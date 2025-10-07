@@ -18,48 +18,18 @@ import (
 // ShadowLinkServiceGatewayServer implements the gRPC server API for the ShadowLinkService service.
 type ShadowLinkServiceGatewayServer struct {
 	v1alpha3.UnimplementedShadowLinkServiceServer
-	createShadowLink connect_gateway.UnaryHandler[v2.CreateShadowLinkRequest, v2.CreateShadowLinkResponse]
-	getShadowLink    connect_gateway.UnaryHandler[v2.GetShadowLinkRequest, v2.GetShadowLinkResponse]
-	listShadowLinks  connect_gateway.UnaryHandler[v2.ListShadowLinksRequest, v2.ListShadowLinksResponse]
-	updateShadowLink connect_gateway.UnaryHandler[v2.UpdateShadowLinkRequest, v2.UpdateShadowLinkResponse]
-	deleteShadowLink connect_gateway.UnaryHandler[v2.DeleteShadowLinkRequest, v2.DeleteShadowLinkResponse]
-	failOver         connect_gateway.UnaryHandler[v2.FailOverRequest, v2.FailOverResponse]
+	failOver connect_gateway.UnaryHandler[v2.FailOverRequest, v1alpha3.FailOverResponse]
 }
 
 // NewShadowLinkServiceGatewayServer constructs a Connect-Gateway gRPC server for the
 // ShadowLinkService service.
 func NewShadowLinkServiceGatewayServer(svc ShadowLinkServiceHandler, opts ...connect_gateway.HandlerOption) *ShadowLinkServiceGatewayServer {
 	return &ShadowLinkServiceGatewayServer{
-		createShadowLink: connect_gateway.NewUnaryHandler(ShadowLinkServiceCreateShadowLinkProcedure, svc.CreateShadowLink, opts...),
-		getShadowLink:    connect_gateway.NewUnaryHandler(ShadowLinkServiceGetShadowLinkProcedure, svc.GetShadowLink, opts...),
-		listShadowLinks:  connect_gateway.NewUnaryHandler(ShadowLinkServiceListShadowLinksProcedure, svc.ListShadowLinks, opts...),
-		updateShadowLink: connect_gateway.NewUnaryHandler(ShadowLinkServiceUpdateShadowLinkProcedure, svc.UpdateShadowLink, opts...),
-		deleteShadowLink: connect_gateway.NewUnaryHandler(ShadowLinkServiceDeleteShadowLinkProcedure, svc.DeleteShadowLink, opts...),
-		failOver:         connect_gateway.NewUnaryHandler(ShadowLinkServiceFailOverProcedure, svc.FailOver, opts...),
+		failOver: connect_gateway.NewUnaryHandler(ShadowLinkServiceFailOverProcedure, svc.FailOver, opts...),
 	}
 }
 
-func (s *ShadowLinkServiceGatewayServer) CreateShadowLink(ctx context.Context, req *v2.CreateShadowLinkRequest) (*v2.CreateShadowLinkResponse, error) {
-	return s.createShadowLink(ctx, req)
-}
-
-func (s *ShadowLinkServiceGatewayServer) GetShadowLink(ctx context.Context, req *v2.GetShadowLinkRequest) (*v2.GetShadowLinkResponse, error) {
-	return s.getShadowLink(ctx, req)
-}
-
-func (s *ShadowLinkServiceGatewayServer) ListShadowLinks(ctx context.Context, req *v2.ListShadowLinksRequest) (*v2.ListShadowLinksResponse, error) {
-	return s.listShadowLinks(ctx, req)
-}
-
-func (s *ShadowLinkServiceGatewayServer) UpdateShadowLink(ctx context.Context, req *v2.UpdateShadowLinkRequest) (*v2.UpdateShadowLinkResponse, error) {
-	return s.updateShadowLink(ctx, req)
-}
-
-func (s *ShadowLinkServiceGatewayServer) DeleteShadowLink(ctx context.Context, req *v2.DeleteShadowLinkRequest) (*v2.DeleteShadowLinkResponse, error) {
-	return s.deleteShadowLink(ctx, req)
-}
-
-func (s *ShadowLinkServiceGatewayServer) FailOver(ctx context.Context, req *v2.FailOverRequest) (*v2.FailOverResponse, error) {
+func (s *ShadowLinkServiceGatewayServer) FailOver(ctx context.Context, req *v2.FailOverRequest) (*v1alpha3.FailOverResponse, error) {
 	return s.failOver(ctx, req)
 }
 

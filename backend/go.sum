@@ -6,6 +6,10 @@ buf.build/gen/go/connectrpc/eliza/protocolbuffers/go v1.33.0-20230913231627-233f
 buf.build/gen/go/connectrpc/eliza/protocolbuffers/go v1.33.0-20230913231627-233fca715f49.1/go.mod h1:v0PWlly2hqVEW2IZSPlvPHELTvdHD5hBsA0+KlCfTQk=
 buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.9-20250904135917-9feeb2588236.1 h1:EuSEe6Ctb+NxZV/VL7ROE5V231EW0trnZ5N4wAJ0/RE=
 buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.9-20250904135917-9feeb2588236.1/go.mod h1:7xXkOBJeUugsZwozO4GJlEnDMFqsGmS9p8OcTugEiwk=
+buf.build/gen/go/redpandadata/core/connectrpc/go v1.18.1-20250903131725-492a4ada6956.1 h1:ILKCJnvuZt7dVvSrrg96EYHZw+daqVTCj0Wgm+dM1do=
+buf.build/gen/go/redpandadata/core/connectrpc/go v1.18.1-20250903131725-492a4ada6956.1/go.mod h1:kc2N3jlUqEZrUEit1SEEgJrFQ14kk4uIzGHd5Wu5tMI=
+buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.9-20250903131725-492a4ada6956.1 h1:wpCXTU52u2r1XLPsEScI2yZJ5xbxURTJrugu+RflQgE=
+buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.9-20250903131725-492a4ada6956.1/go.mod h1:oupF1xcfwydaQw7rI2idmWZZG7lF/hTF9V6EWSc/UCg=
 buf.build/go/protovalidate v1.0.0 h1:IAG1etULddAy93fiBsFVhpj7es5zL53AfB/79CVGtyY=
 buf.build/go/protovalidate v1.0.0/go.mod h1:KQmEUrcQuC99hAw+juzOEAmILScQiKBP1Oc36vvCLW8=
 cel.dev/expr v0.24.0 h1:56OvJKSH3hDGL0ml5uSxZmz3/3Pq4tJ+fb1unVLAFcY=
@@ -398,6 +402,7 @@ github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7 h1:M
 github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7/go.mod h1:UJIi/yUxGOBYXUrfUsOkxfYxcb/ll7mZrwae/i+U2kc=
 github.com/redpanda-data/common-go/rpadmin v0.1.16 h1:XFRTFOsBHRByvwWLSmFeciJxbF356GJfPbCR2knZ/M4=
 github.com/redpanda-data/common-go/rpadmin v0.1.16/go.mod h1:zgE/M2UihQZRdivHfbm4x9Rb3Vm/crO5kiX3GQrxhG4=
+github.com/redpanda-data/common-go/rpadmin v0.1.17-0.20250918052456-493894730cb7 h1:RGdPbgiCplZvFQ40r7n0SlEP9R4w5kCGrADOV+W7/7o=
 github.com/redpanda-data/common-go/rpadmin v0.1.17-0.20250918052456-493894730cb7/go.mod h1:NMOb9iySu0qkqREwoZaN0WANeqaGEZKDtKMecSobToQ=
 github.com/redpanda-data/common-go/rpsr v0.1.2 h1:DThUeyfBH8fkL9WoP1sEbRhT2NVV22zmsTpcCtzfusQ=
 github.com/redpanda-data/common-go/rpsr v0.1.2/go.mod h1:2j2416onosg5FKaKz52NooRE+q/9EJqQn0kyTcTXWHc=
