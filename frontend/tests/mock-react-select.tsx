@@ -7,7 +7,7 @@ interface ChakraEvent {
 }
 
 interface MockedReactSelectProps {
-  options: Array<ChakraEvent>;
+  options: ChakraEvent[];
   value: string;
   onChange: (event?: ChakraEvent) => void;
 }
@@ -19,7 +19,7 @@ const MockedReactSelect = ({ options, value, onChange }: MockedReactSelectProps)
   }
   return (
     <>
-      <select data-testid="select" value={value} onChange={handleChange}>
+      <select data-testid="select" onChange={handleChange} value={value}>
         {options.map((option: ChakraEvent) => (
           <option key={option.value} value={option.value}>
             {option.label}
