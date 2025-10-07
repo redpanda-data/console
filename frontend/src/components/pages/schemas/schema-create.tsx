@@ -571,7 +571,9 @@ function createSchemaState() {
           const obj = JSON.parse(this.schemaText);
           const name = obj.name;
           return name;
-        } catch {}
+        } catch {
+          // no op - schema may be incomplete during editing
+        }
 
         // The above will obviously only work when the schema is complete,
         // when the user is editting the text, it might not parse, so we fall back to regex matching

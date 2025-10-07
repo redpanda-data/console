@@ -533,7 +533,13 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
         }}
       />
 
-      <Modal isCentered isOpen={isCreatingModalOpen} onClose={() => {}}>
+      <Modal
+        isCentered
+        isOpen={isCreatingModalOpen}
+        onClose={() => {
+          // no op - modal is not closeable during connector creation
+        }}
+      >
         <ModalOverlay backdropFilter="blur(5px)" bg="blackAlpha.300" />
         <ModalContent>
           <ModalHeader>Creating connector...</ModalHeader>

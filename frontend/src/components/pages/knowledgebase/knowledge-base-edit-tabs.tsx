@@ -318,7 +318,9 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
           isDisabled
           isMulti
           isSearchable={false}
-          onChange={() => {}}
+          onChange={() => {
+            // no op - read-only field
+          }}
           options={[]}
           placeholder="Topics configured" // No-op for read-only
           value={selectedValues}
@@ -1254,7 +1256,9 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
 
             <TopicSelector
               isReadOnly={true}
-              onTopicsChange={() => {}} // No-op for read-only
+              onTopicsChange={() => {
+                // no op - read-only field
+              }} // No-op for read-only
               selectedTopics={indexer?.inputTopics || []}
             />
 
@@ -1264,7 +1268,9 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
                 isDisabled
                 isRequired // No-op for read-only
                 label="Redpanda Username"
-                onChange={() => {}}
+                onChange={() => {
+                  // no op - read-only field
+                }}
                 value={indexer?.redpandaUsername || ''}
               />
               <FormControl isRequired>
@@ -1274,7 +1280,9 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
                 </Text>
                 <SingleSelect
                   isDisabled
-                  onChange={() => {}} // No-op for read-only
+                  onChange={() => {
+                    // no op - read-only field
+                  }} // No-op for read-only
                   options={[]}
                   placeholder="Password configured"
                   value={indexer?.redpandaPassword || ''}
@@ -1286,7 +1294,9 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
               <FormLabel>SASL Mechanism</FormLabel>
               <SingleSelect
                 isDisabled
-                onChange={() => {}} // No-op for read-only
+                onChange={() => {
+                  // no op - read-only field
+                }} // No-op for read-only
                 options={[
                   { value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256, label: 'SCRAM-SHA-256' },
                   { value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512, label: 'SCRAM-SHA-512' },

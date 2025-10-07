@@ -153,7 +153,12 @@ export class EditOffsetsModal extends Component<{
     return (
       <>
         <ToastContainer />
-        <Modal isOpen={visible} onClose={() => {}}>
+        <Modal
+          isOpen={visible}
+          onClose={() => {
+            // no op - modal is controlled by parent component
+          }}
+        >
           <ModalOverlay />
           <ModalContent minW="3xl">
             <ModalHeader>Edit consumer group</ModalHeader>

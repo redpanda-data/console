@@ -119,6 +119,7 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
       // Log different types of errors for debugging
       const errorStr = String(err);
       if (errorStr.includes('404') || errorStr.includes('not found')) {
+        // no op - 404 is expected when consumer group doesn't exist yet
       } else {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('KnowledgeBase.Details: Failed to load consumer group data:', err);

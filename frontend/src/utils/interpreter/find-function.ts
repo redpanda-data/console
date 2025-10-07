@@ -209,7 +209,9 @@ function findElement(ctx: PropertySearchContext, obj: unknown): boolean {
       let isMatch = false;
       try {
         isMatch = ctx.isMatch(obj, key);
-      } catch {}
+      } catch {
+        // no op - match function may throw
+      }
 
       if (isMatch) {
         const clonedPath = Object.assign([], ctx.currentPath);

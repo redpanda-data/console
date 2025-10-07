@@ -173,7 +173,9 @@ export class StepSelectPartitions extends Component<{
             },
           ]}
           data={this.topicPartitions}
-          onRowSelectionChange={(_data) => {}}
+          onRowSelectionChange={(_data) => {
+            // no op - selection is handled manually
+          }}
           pagination={true}
           rowSelection={{
             _internal_connectors_configs: true,

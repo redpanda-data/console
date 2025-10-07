@@ -32,7 +32,15 @@ describe('TopicConfiguration', () => {
       currentValue: '',
     }));
 
-    const { container } = render(<ConfigurationEditor entries={entries} onForceRefresh={() => {}} targetTopic="" />);
+    const { container } = render(
+      <ConfigurationEditor
+        entries={entries}
+        onForceRefresh={() => {
+          // no op - test callback
+        }}
+        targetTopic=""
+      />
+    );
     expect(screen.getByTestId('config-group-table')).toBeVisible();
 
     const groups = container.querySelectorAll('.configGroupTitle');

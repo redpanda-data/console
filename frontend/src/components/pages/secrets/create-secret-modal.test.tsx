@@ -43,7 +43,15 @@ describe('CreateSecretModal', () => {
       rpc(createSecret, createSecretMock);
     });
 
-    render(<CreateSecretModal isOpen onClose={() => {}} />, { transport });
+    render(
+      <CreateSecretModal
+        isOpen
+        onClose={() => {
+          // no op - test modal
+        }}
+      />,
+      { transport }
+    );
 
     await waitFor(() => {
       expect(screen.getByTestId('create-secret-button')).toBeVisible();
@@ -116,7 +124,15 @@ describe('CreateSecretModal', () => {
       rpc(createSecret, createSecretMock);
     });
 
-    render(<CreateSecretModal isOpen onClose={() => {}} />, { transport });
+    render(
+      <CreateSecretModal
+        isOpen
+        onClose={() => {
+          // no op - test modal
+        }}
+      />,
+      { transport }
+    );
 
     await waitFor(() => {
       expect(screen.getByTestId('create-secret-button')).toBeVisible();

@@ -675,7 +675,7 @@
         // A describe block should not contain duplicate hooks.
         "noDuplicateTestHooks": "error",
         // Disallow empty block statements and static blocks.
-        "noEmptyBlockStatements": "off", // Enable later - many violations
+        "noEmptyBlockStatements": "error",
         // Disallow the declaration of empty interfaces.
         "noEmptyInterface": "error",
         // Disallow variables from evolving into any type through reassignments.

@@ -155,7 +155,9 @@ class SchemaList extends PageComponent {
       if (subject.name.match(quickSearchRegExp)) {
         return true;
       }
-    } catch {}
+    } catch {
+      // no op - invalid regex, fall back to string matching
+    }
 
     // Find by normal string matching
     return subject.name.toLowerCase().includes(filterString.toLowerCase());

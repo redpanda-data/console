@@ -358,6 +358,7 @@ export const getCategoryBadgeProps = (
     default:
       // Log unknown categories for debugging
       if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+        // no op - could add debug logging here if needed
       }
       return {
         icon: <HelpCircle className="h-3 w-3" />,

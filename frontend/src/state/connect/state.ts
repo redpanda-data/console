@@ -540,7 +540,9 @@ export class ConnectorPropertiesStore {
       let parsedConfig = {};
       try {
         parsedConfig = JSON.parse(this.jsonText);
-      } catch {}
+      } catch {
+        // no op - JSON may be invalid during editing
+      }
       Object.assign(config, parsedConfig);
 
       return config;

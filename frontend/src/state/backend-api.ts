@@ -614,6 +614,7 @@ const apiStore = {
       if (v?.topics != null) {
         for (const t of v.topics) {
           if (!t.allowedActions) {
+            // no op - allowedActions may not be set
           }
 
           // DEBUG: randomly remove some allowedActions
@@ -793,6 +794,7 @@ const apiStore = {
           this.topicPartitions.set(t.topicName, t.partitions);
 
           if (partitionErrors.length === 0 && waterMarkErrors.length === 0) {
+            // no op - no errors to track
           } else {
             errors.push({
               topicName: t.topicName,
@@ -1373,7 +1375,9 @@ const apiStore = {
 
         subjectVersions?.set(version, cleanedReferences);
       })
-      .catch(() => {});
+      .catch(() => {
+        // no op - error handled elsewhere
+      });
   },
 
   async refreshSchemaUsagesById(schemaId: number, force?: boolean): Promise<void> {
@@ -2929,7 +2933,9 @@ export function createMessageSearch() {
 
                 try {
                   m.key.payload = JSON.parse(keyPayload);
-                } catch {}
+                } catch {
+                  // no op - payload may not be JSON
+                }
 
                 m.key.troubleshootReport = key?.troubleshootReport;
                 m.key.schemaId = key?.schemaId ?? 0;
@@ -3006,7 +3012,9 @@ export function createMessageSearch() {
 
                 try {
                   m.value.payload = JSON.parse(valuePayload);
-                } catch {}
+                } catch {
+                  // no op - payload may not be JSON
+                }
 
                 m.valueJson = JSON.stringify(m.value.payload);
                 m.value.size = Number(val?.payloadSize);
@@ -3222,7 +3230,9 @@ async function parseOrUnwrap<T>(response: Response, text: string | null): Promis
   }
   try {
     obj = JSON.parse(text);
-  } catch {}
+  } catch {
+    // no op - response may not be JSON
+  }
 
   // api error?
   if (isApiError(obj)) {

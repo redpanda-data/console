@@ -154,8 +154,12 @@ export const config: Config = observable({
   fetch: window.fetch,
   assetsPath: getBasePath(),
   clusterId: 'default',
-  setSidebarItems: () => {},
-  setBreadcrumbs: () => {},
+  setSidebarItems: () => {
+    // no op - set by parent application
+  },
+  setBreadcrumbs: () => {
+    // no op - set by parent application
+  },
   isServerless: false,
   featureFlags: FEATURE_FLAGS,
 });

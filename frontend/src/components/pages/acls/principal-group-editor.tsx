@@ -161,7 +161,12 @@ export const AclPrincipalGroupEditor = observer(
     }
 
     return (
-      <Modal isOpen onClose={() => {}}>
+      <Modal
+        isOpen
+        onClose={() => {
+          // no op - modal is not closeable
+        }}
+      >
         <ModalOverlay />
         <ModalContent minW="6xl">
           <ModalHeader>{p.type === 'create' ? 'Create ACL' : 'Edit ACL'}</ModalHeader>
