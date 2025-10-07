@@ -512,7 +512,7 @@
         // Require consistently using either T[] or Array<T>
         "useConsistentArrayType": "error",
         // Enforce the use of new for all builtins, except String, Number and Boolean.
-        "useConsistentBuiltinInstantiation": "off",
+        "useConsistentBuiltinInstantiation": "error",
         // Require consistent accessibility modifiers on class properties and methods.
         "useConsistentMemberAccessibility": "off",
         // Require the consistent declaration of object literals. Defaults to explicit definitions.
