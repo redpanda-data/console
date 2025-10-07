@@ -26,6 +26,7 @@ import CreateACL from 'components/pages/acls/new-acl/CreateACL';
 import { HostSelector } from 'components/pages/acls/new-acl/HostSelector';
 import { useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+
 import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../react-query/api/acl';
 import { uiState } from '../../../state/uiState';
 import PageContent from '../../misc/PageContent';
@@ -73,7 +74,7 @@ const RoleUpdatePage = () => {
   if (data.length > 1 && !host) {
     return (
       <PageContent>
-        <HostSelector principalName={roleName} hosts={data} baseUrl={`/security/roles/${roleName}/update`} />
+        <HostSelector baseUrl={`/security/roles/${roleName}/update`} hosts={data} principalName={roleName} />
       </PageContent>
     );
   }
@@ -84,7 +85,7 @@ const RoleUpdatePage = () => {
   if (!acl) {
     return (
       <PageContent>
-        <div className="flex items-center justify-center h-96">
+        <div className="flex h-96 items-center justify-center">
           <div className="text-gray-500">No ACL data found for host: {host}</div>
         </div>
       </PageContent>
@@ -103,11 +104,11 @@ const RoleUpdatePage = () => {
       mergedOperations = Object.fromEntries(Object.keys(allOperations).map((op) => [op, OperationTypeDeny]));
     } else {
       // For custom mode, override with the actual values from the fetched rule
-      Object.entries(rule.operations).forEach(([op, value]) => {
+      for (const [op, value] of Object.entries(rule.operations)) {
         if (op in mergedOperations) {
           mergedOperations[op] = value;
         }
-      });
+      }
     }
 
     return {
@@ -119,12 +120,12 @@ const RoleUpdatePage = () => {
   return (
     <PageContent>
       <CreateACL
-        onSubmit={updateRoleAclMutation(acl.rules, acl.sharedConfig)}
+        edit={true}
         onCancel={() => navigate(handleUrlWithHost(`/security/roles/${roleName}/details`, host))}
+        onSubmit={updateRoleAclMutation(acl.rules, acl.sharedConfig)}
+        principalType={PrincipalTypeRedpandaRole}
         rules={rulesWithAllOperations}
         sharedConfig={acl.sharedConfig}
-        edit={true}
-        principalType={PrincipalTypeRedpandaRole}
       />
     </PageContent>
   );

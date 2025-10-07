@@ -41,7 +41,7 @@ export const UserInformationCard = ({ username, saslMechanism, onEditPassword }:
           <Text variant="muted">Passwords cannot be viewed</Text>
           <div className="flex justify-end">
             {onEditPassword && (
-              <Button variant="outline" size="sm" onClick={onEditPassword}>
+              <Button onClick={onEditPassword} size="sm" variant="outline">
                 Edit
               </Button>
             )}

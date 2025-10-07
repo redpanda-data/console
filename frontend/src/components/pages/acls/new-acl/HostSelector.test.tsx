@@ -10,10 +10,12 @@
  */
 
 import { fireEvent, renderWithRouter, screen, waitFor } from 'test-utils';
+
 import { HostSelector } from './HostSelector';
 
 const mockNavigate = vi.fn();
 const mockSearchParams = new URLSearchParams();
+const MULTIPLE_HOSTS_PATTERN = /principal has ACLs configured for multiple hosts/i;
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -50,9 +52,7 @@ describe('HostSelector', () => {
       expect(screen.getByTestId('host-selector-principal-name')).toBeVisible();
       expect(screen.getByTestId('host-selector-principal-name')).toHaveTextContent('test-user');
       expect(screen.getByTestId('host-selector-description')).toBeVisible();
-      expect(screen.getByTestId('host-selector-description')).toHaveTextContent(
-        /principal has ACLs configured for multiple hosts/i,
-      );
+      expect(screen.getByTestId('host-selector-description')).toHaveTextContent(MULTIPLE_HOSTS_PATTERN);
 
       // Verify all host values are visible
       expect(screen.getByText('192.168.1.1')).toBeVisible();

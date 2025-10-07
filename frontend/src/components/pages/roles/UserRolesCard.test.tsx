@@ -11,6 +11,7 @@
 
 import { BrowserRouter } from 'react-router-dom';
 import { render, screen } from 'test-utils';
+
 import { UserRolesCard } from './UserRolesCard';
 
 // Mock useNavigate
@@ -38,7 +39,7 @@ describe('UserRolesCard', () => {
     render(
       <BrowserRouter>
         <UserRolesCard roles={[]} />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
     expect(screen.getByText('Roles')).toBeInTheDocument();
@@ -49,8 +50,8 @@ describe('UserRolesCard', () => {
     const mockOnChangeRoles = vi.fn();
     render(
       <BrowserRouter>
-        <UserRolesCard roles={[]} onChangeRoles={mockOnChangeRoles} />
-      </BrowserRouter>,
+        <UserRolesCard onChangeRoles={mockOnChangeRoles} roles={[]} />
+      </BrowserRouter>
     );
 
     expect(screen.getByTestId('assign-role-button')).toBeInTheDocument();
@@ -60,7 +61,7 @@ describe('UserRolesCard', () => {
     render(
       <BrowserRouter>
         <UserRolesCard roles={[]} />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
     expect(screen.queryByTestId('assign-role-button')).not.toBeInTheDocument();
@@ -70,7 +71,7 @@ describe('UserRolesCard', () => {
     render(
       <BrowserRouter>
         <UserRolesCard roles={mockRoles} />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
     expect(screen.getByTestId('role-name-admin')).toHaveTextContent('admin');
@@ -81,7 +82,7 @@ describe('UserRolesCard', () => {
     render(
       <BrowserRouter>
         <UserRolesCard roles={mockRoles} />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
     expect(screen.getByTestId('view-role-admin')).toBeInTheDocument();
@@ -92,7 +93,7 @@ describe('UserRolesCard', () => {
     render(
       <BrowserRouter>
         <UserRolesCard roles={mockRoles} />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
     expect(screen.getByText('Name')).toBeInTheDocument();
@@ -103,8 +104,8 @@ describe('UserRolesCard', () => {
     const mockOnChangeRoles = vi.fn();
     render(
       <BrowserRouter>
-        <UserRolesCard roles={mockRoles} onChangeRoles={mockOnChangeRoles} />
-      </BrowserRouter>,
+        <UserRolesCard onChangeRoles={mockOnChangeRoles} roles={mockRoles} />
+      </BrowserRouter>
     );
 
     expect(screen.getByTestId('change-role-button')).toBeInTheDocument();

@@ -1,8 +1,6 @@
-import { type Page, test } from '@playwright/test';
-
-import { ACLPage } from './pages/ACLPage';
-import { RolePage } from './pages/RolePage';
+import { type Page, test, expect } from '@playwright/test';
 import {
+  getRuleDataTestId,
   ModeAllowAll,
   ModeCustom,
   ModeDenyAll,
@@ -18,7 +16,9 @@ import {
   ResourceTypeTopic,
   ResourceTypeTransactionalId,
   type Rule,
-} from '../../src/components/pages/acls/new-acl/acl.model';
+} from '../../src/components/pages/acls/new-acl/ACL.model';
+import { ACLPage } from './pages/ACLPage';
+import { RolePage } from './pages/RolePage';
 
 /**
  * Generates a unique principal name for testing
@@ -953,7 +953,7 @@ test.describe('Allow all operations', () => {
           selectorValue: '',
           operations: {},
           resourceType: type,
-        }) as Rule
+        }) as Rule,
     );
 
     aclPages.map(({ createPage, type }) => {
@@ -1137,6 +1137,8 @@ test.describe('Multiples ACLs to same principal', () => {
       const aclPage = new ACLPage(page);
       await aclPage.gotoList();
 
+      await page.getByTestId('search-field-input').fill(principal);
+
       // Verify first ACL with host='*' appears in the list
       const firstAclListItem = page.getByTestId(`acl-list-item-${principal}-${firstHost}`);
       await expect(firstAclListItem).toBeVisible({ timeout: 1000 });
@@ -1149,6 +1151,8 @@ test.describe('Multiples ACLs to same principal', () => {
       const aclPage = new ACLPage(page);
 
       await aclPage.gotoList();
+
+      await page.getByTestId('search-field-input').fill(principal);
 
       // Click on first ACL with host='*'
       await test.step('Click first ACL (host=*) and validate rules', async () => {
@@ -1171,6 +1175,8 @@ test.describe('Multiples ACLs to same principal', () => {
       await test.step('Navigate back to ACL list', async () => {
         await aclPage.gotoList();
       });
+
+      await page.getByTestId('search-field-input').fill(principal);
 
       // Click on second ACL with host='1.1.1.1'
       await test.step('Click second ACL (host=1.1.1.1) and validate rules', async () => {

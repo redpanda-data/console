@@ -16,6 +16,10 @@ import { UserRolesCard } from 'components/pages/roles/UserRolesCard';
 import { Button } from 'components/redpanda-ui/components/button';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+
+import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
+import type { AclPrincipalGroup } from './Models';
+import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
 import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
@@ -24,9 +28,6 @@ import { Features } from '../../../state/supportedFeatures';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
-import type { AclPrincipalGroup } from './Models';
-import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
 
 @observer
 class UserDetailsPage extends PageComponent<{ userName: string }> {
@@ -88,17 +89,22 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
       <PageContent>
         <div className="flex flex-col gap-4">
           <UserInformationCard
-            username={userName}
-            saslMechanism={this.mechanism}
             onEditPassword={api.isAdminApiConfigured ? () => (this.isChangePasswordModalOpen = true) : undefined}
+            saslMechanism={this.mechanism}
+            username={userName}
           />
           <UserPermissionDetailsContent
-            userName={userName}
             onChangeRoles={Features.rolesApi ? () => (this.isChangeRolesModalOpen = true) : undefined}
+            userName={userName}
           />
           <div>
             {isServiceAccount && (
               <DeleteUserConfirmModal
+                buttonEl={
+                  <Button disabled={!isServiceAccount} variant="destructive">
+                    Delete user
+                  </Button>
+                }
                 onConfirm={async () => {
                   await api.deleteServiceAccount(userName);
 
@@ -116,11 +122,6 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
                   await rolesApi.refreshRoleMembers();
                   appGlobal.historyPush('/security/users/');
                 }}
-                buttonEl={
-                  <Button variant="destructive" disabled={!isServiceAccount}>
-                    Delete user
-                  </Button>
-                }
                 userName={userName}
               />
             )}
@@ -129,17 +130,17 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
           {/*Modals*/}
           {api.isAdminApiConfigured && (
             <ChangePasswordModal
-              userName={userName}
               isOpen={this.isChangePasswordModalOpen}
               setIsOpen={(value: boolean) => (this.isChangePasswordModalOpen = value)}
+              userName={userName}
             />
           )}
 
           {Features.rolesApi && (
             <ChangeRolesModal
-              userName={userName}
               isOpen={this.isChangeRolesModalOpen}
               setIsOpen={(value: boolean) => (this.isChangeRolesModalOpen = value)}
+              userName={userName}
             />
           )}
         </div>
@@ -173,7 +174,7 @@ const UserPermissionDetailsContent = observer((p: { userName: string; onChangeRo
 
   return (
     <div className="flex flex-col gap-4">
-      <UserRolesCard roles={roles} onChangeRoles={p.onChangeRoles} />
+      <UserRolesCard onChangeRoles={p.onChangeRoles} roles={roles} />
       <UserAclsCard acls={acls} />
     </div>
   );

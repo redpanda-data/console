@@ -415,7 +415,7 @@ export const useListACLAsPrincipalGroups = () =>
   useQuery(listACLs, {} as ListACLsRequest, {
     select: (response) => {
       const groupsAcl = response.resources.reduce((acc, r) => {
-        r.acls.forEach((a) => {
+        for (const a of r.acls) {
           if (!acc.has(`${a.principal}:${a.host}`)) {
             const [principalType, principalName] = (a.principal ?? '').split(':');
             acc.set(`${a.principal}:${a.host}`, {
@@ -426,7 +426,7 @@ export const useListACLAsPrincipalGroups = () =>
               hasAcl: true,
             });
           }
-        });
+        }
         return acc;
       }, new Map<string, SimpleAcl>());
       return groupsAcl.values().toArray();
@@ -513,10 +513,10 @@ export const useUpdateAclMutation = () => {
     const allResults = await Promise.allSettled([...createResults, ...deleteResults]);
     const errs = new Map<number, ConnectError>();
     const rejected = allResults.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
-    rejected.forEach((result) => {
+    for (const result of rejected) {
       const r = result.reason as ConnectError;
       errs.set(r.code, r);
-    });
+    }
     await invalid();
     return { errors: errs.values().toArray(), created: rejected.length < allResults.length };
   };
@@ -527,9 +527,9 @@ export const useUpdateAclMutation = () => {
 export const useGetAclsByPrincipal = <T = AclDetail[]>(
   principal: string,
   host?: string,
-  transformFn?: (aclList: ListACLsResponse) => T,
-) => {
-  return useQuery(
+  transformFn?: (aclList: ListACLsResponse) => T
+) =>
+  useQuery(
     listACLs,
     {
       filter: {
@@ -539,9 +539,8 @@ export const useGetAclsByPrincipal = <T = AclDetail[]>(
     } as ListACLsRequest,
     {
       select: transformFn ?? (getAclFromAclListResponse as (aclList: ListACLsResponse) => T),
-    },
+    }
   );
-};
 
 export const useCreateAcls = () => {
   const { mutateAsync: createACLMutation } = useMutation(createACL);
@@ -551,10 +550,10 @@ export const useCreateAcls = () => {
     const results = await Promise.allSettled(acls.map((r) => createACLMutation(r)));
     const errs = new Map<number, ConnectError>();
     const rejected = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
-    rejected.forEach((result) => {
+    for (const result of rejected) {
       const r = result.reason as ConnectError;
       errs.set(r.code, r);
-    });
+    }
     await invalid();
     return { errors: errs.values().toArray(), created: rejected.length < results.length };
   };

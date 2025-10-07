@@ -18,7 +18,6 @@ import {
   ModeDenyAll,
   OperationTypeAllow,
   OperationTypeDeny,
-  parsePrincipal,
   PrincipalTypeUser,
   type Rule,
   type SharedConfig,
@@ -27,6 +26,7 @@ import CreateACL from 'components/pages/acls/new-acl/CreateACL';
 import { HostSelector } from 'components/pages/acls/new-acl/HostSelector';
 import { useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+
 import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../../react-query/api/acl';
 import { uiState } from '../../../../state/uiState';
 import PageContent from '../../../misc/PageContent';
@@ -73,14 +73,14 @@ const AclUpdatePage = () => {
     );
   }
 
-  if (!acls || !data) {
+  if (!(acls && data)) {
     return <div>No ACL data found</div>;
   }
 
   if (hosts.length > 1) {
     return (
       <PageContent>
-        <HostSelector principalName={aclName} hosts={data} baseUrl={`/security/acls/${aclName}/update`} />
+        <HostSelector baseUrl={`/security/acls/${aclName}/update`} hosts={data} principalName={aclName} />
       </PageContent>
     );
   }
@@ -97,11 +97,11 @@ const AclUpdatePage = () => {
       mergedOperations = Object.fromEntries(Object.keys(allOperations).map((op) => [op, OperationTypeDeny]));
     } else {
       // For custom mode, override with the actual values from the fetched rule
-      Object.entries(rule.operations).forEach(([op, value]) => {
+      for (const [op, value] of Object.entries(rule.operations)) {
         if (op in mergedOperations) {
           mergedOperations[op] = value;
         }
-      });
+      }
     }
 
     return {
@@ -113,12 +113,12 @@ const AclUpdatePage = () => {
   return (
     <PageContent>
       <CreateACL
-        onSubmit={updateAclMutation(acls.rules, acls.sharedConfig)}
+        edit={true}
         onCancel={() => navigate(handleUrlWithHost(`/security/acls/${aclName}/details`, host))}
+        onSubmit={updateAclMutation(acls.rules, acls.sharedConfig)}
+        principalType={PrincipalTypeUser}
         rules={rulesWithAllOperations}
         sharedConfig={acls.sharedConfig}
-        edit={true}
-        principalType={PrincipalTypeUser}
       />
     </PageContent>
   );

@@ -13,12 +13,13 @@ import { Pencil } from 'lucide-react';
 import { useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { uiState } from 'state/uiState';
-import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
-import { Button } from '../../../redpanda-ui/components/button';
-import { Text } from '../../../redpanda-ui/components/typography';
+
 import { handleUrlWithHost } from './ACL.model';
 import { ACLDetails } from './ACLDetails';
 import { HostSelector } from './HostSelector';
+import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
+import { Button } from '../../../redpanda-ui/components/button';
+import { Text } from '../../../redpanda-ui/components/typography';
 
 const AclDetailPage = () => {
   const { aclName = '' } = useParams<{ aclName: string }>();
@@ -43,12 +44,12 @@ const AclDetailPage = () => {
     return <div>Loading...</div>;
   }
 
-  if (!acls || !data) {
+  if (!(acls && data)) {
     return <div>No ACL data found</div>;
   }
 
   if (!!hosts && hosts.length > 0) {
-    return <HostSelector principalName={aclName} hosts={data} baseUrl={`/security/acls/${aclName}/details`} />;
+    return <HostSelector baseUrl={`/security/acls/${aclName}/details`} hosts={data} principalName={aclName} />;
   }
 
   return (
@@ -58,15 +59,15 @@ const AclDetailPage = () => {
           ACL Configuration Details for <strong>{aclName}</strong>
         </Text>
         <Button
-          onClick={() => navigate(handleUrlWithHost(`/security/acls/${aclName}/update`, host))}
           data-testid="update-acl-button"
+          onClick={() => navigate(handleUrlWithHost(`/security/acls/${aclName}/update`, host))}
           variant="secondary"
         >
-          <Pencil className="w-4 h-4 mr-2" />
+          <Pencil className="mr-2 h-4 w-4" />
           Edit
         </Button>
       </div>
-      <ACLDetails sharedConfig={acls.sharedConfig} rules={acls.rules} isSimpleView={false} />
+      <ACLDetails isSimpleView={false} rules={acls.rules} sharedConfig={acls.sharedConfig} />
     </div>
   );
 };

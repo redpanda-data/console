@@ -11,6 +11,7 @@
 
 import { Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
 import { Button } from '../../redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
@@ -26,15 +27,15 @@ export const UserAclsCard = ({ acls }: UserAclsCardProps) => {
   if (!acls || acls.length === 0) {
     return (
       <Card size="full">
-        <CardHeader className="flex justify-between items-center">
+        <CardHeader className="flex items-center justify-between">
           <CardTitle>ACLs (0)</CardTitle>
           <CardAction>
             <Button
-              variant="outline"
               onClick={() => {
                 navigate('/security/acls/create');
               }}
               testId="create-acl-button"
+              variant="outline"
             >
               Create ACL
             </Button>
@@ -49,7 +50,7 @@ export const UserAclsCard = ({ acls }: UserAclsCardProps) => {
 
   return (
     <Card size="full">
-      <CardHeader className="flex justify-between items-center">
+      <CardHeader className="flex items-center justify-between">
         <CardTitle>ACLs ({acls.length})</CardTitle>
       </CardHeader>
       <CardContent>
@@ -62,30 +63,28 @@ export const UserAclsCard = ({ acls }: UserAclsCardProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {acls.map((r) => {
-              return (
-                <TableRow key={`acl-${r.sharedConfig.principal}-${r.sharedConfig.host}`}>
-                  <TableCell testId={`acl-principal-${r.sharedConfig.principal}-${r.sharedConfig.host}`}>
-                    {r.sharedConfig.principal}
-                  </TableCell>
-                  <TableCell testId={`acl-host-${r.sharedConfig.host}`}>{r.sharedConfig.host}</TableCell>
-                  <TableCell align="right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        navigate(
-                          handleUrlWithHost(`/security/acls/${r.sharedConfig.principal}/details`, r.sharedConfig.host),
-                        );
-                      }}
-                      testId={`view-acl-${r.sharedConfig.principal}-${r.sharedConfig.host}`}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {acls.map((r) => (
+              <TableRow key={`acl-${r.sharedConfig.principal}-${r.sharedConfig.host}`}>
+                <TableCell testId={`acl-principal-${r.sharedConfig.principal}-${r.sharedConfig.host}`}>
+                  {r.sharedConfig.principal}
+                </TableCell>
+                <TableCell testId={`acl-host-${r.sharedConfig.host}`}>{r.sharedConfig.host}</TableCell>
+                <TableCell align="right">
+                  <Button
+                    onClick={() => {
+                      navigate(
+                        handleUrlWithHost(`/security/acls/${r.sharedConfig.principal}/details`, r.sharedConfig.host)
+                      );
+                    }}
+                    size="sm"
+                    testId={`view-acl-${r.sharedConfig.principal}-${r.sharedConfig.host}`}
+                    variant="outline"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </CardContent>

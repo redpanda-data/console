@@ -12,18 +12,17 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { useNavigate } from 'react-router-dom';
+
 import {
   formatLabel,
   getIdFromRule,
   getOperationsForResourceType,
   getRuleDataTestId,
-  type OperationType,
   parsePrincipal,
   type Rule,
   type SharedConfig,
-} from './acl.model';
+} from './ACL.model';
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
-import { MatchingUsersCard } from '../../roles/matching-users-card';
 
 // Helper function to get resource name
 const getResourceName = (resourceType: string): string => {
@@ -134,13 +133,11 @@ export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDet
                   ) : (
                     data.rules.map((rule: Rule) => {
                       const availableRules = Object.entries(getOperationsForResourceType(rule.resourceType)).length;
-                      const enabledOperations = Object.entries(rule.operations).map(
-                        ([op, value]: [string, OperationType]) => ({
-                          name: formatLabel(op),
-                          originName: op,
-                          value,
-                        })
-                      );
+                      const enabledOperations = Object.entries(rule.operations).map(([op, value]: [string, any]) => ({
+                        name: formatLabel(op),
+                        originName: op,
+                        value,
+                      }));
 
                       // Check if all operations have the same permission
                       const allAllow =
@@ -229,7 +226,7 @@ const EmbeddedAclDetail = ({ principal }: { principal: string }) => {
 
   const acl = data[0];
 
-  return <ACLDetails sharedConfig={acl.sharedConfig} rules={acl.rules} isSimpleView={true} />;
+  return <ACLDetails isSimpleView={true} rules={acl.rules} sharedConfig={acl.sharedConfig} />;
 };
 
 export { EmbeddedAclDetail };

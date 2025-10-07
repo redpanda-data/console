@@ -11,8 +11,9 @@
 
 import { BrowserRouter } from 'react-router-dom';
 import { render, screen } from 'test-utils';
-import type { AclDetail } from '../acls/new-acl/ACL.model';
+
 import { UserAclsCard } from './UserAclsCard';
+import type { AclDetail } from '../acls/new-acl/ACL.model';
 
 // Mock useNavigate
 vi.mock('react-router-dom', async () => {
@@ -68,7 +69,7 @@ describe('UserAclsCard', () => {
     render(
       <BrowserRouter>
         <UserAclsCard acls={[]} />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
     expect(screen.getByText('ACLs (0)')).toBeInTheDocument();
@@ -80,7 +81,7 @@ describe('UserAclsCard', () => {
     render(
       <BrowserRouter>
         <UserAclsCard acls={undefined} />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
     expect(screen.getByText('ACLs (0)')).toBeInTheDocument();
@@ -92,7 +93,7 @@ describe('UserAclsCard', () => {
     render(
       <BrowserRouter>
         <UserAclsCard acls={mockAcls} />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
     expect(screen.getByText('ACLs (2)')).toBeInTheDocument();
@@ -102,7 +103,7 @@ describe('UserAclsCard', () => {
     render(
       <BrowserRouter>
         <UserAclsCard acls={mockAcls} />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
     expect(screen.getByTestId('acl-principal-User:test-user-*')).toHaveTextContent('User:test-user');
@@ -115,7 +116,7 @@ describe('UserAclsCard', () => {
     render(
       <BrowserRouter>
         <UserAclsCard acls={mockAcls} />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
     expect(screen.getByTestId('view-acl-User:test-user-*')).toBeInTheDocument();
@@ -126,7 +127,7 @@ describe('UserAclsCard', () => {
     render(
       <BrowserRouter>
         <UserAclsCard acls={mockAcls} />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
     expect(screen.getByText('Name')).toBeInTheDocument();

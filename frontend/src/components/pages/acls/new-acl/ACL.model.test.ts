@@ -20,6 +20,7 @@ import {
   ListACLsResponseSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { describe, expect, test } from 'vitest';
+
 import {
   getAclFromAclListResponse,
   ModeAllowAll,

@@ -10,10 +10,11 @@
  */
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
+
+import type { AclDetail } from './ACL.model';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { Text } from '../../../redpanda-ui/components/typography';
-import type { AclDetail } from './ACL.model';
 
 interface HostSelectorProps {
   principalName: string;
@@ -26,12 +27,12 @@ export const HostSelector = ({ principalName, hosts, baseUrl }: HostSelectorProp
   const [searchParams] = useSearchParams();
 
   return (
-    <div className="flex items-center w-2/3">
+    <div className="flex w-2/3 items-center">
       <Card size={'full'}>
         <CardHeader>
           <CardTitle>Multiple Hosts Found</CardTitle>
         </CardHeader>
-        <CardContent className={' flex flex-col gap-2'}>
+        <CardContent className={'flex flex-col gap-2'}>
           <Text className="mb-4 text-gray-600" data-testid="host-selector-description">
             This{' '}
             <Text as="span" className={'font-bold'} data-testid="host-selector-principal-name">
@@ -49,8 +50,8 @@ export const HostSelector = ({ principalName, hosts, baseUrl }: HostSelectorProp
             <TableBody>
               {hosts.map(({ sharedConfig: { host: hostValue } }) => (
                 <TableRow
-                  key={hostValue}
                   className="cursor-pointer hover:bg-gray-50"
+                  key={hostValue}
                   onClick={() => {
                     const newSearchParams = new URLSearchParams(searchParams);
                     newSearchParams.set('host', hostValue);

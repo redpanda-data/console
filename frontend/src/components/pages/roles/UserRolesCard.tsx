@@ -11,6 +11,7 @@
 
 import { Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
 import { Button } from '../../redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
@@ -32,11 +33,11 @@ export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
   if (roles.length === 0) {
     return (
       <Card size="full">
-        <CardHeader className="flex justify-between items-center">
+        <CardHeader className="flex items-center justify-between">
           <CardTitle>Roles</CardTitle>
           <CardAction>
             {onChangeRoles && (
-              <Button variant="outline" onClick={onChangeRoles} testId="assign-role-button">
+              <Button onClick={onChangeRoles} testId="assign-role-button" variant="outline">
                 Assign Role
               </Button>
             )}
@@ -51,11 +52,11 @@ export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
 
   return (
     <Card size="full">
-      <CardHeader className="flex justify-between items-center">
+      <CardHeader className="flex items-center justify-between">
         <CardTitle>Roles</CardTitle>
         <CardAction>
           {onChangeRoles && (
-            <Button variant="outline" onClick={onChangeRoles} testId="change-role-button">
+            <Button onClick={onChangeRoles} testId="change-role-button" variant="outline">
               Change Role
             </Button>
           )}
@@ -70,25 +71,23 @@ export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {roles.map((r) => {
-              return (
-                <TableRow key={`role-${r.principalType}-${r.principalName}`}>
-                  <TableCell testId={`role-name-${r.principalName}`}>{r.principalName}</TableCell>
-                  <TableCell align="right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        navigate(handleUrlWithHost(`/security/roles/${r.principalName}/details`, ''));
-                      }}
-                      testId={`view-role-${r.principalName}`}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {roles.map((r) => (
+              <TableRow key={`role-${r.principalType}-${r.principalName}`}>
+                <TableCell testId={`role-name-${r.principalName}`}>{r.principalName}</TableCell>
+                <TableCell align="right">
+                  <Button
+                    onClick={() => {
+                      navigate(handleUrlWithHost(`/security/roles/${r.principalName}/details`, ''));
+                    }}
+                    size="sm"
+                    testId={`view-role-${r.principalName}`}
+                    variant="outline"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </CardContent>

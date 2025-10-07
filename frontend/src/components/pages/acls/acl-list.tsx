@@ -748,7 +748,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                       className="hoverLink"
                       onClick={() => {
                         navigate(
-                          `/security/acls/${record.principalName}/details?host=${encodeURIComponent(record.host)}`,
+                          `/security/acls/${record.principalName}/details?host=${encodeURIComponent(record.host)}`
                         );
                       }}
                       type="button"
