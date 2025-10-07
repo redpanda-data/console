@@ -262,11 +262,11 @@ export const mergeConnectConfigs = (
       const newProcessor = newProcessorNode || newConfigObject.pipeline?.processors?.[0];
 
       if (newProcessor) {
-        if (!Array.isArray(processors)) {
-          doc.setIn(['pipeline', 'processors'], [newProcessor]);
-        } else {
+        if (Array.isArray(processors)) {
           // Spread existing processors and append new one
           doc.setIn(['pipeline', 'processors'], [...processors, newProcessor]);
+        } else {
+          doc.setIn(['pipeline', 'processors'], [newProcessor]);
         }
       }
       break;

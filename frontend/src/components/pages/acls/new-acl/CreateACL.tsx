@@ -1062,10 +1062,10 @@ export default function CreateACL({
                     data-testid="submit-acl-button"
                     disabled={!!principalError || !isValidRule}
                     onClick={() => {
-                      if (!parsePrincipal(sharedConfig.principal).name) {
-                        setPrincipalError('Principal is required');
-                      } else {
+                      if (parsePrincipal(sharedConfig.principal).name) {
                         onSubmit?.(sharedConfig.principal, sharedConfig.host, rules);
+                      } else {
+                        setPrincipalError('Principal is required');
                       }
                     }}
                   >

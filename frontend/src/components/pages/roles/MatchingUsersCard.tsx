@@ -167,18 +167,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
           {/* Add user/principal button and input - only for RedpandaRole */}
           {principalType === 'RedpandaRole' && (
             <div className="border-gray-200 border-t pt-2">
-              {!isAddingUser ? (
-                <Button
-                  className="w-full justify-start text-gray-600 hover:bg-white/60 hover:text-gray-900"
-                  data-testid="add-user-principal-button"
-                  onClick={() => setIsAddingUser(true)}
-                  size="sm"
-                  variant="ghost"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add user/principal
-                </Button>
-              ) : (
+              {isAddingUser ? (
                 <div className="flex gap-2">
                   <AutocompleteInput
                     className="flex-1 text-sm"
@@ -210,6 +199,17 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
                     <X className="h-4 w-4 text-red-600" />
                   </Button>
                 </div>
+              ) : (
+                <Button
+                  className="w-full justify-start text-gray-600 hover:bg-white/60 hover:text-gray-900"
+                  data-testid="add-user-principal-button"
+                  onClick={() => setIsAddingUser(true)}
+                  size="sm"
+                  variant="ghost"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add user/principal
+                </Button>
               )}
             </div>
           )}

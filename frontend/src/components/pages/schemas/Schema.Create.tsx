@@ -291,7 +291,7 @@ async function validateSchema(state: SchemaEditorStateHelper): Promise<{
   return {
     isValid: r.isValid,
     errorDetails: r.parsingError,
-    isCompatible: !r.isValid ? undefined : r.compatibility.isCompatible,
+    isCompatible: r.isValid ? r.compatibility.isCompatible : undefined,
   };
 }
 

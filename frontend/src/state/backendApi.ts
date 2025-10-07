@@ -1657,10 +1657,10 @@ const apiStore = {
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}`,
       force
     ).then((v) => {
-      if (!v) {
-        this.connectAdditionalClusterInfo.delete(clusterName);
-      } else {
+      if (v) {
         this.connectAdditionalClusterInfo.set(clusterName, v);
+      } else {
+        this.connectAdditionalClusterInfo.delete(clusterName);
       }
     }, addError);
   },

@@ -49,8 +49,8 @@ export function ShortNum(p: { value: number; tooltip?: boolean; className?: stri
   const str = unit ? valString + unit : valString;
 
   if (tooltip) {
-    if (!className) className = 'tooltip';
-    else className += ' tooltip';
+    if (className) className += ' tooltip';
+    else className = 'tooltip';
 
     return (
       <div className={className} style={style}>

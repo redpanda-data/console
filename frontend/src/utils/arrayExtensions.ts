@@ -189,10 +189,10 @@ Array.prototype.groupBy = function groupBy<T, K>(this: T[], keySelector: (x: T) 
   for (const item of this) {
     const key = keySelector(item);
     const collection = map.get(key);
-    if (!collection) {
-      map.set(key, [item]);
-    } else {
+    if (collection) {
       collection.push(item);
+    } else {
+      map.set(key, [item]);
     }
   }
   return map;

@@ -109,7 +109,7 @@ export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonVal
   if (path.length === 0) return value;
 
   if (obj === null || obj === undefined) {
-    obj = !Number.isNaN(Number(path[0])) ? [] : {};
+    obj = Number.isNaN(Number(path[0])) ? {} : [];
   }
 
   if (Array.isArray(obj)) {

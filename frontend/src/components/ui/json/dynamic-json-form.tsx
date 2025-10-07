@@ -308,10 +308,10 @@ export const DynamicJSONForm = ({
             <Combobox
               creatable
               onChange={(val) => {
-                if (!(val || isRequired)) {
-                  handleFieldChange(path, undefined);
-                } else {
+                if (val || isRequired) {
                   handleFieldChange(path, val);
+                } else {
+                  handleFieldChange(path, undefined);
                 }
               }}
               onCreateOption={(newValue) => {
@@ -340,10 +340,10 @@ export const DynamicJSONForm = ({
             <Combobox
               creatable
               onChange={(val) => {
-                if (!(val || isRequired)) {
-                  handleFieldChange(path, undefined);
-                } else {
+                if (val || isRequired) {
                   handleFieldChange(path, val);
+                } else {
+                  handleFieldChange(path, undefined);
                 }
               }}
               onCreateOption={(newValue) => {
@@ -368,10 +368,10 @@ export const DynamicJSONForm = ({
             <Combobox
               creatable
               onChange={(val) => {
-                if (!(val || isRequired)) {
-                  handleFieldChange(path, undefined);
-                } else {
+                if (val || isRequired) {
                   handleFieldChange(path, val);
+                } else {
+                  handleFieldChange(path, undefined);
                 }
               }}
               onCreateOption={(newValue) => {
@@ -430,13 +430,13 @@ export const DynamicJSONForm = ({
             min={propSchema.minimum}
             onChange={(e) => {
               const val = e.target.value;
-              if (!(val || isRequired)) {
-                handleFieldChange(path, undefined);
-              } else {
+              if (val || isRequired) {
                 const num = Number(val);
                 if (!Number.isNaN(num)) {
                   handleFieldChange(path, num);
                 }
+              } else {
+                handleFieldChange(path, undefined);
               }
             }}
             placeholder={propSchema.description}
@@ -453,13 +453,13 @@ export const DynamicJSONForm = ({
             min={propSchema.minimum}
             onChange={(e) => {
               const val = e.target.value;
-              if (!(val || isRequired)) {
-                handleFieldChange(path, undefined);
-              } else {
+              if (val || isRequired) {
                 const num = Number(val);
                 if (!Number.isNaN(num) && Number.isInteger(num)) {
                   handleFieldChange(path, num);
                 }
+              } else {
+                handleFieldChange(path, undefined);
               }
             }}
             placeholder={propSchema.description}

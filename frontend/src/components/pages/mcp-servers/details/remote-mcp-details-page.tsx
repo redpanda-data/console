@@ -53,10 +53,10 @@ export const RemoteMCPDetailsPage = () => {
 
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
-    if (!tabFromUrl) {
-      setActiveTab('configuration');
-    } else {
+    if (tabFromUrl) {
       setActiveTab(tabFromUrl);
+    } else {
+      setActiveTab('configuration');
     }
   }, [searchParams]);
 

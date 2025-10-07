@@ -200,8 +200,8 @@ const ImportExportTab: FC = observer(() => {
                 const skipped: string[] = [];
                 transaction(() => {
                   for (const k in data) {
-                    if (!Reflect.has(uiSettings, k)) skipped.push(k);
-                    else (uiSettings as any)[k] = data[k];
+                    if (Reflect.has(uiSettings, k)) (uiSettings as any)[k] = data[k];
+                    else skipped.push(k);
                   }
                 });
                 if (skipped.length > 0)

@@ -65,15 +65,15 @@ export class StepSelectBrokers extends Component<{
                     isChecked={allIsSelected}
                     isIndeterminate={!allIsSelected && selectedSet.size > 0}
                     onChange={() => {
-                      if (!allIsSelected) {
+                      if (allIsSelected) {
+                        selectedBrokers.splice(0);
+                      } else {
                         transaction(() => {
                           selectedBrokers.splice(0);
                           for (const broker of this.brokers) {
                             selectedBrokers.push(broker.brokerId);
                           }
                         });
-                      } else {
-                        selectedBrokers.splice(0);
                       }
                     }}
                   />

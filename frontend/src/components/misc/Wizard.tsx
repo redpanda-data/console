@@ -26,11 +26,11 @@ export function Wizard<State extends WizardState>({ state }: { state: State }) {
           </Button>
         )}
 
-        {!state.isFirst() ? (
+        {state.isFirst() ? null : (
           <Button className={styles.prevButton} onClick={state.previous} px="8" variant="link">
             {currentStep.prevButtonLabel ?? 'Back'}
           </Button>
-        ) : null}
+        )}
       </div>
     </div>
   );

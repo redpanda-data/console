@@ -94,7 +94,7 @@ const AppPageHeader = observer(() => {
               isDisabled={!api.userData?.canViewDebugBundle}
               to={api.userData?.canViewDebugBundle ? '/debug-bundle' : undefined}
               tooltip={
-                !api.userData?.canViewDebugBundle ? 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission' : null
+                api.userData?.canViewDebugBundle ? null : 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission'
               }
               variant="ghost"
             >

@@ -48,12 +48,12 @@ export default observer(({ acl }: AclListProps) => {
           You do not have the necessary permissions to view ACLs
         </Alert>
       ) : null}
-      {!acl?.isAuthorizerEnabled ? (
+      {acl?.isAuthorizerEnabled ? null : (
         <Alert status="warning" style={{ marginBottom: '1em' }}>
           <AlertIcon />
           There's no authorizer configured in your Kafka cluster
         </Alert>
-      ) : null}
+      )}
       <DataTable<{
         eqKey: string;
         principal: string;

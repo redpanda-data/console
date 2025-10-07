@@ -233,7 +233,7 @@ export const RemoteMCPInspectorTab = () => {
           updatedParams = {
             ...updatedParams,
             messages: updatedParams.messages.map((msg: any) =>
-              !msg?.topic_name ? { ...msg, topic_name: availableTopic } : msg
+              msg?.topic_name ? msg : { ...msg, topic_name: availableTopic }
             ),
           };
         } else {
