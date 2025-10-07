@@ -527,7 +527,7 @@
         // Enforce default function parameters and optional function parameters to be last.
         "useDefaultParameterLast": "error",
         // Require the default clause in switch statements.
-        "useDefaultSwitchClause": "off",
+        "useDefaultSwitchClause": "error",
         // Require specifying the reason argument when using @deprecated directive
         "useDeprecatedReason": "off",
         // Require that each enum member value be explicitly initialized.

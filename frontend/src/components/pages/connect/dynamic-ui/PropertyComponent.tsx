@@ -119,6 +119,15 @@ export const PropertyComponent = observer((props: { property: Property }) => {
       }
 
       break;
+    default:
+      inputComp = (
+        <Input
+          defaultValue={def.default_value ?? undefined}
+          onChange={(e) => (p.value = e.target.value)}
+          value={String(v)}
+        />
+      );
+      break;
   }
 
   inputComp = <ErrorWrapper input={inputComp} property={p} />;

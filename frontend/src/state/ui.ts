@@ -85,6 +85,8 @@ export function IsLocalTimestampFormat(timestampType: TimestampDisplayFormat) {
       return false;
     case 'unixMillis':
       return false;
+    default:
+      return true;
   }
 }
 

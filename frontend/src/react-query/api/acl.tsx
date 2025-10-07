@@ -74,6 +74,8 @@ const getACLOperationLegacy = (operation: AclStrOperation) => {
       return ACL_Operation.ALTER_CONFIGS;
     case 'IdempotentWrite':
       return ACL_Operation.IDEMPOTENT_WRITE;
+    default:
+      return ACL_Operation.UNSPECIFIED;
   }
 };
 
@@ -98,6 +100,8 @@ const getACLResourceTypeLegacy = (resourceType: AclStrResourceType) => {
       return ACL_ResourceType.DELEGATION_TOKEN;
     case 'RedpandaRole':
       return ACL_ResourceType.USER; // TODO: Check if this mapping is correct
+    default:
+      return ACL_ResourceType.UNSPECIFIED;
   }
 };
 
@@ -116,6 +120,8 @@ const getACLResourcePatternTypeLegacy = (resourcePatternType: AclStrResourcePatt
       return ACL_ResourcePatternType.LITERAL;
     case 'Prefixed':
       return ACL_ResourcePatternType.PREFIXED;
+    default:
+      return ACL_ResourcePatternType.UNSPECIFIED;
   }
 };
 
@@ -227,6 +233,8 @@ const getACLResourceType = (resourceType: ACL_ResourceType) => {
       return 'DelegationToken';
     case ACL_ResourceType.USER:
       return 'RedpandaRole'; // Check if this is accurate
+    default:
+      return 'Unknown';
   }
 };
 
@@ -245,6 +253,8 @@ const getACLResourcePatternType = (resourcePatternType: ACL_ResourcePatternType)
       return 'Literal';
     case ACL_ResourcePatternType.PREFIXED:
       return 'Prefixed';
+    default:
+      return 'Unknown';
   }
 };
 
@@ -283,6 +293,8 @@ export const getACLOperation = (operation: ACL_Operation) => {
       return 'CreateTokens';
     case ACL_Operation.DESCRIBE_TOKENS:
       return 'DescribeTokens';
+    default:
+      return 'Unknown';
   }
 };
 
@@ -299,6 +311,8 @@ export const getACLPermissionType = (permissionType: ACL_PermissionType) => {
       return 'Deny';
     case ACL_PermissionType.ALLOW:
       return 'Allow';
+    default:
+      return 'Unknown';
   }
 };
 

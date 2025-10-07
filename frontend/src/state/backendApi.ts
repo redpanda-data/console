@@ -2708,6 +2708,9 @@ export function createMessageSearch() {
                   case ProtoCompressionType.ZSTD:
                     m.compression = CompressionType.ZStd;
                     break;
+                  default:
+                    m.compression = CompressionType.Unknown;
+                    break;
                 }
 
                 m.offset = Number(res.controlMessage.value.offset);
@@ -2877,6 +2880,8 @@ export function createMessageSearch() {
                 this.messages.push(m);
                 break;
               }
+              default:
+                break;
             }
           } catch (e) {
             // biome-ignore lint/suspicious/noConsole: intentional console usage

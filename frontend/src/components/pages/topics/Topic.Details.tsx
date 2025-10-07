@@ -387,6 +387,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
       case 'compact,delete':
         favs.pushDistinct('retention.ms', 'retention.bytes', 'min.cleanable.dirty.ratio', 'delete.retention.ms');
         break;
+      default:
+        break;
     }
   }
 

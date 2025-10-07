@@ -656,6 +656,9 @@ export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 
     case 'end':
       _top = rect.bottom;
       break;
+    default:
+      _top = rect.top;
+      break;
   }
 
   mainLayout.scrollTo({

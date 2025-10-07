@@ -107,6 +107,8 @@ export const getSASLMechanism = (saslMechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512
       return SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256;
     case 'SCRAM-SHA-512':
       return SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512;
+    default:
+      return SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256;
   }
 };
 

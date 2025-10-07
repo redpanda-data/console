@@ -87,10 +87,10 @@ export class TimestampDisplay extends Component<{ unixEpochMillisecond: number; 
         return ts.toString();
       case 'relative':
         return `${prettyMilliseconds(Date.now() - ts, { compact: true })} ago`;
+      default:
+        // format 'default' -> locale datetime
+        return new Date(ts).toLocaleString();
     }
-
-    // format 'default' -> locale datetime
-    return new Date(ts).toLocaleString();
   }
 }
 

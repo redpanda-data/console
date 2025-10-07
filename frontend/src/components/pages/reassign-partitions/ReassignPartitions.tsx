@@ -294,6 +294,8 @@ class ReassignPartitions extends PageComponent {
                           topicsWithMoves={this.topicsWithMoves}
                         />
                       );
+                    default:
+                      return null;
                   }
                 })()}
               </motion.div>
