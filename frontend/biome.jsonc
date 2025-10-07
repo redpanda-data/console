@@ -524,7 +524,7 @@
         // Require the default clause in switch statements.
         "useDefaultSwitchClause": "error",
         // Require specifying the reason argument when using @deprecated directive
-        "useDeprecatedReason": "off",
+        "useDeprecatedReason": "error",
         // Require that each enum member value be explicitly initialized.
         "useEnumInitializers": "error",
         // Disallow the use of Math.pow in favor of the ** operator.
