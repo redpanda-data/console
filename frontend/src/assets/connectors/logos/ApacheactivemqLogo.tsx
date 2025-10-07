@@ -1,8 +1,36 @@
 import type React from 'react';
 
 export const ApacheactivemqLogo = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" {...props}>
-    <title>Apacheactivemq</title>
-    <path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18L19.82 8 12 11.82 4.18 8 12 4.18zM4 9.7l7 3.5v7l-7-3.5v-7zm16 0v7l-7 3.5v-7l7-3.5z" />
+  <svg viewBox="0 0 18.062 18.062" fill="currentColor" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <title>Apache ActiveMQ</title>
+    <g transform="matrix(1.750568 0 0 1.750568 -73.527298 -246.88563)">
+      <use xlinkHref="#A" fill="#c12766" />
+      <use xlinkHref="#A" x="-3.042" y="1.746" fill="#3e489f" />
+      <use xlinkHref="#A" x="-.018" y="3.5" fill="#714099" />
+      <use xlinkHref="#A" x="-3.025" y="-1.73" fill="#78932c" />
+      <use xlinkHref="#A" x="-.002" y="-3.48" fill="#cf242a" />
+      <g fill="#fff">
+        <circle r=".292" cy="142.702" cx="47.824" />
+        <circle r=".292" cy="144.449" cx="44.8" />
+        <circle r=".292" cy="147.927" cx="44.784" />
+        <circle r=".292" cy="149.68" cx="47.806" />
+      </g>
+      <path
+        d="M47.64 142.783l-2.648 1.517m-.204.377l.01 3.052m.2.325l2.624 1.56"
+        fill="none"
+        stroke="#fff"
+        strokeWidth=".097"
+      />
+      <circle r=".292" cy="146.181" cx="47.825" fill="#fff" />
+      <path
+        d="M47.815 142.907l.01 3.052m.005.446l.01 3.052m-.196-3.157l-2.648 1.517m.012-3.23l2.624 1.56"
+        fill="none"
+        stroke="#fff"
+        strokeWidth=".097"
+      />
+    </g>
+    <defs>
+      <path id="A" d="M48.782 147.85l-1.925-.006-.957-1.67.967-1.664 1.925.006.957 1.67z" />
+    </defs>
   </svg>
 );

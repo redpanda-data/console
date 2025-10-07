@@ -719,7 +719,7 @@ export function generateDefaultValue(
 ): unknown {
   // IMPORTANT: Determine if this field is truly required
   // A field is required if it's explicitly marked as not optional OR if it has no default and is_optional is undefined
-  const isExplicitlyRequired = isFalsy(spec.is_optional);
+  const isExplicitlyRequired = spec.is_optional === false;
   const isCriticalField = CRITICAL_CONNECTION_FIELDS.has(spec.name);
 
   if (componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName)) {

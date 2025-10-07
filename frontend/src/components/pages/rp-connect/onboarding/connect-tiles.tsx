@@ -295,11 +295,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                                           <ChoiceboxItemIndicator className="absolute right-2 top-2" />
                                         )}
                                       {component?.logoUrl ? (
-                                        <img
-                                          src={component.logoUrl}
-                                          alt={component.name}
-                                          className="size-6 grayscale"
-                                        />
+                                        <img src={component.logoUrl} alt={component.name} className="size-6" />
                                       ) : componentLogoMap[component.name as ComponentName] ? (
                                         <ConnectorLogo
                                           name={component.name as ComponentName}
