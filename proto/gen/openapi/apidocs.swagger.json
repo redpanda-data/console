@@ -1,0 +1,3111 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "redpanda/api/dataplane/v1alpha3/ai_agent.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "AI Agents",
+      "description": "Create and manage AI agents and their configurations."
+    },
+    {
+      "name": "Redpanda AI KnowledgeBase",
+      "description": "Create and manage retrieval-augmented generation (RAG) knowledge bases."
+    },
+    {
+      "name": "Redpanda Connect MCP servers",
+      "description": "Create and manage Redpanda Connect MCP servers and their configurations."
+    },
+    {
+      "name": "Shadow Links",
+      "description": "Manage Redpanda shadow links for disaster recovery and failover."
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1alpha3/ai-agents": {
+      "get": {
+        "summary": "List AI Agents",
+        "description": "List AI agents. Optional: filter based on AI agent name.",
+        "operationId": "AIAgentService_ListAIAgents",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/ListAIAgentsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter.name_contains",
+            "description": "Any AI agents that partially match this name will be returned.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "filter.tags[string]",
+            "description": "This is a request variable of the map type. The query format is \"map_name[key]=value\", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age[\"bob\"]=18",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page_size",
+            "description": "Limit the paginated response to a number of items. Defaults to 50. Use -1 to disable pagination.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "page_token",
+            "description": "Value of the next_page_token field returned by the previous response.\nIf not provided, the system assumes the first page is requested.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "AI Agents"
+        ]
+      },
+      "post": {
+        "summary": "Create AI Agent",
+        "description": "Create a new AI agent.",
+        "operationId": "AIAgentService_CreateAIAgent",
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/AIAgent"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ai_agent",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AIAgentCreate"
+            }
+          }
+        ],
+        "tags": [
+          "AI Agents"
+        ]
+      }
+    },
+    "/v1alpha3/ai-agents/{id}": {
+      "get": {
+        "summary": "Get AI Agent",
+        "description": "Get a specific AI agent.",
+        "operationId": "AIAgentService_GetAIAgent",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/AIAgent"
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "AI Agent ID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "AI Agents"
+        ]
+      },
+      "delete": {
+        "summary": "Delete AI Agent",
+        "description": "Delete an AI agent.",
+        "operationId": "AIAgentService_DeleteAIAgent",
+        "responses": {
+          "204": {
+            "description": "Deleted",
+            "schema": {}
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "AI Agent ID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "AI Agents"
+        ]
+      },
+      "put": {
+        "summary": "Update AI Agent",
+        "description": "Update the configuration of an AI agent.",
+        "operationId": "AIAgentService_UpdateAIAgent",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/AIAgent"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "AI Agent ID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "ai_agent",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AIAgentUpdate",
+              "required": [
+                "ai_agent"
+              ]
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Specifies which fields should be updated. If not provided,\nall fields will be updated.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "AI Agents"
+        ]
+      }
+    },
+    "/v1alpha3/ai-agents/{id}:start": {
+      "put": {
+        "summary": "Start AI Agent",
+        "description": "Start a stopped AI agent.",
+        "operationId": "AIAgentService_StartAIAgent",
+        "responses": {
+          "200": {
+            "description": "Started",
+            "schema": {
+              "$ref": "#/definitions/AIAgent"
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "AI Agent ID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "AI Agents"
+        ]
+      }
+    },
+    "/v1alpha3/ai-agents/{id}:stop": {
+      "put": {
+        "summary": "Stop AI Agent",
+        "description": "Stop a running AI agent.",
+        "operationId": "AIAgentService_StopAIAgent",
+        "responses": {
+          "200": {
+            "description": "Stopped",
+            "schema": {
+              "$ref": "#/definitions/AIAgent"
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "AI Agent ID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "AI Agents"
+        ]
+      }
+    },
+    "/v1alpha3/knowledge-bases": {
+      "get": {
+        "operationId": "KnowledgeBaseService_ListKnowledgeBases",
+        "responses": {
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page_size",
+            "description": "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "page_token",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "filter.name_contains",
+            "description": "Any KnowledgeBase that partially match this name will be returned.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "filter.tags[string]",
+            "description": "This is a request variable of the map type. The query format is \"map_name[key]=value\", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age[\"bob\"]=18",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KnowledgeBaseService"
+        ]
+      },
+      "post": {
+        "operationId": "KnowledgeBaseService_CreateKnowledgeBase",
+        "responses": {
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "knowledge_base",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBaseCreate"
+            }
+          }
+        ],
+        "tags": [
+          "KnowledgeBaseService"
+        ]
+      }
+    },
+    "/v1alpha3/knowledge-bases/{id}": {
+      "get": {
+        "operationId": "KnowledgeBaseService_GetKnowledgeBase",
+        "responses": {
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KnowledgeBaseService"
+        ]
+      },
+      "delete": {
+        "operationId": "KnowledgeBaseService_DeleteKnowledgeBase",
+        "responses": {
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KnowledgeBaseService"
+        ]
+      },
+      "put": {
+        "operationId": "KnowledgeBaseService_UpdateKnowledgeBase",
+        "responses": {
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "knowledge_base",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBaseUpdate",
+              "required": [
+                "knowledge_base"
+              ]
+            }
+          },
+          {
+            "name": "update_mask",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KnowledgeBaseService"
+        ]
+      }
+    },
+    "/v1alpha3/redpanda-connect/mcp-servers": {
+      "get": {
+        "summary": "List Redpanda Connect MCP Servers",
+        "description": "List Redpanda Connect MCP Servers. Optional: filter based on MCP server name.",
+        "operationId": "MCPServerService_ListMCPServers",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/ListMCPServersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter.display_name_contains",
+            "description": "Any MCP Server that partially match this name will be returned.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "filter.tags[string]",
+            "description": "This is a request variable of the map type. The query format is \"map_name[key]=value\", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age[\"bob\"]=18",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "filter.secret_id",
+            "description": "Match MCP servers that use this secret ID.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page_size",
+            "description": "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "page_token",
+            "description": "Value of the next_page_token field returned by the previous response.\nIf not provided, the system assumes the first page is requested.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Redpanda Connect MCP servers"
+        ]
+      },
+      "post": {
+        "summary": "Create Redpanda Connect MCP Server",
+        "description": "Create a new Redpanda Connect MCP Server.",
+        "operationId": "MCPServerService_CreateMCPServer",
+        "responses": {
+          "201": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/v1alpha3.MCPServer"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "mcp_server",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MCPServerCreate"
+            }
+          }
+        ],
+        "tags": [
+          "Redpanda Connect MCP servers"
+        ]
+      }
+    },
+    "/v1alpha3/redpanda-connect/mcp-servers/{id}": {
+      "get": {
+        "summary": "Get Redpanda Connect MCP server",
+        "description": "Get a specific Redpanda Connect MCP server.",
+        "operationId": "MCPServerService_GetMCPServer",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/v1alpha3.MCPServer"
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "MCP server ID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Redpanda Connect MCP servers"
+        ]
+      },
+      "delete": {
+        "summary": "Delete a Redpanda Connect MCP server",
+        "description": "Delete a Redpanda Connect MCP server.",
+        "operationId": "MCPServerService_DeleteMCPServer",
+        "responses": {
+          "204": {
+            "description": "Deleted",
+            "schema": {}
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "MCP Server ID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Redpanda Connect MCP servers"
+        ]
+      },
+      "put": {
+        "summary": "Update a Redpanda Connect MCP Server",
+        "description": "Update the configuration of a Redpanda Connect MCP server.",
+        "operationId": "MCPServerService_UpdateMCPServer",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/v1alpha3.MCPServer"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "MCP Server ID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "mcp_server",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MCPServerUpdate",
+              "required": [
+                "mcp_server"
+              ]
+            }
+          },
+          {
+            "name": "update_mask",
+            "description": "Specifies which fields should be updated. If not provided,\nall fields will be updated.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Redpanda Connect MCP servers"
+        ]
+      }
+    },
+    "/v1alpha3/redpanda-connect/mcp-servers/{id}:start": {
+      "post": {
+        "summary": "Start a Redpanda Connect MCP server",
+        "description": "Start a stopped Redpanda Connect MCP server.",
+        "operationId": "MCPServerService_StartMCPServer",
+        "responses": {
+          "200": {
+            "description": "Started",
+            "schema": {
+              "$ref": "#/definitions/v1alpha3.MCPServer"
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "MCP Server ID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Redpanda Connect MCP servers"
+        ]
+      }
+    },
+    "/v1alpha3/redpanda-connect/mcp-servers/{id}:stop": {
+      "post": {
+        "summary": "Stops a Redpanda Connect MCP server",
+        "description": "Stop a running Redpanda Connect MCP server.",
+        "operationId": "MCPServerService_StopMCPServer",
+        "responses": {
+          "200": {
+            "description": "Stopped",
+            "schema": {
+              "$ref": "#/definitions/v1alpha3.MCPServer"
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "MCP Server ID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Redpanda Connect MCP servers"
+        ]
+      }
+    },
+    "/v1alpha3/redpanda-connect/mcp-servers:getConfigSchema": {
+      "get": {
+        "summary": "Retrieve the schema for Redpanda Connect MCP Servers configurations.",
+        "description": "The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.",
+        "operationId": "MCPServerService_GetMCPServerServiceConfigSchema",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/GetMCPServerServiceConfigSchemaResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "tags": [
+          "Redpanda Connect MCP servers"
+        ]
+      }
+    },
+    "/v1alpha3/redpanda-connect/mcp-servers:lint-config": {
+      "post": {
+        "summary": "Lint a Redpanda Connect MCP tools configuration",
+        "description": "Validates a supplied Redpanda Connect MCP tools YAML and returns a list of linting hints. If no problems are found, the list is empty.",
+        "operationId": "MCPServerService_LintMCPConfig",
+        "responses": {
+          "200": {
+            "description": "Linting finished. See `lint_hints` for details.",
+            "schema": {
+              "$ref": "#/definitions/LintMCPConfigResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LintMCPConfigRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Redpanda Connect MCP servers"
+        ]
+      }
+    },
+    "/v1alpha3/shadow-links": {
+      "get": {
+        "summary": "List Shadow Links",
+        "description": "List all shadow links in the cluster.",
+        "operationId": "ShadowLinkService_ListShadowLinks",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": ".redpanda.api.dataplane.v1alpha3.ListShadowLinksResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "tags": [
+          "Shadow Links"
+        ]
+      },
+      "post": {
+        "summary": "Create Shadow Link",
+        "description": "Create a new shadow link to replicate topics from a source cluster.",
+        "operationId": "ShadowLinkService_CreateShadowLink",
+        "responses": {
+          "201": {
+            "description": "Shadow link created",
+            "schema": {
+              "$ref": ".redpanda.api.dataplane.v1alpha3.CreateShadowLinkResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "shadow_link",
+            "description": "The shadow link to create",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ShadowLink"
+            }
+          }
+        ],
+        "tags": [
+          "Shadow Links"
+        ]
+      }
+    },
+    "/v1alpha3/shadow-links/{name}": {
+      "get": {
+        "summary": "Get Shadow Link",
+        "description": "Retrieve details of a specific shadow link by name.",
+        "operationId": "ShadowLinkService_GetShadowLink",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": ".redpanda.api.dataplane.v1alpha3.GetShadowLinkResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the shadow link to get",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Shadow Links"
+        ]
+      },
+      "delete": {
+        "summary": "Delete Shadow Link",
+        "description": "Delete a shadow link by name.",
+        "operationId": "ShadowLinkService_DeleteShadowLink",
+        "responses": {
+          "204": {
+            "description": "Shadow link deleted",
+            "schema": {}
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the link to delete",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Shadow Links"
+        ]
+      }
+    },
+    "/v1alpha3/shadow-links/{name}/failover": {
+      "post": {
+        "summary": "Fail Over Shadow Link",
+        "description": "Fail over a shadow link or a specific shadow topic within a link.",
+        "operationId": "ShadowLinkService_FailOver",
+        "responses": {
+          "200": {
+            "description": "Failover initiated",
+            "schema": {
+              "$ref": ".redpanda.api.dataplane.v1alpha3.FailOverShadowLinkResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "The name of the shadow link to fail over",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/FailOverBody"
+            }
+          }
+        ],
+        "tags": [
+          "Shadow Links"
+        ]
+      }
+    },
+    "/v1alpha3/shadow-links/{shadow_link.name}": {
+      "patch": {
+        "summary": "Update Shadow Link",
+        "description": "Update an existing shadow link configuration.",
+        "operationId": "ShadowLinkService_UpdateShadowLink",
+        "responses": {
+          "200": {
+            "description": "Shadow link updated",
+            "schema": {
+              "$ref": ".redpanda.api.dataplane.v1alpha3.UpdateShadowLinkResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "shadow_link.name",
+            "description": "The name of the shadow link",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "shadow_link",
+            "description": "The shadow link to update",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "uid": {
+                  "type": "string",
+                  "title": "The UUID of the shadow link",
+                  "readOnly": true
+                },
+                "configurations": {
+                  "$ref": "#/definitions/ShadowLinkConfigurations",
+                  "title": "Shadow link configuration"
+                },
+                "status": {
+                  "$ref": "#/definitions/ShadowLinkStatus",
+                  "title": "Status of the shadow link",
+                  "readOnly": true
+                }
+              },
+              "title": "The shadow link to update"
+            }
+          }
+        ],
+        "tags": [
+          "Shadow Links"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "ACLAccessFilter": {
+      "type": "object",
+      "properties": {
+        "principal": {
+          "type": "string",
+          "title": "The name of the principal, if not set will default to match\nall principals with the specified `operation` and `permission_type`"
+        },
+        "operation": {
+          "$ref": "#/definitions/ACLOperation",
+          "title": "The ACL operation to match"
+        },
+        "permission_type": {
+          "$ref": "#/definitions/ACLPermissionType",
+          "title": "The permission type"
+        },
+        "host": {
+          "type": "string",
+          "title": "The host to match.  If not set, will default to match all hosts\nwith the specified `operation` and `permission_type`. Note that\nthe asterisk `*` is literal and matches hosts that are set to `*`"
+        }
+      },
+      "title": "Filter an ACL based on its access"
+    },
+    "ACLFilter": {
+      "type": "object",
+      "properties": {
+        "resource_filter": {
+          "$ref": "#/definitions/ACLResourceFilter",
+          "title": "The resource filter"
+        },
+        "access_filter": {
+          "$ref": "#/definitions/ACLAccessFilter",
+          "title": "The access filter"
+        }
+      },
+      "title": "A filter for ACLs"
+    },
+    "ACLOperation": {
+      "type": "string",
+      "enum": [
+        "ACL_OPERATION_ANY",
+        "ACL_OPERATION_READ",
+        "ACL_OPERATION_WRITE",
+        "ACL_OPERATION_CREATE",
+        "ACL_OPERATION_REMOVE",
+        "ACL_OPERATION_ALTER",
+        "ACL_OPERATION_DESCRIBE",
+        "ACL_OPERATION_CLUSTER_ACTION",
+        "ACL_OPERATION_DESCRIBE_CONFIGS",
+        "ACL_OPERATION_ALTER_CONFIGS",
+        "ACL_OPERATION_IDEMPOTENT_WRITE"
+      ],
+      "title": "/ The ACL operation to match"
+    },
+    "ACLPattern": {
+      "type": "string",
+      "enum": [
+        "ACL_PATTERN_ANY",
+        "ACL_PATTERN_LITERAL",
+        "ACL_PATTERN_PREFIXED",
+        "ACL_PATTERN_MATCH"
+      ],
+      "description": "- ACL_PATTERN_ANY: Wildcard to match any pattern\n - ACL_PATTERN_LITERAL: Match a literal string\n - ACL_PATTERN_PREFIXED: Match a prefix\n - ACL_PATTERN_MATCH: Match serves as a catch-all for all the names of a topic\nthe principal is authorized to access",
+      "title": "/ The ACL pattern type"
+    },
+    "ACLPermissionType": {
+      "type": "string",
+      "enum": [
+        "ACL_PERMISSION_TYPE_ANY",
+        "ACL_PERMISSION_TYPE_ALLOW",
+        "ACL_PERMISSION_TYPE_DENY"
+      ],
+      "title": "/ ACL permission types"
+    },
+    "ACLResource": {
+      "type": "string",
+      "enum": [
+        "ACL_RESOURCE_ANY",
+        "ACL_RESOURCE_CLUSTER",
+        "ACL_RESOURCE_GROUP",
+        "ACL_RESOURCE_TOPIC",
+        "ACL_RESOURCE_TXN_ID",
+        "ACL_RESOURCE_SR_SUBJECT",
+        "ACL_RESOURCE_SR_REGISTRY",
+        "ACL_RESOURCE_SR_ANY"
+      ],
+      "description": "- ACL_RESOURCE_ANY: Wildcard for selecting any ACL resource\n - ACL_RESOURCE_CLUSTER: Cluster wide resource\n - ACL_RESOURCE_GROUP: Consumer group resource\n - ACL_RESOURCE_TOPIC: Topic resource\n - ACL_RESOURCE_TXN_ID: Transaction ID resource\n - ACL_RESOURCE_SR_SUBJECT: Schema Registry subject resource\n - ACL_RESOURCE_SR_REGISTRY: Schema Registry wide resource\n - ACL_RESOURCE_SR_ANY: Wildcard to match any SR ACL resource",
+      "title": "/ The ACL resource types"
+    },
+    "ACLResourceFilter": {
+      "type": "object",
+      "properties": {
+        "resource_type": {
+          "$ref": "#/definitions/ACLResource",
+          "title": "The ACL resource type to match"
+        },
+        "pattern_type": {
+          "$ref": "#/definitions/ACLPattern",
+          "title": "The pattern to apply to name"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name, if not given will default to match all items in `resource_type`.\nNote that asterisk `*` is literal and matches resource ACLs\nthat are named `*`"
+        }
+      },
+      "title": "A filter to match ACLs for resources"
+    },
+    "AIAgent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "AI Agent ID.",
+          "readOnly": true
+        },
+        "display_name": {
+          "type": "string",
+          "description": "User-friendly AI agent name."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional AI agent description."
+        },
+        "system_prompt": {
+          "type": "string",
+          "description": "System instructions that define how the AI agent should behave and respond."
+        },
+        "provider": {
+          "$ref": "#/definitions/AIAgent.Provider",
+          "description": "LLM configuration settings for the AI agent."
+        },
+        "dimensions": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "model": {
+          "type": "string"
+        },
+        "mcp_servers": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/AIAgent.MCPServer"
+          },
+          "description": "Map of MCP servers that this AI agent can use."
+        },
+        "resources": {
+          "$ref": "#/definitions/Resources",
+          "description": "The requested amount of resources for the AI Agent. Depending on the backend, the resources might be guaranteed, or might be tweaked based on the utilization of the AI Agent."
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Tags are key-value pairs that can be assigned to an AI agent resource.\nThey help organize AI agents and enable filtering when listing them."
+        },
+        "state": {
+          "$ref": "#/definitions/AIAgent.State",
+          "description": "The current AI agent state.",
+          "readOnly": true
+        },
+        "url": {
+          "type": "string",
+          "description": "URL to connect to the AI agent endpoint.",
+          "readOnly": true
+        },
+        "max_iterations": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "authentication": {
+          "$ref": "#/definitions/Authentication"
+        }
+      },
+      "description": "Defines the AI Agent resource.",
+      "required": [
+        "display_name",
+        "system_prompt",
+        "provider",
+        "dimensions",
+        "model"
+      ]
+    },
+    "AIAgent.MCPServer": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the Redpanda MCP server."
+        }
+      },
+      "description": "MCP server configuration."
+    },
+    "AIAgent.Provider": {
+      "type": "object",
+      "properties": {
+        "openai": {
+          "$ref": "#/definitions/AIAgent.Provider.OpenAI"
+        }
+      }
+    },
+    "AIAgent.Provider.OpenAI": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "api_key"
+      ]
+    },
+    "AIAgent.State": {
+      "type": "string",
+      "enum": [
+        "STATE_STARTING",
+        "STATE_RUNNING",
+        "STATE_STOPPING",
+        "STATE_STOPPED",
+        "STATE_ERROR"
+      ],
+      "description": "State of the AI agent.\n\n - STATE_STARTING: The AI agent is starting.\n - STATE_RUNNING: The AI agent is running and ready to handle requests.\n - STATE_STOPPING: The AI agent is in the process of stopping.\n - STATE_STOPPED: The AI agent is stopped and in paused state.\n - STATE_ERROR: The AI agent encountered an error."
+    },
+    "AIAgentCreate": {
+      "type": "object",
+      "properties": {
+        "display_name": {
+          "type": "string",
+          "description": "User-friendly AI agent name."
+        },
+        "description": {
+          "type": "string",
+          "description": "AI agent description."
+        },
+        "system_prompt": {
+          "type": "string",
+          "description": "System instructions that define how the AI agent should behave and respond."
+        },
+        "provider": {
+          "$ref": "#/definitions/AIAgent.Provider",
+          "description": "LLM configuration settings for the AI agent."
+        },
+        "dimensions": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "model": {
+          "type": "string"
+        },
+        "mcp_servers": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/AIAgent.MCPServer"
+          },
+          "description": "Map of MCP servers that this AI agent can use."
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional list of tags to attach to an AI agent."
+        },
+        "resources": {
+          "$ref": "#/definitions/Resources",
+          "description": "The number of resources that are guaranteed to be assigned to the AI agent."
+        },
+        "max_iterations": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "authentication": {
+          "$ref": "#/definitions/Authentication"
+        }
+      },
+      "description": "AIAgentCreate contains the details for the AI agent creation request.",
+      "required": [
+        "display_name",
+        "system_prompt",
+        "provider",
+        "dimensions",
+        "model"
+      ]
+    },
+    "AIAgentUpdate": {
+      "type": "object",
+      "properties": {
+        "display_name": {
+          "type": "string",
+          "description": "User-friendly AI agent name."
+        },
+        "description": {
+          "type": "string",
+          "description": "AI agent description."
+        },
+        "system_prompt": {
+          "type": "string",
+          "description": "System instructions that define how the AI agent should behave and respond."
+        },
+        "provider": {
+          "$ref": "#/definitions/AIAgent.Provider",
+          "description": "LLM configuration settings for the AI agent."
+        },
+        "dimensions": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "model": {
+          "type": "string"
+        },
+        "mcp_servers": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/AIAgent.MCPServer"
+          },
+          "description": "Map of MCP servers that this AI agent can use."
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A map of tags to add, update or delete.\nIf a tag's value is empty, the server interprets that as a deletion."
+        },
+        "resources": {
+          "$ref": "#/definitions/Resources",
+          "description": "The number of resources that are guaranteed to be assigned to the AI agent."
+        },
+        "max_iterations": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "authentication": {
+          "$ref": "#/definitions/Authentication"
+        }
+      },
+      "required": [
+        "provider",
+        "dimensions",
+        "model"
+      ]
+    },
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "Authentication": {
+      "type": "object",
+      "properties": {
+        "client_id": {
+          "type": "string"
+        },
+        "client_secret": {
+          "type": "string"
+        },
+        "token_url": {
+          "type": "string"
+        },
+        "audience": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "client_id",
+        "client_secret",
+        "token_url",
+        "audience"
+      ]
+    },
+    "AuthenticationConfiguration": {
+      "type": "object",
+      "properties": {
+        "scram_configuration": {
+          "$ref": "#/definitions/ScramConfig",
+          "title": "SASL/SCRAM configuration"
+        }
+      },
+      "title": "Authentication config.  Currently only supporting SASL/SCRAM,\nhowever made as a oneof for expansion"
+    },
+    "ComponentType": {
+      "type": "string",
+      "enum": [
+        "COMPONENT_TYPE_PROCESSOR",
+        "COMPONENT_TYPE_CACHE",
+        "COMPONENT_TYPE_INPUT",
+        "COMPONENT_TYPE_OUTPUT"
+      ],
+      "description": "Component type for this tool."
+    },
+    "ConfigurationYAMLSchema": {
+      "type": "object",
+      "properties": {
+        "component_type": {
+          "$ref": "#/definitions/ComponentType",
+          "description": "The component type of the schema."
+        },
+        "config_schema": {
+          "type": "string",
+          "description": "JSON schema of the configuration components that are allowed for MCP Servers."
+        }
+      }
+    },
+    "ConsumerOffsetSyncOptions": {
+      "type": "object",
+      "properties": {
+        "interval": {
+          "type": "string",
+          "title": "Sync interval\nIf 0 provided, defaults to 30 seconds"
+        },
+        "enabled": {
+          "type": "boolean",
+          "title": "Whether it's enabled"
+        },
+        "group_filters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/NameFilter"
+          },
+          "title": "The filters"
+        }
+      },
+      "title": "Options for syncing consumer offsets"
+    },
+    "CreateAIAgentResponse": {
+      "type": "object",
+      "properties": {
+        "ai_agent": {
+          "$ref": "#/definitions/AIAgent"
+        }
+      }
+    },
+    "CreateKnowledgeBaseResponse": {
+      "type": "object",
+      "properties": {
+        "knowledge_base": {
+          "$ref": "#/definitions/KnowledgeBase"
+        }
+      }
+    },
+    "CreateMCPServerResponse": {
+      "type": "object",
+      "properties": {
+        "mcp_server": {
+          "$ref": "#/definitions/v1alpha3.MCPServer"
+        }
+      }
+    },
+    "CreateShadowLinkResponse": {
+      "type": "object",
+      "properties": {
+        "shadow_link": {
+          "$ref": "#/definitions/ShadowLink",
+          "title": "The shadow link that was created"
+        }
+      },
+      "title": "Response to creating a shadow link"
+    },
+    "DeleteAIAgentResponse": {
+      "type": "object"
+    },
+    "DeleteKnowledgeBaseResponse": {
+      "type": "object"
+    },
+    "DeleteMCPServerResponse": {
+      "type": "object"
+    },
+    "DeleteShadowLinkResponse": {
+      "type": "object",
+      "title": "Response to deleting a shadow link"
+    },
+    "FailOverBody": {
+      "type": "object",
+      "properties": {
+        "shadow_topic_name": {
+          "type": "string",
+          "title": "The name of the shadow topic to fail over, if not set will fail over\nthe entire shadow link"
+        }
+      },
+      "title": "Request to fail over a shadow link or a single shadow topic"
+    },
+    "FailOverResponse": {
+      "type": "object",
+      "properties": {
+        "shadow_link": {
+          "$ref": "#/definitions/ShadowLink",
+          "title": "The shadow link that was failed over"
+        }
+      },
+      "title": "The response to the FailOverRequest"
+    },
+    "FilterType": {
+      "type": "string",
+      "enum": [
+        "FILTER_TYPE_INCLUDE",
+        "FILTER_TYPE_EXCLUDE"
+      ],
+      "description": "- FILTER_TYPE_INCLUDE: Include the items that match the filter\n - FILTER_TYPE_EXCLUDE: Exclude the items that match the filter",
+      "title": "What type of filter this is, include or exclude"
+    },
+    "GetAIAgentResponse": {
+      "type": "object",
+      "properties": {
+        "ai_agent": {
+          "$ref": "#/definitions/AIAgent"
+        }
+      }
+    },
+    "GetKnowledgeBaseResponse": {
+      "type": "object",
+      "properties": {
+        "knowledge_base": {
+          "$ref": "#/definitions/KnowledgeBase"
+        }
+      }
+    },
+    "GetMCPServerResponse": {
+      "type": "object",
+      "properties": {
+        "mcp_server": {
+          "$ref": "#/definitions/v1alpha3.MCPServer"
+        }
+      }
+    },
+    "GetMCPServerServiceConfigSchemaResponse": {
+      "type": "object",
+      "properties": {
+        "configuration_yamls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ConfigurationYAMLSchema"
+          },
+          "description": "The configuration schema for the MCP Server."
+        }
+      }
+    },
+    "GetShadowLinkResponse": {
+      "type": "object",
+      "properties": {
+        "shadow_link": {
+          "$ref": "#/definitions/ShadowLink",
+          "title": "The shadow link that was retrieved"
+        }
+      },
+      "title": "Response to getting a shadow link"
+    },
+    "KnowledgeBase": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "vector_database": {
+          "$ref": "#/definitions/KnowledgeBase.VectorDatabase"
+        },
+        "embedding_generator": {
+          "$ref": "#/definitions/KnowledgeBase.EmbeddingGenerator"
+        },
+        "retrieval_api_url": {
+          "type": "string",
+          "readOnly": true
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional list of tags to attach to a pipeline."
+        },
+        "indexer": {
+          "$ref": "#/definitions/KnowledgeBase.Indexer"
+        },
+        "retriever": {
+          "$ref": "#/definitions/KnowledgeBase.Retriever"
+        },
+        "generation": {
+          "$ref": "#/definitions/KnowledgeBase.Generation"
+        }
+      },
+      "required": [
+        "id",
+        "display_name",
+        "vector_database",
+        "embedding_generator",
+        "generation"
+      ]
+    },
+    "KnowledgeBase.EmbeddingGenerator": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "$ref": "#/definitions/KnowledgeBase.EmbeddingGenerator.Provider"
+        },
+        "dimensions": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "model": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "dimensions",
+        "model"
+      ]
+    },
+    "KnowledgeBase.EmbeddingGenerator.Provider": {
+      "type": "object",
+      "properties": {
+        "openai": {
+          "$ref": "#/definitions/KnowledgeBase.EmbeddingGenerator.Provider.OpenAI"
+        },
+        "cohere": {
+          "$ref": "#/definitions/KnowledgeBase.EmbeddingGenerator.Provider.Cohere"
+        }
+      }
+    },
+    "KnowledgeBase.EmbeddingGenerator.Provider.Cohere": {
+      "type": "object",
+      "properties": {
+        "base_url": {
+          "type": "string"
+        },
+        "api_key": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "api_key"
+      ]
+    },
+    "KnowledgeBase.EmbeddingGenerator.Provider.OpenAI": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string"
+        }
+      }
+    },
+    "KnowledgeBase.Generation": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "$ref": "#/definitions/KnowledgeBase.Generation.Provider"
+        },
+        "model": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "model"
+      ]
+    },
+    "KnowledgeBase.Generation.Provider": {
+      "type": "object",
+      "properties": {
+        "openai": {
+          "$ref": "#/definitions/KnowledgeBase.Generation.Provider.OpenAI"
+        }
+      }
+    },
+    "KnowledgeBase.Generation.Provider.OpenAI": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string"
+        }
+      }
+    },
+    "KnowledgeBase.Indexer": {
+      "type": "object",
+      "properties": {
+        "chunk_size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "chunk_overlap": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "redpanda_username": {
+          "type": "string"
+        },
+        "redpanda_password": {
+          "type": "string"
+        },
+        "input_topics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "redpanda_sasl_mechanism": {
+          "$ref": "#/definitions/SASLMechanism"
+        }
+      },
+      "required": [
+        "input_topics"
+      ]
+    },
+    "KnowledgeBase.Retriever": {
+      "type": "object",
+      "properties": {
+        "reranker": {
+          "$ref": "#/definitions/KnowledgeBase.Retriever.Reranker"
+        }
+      }
+    },
+    "KnowledgeBase.Retriever.Reranker": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "provider": {
+          "$ref": "#/definitions/KnowledgeBase.Retriever.Reranker.Provider"
+        }
+      }
+    },
+    "KnowledgeBase.Retriever.Reranker.Provider": {
+      "type": "object",
+      "properties": {
+        "cohere": {
+          "$ref": "#/definitions/KnowledgeBase.Retriever.Reranker.Provider.Cohere"
+        }
+      }
+    },
+    "KnowledgeBase.Retriever.Reranker.Provider.Cohere": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "api_key",
+        "model"
+      ]
+    },
+    "KnowledgeBase.VectorDatabase": {
+      "type": "object",
+      "properties": {
+        "postgres": {
+          "$ref": "#/definitions/KnowledgeBase.VectorDatabase.Postgres"
+        }
+      }
+    },
+    "KnowledgeBase.VectorDatabase.Postgres": {
+      "type": "object",
+      "properties": {
+        "dsn": {
+          "type": "string"
+        },
+        "table": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "dsn",
+        "table"
+      ]
+    },
+    "KnowledgeBaseCreate": {
+      "type": "object",
+      "properties": {
+        "display_name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "vector_database": {
+          "$ref": "#/definitions/KnowledgeBaseCreate.VectorDatabase"
+        },
+        "embedding_generator": {
+          "$ref": "#/definitions/KnowledgeBaseCreate.EmbeddingGenerator"
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional list of tags to attach to a pipeline."
+        },
+        "indexer": {
+          "$ref": "#/definitions/KnowledgeBaseCreate.Indexer"
+        },
+        "retriever": {
+          "$ref": "#/definitions/KnowledgeBaseCreate.Retriever"
+        },
+        "generation": {
+          "$ref": "#/definitions/KnowledgeBaseCreate.Generation"
+        }
+      },
+      "required": [
+        "display_name",
+        "vector_database",
+        "embedding_generator"
+      ]
+    },
+    "KnowledgeBaseCreate.EmbeddingGenerator": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "$ref": "#/definitions/KnowledgeBaseCreate.EmbeddingGenerator.Provider"
+        },
+        "dimensions": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "model": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "dimensions",
+        "model"
+      ]
+    },
+    "KnowledgeBaseCreate.EmbeddingGenerator.Provider": {
+      "type": "object",
+      "properties": {
+        "openai": {
+          "$ref": "#/definitions/KnowledgeBaseCreate.EmbeddingGenerator.Provider.OpenAI"
+        },
+        "cohere": {
+          "$ref": "#/definitions/KnowledgeBaseCreate.EmbeddingGenerator.Provider.Cohere"
+        }
+      }
+    },
+    "KnowledgeBaseCreate.EmbeddingGenerator.Provider.Cohere": {
+      "type": "object",
+      "properties": {
+        "base_url": {
+          "type": "string"
+        },
+        "api_key": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "api_key"
+      ]
+    },
+    "KnowledgeBaseCreate.EmbeddingGenerator.Provider.OpenAI": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string"
+        }
+      }
+    },
+    "KnowledgeBaseCreate.Generation": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "$ref": "#/definitions/KnowledgeBaseCreate.Generation.Provider"
+        },
+        "model": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "model"
+      ]
+    },
+    "KnowledgeBaseCreate.Generation.Provider": {
+      "type": "object",
+      "properties": {
+        "openai": {
+          "$ref": "#/definitions/KnowledgeBaseCreate.Generation.Provider.OpenAI"
+        }
+      }
+    },
+    "KnowledgeBaseCreate.Generation.Provider.OpenAI": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string"
+        }
+      }
+    },
+    "KnowledgeBaseCreate.Indexer": {
+      "type": "object",
+      "properties": {
+        "chunk_size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "chunk_overlap": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "redpanda_username": {
+          "type": "string"
+        },
+        "redpanda_password": {
+          "type": "string"
+        },
+        "input_topics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "redpanda_sasl_mechanism": {
+          "$ref": "#/definitions/SASLMechanism"
+        }
+      },
+      "required": [
+        "input_topics"
+      ]
+    },
+    "KnowledgeBaseCreate.Retriever": {
+      "type": "object",
+      "properties": {
+        "reranker": {
+          "$ref": "#/definitions/KnowledgeBaseCreate.Retriever.Reranker"
+        }
+      }
+    },
+    "KnowledgeBaseCreate.Retriever.Reranker": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "provider": {
+          "$ref": "#/definitions/KnowledgeBaseCreate.Retriever.Reranker.Provider"
+        }
+      }
+    },
+    "KnowledgeBaseCreate.Retriever.Reranker.Provider": {
+      "type": "object",
+      "properties": {
+        "cohere": {
+          "$ref": "#/definitions/KnowledgeBaseCreate.Retriever.Reranker.Provider.Cohere"
+        }
+      }
+    },
+    "KnowledgeBaseCreate.Retriever.Reranker.Provider.Cohere": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "api_key",
+        "model"
+      ]
+    },
+    "KnowledgeBaseCreate.VectorDatabase": {
+      "type": "object",
+      "properties": {
+        "postgres": {
+          "$ref": "#/definitions/KnowledgeBaseCreate.VectorDatabase.Postgres"
+        }
+      }
+    },
+    "KnowledgeBaseCreate.VectorDatabase.Postgres": {
+      "type": "object",
+      "properties": {
+        "dsn": {
+          "type": "string"
+        },
+        "table": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "dsn",
+        "table"
+      ]
+    },
+    "KnowledgeBaseUpdate": {
+      "type": "object",
+      "properties": {
+        "display_name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "vector_database": {
+          "$ref": "#/definitions/KnowledgeBaseUpdate.VectorDatabase"
+        },
+        "embedding_generator": {
+          "$ref": "#/definitions/KnowledgeBaseUpdate.EmbeddingGenerator"
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional list of tags to attach to a pipeline."
+        },
+        "indexer": {
+          "$ref": "#/definitions/KnowledgeBaseUpdate.Indexer"
+        },
+        "retriever": {
+          "$ref": "#/definitions/KnowledgeBaseUpdate.Retriever"
+        },
+        "generation": {
+          "$ref": "#/definitions/KnowledgeBaseUpdate.Generation"
+        }
+      },
+      "required": [
+        "display_name",
+        "vector_database",
+        "embedding_generator"
+      ]
+    },
+    "KnowledgeBaseUpdate.EmbeddingGenerator": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "$ref": "#/definitions/KnowledgeBaseUpdate.EmbeddingGenerator.Provider"
+        }
+      },
+      "required": [
+        "provider"
+      ]
+    },
+    "KnowledgeBaseUpdate.EmbeddingGenerator.Provider": {
+      "type": "object",
+      "properties": {
+        "openai": {
+          "$ref": "#/definitions/KnowledgeBaseUpdate.EmbeddingGenerator.Provider.OpenAI"
+        },
+        "cohere": {
+          "$ref": "#/definitions/KnowledgeBaseUpdate.EmbeddingGenerator.Provider.Cohere"
+        }
+      }
+    },
+    "KnowledgeBaseUpdate.EmbeddingGenerator.Provider.Cohere": {
+      "type": "object",
+      "properties": {
+        "base_url": {
+          "type": "string"
+        },
+        "api_key": {
+          "type": "string"
+        }
+      }
+    },
+    "KnowledgeBaseUpdate.EmbeddingGenerator.Provider.OpenAI": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string"
+        }
+      }
+    },
+    "KnowledgeBaseUpdate.Generation": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "$ref": "#/definitions/KnowledgeBaseUpdate.Generation.Provider"
+        }
+      },
+      "required": [
+        "provider"
+      ]
+    },
+    "KnowledgeBaseUpdate.Generation.Provider": {
+      "type": "object",
+      "properties": {
+        "openai": {
+          "$ref": "#/definitions/KnowledgeBaseUpdate.Generation.Provider.OpenAI"
+        }
+      }
+    },
+    "KnowledgeBaseUpdate.Generation.Provider.OpenAI": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string"
+        }
+      }
+    },
+    "KnowledgeBaseUpdate.Indexer": {
+      "type": "object",
+      "properties": {
+        "chunk_size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "chunk_overlap": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "redpanda_username": {
+          "type": "string"
+        },
+        "redpanda_password": {
+          "type": "string"
+        },
+        "input_topics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "redpanda_sasl_mechanism": {
+          "$ref": "#/definitions/SASLMechanism"
+        }
+      },
+      "required": [
+        "input_topics"
+      ]
+    },
+    "KnowledgeBaseUpdate.Retriever": {
+      "type": "object",
+      "properties": {
+        "reranker": {
+          "$ref": "#/definitions/KnowledgeBaseUpdate.Retriever.Reranker"
+        }
+      }
+    },
+    "KnowledgeBaseUpdate.Retriever.Reranker": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "provider": {
+          "$ref": "#/definitions/KnowledgeBaseUpdate.Retriever.Reranker.Provider"
+        }
+      }
+    },
+    "KnowledgeBaseUpdate.Retriever.Reranker.Provider": {
+      "type": "object",
+      "properties": {
+        "cohere": {
+          "$ref": "#/definitions/KnowledgeBaseUpdate.Retriever.Reranker.Provider.Cohere"
+        }
+      }
+    },
+    "KnowledgeBaseUpdate.Retriever.Reranker.Provider.Cohere": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "api_key",
+        "model"
+      ]
+    },
+    "KnowledgeBaseUpdate.VectorDatabase": {
+      "type": "object",
+      "properties": {
+        "postgres": {
+          "$ref": "#/definitions/KnowledgeBaseUpdate.VectorDatabase.Postgres"
+        }
+      }
+    },
+    "KnowledgeBaseUpdate.VectorDatabase.Postgres": {
+      "type": "object",
+      "properties": {
+        "dsn": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "dsn"
+      ]
+    },
+    "LintHint": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Line number of the lint."
+        },
+        "column": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Column number of the lint."
+        },
+        "hint": {
+          "type": "string",
+          "description": "The hint message."
+        },
+        "lint_type": {
+          "type": "string",
+          "description": "Optional lint type or enum."
+        }
+      },
+      "description": "LintHint is a generic linting hint."
+    },
+    "LintMCPConfigRequest": {
+      "type": "object",
+      "properties": {
+        "tools": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Tool"
+          },
+          "description": "The Redpanda Connect MCP tools configuration in YAML format."
+        }
+      },
+      "required": [
+        "tools"
+      ]
+    },
+    "LintMCPConfigResponse": {
+      "type": "object",
+      "properties": {
+        "lint_hints": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/LintHint"
+          },
+          "description": "A list of linting issues."
+        }
+      }
+    },
+    "ListAIAgentsRequest.Filter": {
+      "type": "object",
+      "properties": {
+        "name_contains": {
+          "type": "string",
+          "description": "Any AI agents that partially match this name will be returned."
+        },
+        "tags[string]": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "AI agents that match all the provided tags will be returned."
+        }
+      }
+    },
+    "ListAIAgentsResponse": {
+      "type": "object",
+      "properties": {
+        "ai_agents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/AIAgent"
+          }
+        },
+        "next_page_token": {
+          "type": "string"
+        }
+      }
+    },
+    "ListKnowledgeBasesRequest.Filter": {
+      "type": "object",
+      "properties": {
+        "name_contains": {
+          "type": "string",
+          "description": "Any KnowledgeBase that partially match this name will be returned."
+        },
+        "tags[string]": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "KnowledgeBases that match all the provided tags will be returned."
+        }
+      }
+    },
+    "ListKnowledgeBasesResponse": {
+      "type": "object",
+      "properties": {
+        "knowledge_bases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/KnowledgeBase"
+          }
+        },
+        "next_page_token": {
+          "type": "string"
+        }
+      }
+    },
+    "ListMCPServersRequest.Filter": {
+      "type": "object",
+      "properties": {
+        "display_name_contains": {
+          "type": "string",
+          "description": "Any MCP Server that partially match this name will be returned."
+        },
+        "tags[string]": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "MCP servers that match all the provided tags will be returned."
+        },
+        "secret_id": {
+          "type": "string",
+          "description": "Match MCP servers that use this secret ID."
+        }
+      }
+    },
+    "ListMCPServersResponse": {
+      "type": "object",
+      "properties": {
+        "mcp_servers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1alpha3.MCPServer"
+          }
+        },
+        "next_page_token": {
+          "type": "string"
+        }
+      }
+    },
+    "ListShadowLinksResponse": {
+      "type": "object",
+      "properties": {
+        "shadow_links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ShadowLink"
+          },
+          "title": "The shadow links"
+        }
+      },
+      "title": "All shadow links on the cluster"
+    },
+    "MCPServer.State": {
+      "type": "string",
+      "enum": [
+        "STATE_STARTING",
+        "STATE_RUNNING",
+        "STATE_STOPPING",
+        "STATE_STOPPED",
+        "STATE_ERROR"
+      ],
+      "description": "State of the MCP server.\n\n - STATE_STARTING: The MCP server is starting.\n - STATE_RUNNING: The MCP server is running.\n - STATE_STOPPING: The MCP server is in the process of stopping.\n - STATE_STOPPED: The MCP server is stopped and in paused state.\n - STATE_ERROR: The MCP server encountered an error."
+    },
+    "MCPServer.Status": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        }
+      },
+      "description": "MCP server status may contain an error message."
+    },
+    "MCPServerCreate": {
+      "type": "object",
+      "properties": {
+        "display_name": {
+          "type": "string",
+          "description": "User-friendly MCP server name."
+        },
+        "description": {
+          "type": "string",
+          "description": "MCP server description."
+        },
+        "tools": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Tool"
+          },
+          "description": "The Redpanda Connect MCP server configuration."
+        },
+        "resources": {
+          "$ref": "#/definitions/Resources",
+          "description": "The number of resources that are guaranteed to be assigned to the MCP server."
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional list of tags to attach to a MCP server."
+        }
+      },
+      "description": "MCPServerCreate contains the details for the MCP Server creation request.",
+      "required": [
+        "display_name",
+        "tools"
+      ]
+    },
+    "MCPServerUpdate": {
+      "type": "object",
+      "properties": {
+        "display_name": {
+          "type": "string",
+          "description": "User-friendly MCP servers name."
+        },
+        "description": {
+          "type": "string",
+          "description": "MCP server description."
+        },
+        "tools": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Tool"
+          },
+          "description": "The Redpanda Connect MCP server configuration."
+        },
+        "resources": {
+          "$ref": "#/definitions/Resources",
+          "description": "The number of resources that are guaranteed to be assigned to the MCP server."
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A map of tags to add, update or delete.\nIf a tag's value is empty, the server interprets that as a deletion."
+        }
+      }
+    },
+    "NameFilter": {
+      "type": "object",
+      "properties": {
+        "pattern_type": {
+          "$ref": "#/definitions/PatternType",
+          "title": "Literal or prefix"
+        },
+        "filter_type": {
+          "$ref": "#/definitions/FilterType",
+          "title": "Include or exclude"
+        },
+        "name": {
+          "type": "string",
+          "title": "The resource name, or \"*\"\nNote if \"*\", must be the _only_ character\nand `pattern_type` must be `PATTERN_TYPE_LITERAL`"
+        }
+      },
+      "title": "A filter based on the name of a resource"
+    },
+    "PatternType": {
+      "type": "string",
+      "enum": [
+        "PATTERN_TYPE_LITERAL",
+        "PATTERN_TYPE_PREFIX"
+      ],
+      "description": "- PATTERN_TYPE_LITERAL: Must match the filter exactly\n - PATTERN_TYPE_PREFIX: Will match anything that starts with filter",
+      "title": "The matching pattern type"
+    },
+    "Resources": {
+      "type": "object",
+      "properties": {
+        "memory_shares": {
+          "type": "string",
+          "description": "`memory_shares` is a string specifying the amount of memory to allocate for\nthe pipeline.\n\nThis follows the [Kubernetes quantity](https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/) format. Acceptable units\ninclude:\n- Decimal SI units: \"K\", \"M\", \"G\", \"T\", \"P\", \"E\" (e.g., \"128M\" for 128\n  megabytes)\n- Binary SI units: \"Ki\", \"Mi\", \"Gi\", \"Ti\", \"Pi\", \"Ei\" (e.g., \"512Mi\" for\n512 mebibytes) If you don't specify a unit, the value is interpreted as\nbytes."
+        },
+        "cpu_shares": {
+          "type": "string",
+          "description": "`cpu_shares` is a string specifying the amount of CPU to allocate for the\npipeline.\n\nThis follows the [Kubernetes quantity](https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/) format. Acceptable\nunits include:\n- Decimal SI units: \"m\" (e.g., \"500m\" for 500 millicores, \"2\" for 2 cores)\nCPU shares can be specified in millicores (1 core = 1000 millicores).\nIf you don't specify a unit, the value is interpreted as the number of cores."
+        }
+      },
+      "required": [
+        "memory_shares",
+        "cpu_shares"
+      ]
+    },
+    "SASLMechanism": {
+      "type": "string",
+      "enum": [
+        "SASL_MECHANISM_SCRAM_SHA_256",
+        "SASL_MECHANISM_SCRAM_SHA_512"
+      ],
+      "description": "SASL mechanism to use for authentication."
+    },
+    "ScramConfig": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "title": "SCRAM username"
+        },
+        "password": {
+          "type": "string",
+          "title": "Password"
+        },
+        "password_set": {
+          "type": "boolean",
+          "title": "Indicates that the password has been set",
+          "readOnly": true
+        },
+        "password_set_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp of when the password was last set - only valid if password_set\nis true",
+          "readOnly": true
+        },
+        "scram_mechanism": {
+          "$ref": "#/definitions/ScramMechanism",
+          "title": "The SCRAM mechanism to use"
+        }
+      },
+      "title": "SCRAM settings"
+    },
+    "ScramMechanism": {
+      "type": "string",
+      "enum": [
+        "SCRAM_MECHANISM_SCRAM_SHA_256",
+        "SCRAM_MECHANISM_SCRAM_SHA_512"
+      ],
+      "description": "- SCRAM_MECHANISM_SCRAM_SHA_256: SCRAM-SHA-256\n - SCRAM_MECHANISM_SCRAM_SHA_512: SCRAM-SHA-512",
+      "title": "Valid SCRAM mechanisms"
+    },
+    "SecuritySettingsSyncOptions": {
+      "type": "object",
+      "properties": {
+        "interval": {
+          "type": "string",
+          "title": "Sync interval\nIf 0 provided, defaults to 30 seconds"
+        },
+        "enabled": {
+          "type": "boolean",
+          "title": "Whether or not it's enabled"
+        },
+        "role_filters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/NameFilter"
+          },
+          "title": "Role filters"
+        },
+        "scram_cred_filters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/NameFilter"
+          },
+          "title": "SCRAM credential filters"
+        },
+        "acl_filters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ACLFilter"
+          },
+          "title": "ACL filters"
+        }
+      },
+      "title": "Options for syncing security settings"
+    },
+    "ShadowLink": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "The name of the shadow link"
+        },
+        "uid": {
+          "type": "string",
+          "title": "The UUID of the shadow link",
+          "readOnly": true
+        },
+        "configurations": {
+          "$ref": "#/definitions/ShadowLinkConfigurations",
+          "title": "Shadow link configuration"
+        },
+        "status": {
+          "$ref": "#/definitions/ShadowLinkStatus",
+          "title": "Status of the shadow link",
+          "readOnly": true
+        }
+      },
+      "title": "A ShadowLink resource",
+      "required": [
+        "name"
+      ]
+    },
+    "ShadowLinkClientOptions": {
+      "type": "object",
+      "properties": {
+        "bootstrap_servers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "The bootstrap servers to use"
+        },
+        "client_id": {
+          "type": "string",
+          "title": "The Client ID for the Kafka RPC requests setn by this cluster to the\nsource cluster",
+          "readOnly": true
+        },
+        "source_cluster_id": {
+          "type": "string",
+          "title": "If provided, this is the expected ID of the source cluster.  If it does\nnot match then the connection will be rejected.  If provided, this value\nmust match the `ClusterId` field returned in the Kafka Metadata response\nmessage"
+        },
+        "tls_settings": {
+          "$ref": "#/definitions/TLSSettings",
+          "x-nullable": true,
+          "title": "TLS settings"
+        },
+        "authentication_configuration": {
+          "$ref": "#/definitions/AuthenticationConfiguration",
+          "x-nullable": true,
+          "title": "Authentication settings"
+        },
+        "metadata_max_age_ms": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Max metadata age\nIf 0 is provided, defaults to 10 seconds"
+        },
+        "connection_timeout_ms": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Connection timeout\nIf 0 is provided, defaults to 1 second"
+        },
+        "retry_backoff_ms": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Retry base backoff\nIf 0 is provided, defaults to 100ms"
+        },
+        "fetch_wait_max_ms": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Fetch request timeout\nIf 0 is provided, defaults to 100ms"
+        },
+        "fetch_min_bytes": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Fetch min bytes\nIf 0 is provided, defaults to 1 byte"
+        },
+        "fetch_max_bytes": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Fetch max bytes\nIf 0 is provided, defaults to 1MiB"
+        }
+      },
+      "title": "Options for the client link",
+      "required": [
+        "bootstrap_servers"
+      ]
+    },
+    "ShadowLinkConfigurations": {
+      "type": "object",
+      "properties": {
+        "client_options": {
+          "$ref": "#/definitions/ShadowLinkClientOptions",
+          "title": "Configuration for the internal kafka client"
+        },
+        "topic_metadata_sync_options": {
+          "$ref": "#/definitions/TopicMetadataSyncOptions",
+          "title": "Topic metadata sync options"
+        },
+        "consumer_offset_sync_options": {
+          "$ref": "#/definitions/ConsumerOffsetSyncOptions",
+          "title": "Consumer offset sync options"
+        },
+        "security_sync_options": {
+          "$ref": "#/definitions/SecuritySettingsSyncOptions",
+          "title": "Security settings sync options"
+        }
+      },
+      "title": "ShadowLink options"
+    },
+    "ShadowLinkState": {
+      "type": "string",
+      "enum": [
+        "SHADOW_LINK_STATE_ACTIVE",
+        "SHADOW_LINK_STATE_PAUSED"
+      ],
+      "description": "- SHADOW_LINK_STATE_ACTIVE: Shadow link is active\n - SHADOW_LINK_STATE_PAUSED: Shadow link was paused",
+      "title": "State of the shadow link"
+    },
+    "ShadowLinkStatus": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "$ref": "#/definitions/ShadowLinkState"
+        },
+        "task_statuses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ShadowLinkTaskStatus"
+          },
+          "title": "Statuses of the running tasks"
+        },
+        "shadow_topic_statuses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ShadowTopicStatus"
+          },
+          "title": "Status of shadow topics"
+        }
+      },
+      "title": "Status of the shadow link"
+    },
+    "ShadowLinkTaskStatus": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Name of the task"
+        },
+        "state": {
+          "$ref": "#/definitions/TaskState",
+          "title": "State of the task"
+        },
+        "reason": {
+          "type": "string",
+          "title": "Reason for task being in state"
+        },
+        "broker_id": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The broker the task is running on"
+        }
+      },
+      "title": "Status of a task"
+    },
+    "ShadowTopicState": {
+      "type": "string",
+      "enum": [
+        "SHADOW_TOPIC_STATE_ACTIVE",
+        "SHADOW_TOPIC_STATE_FAULTED",
+        "SHADOW_TOPIC_STATE_PAUSED",
+        "SHADOW_TOPIC_STATE_FAILING_OVER",
+        "SHADOW_TOPIC_STATE_FAILED_OVER",
+        "SHADOW_TOPIC_STATE_PROMOTING",
+        "SHADOW_TOPIC_STATE_PROMOTED"
+      ],
+      "description": "- SHADOW_TOPIC_STATE_ACTIVE: Shadow topic is active\n - SHADOW_TOPIC_STATE_FAULTED: Shadow topic has faulted\n - SHADOW_TOPIC_STATE_PAUSED: Shadow topic has been paused\n - SHADOW_TOPIC_STATE_FAILING_OVER: Shadow topic is in the process of failing over\n - SHADOW_TOPIC_STATE_FAILED_OVER: Shadow topic has failed over successfully\n - SHADOW_TOPIC_STATE_PROMOTING: Shadow topic is in the process of being promoted\n - SHADOW_TOPIC_STATE_PROMOTED: Shadow topic is promoted successfully",
+      "title": "State of a shadow topic"
+    },
+    "ShadowTopicStatus": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Name of the shadow topic"
+        },
+        "topic_id": {
+          "type": "string",
+          "title": "Topic ID of the shadow topic"
+        },
+        "state": {
+          "$ref": "#/definitions/ShadowTopicState",
+          "title": "State of the shadow topic"
+        },
+        "partition_information": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/TopicPartitionInformation"
+          },
+          "title": "List of partition information for the shadow topic"
+        }
+      },
+      "title": "Status of a ShadowTopic"
+    },
+    "StartAIAgentResponse": {
+      "type": "object",
+      "properties": {
+        "ai_agent": {
+          "$ref": "#/definitions/AIAgent"
+        }
+      }
+    },
+    "StartMCPServerResponse": {
+      "type": "object",
+      "properties": {
+        "mcp_server": {
+          "$ref": "#/definitions/v1alpha3.MCPServer"
+        }
+      }
+    },
+    "StopAIAgentResponse": {
+      "type": "object",
+      "properties": {
+        "ai_agent": {
+          "$ref": "#/definitions/AIAgent"
+        }
+      }
+    },
+    "StopMCPServerResponse": {
+      "type": "object",
+      "properties": {
+        "mcp_server": {
+          "$ref": "#/definitions/v1alpha3.MCPServer"
+        }
+      }
+    },
+    "TLSFileSettings": {
+      "type": "object",
+      "properties": {
+        "ca_path": {
+          "type": "string",
+          "title": "Path to the CA"
+        },
+        "key_path": {
+          "type": "string",
+          "title": "Key and Cert are optional but if one is provided, then both must be\nPath to the key"
+        },
+        "cert_path": {
+          "type": "string",
+          "title": "Path to the cert"
+        }
+      },
+      "title": "TLS file settings"
+    },
+    "TLSPEMSettings": {
+      "type": "object",
+      "properties": {
+        "ca": {
+          "type": "string",
+          "title": "The CA"
+        },
+        "key": {
+          "type": "string",
+          "title": "Key and Cert are optional but if one is provided, then both must be\nThe key"
+        },
+        "key_fingerprint": {
+          "type": "string",
+          "title": "The SHA-256 of the key, in base64 format",
+          "readOnly": true
+        },
+        "cert": {
+          "type": "string",
+          "title": "The cert"
+        }
+      },
+      "title": "Used when providing the TLS information in PEM format"
+    },
+    "TLSSettings": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Whether or not TLS is enabled"
+        },
+        "tls_file_settings": {
+          "$ref": "#/definitions/TLSFileSettings",
+          "title": "Certificates and keys are provided as files"
+        },
+        "tls_pem_settings": {
+          "$ref": "#/definitions/TLSPEMSettings",
+          "title": "Certificates and keys are provided in PEM format"
+        }
+      },
+      "title": "TLS settings"
+    },
+    "TaskState": {
+      "type": "string",
+      "enum": [
+        "TASK_STATE_ACTIVE",
+        "TASK_STATE_PAUSED",
+        "TASK_STATE_LINK_UNAVAILABLE",
+        "TASK_STATE_NOT_RUNNING",
+        "TASK_STATE_FAULTED"
+      ],
+      "description": "- TASK_STATE_ACTIVE: Task is active\n - TASK_STATE_PAUSED: Task was paused\n - TASK_STATE_LINK_UNAVAILABLE: Task is unable to communicate with source cluster\n - TASK_STATE_NOT_RUNNING: Task is not running\n - TASK_STATE_FAULTED: Task is faulted",
+      "title": "Task states"
+    },
+    "Tool": {
+      "type": "object",
+      "properties": {
+        "component_type": {
+          "$ref": "#/definitions/ComponentType"
+        },
+        "config_yaml": {
+          "type": "string",
+          "description": "The contents of the configuration tool in YAML format."
+        }
+      },
+      "description": "A configuration tool for the MCP server.",
+      "required": [
+        "config_yaml"
+      ]
+    },
+    "TopicMetadataSyncOptions": {
+      "type": "object",
+      "properties": {
+        "interval": {
+          "type": "string",
+          "title": "How often to sync metadata\nIf 0 provided, defaults to 30 seconds"
+        },
+        "auto_create_shadow_topic_filters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/NameFilter"
+          },
+          "description": "List of filters that indicate which topics should be automatically\ncreated as shadow topics on the shadow cluster.  This only controls\nautomatic creation of shadow topics and does not effect the state of the\nmirror topic once it is created."
+        },
+        "shadowed_topic_properties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Additional topic properties to shadow\nPartition count, `max.message.bytes`, `cleanup.policy` and\n`timestamp.type` will always be replicated"
+        }
+      },
+      "title": "Options for syncing topic metadata"
+    },
+    "TopicPartitionInformation": {
+      "type": "object",
+      "properties": {
+        "partition_id": {
+          "type": "string",
+          "format": "int64",
+          "title": "Partition ID"
+        },
+        "source_last_stable_offset": {
+          "type": "string",
+          "format": "int64",
+          "title": "Source partition's LSO"
+        },
+        "source_high_watermark": {
+          "type": "string",
+          "format": "int64",
+          "title": "Source partition's HWM"
+        },
+        "high_watermark": {
+          "type": "string",
+          "format": "int64",
+          "title": "Shadowed partition's HWM"
+        }
+      },
+      "title": "Topic partition information"
+    },
+    "UpdateAIAgentResponse": {
+      "type": "object",
+      "properties": {
+        "ai_agent": {
+          "$ref": "#/definitions/AIAgent"
+        }
+      }
+    },
+    "UpdateKnowledgeBaseResponse": {
+      "type": "object",
+      "properties": {
+        "knowledge_base": {
+          "$ref": "#/definitions/KnowledgeBase"
+        }
+      }
+    },
+    "UpdateMCPServerResponse": {
+      "type": "object",
+      "properties": {
+        "mcp_server": {
+          "$ref": "#/definitions/v1alpha3.MCPServer"
+        }
+      }
+    },
+    "UpdateShadowLinkResponse": {
+      "type": "object",
+      "properties": {
+        "shadow_link": {
+          "$ref": "#/definitions/ShadowLink",
+          "title": "The shadow link that was updated"
+        }
+      },
+      "title": "Response to the update shadow link request"
+    },
+    "rpc.Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "v1alpha3.MCPServer": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "MCP Server ID."
+        },
+        "display_name": {
+          "type": "string",
+          "description": "User-friendly MCP server name."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional MCP server description."
+        },
+        "tools": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Tool"
+          },
+          "description": "The Redpanda Connect MCP server configuration."
+        },
+        "resources": {
+          "$ref": "#/definitions/Resources",
+          "description": "The requested amount of resources for the MCP server. Depending on the backend, the resources might be guaranteed, or might be tweaked based on the utilization of the MCP server."
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Tags are key-value pairs that can be assigned to a MCP server resource.\nThey help organize MCP servers and enable filtering when listing them."
+        },
+        "state": {
+          "$ref": "#/definitions/MCPServer.State",
+          "description": "The current MCP server state.",
+          "readOnly": true
+        },
+        "status": {
+          "$ref": "#/definitions/MCPServer.Status",
+          "readOnly": true
+        },
+        "url": {
+          "type": "string",
+          "title": "URL to connect to the MCP server",
+          "readOnly": true
+        }
+      },
+      "description": "Defines the MCP server resource.",
+      "required": [
+        "id",
+        "display_name",
+        "tools"
+      ]
+    }
+  }
+}
