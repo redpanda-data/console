@@ -1,3 +1,4 @@
+import { isFalsy } from 'utils/falsy';
 import { parseDocument, stringify as yamlStringify } from 'yaml';
 import benthosSchema from '../../../../assets/rp-connect-schema-full.json';
 import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from '../../../../state/connect/state';
@@ -716,6 +717,11 @@ export function generateDefaultValue(
   componentName?: string,
   insideWizardContext?: boolean,
 ): unknown {
+  // IMPORTANT: Determine if this field is truly required
+  // A field is required if it's explicitly marked as not optional OR if it has no default and is_optional is undefined
+  const isExplicitlyRequired = isFalsy(spec.is_optional);
+  const isCriticalField = CRITICAL_CONNECTION_FIELDS.has(spec.name);
+
   if (componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName)) {
     const { topicData, userData } = getPersistedWizardData();
 
@@ -742,17 +748,18 @@ export function generateDefaultValue(
     componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName) && NON_CRITICAL_CONFIG_OBJECTS.has(spec.name);
 
   // Hide non-critical config objects (tls, metadata, batching, etc.) immediately
-  if (isNonCriticalConfigObject && !showOptionalFields) {
+  // BUT never hide explicitly required fields
+  if (isNonCriticalConfigObject && !showOptionalFields && !isExplicitlyRequired) {
     return undefined;
   }
 
   // Check if field has wizard-relevant data (only for direct wizard fields, not nested)
   const hasWizardData = hasWizardRelevantFields(spec, componentName);
 
-  if (isAdvancedField && !showOptionalFields && !hasWizardData) {
+  if (isAdvancedField && !showOptionalFields && !hasWizardData && !isExplicitlyRequired) {
     // Hide advanced fields unless they're required and inside wizard context
     // Fields with empty/falsy defaults are truly optional, fields with meaningful defaults may be required
-    const hasEmptyDefault = spec.default === '' || spec.default === null || spec.default === undefined;
+    const hasEmptyDefault = isFalsy(spec.default);
     const isEffectivelyOptional = spec.is_optional === true || (hasEmptyDefault && spec.is_optional !== false);
     if (!insideWizardContext || isEffectivelyOptional) {
       return undefined;
@@ -771,9 +778,8 @@ export function generateDefaultValue(
   const hasDefault = spec.default !== undefined;
   const isScalarDefault = hasDefault && spec.kind === 'scalar' && spec.type !== 'object';
   const isExplicitlyOptional = spec.is_optional === true;
-  const isCriticalField = CRITICAL_CONNECTION_FIELDS.has(spec.name);
 
-  if (isScalarDefault && !showOptionalFields && !insideWizardContext) {
+  if (isScalarDefault && !showOptionalFields && !insideWizardContext && !isExplicitlyRequired) {
     // Always hide explicitly optional fields with defaults
     if (isExplicitlyOptional && !hasWizardData) {
       return undefined;
@@ -837,16 +843,20 @@ export function generateDefaultValue(
             const objKeys = Object.keys(obj);
             if (objKeys.length === 0) {
               const shouldHideEmpty =
-                (spec.is_optional === true || spec.is_advanced === true) && !showOptionalFields && !hasWizardData;
+                (spec.is_optional === true || spec.is_advanced === true) &&
+                !showOptionalFields &&
+                !hasWizardData &&
+                !isExplicitlyRequired;
               if (shouldHideEmpty) {
                 return undefined;
               }
             }
 
             // For REDPANDA_SECRET_COMPONENTS: hide empty objects without wizard-relevant data
+            // BUT never hide explicitly required objects
             if (componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName) && objKeys.length === 0) {
               // Hide empty objects for Redpanda components when no wizard relevance
-              if (!hasWizardData && !showOptionalFields) {
+              if (!hasWizardData && !showOptionalFields && !isExplicitlyRequired) {
                 return undefined;
               }
             }
@@ -887,9 +897,13 @@ export function generateDefaultValue(
       // Arrays should be hidden if:
       // 1. They're optional or advanced AND
       // 2. showOptionalFields is false AND
-      // 3. Not wizard-relevant
+      // 3. Not wizard-relevant AND
+      // 4. Not explicitly required
       const shouldHideArray =
-        (spec.is_optional === true || spec.is_advanced === true) && !showOptionalFields && !hasWizardData;
+        (spec.is_optional === true || spec.is_advanced === true) &&
+        !showOptionalFields &&
+        !hasWizardData &&
+        !isExplicitlyRequired;
       if (shouldHideArray) {
         return undefined;
       }

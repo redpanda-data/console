@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { isFalsy } from 'utils/falsy';
 
 interface StepSubmissionResult {
   success: boolean;
@@ -41,7 +42,7 @@ export const handleStepResult = (result: StepSubmissionResult | undefined, onSuc
  * @returns true if the value is null, undefined, or empty string
  */
 export const isEmpty = (value: string | null | undefined): boolean => {
-  return value == null || value === '';
+  return isFalsy(value);
 };
 
 /**

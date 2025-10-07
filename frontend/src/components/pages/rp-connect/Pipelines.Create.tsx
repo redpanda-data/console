@@ -253,7 +253,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           }
 
           await pipelinesApi.refreshPipelines(true);
-          appGlobal.historyPush('/connect-clusters');
+          appGlobal.historyPush(`/rp-connect/${this.fileName}`);
         }),
       )
       .catch(
