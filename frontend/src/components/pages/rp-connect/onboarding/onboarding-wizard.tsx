@@ -67,7 +67,10 @@ export const ConnectOnboardingWizard = () => {
     [setPersistedConnector]
   );
 
-  const handleNext = async (methods: { current: { id: WizardStep }; next: () => void }) => {
+  const handleNext = async (methods: {
+    current: { id: (typeof WizardStep)[keyof typeof WizardStep] };
+    next: () => void;
+  }) => {
     switch (methods.current.id) {
       case WizardStep.ADD_CONNECTOR: {
         const result = await addConnectorStepRef.current?.triggerSubmit();

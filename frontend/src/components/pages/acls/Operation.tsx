@@ -14,7 +14,7 @@ import { Flex } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import type { CSSProperties, FC, ReactElement, ReactNode } from 'react';
 
-import { AclOperation, type AclStrPermission } from '../../../state/restInterfaces';
+import { AclOperation, type AclOperationType, type AclStrPermission } from '../../../state/restInterfaces';
 import { Label } from '../../../utils/tsxUtils';
 import { SingleSelect } from '../../misc/Select';
 
@@ -36,7 +36,7 @@ const OptionContent: FC<{
 
 export const Operation = observer(
   (p: {
-    operation: string | AclOperation;
+    operation: string | AclOperationType;
     value: AclStrPermission;
     disabled?: boolean;
     onChange: (v: AclStrPermission) => void;
@@ -44,7 +44,11 @@ export const Operation = observer(
   }) => {
     const disabled = p.disabled ?? false;
 
-    const operationName = typeof p.operation === 'string' ? p.operation : AclOperation[p.operation];
+    const operationName =
+      typeof p.operation === 'string'
+        ? p.operation
+        : Object.keys(AclOperation).find((key) => AclOperation[key as keyof typeof AclOperation] === p.operation) ||
+          'Unknown';
 
     return (
       <Label text={operationName}>

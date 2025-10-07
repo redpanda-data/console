@@ -172,15 +172,17 @@ export type MessageDataType =
   | 'uint'
   | 'smile'
   | 'cbor';
-export enum CompressionType {
-  Unknown = 'unknown',
+export const CompressionType = {
+  Unknown: 'unknown',
 
-  Uncompressed = 'uncompressed',
-  GZip = 'gzip',
-  Snappy = 'snappy',
-  LZ4 = 'lz4',
-  ZStd = 'zstd',
-}
+  Uncompressed: 'uncompressed',
+  GZip: 'gzip',
+  Snappy: 'snappy',
+  LZ4: 'lz4',
+  ZStd: 'zstd',
+} as const;
+
+export type CompressionTypeType = (typeof CompressionType)[keyof typeof CompressionType];
 
 export type Payload = {
   payload: any; // json obj
@@ -200,7 +202,7 @@ export type TopicMessage = {
   offset: number;
   timestamp: number;
 
-  compression: CompressionType;
+  compression: CompressionTypeType;
   isTransactional: boolean;
 
   headers: {
@@ -641,49 +643,57 @@ export type TopicPermissions = {
 // Listing ACLs
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L47
-export enum AclResourceType {
-  Unknown = 0,
-  Any = 1,
-  Topic = 2,
-  Group = 3,
-  Cluster = 4,
-  TransactionalID = 5,
-  DelegationToken = 6,
-}
+export const AclResourceType = {
+  Unknown: 0,
+  Any: 1,
+  Topic: 2,
+  Group: 3,
+  Cluster: 4,
+  TransactionalID: 5,
+  DelegationToken: 6,
+} as const;
+
+export type AclResourceTypeType = (typeof AclResourceType)[keyof typeof AclResourceType];
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L59
-export enum AclResourcePatternType {
-  Unknown = 0,
-  Any = 1,
-  Match = 2,
-  Literal = 3,
-  Prefixed = 4,
-}
+export const AclResourcePatternType = {
+  Unknown: 0,
+  Any: 1,
+  Match: 2,
+  Literal: 3,
+  Prefixed: 4,
+} as const;
+
+export type AclResourcePatternTypeType = (typeof AclResourcePatternType)[keyof typeof AclResourcePatternType];
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L81
-export enum AclOperation {
-  Unknown = 0,
-  Any = 1,
-  All = 2,
-  Read = 3,
-  Write = 4,
-  Create = 5,
-  Delete = 6,
-  Alter = 7,
-  Describe = 8,
-  ClusterAction = 9,
-  DescribeConfigs = 10,
-  AlterConfigs = 11,
-  IdempotentWrite = 12,
-}
+export const AclOperation = {
+  Unknown: 0,
+  Any: 1,
+  All: 2,
+  Read: 3,
+  Write: 4,
+  Create: 5,
+  Delete: 6,
+  Alter: 7,
+  Describe: 8,
+  ClusterAction: 9,
+  DescribeConfigs: 10,
+  AlterConfigs: 11,
+  IdempotentWrite: 12,
+} as const;
+
+export type AclOperationType = (typeof AclOperation)[keyof typeof AclOperation];
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L71
-export enum AclPermission {
-  Unknown = 0,
-  Any = 1,
-  Deny = 2,
-  Allow = 3,
-}
+export const AclPermission = {
+  Unknown: 0,
+  Any: 1,
+  Deny: 2,
+  Allow: 3,
+} as const;
+
+export type AclPermissionType = (typeof AclPermission)[keyof typeof AclPermission];
 
 // list all:
 //   /api/acls?resourceType=1&resourcePatternTypeFilter=1&operation=1&permissionType=1
@@ -819,31 +829,35 @@ export type QuotaResponseItem = {
   settings: QuotaResponseSetting[];
 };
 
-export enum QuotaType {
+export const QuotaType = {
   // A rate representing the upper bound (bytes/sec) for producer traffic
-  PRODUCER_BYTE_RATE = 'producer_byte_rate',
+  PRODUCER_BYTE_RATE: 'producer_byte_rate',
   // A rate representing the upper bound (bytes/sec) for consumer traffic.
-  CONSUMER_BYTE_RATE = 'consumer_byte_rate',
+  CONSUMER_BYTE_RATE: 'consumer_byte_rate',
   // A percentage representing the upper bound of time spent for processing requests.
-  REQUEST_PERCENTAGE = 'request_percentage',
+  REQUEST_PERCENTAGE: 'request_percentage',
   // The rate at which mutations are accepted for the create "topics request,
   // the create partitions request and the delete topics request. The rate is accumulated by
   // the number of partitions created or deleted.
-  CONTROLLER_MUTATION_RATE = 'controller_mutation_rate',
+  CONTROLLER_MUTATION_RATE: 'controller_mutation_rate',
   // An int representing the upper bound of connections accepted for the specified IP.
-  CONNECTION_CREATION_RATE = 'connection_creation_rate',
-}
+  CONNECTION_CREATION_RATE: 'connection_creation_rate',
+} as const;
+
+export type QuotaTypeType = (typeof QuotaType)[keyof typeof QuotaType];
 
 export type QuotaResponseSetting = {
-  key: QuotaType;
+  key: QuotaTypeType;
   value: number;
 };
 
-export enum SchemaType {
-  AVRO = 'AVRO',
-  JSON = 'JSON',
-  PROTOBUF = 'PROTOBUF',
-}
+export const SchemaType = {
+  AVRO: 'AVRO',
+  JSON: 'JSON',
+  PROTOBUF: 'PROTOBUF',
+} as const;
+
+export type SchemaTypeType = (typeof SchemaType)[keyof typeof SchemaType];
 
 // Partition Reassignments - Get
 export type PartitionReassignmentsResponse = {
@@ -894,12 +908,14 @@ export type AlterPartitionReassignmentsPartitionResponse = {
 
 // Change broker config
 // PATCH api/operations/configs
-export enum ConfigResourceType {
-  Unknown = 0,
-  Topic = 2,
-  Broker = 4,
-  BrokerLogger = 8,
-}
+export const ConfigResourceType = {
+  Unknown: 0,
+  Topic: 2,
+  Broker: 4,
+  BrokerLogger: 8,
+} as const;
+
+export type ConfigResourceTypeType = (typeof ConfigResourceType)[keyof typeof ConfigResourceType];
 
 // export enum ConfigSource {
 //     Unknown = 0,
@@ -911,12 +927,14 @@ export enum ConfigResourceType {
 //     DynamicBrokerLoggerConfig = 6,
 // }
 
-export enum AlterConfigOperation {
-  Set = 0, // set a config key
-  Delete = 1, // remove/unset a config key
-  Append = 2, // add a value to a list
-  Subtract = 3, // remove a value from a list
-}
+export const AlterConfigOperation = {
+  Set: 0, // set a config key
+  Delete: 1, // remove/unset a config key
+  Append: 2, // add a value to a list
+  Subtract: 3, // remove a value from a list
+} as const;
+
+export type AlterConfigOperationType = (typeof AlterConfigOperation)[keyof typeof AlterConfigOperation];
 
 export type IncrementalAlterConfigsRequestResourceConfig = {
   // name of key to modify (e.g segment.bytes)
@@ -926,7 +944,7 @@ export type IncrementalAlterConfigsRequestResourceConfig = {
   // delete(1) delete a config key
   // append(2) append value to list of values, the config entry must be a list
   // subtract(3) remove an entry from a list of values
-  op: AlterConfigOperation;
+  op: AlterConfigOperationType;
 
   // value to set the key to
   value?: string;
@@ -946,7 +964,7 @@ export type IncrementalAlterConfigsRequestResourceConfig = {
 
 export type ResourceConfig = {
   // ResourceType is an enum that represents TOPIC, BROKER or BROKER_LOGGER
-  resourceType: ConfigResourceType;
+  resourceType: ConfigResourceTypeType;
 
   // ResourceName is the name of config to alter.
   //
@@ -973,7 +991,7 @@ export type PatchConfigsResponse = {
   patchedConfigs: {
     error?: string;
     resourceName: string;
-    resourceType: ConfigResourceType;
+    resourceType: ConfigResourceTypeType;
   }[];
 };
 
@@ -1048,12 +1066,14 @@ export type ClusterConnectors = {
 };
 
 // https://docs.confluent.io/home/connect/monitoring.html#connector-and-task-status
-export enum ConnectorState {
-  Unassigned = 'UNASSIGNED',
-  Running = 'RUNNING',
-  Paused = 'PAUSED',
-  Failed = 'FAILED',
-}
+export const ConnectorState = {
+  Unassigned: 'UNASSIGNED',
+  Running: 'RUNNING',
+  Paused: 'PAUSED',
+  Failed: 'FAILED',
+} as const;
+
+export type ConnectorStateType = (typeof ConnectorState)[keyof typeof ConnectorState];
 
 export type ConnectorStatus = 'HEALTHY' | 'UNHEALTHY' | 'DEGRADED' | 'PAUSED' | 'RESTARTING';
 
@@ -1063,9 +1083,9 @@ export type ConnectorError = {
   content: string;
 };
 
-export type TaskState = ConnectorState;
+export type TaskState = ConnectorStateType;
 
-export type ConnectorPossibleStatesLiteral = `${ConnectorState}`;
+export type ConnectorPossibleStatesLiteral = `${ConnectorStateType}`;
 
 export type ClusterConnectorInfo = {
   name: string;
@@ -1073,7 +1093,7 @@ export type ClusterConnectorInfo = {
   config: object; // map[string]string
   type: string; // Source or Sink
   topic: string; // Kafka Topic name
-  state: ConnectorState;
+  state: ConnectorStateType;
   status: ConnectorStatus;
   errors: ConnectorError[];
 
@@ -1200,13 +1220,13 @@ type ConnectorRecommendedValueEntry = {
 export type ConnectorProperty = {
   definition: {
     name: string;
-    type: DataType;
+    type: DataTypeType;
     required: boolean;
     default_value: null | string;
-    importance: PropertyImportance;
+    importance: PropertyImportanceType;
     documentation: string;
     // group: null | string;
-    width: PropertyWidth;
+    width: PropertyWidthType;
     display_name: string;
     dependents: string[];
     order: number;
@@ -1227,41 +1247,49 @@ export type ConnectorProperty = {
   };
 };
 
-export enum PropertyImportance {
-  Low = 'LOW',
-  Medium = 'MEDIUM',
-  High = 'HIGH',
-}
+export const PropertyImportance = {
+  Low: 'LOW',
+  Medium: 'MEDIUM',
+  High: 'HIGH',
+} as const;
 
-export enum DataType {
-  Boolean = 'BOOLEAN',
-  Class = 'CLASS',
-  Int = 'INT',
-  List = 'LIST',
-  Long = 'LONG',
-  Float = 'FLOAT',
-  Double = 'DOUBLE',
-  Short = 'SHORT',
-  String = 'STRING',
-  Password = 'PASSWORD',
-}
+export type PropertyImportanceType = (typeof PropertyImportance)[keyof typeof PropertyImportance];
 
-export enum PropertyWidth {
-  None = 'NONE',
-  Short = 'SHORT',
-  Medium = 'MEDIUM',
-  Long = 'LONG',
-}
+export const DataType = {
+  Boolean: 'BOOLEAN',
+  Class: 'CLASS',
+  Int: 'INT',
+  List: 'LIST',
+  Long: 'LONG',
+  Float: 'FLOAT',
+  Double: 'DOUBLE',
+  Short: 'SHORT',
+  String: 'STRING',
+  Password: 'PASSWORD',
+} as const;
 
-export enum CompressionTypeNum {
-  None = 0,
-  GZip = 1,
-  Snappy = 2,
-  LZ4 = 3,
-  ZStd = 4,
-}
+export type DataTypeType = (typeof DataType)[keyof typeof DataType];
 
-export function compressionTypeToNum(type: CompressionType) {
+export const PropertyWidth = {
+  None: 'NONE',
+  Short: 'SHORT',
+  Medium: 'MEDIUM',
+  Long: 'LONG',
+} as const;
+
+export type PropertyWidthType = (typeof PropertyWidth)[keyof typeof PropertyWidth];
+
+export const CompressionTypeNum = {
+  None: 0,
+  GZip: 1,
+  Snappy: 2,
+  LZ4: 3,
+  ZStd: 4,
+} as const;
+
+export type CompressionTypeNumType = (typeof CompressionTypeNum)[keyof typeof CompressionTypeNum];
+
+export function compressionTypeToNum(type: CompressionTypeType) {
   switch (type) {
     case CompressionType.GZip:
       return CompressionTypeNum.GZip;
@@ -1280,7 +1308,7 @@ export type PublishRecordsRequest = {
   topicNames: string[];
 
   // CompressionType that shall be used when producing the records to Kafka.
-  compressionType: CompressionTypeNum;
+  compressionType: CompressionTypeNumType;
 
   // UseTransactions indicates whether we should produce the records transactional. If only one record shall
   // be produced this option should always be false.
@@ -1459,7 +1487,7 @@ export type SchemaRegistrySchemaTypesResponse = {
 // version can be 'all' or 'latest'
 export type SchemaRegistrySubjectDetails = {
   name: string;
-  type: SchemaType;
+  type: SchemaTypeType;
   compatibility: 'DEFAULT' | SchemaRegistryCompatibilityMode;
   versions: SchemaRegistrySubjectDetailsVersion[];
   latestActiveVersion: number;
@@ -1475,7 +1503,7 @@ export type SchemaRegistryVersionedSchema = {
   id: number;
   version: number;
   isSoftDeleted: boolean;
-  type: SchemaType;
+  type: SchemaTypeType;
   schema: string;
   references: SchemaReference[];
 };
@@ -1499,7 +1527,7 @@ export type SchemaRegistryDeleteSubjectResponse = {
 // POST /schema-registry/subjects/{subject}/versions
 export type SchemaRegistryCreateSchema = {
   schema: string;
-  schemaType: SchemaType;
+  schemaType: SchemaTypeType;
   references: SchemaReference[];
 };
 

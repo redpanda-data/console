@@ -115,7 +115,8 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
         if (!visibility.visible) return null;
 
         isEnabled = visibility.disabledReasons?.length === 0;
-        if (!isEnabled) disabledText = disabledReasonText[visibility.disabledReasons?.[0]];
+        if (!isEnabled && visibility.disabledReasons?.[0] !== undefined)
+          disabledText = disabledReasonText[visibility.disabledReasons[0] as DisabledReasonsType];
       }
       const isDisabled = !isEnabled;
 
@@ -170,14 +171,16 @@ export const RouteView = () => (
   </AnimatePresence>
 );
 
-enum DisabledReasons {
-  notSupported = 0, // kafka cluster version too low
-  noPermission = 1, // user doesn't have permissions to use the feature,
-  enterpriseFeature = 2,
-  notSupportedServerless = 3, // This feature is not supported in serverless mode
-}
+const DisabledReasons = {
+  notSupported: 0, // kafka cluster version too low
+  noPermission: 1, // user doesn't have permissions to use the feature,
+  enterpriseFeature: 2,
+  notSupportedServerless: 3, // This feature is not supported in serverless mode
+} as const;
 
-const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
+type DisabledReasonsType = (typeof DisabledReasons)[keyof typeof DisabledReasons];
+
+const disabledReasonText: { [key in DisabledReasonsType]: JSX.Element } = {
   [DisabledReasons.noPermission]: (
     <span>
       You don't have permissions
@@ -198,7 +201,7 @@ const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
 
 type MenuItemState = {
   visible: boolean;
-  disabledReasons: DisabledReasons[];
+  disabledReasons: DisabledReasonsType[];
 };
 
 // Separate component to handle the route rendering logic
@@ -297,7 +300,7 @@ function routeVisibility(
   return () => {
     let v = typeof visible === 'boolean' ? visible : visible();
 
-    const disabledReasons: DisabledReasons[] = [];
+    const disabledReasons: DisabledReasonsType[] = [];
     if (requiredFeatures)
       for (const f of requiredFeatures) {
         if (!isSupported(f)) {

@@ -32,6 +32,7 @@ import {
   DEFAULT_SEARCH_PARAMS,
   FilterEntry,
   PartitionOffsetOrigin,
+  type PartitionOffsetOriginType,
   type PreviewTagV2,
   type TimestampDisplayFormat,
 } from '../../../../state/ui';
@@ -128,7 +129,7 @@ import {
 import { range } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
 import RemovableFilter from '../../../misc/RemovableFilter';
-import { SingleSelect, type SingleSelectProps } from '../../../misc/Select';
+import { SingleSelect } from '../../../misc/Select';
 
 const payloadEncodingPairs = [
   { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
@@ -272,35 +273,35 @@ function getPayloadAsString(value: string | Uint8Array | object): string {
   return JSON.stringify(value, null, 4);
 }
 
-const defaultSelectChakraStyles: SingleSelectProps<PayloadEncoding | number>['chakraStyles'] = {
-  control: (provided) => ({
+const defaultSelectChakraStyles = {
+  control: (provided: any) => ({
     ...provided,
     minWidth: 'max-content',
   }),
-  option: (provided) => ({
+  option: (provided: any) => ({
     ...provided,
     wordBreak: 'keep-all',
     whiteSpace: 'nowrap',
   }),
-  menuList: (provided) => ({
+  menuList: (provided: any) => ({
     ...provided,
     minWidth: 'min-content',
   }),
-};
+} as const;
 
-const inlineSelectChakraStyles: SingleSelectProps<PayloadEncoding | number>['chakraStyles'] = {
+const inlineSelectChakraStyles = {
   ...defaultSelectChakraStyles,
-  control: (provided) => ({
+  control: (provided: any) => ({
     ...provided,
     _hover: {
       borderColor: 'transparent',
     },
   }),
-  container: (provided) => ({
+  container: (provided: any) => ({
     ...provided,
     borderColor: 'transparent',
   }),
-};
+} as const;
 
 @observer
 export class TopicMessageView extends Component<TopicMessageViewProps> {
@@ -471,8 +472,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     ];
 
     // Determine the current offset origin based on startOffset
-    const currentOffsetOrigin =
-      this.currentParams.startOffset >= 0 ? PartitionOffsetOrigin.Custom : this.currentParams.startOffset;
+    const currentOffsetOrigin = (
+      this.currentParams.startOffset >= 0 ? PartitionOffsetOrigin.Custom : this.currentParams.startOffset
+    ) as PartitionOffsetOriginType;
 
     return (
       <React.Fragment>
@@ -480,7 +482,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
           <GridItem display="flex" gap={3} gridColumn={{ base: '1/-1', md: '1' }}>
             <Label text="Start Offset">
               <Flex gap={3}>
-                <SingleSelect<PartitionOffsetOrigin>
+                <SingleSelect<PartitionOffsetOriginType>
                   chakraStyles={defaultSelectChakraStyles}
                   data-testid="start-offset-dropdown"
                   onChange={(e) => {

@@ -11,10 +11,10 @@ import {
 import { api } from '../../state/backendApi';
 import { AppFeatures } from '../../utils/env';
 
-enum Platform {
-  PLATFORM_REDPANDA = 1,
-  PLATFORM_NON_REDPANDA = 2,
-}
+const Platform = {
+  PLATFORM_REDPANDA: 1,
+  PLATFORM_NON_REDPANDA: 2,
+} as const;
 
 export const MS_IN_DAY = 24 * 60 * 60 * 1000;
 

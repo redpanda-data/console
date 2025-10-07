@@ -49,8 +49,8 @@ export const isEmpty = (value: string | null | undefined): boolean => value == n
  */
 export const hasValue = (value: string | null | undefined): boolean => !isEmpty(value);
 
-export enum WizardStep {
-  ADD_CONNECTOR = 'add-connector-step',
-  ADD_TOPIC = 'add-topic-step',
-  ADD_USER = 'add-user-step',
-}
+export const WizardStep = {
+  ADD_CONNECTOR: 'add-connector-step',
+  ADD_TOPIC: 'add-topic-step',
+  ADD_USER: 'add-user-step',
+} as const;

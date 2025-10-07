@@ -42,18 +42,20 @@ import { PageComponent, type PageInitHelper } from '../Page';
 import RpConnectPipelinesList from '../rp-connect/Pipelines.List';
 import { RedpandaConnectIntro } from '../rp-connect/RedpandaConnectIntro';
 
-enum ConnectView {
-  KafkaConnect = 'kafka-connect',
-  RedpandaConnect = 'redpanda-connect',
-  RedpandaConnectSecret = 'redpanda-connect-secret',
-}
+const ConnectView = {
+  KafkaConnect: 'kafka-connect',
+  RedpandaConnect: 'redpanda-connect',
+  RedpandaConnectSecret: 'redpanda-connect-secret',
+} as const;
+
+type ConnectViewType = (typeof ConnectView)[keyof typeof ConnectView];
 
 /**
  * The Redpanda Connect Secret Manager introduces a new tab in Redpanda Connect.
  * this logic determines which tab should be opened based on the `defaultTab`
  * query parameter in the URL.
  */
-const getDefaultView = (defaultView: string): { initialTab: ConnectView; redpandaConnectTab: ConnectView } => {
+const getDefaultView = (defaultView: string): { initialTab: ConnectViewType; redpandaConnectTab: ConnectViewType } => {
   const showKafkaTab = { initialTab: ConnectView.KafkaConnect, redpandaConnectTab: ConnectView.RedpandaConnect };
   const showRedpandaConnectTab = {
     initialTab: ConnectView.RedpandaConnect,

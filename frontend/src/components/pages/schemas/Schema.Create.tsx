@@ -30,7 +30,11 @@ import { useEffect, useState } from 'react';
 import { openSwitchSchemaFormatModal, openValidationErrorsModal } from './modals';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { type SchemaRegistryValidateSchemaResponse, SchemaType } from '../../../state/restInterfaces';
+import {
+  type SchemaRegistryValidateSchemaResponse,
+  SchemaType,
+  type SchemaTypeType,
+} from '../../../state/restInterfaces';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import type { ElementOf } from '../../../utils/utils';
 import KowlEditor from '../../misc/KowlEditor';
@@ -188,7 +192,7 @@ const SchemaPageButtons = observer(
               const subjectName = editorState.computedSubjectName;
               const r = await api
                 .createSchema(editorState.computedSubjectName, {
-                  schemaType: editorState.format as SchemaType,
+                  schemaType: editorState.format as SchemaTypeType,
                   schema: editorState.schemaText,
                   references: editorState.references.filter((x) => x.name && x.subject),
                 })
@@ -271,7 +275,7 @@ async function validateSchema(state: SchemaEditorStateHelper): Promise<{
 
   const r = await api
     .validateSchema(state.computedSubjectName, 'latest', {
-      schemaType: state.format as SchemaType,
+      schemaType: state.format as SchemaTypeType,
       schema: state.schemaText,
       references: state.references.filter((x) => x.name && x.subject),
     })
@@ -571,7 +575,7 @@ function createSchemaState() {
   });
 }
 
-const exampleSchema: Record<SchemaType, string> = {
+const exampleSchema: Record<SchemaTypeType, string> = {
   AVRO: `
 {
    "type": "record",

@@ -467,7 +467,7 @@
         // Disallow using a callback in asynchronous tests and hooks.
         "noDoneCallback": "error",
         // Allow TypeScript enum.
-        "noEnum": "off",
+        "noEnum": "error",
         // Disallow exporting an imported variable.
         "noExportedImports": "off",
         // Prevent usage of <head> element in a Next.js project.

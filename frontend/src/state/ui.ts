@@ -88,16 +88,18 @@ export function IsLocalTimestampFormat(timestampType: TimestampDisplayFormat) {
   }
 }
 
-export enum PartitionOffsetOrigin {
-  EndMinusResults = -1,
-  Start = -2,
-  End = -3,
-  Timestamp = -4,
-  Custom = 0,
-}
+export const PartitionOffsetOrigin = {
+  EndMinusResults: -1,
+  Start: -2,
+  End: -3,
+  Timestamp: -4,
+  Custom: 0,
+} as const;
+
+export type PartitionOffsetOriginType = (typeof PartitionOffsetOrigin)[keyof typeof PartitionOffsetOrigin];
 
 export const DEFAULT_SEARCH_PARAMS = {
-  offsetOrigin: -1 as PartitionOffsetOrigin, // start, end, custom
+  offsetOrigin: -1 as PartitionOffsetOriginType, // start, end, custom
   startOffset: -1, // used when offsetOrigin is custom
   startTimestamp: -1, // used when offsetOrigin is timestamp
   startTimestampWasSetByUser: false, // only used in frontend, to track whether we should update the timestamp to 'now' when the page loads
