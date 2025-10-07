@@ -56,7 +56,7 @@ export function computeMovedReplicas(
   apiTopics: Topic[],
   apiTopicPartitions: Map<string, Partition[] | null>
 ): TopicWithMoves[] {
-  const ar = [];
+  const ar: TopicWithMoves[] = [];
   // For each partition in each topic:
   // - get Partition objects
   // - compute number of moved replicas
@@ -199,7 +199,7 @@ export function topicAssignmentsToReassignmentRequest(
   topicAssignments: TopicAssignments
 ): PartitionReassignmentRequest {
   // Construct reassignment request from topicAssignments
-  const topics = [];
+  const topics: { topicName: string; partitions: { partitionId: number; replicas: number[] | null }[] }[] = [];
   for (const t in topicAssignments) {
     if (Object.hasOwn(topicAssignments, t)) {
       const topicAssignment = topicAssignments[t];

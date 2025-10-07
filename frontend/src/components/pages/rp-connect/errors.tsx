@@ -78,7 +78,7 @@ export function extractLintHintsFromError(err: unknown): Record<string, LintHint
 }
 
 export function formatPipelineError(err: unknown): React.ReactNode {
-  const details = [];
+  const details: React.ReactNode[] = [];
   let genDesc = String(err);
   if (err instanceof ConnectError) {
     genDesc = err.message;

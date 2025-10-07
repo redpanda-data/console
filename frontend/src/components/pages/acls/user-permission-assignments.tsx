@@ -56,7 +56,7 @@ export const UserRoleTags = observer(
 
     if (Features.rolesApi) {
       // Get all roles, and ACL sets that apply to this user
-      const roles = [];
+      const roles: string[] = [];
       for (const [roleName, members] of rolesApi.roleMembers) {
         if (!members.any((m) => m.name === userName)) {
           continue; // this role doesn't contain our user

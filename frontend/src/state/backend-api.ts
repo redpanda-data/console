@@ -757,8 +757,8 @@ const apiStore = {
           }
 
           // If any partition has any errors, don't set the result for that topic
-          const partitionErrors = [];
-          const waterMarkErrors = [];
+          const partitionErrors: Array<{ partitionId: number; error: string }> = [];
+          const waterMarkErrors: Array<{ partitionId: number; error: string }> = [];
           for (const p of t.partitions) {
             // topicName
             p.topicName = t.topicName;
@@ -2271,7 +2271,7 @@ export const rolesApi = observable({
       throw new Error('security client is not initialized');
     }
 
-    const rolePromises = [];
+    const rolePromises: Promise<unknown>[] = [];
 
     if (Features.rolesApi) {
       for (const role of this.roles) {
@@ -2284,7 +2284,7 @@ export const rolesApi = observable({
     this.roleMembers.clear();
 
     for (const r of rolePromises) {
-      const res = await r;
+      const res = (await r) as { response?: { role?: { name: string }; members: Array<{ principal: string }> } };
       if (res.response == null || res.response.role == null) {
         continue; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
       }
@@ -2369,7 +2369,7 @@ export const pipelinesApi = observable({
       throw new Error('pipelines client is not initialized');
     }
 
-    const pipelines = [];
+    const pipelines: Pipeline[] = [];
     this.pipelinesError = null;
 
     let nextPageToken = '';
@@ -2452,7 +2452,7 @@ export const knowledgebaseApi = observable({
       throw new Error('knowledgebase client is not initialized');
     }
 
-    const knowledgeBases = [];
+    const knowledgeBases: KnowledgeBase[] = [];
     this.knowledgeBasesError = null;
 
     let nextPageToken = '';
@@ -2544,7 +2544,7 @@ export const rpcnSecretManagerApi = observable({
     // handle error in order to avoid crash app for this request
     this.secretsByPipeline = await this.getPipelinesBySecret().catch(() => []);
 
-    const secrets = [];
+    const secrets: Secret[] = [];
 
     let nextPageToken = '';
     while (true) {

@@ -131,7 +131,7 @@ export function debugFieldBehaviors(messageSchema: DescMessage): void {
   const metadata = getMessageFieldMetadata(messageSchema);
 
   for (const [, meta] of Object.entries(metadata)) {
-    const flags = [];
+    const flags: string[] = [];
     if (meta.isRequired) {
       flags.push('REQUIRED');
     }

@@ -429,7 +429,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
     await api.deleteServiceAccount(user.name);
 
     // Remove user from all its roles
-    const promises = [];
+    const promises: Promise<unknown>[] = [];
     for (const [roleName, members] of rolesApi.roleMembers) {
       if (members.any((m) => m.name === user.name)) {
         // is this user part of this role?

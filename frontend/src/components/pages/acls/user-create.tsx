@@ -159,7 +159,7 @@ class UserCreatePage extends PageComponent {
       await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), api.refreshServiceAccounts()]);
 
       // Add the user to the selected roles
-      const roleAddPromises = [];
+      const roleAddPromises: Promise<unknown>[] = [];
       for (const r of this.selectedRoles) {
         roleAddPromises.push(rolesApi.updateRoleMembership(r, [this.username], [], false));
       }

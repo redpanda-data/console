@@ -127,7 +127,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
 
           if (hasRetentionChanges) {
             // Build configuration updates for React Query mutation
-            const configs = [];
+            const configs: Array<{ key: string; op: 'SET'; value: string }> = [];
 
             // Convert retention time
             const retentionMs = convertRetentionTimeToMs(data.retentionTimeMs, data.retentionTimeUnit);

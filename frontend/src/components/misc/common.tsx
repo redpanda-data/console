@@ -53,7 +53,7 @@ export const Spacer = constant(<span style={{ display: 'flex', flexGrow: 1 }} />
  * returns an array with the numbers from start, up to end (does not include end!)
  */
 export function range(start: number, end: number): number[] {
-  const ar = [];
+  const ar: number[] = [];
   for (let i = start; i < end; i++) {
     ar.push(i);
   }

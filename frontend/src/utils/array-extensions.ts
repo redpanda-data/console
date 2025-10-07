@@ -330,7 +330,7 @@ Array.prototype.intersection = function intersection<T>(this: T[], other: T[]): 
 };
 
 Array.prototype.except = function except<T>(this: T[], other: T[]): T[] {
-  const ar = [];
+  const ar: T[] = [];
   const otherSet = new Set<T>(other);
   for (const e of this) {
     if (otherSet.has(e)) {
@@ -345,7 +345,7 @@ Array.prototype.genericJoin = function genericJoin<T>(
   this: T[],
   getSeparator: (last: T, current: T, index: number) => T
 ): T[] {
-  const ar = [];
+  const ar: T[] = [];
   for (let i = 1; i < this.length; i++) {
     const last = this[i - 1];
     const current = this[i];

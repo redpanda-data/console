@@ -679,7 +679,7 @@
         // Disallow the declaration of empty interfaces.
         "noEmptyInterface": "error",
         // Disallow variables from evolving into any type through reassignments.
-        "noEvolvingTypes": "off", // Enable later - many violations
+        "noEvolvingTypes": "error",
         // Disallow the any type usage.
         "noExplicitAny": "error",
         // Disallow using export or module.exports in files containing tests.

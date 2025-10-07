@@ -86,7 +86,7 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
   }
 
   @computed get selectedPartitions(): { topic: string; partitions: Partition[] }[] {
-    const ar = [];
+    const ar: { topic: string; partitions: Partition[] }[] = [];
     for (const [topic, partitions] of api.topicPartitions) {
       if (partitions == null) {
         continue;

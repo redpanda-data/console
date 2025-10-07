@@ -77,7 +77,7 @@ export const ProtoInputField = ({
 
   // Convert behavior flags to user-friendly indicators
   const getFieldIndicators = () => {
-    const indicators = [];
+    const indicators: string[] = [];
     if (isFieldOutputOnly(messageSchema, fieldName)) {
       indicators.push('Computed by system');
     }

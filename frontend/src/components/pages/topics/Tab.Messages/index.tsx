@@ -1390,14 +1390,14 @@ class SaveMessagesDialog extends Component<{
       headers.push('isTransactional');
     }
 
-    const csvRows = [];
+    const csvRows: string[] = [];
 
     // Add the headers
     csvRows.push(headers.join(','));
 
     // Add the data
     for (const message of messages) {
-      const values = [];
+      const values: (string | number | boolean)[] = [];
 
       // Add fields in the same order as headers
       for (const header of headers) {
@@ -1430,7 +1430,9 @@ class SaveMessagesDialog extends Component<{
         } else {
           // For other simple fields like partitionID, offset, timestamp, compression, isTransactional
           const messageValue = (message as Record<string, unknown>)[header];
-          values.push(messageValue !== undefined ? messageValue : '');
+          values.push(
+            messageValue !== undefined && messageValue !== null ? (messageValue as string | number | boolean) : ''
+          );
         }
       }
 

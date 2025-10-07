@@ -124,7 +124,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
                   await api.deleteServiceAccount(userName);
 
                   // Remove user from all its roles
-                  const promises = [];
+                  const promises: Promise<unknown>[] = [];
                   for (const [roleName, members] of rolesApi.roleMembers) {
                     if (members.any((m) => m.name === userName)) {
                       // is this user part of this role?
