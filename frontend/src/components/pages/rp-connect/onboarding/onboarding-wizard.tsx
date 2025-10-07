@@ -115,7 +115,6 @@ export const ConnectOnboardingWizard = () => {
     navigate('/rp-connect/create');
   };
 
-  // Get loading state from current step's ref
   const getCurrentStepLoading = (currentStepId: WizardStep): boolean => {
     switch (currentStepId) {
       case WizardStep.ADD_INPUT:
@@ -152,6 +151,7 @@ export const ConnectOnboardingWizard = () => {
                 {methods.switch({
                   [WizardStep.ADD_INPUT]: () => (
                     <ConnectTiles
+                      key="input-connector-tiles"
                       componentTypeFilter={['input']}
                       onChange={handleInputChange}
                       defaultConnectionName={persistedConnector.input?.connectionName}
@@ -163,6 +163,7 @@ export const ConnectOnboardingWizard = () => {
                   ),
                   [WizardStep.ADD_OUTPUT]: () => (
                     <ConnectTiles
+                      key="output-connector-tiles"
                       componentTypeFilter={['output']}
                       onChange={handleOutputChange}
                       defaultConnectionName={persistedConnector.output?.connectionName}

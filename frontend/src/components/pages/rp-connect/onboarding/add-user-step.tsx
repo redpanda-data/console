@@ -41,7 +41,8 @@ interface AddUserStepProps {
 }
 
 export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersList }, ref) => {
-  const [persistedUserData, setUserFormData] = useSessionStorage<AddUserFormData>(CONNECT_WIZARD_USER_KEY);
+  const [persistedUserData, setUserFormData] =
+    useSessionStorage<Omit<AddUserFormData, 'password'>>(CONNECT_WIZARD_USER_KEY);
   const [topicData] = useSessionStorage<AddTopicFormData>(CONNECT_WIZARD_TOPIC_KEY);
 
   const initialUserOptions = useMemo(
@@ -58,7 +59,8 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
 
   const isLoading = createUserMutation.isPending || createACLMutation.isPending;
 
-  // Initialize password based on persisted settings or defaults
+  // Initialize password generation settings from persisted data or defaults
+  // Note: We don't persist the actual password (it's write-only in the API)
   const initialSpecialChars = useMemo(
     () => persistedUserData?.specialCharactersEnabled ?? false,
     [persistedUserData?.specialCharactersEnabled],
@@ -68,8 +70,8 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
     [persistedUserData?.passwordLength],
   );
   const initialPassword = useMemo(
-    () => persistedUserData?.password || generatePassword(initialPasswordLength, initialSpecialChars),
-    [persistedUserData?.password, initialPasswordLength, initialSpecialChars],
+    () => generatePassword(initialPasswordLength, initialSpecialChars),
+    [initialPasswordLength, initialSpecialChars],
   );
 
   const form = useForm<AddUserFormData>({
@@ -100,18 +102,15 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
     return usersList?.find((user) => user.name === getUserName);
   }, [persistedUsername, matchingUserNameForFormValue, usersList]);
 
-  // Function to generate new password based on current settings
   const generateNewPassword = useCallback(() => {
     const newPassword = generatePassword(watchedPasswordLength, watchedSpecialCharacters);
     form.setValue('password', newPassword, { shouldDirty: true });
   }, [watchedPasswordLength, watchedSpecialCharacters, form]);
 
-  // Handler for creating new user options in the combobox
   const handleCreateUserOption = useCallback((value: string) => {
     setUserOptions((prev) => [...prev, { value, label: value }]);
   }, []);
 
-  // Handler for special characters checkbox change
   const handleSpecialCharsChange = useCallback(
     (val: boolean | 'indeterminate', onChange: (value: boolean) => void) => {
       const newValue = val === 'indeterminate' ? false : val;
@@ -129,7 +128,6 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
     }
   }, [existingUserBeingEdited, form]);
 
-  // Update user options when usersList changes
   useEffect(() => {
     setUserOptions(initialUserOptions);
   }, [initialUserOptions]);
@@ -137,7 +135,9 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
   const handleSubmit = useCallback(
     async (userData: AddUserFormData): Promise<StepSubmissionResult> => {
       try {
-        setUserFormData(userData);
+        // Persist user data WITHOUT password (passwords are write-only in the API)
+        const { password: _password, ...userDataWithoutPassword } = userData;
+        setUserFormData(userDataWithoutPassword);
 
         if (existingUserBeingEdited) {
           return {

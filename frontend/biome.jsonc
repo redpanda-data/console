@@ -8,7 +8,14 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!**/protogen", "!**/redpanda-ui/**/*.tsx", "!**/redpanda-ui/**/*.ts", "!**/redpanda-ui/style/globals.css"]
+    "includes": [
+      "**",
+      "!**/protogen",
+      "!**/redpanda-ui/**/*.tsx",
+      "!**/redpanda-ui/**/*.ts",
+      "!**/redpanda-ui/style/globals.css",
+      "!**/assets/rp-connect-schema-full.json"
+    ]
   },
   "formatter": {
     "enabled": true,

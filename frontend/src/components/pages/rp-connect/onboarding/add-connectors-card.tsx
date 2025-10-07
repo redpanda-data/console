@@ -4,11 +4,12 @@ import { Separator } from 'components/redpanda-ui/components/separator';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { PlusIcon } from 'lucide-react';
 import { memo } from 'react';
-import { CONNECT_COMPONENT_TYPE, type ConnectComponentType } from '../types/schema';
+import type { ConnectComponentType } from '../types/schema';
 import { getConnectorTypeBadgeProps } from './connector-badges';
 
-// Derive processor types from CONNECT_COMPONENT_TYPE (all types except input/output)
-const processorTypes = CONNECT_COMPONENT_TYPE.filter((t) => t !== 'input' && t !== 'output');
+const allowedConnectorTypes: ConnectComponentType[] = ['processor', 'cache', 'buffer'];
+
+const SCANNER_SUPPORTED_INPUTS = ['aws_s3', 'gcp_cloud_storage', 'azure_blob_storage'];
 
 const AddConnectorButton = ({
   type,
@@ -31,11 +32,21 @@ export const AddConnectorsCard = memo(
     onAddConnector,
     hasInput,
     hasOutput,
+    editorContent,
   }: {
     onAddConnector: (type: ConnectComponentType) => void;
     hasInput?: boolean;
     hasOutput?: boolean;
+    editorContent?: string;
   }) => {
+    const inputSupportsScanner = editorContent
+      ? SCANNER_SUPPORTED_INPUTS.some((inputType) => {
+          // Match input: <inputType>: pattern
+          const regex = new RegExp(`input:\\s*\n\\s*${inputType}:`);
+          return regex.test(editorContent);
+        })
+      : false;
+
     return (
       <Card>
         <CardHeader>
@@ -44,9 +55,10 @@ export const AddConnectorsCard = memo(
         </CardHeader>
         <CardContent className="gap-4 flex flex-col space-y-0">
           <div className="flex-wrap flex gap-2">
-            {processorTypes.map((processorType) => (
-              <AddConnectorButton key={processorType} type={processorType} onClick={onAddConnector} />
+            {allowedConnectorTypes.map((connectorType) => (
+              <AddConnectorButton key={connectorType} type={connectorType} onClick={onAddConnector} />
             ))}
+            {inputSupportsScanner && <AddConnectorButton type="scanner" onClick={onAddConnector} />}
           </div>
           {(!hasInput || !hasOutput) && (
             <div className="flex flex-col gap-2">

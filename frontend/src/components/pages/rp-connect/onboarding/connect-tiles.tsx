@@ -1,6 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type ComponentName, componentLogoMap } from 'assets/connectors/componentLogoMap';
-import { Badge } from 'components/redpanda-ui/components/badge';
 import {
   Card,
   CardContent,
@@ -20,35 +19,27 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { SearchIcon, Waypoints } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type {
-  ComponentCategory,
-  ConnectComponentSpec,
-  ConnectComponentType,
-  ExtendedConnectComponentSpec,
-} from '../types/schema';
+import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 import { type ConnectTilesFormData, connectTilesFormSchema } from '../types/wizard';
 import { getAllCategories, getAllComponents } from '../utils/schema';
 import type { BaseStepRef } from '../utils/wizard';
-import { getCategoryBadgeProps } from './connector-badges';
 import { ConnectorLogo } from './connector-logo';
 
 const searchComponents = (
   query: string,
   filters?: {
     types?: ConnectComponentType[];
-    categories?: (ComponentCategory | string)[];
+    categories?: string[];
   },
   additionalComponents?: ExtendedConnectComponentSpec[],
 ): ConnectComponentSpec[] => {
   return getAllComponents(additionalComponents)
     .sort((a, b) => a.name.localeCompare(b.name))
     .filter((component) => {
-      // First, filter by component type
       if (filters?.types?.length && !filters.types.includes(component.type)) {
         return false;
       }
 
-      // Then, filter by search text if provided
       if (query.trim()) {
         const searchLower = query.toLowerCase();
         const matchesName = component.name.toLowerCase().includes(searchLower);
@@ -59,7 +50,6 @@ const searchComponents = (
         }
       }
 
-      // Filter by categories
       if (filters?.categories?.length) {
         const hasMatchingCategory = component.categories?.some((cat) => filters.categories?.includes(cat));
         if (!hasMatchingCategory) return false;
@@ -109,7 +99,6 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
     const [showScrollGradient, setShowScrollGradient] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    // Check if content is scrollable and update gradient visibility
     const checkScrollable = useCallback(() => {
       const container = scrollContainerRef.current;
       if (!container) return;
@@ -131,7 +120,6 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
       },
     });
 
-    // Sync form when default values change
     useEffect(() => {
       if (defaultConnectionName && defaultConnectionType) {
         form.reset({
@@ -143,7 +131,6 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
 
     const categories = useMemo(() => getAllCategories(additionalComponents), [additionalComponents]);
 
-    // Filter components based on search, categories, and component type
     const filteredComponents = useMemo(() => {
       return searchComponents(
         filter,
@@ -155,9 +142,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
       );
     }, [componentTypeFilter, filter, selectedCategories, additionalComponents]);
 
-    // Check if scrolling is needed whenever filtered components change
     useEffect(() => {
-      // Use requestAnimationFrame to ensure DOM has updated
       requestAnimationFrame(() => {
         checkScrollable();
       });
@@ -243,17 +228,10 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                     Categories
                     <SimpleMultiSelect
                       container={document.getElementById('rp-connect-onboarding-wizard') ?? undefined}
-                      options={categories.map((category) => {
-                        const { icon, text, variant } = getCategoryBadgeProps(category.id);
-                        return {
-                          value: category.id,
-                          label: (
-                            <Badge icon={icon} variant={variant}>
-                              {text}
-                            </Badge>
-                          ),
-                        };
-                      })}
+                      options={categories.map((category) => ({
+                        value: category.id,
+                        label: category.name,
+                      }))}
                       value={selectedCategories}
                       onValueChange={setSelectedCategories}
                       placeholder="Databases, Social..."

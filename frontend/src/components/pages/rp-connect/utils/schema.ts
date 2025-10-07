@@ -1,7 +1,6 @@
 import { parseDocument, stringify as yamlStringify } from 'yaml';
-import benthosSchema from '../../../../assets/rp-connect-schema.json';
+import benthosSchema from '../../../../assets/rp-connect-schema-full.json';
 import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from '../../../../state/connect/state';
-import { generateDefaultFromJsonSchema } from '../../../../utils/json-schema';
 import {
   CONNECT_COMPONENT_TYPE,
   type ConnectComponentSpec,
@@ -11,59 +10,83 @@ import {
   type ExtendedConnectComponentSpec,
 } from '../types/schema';
 import type { AddTopicFormData, AddUserFormData } from '../types/wizard';
-import { getCategoryDisplayName, inferComponentCategory } from './categories';
+import { getCategoryDisplayName } from './categories';
 
 /**
- * Extracts lightweight metadata from JSON Schema component variants
- * No complex transformation - just metadata for display + raw schema reference
+ * Components that support Redpanda secret population from wizard
+ * Includes Kafka-compatible components and Redpanda migrator tools
  */
-const extractComponentMetadata = (componentType: string, definition: any): ConnectComponentSpec[] => {
-  const components: ConnectComponentSpec[] = [];
+const REDPANDA_SECRET_COMPONENTS = [
+  'kafka',
+  'kafka_franz',
+  'redpanda',
+  'redpanda_common',
+  'redpanda_migrator',
+  'redpanda_migrator_bundle',
+  'redpanda_migrator_offsets',
+];
 
-  if (!definition.allOf || !Array.isArray(definition.allOf)) {
-    return components;
+/**
+ * Fields that are critical for connection and should always be shown
+ * even when they have defaults
+ */
+const CRITICAL_CONNECTION_FIELDS = new Set(['addresses', 'seed_brokers', 'topics', 'topic', 'brokers']);
+
+/**
+ * Configuration object fields that should be hidden for REDPANDA_SECRET_COMPONENTS
+ * when wizard data exists (unless showOptionalFields is true)
+ */
+const NON_CRITICAL_CONFIG_OBJECTS = new Set(['tls', 'metadata', 'batching', 'backoff', 'retry']);
+
+/**
+ * Converts a field spec from the full schema format to ConnectFieldSpec
+ */
+const convertFieldSpecFromFullSchema = (fieldSpec: any): ConnectFieldSpec => {
+  const spec: ConnectFieldSpec = {
+    name: fieldSpec.name || '',
+    type: fieldSpec.type || 'unknown',
+    kind: fieldSpec.kind || 'scalar',
+    description: fieldSpec.description,
+    is_advanced: fieldSpec.is_advanced,
+    is_deprecated: fieldSpec.is_deprecated,
+    is_optional: fieldSpec.is_optional,
+    is_secret: fieldSpec.is_secret,
+    default: fieldSpec.default,
+    interpolated: fieldSpec.interpolated,
+    bloblang: fieldSpec.bloblang,
+    examples: fieldSpec.examples,
+    annotated_options: fieldSpec.annotated_options,
+    options: fieldSpec.options,
+    version: fieldSpec.version,
+    linter: fieldSpec.linter,
+    scrubber: fieldSpec.scrubber,
+  };
+
+  if (fieldSpec.children && Array.isArray(fieldSpec.children)) {
+    spec.children = fieldSpec.children.map(convertFieldSpecFromFullSchema);
   }
 
-  // The first element of allOf contains anyOf with component variants
-  const variantsSection = definition.allOf[0];
-  if (!variantsSection.anyOf || !Array.isArray(variantsSection.anyOf)) {
-    return components;
+  return spec;
+};
+
+/**
+ * Creates a ConnectFieldSpec for a component's config from the full schema format
+ */
+const createComponentConfigSpec = (component: any): ConnectFieldSpec => {
+  const config = component.config;
+
+  const configSpec: ConnectFieldSpec = {
+    name: component.name,
+    type: 'object',
+    kind: 'scalar',
+    children: [],
+  };
+
+  if (config?.children && Array.isArray(config.children)) {
+    configSpec.children = config.children.map(convertFieldSpecFromFullSchema);
   }
 
-  // Extract metadata from each variant
-  for (const variant of variantsSection.anyOf) {
-    if (!variant.properties) continue;
-
-    // Each variant has a single property key which is the component name
-    const componentNames = Object.keys(variant.properties);
-    for (const componentName of componentNames) {
-      const componentSchema = variant.properties[componentName];
-
-      // Simple metadata extraction - no transformation
-      const componentSpec: ConnectComponentSpec = {
-        name: componentName,
-        type: componentType as ConnectComponentType,
-        status: 'stable',
-        plugin: false,
-        summary: `${componentName} ${componentType}`,
-        description: componentSchema.description || `${componentName} ${componentType} component`,
-        categories: inferComponentCategory(componentName),
-        // Minimal config with raw JSON Schema reference
-        config: {
-          name: componentName,
-          type: 'object',
-          kind: 'scalar',
-          // Store raw JSON Schema for on-demand YAML generation
-          _jsonSchema: componentSchema,
-        } as ConnectFieldSpec,
-        version: '1.0.0',
-      };
-
-      components.push(componentSpec);
-    }
-  }
-
-  return components;
+  return configSpec;
 };
 
 /**
@@ -73,22 +96,42 @@ const parseSchema = () => {
   const schemaData = benthosSchema as any;
   const allComponents: ConnectComponentSpec[] = [];
 
-  // Check if schema has the new JSON Schema format with definitions
-  if (!schemaData.definitions) {
-    console.error('Schema does not have definitions structure. Expected JSON Schema format.');
-    return allComponents;
-  }
+  // Map component types to schema array keys
+  const typeToSchemaKey: Record<string, string> = {
+    input: 'inputs',
+    output: 'outputs',
+    processor: 'processors',
+    cache: 'caches',
+    buffer: 'buffers',
+    rate_limit: 'rate-limits',
+    scanner: 'scanners',
+    metrics: 'metrics',
+    tracer: 'tracers',
+  };
 
-  // Parse each component type from definitions
+  // Parse each component type from flat arrays
   for (const componentType of CONNECT_COMPONENT_TYPE) {
-    const definition = schemaData.definitions[componentType];
-    if (!definition) continue;
+    const schemaKey = typeToSchemaKey[componentType];
+    const componentsArray = schemaData[schemaKey];
 
-    // Extract lightweight metadata from the JSON Schema definition
-    const components = extractComponentMetadata(componentType, definition);
+    if (!componentsArray || !Array.isArray(componentsArray)) {
+      continue;
+    }
 
-    if (components.length > 0) {
-      allComponents.push(...components);
+    for (const comp of componentsArray) {
+      const componentSpec: ConnectComponentSpec = {
+        name: comp.name,
+        type: comp.type as ConnectComponentType,
+        status: comp.status || 'stable',
+        plugin: comp.plugin || false,
+        summary: comp.summary || `${comp.name} ${comp.type}`,
+        description: comp.description || `${comp.name} ${comp.type} component`,
+        categories: comp.categories || null,
+        config: createComponentConfigSpec(comp),
+        version: comp.version || '1.0.0',
+      };
+
+      allComponents.push(componentSpec);
     }
   }
 
@@ -109,7 +152,8 @@ export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptiona
   }
 
   // Generate the configuration object from the component's FieldSpec
-  const connectionConfig = generateDefaultValue(componentSpec.config, showOptionalFields);
+  // Pass component name for secret population logic
+  const connectionConfig = generateDefaultValue(componentSpec.config, showOptionalFields, componentSpec.name);
 
   const config: any = {};
 
@@ -198,7 +242,6 @@ export const mergeConnectConfigs = (
   newConfigObject: ReturnType<typeof schemaToConfig>,
   componentSpec: ConnectComponentSpec,
 ) => {
-  // If no existing YAML, return new config object
   if (!existingYaml.trim()) {
     return newConfigObject;
   }
@@ -240,7 +283,6 @@ export const mergeConnectConfigs = (
     }
   }
 
-  // Apply merging rules based on component type using Document API
   switch (componentSpec.type) {
     case 'processor': {
       // Processors: append to pipeline.processors[] array
@@ -357,9 +399,34 @@ export const mergeConnectConfigs = (
       break;
     }
 
-    case 'scanner':
-      // Scanners are embedded, return as-is for manual handling
-      return newConfigObject;
+    case 'scanner': {
+      // Scanners are embedded within input configurations
+      // Find the input node and merge the scanner into it
+      const inputNode = doc.get('input');
+      if (!inputNode) {
+        console.warn('Cannot add scanner: no input found in existing YAML');
+        return doc;
+      }
+
+      // Get the input type (first key under input)
+      const inputObj = inputNode.toJSON?.() || {};
+      const inputType = Object.keys(inputObj)[0];
+      if (!inputType) {
+        console.warn('Cannot add scanner: input type not found');
+        return doc;
+      }
+
+      // Scanner config is returned as { scannerName: scannerConfig }
+      const scannerName = Object.keys(newConfigObject)[0];
+      const scannerConfig = newConfigObject[scannerName];
+
+      // Get the new scanner from the commented Document (or fallback to plain object)
+      const newScannerNode = newDoc?.get(scannerName);
+
+      // Set the scanner within the input
+      doc.setIn(['input', inputType, 'scanner'], newScannerNode || scannerConfig);
+      break;
+    }
 
     default:
       // Unknown component type: merge at root level
@@ -371,7 +438,6 @@ export const mergeConnectConfigs = (
       break;
   }
 
-  // Return the modified Document (will be converted to YAML string in configToYaml)
   return doc;
 };
 
@@ -386,6 +452,8 @@ export const configToYaml = (configObject: any, componentSpec: ConnectComponentS
     if (configObject && typeof configObject.toString === 'function' && typeof configObject.getIn === 'function') {
       // It's a Document - convert to string (preserves comments!)
       yamlString = configObject.toString();
+      // Apply root spacing for readability (adds newlines between root-level keys)
+      yamlString = addRootSpacing(yamlString);
     } else {
       // It's a plain object - stringify to YAML
       yamlString = yamlStringify(configObject, {
@@ -395,10 +463,8 @@ export const configToYaml = (configObject: any, componentSpec: ConnectComponentS
         doubleQuotedAsJSON: false,
       });
 
-      // Add schema comments
       yamlString = addSchemaComments(yamlString, componentSpec);
 
-      // Add spacing between root-level components for readability
       yamlString = addRootSpacing(yamlString);
     }
 
@@ -443,147 +509,54 @@ const getPersistedWizardData = () => {
 
 /**
  * Checks if a field name is topic-related
+ * Matches: 'topic' (outputs/cache) or 'topics' (inputs)
  */
 const isTopicField = (fieldName: string): boolean => {
   const normalizedName = fieldName.toLowerCase();
-  return (
-    normalizedName === 'topic' ||
-    normalizedName === 'topics' ||
-    normalizedName === 'target_topic' ||
-    normalizedName === 'target_topics' ||
-    normalizedName === 'source_topic' ||
-    normalizedName === 'source_topics' ||
-    normalizedName.endsWith('_topic') ||
-    normalizedName.endsWith('_topics')
-  );
+  return normalizedName === 'topic' || normalizedName === 'topics';
 };
 
 /**
  * Checks if a field name is user/authentication-related
+ * Matches: 'user' (kafka sasl) or 'username' (redpanda sasl)
  */
 const isUserField = (fieldName: string): boolean => {
-  const normalizedName = fieldName.toLowerCase();
-  return (
-    normalizedName === 'user' ||
-    normalizedName === 'username' ||
-    normalizedName === 'sasl_user' ||
-    normalizedName.endsWith('.user') ||
-    normalizedName.endsWith('.username')
-  );
+  const normalized = fieldName.toLowerCase();
+  return normalized === 'user' || normalized === 'username';
 };
 
 /**
  * Checks if a field name is password-related
+ * Matches: 'password' (nested in sasl object)
  */
 const isPasswordField = (fieldName: string): boolean => {
-  const normalizedName = fieldName.toLowerCase();
-  return normalizedName === 'password' || normalizedName === 'sasl_password' || normalizedName.endsWith('.password');
+  return fieldName.toLowerCase() === 'password';
 };
 
 /**
- * Checks if a schema has any nested fields matching topic/user/password patterns
+ * Checks if a ConnectFieldSpec or its children have wizard-relevant fields
+ * Used to determine if advanced/optional fields should be shown
  */
-const hasRelevantNestedFields = (schema: any, topicData: any, userData: any): boolean => {
-  // Check object properties
-  if (schema?.type === 'object' && schema.properties) {
-    for (const [propName, propSchema] of Object.entries(schema.properties) as [string, any][]) {
-      if (isTopicField(propName) && topicData?.topicName) return true;
-      if (isUserField(propName) && userData?.username) return true;
-      if (isPasswordField(propName) && userData?.password) return true;
+const hasWizardRelevantFields = (spec: ConnectFieldSpec, componentName?: string): boolean => {
+  if (!componentName || !REDPANDA_SECRET_COMPONENTS.includes(componentName)) {
+    return false;
+  }
 
-      if (propSchema.type === 'object' && hasRelevantNestedFields(propSchema, topicData, userData)) {
+  const { topicData, userData } = getPersistedWizardData();
+
+  if (isTopicField(spec.name) && topicData?.topicName) return true;
+  if (isUserField(spec.name) && userData?.username) return true;
+  if (isPasswordField(spec.name) && userData?.username) return true;
+
+  if (spec.children && spec.children.length > 0) {
+    for (const child of spec.children) {
+      if (hasWizardRelevantFields(child, componentName)) {
         return true;
-      }
-
-      // Check array items
-      if (propSchema.type === 'array' && propSchema.items) {
-        if (hasRelevantNestedFields(propSchema.items, topicData, userData)) {
-          return true;
-        }
       }
     }
   }
 
   return false;
-};
-
-/**
- * Recursively populates persisted topic/user data in the generated defaults object
- * Also creates optional nested objects when they contain relevant fields
- */
-const populatePersistedData = (defaults: any, jsonSchema: any, rootFieldName?: string): any => {
-  const { topicData, userData } = getPersistedWizardData();
-
-  if (jsonSchema.type === 'object' && jsonSchema.properties) {
-    const hasRelevant = hasRelevantNestedFields(jsonSchema, topicData, userData);
-
-    if (!defaults || typeof defaults !== 'object') {
-      if (hasRelevant) {
-        defaults = {};
-      } else {
-        return defaults;
-      }
-    }
-
-    const result = { ...defaults };
-    const requiredFields = jsonSchema.required || [];
-
-    for (const [propName, propSchema] of Object.entries(jsonSchema.properties) as [string, any][]) {
-      const isRequired = requiredFields.includes(propName);
-      const existsInResult = propName in result;
-
-      const hasTopic = isTopicField(propName) && topicData?.topicName;
-      const hasUser = isUserField(propName) && userData?.username;
-      const hasPassword = isPasswordField(propName) && userData?.password;
-      const hasNestedRelevant =
-        (propSchema.type === 'object' && hasRelevantNestedFields(propSchema, topicData, userData)) ||
-        (propSchema.type === 'array' &&
-          propSchema.items &&
-          hasRelevantNestedFields(propSchema.items, topicData, userData));
-
-      if (existsInResult || isRequired || hasTopic || hasUser || hasPassword || hasNestedRelevant) {
-        if (isTopicField(propName) && topicData?.topicName) {
-          if (propSchema.type === 'array') {
-            result[propName] = [topicData.topicName];
-          } else if (propSchema.type === 'string') {
-            result[propName] = topicData.topicName;
-          }
-        } else if (isUserField(propName) && userData?.username) {
-          result[propName] = '$' + '{secrets.REDPANDA_USERNAME}';
-        } else if (isPasswordField(propName) && userData?.password) {
-          result[propName] = '$' + '{secrets.REDPANDA_PASSWORD}';
-        } else if (propSchema.type === 'object') {
-          const nestedDefaults = existsInResult ? result[propName] : {};
-          const populated = populatePersistedData(nestedDefaults, propSchema, propName);
-          if (Object.keys(populated).length > 0) {
-            result[propName] = populated;
-          }
-        } else if (propSchema.type === 'array' && propSchema.items) {
-          // Handle arrays that contain objects with relevant fields (e.g., sasl array)
-          if (hasRelevantNestedFields(propSchema.items, topicData, userData)) {
-            const itemDefaults = {};
-            const populated = populatePersistedData(itemDefaults, propSchema.items, propName);
-            if (Object.keys(populated).length > 0) {
-              result[propName] = [populated];
-            }
-          }
-        }
-      }
-    }
-
-    return result;
-  }
-
-  if (Array.isArray(defaults)) {
-    return defaults.map((item) => {
-      if (typeof item === 'object' && jsonSchema.items) {
-        return populatePersistedData(item, jsonSchema.items, rootFieldName);
-      }
-      return item;
-    });
-  }
-
-  return defaults;
 };
 
 export const getAllCategories = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectNodeCategory[] => {
@@ -619,12 +592,37 @@ export const getAllCategories = (additionalComponents?: ExtendedConnectComponent
 };
 
 /**
+ * Builds a flat map of field names to their specs for quick lookup
+ */
+const buildFieldMap = (fields: ConnectFieldSpec[] | undefined): Map<string, ConnectFieldSpec> => {
+  const map = new Map<string, ConnectFieldSpec>();
+
+  if (!fields) return map;
+
+  const traverse = (fieldList: ConnectFieldSpec[]) => {
+    for (const field of fieldList) {
+      map.set(field.name, field);
+
+      if (field.children && field.children.length > 0) {
+        traverse(field.children);
+      }
+    }
+  };
+
+  traverse(fields);
+  return map;
+};
+
+/**
  * Adds helpful schema comments to NEW YAML configs
+ * Comments indicate:
+ * - "# Required" for required fields without defaults
+ * - "# Default: <value>" for fields with default values
  */
 const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSpec): string => {
-  // Get the JSON Schema for this component
-  const jsonSchema = componentSpec.config._jsonSchema;
-  if (!jsonSchema || !jsonSchema.properties) {
+  const fieldMap = buildFieldMap(componentSpec.config.children);
+
+  if (fieldMap.size === 0) {
     return yamlString;
   }
 
@@ -632,13 +630,11 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
   const processedLines: string[] = [];
 
   lines.forEach((line) => {
-    // Skip empty lines and existing comments
     if (!line.trim() || line.trim().startsWith('#') || line.includes('#')) {
       processedLines.push(line);
       return;
     }
 
-    // Match YAML key-value pairs
     const keyValueMatch = line.match(/^(\s*)([^:#\n]+):\s*(.*)$/);
     if (!keyValueMatch) {
       processedLines.push(line);
@@ -648,29 +644,24 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
     const [, indent, key, value] = keyValueMatch;
     const cleanKey = key.trim();
 
-    // Look up field in JSON Schema properties
-    const fieldSchema = jsonSchema.properties[cleanKey];
-    if (!fieldSchema) {
+    const fieldSpec = fieldMap.get(cleanKey);
+    if (!fieldSpec) {
       processedLines.push(line);
       return;
     }
 
-    // Generate comment based on JSON Schema
     let comment = '';
-    const requiredFields = jsonSchema.required || [];
-    const isRequired = requiredFields.includes(cleanKey);
 
-    // Only add comments to lines with actual values (not structural keys)
-    // Skip if value is empty (array/object on next line) to prevent comment displacement
     const hasValue = value.trim().length > 0 && value.trim() !== '{}' && value.trim() !== '[]';
 
     if (hasValue) {
-      if (isRequired) {
+      // Check if field has a default value
+      if (fieldSpec.default !== undefined) {
+        comment = ` # Default: ${JSON.stringify(fieldSpec.default)}`;
+      }
+      // Check if field is required (not optional and no default)
+      else if (!fieldSpec.is_optional) {
         comment = ' # Required';
-      } else if (fieldSchema.default !== undefined) {
-        comment = ` # Default: ${JSON.stringify(fieldSchema.default)}`;
-      } else {
-        comment = ' # Optional';
       }
     }
 
@@ -715,51 +706,84 @@ const addRootSpacing = (yamlString: string): string => {
 };
 
 /**
- * Recursively removes null values from arrays and objects
+ * Generates default values from ConnectFieldSpec
+ * Populates topic/user fields from session storage when applicable
+ * Only populates secrets for Redpanda-compatible components (kafka, kafka_franz, redpanda)
  */
-const cleanupNullValues = (obj: any): any => {
-  if (Array.isArray(obj)) {
-    // Remove null/undefined values from arrays
-    const filtered = obj.filter((item) => item !== null && item !== undefined);
-    // Recursively clean nested items
-    return filtered.map((item) => cleanupNullValues(item));
+export function generateDefaultValue(
+  spec: ConnectFieldSpec,
+  showOptionalFields?: boolean,
+  componentName?: string,
+  insideWizardContext?: boolean,
+): unknown {
+  if (componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName)) {
+    const { topicData, userData } = getPersistedWizardData();
+
+    // Populate topic fields
+    if (isTopicField(spec.name) && topicData?.topicName) {
+      return spec.kind === 'array' ? [topicData.topicName] : topicData.topicName;
+    }
+
+    // Populate username fields
+    if (isUserField(spec.name) && userData?.username) {
+      return userData.username;
+    }
+
+    // Populate password fields (empty string for manual entry)
+    if (isPasswordField(spec.name) && userData?.username) {
+      return '';
+    }
   }
 
-  if (obj !== null && typeof obj === 'object') {
-    const cleaned: any = {};
-    for (const [key, value] of Object.entries(obj)) {
-      const cleanedValue = cleanupNullValues(value);
-      // Keep non-null values, or empty arrays/objects
-      if (cleanedValue !== null && cleanedValue !== undefined) {
-        cleaned[key] = cleanedValue;
+  // Check if this is an advanced field that should be hidden
+  // For REDPANDA_SECRET_COMPONENTS, hide non-critical config objects immediately
+  const isAdvancedField = spec.is_advanced === true;
+  const isNonCriticalConfigObject =
+    componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName) && NON_CRITICAL_CONFIG_OBJECTS.has(spec.name);
+
+  // Hide non-critical config objects (tls, metadata, batching, etc.) immediately
+  if (isNonCriticalConfigObject && !showOptionalFields) {
+    return undefined;
+  }
+
+  // Check if field has wizard-relevant data (only for direct wizard fields, not nested)
+  const hasWizardData = hasWizardRelevantFields(spec, componentName);
+
+  if (isAdvancedField && !showOptionalFields && !hasWizardData) {
+    // Hide advanced fields unless they're required and inside wizard context
+    // Fields with empty/falsy defaults are truly optional, fields with meaningful defaults may be required
+    const hasEmptyDefault = spec.default === '' || spec.default === null || spec.default === undefined;
+    const isEffectivelyOptional = spec.is_optional === true || (hasEmptyDefault && spec.is_optional !== false);
+    if (!insideWizardContext || isEffectivelyOptional) {
+      return undefined;
+    }
+  }
+
+  // Check if this is an optional field (non-advanced) that should be hidden
+  // Optional fields with defaults should only show when explicitly requested or wizard-relevant
+  const isOptionalField = spec.is_optional === true && !isAdvancedField;
+  if (isOptionalField && !showOptionalFields && !hasWizardData) {
+    return undefined;
+  }
+
+  // Treat scalar fields with defaults as optional in certain cases
+  // Don't hide arrays/objects here - they're handled below where we can check if they're empty
+  const hasDefault = spec.default !== undefined;
+  const isScalarDefault = hasDefault && spec.kind === 'scalar' && spec.type !== 'object';
+  const isExplicitlyOptional = spec.is_optional === true;
+  const isCriticalField = CRITICAL_CONNECTION_FIELDS.has(spec.name);
+
+  if (isScalarDefault && !showOptionalFields && !insideWizardContext) {
+    // Always hide explicitly optional fields with defaults
+    if (isExplicitlyOptional && !hasWizardData) {
+      return undefined;
+    }
+    // For REDPANDA_SECRET_COMPONENTS, hide non-critical scalar fields with defaults
+    if (componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName)) {
+      if (!isCriticalField && !hasWizardData) {
+        return undefined;
       }
     }
-    return cleaned;
-  }
-
-  return obj;
-};
-
-/**
- * Generates default values from ConnectFieldSpec
- * Uses shared JSON Schema utility when _jsonSchema is available
- * Populates topic/user fields from session storage when applicable
- */
-export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?: boolean): unknown {
-  if (spec._jsonSchema) {
-    if (showOptionalFields) {
-      const allFields = generateAllFieldsFromJsonSchema(spec._jsonSchema, spec.name);
-      return cleanupNullValues(allFields);
-    }
-    const defaults = generateDefaultFromJsonSchema(spec._jsonSchema);
-    const populated = populatePersistedData(defaults, spec._jsonSchema, spec.name);
-    return cleanupNullValues(populated);
-  }
-
-  // Fallback to legacy behavior for backward compatibility (external components without _jsonSchema)
-  const isOptionalField = spec.default !== undefined || spec.is_optional === true;
-  if (isOptionalField && !showOptionalFields) {
-    return undefined;
   }
 
   if (spec.default !== undefined) {
@@ -779,20 +803,98 @@ export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?
         case 'object':
           if (spec.children) {
             const obj = {} as Record<string, unknown>;
+
+            // Get wizard data once for all children (need userData for wizard context check)
+            const { userData } =
+              componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName)
+                ? getPersistedWizardData()
+                : { userData: null };
+
+            // Check if THIS object has wizard-relevant children (not just if wizard data exists)
+            // Only direct wizard fields (user/password), NOT topic fields at root level
+            // Topic/topics are at root level and shouldn't make siblings show in wizard context
+            const hasDirectWizardChildren =
+              spec.children?.some((child) => {
+                // Only user/password fields create wizard context, not topic
+                if (isUserField(child.name) && userData?.username) return true;
+                if (isPasswordField(child.name) && userData?.username) return true;
+                return false;
+              }) ?? false;
+
+            // Generate children values
+            // Pass wizard context down ONLY if this object has direct user/password children
+            // This ensures SASL children get wizard context, but root config children don't
+            const inWizardContext = insideWizardContext || hasDirectWizardChildren;
             for (const child of spec.children) {
-              const childValue = generateDefaultValue(child, showOptionalFields);
+              const childValue = generateDefaultValue(child, showOptionalFields, componentName, inWizardContext);
+
               if (childValue !== undefined) {
                 obj[child.name] = childValue;
               }
             }
+
+            // Hide empty objects or objects with all optional children if not explicitly required
+            const objKeys = Object.keys(obj);
+            if (objKeys.length === 0) {
+              const shouldHideEmpty =
+                (spec.is_optional === true || spec.is_advanced === true) && !showOptionalFields && !hasWizardData;
+              if (shouldHideEmpty) {
+                return undefined;
+              }
+            }
+
+            // For REDPANDA_SECRET_COMPONENTS: hide empty objects without wizard-relevant data
+            if (componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName) && objKeys.length === 0) {
+              // Hide empty objects for Redpanda components when no wizard relevance
+              if (!hasWizardData && !showOptionalFields) {
+                return undefined;
+              }
+            }
+
             return obj;
           }
           return {};
         default:
           return '';
       }
-    case 'array':
+    case 'array': {
+      // Special case: SASL arrays for redpanda/kafka_franz components
+      // These have children defining the SASL object structure
+      const isSaslArray = spec.name.toLowerCase() === 'sasl';
+      if (isSaslArray && spec.children && componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName)) {
+        const { userData } = getPersistedWizardData();
+
+        // If wizard data exists, generate a single SASL config object
+        if (userData?.username) {
+          const saslObj = {} as Record<string, unknown>;
+
+          // Pass wizard context to children so they get populated
+          const inWizardContext = true;
+          for (const child of spec.children) {
+            const childValue = generateDefaultValue(child, showOptionalFields, componentName, inWizardContext);
+            if (childValue !== undefined) {
+              saslObj[child.name] = childValue;
+            }
+          }
+
+          // Return as single-element array if we have any content
+          if (Object.keys(saslObj).length > 0) {
+            return [saslObj];
+          }
+        }
+      }
+
+      // Arrays should be hidden if:
+      // 1. They're optional or advanced AND
+      // 2. showOptionalFields is false AND
+      // 3. Not wizard-relevant
+      const shouldHideArray =
+        (spec.is_optional === true || spec.is_advanced === true) && !showOptionalFields && !hasWizardData;
+      if (shouldHideArray) {
+        return undefined;
+      }
       return [];
+    }
     case '2darray':
       return [];
     case 'map':
@@ -800,68 +902,6 @@ export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?
     default:
       return undefined;
   }
-}
-
-/**
- * Helper to generate ALL fields from JSON Schema (including optional ones)
- * Used when showOptionalFields is true
- * Also populates topic/user defaults from session storage when applicable
- */
-function generateAllFieldsFromJsonSchema(jsonSchema: any, fieldName?: string): unknown {
-  if (jsonSchema.default !== undefined) {
-    return jsonSchema.default;
-  }
-
-  const { topicData, userData } = getPersistedWizardData();
-
-  if (fieldName) {
-    if (isTopicField(fieldName) && topicData?.topicName) {
-      if (jsonSchema.type === 'array') {
-        return [topicData.topicName];
-      }
-      if (jsonSchema.type === 'string') {
-        return topicData.topicName;
-      }
-    }
-
-    if (isUserField(fieldName) && userData?.username) {
-      return '$' + '{secrets.REDPANDA_USERNAME}';
-    }
-
-    if (isPasswordField(fieldName) && userData?.password) {
-      return '$' + '{secrets.REDPANDA_PASSWORD}';
-    }
-  }
-
-  if (jsonSchema.type === 'string') return '';
-  if (jsonSchema.type === 'number' || jsonSchema.type === 'integer') return 0;
-  if (jsonSchema.type === 'boolean') return false;
-  if (jsonSchema.type === 'array') return [];
-
-  if (jsonSchema.type === 'object') {
-    const obj: Record<string, unknown> = {};
-
-    if (jsonSchema.patternProperties) {
-      return {};
-    }
-
-    if (jsonSchema.properties) {
-      for (const [propName, propSchema] of Object.entries(jsonSchema.properties)) {
-        const value = generateAllFieldsFromJsonSchema(propSchema, propName);
-        if (value !== undefined) {
-          obj[propName] = value;
-        }
-      }
-    }
-
-    return obj;
-  }
-
-  if (jsonSchema.$ref) {
-    return {};
-  }
-
-  return undefined;
 }
 
 /**

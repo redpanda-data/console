@@ -48,7 +48,6 @@ export const CreatePipelineSidebar = memo(
       closeAddConnector();
     };
 
-    // Separate existing and missing secrets
     const existingSecretsSet = new Set(existingSecrets);
     const missingSecrets = detectedSecrets.filter((secret) => !existingSecretsSet.has(secret));
 
@@ -76,7 +75,12 @@ export const CreatePipelineSidebar = memo(
           onSecretsCreated={handleSecretsCreated}
         />
 
-        <AddConnectorsCard onAddConnector={handleConnectorTypeChange} hasInput={hasInput} hasOutput={hasOutput} />
+        <AddConnectorsCard
+          onAddConnector={handleConnectorTypeChange}
+          hasInput={hasInput}
+          hasOutput={hasOutput}
+          editorContent={editorContent}
+        />
 
         <AddConnectorDialog
           isOpen={isAddConnectorOpen}

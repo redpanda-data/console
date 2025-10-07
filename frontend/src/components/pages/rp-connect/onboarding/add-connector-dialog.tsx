@@ -31,7 +31,6 @@ export const AddConnectorDialog = ({
           <ConnectTiles
             componentTypeFilter={connectorType ? [connectorType] : undefined}
             hideHeader
-            hideFilters
             onChange={onAddConnector}
             variant="ghost"
             className="px-0 pt-0"

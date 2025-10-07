@@ -422,10 +422,15 @@ export const PipelineEditor = observer(
       if (!editorInstance) return;
 
       const currentValue = editorInstance.getValue();
+
+      // For explicitly-added components (scanner, processor, cache, buffer),
+      // we want to show all fields since users are adding them to customize behavior.
+      const showAllFields = ['scanner', 'processor', 'cache', 'buffer'].includes(connectionType);
+
       const mergedYaml = getConnectTemplate({
         connectionName,
         connectionType,
-        showOptionalFields: false,
+        showOptionalFields: showAllFields,
         existingYaml: currentValue,
       });
 

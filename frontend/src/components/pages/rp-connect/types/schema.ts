@@ -18,28 +18,6 @@ export type KnownConnectComponentStatus = (typeof CONNECT_COMPONENT_STATUS)[numb
 
 export type ConnectComponentStatus = (typeof CONNECT_COMPONENT_STATUS)[number] | (string & {});
 
-export const COMPONENT_CATEGORIES = {
-  // Infrastructure
-  DATABASES: 'databases',
-  MESSAGING: 'messaging',
-  STORAGE: 'storage',
-  API: 'api',
-
-  // Cloud Providers
-  AWS: 'aws',
-  GCP: 'gcp',
-  AZURE: 'azure',
-  CLOUD: 'cloud',
-
-  // Data Formats
-  EXPORT: 'export',
-  // Other
-  TRANSFORMATION: 'transformation',
-  MONITORING: 'monitoring',
-} as const;
-
-export type ComponentCategory = (typeof COMPONENT_CATEGORIES)[keyof typeof COMPONENT_CATEGORIES]; // Categorizes the primary function of a Benthos component within a pipeline.
-
 export const CONNECT_COMPONENT_TYPE = [
   // Buffers messages, often used between inputs/outputs and processing stages
   // to decouple components, absorb temporary load spikes, or ensure message persistence.
