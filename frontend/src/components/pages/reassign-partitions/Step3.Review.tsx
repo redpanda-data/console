@@ -198,15 +198,15 @@ export class StepReview extends Component<{
 
         return {
           ...p,
-          totalTraffic: totalTraffic,
-          potentialBandwidth: potentialBandwidth,
-          estimatedTimeSec: estimatedTimeSec,
+          totalTraffic,
+          potentialBandwidth,
+          estimatedTimeSec,
         };
       });
 
       return {
         ...t,
-        partitionStats: partitionStats,
+        partitionStats,
       };
     });
     const estimatedTimeSec = trafficStats.sum((t) => t.partitionStats.sum((p) => p.estimatedTimeSec));

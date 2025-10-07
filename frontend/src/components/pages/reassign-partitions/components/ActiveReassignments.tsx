@@ -536,28 +536,28 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
           // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.warn(
             "active reassignments, traffic limit: skipping partition because old or new brokers can't be found",
-            { state: state }
+            { state }
           );
           continue;
         }
 
         // leader throttling is applied to all sources (all brokers that have a replica of this partition)
         for (const sourceBroker of brokersOld) {
-          leaderReplicas.push({ partitionId: partitionId, brokerId: sourceBroker });
+          leaderReplicas.push({ partitionId, brokerId: sourceBroker });
         }
 
         // follower throttling is applied only to target brokers that do not yet have a copy
         const newBrokers = brokersNew.except(brokersOld);
         for (const targetBroker of newBrokers) {
-          followerReplicas.push({ partitionId: partitionId, brokerId: targetBroker });
+          followerReplicas.push({ partitionId, brokerId: targetBroker });
         }
       }
 
       api.setThrottledReplicas([
         {
           topicName: state.topicName,
-          leaderReplicas: leaderReplicas,
-          followerReplicas: followerReplicas,
+          leaderReplicas,
+          followerReplicas,
         },
       ]);
     } else {
@@ -595,7 +595,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       const response = await api.startPartitionReassignment(cancelRequest);
 
       // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.log('cancel reassignment result', { request: cancelRequest, response: response });
+      console.log('cancel reassignment result', { request: cancelRequest, response });
 
       toast.update(toastRef, {
         status: 'success',

@@ -845,7 +845,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       partitionId: partitionID,
       startOffset: offset,
       startTimestamp: 0,
-      topicName: topicName,
+      topicName,
       includeRawPayload: true,
       ignoreSizeLimit: true,
       keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,

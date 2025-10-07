@@ -51,8 +51,8 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
     const updateRequest = create(UpdateUserRequestSchema, {
       user: {
         name: userName,
-        mechanism: mechanism,
-        password: password,
+        mechanism,
+        password,
       },
     });
     try {

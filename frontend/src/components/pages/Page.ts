@@ -30,7 +30,7 @@ export class PageInitHelper {
     uiState.pageTitle = title;
   }
   addBreadcrumb(title: string, to: string, heading?: string, options?: BreadcrumbOptions) {
-    uiState.pageBreadcrumbs.push({ title: title, linkTo: to, heading, options });
+    uiState.pageBreadcrumbs.push({ title, linkTo: to, heading, options });
   }
 }
 export abstract class PageComponent<TRouteParams = NoRouteParams> extends React.Component<PageProps<TRouteParams>> {

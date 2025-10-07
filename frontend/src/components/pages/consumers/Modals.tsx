@@ -686,8 +686,8 @@ export class EditOffsetsModal extends Component<{
         .filter((t) => t.partitions.length > 0);
       if (errors.length > 0) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error('apply offsets, backend errors', { errors: errors, request: topics });
-        throw { errors: errors, request: topics };
+        console.error('apply offsets, backend errors', { errors, request: topics });
+        throw { errors, request: topics };
       }
 
       toast.update(toastRef, {
@@ -990,9 +990,9 @@ export class DeleteOffsetsModal extends Component<{
                       // biome-ignore lint/suspicious/noConsole: intentional console usage
                       console.error('backend returned errors for deleteOffsets', {
                         request: deleteRequest,
-                        errors: errors,
+                        errors,
                       });
-                      throw { request: deleteRequest, errors: errors };
+                      throw { request: deleteRequest, errors };
                     }
                   }
 

@@ -87,7 +87,7 @@ const addProp = (key: string, value: any) => {
   }
   key = key.removePrefix('REACT_APP_CONSOLE_').removePrefix('REACT_APP_');
   envVarDebugObj[key] = value;
-  envVarDebugAr.push({ name: key, value: value });
+  envVarDebugAr.push({ name: key, value });
 };
 // - add env vars
 for (const k in env) {

@@ -660,20 +660,20 @@ class ReassignPartitions extends PageComponent {
 
         // leader throttling is applied to all sources (all brokers that have a replica of this partition)
         for (const sourceBroker of brokersOld) {
-          leaderReplicas.push({ partitionId: partitionId, brokerId: sourceBroker });
+          leaderReplicas.push({ partitionId, brokerId: sourceBroker });
         }
 
         // follower throttling is applied only to target brokers that do not yet have a copy
         const newBrokers = brokersNew.except(brokersOld);
         for (const targetBroker of newBrokers) {
-          followerReplicas.push({ partitionId: partitionId, brokerId: targetBroker });
+          followerReplicas.push({ partitionId, brokerId: targetBroker });
         }
       }
 
       topicReplicas.push({
         topicName: t.topicName,
-        leaderReplicas: leaderReplicas,
-        followerReplicas: followerReplicas,
+        leaderReplicas,
+        followerReplicas,
       });
     }
 

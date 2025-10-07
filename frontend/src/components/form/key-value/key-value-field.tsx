@@ -94,7 +94,7 @@ const KeyValuePairField = ({ index, ...rest }: KeyValuePairFieldProps) => {
     const updatedLabels = [...parentField.state.value];
     updatedLabels[index] = {
       ...updatedLabels[index],
-      value: value,
+      value,
     };
     parentField.handleChange(updatedLabels);
   };

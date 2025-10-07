@@ -796,8 +796,8 @@ const apiStore = {
           } else {
             errors.push({
               topicName: t.topicName,
-              partitionErrors: partitionErrors,
-              waterMarkErrors: waterMarkErrors,
+              partitionErrors,
+              waterMarkErrors,
             });
           }
         }
@@ -1143,8 +1143,8 @@ const apiStore = {
     topics: EditConsumerGroupOffsetsTopic[]
   ): Promise<EditConsumerGroupOffsetsResponseTopic[]> {
     const request: EditConsumerGroupOffsetsRequest = {
-      groupId: groupId,
-      topics: topics,
+      groupId,
+      topics,
     };
 
     const response = await appConfig.fetch(`${appConfig.restBasePath}/consumer-groups/${encodeURIComponent(groupId)}`, {
@@ -1162,8 +1162,8 @@ const apiStore = {
     topics: DeleteConsumerGroupOffsetsTopic[]
   ): Promise<DeleteConsumerGroupOffsetsResponseTopic[]> {
     const request: DeleteConsumerGroupOffsetsRequest = {
-      groupId: groupId,
-      topics: topics,
+      groupId,
+      topics,
     };
 
     const response = await appConfig.fetch(
@@ -1835,7 +1835,7 @@ const apiStore = {
       {
         method: 'PUT',
         headers: [['Content-Type', 'application/json']],
-        body: JSON.stringify({ config: config }),
+        body: JSON.stringify({ config }),
       }
     );
     return parseOrUnwrap<void>(response, null);
@@ -1890,8 +1890,8 @@ const apiStore = {
         method: 'POST',
         headers: [['Content-Type', 'application/json']],
         body: JSON.stringify({
-          connectorName: connectorName,
-          config: config,
+          connectorName,
+          config,
         }),
       }
     );
@@ -2344,7 +2344,7 @@ export const rolesApi = observable({
 
     return await client.updateRoleMembership({
       request: {
-        roleName: roleName,
+        roleName,
         add: addUsers.map((u) => ({ principal: `User:${u}` })),
         remove: removeUsers.map((u) => ({ principal: `User:${u}` })),
         create,
@@ -2395,7 +2395,7 @@ export const pipelinesApi = observable({
       throw new Error('pipelines client is not initialized');
     }
 
-    await client.deletePipeline({ request: { id: id } });
+    await client.deletePipeline({ request: { id } });
   },
   async createPipeline(pipeline: PipelineCreate) {
     const client = appConfig.pipelinesClient;
@@ -2615,8 +2615,8 @@ export const rpcnSecretManagerApi = observable({
       request: create(GetPipelinesBySecretsRequestSchemaDataPlane),
     });
     return pipelinesBySecrets.response?.pipelinesForSecret.map(({ secretId, pipelines }) => ({
-      secretId: secretId,
-      pipelines: pipelines,
+      secretId,
+      pipelines,
     }));
   },
 });

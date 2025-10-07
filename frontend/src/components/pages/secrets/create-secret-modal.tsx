@@ -69,7 +69,7 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
   };
 
   const formOpts = formOptions({
-    defaultValues: defaultValues,
+    defaultValues,
     validators: {
       onChange: finalSchema,
     },

@@ -90,10 +90,10 @@ function findByCallback(
   returnFirstResult: boolean
 ): any[] {
   const ctx: PropertySearchContext = {
-    isMatch: isMatch,
+    isMatch,
     currentPath: [],
     results: [],
-    returnFirstResult: returnFirstResult,
+    returnFirstResult,
   };
 
   findElement(ctx, obj);
@@ -167,7 +167,7 @@ function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, ret
     isMatch: isPatternMatch,
     pattern: patternObj,
     results: [],
-    returnFirstResult: returnFirstResult,
+    returnFirstResult,
   };
 
   findObject(ctx, obj);
@@ -208,7 +208,7 @@ function findElement(ctx: PropertySearchContext, obj: any): boolean {
 
       if (isMatch) {
         const clonedPath = Object.assign([], ctx.currentPath);
-        ctx.results.push({ propertyName: key, path: clonedPath, value: value });
+        ctx.results.push({ propertyName: key, path: clonedPath, value });
 
         if (ctx.returnFirstResult) {
           return true;

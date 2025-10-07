@@ -67,7 +67,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
     try {
       await updateMembership(
         create(UpdateRoleMembershipRequestSchema, {
-          roleName: roleName,
+          roleName,
           add: [{ principal: `User:${newUserName.trim()}` }],
           remove: [],
           create: true,
@@ -91,7 +91,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
     try {
       await updateMembership(
         create(UpdateRoleMembershipRequestSchema, {
-          roleName: roleName,
+          roleName,
           add: [],
           remove: [{ principal: userPrincipal }],
           create: false,

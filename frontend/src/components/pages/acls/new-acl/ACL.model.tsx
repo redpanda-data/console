@@ -465,8 +465,8 @@ export function convertRulesToCreateACLRequests(rules: Rule[], principal: string
     if (r.mode === ModeAllowAll) {
       const a: CreateACLRequest = {
         ...baseRule,
-        host: host,
-        principal: principal,
+        host,
+        principal,
         resourceType: getGRPCResourceType(r.resourceType),
         operation: ACL_Operation.ALL,
         permissionType: ACL_PermissionType.ALLOW,
@@ -476,8 +476,8 @@ export function convertRulesToCreateACLRequests(rules: Rule[], principal: string
     if (r.mode === ModeDenyAll) {
       const a: CreateACLRequest = {
         ...baseRule,
-        host: host,
-        principal: principal,
+        host,
+        principal,
         resourceType: getGRPCResourceType(r.resourceType),
         operation: ACL_Operation.ALL,
         permissionType: ACL_PermissionType.DENY,
@@ -489,8 +489,8 @@ export function convertRulesToCreateACLRequests(rules: Rule[], principal: string
         if (value !== OperationTypeNotSet) {
           acc.push({
             ...baseRule,
-            host: host,
-            principal: principal,
+            host,
+            principal,
             resourceType: getGRPCResourceType(r.resourceType),
             operation: getGRPCOperationType(op),
             permissionType: getGRPCPermissionType(value),

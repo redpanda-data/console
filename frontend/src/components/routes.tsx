@@ -342,7 +342,7 @@ function routeVisibility(
 
     return {
       visible: v,
-      disabledReasons: disabledReasons,
+      disabledReasons,
     };
   };
 }

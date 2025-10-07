@@ -835,9 +835,9 @@ export class ConnectorPropertiesStore {
         const value: any = initialValue ?? defaultValue;
 
         const property = observable({
-          name: name,
+          name,
           entry: p,
-          value: value,
+          value,
           isHidden: hiddenProperties.includes(name),
           errors: p.value.errors ?? [],
           lastErrors: [],

@@ -516,7 +516,7 @@
         // Require consistent accessibility modifiers on class properties and methods.
         "useConsistentMemberAccessibility": "error",
         // Require the consistent declaration of object literals. Defaults to explicit definitions.
-        "useConsistentObjectDefinitions": "off",
+        "useConsistentObjectDefinitions": "error",
         // Require const declarations for variables that are only assigned once.
         "useConst": "off",
         // Enforce default function parameters and optional function parameters to be last.

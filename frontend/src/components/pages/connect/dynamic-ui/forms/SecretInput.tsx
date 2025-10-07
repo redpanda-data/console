@@ -37,7 +37,7 @@ export const SecretInput = observer(({ value, onChange, updating = false }: Secr
   const localState = useLocalObservable(() => ({
     canEdit: !updating,
     initialValue: value,
-    value: value,
+    value,
     clear() {
       this.value = '';
     },

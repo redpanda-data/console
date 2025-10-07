@@ -717,7 +717,7 @@ class KnowledgeBaseCreate extends PageComponent {
       const userRequest = create(CreateUserRequestSchema, {
         user: create(CreateUserRequest_UserSchema, {
           name: username,
-          password: password,
+          password,
           mechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
         }),
       });

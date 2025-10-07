@@ -222,7 +222,7 @@ export const Label = (p: {
 
   const newChild = Object.assign({}, child) as any;
   newChild.props = {};
-  Object.assign(newChild.props, (child as any).props, { id: id });
+  Object.assign(newChild.props, (child as any).props, { id });
 
   const divStyle = p.style ? { ...p.style, ...style_flexColumn } : p.style;
 
@@ -297,7 +297,7 @@ export const InfoText = (p: {
   const icon = (
     <span
       style={{
-        color: color,
+        color,
         display: 'inline-flex',
         boxSizing: 'content-box',
         width: size,

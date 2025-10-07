@@ -20,7 +20,7 @@ describe('TopicConfiguration', () => {
       'Schema Registry and Validation',
     ].map((category) => ({
       name: 'test.option',
-      category: category,
+      category,
       value: '',
       source: '',
       type: 'STRING',

@@ -357,7 +357,7 @@ const registerSecretsAutocomplete = async (
         label: `{secrets.${secret.id}}`,
         kind: monaco.languages.CompletionItemKind.Variable,
         insertText: `{secrets.${secret.id}}`,
-        range: range,
+        range,
       }));
       return {
         suggestions: completeItems,

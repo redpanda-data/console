@@ -633,10 +633,10 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
   const deleteACLsForPrincipal = async (principal: string, host: string) => {
     const deleteRequest: DeleteACLsRequest = create(DeleteACLsRequestSchema, {
       filter: {
-        principal: principal,
+        principal,
         resourceType: ACL_ResourceType.ANY,
         resourceName: undefined,
-        host: host,
+        host,
         operation: ACL_Operation.ANY,
         permissionType: ACL_PermissionType.ANY,
         resourcePatternType: ACL_ResourcePatternType.ANY,

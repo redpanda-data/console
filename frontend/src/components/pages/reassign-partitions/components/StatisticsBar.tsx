@@ -95,7 +95,7 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
         continue;
       }
       const relevantPartitions = partitions.filter((p) => this.props.partitionSelection[topic].includes(p.id));
-      ar.push({ topic: topic, partitions: relevantPartitions });
+      ar.push({ topic, partitions: relevantPartitions });
     }
     return ar;
   }

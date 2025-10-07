@@ -281,7 +281,7 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
       partitionId: partitionID,
       startOffset: offset,
       startTimestamp: 0,
-      topicName: topicName,
+      topicName,
       includeRawPayload: true,
       ignoreSizeLimit: true,
       keyDeserializer: PayloadEncoding.UNSPECIFIED,
@@ -402,7 +402,7 @@ function executeMessageSearch(search: MessageSearch, topicName: string, pipeline
   startTime.setHours(startTime.getHours() - lastXHours);
 
   const request = {
-    topicName: topicName,
+    topicName,
     partitionId: -1,
 
     startOffset: PartitionOffsetOrigin.Timestamp,

@@ -42,7 +42,7 @@ export function partitionSelectionToTopicPartitions(
 
       // we've checked that there can't be any falsy partitions
       // so we assert that 'relevantPartitions' is the right type
-      ar.push({ topic: topic, partitions: relevantPartitions as Partition[] });
+      ar.push({ topic, partitions: relevantPartitions as Partition[] });
     }
   }
 
@@ -108,15 +108,15 @@ export function computeMovedReplicas(
         brokersAfter: newBrokers ?? [],
         numAddedBrokers: added,
         numRemovedBrokers: removed,
-        changedLeader: changedLeader,
-        anyChanges: anyChanges,
+        changedLeader,
+        anyChanges,
       });
     }
 
     ar.push({
-      topicName: topicName,
-      topic: topic,
-      allPartitions: allPartitions,
+      topicName,
+      topic,
+      allPartitions,
       selectedPartitions: partitionsWithMoves,
     });
   }
@@ -213,9 +213,9 @@ export function topicAssignmentsToReassignmentRequest(
         }
       }
 
-      topics.push({ topicName: t, partitions: partitions });
+      topics.push({ topicName: t, partitions });
     }
   }
 
-  return { topics: topics };
+  return { topics };
 }

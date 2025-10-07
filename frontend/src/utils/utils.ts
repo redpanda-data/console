@@ -240,7 +240,7 @@ export function collectElements(
   returnFirstMatch: boolean
 ): FoundProperty[] {
   const ctx: PropertySearchExContext = {
-    isMatch: isMatch,
+    isMatch,
     currentPath: [],
     results: [],
     returnFirstResult: returnFirstMatch,
@@ -259,7 +259,7 @@ function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): Prope
 
       if (isMatch) {
         const clonedPath = Object.assign([], ctx.currentPath);
-        ctx.results.push({ propertyName: key, path: clonedPath, value: value });
+        ctx.results.push({ propertyName: key, path: clonedPath, value });
 
         if (ctx.returnFirstResult) {
           return 'abort';
@@ -340,7 +340,7 @@ export function collectElements2(
 
               targetList.push({
                 path: [...foundProp.path, key],
-                value: value,
+                value,
               });
             }
           }
@@ -359,7 +359,7 @@ export function collectElements2(
               if (match) {
                 targetList.push({
                   path: [...foundProp.path, key],
-                  value: value,
+                  value,
                 });
               }
             }

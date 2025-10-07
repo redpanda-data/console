@@ -87,7 +87,7 @@ function computeReassignments(
   for (const t of selectedTopicPartitions) {
     resultAssignments[t.topic.topicName] = {};
     for (const partition of t.partitions) {
-      resultAssignments[t.topic.topicName][partition.id] = { partition: partition, brokers: [] };
+      resultAssignments[t.topic.topicName][partition.id] = { partition, brokers: [] };
     }
   }
 
@@ -670,10 +670,10 @@ function calcRange<T>(
   const range = maxVal - minVal;
 
   return {
-    range: range,
-    min: min,
+    range,
+    min,
     minValue: minVal,
-    max: max,
+    max,
     maxValue: maxVal,
   };
 }

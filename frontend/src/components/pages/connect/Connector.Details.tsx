@@ -669,7 +669,7 @@ const LogsTab = observer(
         partitionId: partitionID,
         startOffset: offset,
         startTimestamp: 0,
-        topicName: topicName,
+        topicName,
         includeRawPayload: true,
         ignoreSizeLimit: true,
         keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
@@ -796,7 +796,7 @@ function executeMessageSearch(search: MessageSearch, topicName: string, connecto
   startTime.setHours(startTime.getHours() - lastXHours);
 
   const request = {
-    topicName: topicName,
+    topicName,
     partitionId: -1,
 
     startOffset: PartitionOffsetOrigin.Timestamp,

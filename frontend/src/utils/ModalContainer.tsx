@@ -29,8 +29,8 @@ export function openModal<P extends object>(
 
   const element = React.createElement(component, p as any, []);
   modals.push({
-    element: element,
-    id: id,
+    element,
+    id,
   });
 }
 

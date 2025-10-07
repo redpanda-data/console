@@ -516,7 +516,7 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
         resourceName,
         resourcePatternType,
 
-        operation: operation,
+        operation,
         permissionType: permission,
       };
       flat.push(e);
@@ -563,7 +563,7 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
         resourceName,
         resourcePatternType,
 
-        operation: operation,
+        operation,
         permissionType: permission,
       };
       flat.push(e);
@@ -610,7 +610,7 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
         resourceName,
         resourcePatternType,
 
-        operation: operation,
+        operation,
         permissionType: permission,
       };
       flat.push(e);
@@ -645,7 +645,7 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
         resourceName: 'kafka-cluster',
         resourcePatternType: 'Literal',
 
-        operation: operation,
+        operation,
         permissionType: permission,
       };
       flat.push(e);
