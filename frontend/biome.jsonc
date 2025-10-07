@@ -500,7 +500,7 @@
         // Disallow Array constructors.
         "useArrayLiterals": "error",
         // Enforce the use of as const over literal type and type annotation.
-        "useAsConstAssertion": "off",
+        "useAsConstAssertion": "error",
         // Use at() instead of integer index access.
         "useAtIndex": "off",
         // Requires following curly brace conventions.
