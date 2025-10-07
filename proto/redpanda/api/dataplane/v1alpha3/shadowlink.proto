@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha3;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/core/admin/v2/shadow_link.proto";
+
+message FailOverResponse {}
+
+service ShadowLinkService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Shadow Links (Dataplane)"
+    description: "Dataplane operations for Redpanda shadow links."
+  };
+
+  rpc FailOver(core.admin.v2.FailOverRequest) returns (FailOverResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha3/shadowlink/{name}/failover"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Fail Over Shadow Link"
+      description: "Fail over a shadow link or a specific shadow topic within a link."
+      responses: {
+        key: "200"
+        value: {
+          description: "Failover completed"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.FailOverResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_ADMIN
+    };
+  }
+}

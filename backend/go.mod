@@ -5,6 +5,7 @@ go 1.25.1
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.9-20250912141014-52f32327d4b0.1
 	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.9-20250904135917-9feeb2588236.1
+	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.9-20250903131725-492a4ada6956.1
 	buf.build/go/protovalidate v1.0.0
 	connectrpc.com/connect v1.18.1
 	connectrpc.com/grpcreflect v1.3.0
@@ -41,7 +42,7 @@ require (
 	github.com/redpanda-data/benthos/v4 v4.56.0
 	github.com/redpanda-data/common-go/api v0.0.0-20250913225531-ce670c336046
 	github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7
-	github.com/redpanda-data/common-go/rpadmin v0.1.16
+	github.com/redpanda-data/common-go/rpadmin v0.1.17-0.20250918052456-493894730cb7
 	github.com/redpanda-data/common-go/rpsr v0.1.2
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/stretchr/testify v1.11.1
@@ -72,6 +73,7 @@ require (
 )
 
 require (
+	buf.build/gen/go/redpandadata/core/connectrpc/go v1.18.1-20250903131725-492a4ada6956.1 // indirect
 	cel.dev/expr v0.24.0 // indirect
 	cuelang.org/go v0.14.1 // indirect
 	dario.cat/mergo v1.0.2 // indirect
