@@ -50,7 +50,7 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
   });
 
   const allTopics = topics.data?.topics?.map((x) => x.topicName) ?? [];
-  const matchingTopics = state.isRegex
+  const _matchingTopics = state.isRegex
     ? allTopics.filter((t) => {
         try {
           const regex = new RegExp(String(state.property.value));

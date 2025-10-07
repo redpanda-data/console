@@ -1,3 +1,4 @@
+import { ConnectError } from '@connectrpc/connect';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { config } from 'config';
 import type {
@@ -7,6 +8,12 @@ import type {
   SchemaRegistrySubjectDetails,
   SchemaVersion,
 } from 'state/restInterfaces';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+
+// Stale time constants for consistent cache behavior
+// const STALE_TIME_SHORT = 10_000; // 10 seconds
+const STALE_TIME_MEDIUM = 30_000; // 30 seconds
+// const STALE_TIME_LONG = 60_000; // 60 seconds
 
 export const useListSchemasQuery = () => {
   return useQuery<SchemaRegistrySubject[]>({
@@ -109,7 +116,7 @@ export const useSchemaDetailsQuery = (subjectName: string, options?: { enabled?:
 
       return response.json();
     },
-    staleTime: 30000, // Cache for 30 seconds
+    staleTime: STALE_TIME_MEDIUM,
     refetchOnMount: true,
     enabled: options?.enabled !== false,
   });
@@ -130,13 +137,22 @@ export const useUpdateGlobalCompatibilityMutation = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update global compatibility mode');
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to update global compatibility mode');
       }
 
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'compatibility'] });
+      queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'compatibility'], exact: false });
+    },
+    onError: (error) => {
+      const connectError = ConnectError.from(error);
+      return formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'update',
+        entity: 'global compatibility mode',
+      });
     },
   });
 };
@@ -162,7 +178,8 @@ export const useUpdateSubjectCompatibilityMutation = () => {
         );
 
         if (!response.ok) {
-          throw new Error('Failed to reset subject compatibility mode to default');
+          const errorText = await response.text();
+          throw new Error(errorText || 'Failed to reset subject compatibility mode to default');
         }
 
         return response.json();
@@ -178,13 +195,22 @@ export const useUpdateSubjectCompatibilityMutation = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update subject compatibility mode');
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to update subject compatibility mode');
       }
 
       return response.json();
     },
     onSuccess: (_, { subjectName }) => {
-      queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'] });
+      queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'], exact: false });
+    },
+    onError: (error) => {
+      const connectError = ConnectError.from(error);
+      return formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'update',
+        entity: 'subject compatibility mode',
+      });
     },
   });
 };
@@ -199,7 +225,15 @@ export const useDeleteSchemaMutation = () => {
     },
     onSuccess: async () => {
       // Only invalidate subjects list, not mode/compatibility
-      await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects'] });
+      await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects'], exact: false });
+    },
+    onError: (error) => {
+      const connectError = ConnectError.from(error);
+      return formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'delete',
+        entity: 'schema',
+      });
     },
   });
 };
@@ -261,15 +295,23 @@ export const useCreateSchemaMutation = () => {
       );
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Failed to create schema');
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to create schema');
       }
 
       return response.json();
     },
     onSuccess: (_, { subjectName }) => {
-      queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects'] });
-      queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'] });
+      queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'], exact: false });
+    },
+    onError: (error) => {
+      const connectError = ConnectError.from(error);
+      return formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'create',
+        entity: 'schema',
+      });
     },
   });
 };
@@ -354,7 +396,7 @@ export const useSchemaReferencedByQuery = (subjectName: string, version: number,
         return true;
       });
     },
-    staleTime: 30000,
+    staleTime: STALE_TIME_MEDIUM,
     refetchOnMount: true,
     enabled: options?.enabled !== false,
   });
@@ -377,13 +419,24 @@ export const useDeleteSchemaVersionMutation = () => {
       );
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Failed to delete schema version');
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to delete schema version');
       }
     },
     onSuccess: async (_, { subjectName }) => {
-      await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects'] });
-      await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'] });
+      await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects'], exact: false });
+      await queryClient.invalidateQueries({
+        queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
+        exact: false,
+      });
+    },
+    onError: (error) => {
+      const connectError = ConnectError.from(error);
+      return formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'delete',
+        entity: 'schema version',
+      });
     },
   });
 };
@@ -420,7 +473,7 @@ export const useSchemaUsagesByIdQuery = (schemaId: number | null) => {
 
       return data;
     },
-    staleTime: 30000, // Cache for 30 seconds
+    staleTime: STALE_TIME_MEDIUM,
     enabled: schemaId !== null,
   });
 };

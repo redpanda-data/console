@@ -53,17 +53,9 @@ const SchemaNotConfiguredPage: FC = () => {
 const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName: subjectNameEncoded }) => {
   const subjectName = subjectNameEncoded ? decodeURIComponent(subjectNameEncoded) : undefined;
 
-  const { data: schemaMode, isLoading: isModeLoading, refetch: refetchMode } = useSchemaModeQuery();
-  const {
-    data: schemaCompatibility,
-    isLoading: isCompatibilityLoading,
-    refetch: refetchCompatibility,
-  } = useSchemaCompatibilityQuery();
-  const {
-    data: schemaDetails,
-    isLoading: isDetailsLoading,
-    refetch: refetchDetails,
-  } = useSchemaDetailsQuery(subjectName || '', {
+  const { data: schemaMode, isLoading: isModeLoading } = useSchemaModeQuery();
+  const { data: schemaCompatibility, isLoading: isCompatibilityLoading } = useSchemaCompatibilityQuery();
+  const { data: schemaDetails, isLoading: isDetailsLoading } = useSchemaDetailsQuery(subjectName || '', {
     enabled: !!subjectName,
   });
 
@@ -86,13 +78,7 @@ const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName
         linkTo: '/schema-registry/edit-compatibility',
       });
     }
-
-    appGlobal.onRefresh = () => {
-      refetchMode();
-      refetchCompatibility();
-      if (subjectName) refetchDetails();
-    };
-  }, [subjectName, refetchMode, refetchCompatibility, refetchDetails]);
+  }, [subjectName]);
 
   if (api.schemaOverviewIsConfigured === false) {
     return <SchemaNotConfiguredPage />;
