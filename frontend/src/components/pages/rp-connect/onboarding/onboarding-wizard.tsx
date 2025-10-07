@@ -133,13 +133,13 @@ export const ConnectOnboardingWizard = () => {
 
   return (
     <PageContent>
-      <Stepper.Provider className="space-y-4" initialStep={initialStep}>
+      <Stepper.Provider className="space-y-2" initialStep={initialStep}>
         {({ methods }) => {
           const isCurrentStepLoading = getCurrentStepLoading(methods.current.id);
 
           return (
-            <div className="flex flex-col gap-8 relative">
-              <div className="flex flex-col gap-8 pt-6 h-full">
+            <div className="flex flex-col gap-6 relative">
+              <div className="flex flex-col gap-6 pt-4 h-full">
                 <div className="flex flex-col space-y-2 text-center">
                   <Stepper.Navigation>
                     {stepDefinitions.map((step) => (
@@ -158,6 +158,7 @@ export const ConnectOnboardingWizard = () => {
                       defaultConnectionType={persistedConnector.input?.connectionType}
                       ref={addInputStepRef}
                       title="Send data to your pipeline"
+                      tileWrapperClassName="min-h-[300px] max-h-[40vh]"
                     />
                   ),
                   [WizardStep.ADD_OUTPUT]: () => (
@@ -168,6 +169,7 @@ export const ConnectOnboardingWizard = () => {
                       defaultConnectionType={persistedConnector.output?.connectionType}
                       ref={addOutputStepRef}
                       title="Read data from your pipeline"
+                      tileWrapperClassName="min-h-[300px] max-h-[40vh]"
                     />
                   ),
                   // TODO add persisted data to both steps
