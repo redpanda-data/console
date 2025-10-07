@@ -1,143 +1,23 @@
-// Copyright 2025 Redpanda Data, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 syntax = "proto3";
 
 package redpanda.api.dataplane.v1alpha3;
-
 
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
 import "redpanda/core/admin/v2/shadow_link.proto";
 
+message FailOverResponse {}
 
 service ShadowLinkService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
-    name: "Shadow Links"
-    description: "Manage Redpanda shadow links for disaster recovery and failover."
+    name: "Shadow Links (Dataplane)"
+    description: "Dataplane operations for Redpanda shadow links."
   };
 
-  rpc CreateShadowLink(core.admin.v2.CreateShadowLinkRequest) returns (core.admin.v2.CreateShadowLinkResponse) {
+  rpc FailOver(core.admin.v2.FailOverRequest) returns (FailOverResponse) {
     option (google.api.http) = {
-      post: "/v1alpha3/shadow-links"
-      body: "shadow_link"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Create Shadow Link"
-      description: "Create a new shadow link to replicate topics from a source cluster."
-      responses: {
-        key: "201"
-        value: {
-          description: "Shadow link created"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.CreateShadowLinkResponse"}
-          }
-        }
-      }
-    };
-    option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_EDIT
-      api: API_REDPANDA_ADMIN
-    };
-  }
-
-  rpc GetShadowLink(core.admin.v2.GetShadowLinkRequest) returns (core.admin.v2.GetShadowLinkResponse) {
-    option (google.api.http) = {get: "/v1alpha3/shadow-links/{name}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Get Shadow Link"
-      description: "Retrieve details of a specific shadow link by name."
-      responses: {
-        key: "200"
-        value: {
-          description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.GetShadowLinkResponse"}
-          }
-        }
-      }
-    };
-    option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_VIEW
-      api: API_REDPANDA_ADMIN
-    };
-  }
-
-  rpc ListShadowLinks(core.admin.v2.ListShadowLinksRequest) returns (core.admin.v2.ListShadowLinksResponse) {
-    option (google.api.http) = {get: "/v1alpha3/shadow-links"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "List Shadow Links"
-      description: "List all shadow links in the cluster."
-      responses: {
-        key: "200"
-        value: {
-          description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListShadowLinksResponse"}
-          }
-        }
-      }
-    };
-    option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_VIEW
-      api: API_REDPANDA_ADMIN
-    };
-  }
-
-  rpc UpdateShadowLink(core.admin.v2.UpdateShadowLinkRequest) returns (core.admin.v2.UpdateShadowLinkResponse) {
-    option (google.api.http) = {
-      patch: "/v1alpha3/shadow-links/{shadow_link.name}"
-      body: "shadow_link"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Update Shadow Link"
-      description: "Update an existing shadow link configuration."
-      responses: {
-        key: "200"
-        value: {
-          description: "Shadow link updated"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.UpdateShadowLinkResponse"}
-          }
-        }
-      }
-    };
-    option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_EDIT
-      api: API_REDPANDA_ADMIN
-    };
-  }
-
-  rpc DeleteShadowLink(core.admin.v2.DeleteShadowLinkRequest) returns (core.admin.v2.DeleteShadowLinkResponse) {
-    option (google.api.http) = {delete: "/v1alpha3/shadow-links/{name}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Delete Shadow Link"
-      description: "Delete a shadow link by name."
-      responses: {
-        key: "204"
-        value: {description: "Shadow link deleted"}
-      }
-    };
-    option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_EDIT
-      api: API_REDPANDA_ADMIN
-    };
-  }
-
-  rpc FailOver(core.admin.v2.FailOverRequest) returns (core.admin.v2.FailOverResponse) {
-    option (google.api.http) = {
-      post: "/v1alpha3/shadow-links/{name}/failover"
+      post: "/v1alpha3/shadowlink/{name}/failover"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -146,9 +26,9 @@ service ShadowLinkService {
       responses: {
         key: "200"
         value: {
-          description: "Failover initiated"
+          description: "Failover completed"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.FailOverShadowLinkResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.FailOverResponse"}
           }
         }
       }
