@@ -273,19 +273,19 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
   // Filter options based on search term
   const filteredOptions = topicOptions.slice(0, 50); // Limit to 50 for performance
 
-  const formatOptionLabel = (option: any) => (
+  const formatOptionLabel = (option: { value: string; label: string }) => (
     <div>
       <div>{option.label}</div>
     </div>
   );
 
-  const handleInputChange = (inputValue: string, { action }: any) => {
+  const handleInputChange = (inputValue: string, { action }: { action: string }) => {
     if (action === 'input-change') {
       setSearchTerm(inputValue);
     }
   };
 
-  const handleKeyDown = (event: any) => {
+  const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && searchTerm && !topicOptions.find((opt) => opt.value === searchTerm)) {
       // Add the search term as a new option (likely a regex pattern)
       const newTopics = [...selectedTopics, searchTerm];
@@ -521,7 +521,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
   @observable query = '';
   @observable topN = 10;
   @observable isQueryLoading = false;
-  @observable retrievalResults: any[] = [];
+  @observable retrievalResults: unknown[] = [];
   @observable chatResponse = '';
   @observable chatLoadingPhase: 'retrieving' | 'thinking' = 'retrieving';
 
@@ -680,10 +680,10 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
     }
   }
 
-  updateFormData = (path: string, value: any) => {
+  updateFormData = (path: string, value: unknown) => {
     // Simple path-based updates - we can make this more sophisticated later
     const keys = path.split('.');
-    let current: any = this.formData;
+    let current: Record<string, unknown> = this.formData as Record<string, unknown>;
 
     for (let i = 0; i < keys.length - 1; i++) {
       if (!current[keys[i]]) {
@@ -797,7 +797,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
         if (meta.isRequired) {
           // Convert protobuf field name (display_name) to TypeScript property name (displayName)
           const camelCaseFieldName = this.protobufFieldToCamelCase(protoFieldName);
-          const value = (this.formData as any)[camelCaseFieldName];
+          const value = (this.formData as Record<string, unknown>)[camelCaseFieldName];
 
           if (!value || (typeof value === 'string' && !value.trim())) {
             errors[camelCaseFieldName] = `${meta.name.replace(/_/g, ' ')} is required`;

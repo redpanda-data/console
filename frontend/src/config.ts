@@ -77,7 +77,7 @@ export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => a
     if (error instanceof ConnectError && error.code === Code.FailedPrecondition) {
       for (const detail of error.details) {
         // TODO fix type checks for IncomingDetail, BE should provide types for debug field
-        const detailWithDebug = detail as any;
+        const detailWithDebug = detail as { type?: string; debug?: { reason?: string } };
         if (
           detailWithDebug?.type &&
           detailWithDebug?.debug &&

@@ -78,7 +78,7 @@ export const PartitionStatus = observer((p: { status: PartitionTransformStatus_P
 class TransformsList extends PageComponent {
   @observable placeholder = 5;
 
-  constructor(p: any) {
+  constructor(p: Record<string, never>) {
     super(p);
     makeObservable(this);
   }

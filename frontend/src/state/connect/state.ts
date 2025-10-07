@@ -51,7 +51,7 @@ export type UpdatingConnectorData = { clusterName: string; connectorName: string
 export type RestartingTaskData = { clusterName: string; connectorName: string; taskId: number };
 
 class CustomError extends Error {
-  constructor(message: any) {
+  constructor(message: string) {
     super(message);
     this.name = this.constructor.name;
   }
@@ -89,7 +89,7 @@ export class SecretCreationError extends CustomError {}
  * if (p.definition.type == DataType.Boolean && value == null) value = false;
  */
 
-const sanitizeBoolean = (val: any) => {
+const sanitizeBoolean = (val: unknown) => {
   if (typeof val === 'boolean') {
     return val;
   }
@@ -106,12 +106,12 @@ const sanitizeBoolean = (val: any) => {
   return false;
 };
 
-const sanitizeNumber = (val: any) => {
-  const n = Number.parseFloat(val);
+const sanitizeNumber = (val: unknown) => {
+  const n = Number.parseFloat(String(val));
   return Number.isFinite(n) ? n : null;
 };
 
-function sanitizeDefaultValue(value: any, type: any) {
+function sanitizeDefaultValue(value: unknown, type: string) {
   switch (type) {
     case DataType.Boolean:
       return sanitizeBoolean(value);
@@ -124,7 +124,7 @@ function sanitizeDefaultValue(value: any, type: any) {
   }
 }
 
-function sanitizeValue(value: any, type: any) {
+function sanitizeValue(value: unknown, type: string) {
   switch (type) {
     case DataType.Boolean:
       return sanitizeBoolean(value);
@@ -186,7 +186,7 @@ export class ConnectClusterStore {
   createConnector = flow(function* (
     this: ConnectClusterStore,
     pluginClass: string,
-    updatedConfig: Record<string, any> = {}
+    updatedConfig: Record<string, unknown> = {}
   ) {
     const connector = this.getConnector(pluginClass, null, undefined);
     const secrets = connector?.secrets;
@@ -216,7 +216,7 @@ export class ConnectClusterStore {
     }
     try {
       const configObj = connector?.getConfigObject();
-      const finalProperties: Record<string, any> = { ...updatedConfig, ...configObj };
+      const finalProperties: Record<string, unknown> = { ...updatedConfig, ...configObj };
 
       // If the config has been created using only the json view, the secrets are missing (since updates to them, only apply to our property wrappers)
       // We need to go through all props of type password, and use those values instead (since those will be the "secret string" aka placeholder)
@@ -289,7 +289,11 @@ export class ConnectClusterStore {
     this.connectors.delete(identifier);
   }
 
-  getConnector(pluginClassName: string, connectorName: string | null, initialConfig: Record<string, any> | undefined) {
+  getConnector(
+    pluginClassName: string,
+    connectorName: string | null,
+    initialConfig: Record<string, unknown> | undefined
+  ) {
     const identifier = connectorName ? `${pluginClassName}/${connectorName}` : pluginClassName;
     let connectorStore = this.connectors.get(identifier);
     if (!connectorStore) {
@@ -471,14 +475,14 @@ export class ConnectorPropertiesStore {
   clusterName: string;
   pluginClassName: string;
   connectorType: 'sink' | 'source';
-  private appliedConfig: Record<string, any> | undefined;
+  private appliedConfig: Record<string, unknown> | undefined;
 
   // biome-ignore lint/nursery/useMaxParams: Legacy MobX class with multiple constructor parameters
   constructor(
     clusterName: string,
     pluginClassName: string,
     connectorType: 'sink' | 'source',
-    appliedConfig: Record<string, any> | undefined,
+    appliedConfig: Record<string, unknown> | undefined,
     features?: ConnectorClusterFeatures
   ) {
     this.clusterName = clusterName;
@@ -526,7 +530,7 @@ export class ConnectorPropertiesStore {
     const config = {
       'connector.class': this.pluginClassName,
       ...this.appliedConfig,
-    } as any;
+    } as Record<string, unknown>;
 
     if (this.viewMode === 'json') {
       let parsedConfig = {};
@@ -565,7 +569,7 @@ export class ConnectorPropertiesStore {
     return config;
   }
 
-  updateProperties(properties: Record<string, any>) {
+  updateProperties(properties: Record<string, unknown>) {
     for (const [key, value] of Object.entries(properties)) {
       const property = this.propsByName.get(key);
       if (property) {
@@ -672,7 +676,7 @@ export class ConnectorPropertiesStore {
           { delay: 300, fireImmediately: true, equals: comparer.structural }
         )
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('error in initConfig', err);
       this.error =
@@ -801,7 +805,7 @@ export class ConnectorPropertiesStore {
           p.lastErrorValue = p.value;
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('error validating config', err);
     }
@@ -830,9 +834,9 @@ export class ConnectorPropertiesStore {
         const definitionType = p.definition.type;
 
         // Fix type of default values
-        const defaultValue: any = sanitizeDefaultValue(p.definition.default_value, definitionType);
-        const initialValue: any = sanitizeValue(p.value.value, definitionType);
-        const value: any = initialValue ?? defaultValue;
+        const defaultValue: unknown = sanitizeDefaultValue(p.definition.default_value, definitionType);
+        const initialValue: unknown = sanitizeValue(p.value.value, definitionType);
+        const value: unknown = initialValue ?? defaultValue;
 
         const property = observable({
           name,
@@ -843,8 +847,8 @@ export class ConnectorPropertiesStore {
           lastErrors: [],
           showErrors: p.value.errors.length > 0,
           currentErrorIndex: 0,
-          lastErrorValue: undefined as any,
-          propertyGroup: undefined as any,
+          lastErrorValue: undefined as unknown,
+          propertyGroup: undefined as PropertyGroup | undefined,
           crud: this.crud,
           isDisabled: undefined,
         });
@@ -899,7 +903,7 @@ export type Property = {
   showErrors: boolean; // true = property has errors currently
   lastErrors: string[]; // previous errors, used so we can fade/animate them out when they get fixed
   currentErrorIndex: number; // since we can only display one error at a time, we use this to cycle through
-  lastErrorValue: any; // the 'value' the property had at the last validation check (used so we can immediately hide the reported error once the user changes the value)
+  lastErrorValue: unknown; // the 'value' the property had at the last validation check (used so we can immediately hide the reported error once the user changes the value)
 
   propertyGroup: PropertyGroup;
   crud: 'create' | 'update';

@@ -50,7 +50,7 @@ const { ToastContainer, toast } = createStandaloneToast();
 class TransformDetails extends PageComponent<{ transformName: string }> {
   @observable placeholder = 5;
 
-  constructor(p: any) {
+  constructor(p: { transformName: string }) {
     super(p);
     makeObservable(this);
   }
@@ -376,7 +376,7 @@ function executeMessageSearch(search: MessageSearch, topicName: string, transfor
         console.error(`error in transformLogsMessageSearch: ${msg}`);
         return [];
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`error in transformLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
       return Promise.resolve([]);

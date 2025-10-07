@@ -512,7 +512,13 @@ class UnitSelect<UnitType extends string> extends Component<{
 }> {
   @observable unit: UnitType;
 
-  constructor(p: any) {
+  constructor(p: {
+    baseValue: number;
+    unitFactors: { [index in UnitType]: number };
+    onChange: (baseValue: number) => void;
+    allowInfinite: boolean;
+    className?: string;
+  }) {
     super(p);
 
     const value = this.props.baseValue;

@@ -63,14 +63,14 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
   // used to determine whether or not the 'ok' button is enabled
   isOkEnabled?: (state: TModalState) => boolean;
   // called when 'onOk' has returned (and not thrown an exception)
-  onSuccess?: (state: TModalState, result: any) => void;
+  onSuccess?: (state: TModalState, result: JSX.Element | undefined) => void;
 }): AutoModal<TShowArg> {
   let userState: TModalState | undefined;
   const state = observable<{
     modalProps: AutoModalProps | null;
     visible: boolean;
     loading: boolean;
-    result: null | { error?: any; returnValue?: JSX.Element };
+    result: null | { error?: unknown; returnValue?: JSX.Element };
   }>(
     {
       modalProps: null,
@@ -126,7 +126,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
     state.visible = true;
   });
 
-  const renderError = (err: any): ReactElement => {
+  const renderError = (err: unknown): ReactElement => {
     let content: ReactNode;
     let title = 'Error';
     const codeBoxStyle = {

@@ -264,13 +264,13 @@ function getMessageAsString(value: string | TopicMessage): string {
   if (obj.key) {
     obj.key.normalizedPayload = undefined;
     if (obj.key.rawBytes) {
-      obj.key.rawBytes = Array.from(obj.key.rawBytes) as any;
+      obj.key.rawBytes = Array.from(obj.key.rawBytes) as Uint8Array & number[];
     }
   }
   if (obj.value) {
     obj.value.normalizedPayload = undefined;
     if (obj.value.rawBytes) {
-      obj.value.rawBytes = Array.from(obj.value.rawBytes) as any;
+      obj.value.rawBytes = Array.from(obj.value.rawBytes) as Uint8Array & number[];
     }
   }
 
@@ -294,16 +294,16 @@ function getPayloadAsString(value: string | Uint8Array | object): string {
 }
 
 const defaultSelectChakraStyles = {
-  control: (provided: any) => ({
+  control: (provided: Record<string, unknown>) => ({
     ...provided,
     minWidth: 'max-content',
   }),
-  option: (provided: any) => ({
+  option: (provided: Record<string, unknown>) => ({
     ...provided,
     wordBreak: 'keep-all',
     whiteSpace: 'nowrap',
   }),
-  menuList: (provided: any) => ({
+  menuList: (provided: Record<string, unknown>) => ({
     ...provided,
     minWidth: 'min-content',
   }),
@@ -311,13 +311,13 @@ const defaultSelectChakraStyles = {
 
 const inlineSelectChakraStyles = {
   ...defaultSelectChakraStyles,
-  control: (provided: any) => ({
+  control: (provided: Record<string, unknown>) => ({
     ...provided,
     _hover: {
       borderColor: 'transparent',
     },
   }),
-  container: (provided: any) => ({
+  container: (provided: Record<string, unknown>) => ({
     ...provided,
     borderColor: 'transparent',
   }),
@@ -332,7 +332,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
   @observable showPreviewFieldsModal = false;
   @observable showDeserializersModal = false;
 
-  @observable fetchError = null as any | null;
+  @observable fetchError = null as Error | null;
 
   messageSearch = createMessageSearch();
   messageSource = new FilterableDataSource<TopicMessage>(
@@ -1251,10 +1251,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
           this.fetchError = err;
           return [];
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(`error in searchTopicMessages: ${(error as Error).message ?? String(error)}`);
-        this.fetchError = error;
+        this.fetchError = error as Error;
         return Promise.resolve([]);
       }
     });
@@ -1273,7 +1273,11 @@ class SaveMessagesDialog extends Component<{
 
   radioStyle = { display: 'block', lineHeight: '30px' };
 
-  constructor(p: any) {
+  constructor(p: {
+    messages: TopicMessage[] | null;
+    onClose: () => void;
+    onRequireRawPayload: () => Promise<TopicMessage[]>;
+  }) {
     super(p);
     makeObservable(this);
   }
@@ -1369,7 +1373,7 @@ class SaveMessagesDialog extends Component<{
   }
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 40, refactor later
-  convertToCSV(messages: any[]): string {
+  convertToCSV(messages: TopicMessage[]): string {
     if (messages.length === 0) {
       return '';
     }
@@ -1433,23 +1437,23 @@ class SaveMessagesDialog extends Component<{
     return csvRows.join('\n');
   }
 
-  cleanMessages(messages: TopicMessage[]): any[] {
-    const ar: any[] = [];
+  cleanMessages(messages: TopicMessage[]): unknown[] {
+    const ar: unknown[] = [];
 
     // create a copy of each message, omitting properties that don't make
     // sense for the user, like 'size' or caching properties like 'keyJson'.
     const includeRaw = this.includeRawContent;
 
-    const cleanPayload = (p: Payload): Payload => {
+    const cleanPayload = (p: Payload): Payload | undefined => {
       if (!p) {
-        return undefined as any;
+        return undefined;
       }
 
       const cleanedPayload = {
         payload: p.payload,
         rawPayload: includeRaw && p.rawBytes ? base64FromUInt8Array(p.rawBytes) : undefined,
         encoding: p.encoding,
-      } as any as Payload;
+      } as Payload;
 
       if (p.schemaId && p.schemaId !== 0) {
         cleanedPayload.schemaId = p.schemaId;
@@ -1553,8 +1557,8 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage; previewFields: ()
 }
 
 @observer
-class StartOffsetDateTimePicker extends Component {
-  constructor(p: any) {
+class StartOffsetDateTimePicker extends Component<Record<string, never>> {
+  constructor(p: Record<string, never>) {
     super(p);
     const searchParams = uiState.topicSettings.searchParams;
     if (!searchParams.startTimestampWasSetByUser) {
@@ -2026,7 +2030,7 @@ const TroubleshootReportViewer = observer((props: { payload: Payload }) => {
 
 const MessageMetaData = observer((props: { msg: TopicMessage }) => {
   const msg = props.msg;
-  const data: { [k: string]: any } = {
+  const data: { [k: string]: React.ReactNode } = {
     Partition: msg.partitionID,
     Offset: numberToThousandsString(msg.offset),
     Key: msg.key.isPayloadNull ? 'Null' : `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,

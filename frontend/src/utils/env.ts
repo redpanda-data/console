@@ -46,9 +46,9 @@ const appFeatureNames = ['SINGLE_SIGN_ON', 'REASSIGN_PARTITIONS'] as const;
 export type AppFeature = (typeof appFeatureNames)[number];
 
 if (env.REACT_APP_ENABLED_FEATURES) {
-  (window as any).ENABLED_FEATURES = env.REACT_APP_ENABLED_FEATURES;
+  (window as { ENABLED_FEATURES?: string }).ENABLED_FEATURES = env.REACT_APP_ENABLED_FEATURES;
 }
-const featuresRaw = (window as any).ENABLED_FEATURES ?? '';
+const featuresRaw = (window as { ENABLED_FEATURES?: string }).ENABLED_FEATURES ?? '';
 const enabledFeatures = featuresRaw.split(',') as AppFeature[];
 
 const features = {} as { [key in AppFeature]: boolean };
@@ -58,7 +58,7 @@ for (const f of appFeatureNames) {
 
 export const AppFeatures = features;
 
-const basePathRaw: string = (window as any).BASE_URL;
+const basePathRaw: string = (window as { BASE_URL?: string }).BASE_URL ?? '';
 const basePath = typeof basePathRaw === 'string' && !basePathRaw.startsWith('__BASE_PATH') ? basePathRaw : '';
 const basePathTrimmed = basePath ? basePath.removePrefix('/').removeSuffix('/') : '';
 
@@ -78,21 +78,21 @@ export function getBuildDate(): Date | undefined {
 
 //
 // Print all env vars to console
-const envVarDebugObj = {} as any;
+const envVarDebugObj = {} as Record<string, string>;
 const envVarDebugAr: { name: string; value: string }[] = [];
 
-const addProp = (key: string, value: any) => {
+const addProp = (key: string, value: unknown) => {
   if (value === undefined || value === null || value === '') {
     return;
   }
   key = key.removePrefix('REACT_APP_CONSOLE_').removePrefix('REACT_APP_');
-  envVarDebugObj[key] = value;
-  envVarDebugAr.push({ name: key, value });
+  envVarDebugObj[key] = String(value);
+  envVarDebugAr.push({ name: key, value: String(value) });
 };
 // - add env vars
 for (const k in env) {
   if (Object.hasOwn(env, k)) {
-    addProp(k, (env as any)[k]);
+    addProp(k, (env as Record<string, string>)[k]);
   }
 }
 

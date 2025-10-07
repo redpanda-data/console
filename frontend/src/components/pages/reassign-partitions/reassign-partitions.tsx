@@ -119,7 +119,7 @@ class ReassignPartitions extends PageComponent {
   autoScrollReactionDisposer: IReactionDisposer | null = null;
   resetSelectionOnErrorsReactionDisposer: IReactionDisposer | null = null;
 
-  constructor(p: any) {
+  constructor(p: Record<string, never>) {
     super(p);
     makeObservable(this);
   }

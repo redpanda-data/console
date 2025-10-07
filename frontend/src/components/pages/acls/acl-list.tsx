@@ -105,7 +105,7 @@ const getCreateUserButtonProps = () => ({
 class AclList extends PageComponent<{ tab?: AclListTab }> {
   @observable edittingPrincipalGroup?: AclPrincipalGroup;
 
-  constructor(p: any) {
+  constructor(p: { tab?: AclListTab }) {
     super(p);
     makeObservable(this);
   }

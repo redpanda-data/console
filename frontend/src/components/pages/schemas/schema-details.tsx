@@ -62,7 +62,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
     appGlobal.onRefresh = () => this.refreshData(true);
   }
 
-  constructor(p: any) {
+  constructor(p: { subjectName: string }) {
     super(p);
     this.subjectNameRaw = decodeURIComponentPercents(this.props.subjectName);
     this.subjectNameEncoded = encodeURIComponent(this.subjectNameRaw);

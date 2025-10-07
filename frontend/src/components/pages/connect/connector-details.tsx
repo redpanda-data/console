@@ -819,7 +819,7 @@ function executeMessageSearch(search: MessageSearch, topicName: string, connecto
         console.error(`error in connectorLogsMessageSearch: ${msg}`);
         return [];
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`error in connectorLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
       return Promise.resolve([]);

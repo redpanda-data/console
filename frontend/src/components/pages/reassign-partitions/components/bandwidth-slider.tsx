@@ -38,7 +38,7 @@ const labelStyles = {
 export class BandwidthSlider extends Component<ValueAndChangeCallback | { settings: BindableSettings }> {
   @observable isDragging = false;
 
-  constructor(p: any) {
+  constructor(p: ValueAndChangeCallback | { settings: BindableSettings }) {
     super(p);
     makeObservable(this);
   }

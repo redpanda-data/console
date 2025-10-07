@@ -35,7 +35,11 @@ export class SearchTitle extends Component<{
 }> {
   inputRef = React.createRef<HTMLInputElement>(); // reference to input, used to focus it
 
-  constructor(p: any) {
+  constructor(p: {
+    title: string;
+    observableFilterOpen: { filterOpen: boolean };
+    observableSettings: { quickSearch: string };
+  }) {
     super(p);
     this.hideSearchBar = this.hideSearchBar.bind(this);
     this.focusInput = this.focusInput.bind(this);

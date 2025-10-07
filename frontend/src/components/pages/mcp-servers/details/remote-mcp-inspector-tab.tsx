@@ -45,10 +45,10 @@ const generateDefaultValue = (fieldSchema: JSONSchemaType): JSONValue => {
 
   switch (fieldSchema.type) {
     case 'string':
-      return (fieldSchema as any).examples?.[0] || '';
+      return (fieldSchema as { examples?: string[] }).examples?.[0] || '';
     case 'number':
     case 'integer':
-      return (fieldSchema as any).examples?.[0] || 42;
+      return (fieldSchema as { examples?: number[] }).examples?.[0] || 42;
     case 'boolean':
       return true;
     case 'array':
@@ -201,7 +201,7 @@ export const RemoteMCPInspectorTab = () => {
         MCPServer_Tool_ComponentType.OUTPUT
     ) {
       const availableTopic = topicsData.topics[0].topicName;
-      const params = toolParameters as any;
+      const params = toolParameters as { topic_name?: string; messages?: Array<{ topic_name?: string }> };
 
       // Check if topic_name needs to be set - auto-select for messages without topic_name
       const needsUpdate = (() => {
@@ -212,7 +212,7 @@ export const RemoteMCPInspectorTab = () => {
 
         // Check nested topic_name in messages array - look for messages without topics
         if (params?.messages && Array.isArray(params.messages) && params.messages.length > 0) {
-          const messagesNeedingTopics = params.messages.some((message: any) => !message?.topic_name);
+          const messagesNeedingTopics = params.messages.some((message) => !message?.topic_name);
           return messagesNeedingTopics;
         }
 
@@ -230,8 +230,8 @@ export const RemoteMCPInspectorTab = () => {
         if (updatedParams.messages && Array.isArray(updatedParams.messages) && updatedParams.messages.length > 0) {
           updatedParams = {
             ...updatedParams,
-            messages: updatedParams.messages.map((msg: any) =>
-              msg?.topic_name ? msg : { ...msg, topic_name: availableTopic }
+            messages: updatedParams.messages.map((msg) =>
+              (msg as { topic_name?: string })?.topic_name ? msg : { ...msg, topic_name: availableTopic }
             ),
           };
         } else {

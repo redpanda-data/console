@@ -197,7 +197,7 @@ export class PreviewSettings extends Component<{
       .distinct();
   }
 
-  constructor(p: any) {
+  constructor(p: { messageSearch: MessageSearch }) {
     super(p);
     makeObservable(this);
   }
@@ -413,7 +413,7 @@ todo:
     - in order to match `/pattern/` our 'parseJsonPath' must support escaping forward slashes: "\/"
 
 */
-export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.ReactNode[] {
+export function getPreviewTags(targetObject: Record<string, unknown>, tags: PreviewTagV2[]): React.ReactNode[] {
   const ar: React.ReactNode[] = [];
 
   const results: { prop: CollectedProperty; tag: PreviewTagV2; fullPath: string }[] = [];

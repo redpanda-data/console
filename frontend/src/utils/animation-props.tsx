@@ -109,11 +109,11 @@ export const MotionAlways: FC = (p: { children?: React.ReactNode; style?: CSSPro
 );
 
 export const MotionDiv: FC<{
-  identityKey?: any;
+  identityKey?: React.Key;
   children?: React.ReactNode;
   positionTransition?: boolean;
   layoutTransition?: boolean;
-  animProps?: any;
+  animProps?: Record<string, unknown>;
   style?: CSSProperties;
   className?: string;
 }> = (p) => (
@@ -130,9 +130,9 @@ export const MotionDiv: FC<{
 );
 
 export const MotionSpan: FC<{
-  identityKey?: any;
+  identityKey?: React.Key;
   children?: React.ReactNode;
-  overrideAnimProps?: any;
+  overrideAnimProps?: Record<string, unknown>;
   style?: CSSProperties;
 }> = (p) => (
   <motion.span key={p.identityKey} style={p.style} {...(p.overrideAnimProps ?? animProps)}>

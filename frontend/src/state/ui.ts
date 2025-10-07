@@ -307,29 +307,29 @@ const defaultUiSettings = {
     selectedTab: 'clusters' as ConnectTabKeys,
 
     clusters: {
-      pageSize: undefined as any as number,
+      pageSize: undefined as unknown as number,
       quickSearch: '',
     },
     connectors: {
-      pageSize: undefined as any as number,
+      pageSize: undefined as unknown as number,
       quickSearch: '',
     },
     tasks: {
-      pageSize: undefined as any as number,
+      pageSize: undefined as unknown as number,
       quickSearch: '',
     },
 
     clusterDetails: {
-      pageSize: undefined as any as number,
+      pageSize: undefined as unknown as number,
       quickSearch: '',
     },
     clusterDetailsPlugins: {
-      pageSize: undefined as any as number,
+      pageSize: undefined as unknown as number,
       quickSearch: '',
     },
 
     connectorDetails: {
-      pageSize: undefined as any as number,
+      pageSize: undefined as unknown as number,
       quickSearch: '',
     },
   },
@@ -351,7 +351,7 @@ export function clearSettings() {
   transaction(() => {
     for (const k in uiSettings) {
       if (Object.hasOwn(uiSettings, k)) {
-        delete (uiSettings as any)[k];
+        delete (uiSettings as Record<string, unknown>)[k];
       }
     }
     assignDeep(uiSettings, clone(defaultUiSettings));

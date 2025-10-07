@@ -46,9 +46,9 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
   @observable consumerGroupLoading = false;
   @observable consumerGroupLoadFailed = false;
 
-  private editTabsRef: React.RefObject<any> = React.createRef();
+  private editTabsRef: React.RefObject<{ handleSave: () => Promise<void> }> = React.createRef();
 
-  constructor(p: any) {
+  constructor(p: { knowledgebaseId: string }) {
     super(p);
     makeObservable(this);
   }

@@ -43,7 +43,11 @@ export class StepSelectPartitions extends Component<{
 
   @observable selectedBrokerFilters: (string | number)[] | null = null;
 
-  constructor(props: any) {
+  constructor(props: {
+    selectedTopicPartitions: PartitionSelection;
+    partitionSelection: PartitionSelection;
+    throttledTopics: string[];
+  }) {
     super(props);
     this.setSelection = this.setSelection.bind(this);
     this.setTopicSelection = this.setTopicSelection.bind(this);

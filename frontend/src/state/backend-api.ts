@@ -286,7 +286,7 @@ class CacheEntry {
     return this.timeSinceLastResult.value / 1000;
   }
 
-  private promise: Promise<any>;
+  private promise: Promise<unknown>;
   get lastPromise() {
     return this.promise;
   }
@@ -318,8 +318,8 @@ class CacheEntry {
     api.activeRequests.push(this);
   }
 
-  error: any | null = null;
-  lastResult: any | undefined; // set automatically
+  error: unknown | null = null;
+  lastResult: unknown | undefined; // set automatically
   isPending: boolean; // set automatically
 
   private timeSinceRequestStarted = new TimeSince(); // set automatically
@@ -607,7 +607,7 @@ const apiStore = {
   activeRequests: [] as CacheEntry[],
 
   // Fetch errors
-  errors: [] as any[],
+  errors: [] as unknown[],
 
   refreshTopics(force?: boolean) {
     cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force).then((v) => {
@@ -681,7 +681,7 @@ const apiStore = {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}`, {
       method: 'DELETE',
     });
-    return parseOrUnwrap<any>(response, null);
+    return parseOrUnwrap<void>(response, null);
   },
 
   deleteTopicRecords(topicName: string, offset: number, partitionId?: number) {
@@ -976,7 +976,7 @@ const apiStore = {
       throw new Error('Cluster status client is not initialized');
     }
 
-    const requests: Promise<any>[] = [
+    const requests: Promise<unknown>[] = [
       client.getKafkaAuthorizerInfo({}).catch((e) => {
         this.clusterOverview.kafkaAuthorizerError = e;
         // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -1200,8 +1200,8 @@ const apiStore = {
       for (const role of info.roles) {
         for (const permission of role.permissions) {
           for (const k of ['allowedActions', 'includes', 'excludes']) {
-            const ar: string[] = (permission as any)[k] ?? [];
-            (permission as any)[k] = ar.filter((x) => x.length > 0);
+            const ar: string[] = ((permission as Record<string, unknown>)[k] as string[]) ?? [];
+            (permission as Record<string, unknown>)[k] = ar.filter((x) => x.length > 0);
           }
         }
       }
@@ -2003,7 +2003,7 @@ const apiStore = {
         }),
       }
     );
-    return parseOrUnwrap<any>(response, null);
+    return parseOrUnwrap<void>(response, null);
   },
 
   async updateSecret(clusterName: string, secretId: string, secretValue: string): Promise<void> {
@@ -2017,7 +2017,7 @@ const apiStore = {
         }),
       }
     );
-    return parseOrUnwrap<any>(response, null);
+    return parseOrUnwrap<void>(response, null);
   },
 
   async deleteSecret(clusterName: string, secretId: string): Promise<void> {
@@ -2459,7 +2459,7 @@ export const knowledgebaseApi = observable({
         });
 
       // Handle response structure (some APIs return res.response, others return res directly)
-      const response = (res as any)?.response || res;
+      const response = (res as { response?: unknown })?.response || res;
       if (!response) {
         break;
       }
@@ -3204,7 +3204,7 @@ export type MessageSearchRequest = {
 };
 
 async function parseOrUnwrap<T>(response: Response, text: string | null): Promise<T> {
-  let obj: undefined | any;
+  let obj: undefined | unknown;
   if (text === null) {
     if (response.bodyUsed) {
       throw new Error('response content already consumed');

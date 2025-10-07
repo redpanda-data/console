@@ -63,7 +63,16 @@ function sanitizeUrl(uri: string): string {
 @observer
 export class TopicDocumentation extends Component<{ topic: Topic }> {
   private components = {
-    code({ inline, className, children, ...props }: any) {
+    code({
+      inline,
+      className,
+      children,
+      ...props
+    }: {
+      inline?: boolean;
+      className?: string;
+      children?: React.ReactNode;
+    }) {
       const match = CODE_LANGUAGE_REGEX.exec(className || '');
       return !inline && match ? (
         <SyntaxHighlighter

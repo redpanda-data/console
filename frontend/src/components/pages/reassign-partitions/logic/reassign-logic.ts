@@ -624,7 +624,7 @@ function checkArguments(apiData: ApiData, selectedTopicPartitions: TopicPartitio
   }
 }
 
-function throwIfNullOrEmpty(name: string, obj: any[] | Map<any, any>) {
+function throwIfNullOrEmpty(name: string, obj: unknown[] | Map<unknown, unknown>) {
   if (obj == null) {
     throw new Error(`${name} is null`);
   }

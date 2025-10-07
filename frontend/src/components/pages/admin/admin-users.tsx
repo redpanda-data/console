@@ -27,7 +27,7 @@ import { DefaultSkeleton } from '../../../utils/tsx-utils';
 export class AdminUsers extends Component<Record<string, never>> {
   @observable quickSearch = '';
 
-  constructor(p: any) {
+  constructor(p: Record<string, never>) {
     super(p);
     makeObservable(this);
   }

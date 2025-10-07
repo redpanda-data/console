@@ -261,7 +261,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
   const [creationFailure, setCreationFailure] = useState<unknown>(null);
   const [genericFailure, setGenericFailure] = useState<Error | null>(null);
   const [stringifiedConfig, setStringifiedConfig] = useState<string>('');
-  const [parsedUpdatedConfig, setParsedUpdatedConfig] = useState<any | null>(null);
+  const [parsedUpdatedConfig, setParsedUpdatedConfig] = useState<Record<string, unknown> | null>(null);
   const [postCondition, setPostCondition] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [connectClusterStore, setConnectClusterStore] = useState(ConnectClusterStore.getInstance(activeCluster));
@@ -404,7 +404,9 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
           }
         }
 
-        const propertiesObject: Record<string, any> | undefined = connectorRef?.getConfigObject();
+        const propertiesObject: Record<string, unknown> | undefined = connectorRef?.getConfigObject() as
+          | Record<string, unknown>
+          | undefined;
         try {
           const validationResult = await api.validateConnectorConfig(
             activeCluster,
@@ -462,16 +464,17 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
             status: 'success',
             description: `Connector ${connectorName} created`,
           });
-        } catch (e: any) {
-          switch (e?.name) {
+        } catch (e: unknown) {
+          const error = e as { name?: string; message?: string };
+          switch (error?.name) {
             case 'ConnectorValidationError':
-              setValidationFailure(e?.message);
+              setValidationFailure(error?.message);
               break;
             case 'ConnectorCreationError':
-              setCreationFailure(e?.message);
+              setCreationFailure(error?.message);
               break;
             default:
-              setGenericFailure(e?.message);
+              setGenericFailure(new Error(error?.message));
           }
           setLoading(false);
           return { conditionMet: false };

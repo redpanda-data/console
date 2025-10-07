@@ -40,8 +40,8 @@ type BadRequest = {
   fieldViolations: FieldViolation[];
 };
 
-function isBadRequest(obj: any): obj is { type: string; debug: BadRequest } {
-  return obj && obj.type === 'google.rpc.BadRequest';
+function isBadRequest(obj: unknown): obj is { type: string; debug: BadRequest } {
+  return obj && typeof obj === 'object' && 'type' in obj && obj.type === 'google.rpc.BadRequest';
 }
 
 type RegisterFormData = {

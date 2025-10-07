@@ -16,12 +16,12 @@
 
 import { IsDev } from '../env';
 
-declare let value: any; // set/injected by backend
+declare let value: unknown; // set/injected by backend
 
 // declare function find(propName: string, ignoreCase?:boolean): any;
 // declare function find(isMatch: (obj:object|Array<any>)=>boolean): any;
 // declare function find(pattern: object, ignoreCase?:boolean): object|undefined;
-function find(this: any | undefined, arg1: any, arg2: any): any {
+function find(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown {
   const self =
     this != null
       ? this // called on object
@@ -38,7 +38,7 @@ function find(this: any | undefined, arg1: any, arg2: any): any {
 // declare function findAll(propName: string, ignoreCase?:boolean): any[];
 // declare function findAll(isMatch: (obj:object|Array<any>)=>boolean): any[];
 // declare function findAll(pattern: object, ignoreCase?:boolean): object[];
-function findAll(this: any | undefined, arg1: any, arg2: any): any {
+function findAll(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown[] {
   const self =
     this != null
       ? this // called on object
@@ -50,11 +50,11 @@ function findAll(this: any | undefined, arg1: any, arg2: any): any {
 }
 
 // add find methods to all objects
-(Object.prototype as any).find = find;
-(Object.prototype as any).findAll = findAll;
+(Object.prototype as Record<string, unknown>).find = find;
+(Object.prototype as Record<string, unknown>).findAll = findAll;
 
 // calls findByName or findByCallback depending on the arguments
-function findGeneric(self: any, arg1: any, arg2: any, returnFirstResult: boolean): any[] {
+function findGeneric(self: unknown, arg1: unknown, arg2: unknown, returnFirstResult: boolean): unknown[] {
   const ignoreCase = Boolean(arg2);
   const caseSensitive = !ignoreCase;
 
@@ -76,19 +76,19 @@ function findGeneric(self: any, arg1: any, arg2: any, returnFirstResult: boolean
   throw new Error('first parameter of find() must be: string, or function, or pattern object');
 }
 
-function findByName(obj: any, propertyName: string, caseSensitive: boolean, returnFirstResult: boolean): any[] {
+function findByName(obj: unknown, propertyName: string, caseSensitive: boolean, returnFirstResult: boolean): unknown[] {
   const isMatch = caseSensitive
-    ? (_: any, prop: string | number) => prop === propertyName
-    : (_: any, prop: string | number) => String(prop).toUpperCase() === propertyName.toUpperCase();
+    ? (_: unknown, prop: string | number) => prop === propertyName
+    : (_: unknown, prop: string | number) => String(prop).toUpperCase() === propertyName.toUpperCase();
 
   return findByCallback(obj, isMatch, returnFirstResult);
 }
 
 function findByCallback(
-  obj: any,
-  isMatch: (object: any, key: string | number) => boolean,
+  obj: unknown,
+  isMatch: (object: unknown, key: string | number) => boolean,
   returnFirstResult: boolean
-): any[] {
+): unknown[] {
   const ctx: PropertySearchContext = {
     isMatch,
     currentPath: [],
@@ -100,7 +100,12 @@ function findByCallback(
   return ctx.results.map((x) => x.value);
 }
 
-function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, returnFirstResult: boolean): any[] {
+function findByPattern(
+  obj: unknown,
+  patternObj: object,
+  caseSensitive: boolean,
+  returnFirstResult: boolean
+): unknown[] {
   const log = IsDev
     ? // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.debug
@@ -117,7 +122,7 @@ function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, ret
 
     for (const k in pattern) {
       if (Object.hasOwn(pattern, k)) {
-        const patternValue = (pattern as any)[k];
+        const patternValue = (pattern as Record<string, unknown>)[k];
 
         // don't require objects to have the same functions
         // todo: later we might want to have special functions that can compare against the actual value!
@@ -126,7 +131,7 @@ function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, ret
           continue;
         }
 
-        const objValue = (obj as any)[k];
+        const objValue = (obj as Record<string, unknown>)[k];
         log(`  [${k}]`);
 
         if (typeof objValue !== typeof patternValue) {
@@ -174,16 +179,16 @@ function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, ret
   return ctx.results;
 }
 
-type FoundProperty = { propertyName: string; path: string[]; value: any };
+type FoundProperty = { propertyName: string; path: string[]; value: unknown };
 type PropertySearchContext = {
-  isMatch: (currentObject: any, key: string | number) => boolean;
+  isMatch: (currentObject: unknown, key: string | number) => boolean;
   currentPath: string[];
   results: FoundProperty[];
   returnFirstResult: boolean;
 };
 
 type ObjectSearchContext = {
-  isMatch: (obj: any, pattern: object) => boolean;
+  isMatch: (obj: object, pattern: object) => boolean;
   pattern: object;
   results: object[];
   returnFirstResult: boolean;
@@ -192,7 +197,7 @@ type ObjectSearchContext = {
 // returns 'shouldStop'
 // true  -> stop
 // false -> continue
-function findElement(ctx: PropertySearchContext, obj: any): boolean {
+function findElement(ctx: PropertySearchContext, obj: unknown): boolean {
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
       const value = obj[key];
@@ -231,7 +236,7 @@ function findElement(ctx: PropertySearchContext, obj: any): boolean {
   return false;
 }
 
-function findObject(ctx: ObjectSearchContext, obj: any): boolean {
+function findObject(ctx: ObjectSearchContext, obj: unknown): boolean {
   if (ctx.isMatch(obj, ctx.pattern)) {
     ctx.results.push(obj);
     if (ctx.returnFirstResult) {

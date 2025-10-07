@@ -28,7 +28,10 @@ export class StepSelectBrokers extends Component<{
 }> {
   brokers: Broker[];
 
-  constructor(props: any) {
+  constructor(props: {
+    selectedBrokerIds: number[];
+    partitionSelection: PartitionSelection;
+  }) {
     super(props);
     this.brokers = api.clusterInfo?.brokers ?? [];
   }

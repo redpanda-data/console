@@ -27,12 +27,12 @@ export type DataType =
 
 const seen = new Set();
 // Serialize object to json, handling reference loops gracefully
-export function toJson(obj: any, space?: string | number | undefined): string {
+export function toJson(obj: unknown, space?: string | number | undefined): string {
   seen.clear();
   try {
     return JSON.stringify(
       obj,
-      (_key: string, value: any) => {
+      (_key: string, value: unknown) => {
         if (typeof value === 'object' && value !== null) {
           if (seen.has(value)) {
             return;
@@ -62,7 +62,7 @@ export function clone<T>(obj: T): T {
 }
 // Accesses all members of an object by serializing it
 
-export function touch(obj: any): void {
+export function touch(obj: unknown): void {
   JSON.stringify(obj, (_k, v) => {
     if (typeof v === 'object') {
       return v;

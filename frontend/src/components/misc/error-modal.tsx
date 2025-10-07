@@ -30,7 +30,7 @@ class ErrorModal extends Component<ErrorModalProps> {
   subTitle: React.ReactNode;
   content: React.ReactNode;
 
-  constructor(p: any) {
+  constructor(p: ErrorModalProps) {
     super(p);
     this.title = this.props.title();
     this.subTitle = this.props.subTitle();

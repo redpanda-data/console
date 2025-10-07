@@ -84,7 +84,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
   @observable quickSearch = queryToObj(window.location.search).q;
   @observable showWithLagOnly = Boolean(queryToObj(window.location.search).withLag);
 
-  constructor(p: any) {
+  constructor(p: { groupId: string }) {
     super(p);
     makeObservable(this);
   }

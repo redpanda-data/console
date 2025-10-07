@@ -90,7 +90,7 @@ import { type AppFeature, AppFeatures } from '../utils/env';
 //
 //	Route Types
 //
-export type IRouteEntry = PageDefinition<any>;
+export type IRouteEntry = PageDefinition<Record<string, never>>;
 export interface PageDefinition<TRouteParams = {}> {
   title: string;
   path: string;
@@ -137,7 +137,7 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
       return {
         title: title as string | JSX.Element,
         to: entry.path as string,
-        icon: entry.icon as any,
+        icon: entry.icon as ((props: React.ComponentProps<'svg'>) => JSX.Element) | undefined,
         isDisabled: isDisabled as boolean,
         disabledText: disabledText as unknown as string,
       };
@@ -213,7 +213,7 @@ export interface MenuItemState {
 }
 
 // Separate component to handle the route rendering logic
-const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ route }) => {
+const RouteRenderer: FunctionComponent<{ route: PageDefinition<Record<string, never>> }> = ({ route }) => {
   const matchedPath = useMatch(route.path) ?? '';
   const params = useParams();
 
@@ -233,7 +233,7 @@ const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ rout
         icon: route.icon,
         visibilityCheck: route.visibilityCheck,
         routeJsx: null as unknown as JSX.Element,
-      } as PageDefinition<any>;
+      } as PageDefinition<Record<string, never>>;
     }
   }, [route.path, route.title, route.pageType, route.icon, route.visibilityCheck]);
 

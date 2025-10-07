@@ -147,7 +147,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
   topicTabs: TopicTab[] = [];
 
-  constructor(props: any) {
+  constructor(props: { topicName: string }) {
     super(props);
 
     if (isServerless()) {
@@ -231,14 +231,14 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     function computeTabId() {
       // use url anchor if possible
       let key = appGlobal.location.hash.replace('#', '');
-      if (TopicTabIds.includes(key as any)) {
+      if (TopicTabIds.includes(key as TopicTabId)) {
         return key as TopicTabId;
       }
 
       // use settings (last visited tab)
       // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
       key = uiSettings.topicDetailsActiveTabKey!;
-      if (TopicTabIds.includes(key as any)) {
+      if (TopicTabIds.includes(key as TopicTabId)) {
         return key as TopicTabId;
       }
 
@@ -441,7 +441,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   }
 
   setTabPage = (activeKey: string): void => {
-    uiSettings.topicDetailsActiveTabKey = activeKey as any;
+    uiSettings.topicDetailsActiveTabKey = activeKey;
 
     const loc = appGlobal.location;
     loc.hash = String(activeKey);

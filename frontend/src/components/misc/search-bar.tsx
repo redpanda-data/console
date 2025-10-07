@@ -38,7 +38,14 @@ class SearchBar<TItem> extends Component<{
     */
   // todo: allow setting custom "rows" to search, and case sensitive or not (pass those along to isFilterMatch)
 
-  constructor(p: any) {
+  constructor(p: {
+    dataSource: () => TItem[];
+    isFilterMatch: (filter: string, item: TItem) => boolean;
+    filterText: string;
+    onQueryChanged: (value: string) => void;
+    onFilteredDataChanged: (data: TItem[]) => void;
+    placeholderText?: string;
+  }) {
     super(p);
     this.filteredSource = new FilterableDataSource<TItem>(this.props.dataSource, this.props.isFilterMatch);
     this.filteredSource.filterText = this.props.filterText;

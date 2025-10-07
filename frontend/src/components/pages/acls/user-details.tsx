@@ -48,7 +48,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
   @observable isChangePasswordModalOpen = false;
   @observable isChangeRolesModalOpen = false;
 
-  constructor(p: any) {
+  constructor(p: { userName: string }) {
     super(p);
     makeObservable(this);
   }

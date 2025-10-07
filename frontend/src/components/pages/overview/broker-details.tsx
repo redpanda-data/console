@@ -30,7 +30,7 @@ import { PageComponent, type PageInitHelper } from '../page';
 class BrokerDetails extends PageComponent<{ brokerId: string }> {
   @observable id = 0;
 
-  constructor(p: any) {
+  constructor(p: { brokerId: string }) {
     super(p);
     makeObservable(this);
 

@@ -166,11 +166,13 @@ export function ACLDetails({
                   ) : (
                     data.rules.map((rule: Rule) => {
                       const availableRules = Object.entries(getOperationsForResourceType(rule.resourceType)).length;
-                      const enabledOperations = Object.entries(rule.operations).map(([op, value]: [string, any]) => ({
-                        name: formatLabel(op),
-                        originName: op,
-                        value,
-                      }));
+                      const enabledOperations = Object.entries(rule.operations).map(
+                        ([op, value]: [string, unknown]) => ({
+                          name: formatLabel(op),
+                          originName: op,
+                          value,
+                        })
+                      );
 
                       // Check if all operations have the same permission
                       const allAllow =

@@ -107,7 +107,7 @@ function ConnectorJsonEditor(p: { connectorStore: ConnectorPropertiesStore; cont
   // Initialize connector with existing data
   const [jsonText, setJsonText] = useState(() => {
     const configObj = connectorStore.getConfigObject();
-    const connectorName = (configObj as any)?.name;
+    const connectorName = (configObj as { name?: string })?.name;
 
     if (connectorName) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage

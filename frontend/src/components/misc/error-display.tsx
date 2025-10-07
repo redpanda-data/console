@@ -18,8 +18,8 @@ import ErrorResult from './error-result';
 import { api } from '../../state/backend-api';
 import type { WrappedApiError } from '../../state/rest-interfaces';
 
-function isWrappedApiError(error: any): error is WrappedApiError {
-  return error && typeof error === 'object' && 'statusCode' in error;
+function isWrappedApiError(error: unknown): error is WrappedApiError {
+  return error !== null && typeof error === 'object' && 'statusCode' in error;
 }
 
 export const ErrorDisplay: FC<{ children: ReactElement }> = observer(({ children }) => {
@@ -62,7 +62,7 @@ export const ErrorDisplay: FC<{ children: ReactElement }> = observer(({ children
   );
 });
 
-function formatError(err: any): string {
+function formatError(err: unknown): string {
   if (err instanceof Error && err.message) {
     return err.message;
   }

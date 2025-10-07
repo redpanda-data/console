@@ -815,7 +815,7 @@ export default function CreateACL({
     setRules(rules.filter((rule) => rule.id !== id));
   };
 
-  const updateRule = (id: number, updates: any) => {
+  const updateRule = (id: number, updates: Partial<Rule>) => {
     setRules(rules.map((rule) => (rule.id === id ? { ...rule, ...updates } : rule)));
   };
 

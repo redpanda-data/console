@@ -32,7 +32,7 @@ import { DefaultSkeleton } from '../../../utils/tsx-utils';
 export class TopicConfiguration extends Component<{
   topic: Topic;
 }> {
-  constructor(p: any) {
+  constructor(p: { topic: Topic }) {
     super(p);
     makeObservable(this);
   }

@@ -23,7 +23,11 @@ export class KowlTimePicker extends Component<{
   @observable isLocalTimeMode = false;
   @observable timestampUtcMs: number = Date.now();
 
-  constructor(p: any) {
+  constructor(p: {
+    valueUtcMs: number;
+    onChange: (utcMs: number) => void;
+    disabled?: boolean;
+  }) {
     super(p);
     this.timestampUtcMs = this.props.valueUtcMs;
     makeObservable(this);

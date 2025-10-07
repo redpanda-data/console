@@ -42,7 +42,7 @@ const valueStyle: CSSProperties = {
 
 type InfoItem = {
   name: string;
-  value: string | (() => any);
+  value: string | (() => React.ReactNode);
 };
 
 @observer
@@ -54,7 +54,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
 
   @observable infoItems: InfoItem[] = [];
 
-  constructor(p: any) {
+  constructor(p: { children?: React.ReactNode }) {
     super(p);
     makeObservable(this);
   }
@@ -81,7 +81,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
     // Call Stack
     if (this.error?.stack) {
       const dataHolder = observable({
-        value: null as null | any,
+        value: null as null | string,
       });
 
       this.infoItems.push({
@@ -118,8 +118,11 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
     }
 
     // Component Stack
-    if (this.errorInfo && (this.errorInfo as any).componentStack) {
-      this.infoItems.push({ name: 'Components', value: (this.errorInfo as any).componentStack });
+    if (this.errorInfo && typeof this.errorInfo === 'object' && 'componentStack' in this.errorInfo) {
+      this.infoItems.push({
+        name: 'Components',
+        value: String((this.errorInfo as { componentStack: unknown }).componentStack),
+      });
     } else {
       this.infoItems.push({
         name: 'Components',
@@ -275,7 +278,7 @@ export class InfoItemDisplay extends React.Component<{ data: InfoItem }> {
   render() {
     const title = this.props.data.name;
     const value = this.props.data.value;
-    let content: any;
+    let content: React.ReactNode;
     if (typeof value === 'string') {
       content = value;
     } else {

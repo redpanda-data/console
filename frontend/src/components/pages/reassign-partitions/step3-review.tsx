@@ -49,7 +49,12 @@ export class StepReview extends Component<{
   reassignPartitions: ReassignPartitions; // since api is still changing, we pass parent down so we can call functions on it directly
 }> {
   @observable unused = 0;
-  constructor(p: any) {
+  constructor(p: {
+    partitionSelection: PartitionSelection;
+    topicsWithMoves: TopicWithMoves[];
+    assignments: PartitionReassignmentRequest;
+    reassignPartitions: ReassignPartitions;
+  }) {
     super(p);
     makeObservable(this);
   }

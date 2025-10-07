@@ -21,7 +21,7 @@ import httpProcessorTemplate from './processor/http.yaml';
 export type Template = {
   name: string;
   componentType: MCPServer_Tool_ComponentType;
-  yaml: Record<string, any>;
+  yaml: Record<string, unknown>;
   description: string;
 };
 

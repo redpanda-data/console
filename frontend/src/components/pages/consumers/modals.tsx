@@ -119,7 +119,13 @@ export class EditOffsetsModal extends Component<{
   @observable isLoadingTimestamps = false;
   @observable isApplyingEdit = false;
 
-  constructor(p: any) {
+  constructor(p: {
+    offsets: GroupOffset[];
+    groupId: string;
+    onClose: () => void;
+    initialTopic?: string;
+    initialPartition?: number;
+  }) {
     super(p);
     makeObservable(this);
   }
@@ -470,7 +476,7 @@ export class EditOffsetsModal extends Component<{
         //   x.newOffset = new Date(this.timestampUtcMs) as any;
         // }
         for (const x of selectedOffsets) {
-          x.newOffset = 'fetching offsets...' as any;
+          x.newOffset = 'fetching offsets...' as string & number;
         }
         const requiredTopics = selectedOffsets.map((x) => x.topicName).distinct();
 

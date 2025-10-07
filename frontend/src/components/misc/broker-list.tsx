@@ -23,7 +23,7 @@ type BrokerListProps =
 
 @observer
 export class BrokerList extends Component<BrokerListProps> {
-  constructor(p: any) {
+  constructor(p: BrokerListProps) {
     super(p);
     if (!api.clusterInfo) {
       setTimeout(() => api.refreshCluster());

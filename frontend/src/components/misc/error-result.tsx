@@ -18,10 +18,19 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
   }
 
   // Type guard for ConnectError
-  const isConnectError = (err: any): err is ConnectError => err && typeof err.code === 'number' && 'details' in err;
+  const isConnectError = (err: unknown): err is ConnectError =>
+    err !== null &&
+    typeof err === 'object' &&
+    'code' in err &&
+    typeof (err as { code: unknown }).code === 'number' &&
+    'details' in err;
 
   // Type guard for WrappedApiError
-  const isWrappedApiError = (err: any): err is WrappedApiError => err && typeof err.statusCode === 'number';
+  const isWrappedApiError = (err: unknown): err is WrappedApiError =>
+    err !== null &&
+    typeof err === 'object' &&
+    'statusCode' in err &&
+    typeof (err as { statusCode: unknown }).statusCode === 'number';
 
   // HTTP status codes
   const HTTP_UNAUTHORIZED = 401;
@@ -67,7 +76,7 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
     statusCode = getStatusCode(error.code);
     if (error.details && error.details.length > 0) {
       // Use type assertion to access the 'debug' property
-      const detail = error.details[0] as { debug?: any };
+      const detail = error.details[0] as { debug?: unknown };
       if (detail.debug) {
         errorDetails = JSON.stringify(detail.debug, null, 2); // Format JSON with 2 spaces for indentation
       }

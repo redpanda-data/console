@@ -165,14 +165,14 @@ export class DebugTimerStore {
     this.mobxTrigger = this.frame;
   }
 
-  mobxTrigger: any;
+  mobxTrigger: unknown;
 }
 
 let refreshCounter = 0; // used to always create a different value, forcing some components to always re-render
 const REFRESH_COUNTER_MAX = 1000;
 export const alwaysChanging = () => (refreshCounter = (refreshCounter + 1) % REFRESH_COUNTER_MAX);
 
-export function assignDeep(target: any, source: any) {
+export function assignDeep(target: Record<string, unknown>, source: Record<string, unknown>) {
   for (const key in source) {
     if (!Object.hasOwn(source, key)) {
       continue;
@@ -226,19 +226,19 @@ export function equalsIgnoreCase(a: string, b: string) {
   return collator.compare(a, b) === 0;
 }
 
-type FoundProperty = { propertyName: string; path: string[]; value: any };
+type FoundProperty = { propertyName: string; path: string[]; value: unknown };
 type PropertySearchResult = 'continue' | 'abort';
 
 type PropertySearchExContext = {
-  isMatch: (propertyName: string, path: string[], value: any) => boolean;
+  isMatch: (propertyName: string, path: string[], value: unknown) => boolean;
   currentPath: string[];
   results: FoundProperty[];
   returnFirstResult: boolean;
 };
 
 export function collectElements(
-  obj: any,
-  isMatch: (propertyName: string, path: string[], value: any) => boolean,
+  obj: unknown,
+  isMatch: (propertyName: string, path: string[], value: unknown) => boolean,
   returnFirstMatch: boolean
 ): FoundProperty[] {
   const ctx: PropertySearchExContext = {
@@ -251,7 +251,7 @@ export function collectElements(
   return ctx.results;
 }
 
-function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): PropertySearchResult {
+function collectElementsRecursive(ctx: PropertySearchExContext, obj: Record<string, unknown>): PropertySearchResult {
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
       const value = obj[key];
@@ -284,12 +284,12 @@ function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): Prope
   return 'continue';
 }
 
-type IsMatchFunc = (pathElement: string, propertyName: string, value: any) => boolean;
-export type CollectedProperty = { path: string[]; value: any };
+type IsMatchFunc = (pathElement: string, propertyName: string, value: unknown) => boolean;
+export type CollectedProperty = { path: string[]; value: unknown };
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 37, refactor later
 export function collectElements2(
-  targetObject: any,
+  targetObject: Record<string, unknown>,
 
   // "**" collectes all current and nested properties
   // "*" collects all current properties
@@ -415,7 +415,7 @@ type GetAllKeysContext = {
   results: Property[];
 };
 
-function getAllKeysRecursive(ctx: GetAllKeysContext, obj: any): PropertySearchResult {
+function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown>): PropertySearchResult {
   const isArray = Array.isArray(obj);
   let result = 'continue' as PropertySearchResult;
 
@@ -857,7 +857,7 @@ export function retrier<T>(
         if (attempts > 0) {
           return delay(delayTime)
             .then(retrier.bind(null, operation, { attempts: attempts - 1, delayTime }))
-            .then(resolve as any)
+            .then(resolve)
             .catch(reject);
         }
         reject(reason);
@@ -939,7 +939,9 @@ export function decodeURIComponentPercents(encodedStr: string): string {
  * console.log(subject); // Output: "1231231232131"
  * ```
  */
-export function getOidcSubject(error: any): string | null {
+export function getOidcSubject(error: {
+  details?: { debug?: { metadata?: { login_type?: string; subject?: string } } }[];
+}): string | null {
   for (const detail of error.details) {
     if (detail.debug?.metadata?.login_type === 'OIDC' && detail.debug.metadata.subject) {
       return detail.debug.metadata.subject;

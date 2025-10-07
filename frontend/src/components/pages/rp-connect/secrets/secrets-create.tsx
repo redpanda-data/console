@@ -23,7 +23,7 @@ class RpConnectSecretCreate extends PageComponent {
   @observable secret = '';
   @observable isCreating = false;
 
-  constructor(p: any) {
+  constructor(p: Record<string, never>) {
     super(p);
     makeObservable(this, undefined, { autoBind: true });
   }

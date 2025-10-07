@@ -46,7 +46,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   // TODO: Actually show this within the pipeline edit page
   @observable tags = {} as Record<string, string>;
 
-  constructor(p: any) {
+  constructor(p: { pipelineId: string }) {
     super(p);
     makeObservable(this, undefined, { autoBind: true });
   }

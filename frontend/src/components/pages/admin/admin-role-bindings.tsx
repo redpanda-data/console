@@ -21,7 +21,7 @@ export class RoleBindingComponent extends Component<{ binding: RoleBinding }> {
   render() {
     const binding = this.props.binding;
 
-    const rows: [any, any][] = [
+    const rows: [React.ReactNode, React.ReactNode][] = [
       [
         <span className="resourceLabel" key={binding.ephemeralId}>
           Binding

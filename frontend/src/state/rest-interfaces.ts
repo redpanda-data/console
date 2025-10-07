@@ -27,7 +27,7 @@ export type ApiError = {
   message: string;
 };
 
-export function isApiError(obj: any): obj is ApiError {
+export function isApiError(obj: unknown): obj is ApiError {
   if (obj && typeof obj === 'object' && typeof obj.statusCode === 'number' && typeof obj.message === 'string') {
     return true;
   }
@@ -186,7 +186,7 @@ export const CompressionType = {
 export type CompressionTypeType = (typeof CompressionType)[keyof typeof CompressionType];
 
 export type Payload = {
-  payload: any; // json obj
+  payload: unknown; // json obj
   isPayloadNull: boolean;
   encoding: MessageDataType; // actual format of the message (before the backend converted it to json)
   schemaId: number;

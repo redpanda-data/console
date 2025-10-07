@@ -124,15 +124,21 @@ type QuickTableOptions = Partial<typeof DefaultQuickTableOptions>;
 // { 'key1': 'value1', 'key2': 'value2' }
 // [ ['a', 'b'] ]
 export function QuickTable(
-  data: [any, any][] | { [key: string]: any } | { key: any; value: any }[],
+  data:
+    | [React.ReactNode, React.ReactNode][]
+    | { [key: string]: React.ReactNode }
+    | { key: React.ReactNode; value: React.ReactNode }[],
   options?: QuickTableOptions
 ): JSX.Element;
 
 export function QuickTable(
-  data: { key: any; value: any }[] | { [key: string]: any } | [any, any][],
+  data:
+    | { key: React.ReactNode; value: React.ReactNode }[]
+    | { [key: string]: React.ReactNode }
+    | [React.ReactNode, React.ReactNode][],
   options?: QuickTableOptions
 ): JSX.Element {
-  let entries: { key: any; value: any }[];
+  let entries: { key: React.ReactNode; value: React.ReactNode }[];
 
   // plain object?
   if (typeof data === 'object' && !Array.isArray(data)) {
@@ -145,12 +151,12 @@ export function QuickTable(
   // array of [any, any] ?
   else if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
     // Convert to array of key-value objects
-    entries = (data as [any, any][]).map((ar) => ({ key: ar[0], value: ar[1] }));
+    entries = (data as [React.ReactNode, React.ReactNode][]).map((ar) => ({ key: ar[0], value: ar[1] }));
   }
   // already correct? array of { key:any, value:any }
   else {
     // Cast to correct type directly
-    entries = data as { key: any; value: any }[];
+    entries = data as { key: React.ReactNode; value: React.ReactNode }[];
   }
 
   const o = Object.assign({} as QuickTableOptions, DefaultQuickTableOptions, options);
@@ -185,7 +191,7 @@ export function QuickTable(
   );
 }
 
-export function toSafeString(x: any): string {
+export function toSafeString(x: unknown): string {
   if (typeof x === 'undefined' || x === null) {
     return '';
   }
@@ -198,8 +204,8 @@ export function toSafeString(x: any): string {
   return toJson(x);
 }
 
-export function ObjToKv(obj: any): { key: string; value: any }[] {
-  const ar = [] as { key: string; value: any }[];
+export function ObjToKv(obj: Record<string, unknown>): { key: string; value: unknown }[] {
+  const ar = [] as { key: string; value: unknown }[];
   for (const k in obj) {
     if (Object.hasOwn(obj, k)) {
       ar.push({ key: k, value: obj[k] });
@@ -222,9 +228,9 @@ export const Label = (p: {
   const child: React.ReactNode = p.children ?? <React.Fragment />;
 
   // biome-ignore lint/style/useObjectSpread: ReactNode cannot be spread safely
-  const newChild = Object.assign({}, child) as any;
+  const newChild = Object.assign({}, child) as { props?: Record<string, unknown> };
   newChild.props = {};
-  Object.assign(newChild.props, (child as any).props, { id });
+  Object.assign(newChild.props, (child as { props?: Record<string, unknown> }).props, { id });
 
   const divStyle = p.style ? { ...p.style, ...style_flexColumn } : p.style;
 
@@ -335,7 +341,7 @@ export const InfoText = (p: {
 
 export class OptionGroup<T extends string> extends Component<{
   label: string;
-  options: { [key: string]: any };
+  options: { [key: string]: string };
   value: T;
   onChange: (value: T) => void;
   children?: never;
@@ -364,7 +370,7 @@ export class OptionGroup<T extends string> extends Component<{
 
 export class RadioOptionGroup<T extends string | null = string> extends Component<{
   options: {
-    key?: any;
+    key?: React.Key;
     value: T;
     title: string;
     subTitle: string;
@@ -437,9 +443,9 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
 
   // used to fetch 'showWaitingText' (so mobx triggers a re-render).
   // we could just store the value in a local as well, but that might be opimized out.
-  mobxSink: any | undefined;
+  mobxSink: unknown | undefined;
 
-  constructor(p: any) {
+  constructor(p: Record<string, never>) {
     super(p);
 
     // Periodically check if we got any new messages. If not, show a different text after some time

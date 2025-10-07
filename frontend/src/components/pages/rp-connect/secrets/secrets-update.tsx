@@ -21,7 +21,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
   @observable secret = '';
   @observable isUpdating = false;
 
-  constructor(p: any) {
+  constructor(p: { secretId: string }) {
     super(p);
     makeObservable(this, undefined, { autoBind: true });
   }

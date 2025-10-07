@@ -20,7 +20,7 @@ import type { PartitionSelection } from '../reassign-partitions';
 
 @observer
 export class SelectionInfoBar extends Component<{ partitionSelection: PartitionSelection; margin?: string }> {
-  constructor(p: any) {
+  constructor(p: { partitionSelection: PartitionSelection; margin?: string }) {
     super(p);
     makeObservable(this);
   }

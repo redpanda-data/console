@@ -475,7 +475,7 @@ export const ResourceACLsEditor = observer(
                     data-testid={`${resourceName}-${operation}`}
                     disabled={isAllSet}
                     key={operation}
-                    onChange={(p) => ((res.permissions as any)[operation] = p)}
+                    onChange={(p) => ((res.permissions as Record<string, unknown>)[operation] = p)}
                     operation={operation}
                     value={isAllSet ? res.all : permission}
                   />

@@ -248,7 +248,7 @@ export class ReassignmentTracker {
 
   // compute a stable ID for a PartitionReassignment
   computeId(r: PartitionReassignments): string {
-    const id: any[] = [];
+    const id: unknown[] = [];
     id.push(r.topicName);
 
     // for (const p of r.partitions)

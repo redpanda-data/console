@@ -156,7 +156,9 @@ export const RemoteMCPCreatePage: React.FC = () => {
   const handleValidationError = (error: ConnectError) => {
     if (error.code === ConnectCode.InvalidArgument && error.details) {
       // Find BadRequest details
-      const badRequest = error.details.find((detail) => (detail as any).type === 'google.rpc.BadRequest') as any;
+      const badRequest = error.details.find(
+        (detail) => (detail as { type?: string }).type === 'google.rpc.BadRequest'
+      ) as { debug?: { fieldViolations?: Array<{ field: string; description: string }> } } | undefined;
       if (badRequest?.debug?.fieldViolations) {
         // Set form errors for specific fields
         for (const violation of badRequest.debug.fieldViolations) {

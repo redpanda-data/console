@@ -681,7 +681,7 @@
         // Disallow variables from evolving into any type through reassignments.
         "noEvolvingTypes": "off", // Enable later - many violations
         // Disallow the any type usage.
-        "noExplicitAny": "off", // Enable later - many violations
+        "noExplicitAny": "error",
         // Disallow using export or module.exports in files containing tests.
         "noExportsInTest": "error",
         // Prevents the wrong usage of the non-null assertion operator (!) in TypeScript files.

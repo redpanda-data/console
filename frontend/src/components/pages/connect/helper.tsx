@@ -648,7 +648,7 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
       await props.onOk(target);
       success(target);
     } catch (err) {
-      $state.error = err as any;
+      $state.error = err as Error;
     } finally {
       $state.isPending = false;
     }

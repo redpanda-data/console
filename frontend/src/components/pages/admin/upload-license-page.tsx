@@ -135,7 +135,7 @@ const UploadLicenseForm: FC<{
 export default class UploadLicensePage extends PageComponent {
   @observable success = false;
 
-  constructor(p: any) {
+  constructor(p: Record<string, never>) {
     super(p);
     makeObservable(this);
   }

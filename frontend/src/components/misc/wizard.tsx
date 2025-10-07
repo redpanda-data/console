@@ -43,7 +43,7 @@ type WizardState = {
 
   canContinue(): boolean;
 
-  next(): Promise<any>;
+  next(): Promise<void>;
 
   previous(): void;
 

@@ -76,7 +76,11 @@ export class ActiveReassignments extends Component<{
   @observable reassignmentDetails: ReassignmentState | null = null;
   @observable showThrottleDialog = false;
 
-  constructor(p: any) {
+  constructor(p: {
+    currentReassignments: PartitionReassignments;
+    throttledTopics: string[];
+    onRemoveThrottleFromTopics: () => void;
+  }) {
     super(p);
     api.refreshCluster(true);
     makeObservable(this);
@@ -346,7 +350,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
   @observable shouldThrottle = false;
   wasVisible = false;
 
-  constructor(p: any) {
+  constructor(p: { state: ReassignmentState | null; onClose: () => void }) {
     super(p);
     makeObservable(this);
   }

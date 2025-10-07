@@ -35,7 +35,7 @@ declare global {
     groupInto<T, K>(this: T[], selector: (x: T) => K): { key: K; items: T[] }[];
 
     /** returns a new array containing only distinct elements */
-    distinct<T>(this: T[], keySelector?: (x: T) => any): T[];
+    distinct<T>(this: T[], keySelector?: (x: T) => unknown): T[];
     pushDistinct<T>(this: T[], ...elements: T[]): void;
 
     /**
@@ -282,12 +282,12 @@ Array.prototype.isEqual = function isEqual(this: string[], other: string[]): boo
   return true;
 };
 
-Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) => any): T[] {
+Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) => unknown): T[] {
   if (!keySelector) {
     return [...new Set(this)];
   }
 
-  const set = new Set<any>();
+  const set = new Set<unknown>();
   const ar: T[] = [];
 
   for (const item of this) {

@@ -36,7 +36,12 @@ export class CommaSeparatedStringList extends Component<{
 
   reactionDisposer: IReactionDisposer | undefined;
 
-  constructor(p: any) {
+  constructor(p: {
+    defaultValue: string;
+    onChange: (value: string) => void;
+    title?: string;
+    addButtonText?: string;
+  }) {
     super(p);
     makeObservable(this);
 

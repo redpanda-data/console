@@ -258,7 +258,7 @@ const TopicSelector = ({
     : topicOptions;
 
   // Custom option component - show if filtered by regex
-  const formatOptionLabel = (option: any) => {
+  const formatOptionLabel = (option: { value: string; label: string }) => {
     // Show if this option is being shown because it matches a regex search
     if (searchTerm && isRegexPattern(searchTerm)) {
       return (
@@ -276,13 +276,13 @@ const TopicSelector = ({
   };
 
   // Allow custom input (for regex patterns)
-  const handleInputChange = (inputValue: string, { action }: any) => {
+  const handleInputChange = (inputValue: string, { action }: { action: string }) => {
     if (action === 'input-change') {
       setSearchTerm(inputValue);
     }
   };
 
-  const handleKeyDown = (event: any) => {
+  const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && searchTerm && !topicOptions.find((opt) => opt.value === searchTerm)) {
       // Add the search term as a new option (likely a regex pattern)
       const newTopics = [...selectedTopics, searchTerm];
@@ -475,7 +475,7 @@ class KnowledgeBaseCreate extends PageComponent {
   @observable currentSecretField: string | null = null;
   @observable validationErrors: { [key: string]: string } = {};
 
-  constructor(p: any) {
+  constructor(p: Record<string, never>) {
     super(p);
     makeObservable(this);
   }
@@ -526,8 +526,8 @@ class KnowledgeBaseCreate extends PageComponent {
     }
   };
 
-  updateFormData = (field: keyof FormData, value: any) => {
-    (this.formData as any)[field] = value;
+  updateFormData = (field: keyof FormData, value: unknown) => {
+    (this.formData as Record<string, unknown>)[field] = value;
 
     // Clear validation error for this field when user makes changes
     if (this.validationErrors[field as string]) {
@@ -774,7 +774,7 @@ class KnowledgeBaseCreate extends PageComponent {
     });
 
     // Create embedding generator provider
-    let embeddingProvider: any;
+    let embeddingProvider: unknown;
     switch (this.formData.embeddingProvider) {
       case 'openai':
         embeddingProvider = create(KnowledgeBaseCreate_EmbeddingGenerator_ProviderSchema, {
@@ -808,7 +808,7 @@ class KnowledgeBaseCreate extends PageComponent {
     });
 
     // Create indexer configuration
-    const indexerConfig: any = {
+    const indexerConfig: Record<string, unknown> = {
       chunkSize: this.formData.chunkSize,
       chunkOverlap: this.formData.chunkOverlap,
       inputTopics: this.formData.inputTopics,
@@ -822,7 +822,7 @@ class KnowledgeBaseCreate extends PageComponent {
     const indexer = create(KnowledgeBaseCreate_IndexerSchema, indexerConfig);
 
     // Create retriever configuration (optional)
-    let retriever: any;
+    let retriever: unknown;
     if (this.formData.rerankerEnabled) {
       const rerankerProvider = create(KnowledgeBaseCreate_Retriever_Reranker_ProviderSchema, {
         provider: {

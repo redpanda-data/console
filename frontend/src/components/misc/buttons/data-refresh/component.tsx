@@ -21,7 +21,7 @@ import { prettyMilliseconds } from '../../../../utils/utils';
 const autoRefresh = observable(
   {
     active: false,
-    timerId: undefined as any,
+    timerId: undefined as ReturnType<typeof setInterval> | undefined,
     maxRequestCount: 0,
     nextRefresh: Number.POSITIVE_INFINITY,
     remainingSeconds: 0,

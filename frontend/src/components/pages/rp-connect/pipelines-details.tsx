@@ -53,7 +53,7 @@ const { ToastContainer, toast } = createStandaloneToast();
 class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
   @observable isChangingPauseState = false;
 
-  constructor(p: any) {
+  constructor(p: { pipelineId: string }) {
     super(p);
     makeObservable(this);
   }
@@ -420,7 +420,7 @@ function executeMessageSearch(search: MessageSearch, topicName: string, pipeline
   return runInAction(() => {
     try {
       return search.startSearch(request);
-    } catch (_error: any) {
+    } catch (_error: unknown) {
       return Promise.resolve([]);
     }
   });

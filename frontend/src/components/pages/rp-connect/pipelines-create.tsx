@@ -66,11 +66,11 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   @observable editorContent = exampleContent;
   @observable isCreating = false;
   @observable secrets: string[] = [];
-  @observable lintResults: Record<string, any> = {};
+  @observable lintResults: Record<string, unknown> = {};
   // TODO: Actually show this within the pipeline create page
   @observable tags = {} as Record<string, string>;
 
-  constructor(p: any) {
+  constructor(p: Record<string, never>) {
     super(p);
     makeObservable(this, undefined, { autoBind: true });
   }

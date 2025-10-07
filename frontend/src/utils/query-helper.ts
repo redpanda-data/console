@@ -20,7 +20,7 @@ export const queryToObj = (str: string) => {
 
   return obj;
 };
-export const objToQuery = (obj: { [key: string]: any }) => {
+export const objToQuery = (obj: { [key: string]: unknown }) => {
   // '?' + queryString.stringify(obj, stringifyOptions)
   const query = new URLSearchParams();
   for (const [k, v] of Object.entries(obj)) {

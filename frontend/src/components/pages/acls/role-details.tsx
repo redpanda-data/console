@@ -30,7 +30,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
   @observable principalSearch = '';
   @observable roleName = '';
 
-  constructor(p: any) {
+  constructor(p: { roleName: string }) {
     super(p);
     makeObservable(this);
     this.roleName = decodeURIComponent(this.props.roleName);

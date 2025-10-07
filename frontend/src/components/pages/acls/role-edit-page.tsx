@@ -26,7 +26,7 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
   @observable allDataLoaded = false;
   @observable roleName = '';
 
-  constructor(p: any) {
+  constructor(p: { roleName: string }) {
     super(p);
     makeObservable(this);
     this.roleName = decodeURIComponent(this.props.roleName);

@@ -31,7 +31,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
   @observable placeholder = 5;
   @observable filteredResults: ClusterConnectorInfo[] = [];
 
-  constructor(p: any) {
+  constructor(p: { clusterName: string }) {
     super(p);
     makeObservable(this);
   }
