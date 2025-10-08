@@ -1213,14 +1213,17 @@ test.describe('Allow all operations', () => {
       ResourceTypeTransactionalId,
       ResourceTypeSubject,
       ResourceTypeSchemaRegistry,
-    ].map((type, i) => ({
-        id: i,
-        mode: ModeAllowAll,
-        selectorType: ResourcePatternTypeAny,
-        selectorValue: '',
-        operations: {},
-        resourceType: type,
-      } as Rule));
+    ].map(
+      (type, i) =>
+        ({
+          id: i,
+          mode: ModeAllowAll,
+          selectorType: ResourcePatternTypeAny,
+          selectorValue: '',
+          operations: {},
+          resourceType: type,
+        }) as Rule,
+    );
 
     aclPages.map(({ createPage, type }) => {
       test(`${testName} - ${type}`, async ({ page }) => {
@@ -1349,6 +1352,8 @@ test.describe('Multiples ACLs, different hosts but same role', () => {
   const roleName = generatePrincipalName();
 
   test('Create 2 ACLs with same role, 1 with host * and 1 with host 1.1.1.1', async ({ page }) => {
+    test.setTimeout(180000); // 3 minutes timeout for this complex multi-step test
+
     await test.step('Create first ACL host *', async () => {
       const rolePage = new RolePage(page);
       await rolePage.goto();

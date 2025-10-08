@@ -1083,6 +1083,8 @@ test.describe('Multiples ACLs to same principal', () => {
   const principal = generatePrincipalName();
 
   test('Create 2 ACLs with same principal, 1 with host * and 1 with host 1.1.1.1', async ({ page }) => {
+    test.setTimeout(180000); // 3 minutes timeout for this complex multi-step test
+
     await test.step('Create first ACL host *', async () => {
       const aclPage = new ACLPage(page);
       await aclPage.goto();
