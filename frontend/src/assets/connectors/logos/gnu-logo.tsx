@@ -2,13 +2,13 @@ import type React from 'react';
 
 export const GnuLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
-    xlinkHref="http://www.w3.org/1999/xlink"
-    width="256px"
     height="251px"
-    viewBox="0 0 256 251"
-    version="1.1"
     preserveAspectRatio="xMidYMid"
+    version="1.1"
+    viewBox="0 0 256 251"
+    width="256px"
+    xlinkHref="http://www.w3.org/1999/xlink"
+    xmlns="http://www.w3.org/2000/svg"
     {...props}
   >
     <title>Gnu</title>

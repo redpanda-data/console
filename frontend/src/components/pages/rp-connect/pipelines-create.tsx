@@ -38,6 +38,14 @@ import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useState
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { Link } from 'react-router-dom';
 import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
+
+import { extractLintHintsFromError, formatPipelineError } from './errors';
+import { CreatePipelineSidebar } from './onboarding/create-pipeline-sidebar';
+import { SecretsQuickAdd } from './secrets/secrets-quick-add';
+import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+import type { ConnectComponentType } from './types/schema';
+import type { AddUserFormData, WizardFormData } from './types/wizard';
+import { getConnectTemplate } from './utils/schema';
 import type { LintHint } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
 import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
@@ -46,18 +54,12 @@ import PageContent from '../../misc/page-content';
 import PipelinesYamlEditor from '../../misc/pipelines-yaml-editor';
 import Tabs from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper } from '../page';
-import { extractLintHintsFromError, formatPipelineError } from './errors';
-import { CreatePipelineSidebar } from './onboarding/create-pipeline-sidebar';
-import { SecretsQuickAdd } from './secrets/secrets-quick-add';
-import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
-import type { ConnectComponentType } from './types/schema';
-import type { AddUserFormData, WizardFormData } from './types/wizard';
-import { getConnectTemplate } from './utils/yaml';
 
 const exampleContent = `
 `;
 
 @observer
+// biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
 class RpConnectPipelinesCreate extends PageComponent<{}> {
   @observable fileName = '';
   @observable description = '';
@@ -211,6 +213,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     );
   }
 
+  // biome-ignore lint/suspicious/useAwait: async needed for error handling in MobX action
   async createPipeline(toast?: CreateToastFnReturn) {
     this.isCreating = true;
 

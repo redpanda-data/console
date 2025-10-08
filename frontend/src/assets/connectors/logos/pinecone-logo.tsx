@@ -1,7 +1,7 @@
 import type React from 'react';
 
 export const PineconeLogo = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 142 30" fill="currentColor" xmlns="http://www.w3.org/2000/svg" {...props}>
+  <svg fill="currentColor" viewBox="0 0 142 30" xmlns="http://www.w3.org/2000/svg" {...props}>
     <title>Pinecone</title>
     <g fill="none" fillRule="evenodd" transform="translate(0 1)">
       <path

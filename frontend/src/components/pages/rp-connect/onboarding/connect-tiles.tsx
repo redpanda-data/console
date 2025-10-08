@@ -19,21 +19,33 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { SearchIcon, Waypoints } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
-import { type ConnectTilesFormData, connectTilesFormSchema } from '../types/wizard';
-import { getAllCategories, getAllComponents } from '../utils/schema';
-import type { BaseStepRef } from '../utils/wizard';
+
 import { ConnectorLogo } from './connector-logo';
+import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
+import type { BaseStepRef } from '../types/wizard';
+import { type ConnectTilesFormData, connectTilesFormSchema } from '../types/wizard';
+import { getAllCategories } from '../utils/categories';
+import { getBuiltInComponents } from '../utils/schema';
+
+const getLogoForComponent = (component: ConnectComponentSpec) => {
+  if (component?.logoUrl) {
+    return <img alt={component.name} className="size-6" src={component.logoUrl} />;
+  }
+  if (componentLogoMap[component.name as ComponentName]) {
+    return <ConnectorLogo className="size-6" name={component.name as ComponentName} />;
+  }
+  return <Waypoints className="size-6 text-muted-foreground" />;
+};
 
 const searchComponents = (
+  allComponents: ConnectComponentSpec[],
   query: string,
   filters?: {
     types?: ConnectComponentType[];
     categories?: string[];
-  },
-  additionalComponents?: ExtendedConnectComponentSpec[]
-): ConnectComponentSpec[] => {
-  return getAllComponents(additionalComponents)
+  }
+): ConnectComponentSpec[] =>
+  allComponents
     .sort((a, b) => a.name.localeCompare(b.name))
     .filter((component) => {
       if (filters?.types?.length && !filters.types.includes(component.type)) {
@@ -57,7 +69,6 @@ const searchComponents = (
 
       return true;
     });
-};
 
 export type ConnectTilesProps = {
   additionalComponents?: ExtendedConnectComponentSpec[];
@@ -131,18 +142,20 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
       }
     }, [defaultConnectionName, defaultConnectionType, form]);
 
-    const categories = useMemo(() => getAllCategories(additionalComponents), [additionalComponents]);
+    const allComponents = useMemo(
+      () => [...getBuiltInComponents(), ...(additionalComponents || [])],
+      [additionalComponents]
+    );
+    const categories = useMemo(() => getAllCategories(allComponents), [allComponents]);
 
-    const filteredComponents = useMemo(() => {
-      return searchComponents(
-        filter,
-        {
+    const filteredComponents = useMemo(
+      () =>
+        searchComponents(allComponents, filter, {
           types: componentTypeFilter,
           categories: selectedCategories,
-        },
-        additionalComponents
-      );
-    }, [componentTypeFilter, filter, selectedCategories, additionalComponents]);
+        }),
+      [componentTypeFilter, filter, selectedCategories, allComponents]
+    );
 
     useEffect(() => {
       requestAnimationFrame(() => {
@@ -230,13 +243,13 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                     Categories
                     <SimpleMultiSelect
                       container={document.getElementById('rp-connect-onboarding-wizard') ?? undefined}
+                      onValueChange={setSelectedCategories}
                       options={categories.map((category) => ({
                         value: category.id,
                         label: category.name,
                       }))}
-                      value={selectedCategories}
-                      onValueChange={setSelectedCategories}
                       placeholder="Databases, Social..."
+                      value={selectedCategories}
                       width="full"
                     />
                   </Label>
@@ -291,15 +304,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                                           {component.summary}
                                         </Text>
                                       </div>
-                                      <div>
-                                        {component?.logoUrl ? (
-                                          <img src={component.logoUrl} alt={component.name} className="size-6" />
-                                        ) : componentLogoMap[component.name as ComponentName] ? (
-                                          <ConnectorLogo name={component.name as ComponentName} className="size-6" />
-                                        ) : (
-                                          <Waypoints className="size-6 text-muted-foreground" />
-                                        )}
-                                      </div>
+                                      <div>{getLogoForComponent(component)}</div>
                                       {field.value === component.name &&
                                         form.getValues('connectionType') === component.type && (
                                           <ChoiceboxItemIndicator className="absolute top-2 right-2" />

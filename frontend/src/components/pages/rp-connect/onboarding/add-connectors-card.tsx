@@ -4,8 +4,9 @@ import { Separator } from 'components/redpanda-ui/components/separator';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { PlusIcon } from 'lucide-react';
 import { memo } from 'react';
-import type { ConnectComponentType } from '../types/schema';
+
 import { getConnectorTypeBadgeProps } from './connector-badges';
+import type { ConnectComponentType } from '../types/schema';
 
 const allowedConnectorTypes: ConnectComponentType[] = ['processor', 'cache', 'buffer'];
 
@@ -20,9 +21,9 @@ const AddConnectorButton = ({
 }) => {
   const { text, variant, className, icon } = getConnectorTypeBadgeProps(type);
   return (
-    <Badge icon={icon} variant={variant} className="cursor-pointer max-w-fit" onClick={() => onClick(type)}>
+    <Badge className="max-w-fit cursor-pointer" icon={icon} onClick={() => onClick(type)} variant={variant}>
       {text}
-      <PlusIcon size={12} className={cn(className, 'ml-3 mb-0.5')} />
+      <PlusIcon className={cn(className, 'mb-0.5 ml-3')} size={12} />
     </Badge>
   );
 };
@@ -53,18 +54,18 @@ export const AddConnectorsCard = memo(
           <CardTitle>Connectors</CardTitle>
           <CardDescription>Add connectors to your pipeline.</CardDescription>
         </CardHeader>
-        <CardContent className="gap-4 flex flex-col space-y-0">
-          <div className="flex-wrap flex gap-2">
+        <CardContent className="flex flex-col gap-4 space-y-0">
+          <div className="flex flex-wrap gap-2">
             {allowedConnectorTypes.map((connectorType) => (
-              <AddConnectorButton key={connectorType} type={connectorType} onClick={onAddConnector} />
+              <AddConnectorButton key={connectorType} onClick={onAddConnector} type={connectorType} />
             ))}
-            {inputSupportsScanner && <AddConnectorButton type="scanner" onClick={onAddConnector} />}
+            {inputSupportsScanner && <AddConnectorButton onClick={onAddConnector} type="scanner" />}
           </div>
-          {(!hasInput || !hasOutput) && (
+          {!(hasInput && hasOutput) && (
             <div className="flex flex-col gap-2">
               <Separator className="mb-2" />
-              {!hasInput && <AddConnectorButton type="input" onClick={onAddConnector} />}
-              {!hasOutput && <AddConnectorButton type="output" onClick={onAddConnector} />}
+              {!hasInput && <AddConnectorButton onClick={onAddConnector} type="input" />}
+              {!hasOutput && <AddConnectorButton onClick={onAddConnector} type="output" />}
             </div>
           )}
         </CardContent>

@@ -1,5 +1,6 @@
 import type { BadgeVariant } from 'components/redpanda-ui/components/badge';
 import { Cpu, Database, FolderInput, FolderOutput, HelpCircle, Layers, Search, Timer } from 'lucide-react';
+
 import type { ConnectComponentType } from '../types/schema';
 
 export type ConnectBadgeProps = {

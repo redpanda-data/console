@@ -1,7 +1,7 @@
 import type React from 'react';
 
 export const OracleLogo = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 64 64" fill="currentColor" xmlns="http://www.w3.org/2000/svg" {...props}>
+  <svg fill="currentColor" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" {...props}>
     <title>Oracle</title>
     <path d="M0 0h64v64H0z" fill="#e30613" />
     <path

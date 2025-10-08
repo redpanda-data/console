@@ -12,6 +12,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useSt
 import { useForm } from 'react-hook-form';
 import { CONNECT_WIZARD_TOPIC_KEY } from 'state/connect/state';
 import type { Topic } from 'state/rest-interfaces';
+import { isFalsy } from 'utils/falsy';
 
 import { AdvancedTopicSettings } from './advanced-topic-settings';
 import {
@@ -32,7 +33,6 @@ import {
   type StepSubmissionResult,
 } from '../types/wizard';
 import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FORM_DEFAULTS } from '../utils/topic';
-import { hasValue } from '../utils/wizard';
 
 interface AddTopicStepProps {
   topicList: Topic[] | undefined;
@@ -99,7 +99,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
 
   const { data: topicConfig } = useTopicConfigQuery(
     existingTopicBeingEdited?.topicName || '',
-    hasValue(existingTopicBeingEdited?.topicName)
+    !isFalsy(existingTopicBeingEdited?.topicName)
   );
 
   useEffect(() => {

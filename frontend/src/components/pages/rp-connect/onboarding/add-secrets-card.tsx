@@ -39,7 +39,7 @@ export const AddSecretsCard = ({
     return { used, unused };
   }, [existingSecrets, detectedSecretsSet]);
 
-  const { visibleSecrets, collapsibleSecrets, hasMore } = useMemo(() => {
+  const { visibleSecrets, collapsibleSecrets, hasMoreSecrets } = useMemo(() => {
     const allSecrets = [...categorizedSecrets.used, ...categorizedSecrets.unused];
     const visible = allSecrets.slice(0, 3);
     const collapsible = allSecrets.slice(3);
@@ -54,7 +54,7 @@ export const AddSecretsCard = ({
     return {
       visibleSecrets: { used: visibleUsed, unused: visibleUnused },
       collapsibleSecrets: { used: collapsibleUsed, unused: collapsibleUnused },
-      hasMore,
+      hasMoreSecrets: hasMore,
     };
   }, [categorizedSecrets]);
 
@@ -94,48 +94,48 @@ export const AddSecretsCard = ({
       <CardContent>
         <div className="space-y-4">
           {existingSecrets.length > 0 && (
-            <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+            <Collapsible onOpenChange={setIsOpen} open={isOpen}>
               <div className="flex flex-col gap-2">
-                <Text className="text-sm font-medium">Existing Secrets:</Text>
+                <Text className="font-medium text-sm">Existing Secrets:</Text>
                 <div className="flex flex-wrap gap-2">
                   {visibleSecrets.used.map((secret) => (
-                    <Badge key={secret} variant="green" className="font-mono" icon={<Check />}>
+                    <Badge className="font-mono" icon={<Check />} key={secret} variant="green">
                       {`\${secrets.${secret}}`}
                     </Badge>
                   ))}
                   {visibleSecrets.unused.map((secret) => (
                     <Badge
+                      className="cursor-pointer font-mono hover:opacity-80"
                       key={secret}
-                      variant="secondary"
-                      className="font-mono cursor-pointer hover:opacity-80"
                       onClick={() => handleSecretClick(secret)}
+                      variant="secondary"
                     >
                       {`\${secrets.${secret}}`}
                     </Badge>
                   ))}
                   <CollapsibleContent className="flex flex-wrap gap-2">
                     {collapsibleSecrets.used.map((secret) => (
-                      <Badge key={secret} variant="green" className="font-mono" icon={<Check />}>
+                      <Badge className="font-mono" icon={<Check />} key={secret} variant="green">
                         {`\${secrets.${secret}}`}
                       </Badge>
                     ))}
                     {collapsibleSecrets.unused.map((secret) => (
                       <Badge
+                        className="cursor-pointer font-mono hover:opacity-80"
                         key={secret}
-                        variant="secondary"
-                        className="font-mono cursor-pointer hover:opacity-80"
                         onClick={() => handleSecretClick(secret)}
+                        variant="secondary"
                       >
                         {`\${secrets.${secret}}`}
                       </Badge>
                     ))}
                   </CollapsibleContent>
-                  {hasMore && (
+                  {hasMoreSecrets && (
                     <CollapsibleTrigger asChild>
                       <Badge
-                        variant="outline"
                         className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
                         icon={<ChevronDown className={cn('transition-transform', isOpen && 'rotate-180')} />}
+                        variant="outline"
                       >
                         {isOpen ? 'Hide' : `${existingSecrets.length - 3} More`}
                       </Badge>
@@ -164,7 +164,7 @@ export const AddSecretsCard = ({
               reference secrets.
             </Text>
           )}
-          <Button variant="outline" size={existingSecrets.length > 0 ? 'sm' : 'default'} onClick={onOpenDialog}>
+          <Button onClick={onOpenDialog} size={existingSecrets.length > 0 ? 'sm' : 'default'} variant="outline">
             <PlusIcon className="h-4 w-4" />
             {existingSecrets.length > 0 ? 'Add More Secrets' : 'Add Secret'}
           </Button>

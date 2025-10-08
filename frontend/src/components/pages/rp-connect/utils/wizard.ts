@@ -1,16 +1,9 @@
 import { toast } from 'sonner';
-import { isFalsy } from 'utils/falsy';
+import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
 
-interface StepSubmissionResult {
-  success: boolean;
-  message?: string; // Success or error message
-  error?: string; // Detailed error for debugging
-}
-
-export interface BaseStepRef {
-  triggerSubmit: () => Promise<StepSubmissionResult>;
-  isLoading: boolean;
-}
+import { REDPANDA_SECRET_COMPONENTS } from '../types/constants';
+import type { ConnectFieldSpec } from '../types/schema';
+import type { AddTopicFormData, AddUserFormData, StepSubmissionResult } from '../types/wizard';
 
 /**
  * Handles step submission results with success feedback only
@@ -37,17 +30,77 @@ export const handleStepResult = (result: StepSubmissionResult | undefined, onSuc
 };
 
 /**
- * Checks if a value has content (not null, undefined, or empty string)
- * @param value - The value to check
- * @returns true if the value has content
+ * Reads persisted wizard data from session storage
  */
-export const hasValue = (value: string | null | undefined): boolean => !isFalsy(value);
+export const getPersistedWizardData = () => {
+  let topicData: AddTopicFormData | undefined;
+  let userData: AddUserFormData | undefined;
 
-export const WizardStep = {
-  ADD_INPUT: 'add-input-step',
-  ADD_OUTPUT: 'add-output-step',
-  ADD_TOPIC: 'add-topic-step',
-  ADD_USER: 'add-user-step',
-} as const;
+  const topicJson = sessionStorage.getItem(CONNECT_WIZARD_TOPIC_KEY);
+  if (topicJson) {
+    topicData = JSON.parse(topicJson);
+  }
 
-export type WizardStep = (typeof WizardStep)[keyof typeof WizardStep];
+  const userJson = sessionStorage.getItem(CONNECT_WIZARD_USER_KEY);
+  if (userJson) {
+    userData = JSON.parse(userJson);
+  }
+
+  return { topicData, userData };
+};
+
+/**
+ * Checks if a field name is topic-related
+ * Matches: 'topic' (outputs/cache) or 'topics' (inputs)
+ */
+export const isTopicField = (fieldName: string): boolean => {
+  const normalizedName = fieldName.toLowerCase();
+  return normalizedName === 'topic' || normalizedName === 'topics';
+};
+
+/**
+ * Checks if a field name is user/authentication-related
+ * Matches: 'user' (kafka sasl) or 'username' (redpanda sasl)
+ */
+export const isUserField = (fieldName: string): boolean => {
+  const normalized = fieldName.toLowerCase();
+  return normalized === 'user' || normalized === 'username';
+};
+
+/**
+ * Checks if a field name is password-related
+ * Matches: 'password' (nested in sasl object)
+ */
+export const isPasswordField = (fieldName: string): boolean => fieldName.toLowerCase() === 'password';
+
+/**
+ * Checks if a ConnectFieldSpec or its children have wizard-relevant fields
+ * Used to determine if advanced/optional fields should be shown
+ */
+export const hasWizardRelevantFields = (spec: ConnectFieldSpec, componentName?: string): boolean => {
+  if (!(componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName))) {
+    return false;
+  }
+
+  const { topicData, userData } = getPersistedWizardData();
+
+  if (isTopicField(spec.name) && topicData?.topicName) {
+    return true;
+  }
+  if (isUserField(spec.name) && userData?.username) {
+    return true;
+  }
+  if (isPasswordField(spec.name) && userData?.username) {
+    return true;
+  }
+
+  if (spec.children && spec.children.length > 0) {
+    for (const child of spec.children) {
+      if (hasWizardRelevantFields(child, componentName)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};

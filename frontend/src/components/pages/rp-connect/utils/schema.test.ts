@@ -1,7 +1,14 @@
 import { beforeEach, describe, expect, test } from 'vitest';
+
+import {
+  configToYaml,
+  generateDefaultValue,
+  getBuiltInComponents,
+  mergeConnectConfigs,
+  schemaToConfig,
+} from './schema';
 import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from '../../../../state/connect/state';
 import type { ConnectFieldSpec } from '../types/schema';
-import { builtInComponents, configToYaml, generateDefaultValue, mergeConnectConfigs, schemaToConfig } from './schema';
 
 describe('generateDefaultValue', () => {
   beforeEach(() => {
@@ -449,6 +456,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('TLS field should be hidden when advanced and no wizard data', () => {
+      const builtInComponents = getBuiltInComponents();
       const kafkaOutput = builtInComponents.find((c) => c.name === 'kafka' && c.type === 'output');
       const tlsSpec = kafkaOutput?.config.children?.find((c) => c.name === 'tls');
 
@@ -463,6 +471,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('client_id field should be hidden when advanced with default', () => {
+      const builtInComponents = getBuiltInComponents();
       const kafkaOutput = builtInComponents.find((c) => c.name === 'kafka' && c.type === 'output');
       const clientIdSpec = kafkaOutput?.config.children?.find((c) => c.name === 'client_id');
 
@@ -477,9 +486,10 @@ describe('generateDefaultValue', () => {
     });
 
     test('kafka output should only show critical fields', () => {
+      const builtInComponents = getBuiltInComponents();
       const kafkaOutput = builtInComponents.find((c) => c.name === 'kafka' && c.type === 'output');
 
-      const config = schemaToConfig(kafkaOutput, false);
+      const config = schemaToConfig(kafkaOutput, false) as Record<string, any>;
       const outputConfig = config?.output?.kafka;
 
       expect(outputConfig).toBeDefined();
@@ -509,9 +519,10 @@ describe('generateDefaultValue', () => {
     });
 
     test('redpanda input should only show critical fields', () => {
+      const builtInComponents = getBuiltInComponents();
       const redpandaInput = builtInComponents.find((c) => c.name === 'redpanda' && c.type === 'input');
 
-      const config = schemaToConfig(redpandaInput, false);
+      const config = schemaToConfig(redpandaInput, false) as Record<string, any>;
       const inputConfig = config?.input?.redpanda;
 
       expect(inputConfig).toBeDefined();
@@ -536,9 +547,10 @@ describe('generateDefaultValue', () => {
 
   describe('Scanner configuration', () => {
     test('should show scanner fields when showOptionalFields=true', () => {
+      const builtInComponents = getBuiltInComponents();
       const avroScanner = builtInComponents.find((c) => c.name === 'avro' && c.type === 'scanner');
 
-      const config = schemaToConfig(avroScanner, true);
+      const config = schemaToConfig(avroScanner, true) as Record<string, any>;
       const scannerConfig = config?.avro;
 
       expect(scannerConfig).toBeDefined();
@@ -546,18 +558,20 @@ describe('generateDefaultValue', () => {
     });
 
     test('should show empty object when showOptionalFields=false', () => {
+      const builtInComponents = getBuiltInComponents();
       const avroScanner = builtInComponents.find((c) => c.name === 'avro' && c.type === 'scanner');
 
-      const config = schemaToConfig(avroScanner, false);
+      const config = schemaToConfig(avroScanner, false) as Record<string, any>;
       const scannerConfig = config?.avro;
 
       expect(scannerConfig).toBeDefined();
-      expect(Object.keys(scannerConfig).length).toBe(0); // Empty object when hiding optional fields
+      expect(Object.keys(scannerConfig as Record<string, unknown>).length).toBe(0); // Empty object when hiding optional fields
     });
   });
 
   describe('YAML spacing for merged components', () => {
     test('should add newline between root-level items when adding cache', () => {
+      const builtInComponents = getBuiltInComponents();
       const existingYaml = `input:
   stdin:
     codec: lines
@@ -567,10 +581,14 @@ output:
     codec: lines`;
 
       const cacheSpec = builtInComponents.find((c) => c.name === 'memory' && c.type === 'cache');
-      if (!cacheSpec) throw new Error('memory cache not found');
+      if (!cacheSpec) {
+        throw new Error('memory cache not found');
+      }
 
       const newConfig = schemaToConfig(cacheSpec, false);
-      if (!newConfig) throw new Error('Failed to generate cache config');
+      if (!newConfig) {
+        throw new Error('Failed to generate cache config');
+      }
 
       const mergedDoc = mergeConnectConfigs(existingYaml, newConfig, cacheSpec);
       const yamlString = configToYaml(mergedDoc, cacheSpec);
@@ -580,15 +598,20 @@ output:
     });
 
     test('should add newline between root-level items when adding processor', () => {
+      const builtInComponents = getBuiltInComponents();
       const existingYaml = `input:
   stdin:
     codec: lines`;
 
       const processorSpec = builtInComponents.find((c) => c.name === 'log' && c.type === 'processor');
-      if (!processorSpec) throw new Error('log processor not found');
+      if (!processorSpec) {
+        throw new Error('log processor not found');
+      }
 
       const newConfig = schemaToConfig(processorSpec, false);
-      if (!newConfig) throw new Error('Failed to generate processor config');
+      if (!newConfig) {
+        throw new Error('Failed to generate processor config');
+      }
 
       const mergedDoc = mergeConnectConfigs(existingYaml, newConfig, processorSpec);
       const yamlString = configToYaml(mergedDoc, processorSpec);

@@ -18,14 +18,16 @@ import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { PipelineUpdateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Link } from 'react-router-dom';
+
+import { extractLintHintsFromError, formatPipelineError } from './errors';
+import { PipelineEditor } from './pipelines-create';
+import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+import type { LintHint } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
 import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import { PageComponent, type PageInitHelper, type PageProps } from '../page';
-import { extractLintHintsFromError, formatPipelineError } from './errors';
-import { PipelineEditor } from './pipelines-create';
-import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 
 @observer
 class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
@@ -35,7 +37,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   @observable editorContent = undefined as unknown as string;
   @observable isUpdating = false;
   @observable secrets: string[] = [];
-  @observable lintResults: Record<string, any> = {};
+  @observable lintResults: Record<string, LintHint> = {};
   // TODO: Actually show this within the pipeline edit page
   @observable tags = {} as Record<string, string>;
 
@@ -143,8 +145,8 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
           />
         </FormField>
         <FormField
-          label="Compute Units"
           description="One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines."
+          label="Compute Units"
           w={500}
         >
           <NumberInput
@@ -157,7 +159,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
         </FormField>
 
         <div className="mt-4">
-          <PipelineEditor yaml={this.editorContent} onChange={(x) => (this.editorContent = x)} secrets={this.secrets} />
+          <PipelineEditor onChange={(x) => (this.editorContent = x)} secrets={this.secrets} yaml={this.editorContent} />
         </div>
 
         {isFeatureFlagEnabled('enableRpcnTiles') && this.lintResults && Object.keys(this.lintResults).length > 0 && (
@@ -199,15 +201,15 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
       )
       .then(
         action(async (r) => {
-          if (!enableRpcnTiles) {
+          if (enableRpcnTiles) {
+            this.lintResults = {};
+          } else {
             toast({
               status: 'success',
               duration: 4000,
               isClosable: false,
               title: 'Pipeline updated',
             });
-          } else {
-            this.lintResults = {};
           }
           const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
           if (retUnits && this.tasks !== retUnits) {
@@ -224,7 +226,9 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
       )
       .catch(
         action((err) => {
-          if (!enableRpcnTiles) {
+          if (enableRpcnTiles) {
+            this.lintResults = extractLintHintsFromError(err);
+          } else {
             toast({
               status: 'error',
               duration: null,
@@ -232,8 +236,6 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
               title: 'Failed to update pipeline',
               description: formatPipelineError(err),
             });
-          } else {
-            this.lintResults = extractLintHintsFromError(err);
           }
         })
       )

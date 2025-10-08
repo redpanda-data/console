@@ -14,9 +14,10 @@ import { CONNECT_WIZARD_CONNECTOR_KEY } from 'state/connect/state';
 import { AddTopicStep } from './add-topic-step';
 import { AddUserStep } from './add-user-step';
 import { ConnectTiles } from './connect-tiles';
+import { WizardStep, type WizardStepType } from '../types/constants';
 import type { ConnectComponentType } from '../types/schema';
 import type { BaseStepRef, WizardFormData } from '../types/wizard';
-import { handleStepResult, WizardStep } from '../utils/wizard';
+import { handleStepResult } from '../utils/wizard';
 
 const stepDefinitions = [
   {
@@ -85,7 +86,7 @@ export const ConnectOnboardingWizard = () => {
     [setPersistedConnector, persistedConnector]
   );
 
-  const handleNext = async (methods: { current: { id: WizardStep }; next: () => void }) => {
+  const handleNext = async (methods: { current: { id: WizardStepType }; next: () => void }) => {
     switch (methods.current.id) {
       case WizardStep.ADD_INPUT: {
         const result = await addInputStepRef.current?.triggerSubmit();
@@ -116,7 +117,7 @@ export const ConnectOnboardingWizard = () => {
     navigate('/rp-connect/create');
   };
 
-  const getCurrentStepLoading = (currentStepId: WizardStep): boolean => {
+  const getCurrentStepLoading = (currentStepId: WizardStepType): boolean => {
     switch (currentStepId) {
       case WizardStep.ADD_INPUT:
         return addInputStepRef.current?.isLoading ?? false;
@@ -152,10 +153,10 @@ export const ConnectOnboardingWizard = () => {
                 {methods.switch({
                   [WizardStep.ADD_INPUT]: () => (
                     <ConnectTiles
-                      key="input-connector-tiles"
                       componentTypeFilter={['input']}
                       defaultConnectionName={persistedConnector.input?.connectionName}
                       defaultConnectionType={persistedConnector.input?.connectionType}
+                      key="input-connector-tiles"
                       onChange={handleInputChange}
                       ref={addInputStepRef}
                       tileWrapperClassName="min-h-[300px] max-h-[40vh]"
@@ -164,10 +165,10 @@ export const ConnectOnboardingWizard = () => {
                   ),
                   [WizardStep.ADD_OUTPUT]: () => (
                     <ConnectTiles
-                      key="output-connector-tiles"
                       componentTypeFilter={['output']}
                       defaultConnectionName={persistedConnector.output?.connectionName}
                       defaultConnectionType={persistedConnector.output?.connectionType}
+                      key="output-connector-tiles"
                       onChange={handleOutputChange}
                       ref={addOutputStepRef}
                       tileWrapperClassName="min-h-[300px] max-h-[40vh]"

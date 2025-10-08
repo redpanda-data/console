@@ -1,48 +1,37 @@
 import { isFalsy } from 'utils/falsy';
-import { parseDocument, stringify as yamlStringify } from 'yaml';
-import benthosSchema from '../../../../assets/rp-connect-schema-full.json';
-import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from '../../../../state/connect/state';
+import { type Document, parseDocument, stringify as yamlStringify } from 'yaml';
+
+import { getPersistedWizardData, hasWizardRelevantFields, isPasswordField, isTopicField, isUserField } from './wizard';
 import {
+  addRootSpacing,
+  addSchemaComments,
+  mergeCacheResource,
+  mergeProcessor,
+  mergeRateLimitResource,
+  mergeRootComponent,
+  mergeScanner,
+} from './yaml';
+import benthosSchema from '../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
+import {
+  CRITICAL_CONNECTION_FIELDS,
+  NON_CRITICAL_CONFIG_OBJECTS,
+  REDPANDA_SECRET_COMPONENTS,
+} from '../types/constants';
+import {
+  type BenthosSchema,
   CONNECT_COMPONENT_TYPE,
   type ConnectComponentSpec,
   type ConnectComponentType,
+  type ConnectConfigObject,
   type ConnectFieldSpec,
-  type ConnectNodeCategory,
-  type ExtendedConnectComponentSpec,
+  type RawComponentSpec,
+  type RawFieldSpec,
 } from '../types/schema';
-import type { AddTopicFormData, AddUserFormData } from '../types/wizard';
-import { getCategoryDisplayName } from './categories';
-
-/**
- * Components that support Redpanda secret population from wizard
- * Includes Kafka-compatible components and Redpanda migrator tools
- */
-const REDPANDA_SECRET_COMPONENTS = [
-  'kafka',
-  'kafka_franz',
-  'redpanda',
-  'redpanda_common',
-  'redpanda_migrator',
-  'redpanda_migrator_bundle',
-  'redpanda_migrator_offsets',
-];
-
-/**
- * Fields that are critical for connection and should always be shown
- * even when they have defaults
- */
-const CRITICAL_CONNECTION_FIELDS = new Set(['addresses', 'seed_brokers', 'topics', 'topic', 'brokers']);
-
-/**
- * Configuration object fields that should be hidden for REDPANDA_SECRET_COMPONENTS
- * when wizard data exists (unless showOptionalFields is true)
- */
-const NON_CRITICAL_CONFIG_OBJECTS = new Set(['tls', 'metadata', 'batching', 'backoff', 'retry']);
 
 /**
  * Converts a field spec from the full schema format to ConnectFieldSpec
  */
-const convertFieldSpecFromFullSchema = (fieldSpec: any): ConnectFieldSpec => {
+const convertFieldSpecFromFullSchema = (fieldSpec: RawFieldSpec): ConnectFieldSpec => {
   const spec: ConnectFieldSpec = {
     name: fieldSpec.name || '',
     type: fieldSpec.type || 'unknown',
@@ -73,7 +62,7 @@ const convertFieldSpecFromFullSchema = (fieldSpec: any): ConnectFieldSpec => {
 /**
  * Creates a ConnectFieldSpec for a component's config from the full schema format
  */
-const createComponentConfigSpec = (component: any): ConnectFieldSpec => {
+const createComponentConfigSpec = (component: RawComponentSpec): ConnectFieldSpec => {
   const config = component.config;
 
   const configSpec: ConnectFieldSpec = {
@@ -90,32 +79,45 @@ const createComponentConfigSpec = (component: any): ConnectFieldSpec => {
   return configSpec;
 };
 
+const typeToSchemaKey: Record<ConnectComponentType, keyof BenthosSchema> = {
+  input: 'inputs',
+  output: 'outputs',
+  processor: 'processors',
+  cache: 'caches',
+  buffer: 'buffers',
+  rate_limit: 'rate-limits',
+  scanner: 'scanners',
+  metrics: 'metrics',
+  tracer: 'tracers',
+};
+
+// Maps component types to YAML config keys (different from schema keys)
+const typeToYamlConfigKey: Record<ConnectComponentType, string> = {
+  input: 'input',
+  output: 'output',
+  processor: 'pipeline',
+  cache: 'cache_resources',
+  buffer: 'buffer',
+  rate_limit: 'rate_limit_resources',
+  scanner: 'scanner',
+  metrics: 'metrics',
+  tracer: 'tracer',
+};
+
 /**
  * Phase 0: Parses benthos schema and returns all components with metadata
+ * @returns all components with metadata
  */
 const parseSchema = () => {
-  const schemaData = benthosSchema as any;
+  const schemaData = benthosSchema as BenthosSchema;
   const allComponents: ConnectComponentSpec[] = [];
-
-  // Map component types to schema array keys
-  const typeToSchemaKey: Record<string, string> = {
-    input: 'inputs',
-    output: 'outputs',
-    processor: 'processors',
-    cache: 'caches',
-    buffer: 'buffers',
-    rate_limit: 'rate-limits',
-    scanner: 'scanners',
-    metrics: 'metrics',
-    tracer: 'tracers',
-  };
 
   // Parse each component type from flat arrays
   for (const componentType of CONNECT_COMPONENT_TYPE) {
     const schemaKey = typeToSchemaKey[componentType];
-    const componentsArray = schemaData[schemaKey];
+    const componentsArray = schemaData[schemaKey] as RawComponentSpec[] | undefined;
 
-    if (!componentsArray || !Array.isArray(componentsArray)) {
+    if (!(componentsArray && Array.isArray(componentsArray))) {
       continue;
     }
 
@@ -124,7 +126,7 @@ const parseSchema = () => {
         name: comp.name,
         type: comp.type as ConnectComponentType,
         status: comp.status || 'stable',
-        plugin: comp.plugin || false,
+        plugin: comp.plugin,
         summary: comp.summary || `${comp.name} ${comp.type}`,
         description: comp.description || `${comp.name} ${comp.type} component`,
         categories: comp.categories || null,
@@ -139,35 +141,47 @@ const parseSchema = () => {
   return allComponents;
 };
 
-// Cache the parsed schema data (built-in components only)
-// Exported for use by categories.ts and getAllComponents()
-export const builtInComponents = parseSchema();
+// Singleton cache for parsed components (lazy-loaded to avoid circular dependencies)
+let _builtInComponentsCache: ConnectComponentSpec[] | undefined;
+
+/**
+ * Gets built-in components, parsing schema on first call and caching result
+ * This lazy initialization prevents circular dependency issues during module loading
+ */
+export const getBuiltInComponents = (): ConnectComponentSpec[] => {
+  if (!_builtInComponentsCache) {
+    _builtInComponentsCache = parseSchema();
+  }
+  return _builtInComponentsCache;
+};
 
 /**
  * Phase 1: Converts a component specification to a config object structure with default values
  * following the Redpanda Connect YAML schema structure
+ * @param componentSpec - the component spec to convert to a config object
+ * @param showOptionalFields - whether to show optional fields
+ * @returns ConnectConfigObject or undefined
  */
-export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptionalFields?: boolean) => {
+export const schemaToConfig = (
+  componentSpec?: ConnectComponentSpec,
+  showOptionalFields?: boolean
+): ConnectConfigObject | undefined => {
   if (!componentSpec?.config) {
     return;
   }
 
-  // Generate the configuration object from the component's FieldSpec
-  // Pass component name for secret population logic
   const connectionConfig = generateDefaultValue(componentSpec.config, showOptionalFields, componentSpec.name);
 
-  const config: any = {};
+  const config: ConnectConfigObject = {};
 
-  // Structure the config according to Redpanda Connect schema
+  // Structure the config according to Redpanda Connect YAML schema
   switch (componentSpec.type) {
     case 'input':
-      config.input = {
-        [componentSpec.name]: connectionConfig,
-      };
-      break;
-
     case 'output':
-      config.output = {
+    case 'buffer':
+    case 'metrics':
+    case 'tracer':
+      config[typeToYamlConfigKey[componentSpec.type]] = {
         [componentSpec.name]: connectionConfig,
       };
       break;
@@ -182,35 +196,9 @@ export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptiona
       };
       break;
 
-    case 'buffer':
-      config.buffer = {
-        [componentSpec.name]: connectionConfig,
-      };
-      break;
-
-    case 'metrics':
-      config.metrics = {
-        [componentSpec.name]: connectionConfig,
-      };
-      break;
-
-    case 'tracer':
-      config.tracer = {
-        [componentSpec.name]: connectionConfig,
-      };
-      break;
-
     case 'cache':
-      config.cache_resources = [
-        {
-          label: componentSpec.name,
-          [componentSpec.name]: connectionConfig,
-        },
-      ];
-      break;
-
     case 'rate_limit':
-      config.rate_limit_resources = [
+      config[typeToYamlConfigKey[componentSpec.type]] = [
         {
           label: componentSpec.name,
           [componentSpec.name]: connectionConfig,
@@ -233,26 +221,24 @@ export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptiona
 /**
  * Phase 2: Merges a new component config object into existing YAML configuration
  * using Document API to PRESERVE COMMENTS
- *
- * IMPORTANT:
- * - Converts YAML nodes to JavaScript before array operations to fix spreading issues
- * - Converts new config to YAML with comments first, then merges to preserve those comments
+ * @param existingYaml - the existing YAML content to merge with
+ * @param newConfigObject - the new config object to merge
+ * @param componentSpec - the component spec to merge
+ * @returns Document.Parsed or ConnectConfigObject
  */
 export const mergeConnectConfigs = (
   existingYaml: string,
-  newConfigObject: ReturnType<typeof schemaToConfig>,
+  newConfigObject: ConnectConfigObject,
   componentSpec: ConnectComponentSpec
-) => {
+): Document.Parsed | ConnectConfigObject | undefined => {
   if (!existingYaml.trim()) {
     return newConfigObject;
   }
 
-  // Parse existing YAML as Document (preserves comments!)
-  let doc: any;
+  let doc: Document.Parsed;
   try {
     doc = parseDocument(existingYaml);
-  } catch (error) {
-    console.warn('Failed to parse existing YAML, starting with empty config:', error);
+  } catch (_error) {
     return newConfigObject;
   }
 
@@ -268,121 +254,34 @@ export const mergeConnectConfigs = (
     });
     // Add schema comments
     newYamlWithComments = addSchemaComments(newYamlWithComments, componentSpec);
-  } catch (error) {
-    console.warn('Failed to generate YAML with comments, using plain object:', error);
+  } catch (_error) {
     // Fallback to plain object if YAML generation fails
     newYamlWithComments = '';
   }
 
   // Parse the new YAML as a Document to extract commented nodes
-  let newDoc: any;
+  let newDoc: Document.Parsed | undefined;
   if (newYamlWithComments) {
     try {
       newDoc = parseDocument(newYamlWithComments);
-    } catch (error) {
-      console.warn('Failed to parse new YAML with comments:', error);
+    } catch (_error) {
+      // Parsing failed, newDoc remains undefined
     }
   }
 
   switch (componentSpec.type) {
     case 'processor': {
-      // Processors: append to pipeline.processors[] array
-      // IMPORTANT: Convert YAML node to JS with .toJSON() before spreading
-      const processorsNode = doc.getIn(['pipeline', 'processors']);
-      const processors = processorsNode?.toJSON?.() || [];
-
-      // Get the new processor from the commented Document (or fallback to plain object)
-      const newProcessorNode = newDoc?.getIn(['pipeline', 'processors', 0]);
-      const newProcessor = newProcessorNode || newConfigObject.pipeline?.processors?.[0];
-
-      if (newProcessor) {
-        if (Array.isArray(processors)) {
-          // Spread existing processors and append new one
-          doc.setIn(['pipeline', 'processors'], [...processors, newProcessor]);
-        } else {
-          doc.setIn(['pipeline', 'processors'], [newProcessor]);
-        }
-      }
+      mergeProcessor(doc, newDoc, newConfigObject);
       break;
     }
 
     case 'cache': {
-      // Cache: append to cache_resources[] array
-      const cacheResourcesNode = doc.getIn(['cache_resources']);
-      const cacheResources = cacheResourcesNode?.toJSON?.() || [];
-
-      // Get the new resource from the commented Document (or fallback to plain object)
-      const newResourceNode = newDoc?.getIn(['cache_resources', 0]);
-      let newResource = newResourceNode || newConfigObject.cache_resources?.[0];
-
-      if (newResource) {
-        // If we got a node, convert to JS for label manipulation
-        if (newResourceNode) {
-          newResource = newResourceNode.toJSON();
-        }
-
-        // Check for label conflicts
-        const existingLabels = Array.isArray(cacheResources)
-          ? cacheResources.map((r: any) => r?.label).filter(Boolean)
-          : [];
-
-        if (existingLabels.includes(newResource.label)) {
-          let counter = 1;
-          let uniqueLabel = `${newResource.label}_${counter}`;
-          while (existingLabels.includes(uniqueLabel)) {
-            counter++;
-            uniqueLabel = `${newResource.label}_${counter}`;
-          }
-          newResource.label = uniqueLabel;
-
-          // Update the node with the new label if we're using the commented node
-          if (newResourceNode) {
-            newResourceNode.set('label', uniqueLabel);
-          }
-        }
-
-        doc.setIn(['cache_resources'], [...cacheResources, newResourceNode || newResource]);
-      }
+      mergeCacheResource(doc, newDoc, newConfigObject);
       break;
     }
 
     case 'rate_limit': {
-      // Rate limit: append to rate_limit_resources[] array
-      const rateLimitResourcesNode = doc.getIn(['rate_limit_resources']);
-      const rateLimitResources = rateLimitResourcesNode?.toJSON?.() || [];
-
-      // Get the new resource from the commented Document (or fallback to plain object)
-      const newResourceNode = newDoc?.getIn(['rate_limit_resources', 0]);
-      let newResource = newResourceNode || newConfigObject.rate_limit_resources?.[0];
-
-      if (newResource) {
-        // If we got a node, convert to JS for label manipulation
-        if (newResourceNode) {
-          newResource = newResourceNode.toJSON();
-        }
-
-        // Check for label conflicts
-        const existingLabels = Array.isArray(rateLimitResources)
-          ? rateLimitResources.map((r: any) => r?.label).filter(Boolean)
-          : [];
-
-        if (existingLabels.includes(newResource.label)) {
-          let counter = 1;
-          let uniqueLabel = `${newResource.label}_${counter}`;
-          while (existingLabels.includes(uniqueLabel)) {
-            counter++;
-            uniqueLabel = `${newResource.label}_${counter}`;
-          }
-          newResource.label = uniqueLabel;
-
-          // Update the node with the new label if we're using the commented node
-          if (newResourceNode) {
-            newResourceNode.set('label', uniqueLabel);
-          }
-        }
-
-        doc.setIn(['rate_limit_resources'], [...rateLimitResources, newResourceNode || newResource]);
-      }
+      mergeRateLimitResource(doc, newDoc, newConfigObject);
       break;
     }
 
@@ -391,51 +290,17 @@ export const mergeConnectConfigs = (
     case 'buffer':
     case 'metrics':
     case 'tracer': {
-      // Root level components: replace existing
-      // Use commented nodes from newDoc if available
-      for (const [key] of Object.entries(newConfigObject)) {
-        const newNode = newDoc?.get(key);
-        doc.set(key, newNode || newConfigObject[key]);
-      }
+      mergeRootComponent(doc, newDoc, newConfigObject);
       break;
     }
 
     case 'scanner': {
-      // Scanners are embedded within input configurations
-      // Find the input node and merge the scanner into it
-      const inputNode = doc.get('input');
-      if (!inputNode) {
-        console.warn('Cannot add scanner: no input found in existing YAML');
-        return doc;
-      }
-
-      // Get the input type (first key under input)
-      const inputObj = inputNode.toJSON?.() || {};
-      const inputType = Object.keys(inputObj)[0];
-      if (!inputType) {
-        console.warn('Cannot add scanner: input type not found');
-        return doc;
-      }
-
-      // Scanner config is returned as { scannerName: scannerConfig }
-      const scannerName = Object.keys(newConfigObject)[0];
-      const scannerConfig = newConfigObject[scannerName];
-
-      // Get the new scanner from the commented Document (or fallback to plain object)
-      const newScannerNode = newDoc?.get(scannerName);
-
-      // Set the scanner within the input
-      doc.setIn(['input', inputType, 'scanner'], newScannerNode || scannerConfig);
+      mergeScanner(doc, newDoc, newConfigObject);
       break;
     }
 
     default:
-      // Unknown component type: merge at root level
-      // Use commented nodes from newDoc if available
-      for (const [key] of Object.entries(newConfigObject)) {
-        const newNode = newDoc?.get(key);
-        doc.set(key, newNode || newConfigObject[key]);
-      }
+      mergeRootComponent(doc, newDoc, newConfigObject);
       break;
   }
 
@@ -444,8 +309,14 @@ export const mergeConnectConfigs = (
 
 /**
  * Phase 3: Converts config object to formatted YAML string
+ * @param configObject - the config object to convert to a yaml string
+ * @param componentSpec - the component spec to add schema comments to
+ * @returns yaml string
  */
-export const configToYaml = (configObject: any, componentSpec: ConnectComponentSpec): string => {
+export const configToYaml = (
+  configObject: Document.Parsed | ConnectConfigObject | undefined,
+  componentSpec: ConnectComponentSpec
+): string => {
   try {
     let yamlString: string;
 
@@ -470,242 +341,58 @@ export const configToYaml = (configObject: any, componentSpec: ConnectComponentS
     }
 
     return yamlString;
-  } catch (error) {
-    console.error('Error converting config to YAML:', error);
+  } catch (_error) {
     return JSON.stringify(configObject, null, 2);
   }
+};
+
+/**
+ * Phase 4: Generates a yaml string for a connect config and merges it into existing yaml based on the selected connectionName and connectionType
+ * @param existingYaml - optional existing YAML content to merge with
+ * @returns yaml string of connect config for the selected connectionName and connectionType
+ */
+export const getConnectTemplate = ({
+  connectionName,
+  connectionType,
+  showOptionalFields,
+  existingYaml,
+}: {
+  connectionName: string;
+  connectionType: string;
+  showOptionalFields?: boolean;
+  existingYaml?: string;
+}) => {
+  // Phase 0: Find the component spec for the selected connectionName and connectionType
+  const builtInComponents = getBuiltInComponents();
+  const componentSpec =
+    connectionName && connectionType
+      ? builtInComponents.find((comp) => comp.type === connectionType && comp.name === connectionName)
+      : undefined;
+
+  if (!componentSpec) {
+    return;
+  }
+
+  // Phase 1: Generate config object for new component
+  const newConfigObject = schemaToConfig(componentSpec, showOptionalFields);
+  if (!newConfigObject) {
+    return;
+  }
+
+  // Phase 2 & 3: Merge with existing (if any) and convert to YAML
+  if (existingYaml) {
+    const mergedConfig = mergeConnectConfigs(existingYaml, newConfigObject, componentSpec);
+    return configToYaml(mergedConfig, componentSpec);
+  }
+
+  return configToYaml(newConfigObject, componentSpec);
 };
 
 // ===============================
 // Helper functions
 // ===============================
 
-/**
- * Reads persisted wizard data from session storage
- */
-const getPersistedWizardData = () => {
-  let topicData: AddTopicFormData | null = null;
-  let userData: AddUserFormData | null = null;
-
-  try {
-    const topicJson = sessionStorage.getItem(CONNECT_WIZARD_TOPIC_KEY);
-    if (topicJson) {
-      topicData = JSON.parse(topicJson);
-    }
-  } catch (error) {
-    console.warn('Failed to parse topic data from session storage:', error);
-  }
-
-  try {
-    const userJson = sessionStorage.getItem(CONNECT_WIZARD_USER_KEY);
-    if (userJson) {
-      userData = JSON.parse(userJson);
-    }
-  } catch (error) {
-    console.warn('Failed to parse user data from session storage:', error);
-  }
-
-  return { topicData, userData };
-};
-
-/**
- * Checks if a field name is topic-related
- * Matches: 'topic' (outputs/cache) or 'topics' (inputs)
- */
-const isTopicField = (fieldName: string): boolean => {
-  const normalizedName = fieldName.toLowerCase();
-  return normalizedName === 'topic' || normalizedName === 'topics';
-};
-
-/**
- * Checks if a field name is user/authentication-related
- * Matches: 'user' (kafka sasl) or 'username' (redpanda sasl)
- */
-const isUserField = (fieldName: string): boolean => {
-  const normalized = fieldName.toLowerCase();
-  return normalized === 'user' || normalized === 'username';
-};
-
-/**
- * Checks if a field name is password-related
- * Matches: 'password' (nested in sasl object)
- */
-const isPasswordField = (fieldName: string): boolean => {
-  return fieldName.toLowerCase() === 'password';
-};
-
-/**
- * Checks if a ConnectFieldSpec or its children have wizard-relevant fields
- * Used to determine if advanced/optional fields should be shown
- */
-const hasWizardRelevantFields = (spec: ConnectFieldSpec, componentName?: string): boolean => {
-  if (!componentName || !REDPANDA_SECRET_COMPONENTS.includes(componentName)) {
-    return false;
-  }
-
-  const { topicData, userData } = getPersistedWizardData();
-
-  if (isTopicField(spec.name) && topicData?.topicName) return true;
-  if (isUserField(spec.name) && userData?.username) return true;
-  if (isPasswordField(spec.name) && userData?.username) return true;
-
-  if (spec.children && spec.children.length > 0) {
-    for (const child of spec.children) {
-      if (hasWizardRelevantFields(child, componentName)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-};
-
-export const getAllCategories = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectNodeCategory[] => {
-  const categorySet = new Set<string>();
-
-  // Collect categories from built-in components
-  for (const component of builtInComponents) {
-    if (component.categories) {
-      for (const categoryId of component.categories) {
-        categorySet.add(categoryId);
-      }
-    }
-  }
-
-  // Collect categories from external components
-  if (additionalComponents) {
-    for (const component of additionalComponents) {
-      if (component.categories) {
-        for (const categoryId of component.categories) {
-          categorySet.add(categoryId);
-        }
-      }
-    }
-  }
-
-  // Convert to ConnectNodeCategory array with display names
-  return Array.from(categorySet)
-    .sort((a, b) => a.localeCompare(b))
-    .map((categoryId) => ({
-      id: categoryId,
-      name: getCategoryDisplayName(categoryId),
-    }));
-};
-
-/**
- * Builds a flat map of field names to their specs for quick lookup
- */
-const buildFieldMap = (fields: ConnectFieldSpec[] | undefined): Map<string, ConnectFieldSpec> => {
-  const map = new Map<string, ConnectFieldSpec>();
-
-  if (!fields) return map;
-
-  const traverse = (fieldList: ConnectFieldSpec[]) => {
-    for (const field of fieldList) {
-      map.set(field.name, field);
-
-      if (field.children && field.children.length > 0) {
-        traverse(field.children);
-      }
-    }
-  };
-
-  traverse(fields);
-  return map;
-};
-
-/**
- * Adds helpful schema comments to NEW YAML configs
- * Comments indicate:
- * - "# Required" for required fields without defaults
- * - "# Default: <value>" for fields with default values
- */
-const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSpec): string => {
-  const fieldMap = buildFieldMap(componentSpec.config.children);
-
-  if (fieldMap.size === 0) {
-    return yamlString;
-  }
-
-  const lines = yamlString.split('\n');
-  const processedLines: string[] = [];
-
-  lines.forEach((line) => {
-    if (!line.trim() || line.trim().startsWith('#') || line.includes('#')) {
-      processedLines.push(line);
-      return;
-    }
-
-    const keyValueMatch = line.match(/^(\s*)([^:#\n]+):\s*(.*)$/);
-    if (!keyValueMatch) {
-      processedLines.push(line);
-      return;
-    }
-
-    const [, indent, key, value] = keyValueMatch;
-    const cleanKey = key.trim();
-
-    const fieldSpec = fieldMap.get(cleanKey);
-    if (!fieldSpec) {
-      processedLines.push(line);
-      return;
-    }
-
-    let comment = '';
-
-    const hasValue = value.trim().length > 0 && value.trim() !== '{}' && value.trim() !== '[]';
-
-    if (hasValue) {
-      // Check if field has a default value
-      if (fieldSpec.default !== undefined) {
-        comment = ` # Default: ${JSON.stringify(fieldSpec.default)}`;
-      }
-      // Check if field is required (not optional and no default)
-      else if (!fieldSpec.is_optional) {
-        comment = ' # Required';
-      }
-    }
-
-    processedLines.push(`${indent}${cleanKey}: ${value}${comment}`);
-  });
-
-  return processedLines.join('\n');
-};
-
-const addRootSpacing = (yamlString: string): string => {
-  const lines = yamlString.split('\n');
-  const processedLines: string[] = [];
-  let previousRootKey: string | null = null;
-  lines.forEach((line) => {
-    if (!line.trim()) {
-      processedLines.push(line);
-      return;
-    }
-    // Check if this is a root-level key
-    const currentIndent = line.length - line.trimStart().length;
-    if (currentIndent === 0 && line.includes(':')) {
-      const keyMatch = line.match(/^([^:#\n]+):/);
-      if (keyMatch) {
-        const cleanKey = keyMatch[1].trim();
-        // Add spacing before root components (except first)
-        if (previousRootKey !== null && cleanKey !== previousRootKey) {
-          if (processedLines.length > 0 && processedLines[processedLines.length - 1].trim() !== '') {
-            processedLines.push('');
-          }
-        }
-        previousRootKey = cleanKey;
-      }
-    }
-    processedLines.push(line);
-  });
-  return processedLines.join('\n');
-};
-
-/**
- * Generates default values from ConnectFieldSpec
- * Populates topic/user fields from session storage when applicable
- * Only populates secrets for Redpanda-compatible components (kafka, kafka_franz, redpanda)
- */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: It's a complex function..
 export function generateDefaultValue(
   spec: ConnectFieldSpec,
   showOptionalFields?: boolean,
@@ -713,7 +400,6 @@ export function generateDefaultValue(
   insideWizardContext?: boolean
 ): unknown {
   // IMPORTANT: Determine if this field is truly required
-  // A field is required if it's explicitly marked as not optional OR if it has no default and is_optional is undefined
   const isExplicitlyRequired = spec.is_optional === false;
   const isCriticalField = CRITICAL_CONNECTION_FIELDS.has(spec.name);
 
@@ -780,10 +466,8 @@ export function generateDefaultValue(
       return undefined;
     }
     // For REDPANDA_SECRET_COMPONENTS, hide non-critical scalar fields with defaults
-    if (componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName)) {
-      if (!isCriticalField && !hasWizardData) {
-        return undefined;
-      }
+    if (componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName) && !(isCriticalField || hasWizardData)) {
+      return undefined;
     }
   }
 
@@ -817,8 +501,12 @@ export function generateDefaultValue(
             const hasDirectWizardChildren =
               spec.children?.some((child) => {
                 // Only user/password fields create wizard context, not topic
-                if (isUserField(child.name) && userData?.username) return true;
-                if (isPasswordField(child.name) && userData?.username) return true;
+                if (isUserField(child.name) && userData?.username) {
+                  return true;
+                }
+                if (isPasswordField(child.name) && userData?.username) {
+                  return true;
+                }
                 return false;
               }) ?? false;
 
@@ -849,11 +537,13 @@ export function generateDefaultValue(
 
             // For REDPANDA_SECRET_COMPONENTS: hide empty objects without wizard-relevant data
             // BUT never hide explicitly required objects
-            if (componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName) && objKeys.length === 0) {
-              // Hide empty objects for Redpanda components when no wizard relevance
-              if (!hasWizardData && !showOptionalFields && !isExplicitlyRequired) {
-                return undefined;
-              }
+            if (
+              componentName &&
+              REDPANDA_SECRET_COMPONENTS.includes(componentName) &&
+              objKeys.length === 0 &&
+              !(hasWizardData || showOptionalFields || isExplicitlyRequired)
+            ) {
+              return undefined;
             }
 
             return obj;
@@ -912,12 +602,3 @@ export function generateDefaultValue(
       return;
   }
 }
-
-/**
- * Get all components (built-in + external)
- * Used by connect-tiles.tsx for filtering and yaml.ts for template generation
- */
-export const getAllComponents = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectComponentSpec[] => [
-  ...builtInComponents,
-  ...(additionalComponents || []),
-];

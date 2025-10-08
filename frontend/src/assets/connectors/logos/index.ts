@@ -1,3 +1,4 @@
+// biome-ignore lint/performance/noBarrelFile: ignoring for this one-off
 export { AmazonWebServicesLogo } from './amazon-web-services-logo';
 export { ApacheactivemqLogo } from './apache-activemq-logo';
 export { ApacheavroLogo } from './apache-avro-logo';

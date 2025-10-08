@@ -4,13 +4,13 @@ export const JSONLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" {...props}>
     <title>JSON</title>
     <defs>
-      <linearGradient x1="15.7913036%" y1="14.7370493%" x2="91.0087401%" y2="85.2281246%" id="json-gradient-1">
-        <stop stopColor="#000000" offset="0%" />
-        <stop stopColor="#FFFFFF" offset="100%" />
+      <linearGradient id="json-gradient-1" x1="15.7913036%" x2="91.0087401%" y1="14.7370493%" y2="85.2281246%">
+        <stop offset="0%" stopColor="#000000" />
+        <stop offset="100%" stopColor="#FFFFFF" />
       </linearGradient>
-      <linearGradient x1="82.1356665%" y1="85.2373953%" x2="-3.11315442%" y2="14.7900497%" id="json-gradient-2">
-        <stop stopColor="#000000" offset="0%" />
-        <stop stopColor="#FFFFFF" offset="100%" />
+      <linearGradient id="json-gradient-2" x1="82.1356665%" x2="-3.11315442%" y1="85.2373953%" y2="14.7900497%">
+        <stop offset="0%" stopColor="#000000" />
+        <stop offset="100%" stopColor="#FFFFFF" />
       </linearGradient>
     </defs>
     <g>
