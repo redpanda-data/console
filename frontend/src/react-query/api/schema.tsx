@@ -42,8 +42,8 @@ export const useListSchemasQuery = () => {
   });
 };
 
-export const useSchemaModeQuery = () => {
-  return useQuery<string | null>({
+export const useSchemaModeQuery = () =>
+  useQuery<string | null>({
     queryKey: ['schemaRegistry', 'mode'],
     queryFn: async () => {
       const response = await fetch(`${config.restBasePath}/schema-registry/mode`, {
@@ -67,10 +67,9 @@ export const useSchemaModeQuery = () => {
     },
     refetchOnMount: true,
   });
-};
 
-export const useSchemaCompatibilityQuery = () => {
-  return useQuery<string | null>({
+export const useSchemaCompatibilityQuery = () =>
+  useQuery<string | null>({
     queryKey: ['schemaRegistry', 'compatibility'],
     queryFn: async () => {
       const response = await fetch(`${config.restBasePath}/schema-registry/config`, {
@@ -94,10 +93,9 @@ export const useSchemaCompatibilityQuery = () => {
     },
     refetchOnMount: true,
   });
-};
 
-export const useSchemaDetailsQuery = (subjectName: string, options?: { enabled?: boolean }) => {
-  return useQuery<SchemaRegistrySubjectDetails>({
+export const useSchemaDetailsQuery = (subjectName: string, options?: { enabled?: boolean }) =>
+  useQuery<SchemaRegistrySubjectDetails>({
     queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
     queryFn: async () => {
       const response = await fetch(
@@ -107,7 +105,7 @@ export const useSchemaDetailsQuery = (subjectName: string, options?: { enabled?:
           headers: {
             Authorization: `Bearer ${config.jwt}`,
           },
-        },
+        }
       );
 
       if (!response.ok) {
@@ -120,7 +118,6 @@ export const useSchemaDetailsQuery = (subjectName: string, options?: { enabled?:
     refetchOnMount: true,
     enabled: options?.enabled !== false,
   });
-};
 
 export const useUpdateGlobalCompatibilityMutation = () => {
   const queryClient = useQueryClient();
@@ -174,7 +171,7 @@ export const useUpdateSubjectCompatibilityMutation = () => {
             headers: {
               Authorization: `Bearer ${config.jwt}`,
             },
-          },
+          }
         );
 
         if (!response.ok) {
@@ -238,8 +235,8 @@ export const useDeleteSchemaMutation = () => {
   });
 };
 
-export const useSchemaTypesQuery = () => {
-  return useQuery<string[]>({
+export const useSchemaTypesQuery = () =>
+  useQuery<string[]>({
     queryKey: ['schemaRegistry', 'types'],
     queryFn: async () => {
       const response = await fetch(`${config.restBasePath}/schema-registry/schemas/types`, {
@@ -262,7 +259,6 @@ export const useSchemaTypesQuery = () => {
     },
     refetchOnMount: true,
   });
-};
 
 export const useCreateSchemaMutation = () => {
   const queryClient = useQueryClient();
@@ -291,7 +287,7 @@ export const useCreateSchemaMutation = () => {
             schema,
             references,
           }),
-        },
+        }
       );
 
       if (!response.ok) {
@@ -316,8 +312,8 @@ export const useCreateSchemaMutation = () => {
   });
 };
 
-export const useValidateSchemaMutation = () => {
-  return useMutation<
+export const useValidateSchemaMutation = () =>
+  useMutation<
     {
       isValid: boolean;
       parsingError?: string;
@@ -346,7 +342,7 @@ export const useValidateSchemaMutation = () => {
             schema,
             references,
           }),
-        },
+        }
       );
 
       if (!response.ok) {
@@ -361,7 +357,6 @@ export const useValidateSchemaMutation = () => {
       return response.json();
     },
   });
-};
 
 export const useSchemaReferencedByQuery = (subjectName: string, version: number, options?: { enabled?: boolean }) => {
   return useQuery<{ schemaId: number; error?: string; usages: { subject: string; version: number }[] }[]>({
@@ -374,7 +369,7 @@ export const useSchemaReferencedByQuery = (subjectName: string, version: number,
           headers: {
             Authorization: `Bearer ${config.jwt}`,
           },
-        },
+        }
       );
 
       if (!response.ok) {
@@ -386,11 +381,6 @@ export const useSchemaReferencedByQuery = (subjectName: string, version: number,
       // Filter out entries with errors
       return data.filter((ref: { error?: string }) => {
         if (ref.error) {
-          console.error('error in schema referenced by, reference entry has error', {
-            subjectName,
-            version,
-            ref,
-          });
           return false;
         }
         return true;
@@ -415,7 +405,7 @@ export const useDeleteSchemaVersionMutation = () => {
             Authorization: `Bearer ${config.jwt}`,
             'Content-Type': 'application/json',
           },
-        },
+        }
       );
 
       if (!response.ok) {

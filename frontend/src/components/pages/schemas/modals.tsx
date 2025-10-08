@@ -17,6 +17,7 @@ import {
   type ThemeTypings,
 } from '@redpanda-data/ui';
 import { type ReactNode, useState } from 'react';
+
 import { openModal } from '../../../utils/ModalContainer';
 
 const GenericModal = (p: {
@@ -31,27 +32,25 @@ const GenericModal = (p: {
   primaryColorScheme?: ThemeTypings['colorSchemes'];
 
   closeModal: () => void;
-}) => {
-  return (
-    <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader mr="4">{p.title}</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>{p.body}</ModalBody>
+}) => (
+  <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
+    <ModalOverlay />
+    <ModalContent>
+      <ModalHeader mr="4">{p.title}</ModalHeader>
+      <ModalCloseButton />
+      <ModalBody>{p.body}</ModalBody>
 
-        <ModalFooter>
-          <Button mr={3} onClick={() => p.onPrimaryButton(p.closeModal)} colorScheme={p.primaryColorScheme}>
-            {p.primaryButtonContent}
-          </Button>
-          <Button variant="outline" onClick={() => p.onSecondaryButton(p.closeModal)}>
-            {p.secondaryButtonContent}
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-  );
-};
+      <ModalFooter>
+        <Button colorScheme={p.primaryColorScheme} mr={3} onClick={() => p.onPrimaryButton(p.closeModal)}>
+          {p.primaryButtonContent}
+        </Button>
+        <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="outline">
+          {p.secondaryButtonContent}
+        </Button>
+      </ModalFooter>
+    </ModalContent>
+  </Modal>
+);
 
 const ExplicitConfirmModal = (p: {
   title: JSX.Element;
@@ -68,7 +67,7 @@ const ExplicitConfirmModal = (p: {
   const isConfirmEnabled = confirmBoxText === 'delete';
 
   return (
-    <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
+    <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
       <ModalOverlay />
       <ModalContent>
         <ModalHeader mr="4">{p.title}</ModalHeader>
@@ -78,20 +77,20 @@ const ExplicitConfirmModal = (p: {
 
           <Box mt="4">
             To confirm, enter "delete":
-            <Input onChange={(e) => setConfirmBoxText(e.target.value)} autoFocus />
+            <Input autoFocus onChange={(e) => setConfirmBoxText(e.target.value)} />
           </Box>
         </ModalBody>
 
         <ModalFooter>
           <Button
-            mr={3}
-            isDisabled={!isConfirmEnabled}
-            onClick={() => p.onPrimaryButton(p.closeModal)}
             colorScheme="red"
+            isDisabled={!isConfirmEnabled}
+            mr={3}
+            onClick={() => p.onPrimaryButton(p.closeModal)}
           >
             {p.primaryButtonContent}
           </Button>
-          <Button variant="outline" onClick={() => p.onSecondaryButton(p.closeModal)}>
+          <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="outline">
             {p.secondaryButtonContent}
           </Button>
         </ModalFooter>
@@ -107,28 +106,28 @@ const InfoModal = (p: {
   primaryButtonContent: ReactNode;
   onClose?: () => void;
   closeModal: () => void;
-}) => {
-  return (
-    <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader mr="4">{p.title}</ModalHeader>
-        <ModalBody>{p.body}</ModalBody>
-        <ModalFooter>
-          <Button
-            mr={3}
-            onClick={() => {
-              if (p.onClose) p.onClose();
-              p.closeModal();
-            }}
-          >
-            {p.primaryButtonContent}
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-  );
-};
+}) => (
+  <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
+    <ModalOverlay />
+    <ModalContent>
+      <ModalHeader mr="4">{p.title}</ModalHeader>
+      <ModalBody>{p.body}</ModalBody>
+      <ModalFooter>
+        <Button
+          mr={3}
+          onClick={() => {
+            if (p.onClose) {
+              p.onClose();
+            }
+            p.closeModal();
+          }}
+        >
+          {p.primaryButtonContent}
+        </Button>
+      </ModalFooter>
+    </ModalContent>
+  </Modal>
+);
 
 export function openInfoModal(p: {
   title: JSX.Element;
@@ -151,22 +150,28 @@ export function openValidationErrorsModal(result: {
 }) {
   const { isValid, errorDetails, isCompatible } = result;
 
-  const compatBox =
-    isCompatible === undefined || isValid === false ? null : isCompatible ? (
-      <Alert status="success" variant="subtle">
-        <AlertIcon />
-        No compatibility issues
-      </Alert>
-    ) : (
-      <Alert status="error" variant="subtle">
-        <AlertIcon />
-        Compatibility issues found
-      </Alert>
-    );
+  let compatBox = null;
+  if (isCompatible !== undefined && isValid !== false) {
+    if (isCompatible) {
+      compatBox = (
+        <Alert status="success" variant="subtle">
+          <AlertIcon />
+          No compatibility issues
+        </Alert>
+      );
+    } else {
+      compatBox = (
+        <Alert status="error" variant="subtle">
+          <AlertIcon />
+          Compatibility issues found
+        </Alert>
+      );
+    }
+  }
 
   const errDetailsBox = errorDetails ? (
     <Box>
-      <Box maxHeight="400px" overflowY="auto" p="6" background="gray.100" fontFamily="monospace" letterSpacing="-0.5px">
+      <Box background="gray.100" fontFamily="monospace" letterSpacing="-0.5px" maxHeight="400px" overflowY="auto" p="6">
         {errorDetails?.trim()}
       </Box>
     </Box>
@@ -175,7 +180,7 @@ export function openValidationErrorsModal(result: {
   openInfoModal({
     title: (
       <>
-        <Text color="red.500" display="flex" alignItems="center">
+        <Text alignItems="center" color="red.500" display="flex">
           <WarningIcon fontSize="1.18em" mr="3" />
           Schema validation error
         </Text>

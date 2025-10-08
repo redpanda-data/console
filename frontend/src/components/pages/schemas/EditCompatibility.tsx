@@ -12,6 +12,8 @@
 import { Box, CodeBlock, Empty, Flex, Grid, GridItem, RadioGroup, Text, useToast, VStack } from '@redpanda-data/ui';
 import type { FC } from 'react';
 import { useEffect, useState } from 'react';
+
+import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './Schema.Details';
 import {
   useSchemaCompatibilityQuery,
   useSchemaDetailsQuery,
@@ -26,7 +28,6 @@ import { uiState } from '../../../state/uiState';
 import { Button, DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
-import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './Schema.Details';
 
 const SchemaNotConfiguredPage: FC = () => {
   return (
@@ -41,7 +42,7 @@ const SchemaNotConfiguredPage: FC = () => {
             connection credentials in the Redpanda Console config.
           </Text>
           {/* todo: fix link once we have a better guide */}
-          <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
+          <a href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
             <Button variant="solid">Redpanda Console Config Documentation</Button>
           </a>
         </VStack>
@@ -83,15 +84,13 @@ const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName
   if (api.schemaOverviewIsConfigured === false) {
     return <SchemaNotConfiguredPage />;
   }
-  if (isModeLoading || isCompatibilityLoading || (subjectName && isDetailsLoading)) return DefaultSkeleton;
+  if (isModeLoading || isCompatibilityLoading || (subjectName && isDetailsLoading)) {
+    return DefaultSkeleton;
+  }
 
   return (
     <PageContent>
       <EditSchemaCompatibility
-        subjectName={subjectName}
-        schemaMode={schemaMode}
-        schemaCompatibility={schemaCompatibility}
-        schemaDetails={schemaDetails}
         onClose={() => {
           if (subjectName) {
             appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
@@ -99,6 +98,10 @@ const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName
             appGlobal.historyReplace('/schema-registry');
           }
         }}
+        schemaCompatibility={schemaCompatibility}
+        schemaDetails={schemaDetails}
+        schemaMode={schemaMode}
+        subjectName={subjectName}
       />
     </PageContent>
   );
@@ -121,10 +124,12 @@ function EditSchemaCompatibility(p: {
   const schema = schemaDetails?.schemas.first((x: any) => x.version === schemaDetails.latestActiveVersion);
 
   const [configMode, setConfigMode] = useState<string>(
-    (subjectName ? schemaDetails?.compatibility : schemaCompatibility) ?? 'DEFAULT',
+    (subjectName ? schemaDetails?.compatibility : schemaCompatibility) ?? 'DEFAULT'
   );
 
-  if (subjectName && !schema) return DefaultSkeleton;
+  if (subjectName && !schema) {
+    return DefaultSkeleton;
+  }
 
   const onSave = () => {
     const mutation = subjectName ? updateSubjectMutation : updateGlobalMutation;
@@ -163,12 +168,15 @@ function EditSchemaCompatibility(p: {
         {/* <Link>Learn more.</Link> */}
       </Text>
 
-      <Grid templateColumns="1fr 1fr" gap="4rem">
-        <GridItem mt="4" mb="8">
+      <Grid gap="4rem" templateColumns="1fr 1fr">
+        <GridItem mb="8" mt="4">
           <RadioGroup
-            name="configMode"
             direction="column"
             isAttached={false}
+            name="configMode"
+            onChange={(e) => {
+              setConfigMode(e);
+            }}
             options={[
               {
                 value: 'DEFAULT',
@@ -262,29 +270,26 @@ function EditSchemaCompatibility(p: {
               },
             ]}
             value={configMode}
-            onChange={(e) => {
-              setConfigMode(e);
-            }}
           />
         </GridItem>
 
         <GridItem>
           {subjectName && schema && (
             <>
-              <Text mt="4" fontSize="lg" fontWeight="bold" wordBreak="break-word" whiteSpace="break-spaces">
+              <Text fontSize="lg" fontWeight="bold" mt="4" whiteSpace="break-spaces" wordBreak="break-word">
                 {subjectName}
               </Text>
 
-              <Text mt="8" mb="4" fontSize="lg" fontWeight="bold">
+              <Text fontSize="lg" fontWeight="bold" mb="4" mt="8">
                 Schema
               </Text>
               <Box maxHeight="600px" overflow="scroll">
                 <CodeBlock
                   codeString={getFormattedSchemaText(schema)}
                   language={schemaTypeToCodeBlockLanguage(schema.type)}
-                  theme="light"
-                  showLineNumbers
                   showCopyButton={false}
+                  showLineNumbers
+                  theme="light"
                 />
               </Box>
             </>
@@ -295,16 +300,16 @@ function EditSchemaCompatibility(p: {
       <Flex gap="4">
         <Button
           colorScheme="brand"
-          onClick={onSave}
           disabledReason={
             api.userData?.canManageSchemaRegistry === false
               ? "You don't have the 'canManageSchemaRegistry' permission"
               : undefined
           }
+          onClick={onSave}
         >
           Save
         </Button>
-        <Button variant="link" onClick={p.onClose}>
+        <Button onClick={p.onClose} variant="link">
           Cancel
         </Button>
       </Flex>
