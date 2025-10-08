@@ -557,9 +557,7 @@ const SharedConfiguration = ({
   principalError,
 }: SharedConfigProps & { principalType?: PrincipalType; principalError?: string }) => {
   const [principalType, setPrincipalType] = useState(
-    propPrincipalType
-      ? propPrincipalType.replace(':', '')
-      : parsePrincipal(sharedConfig.principal).type || RoleTypeUser,
+    propPrincipalType ? propPrincipalType.replace(':', '') : parsePrincipal(sharedConfig.principal).type || RoleTypeUser
   );
   const [hostType, setHostType] = useState<HostType>(stringToHostType(sharedConfig.host));
 
@@ -753,7 +751,7 @@ export default function CreateACL({
           IDEMPOTENT_WRITE: OperationTypeNotSet,
         },
       },
-    ],
+    ]
   );
 
   const isValidRule = rules.find((r) => Object.entries(r.operations).some(([, o]) => o !== OperationTypeNotSet));
@@ -925,7 +923,7 @@ export default function CreateACL({
           newValue = operationValue;
         }
         return [op, newValue];
-      }),
+      })
     ) as Record<string, OperationType>;
 
     updateRule(ruleId, { mode: mode as ModeType, operations: updatedOperations });

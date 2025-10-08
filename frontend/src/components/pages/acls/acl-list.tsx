@@ -340,7 +340,7 @@ const UsersTab = observer(() => {
     <Flex flexDirection="column" gap="4">
       <Box>
         These users are SASL-SCRAM users managed by your cluster. View permissions for other authentication identities
-        (OIDC, Kerberos, mTLS) on the Permissions List page.
+        (for example, OIDC, mTLS) on the Permissions List page.
       </Box>
 
       <SearchField
@@ -719,7 +719,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                 transactionalIdAcls: [createEmptyTransactionalIdAcl()],
                 clusterAcls: createEmptyClusterAcl(),
                 sourceEntries: [],
-              }) as AclPrincipalGroup,
+              }) as AclPrincipalGroup
             );
           }}
           variant="outline"
@@ -748,7 +748,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                       className="hoverLink"
                       onClick={() => {
                         navigate(
-                          `/security/acls/${record.principalName}/details?host=${encodeURIComponent(record.host)}`,
+                          `/security/acls/${record.principalName}/details?host=${encodeURIComponent(record.host)}`
                         );
                       }}
                       type="button"

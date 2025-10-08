@@ -24,7 +24,7 @@ export const UserInformationCard = ({ username, saslMechanism, onEditPassword }:
   return (
     <Card size="full">
       <CardHeader>
-        <CardTitle>User Information</CardTitle>
+        <CardTitle>User information</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Username Row */}
@@ -52,7 +52,7 @@ export const UserInformationCard = ({ username, saslMechanism, onEditPassword }:
 
         {/* SASL Mechanism Row */}
         <div className="grid grid-cols-3 items-center gap-4 py-2">
-          <Text variant="label">SASL Mechanism</Text>
+          <Text variant="label">SASL mechanism</Text>
           <Text variant="default">{saslMechanism}</Text>
         </div>
       </CardContent>

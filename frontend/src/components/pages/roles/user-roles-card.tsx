@@ -127,7 +127,7 @@ export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
           <CardAction>
             {onChangeRoles && (
               <Button onClick={onChangeRoles} testId="assign-role-button" variant="outline">
-                Assign Role
+                Assign role
               </Button>
             )}
           </CardAction>

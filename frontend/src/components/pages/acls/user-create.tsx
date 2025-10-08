@@ -264,7 +264,7 @@ const CreateUserModal = observer(
             </Flex>
           </FormField>
 
-          <FormField label="SASL Mechanism" showRequiredIndicator>
+          <FormField label="SASL mechanism" showRequiredIndicator>
             <SingleSelect<SaslMechanism>
               onChange={(e) => {
                 state.mechanism = e;
