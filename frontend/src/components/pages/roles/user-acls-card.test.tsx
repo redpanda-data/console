@@ -119,8 +119,13 @@ describe('UserAclsCard', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByTestId('view-acl-User:test-user-*')).toBeInTheDocument();
-    expect(screen.getByTestId('view-acl-User:test-user-192.168.1.1')).toBeInTheDocument();
+    // Check toggle buttons
+    expect(screen.getByTestId('toggle-acl-User:test-user-*')).toBeInTheDocument();
+    expect(screen.getByTestId('toggle-acl-User:test-user-192.168.1.1')).toBeInTheDocument();
+
+    // Check edit buttons
+    expect(screen.getByTestId('edit-acl-User:test-user-*')).toBeInTheDocument();
+    expect(screen.getByTestId('edit-acl-User:test-user-192.168.1.1')).toBeInTheDocument();
   });
 
   test('should render table headers', () => {

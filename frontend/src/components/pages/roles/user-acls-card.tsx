@@ -39,7 +39,7 @@ const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
       <TableCell testId={`acl-host-${acl.sharedConfig.host}`}>{acl.sharedConfig.host}</TableCell>
       <TableCell align="right">
         <div className="flex items-center justify-end gap-2">
-          <Button onClick={onToggle} size="sm" testId={`view-acl-${rowKey}`} variant="outline">
+          <Button onClick={onToggle} size="sm" testId={`toggle-acl-${rowKey}`} variant="outline">
             {isExpanded ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </Button>
           <Button
@@ -53,7 +53,7 @@ const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
               );
             }}
             size="sm"
-            testId={`view-acl-${rowKey}`}
+            testId={`edit-acl-${rowKey}`}
             variant="outline"
           >
             <Pencil className="h-4 w-4" />

@@ -46,7 +46,7 @@ describe('HostSelector', () => {
       renderWithRouter(<HostSelector {...defaultProps} />);
 
       // Verify title
-      expect(screen.getByText('Multiple Hosts Found')).toBeVisible();
+      expect(screen.getByText('Multiple hosts found')).toBeVisible();
 
       // Verify principal name and description
       expect(screen.getByTestId('host-selector-principal-name')).toBeVisible();
