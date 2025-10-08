@@ -13,42 +13,8 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { useNavigate } from 'react-router-dom';
 
-import {
-  formatLabel,
-  getIdFromRule,
-  getOperationsForResourceType,
-  getRuleDataTestId,
-  parsePrincipal,
-  type Rule,
-  type SharedConfig,
-} from './ACL.model';
-import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
-
-// Helper function to get resource name
-const getResourceName = (resourceType: string): string => {
-  const resourceNames: Record<string, string> = {
-    cluster: 'cluster',
-    topic: 'topic',
-    consumerGroup: 'consumer group',
-    transactionalId: 'transactional ID',
-    subject: 'subject',
-    schemaRegistry: 'schema registry',
-  };
-  return resourceNames[resourceType] || resourceType;
-};
-
-// Helper function to get plural resource name
-const getPluralResourceName = (resourceType: string): string => {
-  const pluralNames: Record<string, string> = {
-    cluster: 'clusters',
-    topic: 'topics',
-    consumerGroup: 'consumer groups',
-    transactionalId: 'transactional IDs',
-    subject: 'subjects',
-    schemaRegistry: 'schema registries',
-  };
-  return pluralNames[resourceType] || resourceType;
-};
+import { getRuleDataTestId, parsePrincipal, type Rule, type SharedConfig } from './ACL.model';
+import { OperationsBadges } from './OperationsBadges';
 
 type ACLDetailsProps = {
   sharedConfig: {
@@ -131,81 +97,15 @@ export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDet
                   {data.rules.length === 0 ? (
                     <div className="py-8 text-center text-gray-500">No permissions configured</div>
                   ) : (
-                    data.rules.map((rule: Rule) => {
-                      const availableRules = Object.entries(getOperationsForResourceType(rule.resourceType)).length;
-                      const enabledOperations = Object.entries(rule.operations).map(([op, value]: [string, any]) => ({
-                        name: formatLabel(op),
-                        originName: op,
-                        value,
-                      }));
-
-                      // Check if all operations have the same permission
-                      const allAllow =
-                        enabledOperations.length > 0 &&
-                        availableRules === enabledOperations.length &&
-                        enabledOperations.every((op) => op.value === 'allow');
-                      const allDeny =
-                        enabledOperations.length > 0 &&
-                        availableRules === enabledOperations.length &&
-                        enabledOperations.every((op) => op.value === 'deny');
-                      const showSummary = allAllow || allDeny;
-
-                      return (
-                        <div
-                          className="space-y-3 rounded-lg border border-gray-200 p-4"
-                          data-testid={`summary-card-${getRuleDataTestId(rule)}`}
-                          key={rule.id}
-                        >
-                          <div className="mb-3">
-                            <div className="font-medium text-gray-900">
-                              {(() => {
-                                let text: string;
-                                if (rule.resourceType === 'cluster' || rule.resourceType === 'schemaRegistry') {
-                                  text = getResourceName(rule.resourceType);
-                                } else if (rule.selectorType === 'any') {
-                                  text = `All ${getPluralResourceName(rule.resourceType)}`;
-                                } else {
-                                  const matchType = rule.selectorType === 'literal' ? 'matching' : 'starting with';
-                                  text = `${getPluralResourceName(rule.resourceType)} ${matchType}: "${rule.selectorValue}"`;
-                                }
-                                return text.charAt(0).toUpperCase() + text.slice(1);
-                              })()}
-                            </div>
-                          </div>
-
-                          {/* Operations */}
-                          <div>
-                            {enabledOperations.length > 0 ? (
-                              <div className="flex flex-wrap gap-2">
-                                {showSummary ? (
-                                  <span
-                                    className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-xs ${
-                                      allAllow ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                    }`}
-                                  >
-                                    {allAllow ? 'Allow all' : 'Deny all'}
-                                  </span>
-                                ) : (
-                                  enabledOperations.map((op) => (
-                                    <span
-                                      className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-xs ${
-                                        op.value === 'allow' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                      }`}
-                                      data-testid={`detail-item-op-${getIdFromRule(rule, op.originName, op.value)}`}
-                                      key={op.name}
-                                    >
-                                      {op.name}: {op.value}
-                                    </span>
-                                  ))
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 text-xs italic">No operations configured</span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })
+                    data.rules.map((rule: Rule) => (
+                      <div
+                        className="rounded-lg border border-gray-200 p-4"
+                        data-testid={`summary-card-${getRuleDataTestId(rule)}`}
+                        key={rule.id}
+                      >
+                        <OperationsBadges rule={rule} />
+                      </div>
+                    ))
                   )}
                 </CardContent>
               </Card>

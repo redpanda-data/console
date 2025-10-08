@@ -436,6 +436,32 @@ export const getAclFromAclListResponse = (aclList: ListACLsResponse): AclDetail[
 export const getOperationsForResourceType = (resourceType: ResourceType): Record<string, OperationType> =>
   operationSets[resourceType] || {};
 
+// Helper function to get resource name
+export const getResourceName = (resourceType: string): string => {
+  const resourceNames: Record<string, string> = {
+    cluster: 'cluster',
+    topic: 'topic',
+    consumerGroup: 'consumer group',
+    transactionalId: 'transactional ID',
+    subject: 'subject',
+    schemaRegistry: 'schema registry',
+  };
+  return resourceNames[resourceType] || resourceType;
+};
+
+// Helper function to get plural resource name
+export const getPluralResourceName = (resourceType: string): string => {
+  const pluralNames: Record<string, string> = {
+    cluster: 'clusters',
+    topic: 'topics',
+    consumerGroup: 'consumer groups',
+    transactionalId: 'transactional IDs',
+    subject: 'subjects',
+    schemaRegistry: 'schema registries',
+  };
+  return pluralNames[resourceType] || resourceType;
+};
+
 // Generate a unique key for an ACL based on Rule and SharedConfig
 export function getIdFromRule(rule: Rule, operation: string, permission: OperationType): string {
   const sep = '-';
