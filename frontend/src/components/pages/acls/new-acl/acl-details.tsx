@@ -216,17 +216,3 @@ export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDet
     </div>
   );
 }
-
-const EmbeddedAclDetail = ({ principal }: { principal: string }) => {
-  const { data } = useGetAclsByPrincipal(principal);
-
-  if (!data || data.length === 0) {
-    return <div>Loading...</div>;
-  }
-
-  const acl = data[0];
-
-  return <ACLDetails isSimpleView={true} rules={acl.rules} sharedConfig={acl.sharedConfig} />;
-};
-
-export { EmbeddedAclDetail };
