@@ -112,7 +112,7 @@ class AclList extends PageComponent<{ tab?: AclListTab }> {
 
   initPage(p: PageInitHelper): void {
     p.title = 'Access Control';
-    p.addBreadcrumb('Access control', '/security');
+    p.addBreadcrumb('Access Control', '/security');
 
     this.refreshData().catch(() => {
       // Error handling managed by API layer

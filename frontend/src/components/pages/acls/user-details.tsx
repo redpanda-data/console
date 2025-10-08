@@ -54,7 +54,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
 
   initPage(p: PageInitHelper): void {
     p.title = 'Create user';
-    p.addBreadcrumb('Access control', '/security');
+    p.addBreadcrumb('Access Control', '/security');
     p.addBreadcrumb('Users', '/security/users');
     p.addBreadcrumb(this.props.userName, '/security/users/');
 

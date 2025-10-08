@@ -39,7 +39,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
 
   initPage(p: PageInitHelper): void {
     p.title = 'Role details';
-    p.addBreadcrumb('Access control', '/security');
+    p.addBreadcrumb('Access Control', '/security');
     p.addBreadcrumb('Roles', '/security/roles');
     p.addBreadcrumb(decodeURIComponent(this.props.roleName), `/security/roles/${this.props.roleName}`);
 

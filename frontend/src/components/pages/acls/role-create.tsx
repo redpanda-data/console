@@ -23,7 +23,7 @@ import { PageComponent, type PageInitHelper } from '../page';
 class RoleCreatePage extends PageComponent {
   initPage(p: PageInitHelper): void {
     p.title = 'Create role';
-    p.addBreadcrumb('Access control', '/security');
+    p.addBreadcrumb('Access Control', '/security');
     p.addBreadcrumb('Roles', '/security/roles');
     p.addBreadcrumb('Create role', '/security/roles/create');
 
