@@ -36,9 +36,6 @@ import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 // Routing and state management
 import { Link } from 'react-router-dom';
-
-// Local modals
-import { openDeleteModal, openPermanentDeleteModal } from './modals';
 // Custom hooks
 import { useQueryStateWithCallback } from '../../../hooks/useQueryStateWithCallback';
 // API hooks
@@ -65,6 +62,8 @@ import Section from '../../misc/Section';
 import { SmallStat } from '../../misc/SmallStat';
 // Redpanda UI Registry components
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '../../redpanda-ui/components/drawer';
+// Local modals
+import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -120,7 +119,7 @@ const SchemaList: FC = () => {
       getDefaultValue: () => uiSettings.schemaList.showSoftDeleted,
     },
     'showSoftDeleted',
-    parseAsBoolean
+    parseAsBoolean,
   );
 
   const { data: schemaSubjects, isLoading, isError, refetch: refetchSchemas } = useListSchemasQuery();
@@ -230,20 +229,12 @@ const SchemaList: FC = () => {
         </Tooltip>
         <Spinner display={isLoadingSchemaVersionMatches ? undefined : 'none'} size="md" />
       </Flex>
-      <Drawer
-        direction="right"
-        onOpenChange={setIsHelpSidebarOpen}
-        open={isHelpSidebarOpen}
-        testId="schema-search-help-sheet"
-      >
-        <DrawerContent
-          aria-labelledby="schema-help-title"
-          className="w-[600px] sm:max-w-[600px]"
-          role="dialog"
-          testId="schema-search-help-content"
-        >
+      <Drawer direction="right" onOpenChange={setIsHelpSidebarOpen} open={isHelpSidebarOpen}>
+        <DrawerContent aria-labelledby="schema-help-title" className="w-[600px] sm:max-w-[600px]" role="dialog">
           <DrawerHeader className="border-b">
-            <DrawerTitle id="schema-help-title">Schema Search Help</DrawerTitle>
+            <DrawerTitle id="schema-help-title" data-testid="schema-help-title">
+              Schema Search Help
+            </DrawerTitle>
           </DrawerHeader>
 
           <div className="space-y-6 p-4">
@@ -405,7 +396,7 @@ const SchemaList: FC = () => {
                                     description: String(err),
                                   });
                                 },
-                              }
+                              },
                             );
                           });
                         } else {
@@ -430,7 +421,7 @@ const SchemaList: FC = () => {
                                     description: String(err),
                                   });
                                 },
-                              }
+                              },
                             );
                           });
                         }
