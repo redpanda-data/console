@@ -12,8 +12,8 @@
 import { BrowserRouter } from 'react-router-dom';
 import { render, screen } from 'test-utils';
 
-import { UserAclsCard } from './UserAclsCard';
-import type { AclDetail } from '../acls/new-acl/ACL.model';
+import { UserAclsCard } from './user-acls-card';
+import type { AclDetail } from '../acls/new-acl/acl.model';
 
 // Mock useNavigate
 vi.mock('react-router-dom', async () => {

@@ -30,7 +30,7 @@ import {
   OperationTypeDeny,
   ResourcePatternTypeLiteral,
   ResourcePatternTypePrefix,
-} from './ACL.model';
+} from './acl.model';
 
 describe('getAclFromAclListResponse', () => {
   describe('Single host scenarios', () => {

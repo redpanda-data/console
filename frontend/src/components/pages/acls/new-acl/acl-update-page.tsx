@@ -21,15 +21,15 @@ import {
   PrincipalTypeUser,
   type Rule,
   type SharedConfig,
-} from 'components/pages/acls/new-acl/ACL.model';
-import CreateACL from 'components/pages/acls/new-acl/CreateACL';
-import { HostSelector } from 'components/pages/acls/new-acl/HostSelector';
+} from 'components/pages/acls/new-acl/acl.model';
+import CreateACL from 'components/pages/acls/new-acl/create-acl';
+import { HostSelector } from 'components/pages/acls/new-acl/host-selector';
 import { useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../../react-query/api/acl';
-import { uiState } from '../../../../state/uiState';
-import PageContent from '../../../misc/PageContent';
+import { uiState } from '../../../../state/ui-state';
+import PageContent from '../../../misc/page-content';
 
 const AclUpdatePage = () => {
   const toast = useToast();

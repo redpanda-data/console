@@ -12,17 +12,17 @@
 import { Eye, Pencil } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { uiState } from 'state/uiState';
+import { uiState } from 'state/ui-state';
 
-import { MatchingUsersCard } from './MatchingUsersCard';
+import { MatchingUsersCard } from './matching-users-card';
 import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
-import PageContent from '../../misc/PageContent';
+import PageContent from '../../misc/page-content';
 import { Button } from '../../redpanda-ui/components/button';
 import { Card, CardContent, CardHeader } from '../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { Text } from '../../redpanda-ui/components/typography';
-import { type AclDetail, handleUrlWithHost } from '../acls/new-acl/ACL.model';
-import { ACLDetails } from '../acls/new-acl/ACLDetails';
+import { type AclDetail, handleUrlWithHost } from '../acls/new-acl/acl.model';
+import { ACLDetails } from '../acls/new-acl/acl-details';
 
 interface SecurityAclRulesTableProps {
   data: AclDetail[];

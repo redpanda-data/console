@@ -10,24 +10,25 @@
  */
 
 import { Box, DataTable, Text } from '@redpanda-data/ui';
-import { UserAclsCard } from 'components/pages/roles/UserAclsCard';
-import { UserInformationCard } from 'components/pages/roles/UserInformationCard';
-import { UserRolesCard } from 'components/pages/roles/UserRolesCard';
+import { UserAclsCard } from 'components/pages/roles/user-acls-card';
+import { UserInformationCard } from 'components/pages/roles/user-information-card';
+import { UserRolesCard } from 'components/pages/roles/user-roles-card';
 import { Button } from 'components/redpanda-ui/components/button';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+import type { UpdateRoleMembershipResponse } from 'protogen/redpanda/api/console/v1alpha1/security_pb';
 
-import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
-import type { AclPrincipalGroup } from './Models';
-import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
+import { DeleteUserConfirmModal } from './delete-user-confirm-modal';
+import type { AclPrincipalGroup } from './models';
+import { ChangePasswordModal, ChangeRolesModal } from './user-edit-modals';
 import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
-import { appGlobal } from '../../../state/appGlobal';
-import { api, rolesApi } from '../../../state/backendApi';
-import { AclRequestDefault } from '../../../state/restInterfaces';
-import { Features } from '../../../state/supportedFeatures';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import PageContent from '../../misc/PageContent';
-import { PageComponent, type PageInitHelper } from '../Page';
+import { appGlobal } from '../../../state/app-global';
+import { api, rolesApi } from '../../../state/backend-api';
+import { AclRequestDefault } from '../../../state/rest-interfaces';
+import { Features } from '../../../state/supported-features';
+import { DefaultSkeleton } from '../../../utils/tsx-utils';
+import PageContent from '../../misc/page-content';
+import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 
 @observer
 class UserDetailsPage extends PageComponent<{ userName: string }> {
@@ -46,7 +47,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
   @observable isChangePasswordModalOpen = false;
   @observable isChangeRolesModalOpen = false;
 
-  constructor(p: any) {
+  constructor(p: Readonly<PageProps<{ userName: string }>>) {
     super(p);
     makeObservable(this);
   }
@@ -109,7 +110,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
                   await api.deleteServiceAccount(userName);
 
                   // Remove user from all its roles
-                  const promises = [];
+                  const promises: Promise<UpdateRoleMembershipResponse>[] = [];
                   for (const [roleName, members] of rolesApi.roleMembers) {
                     if (members.any((m) => m.name === userName)) {
                       // is this user part of this role?

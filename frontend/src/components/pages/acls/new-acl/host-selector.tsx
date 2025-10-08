@@ -11,7 +11,7 @@
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import type { AclDetail } from './ACL.model';
+import type { AclDetail } from './acl.model';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { Text } from '../../../redpanda-ui/components/typography';

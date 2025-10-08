@@ -12,11 +12,11 @@
 import { Pencil } from 'lucide-react';
 import { useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { uiState } from 'state/uiState';
+import { uiState } from 'state/ui-state';
 
-import { handleUrlWithHost } from './ACL.model';
-import { ACLDetails } from './ACLDetails';
-import { HostSelector } from './HostSelector';
+import { handleUrlWithHost } from './acl.model';
+import { ACLDetails } from './acl-details';
+import { HostSelector } from './host-selector';
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Text } from '../../../redpanda-ui/components/typography';

@@ -16,8 +16,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../../redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
-import { type AclDetail, getRuleDataTestId, handleUrlWithHost, parsePrincipal } from '../acls/new-acl/ACL.model';
-import { OperationsBadges } from '../acls/new-acl/OperationsBadges';
+import { type AclDetail, getRuleDataTestId, handleUrlWithHost, parsePrincipal } from '../acls/new-acl/acl.model';
+import { OperationsBadges } from '../acls/new-acl/operations-badges';
 
 interface UserAclsCardProps {
   acls?: AclDetail[];

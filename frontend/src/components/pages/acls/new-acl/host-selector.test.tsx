@@ -11,7 +11,7 @@
 
 import { fireEvent, renderWithRouter, screen, waitFor } from 'test-utils';
 
-import { HostSelector } from './HostSelector';
+import { HostSelector } from './host-selector';
 
 const mockNavigate = vi.fn();
 const mockSearchParams = new URLSearchParams();

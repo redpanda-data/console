@@ -15,8 +15,9 @@ import {
   getOperationsForResourceType,
   getPluralResourceName,
   getResourceName,
+  type OperationType,
   type Rule,
-} from './ACL.model';
+} from './acl.model';
 
 type OperationsBadgesProps = {
   rule: Rule;
@@ -24,7 +25,7 @@ type OperationsBadgesProps = {
 };
 
 export const OperationsBadges = ({ rule, showResourceDescription = true }: OperationsBadgesProps) => {
-  const enabledOperations = Object.entries(rule.operations).map(([op, value]: [string, any]) => ({
+  const enabledOperations = Object.entries(rule.operations).map(([op, value]: [string, OperationType]) => ({
     name: formatLabel(op),
     originName: op,
     value,

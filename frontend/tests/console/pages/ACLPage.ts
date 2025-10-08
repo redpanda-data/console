@@ -373,10 +373,10 @@ export class ACLPage {
     _principal: string,
     operationName: string,
     permission: OperationType,
-    _host = '*'
+    _host = '*',
   ) {
     const detailOperationItem = this.page.getByTestId(
-      `detail-item-op-${getIdFromRule(rule, operationName, permission)}`
+      `detail-item-op-${getIdFromRule(rule, operationName, permission)}`,
     );
     await expect(detailOperationItem).toBeVisible();
 
@@ -398,7 +398,7 @@ export class ACLPage {
     await expect(detailRuleCard).toBeVisible();
 
     // Add a small wait to ensure the page is loaded
-    await this.page.waitForTimeout(500);
+    await this.page.waitForTimeout(1000);
 
     // Check if all operations have the same value (which would display as Allow all or Deny all)
     const operations = Object.values(rule.operations);

@@ -12,7 +12,7 @@
 import { BrowserRouter } from 'react-router-dom';
 import { render, screen } from 'test-utils';
 
-import { UserRolesCard } from './UserRolesCard';
+import { UserRolesCard } from './user-roles-card';
 
 // Mock useNavigate
 vi.mock('react-router-dom', async () => {

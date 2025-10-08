@@ -16,7 +16,7 @@ import {
   ResourceTypeTopic,
   ResourceTypeTransactionalId,
   type Rule,
-} from '../../src/components/pages/acls/new-acl/ACL.model';
+} from '../../src/components/pages/acls/new-acl/acl.model';
 import { ACLPage } from './pages/ACLPage';
 import { RolePage } from './pages/RolePage';
 

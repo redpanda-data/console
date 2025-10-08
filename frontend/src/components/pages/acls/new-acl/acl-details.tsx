@@ -13,8 +13,8 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { useNavigate } from 'react-router-dom';
 
-import { getRuleDataTestId, parsePrincipal, type Rule, type SharedConfig } from './ACL.model';
-import { OperationsBadges } from './OperationsBadges';
+import { getRuleDataTestId, parsePrincipal, type Rule, type SharedConfig } from './acl.model';
+import { OperationsBadges } from './operations-badges';
 
 type ACLDetailsProps = {
   sharedConfig: {
