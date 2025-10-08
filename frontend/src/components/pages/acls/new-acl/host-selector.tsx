@@ -30,7 +30,7 @@ export const HostSelector = ({ principalName, hosts, baseUrl }: HostSelectorProp
     <div className="flex w-2/3 items-center">
       <Card size={'full'}>
         <CardHeader>
-          <CardTitle>Multiple Hosts Found</CardTitle>
+          <CardTitle>Multiple hosts found</CardTitle>
         </CardHeader>
         <CardContent className={'flex flex-col gap-2'}>
           <Text className="mb-4 text-gray-600" data-testid="host-selector-description">
@@ -38,7 +38,7 @@ export const HostSelector = ({ principalName, hosts, baseUrl }: HostSelectorProp
             <Text as="span" className={'font-bold'} data-testid="host-selector-principal-name">
               {principalName}
             </Text>{' '}
-            principal has ACLs configured for multiple hosts. Please select a host to view its ACL configuration:
+            principal has ACLs configured for multiple hosts. Select a host to view its ACL configuration.
           </Text>
           <Table>
             <TableHeader>
