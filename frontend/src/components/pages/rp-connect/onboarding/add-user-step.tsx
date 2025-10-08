@@ -52,7 +52,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
         value: user.name || '',
         label: user.name || '',
       })),
-    [usersList],
+    [usersList]
   );
   const [userOptions, setUserOptions] = useState<ComboboxOption[]>(initialUserOptions);
   const createUserMutation = useCreateUserMutation();
@@ -64,15 +64,15 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
   // Note: We don't persist the actual password (it's write-only in the API)
   const initialSpecialChars = useMemo(
     () => persistedUserData?.specialCharactersEnabled ?? false,
-    [persistedUserData?.specialCharactersEnabled],
+    [persistedUserData?.specialCharactersEnabled]
   );
   const initialPasswordLength = useMemo(
     () => persistedUserData?.passwordLength ?? 30,
-    [persistedUserData?.passwordLength],
+    [persistedUserData?.passwordLength]
   );
   const initialPassword = useMemo(
     () => generatePassword(initialPasswordLength, initialSpecialChars),
-    [initialPasswordLength, initialSpecialChars],
+    [initialPasswordLength, initialSpecialChars]
   );
 
   const form = useForm<AddUserFormData>({
@@ -94,7 +94,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
 
   const matchingUserNameForFormValue = useMemo(
     () => usersList?.find((user) => user.name === watchedUsername)?.name,
-    [usersList, watchedUsername],
+    [usersList, watchedUsername]
   );
   const persistedUsername = useMemo(() => persistedUserData?.username, [persistedUserData]);
 
@@ -118,7 +118,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
       onChange(newValue);
       generateNewPassword();
     },
-    [generateNewPassword],
+    [generateNewPassword]
   );
 
   useEffect(() => {
@@ -180,7 +180,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
         };
       }
     },
-    [existingUserBeingEdited, setUserFormData, createUserMutation, topicData?.topicName, createACLMutation],
+    [existingUserBeingEdited, setUserFormData, createUserMutation, topicData?.topicName, createACLMutation]
   );
 
   useImperativeHandle(ref, () => ({

@@ -31,7 +31,7 @@ const searchComponents = (
     types?: ConnectComponentType[];
     categories?: string[];
   },
-  additionalComponents?: ExtendedConnectComponentSpec[],
+  additionalComponents?: ExtendedConnectComponentSpec[]
 ): ConnectComponentSpec[] => {
   return getAllComponents(additionalComponents)
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -92,7 +92,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
       tileWrapperClassName,
       title,
     },
-    ref,
+    ref
   ) => {
     const [filter, setFilter] = useState<string>('');
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -140,7 +140,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
           types: componentTypeFilter,
           categories: selectedCategories,
         },
-        additionalComponents,
+        additionalComponents
       );
     }, [componentTypeFilter, filter, selectedCategories, additionalComponents]);
 
@@ -326,5 +326,5 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
         </CardContent>
       </Card>
     );
-  },
+  }
 );

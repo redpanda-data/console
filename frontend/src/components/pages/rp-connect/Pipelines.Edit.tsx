@@ -195,7 +195,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
           tags: {
             ...this.tags,
           },
-        }),
+        })
       )
       .then(
         action(async (r) => {
@@ -220,7 +220,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
           }
           await pipelinesApi.refreshPipelines(true);
           appGlobal.historyPush(`/rp-connect/${pipelineId}`);
-        }),
+        })
       )
       .catch(
         action((err) => {
@@ -235,7 +235,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
           } else {
             this.lintResults = extractLintHintsFromError(err);
           }
-        }),
+        })
       )
       .finally(() => {
         this.isUpdating = false;

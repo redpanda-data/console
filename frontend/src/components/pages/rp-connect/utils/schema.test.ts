@@ -91,7 +91,7 @@ describe('generateDefaultValue', () => {
       sessionStorage.setItem(CONNECT_WIZARD_TOPIC_KEY, JSON.stringify({ topicName: 'example' }));
       sessionStorage.setItem(
         CONNECT_WIZARD_USER_KEY,
-        JSON.stringify({ username: 'admin', saslMechanism: 'SCRAM-SHA-256' }),
+        JSON.stringify({ username: 'admin', saslMechanism: 'SCRAM-SHA-256' })
       );
     });
 
@@ -208,7 +208,7 @@ describe('generateDefaultValue', () => {
     beforeEach(() => {
       sessionStorage.setItem(
         CONNECT_WIZARD_USER_KEY,
-        JSON.stringify({ username: 'admin', saslMechanism: 'SCRAM-SHA-256' }),
+        JSON.stringify({ username: 'admin', saslMechanism: 'SCRAM-SHA-256' })
       );
     });
 

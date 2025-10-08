@@ -90,5 +90,5 @@ export const CreatePipelineSidebar = memo(
         />
       </div>
     );
-  },
+  }
 );

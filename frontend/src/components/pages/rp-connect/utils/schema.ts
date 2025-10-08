@@ -241,7 +241,7 @@ export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptiona
 export const mergeConnectConfigs = (
   existingYaml: string,
   newConfigObject: ReturnType<typeof schemaToConfig>,
-  componentSpec: ConnectComponentSpec,
+  componentSpec: ConnectComponentSpec
 ) => {
   if (!existingYaml.trim()) {
     return newConfigObject;
@@ -710,7 +710,7 @@ export function generateDefaultValue(
   spec: ConnectFieldSpec,
   showOptionalFields?: boolean,
   componentName?: string,
-  insideWizardContext?: boolean,
+  insideWizardContext?: boolean
 ): unknown {
   // IMPORTANT: Determine if this field is truly required
   // A field is required if it's explicitly marked as not optional OR if it has no default and is_optional is undefined
