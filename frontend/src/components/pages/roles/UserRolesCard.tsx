@@ -9,13 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import { Eye } from 'lucide-react';
+import { Eye, EyeOff, Pencil } from 'lucide-react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
 import { Button } from '../../redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../redpanda-ui/components/card';
+import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
-import { handleUrlWithHost } from '../acls/new-acl/ACL.model';
+import { getRuleDataTestId, handleUrlWithHost } from '../acls/new-acl/ACL.model';
+import { OperationsBadges } from '../acls/new-acl/OperationsBadges';
 
 interface Role {
   principalType: string;
@@ -27,8 +31,93 @@ interface UserRolesCardProps {
   onChangeRoles?: () => void;
 }
 
-export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
+interface RoleTableRowProps {
+  role: Role;
+  isExpanded: boolean;
+  onToggle: () => void;
+}
+
+const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
   const navigate = useNavigate();
+  const { data: acls, isLoading } = useGetAclsByPrincipal(`RedpandaRole:${role.principalName}`, undefined, undefined, {
+    enabled: isExpanded,
+  });
+  const rowKey = role.principalName;
+
+  return [
+    <TableRow className="hover:bg-gray-50" key={`role-${rowKey}`}>
+      <TableCell testId={`role-name-${rowKey}`}>{role.principalName}</TableCell>
+      <TableCell align="right">
+        <div className="flex items-center justify-end gap-2">
+          <Button onClick={onToggle} size="sm" testId={`toggle-role-${rowKey}`} variant="outline">
+            {isExpanded ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </Button>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(handleUrlWithHost(`/security/roles/${role.principalName}/details`, ''));
+            }}
+            size="sm"
+            testId={`view-role-${rowKey}`}
+            variant="outline"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>,
+    isLoading && (
+      <TableRow>
+        <TableCell>
+          <Skeleton />
+        </TableCell>
+        <TableCell>
+          <Skeleton />
+        </TableCell>
+      </TableRow>
+    ),
+    !isLoading && isExpanded && acls && acls.length > 0 && (
+      <TableRow key={`role-${rowKey}-expanded`}>
+        <TableCell className="bg-gray-50 p-6" colSpan={2}>
+          <div className="space-y-4">
+            <div className="font-semibold text-gray-700 text-sm">
+              ACL Rules ({acls.reduce((sum, acl) => sum + acl.rules.length, 0)})
+            </div>
+            {acls.map((acl) => (
+              <div key={`${acl.sharedConfig.principal}-${acl.sharedConfig.host}`}>
+                <div className="mb-2 text-gray-600 text-xs">Host: {acl.sharedConfig.host}</div>
+                {acl.rules.map((rule) => (
+                  <div
+                    className="rounded-lg border border-gray-200 bg-white p-4"
+                    data-testid={`rule-${getRuleDataTestId(rule)}`}
+                    key={rule.id}
+                  >
+                    <OperationsBadges rule={rule} />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </TableCell>
+      </TableRow>
+    ),
+  ];
+};
+
+export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRow = (key: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
 
   if (roles.length === 0) {
     return (
@@ -71,23 +160,19 @@ export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {roles.map((r) => (
-              <TableRow key={`role-${r.principalType}-${r.principalName}`}>
-                <TableCell testId={`role-name-${r.principalName}`}>{r.principalName}</TableCell>
-                <TableCell align="right">
-                  <Button
-                    onClick={() => {
-                      navigate(handleUrlWithHost(`/security/roles/${r.principalName}/details`, ''));
-                    }}
-                    size="sm"
-                    testId={`view-role-${r.principalName}`}
-                    variant="outline"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {roles.flatMap((r) => {
+              const rowKey = r.principalName;
+              const isExpanded = expandedRows.has(rowKey);
+
+              return (
+                <RoleTableRow
+                  isExpanded={isExpanded}
+                  key={`role-${rowKey}`}
+                  onToggle={() => toggleRow(rowKey)}
+                  role={r}
+                />
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>
