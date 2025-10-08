@@ -519,19 +519,20 @@ const RolesTab = observer(() => {
 
   return (
     <Flex flexDirection="column" gap="4">
-      <Box>Roles are groups of ACLs abstracted under a single name. Roles can be assigned to principals.</Box>
-
+      <Box>
+        This tab displays all roles. Roles are groups of access control lists (ACLs) that can be assigned to principals.
+        A principal represents any entity that can be authenticated, such as a user, service, or system (for example, a
+        SASL-SCRAM user, OIDC identity, or mTLS client).
+      </Box>
       <NullFallbackBoundary>
         <FeatureLicenseNotification featureName="rbac" />
       </NullFallbackBoundary>
-
       <SearchField
         placeholderText="Filter by name"
         searchText={uiSettings.aclList.rolesTab.quickSearch}
         setSearchText={(x) => (uiSettings.aclList.rolesTab.quickSearch = x)}
         width="300px"
       />
-
       <Section>
         <Button
           data-testid="create-role-button"

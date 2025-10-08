@@ -321,7 +321,7 @@ const AclRules = ({
           <div>
             <CardTitle className="font-medium text-gray-900 text-lg">ACL rules</CardTitle>
             <CardDescription className="text-gray-600">
-              Configure permissions for different resource types
+              Configure permissions for different resource types.
             </CardDescription>
           </div>
           <Button data-testid="add-allow-all-operations-button" onClick={addAllowAllOperations} variant="outline">
@@ -557,7 +557,9 @@ const SharedConfiguration = ({
   principalError,
 }: SharedConfigProps & { principalType?: PrincipalType; principalError?: string }) => {
   const [principalType, setPrincipalType] = useState(
-    propPrincipalType ? propPrincipalType.replace(':', '') : parsePrincipal(sharedConfig.principal).type || RoleTypeUser
+    propPrincipalType
+      ? propPrincipalType.replace(':', '')
+      : parsePrincipal(sharedConfig.principal).type || RoleTypeUser,
   );
   const [hostType, setHostType] = useState<HostType>(stringToHostType(sharedConfig.host));
 
@@ -751,7 +753,7 @@ export default function CreateACL({
           IDEMPOTENT_WRITE: OperationTypeNotSet,
         },
       },
-    ]
+    ],
   );
 
   const isValidRule = rules.find((r) => Object.entries(r.operations).some(([, o]) => o !== OperationTypeNotSet));
@@ -923,7 +925,7 @@ export default function CreateACL({
           newValue = operationValue;
         }
         return [op, newValue];
-      })
+      }),
     ) as Record<string, OperationType>;
 
     updateRule(ruleId, { mode: mode as ModeType, operations: updatedOperations });
@@ -1046,7 +1048,7 @@ export default function CreateACL({
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             {/* Left Column - Main Form */}
             <div className="space-y-6 lg:col-span-2">
-              <p className="h-12 text-gray-600 text-sm">Configure access control rules for your Kafka resources</p>
+              <p className="h-12 text-gray-600 text-sm">Configure access control rules for your Kafka resources.</p>
 
               <SharedConfiguration
                 edit={edit}
