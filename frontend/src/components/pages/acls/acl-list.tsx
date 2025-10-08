@@ -670,11 +670,10 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
   return (
     <Flex flexDirection="column" gap="4">
       <Box>
-        This tab displays all Kafka Access Control Lists (ACLs), grouped by each principal. A principal represents any
-        entity that can be authenticated, such as a user, service, or system (e.g., a SASL-SCRAM user, OIDC identity,
-        Kerberos principal, or mTLS client). The ACLs tab shows only the permissions directly granted to each principal,
-        without considering any permissions that may be derived from assigned roles. For a complete view of all
-        effective permissions, including those granted through roles, refer to the Permissions List tab.
+        This tab displays all access control lists (ACLs), grouped by principal and host. A principal represents any
+        entity that can be authenticated, such as a user, service, or system (for example, a SASL-SCRAM user, OIDC
+        identity, or mTLS client). The ACLs tab shows only the permissions directly granted to each principal. For a
+        complete view of all permissions, including permissions granted through roles, see the Permissions List tab.
       </Box>
       {Features.rolesApi && (
         <Alert status="info">
