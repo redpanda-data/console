@@ -44,7 +44,7 @@ const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) =
             <TableRow>
               <TableHead>Principal</TableHead>
               <TableHead>Host</TableHead>
-              <TableHead>Count ACLs</TableHead>
+              <TableHead>ACLs count</TableHead>
               <TableHead>{''}</TableHead>
             </TableRow>
           </TableHeader>
@@ -140,7 +140,7 @@ const RoleDetailPage = () => {
     <PageContent>
       <div className="flex items-center justify-between">
         <Text>
-          Viewing role <Text as="span">{roleName}</Text>{' '}
+          Configuration for role: <Text as="span">{roleName}</Text>
         </Text>
         {(!!host || data?.length === 1) && (
           <div>
