@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+
 import {
   formatLabel,
   getIdFromRule,
@@ -8,7 +9,7 @@ import {
   OperationTypeAllow,
   OperationTypeDeny,
   type Rule,
-} from '../../../src/components/pages/acls/new-acl/ACL.model';
+} from '../../../src/components/pages/acls/new-acl/acl.model';
 
 /**
  * Page Object Model for ACL (Access Control List) pages
@@ -226,7 +227,7 @@ export class ACLPage {
         let ruleCardIndex = -1;
         for (let j = 0; j < allRuleCards.length; j++) {
           const testId = await allRuleCards[j].getAttribute('data-testid');
-          if (testId && testId.includes(ruleTestId)) {
+          if (testId?.includes(ruleTestId)) {
             ruleCardIndex = j;
             break;
           }
@@ -234,13 +235,11 @@ export class ACLPage {
 
         if (ruleCardIndex >= 0) {
           // Update selector if needed
-          if (rule.resourceType !== 'cluster' && rule.resourceType !== 'schemaRegistry') {
-            if (rule.selectorType) {
-              await this.setSelectorType(ruleCardIndex, rule.selectorType);
+          if (rule.resourceType !== 'cluster' && rule.resourceType !== 'schemaRegistry' && rule.selectorType) {
+            await this.setSelectorType(ruleCardIndex, rule.selectorType);
 
-              if ((rule.selectorType === 'literal' || rule.selectorType === 'prefix') && rule.selectorValue) {
-                await this.setSelectorValue(ruleCardIndex, rule.selectorValue);
-              }
+            if ((rule.selectorType === 'literal' || rule.selectorType === 'prefix') && rule.selectorValue) {
+              await this.setSelectorValue(ruleCardIndex, rule.selectorValue);
             }
           }
 
@@ -336,7 +335,7 @@ export class ACLPage {
     }
   }
 
-  async validateSummaryRule(ruleIndex: number, rule: Rule) {
+  async validateSummaryRule(_ruleIndex: number, rule: Rule) {
     // Check that the summary rule exists
     const summaryRule = this.page.getByTestId(`summary-card-${getRuleDataTestId(rule)}`).first();
     await expect(summaryRule).toBeVisible();
@@ -371,13 +370,13 @@ export class ACLPage {
    */
   async validateDetailOperationItem(
     rule: Rule,
-    principal: string,
+    _principal: string,
     operationName: string,
     permission: OperationType,
-    host = '*',
+    _host = '*'
   ) {
     const detailOperationItem = this.page.getByTestId(
-      `detail-item-op-${getIdFromRule(rule, operationName, permission)}`,
+      `detail-item-op-${getIdFromRule(rule, operationName, permission)}`
     );
     await expect(detailOperationItem).toBeVisible();
 
@@ -393,7 +392,7 @@ export class ACLPage {
     }
   }
 
-  async validateDetailRule(ruleIndex: number, rule: Rule, principal: string, host = '*') {
+  async validateDetailRule(_ruleIndex: number, rule: Rule, principal: string, host = '*') {
     // Check that the summary card for this rule exists on detail page
     const detailRuleCard = this.page.getByTestId(`summary-card-${getRuleDataTestId(rule)}`);
     await expect(detailRuleCard).toBeVisible();
@@ -455,7 +454,7 @@ export class ACLPage {
   /**
    * Validation methods for checking rule existence
    */
-  async validateRuleExists(rule: Rule, principal: string, host = '*'): Promise<boolean> {
+  async validateRuleExists(rule: Rule, _principal: string, _hostt = '*'): Promise<boolean> {
     // Check if a specific rule exists on the detail page
     try {
       // Check if at least one operation from the rule is visible
@@ -472,7 +471,7 @@ export class ACLPage {
     }
   }
 
-  async validateRuleNotExists(rule: Rule, principal: string, host = '*') {
+  async validateRuleNotExists(rule: Rule, _principal: string, _hostt = '*') {
     // Verify that a specific rule does not exist on the detail page
     for (const [operationName, permission] of Object.entries(rule.operations)) {
       const testId = `detail-item-op-${getIdFromRule(rule, operationName, permission)}`;

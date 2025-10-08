@@ -23,7 +23,13 @@ type HeapUserData = {
 
 declare global {
   interface Window {
-    heap: any;
+    heap?: {
+      identify: (email: string) => void;
+      addUserProperties: (properties: Record<string, unknown>) => void;
+      track: (eventName: string, properties?: Record<string, unknown>) => void;
+      addEventProperties: (properties: Record<string, unknown>) => void;
+      resetIdentity: () => void;
+    };
   }
 }
 
@@ -47,7 +53,7 @@ export const trackHeapUser = (userData: HeapUserData) => {
  * @param eventName - The name of the event to track
  * @param properties - Optional properties to include with the event
  */
-export const trackHeapEvent = (eventName: string, properties?: Record<string, any>) => {
+export const trackHeapEvent = (eventName: string, properties?: Record<string, unknown>) => {
   if (window.heap) {
     window.heap.track(eventName, properties);
   }
@@ -57,7 +63,7 @@ export const trackHeapEvent = (eventName: string, properties?: Record<string, an
  * Add user properties in Heap
  * @param properties - User properties to set
  */
-export const setHeapUserProperties = (properties: Record<string, any>) => {
+export const setHeapUserProperties = (properties: Record<string, unknown>) => {
   if (window.heap) {
     window.heap.addUserProperties(properties);
   }
@@ -67,7 +73,7 @@ export const setHeapUserProperties = (properties: Record<string, any>) => {
  * Add event properties in Heap
  * @param properties - Event properties to set
  */
-export const addHeapEventProperties = (properties: Record<string, any>) => {
+export const addHeapEventProperties = (properties: Record<string, unknown>) => {
   if (window.heap) {
     window.heap.addEventProperties(properties);
   }

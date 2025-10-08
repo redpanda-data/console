@@ -3,7 +3,7 @@
  * Used by both remote-mcp and rp-connect features
  */
 
-import type { JsonObject, JsonValue } from './jsonUtils';
+import type { JsonObject, JsonValue } from './json-utils';
 
 export type JsonSchemaConst = {
   const: JsonValue;

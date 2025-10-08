@@ -1,6 +1,7 @@
+import { expect, test } from '@playwright/test';
+
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
-import { expect, test } from '@playwright/test';
 import { createTopic, deleteTopic, produceMessage } from '../topic.utils';
 
 test.use({
@@ -17,7 +18,7 @@ test.describe('Topic', () => {
     await page.goto(`/topics/${topicName}/produce-record`);
 
     // const DefaultMaxDeserializationPayloadSize = 20_480 // 20 KB
-    const maxMessageSize = 30000;
+    const maxMessageSize = 30_000;
     const fillText = 'example content ';
     const content = fillText.repeat(maxMessageSize / fillText.length + 1);
 
@@ -69,20 +70,27 @@ test.describe('Topic', () => {
     await createTopic(page, { topicName });
 
     await test.step('Verify configuration grouping', async () => {
-      await page.goto(`/topics/${topicName}#configuration`)
-      await expect(page.getByTestId("config-group-table")).toBeVisible();
+      await page.goto(`/topics/${topicName}#configuration`);
+      await expect(page.getByTestId('config-group-table')).toBeVisible();
 
       // This is the full order we currently expect to see things in
       const expected = [
-        'Retention', 'Compaction', 'Replication', 'Tiered Storage',
-        'Write Caching', 'Iceberg', 'Schema Registry and Validation',
-        'Message Handling', 'Compression', 'Storage Internals'
+        'Retention',
+        'Compaction',
+        'Replication',
+        'Tiered Storage',
+        'Write Caching',
+        'Iceberg',
+        'Schema Registry and Validation',
+        'Message Handling',
+        'Compression',
+        'Storage Internals',
       ];
 
       // Grab the actual groups on the page, then grab the intersection
       const actual = await page.locator('.configGroupTitle').allTextContents();
-      const filtered = actual.filter(t => expected.includes(t));
-      const present = expected.filter(t => actual.includes(t));
+      const filtered = actual.filter((t) => expected.includes(t));
+      const present = expected.filter((t) => actual.includes(t));
 
       // Make sure the basic options ('Retention') is present, and the rest are in the right order
       expect(filtered).toContain('Retention');
@@ -156,11 +164,11 @@ test.describe('Topic', () => {
       const searchInput = page.getByPlaceholder('Enter search term/regex');
       await searchInput.fill(topicName);
       await expect(page.getByRole('link', { name: topicName })).toBeVisible();
-      
+
       // Search for non-existent topic
       await searchInput.fill('non-existent-topic-12345');
       await expect(page.getByRole('link', { name: topicName })).not.toBeVisible();
-      
+
       // Clear search and verify topic appears again
       await searchInput.clear();
       await expect(page.getByRole('link', { name: topicName })).toBeVisible();
@@ -224,7 +232,7 @@ test.describe('Topic', () => {
     await test.step('Navigate to topic details', async () => {
       await page.getByRole('link', { name: topicName }).click();
       await expect(page).toHaveURL(new RegExp(`/topics/${topicName}`));
-      
+
       // Verify we're on the topic details page
       await expect(page.getByText(topicName)).toBeVisible();
     });
@@ -263,7 +271,7 @@ test.describe('Topic', () => {
         await valueMonacoEditor.click();
         await page.keyboard.insertText(message);
         await page.getByTestId('produce-button').click();
-        
+
         // Verify message was produced
         const messageValueCell = page.getByRole('cell', { name: new RegExp(message, 'i') }).first();
         await expect(messageValueCell).toBeVisible();
@@ -272,7 +280,7 @@ test.describe('Topic', () => {
 
     await test.step('Verify all messages are visible in topic', async () => {
       await page.goto(`/topics/${topicName}`);
-      
+
       for (const message of messages) {
         await expect(page.getByText(message)).toBeVisible();
       }
@@ -291,18 +299,18 @@ test.describe('Topic', () => {
 
     await test.step('Test empty topic name validation', async () => {
       await page.getByTestId('create-topic-button').click();
-      
+
       // The create button should be disabled when topic name is empty
       const createButton = page.getByTestId('onOk-button');
       await expect(createButton).toBeDisabled();
-      
+
       // Modal should still be open
       await expect(page.getByTestId('topic-name')).toBeVisible();
     });
 
     await test.step('Test invalid topic name characters', async () => {
       await page.getByTestId('topic-name').fill('invalid topic name with spaces!');
-      
+
       // Button might be enabled but should show validation error on submit
       const createButton = page.getByTestId('onOk-button');
       if (await createButton.isEnabled()) {
@@ -317,6 +325,4 @@ test.describe('Topic', () => {
       await expect(page.getByTestId('create-topic-button')).toBeVisible();
     });
   });
-
-  
 });

@@ -37,9 +37,9 @@ import { KnowledgeBaseService } from 'protogen/redpanda/api/dataplane/v1alpha3/k
 
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { APP_ROUTES } from './components/routes';
-import { appGlobal } from './state/appGlobal';
-import { api } from './state/backendApi';
-import { uiState } from './state/uiState';
+import { appGlobal } from './state/app-global';
+import { api } from './state/backend-api';
+import { uiState } from './state/ui-state';
 import { AppFeatures, getBasePath } from './utils/env';
 
 declare const __webpack_public_path__: string;
@@ -77,7 +77,7 @@ export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => a
     if (error instanceof ConnectError && error.code === Code.FailedPrecondition) {
       for (const detail of error.details) {
         // TODO fix type checks for IncomingDetail, BE should provide types for debug field
-        const detailWithDebug = detail as any;
+        const detailWithDebug = detail as { type?: string; debug?: { reason?: string } };
         if (
           detailWithDebug?.type &&
           detailWithDebug?.debug &&
@@ -154,13 +154,24 @@ export const config: Config = observable({
   fetch: window.fetch,
   assetsPath: getBasePath(),
   clusterId: 'default',
-  setSidebarItems: () => {},
-  setBreadcrumbs: () => {},
+  setSidebarItems: () => {
+    // no op - set by parent application
+  },
+  setBreadcrumbs: () => {
+    // no op - set by parent application
+  },
   isServerless: false,
   featureFlags: FEATURE_FLAGS,
 });
 
-const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...args }: SetConfigArguments) => {
+const setConfig = ({
+  fetch,
+  urlOverride,
+  jwt,
+  isServerless: isServerlessMode,
+  featureFlags,
+  ...args
+}: SetConfigArguments) => {
   const assetsUrl =
     urlOverride?.assets === 'WEBPACK' ? String(__webpack_public_path__).removeSuffix('/') : urlOverride?.assets;
 
@@ -186,7 +197,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...arg
   const userGrpcClient = createClient(UserService, transport);
   Object.assign(config, {
     jwt,
-    isServerless,
+    isServerless: isServerlessMode,
     restBasePath: getRestBasePath(urlOverride?.rest),
     grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
     fetch: fetch ?? window.fetch.bind(window),
@@ -208,8 +219,8 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...arg
   return config;
 };
 
-export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
-  monaco.editor.defineTheme('kowl', {
+export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, monacoInstance: Monaco) => {
+  monacoInstance.editor.defineTheme('kowl', {
     base: 'vs',
     inherit: false,
     colors: {

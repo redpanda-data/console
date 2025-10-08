@@ -17,9 +17,11 @@
  */
 
 import express from 'express';
-import { join, dirname } from 'path';
 import fetch from 'node-fetch';
-import { fileURLToPath } from 'url';
+
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 const app = express();
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -30,39 +32,39 @@ const apiServer = 'http://localhost:9090';
 app.use(express.static(rootDir));
 
 app.use('/api/*', async (req, res) => {
+  const url = apiServer + req.baseUrl;
+  // console.log('api request will be proxied', { targetUrl: url });
 
-    const url = apiServer + req.baseUrl;
-    // console.log('api request will be proxied', { targetUrl: url });
+  const proxied = await fetch(url, {
+    method: req.method,
+    body: req.body,
+    // headers: req.headers,
+  });
 
-    const proxied = await fetch(url, {
-        method: req.method,
-        body: req.body,
-        // headers: req.headers,
-    });
+  res.statusCode = proxied.status;
+  res.statusMessage = proxied.statusText;
 
-    res.statusCode = proxied.status;
-    res.statusMessage = proxied.statusText;
-
-    const banned = ['connection', 'content-encoding', 'content-length', 'content-type'];
-    for (const [k, v] of proxied.headers) {
-        if (banned.includes(k.toLowerCase()))
-            continue;
-        res.header(k, v);
+  const banned = ['connection', 'content-encoding', 'content-length', 'content-type'];
+  for (const [k, v] of proxied.headers) {
+    if (banned.includes(k.toLowerCase())) {
+      continue;
     }
+    res.header(k, v);
+  }
 
-    if (proxied.body) {
-        const json = await proxied.text();
-        res.send(json);
-    } else {
-        res.end();
-    }
+  if (proxied.body) {
+    const json = await proxied.text();
+    res.send(json);
+  } else {
+    res.end();
+  }
 });
 
-app.get('/*', (req, res) => {
-    res.sendFile(join(rootDir, 'index.html'));
+app.get('/*', (_req, res) => {
+  res.sendFile(join(rootDir, 'index.html'));
 });
 
 app.listen(port, () => {
-    console.log('will serve from directory: ' + rootDir);
-    console.log('listening on port ' + port);
+  console.log(`will serve from directory: ${rootDir}`);
+  console.log(`listening on port ${port}`);
 });

@@ -66,7 +66,16 @@ describe('UpdateSecretModal', () => {
       rpc(getPipelinesForSecret, getPipelinesForSecretMock);
     });
 
-    render(<UpdateSecretModal isOpen onClose={() => {}} secretId={existingSecretId} />, { transport });
+    render(
+      <UpdateSecretModal
+        isOpen
+        onClose={() => {
+          // no op - test modal
+        }}
+        secretId={existingSecretId}
+      />,
+      { transport }
+    );
 
     await waitFor(() => {
       expect(screen.getByTestId('update-secret-button')).toBeVisible();
@@ -148,7 +157,16 @@ describe('UpdateSecretModal', () => {
       rpc(updateSecret, updateSecretMock);
     });
 
-    render(<UpdateSecretModal isOpen onClose={() => {}} secretId={secretId} />, { transport });
+    render(
+      <UpdateSecretModal
+        isOpen
+        onClose={() => {
+          // no op - test modal
+        }}
+        secretId={secretId}
+      />,
+      { transport }
+    );
 
     await waitFor(() => {
       expect(screen.getByTestId('resource-in-use-alert')).toBeVisible();

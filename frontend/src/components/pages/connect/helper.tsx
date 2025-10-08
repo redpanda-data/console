@@ -69,7 +69,7 @@ import ServicenowLogo from '../../../assets/connectors/servicenow.png';
 import SnowflakeLogo from '../../../assets/connectors/snowflake.png';
 import TwitterLogo from '../../../assets/connectors/twitter.svg';
 import { isEmbedded } from '../../../config';
-import { api } from '../../../state/backendApi';
+import { api } from '../../../state/backend-api';
 import {
   type ApiError,
   type ClusterConnectorInfo,
@@ -77,11 +77,11 @@ import {
   type ClusterConnectorTaskInfo,
   ConnectorState,
   type ConnectorStatus,
-} from '../../../state/restInterfaces';
-import { ZeroSizeWrapper } from '../../../utils/tsxUtils';
-import PageContent from '../../misc/PageContent';
-import Section from '../../misc/Section';
-import { Statistic } from '../../misc/Statistic';
+} from '../../../state/rest-interfaces';
+import { ZeroSizeWrapper } from '../../../utils/tsx-utils';
+import PageContent from '../../misc/page-content';
+import Section from '../../misc/section';
+import { Statistic } from '../../misc/statistic';
 
 type ConnectorMetadata = {
   readonly className?: string; // match by exact match
@@ -630,8 +630,8 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
     });
   });
 
-  const success = action((target: T) => {
-    const messageContent = props.successMessage(target);
+  const success = action((successTarget: T) => {
+    const messageContent = props.successMessage(successTarget);
     toast({
       status: 'success',
       description: messageContent,
@@ -647,8 +647,8 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
     try {
       await props.onOk(target);
       success(target);
-    } catch (err) {
-      $state.error = err as any;
+    } catch (error) {
+      $state.error = error as Error;
     } finally {
       $state.isPending = false;
     }
@@ -769,7 +769,7 @@ export const TaskState = observer(
     const task = p.observable;
     const state = task.state;
 
-    const iconWrapper = (icon: JSX.Element) => <span style={{ fontSize: '18px' }}>{icon}</span>;
+    const iconWrapper = (iconElement: JSX.Element) => <span style={{ fontSize: '18px' }}>{iconElement}</span>;
 
     let icon: JSX.Element = <></>;
     if (state === ConnectorState.Running) {

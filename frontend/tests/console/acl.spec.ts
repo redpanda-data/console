@@ -1,6 +1,8 @@
-import { type Page, test, expect } from '@playwright/test';
+import { type Page, test } from '@playwright/test';
+
+import { ACLPage } from './pages/ACLPage';
+import { RolePage } from './pages/RolePage';
 import {
-  getRuleDataTestId,
   ModeAllowAll,
   ModeCustom,
   ModeDenyAll,
@@ -16,9 +18,7 @@ import {
   ResourceTypeTopic,
   ResourceTypeTransactionalId,
   type Rule,
-} from '../../src/components/pages/acls/new-acl/ACL.model';
-import { ACLPage } from './pages/ACLPage';
-import { RolePage } from './pages/RolePage';
+} from '../../src/components/pages/acls/new-acl/acl.model';
 
 /**
  * Generates a unique principal name for testing
@@ -944,14 +944,17 @@ test.describe('Allow all operations', () => {
       ResourceTypeTransactionalId,
       ResourceTypeSubject,
       ResourceTypeSchemaRegistry,
-    ].map((type, i) => ({
-        id: i,
-        mode: ModeAllowAll,
-        selectorType: ResourcePatternTypeAny,
-        selectorValue: '',
-        operations: {},
-        resourceType: type,
-      } as Rule));
+    ].map(
+      (type, i) =>
+        ({
+          id: i,
+          mode: ModeAllowAll,
+          selectorType: ResourcePatternTypeAny,
+          selectorValue: '',
+          operations: {},
+          resourceType: type,
+        }) as Rule
+    );
 
     aclPages.map(({ createPage, type }) => {
       test(`${testName} - ${type}`, async ({ page }) => {

@@ -3,7 +3,7 @@ import type { SelectOption } from '@redpanda-data/ui/dist/components/Inputs/Sele
 import type { ReactNode } from 'react';
 import { AiOutlinePlus } from 'react-icons/ai';
 
-import { SingleSelect } from '../../misc/Select';
+import { SingleSelect } from '../../misc/select';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 

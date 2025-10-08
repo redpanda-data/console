@@ -12,7 +12,7 @@
 const toJson = JSON.stringify;
 export let successfulTests = 0;
 
-export function expectRefEq(test: { name: string; actual: any; expected: any }) {
+export function expectRefEq(test: { name: string; actual: unknown; expected: unknown }) {
   const { name, actual, expected } = test;
 
   expect(`${name} (type equality)`, () => typeof actual === typeof expected);
@@ -23,7 +23,7 @@ export function expectRefEq(test: { name: string; actual: any; expected: any }) 
 
   successfulTests++;
 }
-export function expectEq(test: { name: string; actual: any; expected: any }) {
+export function expectEq(test: { name: string; actual: unknown; expected: unknown }) {
   const jActual = toJson(test.actual);
   const jExpected = toJson(test.expected);
   if (jActual === jExpected) {

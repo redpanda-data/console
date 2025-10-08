@@ -18,7 +18,7 @@ import { type LintHint, LintHintSchema } from '../../../protogen/redpanda/api/co
  * - err.rawMessage: Raw error from server
  * - err.details: Array of error details (LintHint, BadRequest, etc.)
  */
-export function extractLintHintsFromError(err: any): Record<string, LintHint> {
+export function extractLintHintsFromError(err: unknown): Record<string, LintHint> {
   const lintHints: Record<string, LintHint> = {};
   let hintIndex = 0;
 
@@ -69,7 +69,7 @@ export function extractLintHintsFromError(err: any): Record<string, LintHint> {
     lintHints[`hint_${hintIndex++}`] = create(LintHintSchema, {
       line: 0,
       column: 0,
-      hint: err.message || String(err),
+      hint: err instanceof Error ? err.message : String(err),
       lintType: 'error',
     });
   }
@@ -77,8 +77,8 @@ export function extractLintHintsFromError(err: any): Record<string, LintHint> {
   return lintHints;
 }
 
-export function formatPipelineError(err: any): any {
-  const details = [];
+export function formatPipelineError(err: unknown): React.ReactNode {
+  const details: React.ReactNode[] = [];
   let genDesc = String(err);
   if (err instanceof ConnectError) {
     genDesc = err.message;
@@ -124,10 +124,10 @@ type FieldViolation = {
   description: string;
 };
 
-function isLintHint(obj: any): obj is { type: string; debug: LintHint } {
-  return obj && obj.type === LintHintSchema.typeName;
+function isLintHint(obj: unknown): obj is { type: string; debug: LintHint } {
+  return obj !== null && typeof obj === 'object' && 'type' in obj && obj.type === LintHintSchema.typeName;
 }
 
-function isBadRequest(obj: any): obj is { type: string; debug: BadRequest } {
-  return obj && obj.type === 'google.rpc.BadRequest';
+function isBadRequest(obj: unknown): obj is { type: string; debug: BadRequest } {
+  return obj !== null && typeof obj === 'object' && 'type' in obj && obj.type === 'google.rpc.BadRequest';
 }

@@ -17,11 +17,25 @@ import type { AddTopicFormData, AddUserFormData } from '../types/wizard';
 // Regex for matching YAML key-value pairs
 const YAML_KEY_VALUE_REGEX = /^(\s*)([^:#\n]+):\s*(.*)$/;
 
+// JSON Schema type definition
+type JSONSchema = {
+  type?: string;
+  properties?: Record<string, unknown>;
+  items?: unknown;
+  required?: string[];
+  default?: unknown;
+  enum?: unknown[];
+  anyOf?: unknown[];
+  allOf?: unknown[];
+  $ref?: string;
+  patternProperties?: Record<string, unknown>;
+};
+
 /**
  * Extracts lightweight metadata from JSON Schema component variants
  * No complex transformation - just metadata for display + raw schema reference
  */
-const extractComponentMetadata = (componentType: string, definition: any): ConnectComponentSpec[] => {
+const extractComponentMetadata = (componentType: string, definition: { allOf?: unknown[] }): ConnectComponentSpec[] => {
   const components: ConnectComponentSpec[] = [];
 
   if (!(definition.allOf && Array.isArray(definition.allOf))) {
@@ -29,21 +43,22 @@ const extractComponentMetadata = (componentType: string, definition: any): Conne
   }
 
   // The first element of allOf contains anyOf with component variants
-  const variantsSection = definition.allOf[0];
+  const variantsSection = definition.allOf[0] as { anyOf?: unknown[] };
   if (!(variantsSection.anyOf && Array.isArray(variantsSection.anyOf))) {
     return components;
   }
 
   // Extract metadata from each variant
   for (const variant of variantsSection.anyOf) {
-    if (!variant.properties) {
+    const variantTyped = variant as JSONSchema;
+    if (!variantTyped.properties) {
       continue;
     }
 
     // Each variant has a single property key which is the component name
-    const componentNames = Object.keys(variant.properties);
+    const componentNames = Object.keys(variantTyped.properties);
     for (const componentName of componentNames) {
-      const componentSchema = variant.properties[componentName];
+      const componentSchema = variantTyped.properties[componentName] as JSONSchema & { description?: string };
 
       // Simple metadata extraction - no transformation
       const componentSpec: ConnectComponentSpec = {
@@ -76,7 +91,7 @@ const extractComponentMetadata = (componentType: string, definition: any): Conne
  * Phase 0: Parses benthos schema and returns all components with metadata
  */
 const parseSchema = () => {
-  const schemaData = benthosSchema as any;
+  const schemaData = benthosSchema as { definitions?: Record<string, unknown> };
   const allComponents: ConnectComponentSpec[] = [];
 
   // Check if schema has the new JSON Schema format with definitions
@@ -120,7 +135,7 @@ export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptiona
   // Generate the configuration object from the component's FieldSpec
   const connectionConfig = generateDefaultValue(componentSpec.config, showOptionalFields);
 
-  const config: any = {};
+  const config: Record<string, unknown> = {};
 
   // Structure the config according to Redpanda Connect schema
   switch (componentSpec.type) {
@@ -213,8 +228,13 @@ export const mergeConnectConfigs = (
     return newConfigObject;
   }
 
+  // Early return if newConfigObject is undefined
+  if (!newConfigObject) {
+    return newConfigObject;
+  }
+
   // Parse existing YAML as Document (preserves comments!)
-  let doc: any;
+  let doc: ReturnType<typeof parseDocument>;
   try {
     doc = parseDocument(existingYaml);
   } catch (error) {
@@ -243,7 +263,7 @@ export const mergeConnectConfigs = (
   }
 
   // Parse the new YAML as a Document to extract commented nodes
-  let newDoc: any;
+  let newDoc: ReturnType<typeof parseDocument> | undefined;
   if (newYamlWithComments) {
     try {
       newDoc = parseDocument(newYamlWithComments);
@@ -263,7 +283,8 @@ export const mergeConnectConfigs = (
 
       // Get the new processor from the commented Document (or fallback to plain object)
       const newProcessorNode = newDoc?.getIn(['pipeline', 'processors', 0]);
-      const newProcessor = newProcessorNode || newConfigObject.pipeline?.processors?.[0];
+      const newProcessor =
+        newProcessorNode || (newConfigObject as { pipeline?: { processors?: unknown[] } }).pipeline?.processors?.[0];
 
       if (newProcessor) {
         if (Array.isArray(processors)) {
@@ -283,7 +304,7 @@ export const mergeConnectConfigs = (
 
       // Get the new resource from the commented Document (or fallback to plain object)
       const newResourceNode = newDoc?.getIn(['cache_resources', 0]);
-      let newResource = newResourceNode || newConfigObject.cache_resources?.[0];
+      let newResource = newResourceNode || (newConfigObject as { cache_resources?: unknown[] }).cache_resources?.[0];
 
       if (newResource) {
         // If we got a node, convert to JS for label manipulation
@@ -293,7 +314,7 @@ export const mergeConnectConfigs = (
 
         // Check for label conflicts
         const existingLabels = Array.isArray(cacheResources)
-          ? cacheResources.map((r: any) => r?.label).filter(Boolean)
+          ? cacheResources.map((r: { label?: string }) => r?.label).filter(Boolean)
           : [];
 
         if (existingLabels.includes(newResource.label)) {
@@ -323,7 +344,8 @@ export const mergeConnectConfigs = (
 
       // Get the new resource from the commented Document (or fallback to plain object)
       const newResourceNode = newDoc?.getIn(['rate_limit_resources', 0]);
-      let newResource = newResourceNode || newConfigObject.rate_limit_resources?.[0];
+      let newResource =
+        newResourceNode || (newConfigObject as { rate_limit_resources?: unknown[] }).rate_limit_resources?.[0];
 
       if (newResource) {
         // If we got a node, convert to JS for label manipulation
@@ -333,7 +355,7 @@ export const mergeConnectConfigs = (
 
         // Check for label conflicts
         const existingLabels = Array.isArray(rateLimitResources)
-          ? rateLimitResources.map((r: any) => r?.label).filter(Boolean)
+          ? rateLimitResources.map((r: { label?: string }) => r?.label).filter(Boolean)
           : [];
 
         if (existingLabels.includes(newResource.label)) {
@@ -391,12 +413,16 @@ export const mergeConnectConfigs = (
 /**
  * Phase 3: Converts config object to formatted YAML string
  */
-export const configToYaml = (configObject: any, componentSpec: ConnectComponentSpec): string => {
+export const configToYaml = (configObject: unknown, componentSpec: ConnectComponentSpec): string => {
   try {
     let yamlString: string;
 
     // Check if this is a YAML Document (from mergeConnectConfigs with existing YAML)
-    if (configObject && typeof configObject.toString === 'function' && typeof configObject.getIn === 'function') {
+    if (
+      configObject &&
+      typeof (configObject as { toString?: unknown }).toString === 'function' &&
+      typeof (configObject as { getIn?: unknown }).getIn === 'function'
+    ) {
       // It's a Document - convert to string (preserves comments!)
       yamlString = configObject.toString();
     } else {
@@ -499,10 +525,14 @@ const isPasswordField = (fieldName: string): boolean => {
 /**
  * Checks if a schema has any nested fields matching topic/user/password patterns
  */
-const hasRelevantNestedFields = (schema: any, topicData: any, userData: any): boolean => {
+const hasRelevantNestedFields = (
+  schema: JSONSchema,
+  topicData: { topicName?: string } | null,
+  userData: { username?: string; password?: string } | null
+): boolean => {
   // Check object properties
   if (schema?.type === 'object' && schema.properties) {
-    for (const [propName, propSchema] of Object.entries(schema.properties) as [string, any][]) {
+    for (const [propName, propSchema] of Object.entries(schema.properties) as [string, JSONSchema][]) {
       if (isTopicField(propName) && topicData?.topicName) {
         return true;
       }
@@ -521,7 +551,7 @@ const hasRelevantNestedFields = (schema: any, topicData: any, userData: any): bo
       if (
         propSchema.type === 'array' &&
         propSchema.items &&
-        hasRelevantNestedFields(propSchema.items, topicData, userData)
+        hasRelevantNestedFields(propSchema.items as JSONSchema, topicData, userData)
       ) {
         return true;
       }
@@ -535,25 +565,30 @@ const hasRelevantNestedFields = (schema: any, topicData: any, userData: any): bo
  * Recursively populates persisted topic/user data in the generated defaults object
  * Also creates optional nested objects when they contain relevant fields
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 65, refactor later
-const populatePersistedData = (defaults: any, jsonSchema: any, rootFieldName?: string): any => {
+const populatePersistedData = (
+  defaults: Record<string, unknown>,
+  jsonSchema: JSONSchema,
+  rootFieldName?: string
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 65, refactor later
+): Record<string, unknown> => {
   const { topicData, userData } = getPersistedWizardData();
 
   if (jsonSchema.type === 'object' && jsonSchema.properties) {
     const hasRelevant = hasRelevantNestedFields(jsonSchema, topicData, userData);
 
+    let effectiveDefaults = defaults;
     if (!defaults || typeof defaults !== 'object') {
       if (hasRelevant) {
-        defaults = {};
+        effectiveDefaults = {};
       } else {
         return defaults;
       }
     }
 
-    const result = { ...defaults };
+    const result = { ...effectiveDefaults };
     const requiredFields = jsonSchema.required || [];
 
-    for (const [propName, propSchema] of Object.entries(jsonSchema.properties) as [string, any][]) {
+    for (const [propName, propSchema] of Object.entries(jsonSchema.properties) as [string, JSONSchema][]) {
       const isRequired = requiredFields.includes(propName);
       const existsInResult = propName in result;
 
@@ -564,7 +599,7 @@ const populatePersistedData = (defaults: any, jsonSchema: any, rootFieldName?: s
         (propSchema.type === 'object' && hasRelevantNestedFields(propSchema, topicData, userData)) ||
         (propSchema.type === 'array' &&
           propSchema.items &&
-          hasRelevantNestedFields(propSchema.items, topicData, userData));
+          hasRelevantNestedFields(propSchema.items as JSONSchema, topicData, userData));
 
       if (existsInResult || isRequired || hasTopic || hasUser || hasPassword || hasNestedRelevant) {
         if (isTopicField(propName) && topicData?.topicName) {
@@ -580,7 +615,7 @@ const populatePersistedData = (defaults: any, jsonSchema: any, rootFieldName?: s
           // biome-ignore lint/suspicious/noTemplateCurlyInString: Intentional Go template placeholder
           result[propName] = '${secrets.REDPANDA_PASSWORD}';
         } else if (propSchema.type === 'object') {
-          const nestedDefaults = existsInResult ? result[propName] : {};
+          const nestedDefaults = (existsInResult ? result[propName] : {}) as Record<string, unknown>;
           const populated = populatePersistedData(nestedDefaults, propSchema, propName);
           if (Object.keys(populated).length > 0) {
             result[propName] = populated;
@@ -588,11 +623,11 @@ const populatePersistedData = (defaults: any, jsonSchema: any, rootFieldName?: s
         } else if (
           propSchema.type === 'array' &&
           propSchema.items &&
-          hasRelevantNestedFields(propSchema.items, topicData, userData)
+          hasRelevantNestedFields(propSchema.items as JSONSchema, topicData, userData)
         ) {
           // Handle arrays that contain objects with relevant fields (e.g., sasl array)
           const itemDefaults = {};
-          const populated = populatePersistedData(itemDefaults, propSchema.items, propName);
+          const populated = populatePersistedData(itemDefaults, propSchema.items as JSONSchema, propName);
           if (Object.keys(populated).length > 0) {
             result[propName] = [populated];
           }
@@ -605,11 +640,11 @@ const populatePersistedData = (defaults: any, jsonSchema: any, rootFieldName?: s
 
   if (Array.isArray(defaults)) {
     return defaults.map((item) => {
-      if (typeof item === 'object' && jsonSchema.items) {
-        return populatePersistedData(item, jsonSchema.items, rootFieldName);
+      if (typeof item === 'object' && item !== null && jsonSchema.items) {
+        return populatePersistedData(item as Record<string, unknown>, jsonSchema.items as JSONSchema, rootFieldName);
       }
       return item;
-    });
+    }) as unknown as Record<string, unknown>;
   }
 
   return defaults;
@@ -652,7 +687,7 @@ export const getAllCategories = (additionalComponents?: ExtendedConnectComponent
  */
 const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSpec): string => {
   // Get the JSON Schema for this component
-  const jsonSchema = componentSpec.config._jsonSchema;
+  const jsonSchema = componentSpec.config._jsonSchema as JSONSchema | undefined;
   if (!jsonSchema?.properties) {
     return yamlString;
   }
@@ -678,7 +713,7 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
     const cleanKey = key.trim();
 
     // Look up field in JSON Schema properties
-    const fieldSchema = jsonSchema.properties[cleanKey];
+    const fieldSchema = (jsonSchema.properties as Record<string, JSONSchema>)[cleanKey];
     if (!fieldSchema) {
       processedLines.push(line);
       continue;
@@ -747,7 +782,7 @@ const addRootSpacing = (yamlString: string): string => {
 /**
  * Recursively removes null values from arrays and objects
  */
-const cleanupNullValues = (obj: any): any => {
+const cleanupNullValues = (obj: unknown): unknown => {
   if (Array.isArray(obj)) {
     // Remove null/undefined values from arrays
     const filtered = obj.filter((item) => item !== null && item !== undefined);
@@ -756,7 +791,7 @@ const cleanupNullValues = (obj: any): any => {
   }
 
   if (obj !== null && typeof obj === 'object') {
-    const cleaned: any = {};
+    const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       const cleanedValue = cleanupNullValues(value);
       // Keep non-null values, or empty arrays/objects
@@ -778,11 +813,15 @@ const cleanupNullValues = (obj: any): any => {
 export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?: boolean): unknown {
   if (spec._jsonSchema) {
     if (showOptionalFields) {
-      const allFields = generateAllFieldsFromJsonSchema(spec._jsonSchema, spec.name);
+      const allFields = generateAllFieldsFromJsonSchema(spec._jsonSchema as JSONSchema, spec.name);
       return cleanupNullValues(allFields);
     }
     const defaults = generateDefaultFromJsonSchema(spec._jsonSchema);
-    const populated = populatePersistedData(defaults, spec._jsonSchema, spec.name);
+    const populated = populatePersistedData(
+      defaults as Record<string, unknown>,
+      spec._jsonSchema as JSONSchema,
+      spec.name
+    );
     return cleanupNullValues(populated);
   }
 
@@ -838,7 +877,7 @@ export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?
  * Also populates topic/user defaults from session storage when applicable
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 35, refactor later
-function generateAllFieldsFromJsonSchema(jsonSchema: any, fieldName?: string): unknown {
+function generateAllFieldsFromJsonSchema(jsonSchema: JSONSchema, fieldName?: string): unknown {
   if (jsonSchema.default !== undefined) {
     return jsonSchema.default;
   }
@@ -888,7 +927,7 @@ function generateAllFieldsFromJsonSchema(jsonSchema: any, fieldName?: string): u
 
     if (jsonSchema.properties) {
       for (const [propName, propSchema] of Object.entries(jsonSchema.properties)) {
-        const value = generateAllFieldsFromJsonSchema(propSchema, propName);
+        const value = generateAllFieldsFromJsonSchema(propSchema as JSONSchema, propName);
         if (value !== undefined) {
           obj[propName] = value;
         }

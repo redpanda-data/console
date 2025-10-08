@@ -13,7 +13,9 @@ type FeatureFlagContextType = {
 
 const FeatureFlagContext = createContext<FeatureFlagContextType>({
   flags: {},
-  setFlag: () => {},
+  setFlag: () => {
+    // no op - default context value
+  },
   getBooleanFlagValue: () => false,
 });
 
