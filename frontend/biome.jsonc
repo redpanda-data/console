@@ -18,7 +18,8 @@
       "!**/coverage/**/*",
       "!**/.nyc_output/**/*",
       "!**/*.css",
-      "!**/components/redpanda-ui"
+      "!**/components/redpanda-ui",
+      "!**/assets/rp-connect-schema-full.json"
     ]
   },
   "formatter": {

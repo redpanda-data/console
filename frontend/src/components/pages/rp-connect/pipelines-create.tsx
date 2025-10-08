@@ -45,7 +45,7 @@ import { SecretsQuickAdd } from './secrets/secrets-quick-add';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import type { ConnectComponentType } from './types/schema';
 import type { AddUserFormData, WizardFormData } from './types/wizard';
-import { getConnectTemplate } from './utils/yaml';
+import { getConnectTemplate } from './utils/schema';
 import type { LintHint } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
 import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
@@ -441,10 +441,13 @@ export const PipelineEditor = observer(
       }
 
       const currentValue = editorInstance.getValue();
+      // For explicitly-added components (scanner, processor, cache, buffer),
+      // we want to show all fields since users are adding them to customize behavior.
+      const showAllFields = ['scanner', 'processor', 'cache', 'buffer'].includes(connectionType);
       const mergedYaml = getConnectTemplate({
         connectionName,
         connectionType,
-        showOptionalFields: false,
+        showOptionalFields: showAllFields,
         existingYaml: currentValue,
       });
 

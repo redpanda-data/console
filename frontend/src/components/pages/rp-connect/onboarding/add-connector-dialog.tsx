@@ -32,7 +32,6 @@ export const AddConnectorDialog = ({
           className="px-0 pt-0"
           componentTypeFilter={connectorType ? [connectorType] : undefined}
           gridCols={3}
-          hideFilters
           hideHeader
           onChange={onAddConnector}
           variant="ghost"

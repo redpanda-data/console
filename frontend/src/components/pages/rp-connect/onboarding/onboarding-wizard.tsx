@@ -14,18 +14,19 @@ import { CONNECT_WIZARD_CONNECTOR_KEY } from 'state/connect/state';
 import { AddTopicStep } from './add-topic-step';
 import { AddUserStep } from './add-user-step';
 import { ConnectTiles } from './connect-tiles';
+import { WizardStep, type WizardStepType } from '../types/constants';
 import type { ConnectComponentType } from '../types/schema';
 import type { BaseStepRef, WizardFormData } from '../types/wizard';
-import { handleStepResult, WizardStep } from '../utils/wizard';
+import { handleStepResult } from '../utils/wizard';
 
 const stepDefinitions = [
   {
     id: WizardStep.ADD_INPUT,
-    title: 'Send Data',
+    title: 'Send data',
   },
-  { id: WizardStep.ADD_OUTPUT, title: 'Receive Data' },
-  { id: WizardStep.ADD_TOPIC, title: 'Add a Topic' },
-  { id: WizardStep.ADD_USER, title: 'Add a User' },
+  { id: WizardStep.ADD_OUTPUT, title: 'Receive data' },
+  { id: WizardStep.ADD_TOPIC, title: 'Add a topic' },
+  { id: WizardStep.ADD_USER, title: 'Add a user' },
 ];
 
 const { Stepper } = defineStepper(...stepDefinitions);
@@ -85,7 +86,7 @@ export const ConnectOnboardingWizard = () => {
     [setPersistedConnector, persistedConnector]
   );
 
-  const handleNext = async (methods: { current: { id: WizardStep }; next: () => void }) => {
+  const handleNext = async (methods: { current: { id: WizardStepType }; next: () => void }) => {
     switch (methods.current.id) {
       case WizardStep.ADD_INPUT: {
         const result = await addInputStepRef.current?.triggerSubmit();
@@ -116,8 +117,7 @@ export const ConnectOnboardingWizard = () => {
     navigate('/rp-connect/create');
   };
 
-  // Get loading state from current step's ref
-  const getCurrentStepLoading = (currentStepId: WizardStep): boolean => {
+  const getCurrentStepLoading = (currentStepId: WizardStepType): boolean => {
     switch (currentStepId) {
       case WizardStep.ADD_INPUT:
         return addInputStepRef.current?.isLoading ?? false;
@@ -156,6 +156,7 @@ export const ConnectOnboardingWizard = () => {
                       componentTypeFilter={['input']}
                       defaultConnectionName={persistedConnector.input?.connectionName}
                       defaultConnectionType={persistedConnector.input?.connectionType}
+                      key="input-connector-tiles"
                       onChange={handleInputChange}
                       ref={addInputStepRef}
                       tileWrapperClassName="min-h-[300px] max-h-[40vh]"
@@ -167,6 +168,7 @@ export const ConnectOnboardingWizard = () => {
                       componentTypeFilter={['output']}
                       defaultConnectionName={persistedConnector.output?.connectionName}
                       defaultConnectionType={persistedConnector.output?.connectionType}
+                      key="output-connector-tiles"
                       onChange={handleOutputChange}
                       ref={addOutputStepRef}
                       tileWrapperClassName="min-h-[300px] max-h-[40vh]"

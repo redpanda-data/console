@@ -18,28 +18,6 @@ export type KnownConnectComponentStatus = (typeof CONNECT_COMPONENT_STATUS)[numb
 
 export type ConnectComponentStatus = (typeof CONNECT_COMPONENT_STATUS)[number] | (string & {});
 
-export const COMPONENT_CATEGORIES = {
-  // Infrastructure
-  DATABASES: 'databases',
-  MESSAGING: 'messaging',
-  STORAGE: 'storage',
-  API: 'api',
-
-  // Cloud Providers
-  AWS: 'aws',
-  GCP: 'gcp',
-  AZURE: 'azure',
-  CLOUD: 'cloud',
-
-  // Data Formats
-  EXPORT: 'export',
-  // Other
-  TRANSFORMATION: 'transformation',
-  MONITORING: 'monitoring',
-} as const;
-
-export type ComponentCategory = (typeof COMPONENT_CATEGORIES)[keyof typeof COMPONENT_CATEGORIES]; // Categorizes the primary function of a Benthos component within a pipeline.
-
 export const CONNECT_COMPONENT_TYPE = [
   // Buffers messages, often used between inputs/outputs and processing stages
   // to decouple components, absorb temporary load spikes, or ensure message persistence.
@@ -547,4 +525,114 @@ export interface ExtendedConnectComponentSpec extends ConnectComponentSpec {
 export interface ConnectNodeCategory {
   id: string;
   name: string;
+}
+
+/**
+ * Type representing a Redpanda Connect configuration object structure.
+ * This is the shape returned by schemaToConfig() based on component type.
+ * Can be a YAML Document (with comments preserved) or a plain object.
+ */
+export type ConnectConfigObject = Record<string, unknown>;
+
+/**
+ * Raw field spec as it appears in the JSON schema file (before conversion to ConnectFieldSpec).
+ * This represents the unprocessed structure directly from the JSON.
+ */
+export interface RawFieldSpec {
+  name?: string;
+  type?: string;
+  kind?: string;
+  description?: string;
+  is_advanced?: boolean;
+  is_deprecated?: boolean;
+  is_optional?: boolean;
+  is_secret?: boolean;
+  default?: unknown;
+  interpolated?: boolean;
+  bloblang?: boolean;
+  examples?: unknown[];
+  annotated_options?: [string, string][];
+  options?: string[];
+  version?: string;
+  linter?: string;
+  scrubber?: string;
+  children?: RawFieldSpec[];
+}
+
+/**
+ * Raw component spec as it appears in the JSON schema file (before conversion to ConnectComponentSpec).
+ * This represents the unprocessed structure directly from the JSON.
+ */
+export interface RawComponentSpec {
+  name: string;
+  type: string;
+  status?: string;
+  plugin: boolean;
+  summary?: string;
+  description?: string;
+  categories?: string[] | null;
+  config?: RawFieldSpec;
+  version?: string;
+}
+
+/**
+ * Type representing the full Benthos/Redpanda Connect schema JSON structure.
+ * This is the actual shape of rp-connect-schema-full.json.
+ * Note: Unlike PipelineRoot, this type omits the 'date' field which is not present in the JSON.
+ * Uses raw types (RawFieldSpec, RawComponentSpec) as they appear in the JSON before conversion.
+ */
+export interface BenthosSchema {
+  // The Benthos version this manifest corresponds to. Example: `4.65.0`.
+  version: string;
+  /**
+   * Specifications for the top-level Benthos configuration fields.
+   */
+  config: RawFieldSpec[];
+  /**
+   * A list of specifications for all available Buffer components.
+   */
+  buffers?: RawComponentSpec[];
+  /**
+   * A list of specifications for all available Cache components.
+   */
+  caches?: RawComponentSpec[];
+  /**
+   * A list of specifications for all available Input components.
+   */
+  inputs?: RawComponentSpec[];
+  /**
+   * A list of specifications for all available Output components.
+   */
+  outputs?: RawComponentSpec[];
+  /**
+   * A list of specifications for all available Processor components.
+   */
+  processors?: RawComponentSpec[];
+  /**
+   * A list of specifications for all available Metrics components.
+   */
+  metrics?: RawComponentSpec[];
+  /**
+   * A list of specifications for all available Tracer components.
+   */
+  tracers?: RawComponentSpec[];
+  /**
+   * A list of specifications for all available Scanner components.
+   */
+  scanners?: RawComponentSpec[];
+  /**
+   * A list of specifications for all available Rate Limit components.
+   * Note: The key in the source JSON is "rate-limits".
+   */
+  'rate-limits'?: RawComponentSpec[];
+  /**
+   * A list of specifications for all available built-in Bloblang functions.
+   * Note: The key in the source JSON is "bloblang-functions".
+   */
+  'bloblang-functions'?: BloblangFunctionSpec[];
+  /**
+   * A list of specifications for all available built-in Bloblang methods.
+   * Note: The key in the source JSON is "bloblang-methods".
+   */
+  'bloblang-methods'?: BloblangMethodSpec[];
 }

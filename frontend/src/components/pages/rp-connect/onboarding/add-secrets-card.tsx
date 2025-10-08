@@ -1,10 +1,12 @@
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, Check, PlusIcon } from 'lucide-react';
+import { cn } from 'components/redpanda-ui/lib/utils';
+import { AlertCircle, Check, ChevronDown, PlusIcon } from 'lucide-react';
 import type { editor } from 'monaco-editor';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 export const AddSecretsCard = ({
   detectedSecrets,
@@ -19,10 +21,9 @@ export const AddSecretsCard = ({
   editorInstance: editor.IStandaloneCodeEditor | null;
   onOpenDialog: () => void;
 }) => {
-  // Create a Set for O(1) lookup instead of O(n) array.includes()
+  const [isOpen, setIsOpen] = useState(false);
   const detectedSecretsSet = useMemo(() => new Set(detectedSecrets), [detectedSecrets]);
 
-  // Categorize secrets into used and unused for more efficient rendering
   const categorizedSecrets = useMemo(() => {
     const used: string[] = [];
     const unused: string[] = [];
@@ -38,7 +39,25 @@ export const AddSecretsCard = ({
     return { used, unused };
   }, [existingSecrets, detectedSecretsSet]);
 
-  // Memoize the click handler to prevent recreating on every render
+  const { visibleSecrets, collapsibleSecrets, hasMoreSecrets } = useMemo(() => {
+    const allSecrets = [...categorizedSecrets.used, ...categorizedSecrets.unused];
+    const visible = allSecrets.slice(0, 3);
+    const collapsible = allSecrets.slice(3);
+    const hasMore = allSecrets.length > 3;
+
+    const visibleUsed = visible.filter((s) => categorizedSecrets.used.includes(s));
+    const visibleUnused = visible.filter((s) => categorizedSecrets.unused.includes(s));
+
+    const collapsibleUsed = collapsible.filter((s) => categorizedSecrets.used.includes(s));
+    const collapsibleUnused = collapsible.filter((s) => categorizedSecrets.unused.includes(s));
+
+    return {
+      visibleSecrets: { used: visibleUsed, unused: visibleUnused },
+      collapsibleSecrets: { used: collapsibleUsed, unused: collapsibleUnused },
+      hasMoreSecrets: hasMore,
+    };
+  }, [categorizedSecrets]);
+
   const handleSecretClick = useCallback(
     (secretName: string) => {
       if (!editorInstance) {
@@ -74,33 +93,58 @@ export const AddSecretsCard = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* Existing secrets - always show if any exist */}
           {existingSecrets.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <Text className="font-medium text-sm">Existing Secrets:</Text>
-              <div className="flex flex-wrap gap-2">
-                {/* Used secrets - green with check icon */}
-                {categorizedSecrets.used.map((secret) => (
-                  <Badge className="font-mono" icon={<Check />} key={secret} variant="green">
-                    {`\${secrets.${secret}}`}
-                  </Badge>
-                ))}
-                {/* Unused secrets - clickable, secondary variant */}
-                {categorizedSecrets.unused.map((secret) => (
-                  <Badge
-                    className="cursor-pointer font-mono hover:opacity-80"
-                    key={secret}
-                    onClick={() => handleSecretClick(secret)}
-                    variant="secondary"
-                  >
-                    {`\${secrets.${secret}}`}
-                  </Badge>
-                ))}
+            <Collapsible onOpenChange={setIsOpen} open={isOpen}>
+              <div className="flex flex-col gap-2">
+                <Text className="font-medium text-sm">Existing Secrets:</Text>
+                <div className="flex flex-wrap gap-2">
+                  {visibleSecrets.used.map((secret) => (
+                    <Badge className="font-mono" icon={<Check />} key={secret} variant="green">
+                      {`\${secrets.${secret}}`}
+                    </Badge>
+                  ))}
+                  {visibleSecrets.unused.map((secret) => (
+                    <Badge
+                      className="cursor-pointer font-mono hover:opacity-80"
+                      key={secret}
+                      onClick={() => handleSecretClick(secret)}
+                      variant="secondary"
+                    >
+                      {`\${secrets.${secret}}`}
+                    </Badge>
+                  ))}
+                  <CollapsibleContent className="flex flex-wrap gap-2">
+                    {collapsibleSecrets.used.map((secret) => (
+                      <Badge className="font-mono" icon={<Check />} key={secret} variant="green">
+                        {`\${secrets.${secret}}`}
+                      </Badge>
+                    ))}
+                    {collapsibleSecrets.unused.map((secret) => (
+                      <Badge
+                        className="cursor-pointer font-mono hover:opacity-80"
+                        key={secret}
+                        onClick={() => handleSecretClick(secret)}
+                        variant="secondary"
+                      >
+                        {`\${secrets.${secret}}`}
+                      </Badge>
+                    ))}
+                  </CollapsibleContent>
+                  {hasMoreSecrets && (
+                    <CollapsibleTrigger asChild>
+                      <Badge
+                        className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                        icon={<ChevronDown className={cn('transition-transform', isOpen && 'rotate-180')} />}
+                        variant="outline"
+                      >
+                        {isOpen ? 'Hide' : `${existingSecrets.length - 3} More`}
+                      </Badge>
+                    </CollapsibleTrigger>
+                  )}
+                </div>
               </div>
-            </div>
+            </Collapsible>
           )}
-
-          {/* Missing secrets - show as buttons */}
           {missingSecrets.length > 0 && (
             <div className="flex flex-col gap-2">
               <Text className="font-medium text-destructive text-sm">Missing Secrets:</Text>
@@ -114,16 +158,12 @@ export const AddSecretsCard = ({
               </div>
             </div>
           )}
-
-          {/* No secrets hint - show only when no existing secrets */}
           {existingSecrets.length === 0 && detectedSecrets.length === 0 && (
             <Text className="text-muted-foreground text-sm">
               Your pipeline doesn't reference any secrets yet. Use <code>$&#123;secrets.NAME&#125;</code> syntax to
               reference secrets.
             </Text>
           )}
-
-          {/* Add button - always show */}
           <Button onClick={onOpenDialog} size={existingSecrets.length > 0 ? 'sm' : 'default'} variant="outline">
             <PlusIcon className="h-4 w-4" />
             {existingSecrets.length > 0 ? 'Add More Secrets' : 'Add Secret'}

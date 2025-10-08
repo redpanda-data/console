@@ -10,25 +10,19 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import {
-  Box,
-  Button,
-  Link as ChLink,
-  type CreateToastFnReturn,
-  Flex,
-  FormField,
-  Input,
-  NumberInput,
-  useToast,
-} from '@redpanda-data/ui';
+import { Button, type CreateToastFnReturn, Flex, FormField, Input, NumberInput, useToast } from '@redpanda-data/ui';
+import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
+import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
+import { isFeatureFlagEnabled } from 'config';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { PipelineUpdateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Link } from 'react-router-dom';
 
-import { formatPipelineError } from './errors';
+import { extractLintHintsFromError, formatPipelineError } from './errors';
 import { PipelineEditor } from './pipelines-create';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+import type { LintHint } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
 import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
@@ -43,6 +37,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   @observable editorContent = undefined as unknown as string;
   @observable isUpdating = false;
   @observable secrets: string[] = [];
+  @observable lintResults: Record<string, LintHint> = {};
   // TODO: Actually show this within the pipeline edit page
   @observable tags = {} as Record<string, string>;
 
@@ -110,21 +105,23 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
 
     return (
       <PageContent>
-        <Box my="2">
-          For help creating your pipeline, see our{' '}
-          <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" isExternal>
-            quickstart documentation
-          </ChLink>
-          , our{' '}
-          <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" isExternal>
-            library of examples
-          </ChLink>
-          , or our{' '}
-          <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" isExternal>
-            connector catalog
-          </ChLink>
-          .
-        </Box>
+        <div className="my-2">
+          <UIText>
+            For help editing your pipeline, see our{' '}
+            <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" target="_blank">
+              quickstart documentation
+            </UILink>
+            , our{' '}
+            <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" target="_blank">
+              library of examples
+            </UILink>
+            , or our{' '}
+            <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" target="_blank">
+              connector catalog
+            </UILink>
+            .
+          </UIText>
+        </div>
 
         <FormField errorText="Name cannot be empty" isInvalid={isNameEmpty} label="Pipeline name">
           <Flex alignItems="center" gap="2">
@@ -147,7 +144,11 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
             width={500}
           />
         </FormField>
-        <FormField label="Compute Units">
+        <FormField
+          description="One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines."
+          label="Compute Units"
+          w={500}
+        >
           <NumberInput
             max={MAX_TASKS}
             maxWidth={150}
@@ -157,9 +158,15 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
           />
         </FormField>
 
-        <Box mt="4">
+        <div className="mt-4">
           <PipelineEditor onChange={(x) => (this.editorContent = x)} secrets={this.secrets} yaml={this.editorContent} />
-        </Box>
+        </div>
+
+        {isFeatureFlagEnabled('enableRpcnTiles') && this.lintResults && Object.keys(this.lintResults).length > 0 && (
+          <div className="mt-4">
+            <LintHintList lintHints={this.lintResults} />
+          </div>
+        )}
 
         <Flex alignItems="center" gap="4">
           <UpdateButton />
@@ -174,6 +181,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   updatePipeline(toast: CreateToastFnReturn) {
     this.isUpdating = true;
     const pipelineId = this.props.pipelineId;
+    const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
     pipelinesApi
       .updatePipeline(
@@ -191,34 +199,46 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
           },
         })
       )
-      .then(async (r) => {
-        toast({
-          status: 'success',
-          duration: 4000,
-          isClosable: false,
-          title: 'Pipeline updated',
-        });
-        const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
-        if (retUnits && this.tasks !== retUnits) {
-          toast({
-            status: 'warning',
-            duration: 6000,
-            isClosable: false,
-            title: `Pipeline has been resized to use ${retUnits} compute units`,
-          });
-        }
-        await pipelinesApi.refreshPipelines(true);
-        appGlobal.historyPush(`/rp-connect/${pipelineId}`);
-      })
-      .catch((err) => {
-        toast({
-          status: 'error',
-          duration: null,
-          isClosable: true,
-          title: 'Failed to update pipeline',
-          description: formatPipelineError(err),
-        });
-      })
+      .then(
+        action(async (r) => {
+          if (enableRpcnTiles) {
+            this.lintResults = {};
+          } else {
+            toast({
+              status: 'success',
+              duration: 4000,
+              isClosable: false,
+              title: 'Pipeline updated',
+            });
+          }
+          const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
+          if (retUnits && this.tasks !== retUnits) {
+            toast({
+              status: 'warning',
+              duration: 6000,
+              isClosable: false,
+              title: `Pipeline has been resized to use ${retUnits} compute units`,
+            });
+          }
+          await pipelinesApi.refreshPipelines(true);
+          appGlobal.historyPush(`/rp-connect/${pipelineId}`);
+        })
+      )
+      .catch(
+        action((err) => {
+          if (enableRpcnTiles) {
+            this.lintResults = extractLintHintsFromError(err);
+          } else {
+            toast({
+              status: 'error',
+              duration: null,
+              isClosable: true,
+              title: 'Failed to update pipeline',
+              description: formatPipelineError(err),
+            });
+          }
+        })
+      )
       .finally(() => {
         this.isUpdating = false;
       });

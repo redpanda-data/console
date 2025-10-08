@@ -39,12 +39,7 @@ bun run install:chromium # Install Chromium for Playwright
 
 **Testing Strategy:**
 
-<<<<<<< HEAD
-
 1. # **Vitest Tests** (Unit + Integration) - Fast, cheap to run
-1. **Bun Tests** (Unit + Integration) - Fast, cheap to run
-
-> > > > > > > 525399b3 (feat: various cleanup)
 
 - Test CRUD operations and business logic
 - Verify gRPC Connect transport endpoints are called correctly
@@ -532,21 +527,12 @@ const { data, isLoading, error } = useQuery({
 **Testing:**
 
 ```tsx
-<<<<<<< HEAD
 // ✅ GOOD - Integration test for API calls and business logic (Vitest)
-import { describe, test, expect, vi } from 'vitest';
-
-describe('MCP Server CRUD', () => {
-  test('should create MCP server with correct transport call', async () => {
-    const mockTransport = vi.fn(() => Promise.resolve({ id: '123', name: 'test' }));
-=======
-// ✅ GOOD - Integration test for API calls and business logic (Bun test)
-import { describe, test, expect, mock } from "bun:test";
+import { describe, test, expect, vi } from "vitest";
 
 describe("MCP Server CRUD", () => {
   test("should create MCP server with correct transport call", async () => {
-    const mockTransport = mock(() => Promise.resolve({ id: "123", name: "test" }));
->>>>>>> 525399b3 (feat: various cleanup)
+    const mockTransport = vi.fn(() => Promise.resolve({ id: "123", name: "test" }));
 
     const result = await createMCPServer({ name: "test", url: "http://example.com" });
 
@@ -558,13 +544,8 @@ describe("MCP Server CRUD", () => {
     expect(result.id).toBe("123");
   });
 
-<<<<<<< HEAD
-  test('should handle server creation errors', async () => {
-    const mockTransport = vi.fn(() => Promise.reject(new Error('Network error')));
-=======
   test("should handle server creation errors", async () => {
-    const mockTransport = mock(() => Promise.reject(new Error("Network error")));
->>>>>>> 525399b3 (feat: various cleanup)
+    const mockTransport = vi.fn(() => Promise.reject(new Error("Network error")));
 
     await expect(createMCPServer({ name: "test" })).rejects.toThrow("Network error");
   });
