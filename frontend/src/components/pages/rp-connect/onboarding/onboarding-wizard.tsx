@@ -4,16 +4,19 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { useSessionStorage } from 'hooks/use-session-storage';
+import { runInAction } from 'mobx';
 import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { CONNECT_WIZARD_CONNECTOR_KEY } from 'state/connect/state';
+import { uiState } from 'state/ui-state';
 
 import { AddTopicStep } from './add-topic-step';
 import { AddUserStep } from './add-user-step';
 import { ConnectTiles } from './connect-tiles';
+import RpConnectPipelinesCreate from '../pipelines-create';
 import { WizardStep, type WizardStepType } from '../types/constants';
 import type { ConnectComponentType } from '../types/schema';
 import type { BaseStepRef, WizardFormData } from '../types/wizard';
@@ -27,9 +30,12 @@ const stepDefinitions = [
   { id: WizardStep.ADD_OUTPUT, title: 'Receive data' },
   { id: WizardStep.ADD_TOPIC, title: 'Add a topic' },
   { id: WizardStep.ADD_USER, title: 'Add a user' },
+  { id: WizardStep.CREATE_CONFIG, title: 'Create pipeline' },
 ];
 
-const { Stepper } = defineStepper(...stepDefinitions);
+const { Stepper, Steps } = defineStepper(...stepDefinitions);
+
+type Steps = typeof Steps;
 
 export const ConnectOnboardingWizard = () => {
   const [persistedConnector, setPersistedConnector] = useSessionStorage<Partial<WizardFormData>>(
@@ -37,7 +43,6 @@ export const ConnectOnboardingWizard = () => {
     {}
   );
 
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const initialStep = useMemo(() => {
@@ -51,6 +56,8 @@ export const ConnectOnboardingWizard = () => {
         return WizardStep.ADD_TOPIC;
       case 'add-user':
         return WizardStep.ADD_USER;
+      case 'create-config':
+        return WizardStep.CREATE_CONFIG;
       default:
         return WizardStep.ADD_INPUT;
     }
@@ -65,6 +72,16 @@ export const ConnectOnboardingWizard = () => {
     hideInternalTopics: true,
   });
   const { data: usersList } = useLegacyListUsersQuery();
+
+  useEffect(() => {
+    runInAction(() => {
+      uiState.pageTitle = 'Create Pipeline';
+      uiState.pageBreadcrumbs = [
+        { title: 'Redpanda Connect', linkTo: '/connect-clusters' },
+        { title: 'Create Pipeline', linkTo: '' },
+      ];
+    });
+  }, []);
 
   const handleInputChange = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
@@ -86,16 +103,28 @@ export const ConnectOnboardingWizard = () => {
     [setPersistedConnector, persistedConnector]
   );
 
-  const handleNext = async (methods: { current: { id: WizardStepType }; next: () => void }) => {
+  const handleNext = async (methods: Steps) => {
     switch (methods.current.id) {
       case WizardStep.ADD_INPUT: {
-        const result = await addInputStepRef.current?.triggerSubmit();
-        handleStepResult(result, methods.next);
+        // Only validate if user has selected something
+        if (persistedConnector.input?.connectionName || persistedConnector.input?.connectionType) {
+          const result = await addInputStepRef.current?.triggerSubmit();
+          handleStepResult(result, methods.next);
+        } else {
+          // Skip if no selection made
+          methods.next();
+        }
         break;
       }
       case WizardStep.ADD_OUTPUT: {
-        const result = await addOutputStepRef.current?.triggerSubmit();
-        handleStepResult(result, methods.next);
+        // Only validate if user has selected something
+        if (persistedConnector.output?.connectionName || persistedConnector.output?.connectionType) {
+          const result = await addOutputStepRef.current?.triggerSubmit();
+          handleStepResult(result, methods.next);
+        } else {
+          // Skip if no selection made
+          methods.next();
+        }
         break;
       }
       case WizardStep.ADD_TOPIC: {
@@ -105,7 +134,7 @@ export const ConnectOnboardingWizard = () => {
       }
       case WizardStep.ADD_USER: {
         const result = await addUserStepRef.current?.triggerSubmit();
-        handleStepResult(result, () => navigate('/rp-connect/create'));
+        handleStepResult(result, methods.next);
         break;
       }
       default:
@@ -113,16 +142,22 @@ export const ConnectOnboardingWizard = () => {
     }
   };
 
-  const handleSkip = () => {
-    navigate('/rp-connect/create');
+  const handleSkip = (methods: Steps) => {
+    methods.goTo(WizardStep.CREATE_CONFIG);
   };
 
   const getCurrentStepLoading = (currentStepId: WizardStepType): boolean => {
     switch (currentStepId) {
       case WizardStep.ADD_INPUT:
-        return addInputStepRef.current?.isLoading ?? false;
+        // Only check loading if user has made a selection
+        return persistedConnector.input?.connectionName || persistedConnector.input?.connectionType
+          ? (addInputStepRef.current?.isLoading ?? false)
+          : false;
       case WizardStep.ADD_OUTPUT:
-        return addOutputStepRef.current?.isLoading ?? false;
+        // Only check loading if user has made a selection
+        return persistedConnector.output?.connectionName || persistedConnector.output?.connectionType
+          ? (addOutputStepRef.current?.isLoading ?? false)
+          : false;
       case WizardStep.ADD_TOPIC:
         return addTopicStepRef.current?.isLoading ?? false;
       case WizardStep.ADD_USER:
@@ -178,30 +213,26 @@ export const ConnectOnboardingWizard = () => {
                   // TODO add persisted data to both steps
                   [WizardStep.ADD_TOPIC]: () => <AddTopicStep ref={addTopicStepRef} topicList={topicList.topics} />,
                   [WizardStep.ADD_USER]: () => <AddUserStep ref={addUserStepRef} usersList={usersList?.users} />,
+                  [WizardStep.CREATE_CONFIG]: () => <RpConnectPipelinesCreate matchedPath="/rp-connect/wizard" />,
                 })}
               </div>
               <Stepper.Controls className={cn(!methods.isFirst && 'justify-between')}>
-                {!methods.isFirst && (
+                {!(methods.isFirst || methods.isLast) && (
                   <Button onClick={methods.prev} type="button" variant="secondary">
                     Previous
                   </Button>
                 )}
                 <div className="flex gap-2">
-                  <Button onClick={handleSkip} type="button" variant="outline">
-                    Skip
-                  </Button>
-                  {(methods.current.id === WizardStep.ADD_INPUT &&
-                    persistedConnector.input?.connectionName &&
-                    persistedConnector.input?.connectionType) ||
-                  (methods.current.id === WizardStep.ADD_OUTPUT &&
-                    persistedConnector.output?.connectionName &&
-                    persistedConnector.output?.connectionType) ||
-                  methods.current.id === WizardStep.ADD_TOPIC ||
-                  methods.current.id === WizardStep.ADD_USER ? (
+                  {!methods.isLast && (
+                    <Button onClick={() => handleSkip(methods)} type="button" variant="outline">
+                      Skip
+                    </Button>
+                  )}
+                  {!methods.isLast && (
                     <Button disabled={isCurrentStepLoading} onClick={() => handleNext(methods)}>
                       {isCurrentStepLoading ? 'Loading...' : 'Next'}
                     </Button>
-                  ) : null}
+                  )}
                 </div>
               </Stepper.Controls>
             </div>
