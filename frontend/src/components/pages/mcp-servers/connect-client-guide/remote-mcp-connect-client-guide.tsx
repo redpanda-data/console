@@ -113,12 +113,12 @@ export const RemoteMCPConnectClientGuide = ({ mcpServer }: RemoteMCPConnectClien
             <SelectGroup>
               <SelectLabel>Clients</SelectLabel>
               {AVAILABLE_CLIENTS.map((clientId) => {
-                const client = CLIENT_INFO[clientId];
+                const clientInfo = CLIENT_INFO[clientId];
                 return (
                   <SelectItem key={clientId} value={clientId}>
                     <div className="flex items-center gap-2">
-                      <img alt={client.alt} className="h-4 w-4" src={client.logo} />
-                      <Text>{client.name}</Text>
+                      <img alt={clientInfo.alt} className="h-4 w-4" src={clientInfo.logo} />
+                      <Text>{clientInfo.name}</Text>
                     </div>
                   </SelectItem>
                 );

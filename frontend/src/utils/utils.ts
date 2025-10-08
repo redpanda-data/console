@@ -14,7 +14,7 @@ import { makeObservable, observable } from 'mobx';
 import prettyBytesOriginal from 'pretty-bytes';
 import prettyMillisecondsOriginal from 'pretty-ms';
 
-import type { TopicMessage } from '../state/restInterfaces';
+import type { TopicMessage } from '../state/rest-interfaces';
 
 // Note: Making a <Memo> component is not possible, the container JSX will always render children first so they can be passed as props
 export const nameof = <T>(name: Extract<keyof T, string>): string => name;
@@ -165,14 +165,14 @@ export class DebugTimerStore {
     this.mobxTrigger = this.frame;
   }
 
-  mobxTrigger: any;
+  mobxTrigger: unknown;
 }
 
 let refreshCounter = 0; // used to always create a different value, forcing some components to always re-render
 const REFRESH_COUNTER_MAX = 1000;
 export const alwaysChanging = () => (refreshCounter = (refreshCounter + 1) % REFRESH_COUNTER_MAX);
 
-export function assignDeep(target: any, source: any) {
+export function assignDeep(target: Record<string, unknown>, source: Record<string, unknown>) {
   for (const key in source) {
     if (!Object.hasOwn(source, key)) {
       continue;
@@ -198,7 +198,7 @@ export function assignDeep(target: any, source: any) {
       if (!existing || typeof existing !== 'object') {
         target[key] = value;
       } else {
-        assignDeep(target[key], value);
+        assignDeep(target[key] as Record<string, unknown>, value as Record<string, unknown>);
       }
 
       continue;
@@ -226,19 +226,19 @@ export function equalsIgnoreCase(a: string, b: string) {
   return collator.compare(a, b) === 0;
 }
 
-type FoundProperty = { propertyName: string; path: string[]; value: any };
+type FoundProperty = { propertyName: string; path: string[]; value: unknown };
 type PropertySearchResult = 'continue' | 'abort';
 
 type PropertySearchExContext = {
-  isMatch: (propertyName: string, path: string[], value: any) => boolean;
+  isMatch: (propertyName: string, path: string[], value: unknown) => boolean;
   currentPath: string[];
   results: FoundProperty[];
   returnFirstResult: boolean;
 };
 
 export function collectElements(
-  obj: any,
-  isMatch: (propertyName: string, path: string[], value: any) => boolean,
+  obj: unknown,
+  isMatch: (propertyName: string, path: string[], value: unknown) => boolean,
   returnFirstMatch: boolean
 ): FoundProperty[] {
   const ctx: PropertySearchExContext = {
@@ -247,11 +247,11 @@ export function collectElements(
     results: [],
     returnFirstResult: returnFirstMatch,
   };
-  collectElementsRecursive(ctx, obj);
+  collectElementsRecursive(ctx, obj as Record<string, unknown>);
   return ctx.results;
 }
 
-function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): PropertySearchResult {
+function collectElementsRecursive(ctx: PropertySearchExContext, obj: Record<string, unknown>): PropertySearchResult {
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
       const value = obj[key];
@@ -269,9 +269,9 @@ function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): Prope
       }
 
       // descend into object
-      if (typeof value === 'object') {
+      if (typeof value === 'object' && value !== null) {
         ctx.currentPath.push(key);
-        const childResult = collectElementsRecursive(ctx, value);
+        const childResult = collectElementsRecursive(ctx, value as Record<string, unknown>);
         ctx.currentPath.pop();
 
         if (childResult === 'abort') {
@@ -284,12 +284,12 @@ function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): Prope
   return 'continue';
 }
 
-type IsMatchFunc = (pathElement: string, propertyName: string, value: any) => boolean;
-export type CollectedProperty = { path: string[]; value: any };
+type IsMatchFunc = (pathElement: string, propertyName: string, value: unknown) => boolean;
+export type CollectedProperty = { path: string[]; value: unknown };
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 37, refactor later
 export function collectElements2(
-  targetObject: any,
+  targetObject: Record<string, unknown>,
 
   // "**" collectes all current and nested properties
   // "*" collects all current properties
@@ -333,9 +333,9 @@ export function collectElements2(
 
         case '*':
           // Explore all properties
-          for (const key in currentObj) {
-            if (Object.hasOwn(currentObj, key)) {
-              const value = currentObj[key];
+          for (const key in currentObj as Record<string, unknown>) {
+            if (Object.hasOwn(currentObj as Record<string, unknown>, key)) {
+              const value = (currentObj as Record<string, unknown>)[key];
               if (value == null || typeof value === 'function') {
                 continue;
               }
@@ -350,9 +350,9 @@ export function collectElements2(
 
         default:
           // Some user defined string
-          for (const key in currentObj) {
-            if (Object.hasOwn(currentObj, key)) {
-              const value = currentObj[key];
+          for (const key in currentObj as Record<string, unknown>) {
+            if (Object.hasOwn(currentObj as Record<string, unknown>, key)) {
+              const value = (currentObj as Record<string, unknown>)[key];
               if (value == null || typeof value === 'function') {
                 continue;
               }
@@ -389,7 +389,7 @@ export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
   // slice is needed because messages array is observable
   for (const m of messages.slice()) {
     const payload = m.value.payload;
-    getAllKeysRecursive(ctx, payload);
+    getAllKeysRecursive(ctx, payload as Record<string, unknown>);
 
     ctx.currentPath = [];
     ctx.currentFullPath = '';
@@ -415,7 +415,7 @@ type GetAllKeysContext = {
   results: Property[];
 };
 
-function getAllKeysRecursive(ctx: GetAllKeysContext, obj: any): PropertySearchResult {
+function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown>): PropertySearchResult {
   const isArray = Array.isArray(obj);
   let result = 'continue' as PropertySearchResult;
 
@@ -447,7 +447,7 @@ function getAllKeysRecursive(ctx: GetAllKeysContext, obj: any): PropertySearchRe
 
       // descend into object
       if (typeof value === 'object' && value != null) {
-        const childResult = getAllKeysRecursive(ctx, value);
+        const childResult = getAllKeysRecursive(ctx, value as Record<string, unknown>);
 
         if (childResult === 'abort') {
           result = 'abort';
@@ -566,17 +566,17 @@ export const prettyBytes = (n: number | string | null | undefined, options?: Pre
         return 'N/A'; // empty -> N/A
       }
 
-      n = Number.parseFloat(String(n));
+      const parsed = Number.parseFloat(String(n));
 
-      if (!Number.isFinite(n)) {
-        return String(n); // "NaN" or "Infinity"
+      if (!Number.isFinite(parsed)) {
+        return String(parsed); // "NaN" or "Infinity"
       }
 
       // number parsed, fall through
-    } else {
-      // something else: object, function, ...
-      return 'NaN';
+      return prettyBytesOriginal(parsed, { binary: true });
     }
+    // something else: object, function, ...
+    return 'NaN';
   }
 
   // n is a finite number
@@ -602,18 +602,19 @@ export const prettyMilliseconds = (
         return 'N/A'; // empty -> N/A
       }
 
-      n = Number.parseFloat(String(n));
+      const parsed = Number.parseFloat(String(n));
 
-      if (!Number.isFinite(n)) {
-        return String(n); // "NaN" or "Infinity"
+      if (!Number.isFinite(parsed)) {
+        return String(parsed); // "NaN" or "Infinity"
       }
 
       // number parsed, fall through
-    } else {
-      // something else: object, function, ...
-      return 'NaN';
+      return prettyMillisecondsOriginal(parsed, options);
     }
-  } else if (!Number.isFinite(n)) {
+    // something else: object, function, ...
+    return 'NaN';
+  }
+  if (!Number.isFinite(n)) {
     return 'N/A';
   }
 
@@ -856,8 +857,8 @@ export function retrier<T>(
       .catch((reason: unknown) => {
         if (attempts > 0) {
           return delay(delayTime)
-            .then(retrier.bind(null, operation, { attempts: attempts - 1, delayTime }))
-            .then(resolve as any)
+            .then(() => retrier(operation, { attempts: attempts - 1, delayTime }))
+            .then(resolve)
             .catch(reject);
         }
         reject(reason);
@@ -939,7 +940,12 @@ export function decodeURIComponentPercents(encodedStr: string): string {
  * console.log(subject); // Output: "1231231232131"
  * ```
  */
-export function getOidcSubject(error: any): string | null {
+export function getOidcSubject(error: {
+  details?: { debug?: { metadata?: { login_type?: string; subject?: string } } }[];
+}): string | null {
+  if (!error.details) {
+    return null;
+  }
   for (const detail of error.details) {
     if (detail.debug?.metadata?.login_type === 'OIDC' && detail.debug.metadata.subject) {
       return detail.debug.metadata.subject;

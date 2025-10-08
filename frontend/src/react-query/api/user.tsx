@@ -15,7 +15,7 @@ import {
 import { createUser, listUsers, updateUser } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
-import type { GetUsersResponse } from 'state/restInterfaces';
+import type { GetUsersResponse } from 'state/rest-interfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 /**

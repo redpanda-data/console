@@ -215,7 +215,7 @@ export interface ConnectFieldSpec<T = unknown> {
 
   // Raw JSON Schema reference for on-demand YAML generation
   // This allows us to avoid complex upfront transformation and generate YAML directly from JSON Schema
-  _jsonSchema?: any;
+  _jsonSchema?: unknown;
 } // Describes a Bloblang function, which is a named operation that can be called within a Bloblang mapping.
 // Example functions: `batch_index()`, `env("VAR_NAME")`, `uuid_v4()`.
 

@@ -18,7 +18,7 @@ import {
 } from '@redpanda-data/ui';
 import { type ReactNode, useState } from 'react';
 
-import { openModal } from '../../../utils/ModalContainer';
+import { openModal } from '../../../utils/modal-container';
 
 const GenericModal = (p: {
   title: JSX.Element;

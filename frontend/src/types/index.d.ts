@@ -12,9 +12,9 @@ declare global {
   type Window = {
     heap: {
       identify: (email: string) => void;
-      track: (eventName: string, eventData?: any) => void;
-      addUserProperties: (properties: Record<string, any>) => void;
-      addEventProperties: (properties: Record<string, any>) => void;
+      track: (eventName: string, eventData?: Record<string, unknown>) => void;
+      addUserProperties: (properties: Record<string, unknown>) => void;
+      addEventProperties: (properties: Record<string, unknown>) => void;
       resetIdentity: () => void;
     };
   };

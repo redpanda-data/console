@@ -23,12 +23,12 @@ import { observer } from 'mobx-react';
 import { PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import type { MessageSearch, MessageSearchRequest } from 'state/backendApi';
-import { createMessageSearch } from 'state/backendApi';
-import type { TopicMessage } from 'state/restInterfaces';
-import { uiState } from 'state/uiState';
-import { sanitizeString } from 'utils/filterHelper';
-import { TimestampDisplay } from 'utils/tsxUtils';
+import type { MessageSearch, MessageSearchRequest } from 'state/backend-api';
+import { createMessageSearch } from 'state/backend-api';
+import type { TopicMessage } from 'state/rest-interfaces';
+import { uiState } from 'state/ui-state';
+import { sanitizeString } from 'utils/filter-helper';
+import { TimestampDisplay } from 'utils/tsx-utils';
 import { encodeBase64 } from 'utils/utils';
 
 export const REMOTE_MCP_LOGS_TOPIC = '__redpanda.connect.logs';
@@ -114,24 +114,24 @@ export const RemoteMCPLogsTab = observer(() => {
   }
 
   const createLogsTabState = () => {
-    const search: MessageSearch = createMessageSearch();
-    const state = observable({
-      messages: search.messages,
+    const messageSearch: MessageSearch = createMessageSearch();
+    const tabState = observable({
+      messages: messageSearch.messages,
       isComplete: false,
       error: null as string | null,
-      search,
+      search: messageSearch,
     });
 
     // Start search immediately if remote MCP ID is available
     if (id) {
-      const searchPromise = executeMessageSearch(search, REMOTE_MCP_LOGS_TOPIC, id);
+      const searchPromise = executeMessageSearch(messageSearch, REMOTE_MCP_LOGS_TOPIC, id);
       searchPromise.catch((x) => {
-        state.error = String(x);
-        state.isComplete = true;
+        tabState.error = String(x);
+        tabState.isComplete = true;
       });
     }
 
-    return state;
+    return tabState;
   };
 
   const [state, setState] = useState(createLogsTabState);

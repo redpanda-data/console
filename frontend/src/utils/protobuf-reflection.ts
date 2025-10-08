@@ -96,7 +96,17 @@ export function getMessageFieldMetadata(messageSchema: DescMessage): Record<
     behaviors: FieldBehavior[];
   }
 > {
-  const metadata: Record<string, any> = {};
+  const metadata: Record<
+    string,
+    {
+      name: string;
+      isRequired: boolean;
+      isImmutable: boolean;
+      isOutputOnly: boolean;
+      isEditable: boolean;
+      behaviors: FieldBehavior[];
+    }
+  > = {};
 
   for (const field of messageSchema.fields) {
     const behaviors = getFieldBehaviors(messageSchema, field.name);
@@ -121,7 +131,7 @@ export function debugFieldBehaviors(messageSchema: DescMessage): void {
   const metadata = getMessageFieldMetadata(messageSchema);
 
   for (const [, meta] of Object.entries(metadata)) {
-    const flags = [];
+    const flags: string[] = [];
     if (meta.isRequired) {
       flags.push('REQUIRED');
     }

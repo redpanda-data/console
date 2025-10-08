@@ -27,69 +27,70 @@ import { NuqsAdapter } from 'nuqs/adapters/react-router/v6';
 import React, { Fragment, type FunctionComponent, useEffect } from 'react';
 import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
 import { Navigate, Route, Routes, useLocation, useMatch, useParams } from 'react-router-dom';
-import { appGlobal } from 'state/appGlobal';
+import { appGlobal } from 'state/app-global';
 
 import { Section } from './misc/common';
-import AclList, { type AclListTab } from './pages/acls/Acl.List';
-import AclCreatePage from './pages/acls/new-acl/AclCreatePage';
-import AclDetailPage from './pages/acls/new-acl/AclDetailPage';
-import AclUpdatePage from './pages/acls/new-acl/AclUpdatePage';
-import UserCreatePage from './pages/acls/UserCreate';
-import UserDetailsPage from './pages/acls/UserDetails';
-import { AdminDebugBundle } from './pages/admin/Admin.DebugBundle';
-import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgress';
-import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
-import UploadLicensePage from './pages/admin/UploadLicensePage';
-import KafkaClusterDetails from './pages/connect/Cluster.Details';
-import KafkaConnectorDetails from './pages/connect/Connector.Details';
-import CreateConnector from './pages/connect/CreateConnector';
-import KafkaConnectOverview from './pages/connect/Overview';
-import GroupDetails from './pages/consumers/Group.Details';
-import GroupList from './pages/consumers/Group.List';
-import KnowledgeBaseCreate from './pages/knowledgebase/KnowledgeBase.Create';
-import KnowledgeBaseDetails from './pages/knowledgebase/KnowledgeBase.Details';
-import KnowledgeBaseList from './pages/knowledgebase/KnowledgeBase.List';
+import AclList, { type AclListTab } from './pages/acls/acl-list';
+import AclCreatePage from './pages/acls/new-acl/acl-create-page';
+import AclDetailPage from './pages/acls/new-acl/acl-detail-page';
+import AclUpdatePage from './pages/acls/new-acl/acl-update-page';
+import UserCreatePage from './pages/acls/user-create';
+import UserDetailsPage from './pages/acls/user-details';
+import { AdminDebugBundle } from './pages/admin/admin-debug-bundle';
+import AdminPageDebugBundleProgress from './pages/admin/admin-debug-bundle-progress';
+import LicenseExpiredPage from './pages/admin/license-expired-page';
+import UploadLicensePage from './pages/admin/upload-license-page';
+import KafkaClusterDetails from './pages/connect/cluster-details';
+import KafkaConnectorDetails from './pages/connect/connector-details';
+import CreateConnector from './pages/connect/create-connector';
+import KafkaConnectOverview from './pages/connect/overview';
+import GroupDetails from './pages/consumers/group-details';
+import GroupList from './pages/consumers/group-list';
+import KnowledgeBaseCreate from './pages/knowledgebase/knowledge-base-create';
+import KnowledgeBaseDetails from './pages/knowledgebase/knowledge-base-details';
+import KnowledgeBaseList from './pages/knowledgebase/knowledge-base-list';
 import { RemoteMCPCreatePage } from './pages/mcp-servers/create/remote-mcp-create-page';
 import { RemoteMCPDetailsPage } from './pages/mcp-servers/details/remote-mcp-details-page';
 import { RemoteMCPListPage } from './pages/mcp-servers/list/remote-mcp-list-page';
-import { BrokerDetails } from './pages/overview/Broker.Details';
-import Overview from './pages/overview/Overview';
-import type { PageComponentType, PageProps } from './pages/Page';
-import QuotasList from './pages/quotas/Quotas.List';
-import ReassignPartitions from './pages/reassign-partitions/ReassignPartitions';
-import RoleCreatePage from './pages/roles/RoleCreatePage';
-import RoleDetailPage from './pages/roles/RoleDetailPage';
-import RoleUpdatePage from './pages/roles/RoleUpdatePage';
+import { BrokerDetails } from './pages/overview/broker-details';
+import Overview from './pages/overview/overview';
+import type { PageComponentType, PageProps } from './pages/page';
+import QuotasList from './pages/quotas/quotas-list';
+import ReassignPartitions from './pages/reassign-partitions/reassign-partitions';
+import RoleCreatePage from './pages/roles/role-create-page';
+import RoleDetailPage from './pages/roles/role-detail-page';
+import RoleUpdatePage from './pages/roles/role-update-page';
 import { ConnectOnboardingWizard } from './pages/rp-connect/onboarding/onboarding-wizard';
-import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
-import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
-import RpConnectPipelinesEdit from './pages/rp-connect/Pipelines.Edit';
-import RpConnectSecretCreate from './pages/rp-connect/secrets/Secrets.Create';
-import RpConnectSecretUpdate from './pages/rp-connect/secrets/Secrets.Update';
-import EditSchemaCompatibilityPage from './pages/schemas/EditCompatibility';
-import { SchemaAddVersionPage, SchemaCreatePage } from './pages/schemas/Schema.Create';
-import SchemaDetailsView from './pages/schemas/Schema.Details';
-import SchemaList from './pages/schemas/Schema.List';
+import RpConnectPipelinesCreate from './pages/rp-connect/pipelines-create';
+import RpConnectPipelinesDetails from './pages/rp-connect/pipelines-details';
+import RpConnectPipelinesEdit from './pages/rp-connect/pipelines-edit';
+import RpConnectSecretCreate from './pages/rp-connect/secrets/secrets-create';
+import RpConnectSecretUpdate from './pages/rp-connect/secrets/secrets-update';
+import EditSchemaCompatibilityPage from './pages/schemas/edit-compatibility';
+import { SchemaAddVersionPage, SchemaCreatePage } from './pages/schemas/schema-create';
+import SchemaDetailsView from './pages/schemas/schema-details';
+import SchemaList from './pages/schemas/schema-list';
 import { SecretsStorePage } from './pages/secrets/secrets-store-page';
-import TopicDetails from './pages/topics/Topic.Details';
-import TopicList from './pages/topics/Topic.List';
-import { TopicProducePage } from './pages/topics/Topic.Produce';
-import TransformDetails from './pages/transforms/Transform.Details';
-import TransformsList from './pages/transforms/Transforms.List';
-import { TransformsSetup } from './pages/transforms/Transforms.Setup';
+import TopicDetails from './pages/topics/topic-details';
+import TopicList from './pages/topics/topic-list';
+import { TopicProducePage } from './pages/topics/topic-produce';
+import TransformDetails from './pages/transforms/transform-details';
+import TransformsList from './pages/transforms/transforms-list';
+import { TransformsSetup } from './pages/transforms/transforms-setup';
 import { MCPIcon } from './redpanda-ui/components/icons';
 import { getSidebarItemTitleWithBetaBadge } from './sidebar-utils';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
-import { api } from '../state/backendApi';
-import type { UserPermissions } from '../state/restInterfaces';
-import { Feature, type FeatureEntry, isSupported, shouldHideIfNotSupported } from '../state/supportedFeatures';
-import { uiState } from '../state/uiState';
-import { AnimatePresence } from '../utils/animationProps';
+import { api } from '../state/backend-api';
+import type { UserPermissions } from '../state/rest-interfaces';
+import { Feature, type FeatureEntry, isSupported, shouldHideIfNotSupported } from '../state/supported-features';
+import { uiState } from '../state/ui-state';
+import { AnimatePresence } from '../utils/animation-props';
 import { type AppFeature, AppFeatures } from '../utils/env';
 
 //
 //	Route Types
 //
+// biome-ignore lint/suspicious/noExplicitAny: route definitions have varying type parameters
 export type IRouteEntry = PageDefinition<any>;
 export interface PageDefinition<TRouteParams = {}> {
   title: string;
@@ -137,7 +138,7 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
       return {
         title: title as string | JSX.Element,
         to: entry.path as string,
-        icon: entry.icon as any,
+        icon: entry.icon as ((props: React.ComponentProps<'svg'>) => JSX.Element) | undefined,
         isDisabled: isDisabled as boolean,
         disabledText: disabledText as unknown as string,
       };
@@ -213,14 +214,14 @@ interface MenuItemState {
 }
 
 // Separate component to handle the route rendering logic
-const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ route }) => {
+function RouteRenderer<TRouteParams>({ route }: { route: PageDefinition<TRouteParams> }): JSX.Element {
   const matchedPath = useMatch(route.path) ?? '';
   const params = useParams();
 
-  const pageProps: PageProps = {
+  const pageProps = {
     matchedPath,
     ...params,
-  } as PageProps;
+  } as PageProps<TRouteParams>;
 
   useEffect(() => {
     // Only update if we haven't already and the path has changed
@@ -233,12 +234,12 @@ const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ rout
         icon: route.icon,
         visibilityCheck: route.visibilityCheck,
         routeJsx: null as unknown as JSX.Element,
-      } as PageDefinition<any>;
+      } as PageDefinition<Record<string, never>>;
     }
   }, [route.path, route.title, route.pageType, route.icon, route.visibilityCheck]);
 
   return <route.pageType key={route.path} {...pageProps} />;
-};
+}
 
 /**
  * @description A higher-order-component using feature flags to check if it's possible to navigate to a given route.

@@ -11,7 +11,7 @@
 // biome-ignore lint/style/noNamespace: Required for TypeScript ambient declaration to extend NodeJS global type
 declare namespace NodeJS {
   type Global = {
-    value: any;
+    value: unknown;
   };
 }
 

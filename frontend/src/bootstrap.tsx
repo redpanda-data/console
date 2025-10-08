@@ -10,7 +10,7 @@
  */
 import { createRoot } from 'react-dom/client';
 
-import App from './App';
+import App from './app';
 
 const rootElement = document.getElementById('root');
 // biome-ignore lint/style/noNonNullAssertion: bootstrapping the app

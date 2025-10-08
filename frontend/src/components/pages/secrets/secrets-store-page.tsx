@@ -14,7 +14,7 @@ import {
   Text,
   useDisclosure,
 } from '@redpanda-data/ui';
-import ErrorResult from 'components/misc/ErrorResult';
+import ErrorResult from 'components/misc/error-result';
 import { runInAction } from 'mobx';
 import {
   ListSecretsFilterSchema,
@@ -25,7 +25,7 @@ import {
 import { useEffect, useState } from 'react';
 import { AiOutlineDelete, AiOutlineEdit } from 'react-icons/ai';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { uiState } from 'state/uiState';
+import { uiState } from 'state/ui-state';
 
 import { CreateSecretModal } from './create-secret-modal';
 import { DeleteSecretModal } from './delete-secret-modal';

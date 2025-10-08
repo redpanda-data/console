@@ -45,10 +45,10 @@ const generateDefaultValue = (fieldSchema: JSONSchemaType): JSONValue => {
 
   switch (fieldSchema.type) {
     case 'string':
-      return (fieldSchema as any).examples?.[0] || '';
+      return (fieldSchema as { examples?: string[] }).examples?.[0] || '';
     case 'number':
     case 'integer':
-      return (fieldSchema as any).examples?.[0] || 42;
+      return (fieldSchema as { examples?: number[] }).examples?.[0] || 42;
     case 'boolean':
       return true;
     case 'array':
@@ -201,7 +201,7 @@ export const RemoteMCPInspectorTab = () => {
         MCPServer_Tool_ComponentType.OUTPUT
     ) {
       const availableTopic = topicsData.topics[0].topicName;
-      const params = toolParameters as any;
+      const params = toolParameters as { topic_name?: string; messages?: Array<{ topic_name?: string }> };
 
       // Check if topic_name needs to be set - auto-select for messages without topic_name
       const needsUpdate = (() => {
@@ -212,7 +212,7 @@ export const RemoteMCPInspectorTab = () => {
 
         // Check nested topic_name in messages array - look for messages without topics
         if (params?.messages && Array.isArray(params.messages) && params.messages.length > 0) {
-          const messagesNeedingTopics = params.messages.some((message: any) => !message?.topic_name);
+          const messagesNeedingTopics = params.messages.some((message) => !message?.topic_name);
           return messagesNeedingTopics;
         }
 
@@ -230,9 +230,10 @@ export const RemoteMCPInspectorTab = () => {
         if (updatedParams.messages && Array.isArray(updatedParams.messages) && updatedParams.messages.length > 0) {
           updatedParams = {
             ...updatedParams,
-            messages: updatedParams.messages.map((msg: any) =>
-              msg?.topic_name ? msg : { ...msg, topic_name: availableTopic }
-            ),
+            messages: updatedParams.messages.map((msg) => {
+              const msgTyped = msg as { topic_name?: string };
+              return msgTyped?.topic_name ? msg : { ...(msg as object), topic_name: availableTopic };
+            }),
           };
         } else {
           // Fallback to top-level topic_name
@@ -521,7 +522,7 @@ export const RemoteMCPInspectorTab = () => {
                                       onCreateOption: async (
                                         newTopicName: string,
                                         path: string[],
-                                        handleFieldChange: (path: string[], value: JSONValue) => void
+                                        updateField: (fieldPath: string[], value: JSONValue) => void
                                       ) => {
                                         try {
                                           const request = create(CreateTopicRequestSchema, {
@@ -542,8 +543,8 @@ export const RemoteMCPInspectorTab = () => {
                                           toast.success(`Topic '${newTopicName}' created successfully`);
                                           await refetchTopics();
 
-                                          // Use the provided path and handleFieldChange to update the correct field
-                                          handleFieldChange(path, newTopicName);
+                                          // Use the provided path and updateField to update the correct field
+                                          updateField(path, newTopicName);
                                         } catch (error) {
                                           toast.error(`Failed to create topic: ${error}`);
                                         }

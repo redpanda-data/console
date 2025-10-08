@@ -13,7 +13,7 @@ import {
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 
-import { openModal } from '../../../utils/ModalContainer';
+import { openModal } from '../../../utils/modal-container';
 
 export const ExplicitConfirmModal = observer(
   (p: {
