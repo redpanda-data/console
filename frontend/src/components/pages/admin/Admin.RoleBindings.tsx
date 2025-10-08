@@ -10,9 +10,11 @@
  */
 
 import { Component } from 'react';
+
 import type { RoleBinding, Subject } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
 import { Accordion } from '@redpanda-data/ui';
+
 import { ObjToKv, QuickTable } from '../../../utils/tsxUtils';
 
 export class RoleBindingComponent extends Component<{ binding: RoleBinding }> {
@@ -21,15 +23,15 @@ export class RoleBindingComponent extends Component<{ binding: RoleBinding }> {
 
     const rows: [any, any][] = [
       [
-        <span key={binding.ephemeralId} className="resourceLabel">
+        <span className="resourceLabel" key={binding.ephemeralId}>
           Binding
         </span>,
-        <span key={binding.ephemeralId} className="roleBindingId">
+        <span className="roleBindingId" key={binding.ephemeralId}>
           {binding.ephemeralId}
         </span>,
       ],
       [
-        <span key={binding.ephemeralId} className="resourceLabelSub">
+        <span className="resourceLabelSub" key={binding.ephemeralId}>
           Metadata
         </span>,
         QuickTable(ObjToKv(binding.metadata), {
@@ -38,11 +40,10 @@ export class RoleBindingComponent extends Component<{ binding: RoleBinding }> {
         }),
       ],
       [
-        <span key={binding.ephemeralId} className="resourceLabelSub">
+        <span className="resourceLabelSub" key={binding.ephemeralId}>
           Subjects
         </span>,
         <Accordion
-          key={binding.ephemeralId}
           items={[
             {
               heading: 'click to expand',
@@ -55,6 +56,7 @@ export class RoleBindingComponent extends Component<{ binding: RoleBinding }> {
               ),
             },
           ]}
+          key={binding.ephemeralId}
         />,
       ],
     ];

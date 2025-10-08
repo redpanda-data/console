@@ -1,6 +1,7 @@
 import { Stack } from '@redpanda-data/ui';
 import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
+
 import { animProps } from '../../utils/animationProps';
 
 export type PageContentProps = {

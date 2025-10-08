@@ -10,15 +10,16 @@
  */
 
 import { HStack, Text } from '@redpanda-data/ui';
+
 import { SidebarItemBadge } from './misc/sidebar-item-badge';
 import type { PageDefinition } from './routes';
 
-interface SidebarItemTitleProps {
+type SidebarItemTitleProps = {
   route: PageDefinition;
-}
+};
 
 export const getSidebarItemTitleWithBetaBadge = ({ route }: SidebarItemTitleProps) => (
-  <HStack spacing="12px" key={`${route.path}-title`}>
+  <HStack key={`${route.path}-title`} spacing="12px">
     <Text>{route.title}</Text>
     <SidebarItemBadge>beta</SidebarItemBadge>
   </HStack>

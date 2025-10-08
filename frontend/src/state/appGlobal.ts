@@ -10,6 +10,7 @@
  */
 
 import type { Location, NavigateFunction } from 'react-router-dom';
+
 import { api } from './backendApi';
 import { uiState } from './uiState';
 
@@ -32,7 +33,9 @@ class AppGlobal {
   }
 
   set navigate(n: NavigateFunction) {
-    if (this._navigate === n || !n) return;
+    if (this._navigate === n || !n) {
+      return;
+    }
 
     this._navigate = n;
   }
@@ -45,7 +48,9 @@ class AppGlobal {
   }
 
   set location(l: Location) {
-    if (this._location === l || !l) return;
+    if (this._location === l || !l) {
+      return;
+    }
 
     this._location = l;
   }
@@ -54,6 +59,6 @@ class AppGlobal {
     // intended for pages to set
   };
 
-  searchMessagesFunc?: (source: 'auto' | 'manual') => void = undefined;
+  searchMessagesFunc?: (source: 'auto' | 'manual') => void;
 }
 export const appGlobal = new AppGlobal();

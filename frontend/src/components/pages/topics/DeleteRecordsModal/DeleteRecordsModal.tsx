@@ -34,6 +34,8 @@ import {
 } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { useEffect, useState } from 'react';
+
+import styles from './DeleteRecordsModal.module.scss';
 import { api } from '../../../../state/backendApi';
 import type { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/restInterfaces';
 import { RadioOptionGroup } from '../../../../utils/tsxUtils';
@@ -41,7 +43,6 @@ import { prettyNumber } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import { KowlTimePicker } from '../../../misc/KowlTimePicker';
 import { SingleSelect } from '../../../misc/Select';
-import styles from './DeleteRecordsModal.module.scss';
 
 type AllPartitions = 'allPartitions';
 type SpecificPartition = 'specificPartition';
@@ -51,22 +52,22 @@ const DIGITS_ONLY_REGEX = /^\d*$/;
 
 function TrashIcon() {
   return (
-    <svg width="66" height="67" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg fill="none" height="67" width="66" xmlns="http://www.w3.org/2000/svg">
       <title>Trash</title>
-      <circle cx="33" cy="33.6" r="33" fill="#F53649" />
+      <circle cx="33" cy="33.6" fill="#F53649" r="33" />
       <path
         d="M18.806 24.729h28.388M29.452 31.826V42.47M36.548 31.826V42.47M20.58 24.729l1.775 21.29a3.548 3.548 0 003.548 3.549h14.194a3.548 3.548 0 003.548-3.549l1.774-21.29"
         stroke="#fff"
-        strokeWidth="3.333"
         strokeLinecap="round"
         strokeLinejoin="round"
+        strokeWidth="3.333"
       />
       <path
         d="M27.677 24.729v-5.322a1.774 1.774 0 011.775-1.775h7.096a1.774 1.774 0 011.774 1.774v5.323"
         stroke="#fff"
-        strokeWidth="3.333"
         strokeLinecap="round"
         strokeLinejoin="round"
+        strokeWidth="3.333"
       />
     </svg>
   );
@@ -83,7 +84,7 @@ function SelectPartitionStep({
   onPartitionOptionSelected: (v: PartitionOption) => void;
   onPartitionSpecified: (v: number | null) => void;
   specificPartition: number | null;
-  partitions: Array<number>;
+  partitions: number[];
 }): JSX.Element {
   return (
     <>
@@ -95,14 +96,12 @@ function SelectPartitionStep({
         </p>
       </div>
       <RadioOptionGroup<PartitionOption>
-        value={selectedPartitionOption}
         onChange={(v) => {
           if (v === 'allPartitions') {
             onSpecificPartitionSelected(null);
           }
           onPartitionOptionSelected(v);
         }}
-        showContent="onlyWhenSelected"
         options={[
           {
             value: 'allPartitions',
@@ -116,26 +115,35 @@ function SelectPartitionStep({
             content: (
               // Workaround for Ant Design Issue: https://github.com/ant-design/ant-design/issues/25959
               // fixes immediately self closing Select drop down after an option has already been selected
-              // biome-ignore lint/a11y/noStaticElementInteractions: part of SelectPartitionStep implementation
-              <span
+              // biome-ignore lint/a11y/noStaticElementInteractions: event handlers needed for dropdown workaround
+              <div
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
+                role="presentation"
               >
                 <SingleSelect<number | undefined>
+                  onChange={onSpecificPartitionSelected as (v: number | undefined) => void}
                   options={partitions.map((i) => ({
                     label: `Partition ${i}`,
                     value: i,
                   }))}
-                  value={specificPartition ?? undefined}
-                  onChange={onSpecificPartitionSelected as (v: number | undefined) => void}
                   placeholder="Choose Partition…"
+                  value={specificPartition ?? undefined}
                 />
-              </span>
+              </div>
             ),
           },
         ]}
+        showContent="onlyWhenSelected"
+        value={selectedPartitionOption}
       />
     </>
   );
@@ -174,9 +182,9 @@ const SelectOffsetStep = ({
           subTitle: `Delete records until specified offset across all selected partitions (ID: ${partitionInfo[1]}) in this topic.`,
           content: (
             <ManualOffsetContent
-              topicName={topicName}
-              partitionInfo={partitionInfo}
               onOffsetSpecified={onOffsetSpecified}
+              partitionInfo={partitionInfo}
+              topicName={topicName}
             />
           ),
         };
@@ -191,9 +199,7 @@ const SelectOffsetStep = ({
         </p>
       </div>
       <RadioOptionGroup<OffsetOption>
-        value={selectedValue}
         onChange={selectValue}
-        showContent="onlyWhenSelected"
         options={[
           upperOption,
           {
@@ -203,18 +209,27 @@ const SelectOffsetStep = ({
             content: (
               // Workaround for Ant Design Issue: https://github.com/ant-design/ant-design/issues/25959
               // fixes immediately self closing Select drop down after an option has already been selected
-              // biome-ignore lint/a11y/noStaticElementInteractions: part of SelectOffsetStep implementation
-              <span
+              // biome-ignore lint/a11y/noStaticElementInteractions: event handlers needed for dropdown workaround
+              <div
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
+                role="presentation"
               >
-                <KowlTimePicker valueUtcMs={timestamp || Date.now().valueOf()} onChange={onTimestampChanged} />
-              </span>
+                <KowlTimePicker onChange={onTimestampChanged} valueUtcMs={timestamp || Date.now().valueOf()} />
+              </div>
             ),
           },
         ]}
+        showContent="onlyWhenSelected"
+        value={selectedValue}
       />
     </>
   );
@@ -289,10 +304,10 @@ const ManualOffsetContent = observer(
     const { marks, min, max } = getMarks(partition);
     return (
       <Flex alignItems="center" gap={2}>
-        <Slider min={min} max={max} onChange={updateOffsetFromSlider} value={sliderValue}>
+        <Slider max={max} min={min} onChange={updateOffsetFromSlider} value={sliderValue}>
           {marks &&
             Object.entries(marks).map(([value, label]) => (
-              <SliderMark value={Number(value)} key={value}>
+              <SliderMark key={value} value={Number(value)}>
                 {label}
               </SliderMark>
             ))}
@@ -303,12 +318,6 @@ const ManualOffsetContent = observer(
         </Slider>
         <Input
           maxWidth={124}
-          value={sliderValue}
-          onChange={(e) => {
-            const { value } = e.target;
-            if (!DIGITS_ONLY_REGEX.test(value)) return;
-            updateOffsetFromSlider(Number(value));
-          }}
           onBlur={() => {
             if (sliderValue < min) {
               updateOffsetFromSlider(min);
@@ -318,22 +327,31 @@ const ManualOffsetContent = observer(
               updateOffsetFromSlider(sliderValue);
             }
           }}
+          onChange={(e) => {
+            const { value } = e.target;
+            if (!DIGITS_ONLY_REGEX.test(value)) {
+              return;
+            }
+            updateOffsetFromSlider(Number(value));
+          }}
+          value={sliderValue}
         />
       </Flex>
     );
-  },
+  }
 );
 
 function getMarks(partition: Partition) {
-  if (!partition)
+  if (!partition) {
     return {
       min: 0,
       max: Number.POSITIVE_INFINITY,
     };
+  }
 
   const diff = partition.waterMarkHigh - partition.waterMarkLow;
 
-  let marks: Array<number> = [];
+  let marks: number[] = [];
 
   if (diff > 0) {
     marks = [partition.waterMarkLow, partition.waterMarkLow];
@@ -363,24 +381,26 @@ function formatMarks(marks: number[]) {
       acc[key] = value;
       return acc;
     },
-    {} as { [index: string]: string },
+    {} as { [index: string]: string }
   );
 }
 
-interface DeleteRecordsModalProps {
+type DeleteRecordsModalProps = {
   topic: Topic | undefined | null;
   visible: boolean;
   onCancel: () => void;
   onFinish: () => void;
   afterClose: () => void;
-}
+};
 
 export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element | null {
   const { visible, topic, onCancel, onFinish, afterClose } = props;
   const toast = useToast();
 
   useEffect(() => {
-    topic?.topicName && api.refreshPartitionsForTopic(topic.topicName, true);
+    if (topic?.topicName) {
+      api.refreshPartitionsForTopic(topic.topicName, true);
+    }
   }, [topic?.topicName]);
 
   const [partitionOption, setPartitionOption] = useState<PartitionOption>(null);
@@ -390,7 +410,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
   const [specifiedOffset, setSpecifiedOffset] = useState<number>(0);
   const [okButtonLoading, setOkButtonLoading] = useState<boolean>(false);
   const [timestamp, setTimestamp] = useState<number>(Date.now());
-  const [errors, setErrors] = useState<Array<string>>([]);
+  const [errors, setErrors] = useState<string[]>([]);
 
   const hasErrors = errors.length > 0;
   const isAllPartitions = partitionOption === 'allPartitions';
@@ -400,7 +420,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
   const isTimestamp = offsetOption === 'timestamp';
 
   // biome-ignore lint/suspicious/noConfusingVoidType: needed to fix error TS2345
-  const handleFinish = async (responseData: void | DeleteRecordsResponseData | null | undefined) => {
+  const handleFinish = (responseData: void | DeleteRecordsResponseData | null | undefined) => {
     if (responseData == null) {
       setErrors(['You are not allowed to delete records on this topic. Please contact your Kafka administrator.']);
       return;
@@ -420,10 +440,14 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     }
   };
 
-  if (!topic) return null;
+  if (!topic) {
+    return null;
+  }
 
   const isOkButtonDisabled = () => {
-    if (hasErrors) return false;
+    if (hasErrors) {
+      return false;
+    }
 
     if (step === 1) {
       return partitionOption === null || (isSpecficPartition && specifiedPartition === null);
@@ -437,6 +461,12 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
   };
 
   const onOk = () => {
+    if (!topic) {
+      return;
+    }
+
+    const topicName = topic.topicName;
+
     if (hasErrors) {
       onFinish();
     }
@@ -449,24 +479,24 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     setOkButtonLoading(true);
 
     if (isAllPartitions && isHighWatermark) {
-      api.deleteTopicRecordsFromAllPartitionsHighWatermark(topic.topicName).then(handleFinish);
+      api.deleteTopicRecordsFromAllPartitionsHighWatermark(topicName)?.then(handleFinish);
     } else if (isSpecficPartition && isManualOffset) {
       // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-      api.deleteTopicRecords(topic.topicName, specifiedOffset, specifiedPartition!).then(handleFinish);
+      api.deleteTopicRecords(topicName, specifiedOffset, specifiedPartition!)?.then(handleFinish);
     } else if (isTimestamp && timestamp != null) {
-      api.getTopicOffsetsByTimestamp([topic.topicName], timestamp).then((topicOffsets) => {
+      api.getTopicOffsetsByTimestamp([topicName], timestamp).then((topicOffsets) => {
         if (isAllPartitions) {
           const pairs = topicOffsets[0].partitions.map(({ partitionId, offset }) => ({
             partitionId,
             offset,
           }));
-          api.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topic.topicName, pairs).then(handleFinish);
+          api.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, pairs)?.then(handleFinish);
         } else if (isSpecficPartition) {
           const partitionOffset = topicOffsets[0].partitions.find((p) => specifiedPartition === p.partitionId)?.offset;
 
           if (partitionOffset != null) {
             // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-            api.deleteTopicRecords(topic.topicName, partitionOffset, specifiedPartition!).then(handleFinish);
+            api.deleteTopicRecords(topicName, partitionOffset, specifiedPartition!)?.then(handleFinish);
           } else {
             setErrors([
               'No partition offset was specified, this should not happen. Please contact your administrator.',
@@ -493,7 +523,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
         <ModalHeader>Delete records in topic</ModalHeader>
         <ModalBody>
           {hasErrors && (
-            <Alert status="error" mb={2}>
+            <Alert mb={2} status="error">
               <AlertIcon />
               <Flex flexDirection="column" gap={4} p={2}>
                 <Text>Errors have occurred when processing your request. Please contact your Kafka Administrator.</Text>
@@ -507,34 +537,42 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
           )}
           {!hasErrors && step === 1 && (
             <SelectPartitionStep
-              partitions={range(0, topic.partitionCount)}
               onPartitionOptionSelected={setPartitionOption}
+              onPartitionSpecified={setSpecifiedPartition}
+              partitions={range(0, topic.partitionCount)}
               selectedPartitionOption={partitionOption}
               specificPartition={specifiedPartition}
-              onPartitionSpecified={setSpecifiedPartition}
             />
           )}
           {!hasErrors && step === 2 && partitionOption != null && (
             <SelectOffsetStep
-              onOffsetOptionSelected={setOffsetOption}
               offsetOption={offsetOption}
-              topicName={topic.topicName}
+              onOffsetOptionSelected={setOffsetOption}
               onOffsetSpecified={setSpecifiedOffset}
+              onTimestampChanged={setTimestamp}
               partitionInfo={getPartitionInfo()}
               timestamp={timestamp}
-              onTimestampChanged={setTimestamp}
+              topicName={topic.topicName}
             />
           )}
         </ModalBody>
         <ModalFooter gap={2}>
           <Button
-            variant="solid"
             colorScheme={hasErrors ? 'gray' : 'red'}
-            onClick={onOk}
-            isLoading={okButtonLoading}
             isDisabled={isOkButtonDisabled()}
+            isLoading={okButtonLoading}
+            onClick={onOk}
+            variant="solid"
           >
-            {hasErrors ? 'Ok' : step === 1 ? 'Choose End Offset' : 'Delete Records'}
+            {(() => {
+              if (hasErrors) {
+                return 'Ok';
+              }
+              if (step === 1) {
+                return 'Choose End Offset';
+              }
+              return 'Delete Records';
+            })()}
           </Button>
         </ModalFooter>
       </ModalContent>

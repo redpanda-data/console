@@ -17,7 +17,10 @@
                         "count": { "type": "number" },
                         "enabled": { "type": "boolean" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -29,7 +32,9 @@
               "type": "object"
             },
             {
-              "properties": { "none": { "additionalProperties": false, "properties": {}, "type": "object" } },
+              "properties": {
+                "none": { "additionalProperties": false, "properties": {}, "type": "object" }
+              },
               "type": "object"
             },
             {
@@ -38,8 +43,14 @@
                   "additionalProperties": false,
                   "properties": {
                     "path": { "type": "string" },
-                    "post_processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" },
-                    "pre_processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                    "post_processors": {
+                      "items": { "$ref": "#/definitions/processor" },
+                      "type": "array"
+                    },
+                    "pre_processors": {
+                      "items": { "$ref": "#/definitions/processor" },
+                      "type": "array"
+                    }
                   },
                   "required": ["path"],
                   "type": "object"
@@ -215,7 +226,10 @@
                   "properties": {
                     "algorithm": { "type": "string" },
                     "cap": { "type": "number" },
-                    "init_values": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "init_values": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "optimistic": { "type": "boolean" },
                     "two_queues_ghost_ratio": { "type": "number" },
                     "two_queues_recent_ratio": { "type": "number" }
@@ -256,7 +270,10 @@
                   "properties": {
                     "compaction_interval": { "type": "string" },
                     "default_ttl": { "type": "string" },
-                    "init_values": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "init_values": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "shards": { "type": "number" }
                   },
                   "type": "object"
@@ -284,7 +301,10 @@
               },
               "type": "object"
             },
-            { "properties": { "multilevel": { "items": { "type": "string" }, "type": "array" } }, "type": "object" },
+            {
+              "properties": { "multilevel": { "items": { "type": "string" }, "type": "array" } },
+              "type": "object"
+            },
             {
               "properties": {
                 "nats_kv": {
@@ -338,7 +358,9 @@
               "type": "object"
             },
             {
-              "properties": { "noop": { "additionalProperties": false, "properties": {}, "type": "object" } },
+              "properties": {
+                "noop": { "additionalProperties": false, "properties": {}, "type": "object" }
+              },
               "type": "object"
             },
             {
@@ -427,7 +449,10 @@
                             },
                             "type": "object"
                           },
-                          "extensions": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                          "extensions": {
+                            "patternProperties": { ".": { "type": "string" } },
+                            "type": "object"
+                          },
                           "mechanism": { "type": "string" },
                           "password": { "type": "string" },
                           "token": { "type": "string" },
@@ -525,7 +550,10 @@
                   "properties": {
                     "cap": { "type": "number" },
                     "default_ttl": { "type": "string" },
-                    "init_values": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "init_values": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "optimistic": { "type": "boolean" },
                     "ttl": { "type": "string" }
                   },
@@ -560,7 +588,10 @@
                     "bindings_declare": {
                       "items": {
                         "additionalProperties": false,
-                        "properties": { "exchange": { "type": "string" }, "key": { "type": "string" } },
+                        "properties": {
+                          "exchange": { "type": "string" },
+                          "key": { "type": "string" }
+                        },
                         "type": "object"
                       },
                       "type": "array"
@@ -573,7 +604,10 @@
                     "queue_declare": {
                       "additionalProperties": false,
                       "properties": {
-                        "arguments": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                        "arguments": {
+                          "patternProperties": { ".": { "type": "string" } },
+                          "type": "object"
+                        },
                         "auto_delete": { "type": "boolean" },
                         "durable": { "type": "boolean" },
                         "enabled": { "type": "boolean" }
@@ -678,7 +712,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -916,7 +953,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     }
@@ -950,7 +990,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -972,13 +1015,19 @@
                     "auto_replay_nacks": { "type": "boolean" },
                     "backoff": {
                       "additionalProperties": false,
-                      "properties": { "initial_interval": { "type": "string" }, "max_interval": { "type": "string" } },
+                      "properties": {
+                        "initial_interval": { "type": "string" },
+                        "max_interval": { "type": "string" }
+                      },
                       "type": "object"
                     },
                     "disable_initial_host_lookup": { "type": "boolean" },
                     "host_selection_policy": {
                       "additionalProperties": false,
-                      "properties": { "local_dc": { "type": "string" }, "local_rack": { "type": "string" } },
+                      "properties": {
+                        "local_dc": { "type": "string" },
+                        "local_rack": { "type": "string" }
+                      },
                       "type": "object"
                     },
                     "max_retries": { "type": "number" },
@@ -1110,7 +1159,10 @@
                 "dynamic": {
                   "additionalProperties": false,
                   "properties": {
-                    "inputs": { "patternProperties": { ".": { "$ref": "#/definitions/input" } }, "type": "object" },
+                    "inputs": {
+                      "patternProperties": { ".": { "$ref": "#/definitions/input" } },
+                      "type": "object"
+                    },
                     "prefix": { "type": "string" }
                   },
                   "type": "object"
@@ -1146,12 +1198,21 @@
                     "sync_response": {
                       "additionalProperties": false,
                       "properties": {
-                        "headers": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                        "headers": {
+                          "patternProperties": { ".": { "type": "string" } },
+                          "type": "object"
+                        },
                         "metadata_headers": {
                           "additionalProperties": false,
                           "properties": {
-                            "include_patterns": { "items": { "type": "string" }, "type": "array" },
-                            "include_prefixes": { "items": { "type": "string" }, "type": "array" }
+                            "include_patterns": {
+                              "items": { "type": "string" },
+                              "type": "array"
+                            },
+                            "include_prefixes": {
+                              "items": { "type": "string" },
+                              "type": "array"
+                            }
                           },
                           "type": "object"
                         },
@@ -1174,7 +1235,10 @@
                     "auto_replay_nacks": { "type": "boolean" },
                     "columns": { "items": { "type": "string" }, "type": "array" },
                     "credentials_json": { "type": "string" },
-                    "job_labels": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "job_labels": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "prefix": { "type": "string" },
                     "priority": { "type": "string" },
                     "project": { "type": "string" },
@@ -1214,7 +1278,10 @@
                   "properties": {
                     "create_subscription": {
                       "additionalProperties": false,
-                      "properties": { "enabled": { "type": "boolean" }, "topic": { "type": "string" } },
+                      "properties": {
+                        "enabled": { "type": "boolean" },
+                        "topic": { "type": "string" }
+                      },
                       "type": "object"
                     },
                     "credentials_json": { "type": "string" },
@@ -1245,7 +1312,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -1293,7 +1363,10 @@
                       "properties": {
                         "basic": {
                           "additionalProperties": false,
-                          "properties": { "password": { "type": "string" }, "username": { "type": "string" } },
+                          "properties": {
+                            "password": { "type": "string" },
+                            "username": { "type": "string" }
+                          },
                           "type": "object"
                         },
                         "ssh_key": {
@@ -1373,7 +1446,10 @@
                       "type": "object"
                     },
                     "follow_redirects": { "type": "boolean" },
-                    "headers": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "headers": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "jwt": {
                       "additionalProperties": false,
                       "properties": {
@@ -1411,7 +1487,10 @@
                         "client_key": { "type": "string" },
                         "client_secret": { "type": "string" },
                         "enabled": { "type": "boolean" },
-                        "endpoint_params": { "patternProperties": { ".": {} }, "type": "object" },
+                        "endpoint_params": {
+                          "patternProperties": { ".": {} },
+                          "type": "object"
+                        },
                         "scopes": { "items": { "type": "string" }, "type": "array" },
                         "token_url": { "type": "string" }
                       },
@@ -1491,12 +1570,21 @@
                     "sync_response": {
                       "additionalProperties": false,
                       "properties": {
-                        "headers": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                        "headers": {
+                          "patternProperties": { ".": { "type": "string" } },
+                          "type": "object"
+                        },
                         "metadata_headers": {
                           "additionalProperties": false,
                           "properties": {
-                            "include_patterns": { "items": { "type": "string" }, "type": "array" },
-                            "include_prefixes": { "items": { "type": "string" }, "type": "array" }
+                            "include_patterns": {
+                              "items": { "type": "string" },
+                              "type": "array"
+                            },
+                            "include_prefixes": {
+                              "items": { "type": "string" },
+                              "type": "array"
+                            }
                           },
                           "type": "object"
                         },
@@ -1529,7 +1617,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -1613,7 +1704,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -1659,7 +1753,10 @@
                             },
                             "type": "object"
                           },
-                          "extensions": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                          "extensions": {
+                            "patternProperties": { ".": { "type": "string" } },
+                            "type": "object"
+                          },
                           "mechanism": { "type": "string" },
                           "password": { "type": "string" },
                           "token": { "type": "string" },
@@ -1725,7 +1822,10 @@
                     "operation": { "type": "string" },
                     "password": { "type": "string" },
                     "query": { "type": "string" },
-                    "sort": { "patternProperties": { ".": { "type": "number" } }, "type": "object" },
+                    "sort": {
+                      "patternProperties": { ".": { "type": "number" } },
+                      "type": "object"
+                    },
                     "url": { "type": "string" },
                     "username": { "type": "string" }
                   },
@@ -1837,7 +1937,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -2175,7 +2278,10 @@
                             "check": { "type": "string" },
                             "count": { "type": "number" },
                             "period": { "type": "string" },
-                            "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                            "processors": {
+                              "items": { "$ref": "#/definitions/processor" },
+                              "type": "array"
+                            }
                           },
                           "type": "object"
                         },
@@ -2266,7 +2372,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -2305,7 +2414,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -2352,7 +2464,10 @@
                         },
                         "token": {
                           "additionalProperties": false,
-                          "properties": { "enabled": { "type": "boolean" }, "token": { "type": "string" } },
+                          "properties": {
+                            "enabled": { "type": "boolean" },
+                            "token": { "type": "string" }
+                          },
                           "type": "object"
                         }
                       },
@@ -2620,7 +2735,10 @@
                             },
                             "type": "object"
                           },
-                          "extensions": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                          "extensions": {
+                            "patternProperties": { ".": { "type": "string" } },
+                            "type": "object"
+                          },
                           "mechanism": { "type": "string" },
                           "password": { "type": "string" },
                           "token": { "type": "string" },
@@ -2757,7 +2875,10 @@
                             },
                             "type": "object"
                           },
-                          "extensions": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                          "extensions": {
+                            "patternProperties": { ".": { "type": "string" } },
+                            "type": "object"
+                          },
                           "mechanism": { "type": "string" },
                           "password": { "type": "string" },
                           "token": { "type": "string" },
@@ -2866,7 +2987,10 @@
                             },
                             "type": "object"
                           },
-                          "extensions": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                          "extensions": {
+                            "patternProperties": { ".": { "type": "string" } },
+                            "type": "object"
+                          },
                           "mechanism": { "type": "string" },
                           "password": { "type": "string" },
                           "token": { "type": "string" },
@@ -3501,7 +3625,10 @@
                     "db": { "type": "string" },
                     "include": {
                       "additionalProperties": false,
-                      "properties": { "debug_gc": { "type": "string" }, "runtime": { "type": "string" } },
+                      "properties": {
+                        "debug_gc": { "type": "string" },
+                        "runtime": { "type": "string" }
+                      },
                       "type": "object"
                     },
                     "interval": { "type": "string" },
@@ -3509,7 +3636,10 @@
                     "ping_interval": { "type": "string" },
                     "precision": { "type": "string" },
                     "retention_policy": { "type": "string" },
-                    "tags": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "tags": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "timeout": { "type": "string" },
                     "tls": {
                       "additionalProperties": false,
@@ -3547,21 +3677,28 @@
               "type": "object"
             },
             {
-              "properties": { "json_api": { "additionalProperties": false, "properties": {}, "type": "object" } },
+              "properties": {
+                "json_api": { "additionalProperties": false, "properties": {}, "type": "object" }
+              },
               "type": "object"
             },
             {
               "properties": {
                 "logger": {
                   "additionalProperties": false,
-                  "properties": { "flush_metrics": { "type": "boolean" }, "push_interval": { "type": "string" } },
+                  "properties": {
+                    "flush_metrics": { "type": "boolean" },
+                    "push_interval": { "type": "string" }
+                  },
                   "type": "object"
                 }
               },
               "type": "object"
             },
             {
-              "properties": { "none": { "additionalProperties": false, "properties": {}, "type": "object" } },
+              "properties": {
+                "none": { "additionalProperties": false, "properties": {}, "type": "object" }
+              },
               "type": "object"
             },
             {
@@ -3575,7 +3712,10 @@
                     "histogram_buckets": { "items": { "type": "number" }, "type": "array" },
                     "push_basic_auth": {
                       "additionalProperties": false,
-                      "properties": { "password": { "type": "string" }, "username": { "type": "string" } },
+                      "properties": {
+                        "password": { "type": "string" },
+                        "username": { "type": "string" }
+                      },
                       "type": "object"
                     },
                     "push_interval": { "type": "string" },
@@ -3584,7 +3724,10 @@
                     "summary_quantiles_objectives": {
                       "items": {
                         "additionalProperties": false,
-                        "properties": { "error": { "type": "number" }, "quantile": { "type": "number" } },
+                        "properties": {
+                          "error": { "type": "number" },
+                          "quantile": { "type": "number" }
+                        },
                         "type": "object"
                       },
                       "type": "array"
@@ -3641,7 +3784,10 @@
                     "exchange_declare": {
                       "additionalProperties": false,
                       "properties": {
-                        "arguments": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                        "arguments": {
+                          "patternProperties": { ".": { "type": "string" } },
+                          "type": "object"
+                        },
                         "durable": { "type": "boolean" },
                         "enabled": { "type": "boolean" },
                         "type": { "type": "string" }
@@ -3656,7 +3802,9 @@
                     "message_id": { "type": "string" },
                     "metadata": {
                       "additionalProperties": false,
-                      "properties": { "exclude_prefixes": { "items": { "type": "string" }, "type": "array" } },
+                      "properties": {
+                        "exclude_prefixes": { "items": { "type": "string" }, "type": "array" }
+                      },
                       "type": "object"
                     },
                     "persistent": { "type": "boolean" },
@@ -3708,7 +3856,9 @@
                     "max_in_flight": { "type": "number" },
                     "metadata": {
                       "additionalProperties": false,
-                      "properties": { "exclude_prefixes": { "items": { "type": "string" }, "type": "array" } },
+                      "properties": {
+                        "exclude_prefixes": { "items": { "type": "string" }, "type": "array" }
+                      },
                       "type": "object"
                     },
                     "sasl": {
@@ -3776,7 +3926,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -3794,11 +3947,17 @@
                       "type": "object"
                     },
                     "endpoint": { "type": "string" },
-                    "json_map_columns": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "json_map_columns": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "max_in_flight": { "type": "number" },
                     "max_retries": { "type": "number" },
                     "region": { "type": "string" },
-                    "string_columns": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "string_columns": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "table": { "type": "string" },
                     "ttl": { "type": "string" },
                     "ttl_key": { "type": "string" }
@@ -3830,7 +3989,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -3882,7 +4044,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -3923,7 +4088,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -3954,7 +4122,9 @@
                     "max_in_flight": { "type": "number" },
                     "metadata": {
                       "additionalProperties": false,
-                      "properties": { "exclude_prefixes": { "items": { "type": "string" }, "type": "array" } },
+                      "properties": {
+                        "exclude_prefixes": { "items": { "type": "string" }, "type": "array" }
+                      },
                       "type": "object"
                     },
                     "object_canned_acl": { "type": "string" },
@@ -3962,7 +4132,10 @@
                     "region": { "type": "string" },
                     "server_side_encryption": { "type": "string" },
                     "storage_class": { "type": "string" },
-                    "tags": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "tags": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "timeout": { "type": "string" },
                     "website_redirect_location": { "type": "string" }
                   },
@@ -3996,7 +4169,9 @@
                     "message_group_id": { "type": "string" },
                     "metadata": {
                       "additionalProperties": false,
-                      "properties": { "exclude_prefixes": { "items": { "type": "string" }, "type": "array" } },
+                      "properties": {
+                        "exclude_prefixes": { "items": { "type": "string" }, "type": "array" }
+                      },
                       "type": "object"
                     },
                     "region": { "type": "string" },
@@ -4030,7 +4205,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -4056,7 +4234,9 @@
                     "message_group_id": { "type": "string" },
                     "metadata": {
                       "additionalProperties": false,
-                      "properties": { "exclude_prefixes": { "items": { "type": "string" }, "type": "array" } },
+                      "properties": {
+                        "exclude_prefixes": { "items": { "type": "string" }, "type": "array" }
+                      },
                       "type": "object"
                     },
                     "region": { "type": "string" },
@@ -4103,7 +4283,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -4167,7 +4350,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -4197,14 +4383,20 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
                     "insert_type": { "type": "string" },
                     "max_in_flight": { "type": "number" },
                     "partition_key": { "type": "string" },
-                    "properties": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "properties": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "row_key": { "type": "string" },
                     "storage_access_key": { "type": "string" },
                     "storage_account": { "type": "string" },
@@ -4224,7 +4416,10 @@
               "properties": {
                 "beanstalkd": {
                   "additionalProperties": false,
-                  "properties": { "address": { "type": "string" }, "max_in_flight": { "type": "number" } },
+                  "properties": {
+                    "address": { "type": "string" },
+                    "max_in_flight": { "type": "number" }
+                  },
                   "required": ["address"],
                   "type": "object"
                 }
@@ -4243,7 +4438,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -4282,7 +4480,10 @@
                     "args_mapping": { "type": "string" },
                     "backoff": {
                       "additionalProperties": false,
-                      "properties": { "initial_interval": { "type": "string" }, "max_interval": { "type": "string" } },
+                      "properties": {
+                        "initial_interval": { "type": "string" },
+                        "max_interval": { "type": "string" }
+                      },
                       "type": "object"
                     },
                     "batching": {
@@ -4292,7 +4493,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -4300,7 +4504,10 @@
                     "disable_initial_host_lookup": { "type": "boolean" },
                     "host_selection_policy": {
                       "additionalProperties": false,
-                      "properties": { "local_dc": { "type": "string" }, "local_rack": { "type": "string" } },
+                      "properties": {
+                        "local_dc": { "type": "string" },
+                        "local_rack": { "type": "string" }
+                      },
                       "type": "object"
                     },
                     "logged_batch": { "type": "boolean" },
@@ -4361,7 +4568,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -4407,7 +4617,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -4462,7 +4675,9 @@
               "type": "object"
             },
             {
-              "properties": { "drop": { "additionalProperties": false, "properties": {}, "type": "object" } },
+              "properties": {
+                "drop": { "additionalProperties": false, "properties": {}, "type": "object" }
+              },
               "type": "object"
             },
             {
@@ -4486,7 +4701,10 @@
                 "dynamic": {
                   "additionalProperties": false,
                   "properties": {
-                    "outputs": { "patternProperties": { ".": { "$ref": "#/definitions/output" } }, "type": "object" },
+                    "outputs": {
+                      "patternProperties": { ".": { "$ref": "#/definitions/output" } },
+                      "type": "object"
+                    },
                     "prefix": { "type": "string" }
                   },
                   "type": "object"
@@ -4516,7 +4734,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -4560,7 +4781,9 @@
               "type": "object"
             },
             {
-              "properties": { "fallback": { "items": { "$ref": "#/definitions/output" }, "type": "array" } },
+              "properties": {
+                "fallback": { "items": { "$ref": "#/definitions/output" }, "type": "array" }
+              },
               "type": "object"
             },
             {
@@ -4587,7 +4810,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -4608,7 +4834,10 @@
                     "dataset": { "type": "string" },
                     "format": { "type": "string" },
                     "ignore_unknown_values": { "type": "boolean" },
-                    "job_labels": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "job_labels": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "job_project": { "type": "string" },
                     "max_bad_records": { "type": "number" },
                     "max_in_flight": { "type": "number" },
@@ -4634,7 +4863,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -4666,7 +4898,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -4687,7 +4922,9 @@
                     "max_in_flight": { "type": "number" },
                     "metadata": {
                       "additionalProperties": false,
-                      "properties": { "exclude_prefixes": { "items": { "type": "string" }, "type": "array" } },
+                      "properties": {
+                        "exclude_prefixes": { "items": { "type": "string" }, "type": "array" }
+                      },
                       "type": "object"
                     },
                     "ordering_key": { "type": "string" },
@@ -4714,7 +4951,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -4753,7 +4993,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -4769,7 +5012,10 @@
                       "type": "object"
                     },
                     "follow_redirects": { "type": "boolean" },
-                    "headers": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "headers": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "jwt": {
                       "additionalProperties": false,
                       "properties": {
@@ -4820,7 +5066,10 @@
                         "client_key": { "type": "string" },
                         "client_secret": { "type": "string" },
                         "enabled": { "type": "boolean" },
-                        "endpoint_params": { "patternProperties": { ".": {} }, "type": "object" },
+                        "endpoint_params": {
+                          "patternProperties": { ".": {} },
+                          "type": "object"
+                        },
                         "scopes": { "items": { "type": "string" }, "type": "array" },
                         "token_url": { "type": "string" }
                       },
@@ -4918,7 +5167,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -4941,7 +5193,9 @@
                     "max_retries": { "type": "number" },
                     "metadata": {
                       "additionalProperties": false,
-                      "properties": { "exclude_prefixes": { "items": { "type": "string" }, "type": "array" } },
+                      "properties": {
+                        "exclude_prefixes": { "items": { "type": "string" }, "type": "array" }
+                      },
                       "type": "object"
                     },
                     "partition": { "type": "string" },
@@ -4960,7 +5214,10 @@
                       },
                       "type": "object"
                     },
-                    "static_headers": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "static_headers": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "target_version": { "type": "string" },
                     "timeout": { "type": "string" },
                     "timestamp": { "type": "string" },
@@ -5011,7 +5268,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -5061,7 +5321,10 @@
                             },
                             "type": "object"
                           },
-                          "extensions": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                          "extensions": {
+                            "patternProperties": { ".": { "type": "string" } },
+                            "type": "object"
+                          },
                           "mechanism": { "type": "string" },
                           "password": { "type": "string" },
                           "token": { "type": "string" },
@@ -5131,7 +5394,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -5257,7 +5523,10 @@
                       },
                       "type": "object"
                     },
-                    "headers": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "headers": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "inject_tracing_map": { "type": "string" },
                     "max_in_flight": { "type": "number" },
                     "max_reconnects": { "type": "number" },
@@ -5320,7 +5589,10 @@
                       },
                       "type": "object"
                     },
-                    "headers": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "headers": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "inject_tracing_map": { "type": "string" },
                     "max_in_flight": { "type": "number" },
                     "max_reconnects": { "type": "number" },
@@ -5540,7 +5812,10 @@
                             "check": { "type": "string" },
                             "count": { "type": "number" },
                             "period": { "type": "string" },
-                            "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                            "processors": {
+                              "items": { "$ref": "#/definitions/processor" },
+                              "type": "array"
+                            }
                           },
                           "type": "object"
                         },
@@ -5553,8 +5828,14 @@
                         "metadata": {
                           "additionalProperties": false,
                           "properties": {
-                            "include_patterns": { "items": { "type": "string" }, "type": "array" },
-                            "include_prefixes": { "items": { "type": "string" }, "type": "array" }
+                            "include_patterns": {
+                              "items": { "type": "string" },
+                              "type": "array"
+                            },
+                            "include_prefixes": {
+                              "items": { "type": "string" },
+                              "type": "array"
+                            }
                           },
                           "type": "object"
                         },
@@ -5647,7 +5928,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -5702,7 +5986,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -5741,7 +6028,10 @@
                         },
                         "token": {
                           "additionalProperties": false,
-                          "properties": { "enabled": { "type": "boolean" }, "token": { "type": "string" } },
+                          "properties": {
+                            "enabled": { "type": "boolean" },
+                            "token": { "type": "string" }
+                          },
                           "type": "object"
                         }
                       },
@@ -5777,7 +6067,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -5808,7 +6101,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -5863,7 +6159,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -5919,7 +6218,10 @@
                 "redis_hash": {
                   "additionalProperties": false,
                   "properties": {
-                    "fields": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "fields": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "key": { "type": "string" },
                     "kind": { "type": "string" },
                     "master": { "type": "string" },
@@ -5971,7 +6273,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -6025,7 +6330,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -6078,7 +6386,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -6089,7 +6400,9 @@
                     "max_length": { "type": "number" },
                     "metadata": {
                       "additionalProperties": false,
-                      "properties": { "exclude_prefixes": { "items": { "type": "string" }, "type": "array" } },
+                      "properties": {
+                        "exclude_prefixes": { "items": { "type": "string" }, "type": "array" }
+                      },
                       "type": "object"
                     },
                     "stream": { "type": "string" },
@@ -6177,7 +6490,10 @@
                             },
                             "type": "object"
                           },
-                          "extensions": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                          "extensions": {
+                            "patternProperties": { ".": { "type": "string" } },
+                            "type": "object"
+                          },
                           "mechanism": { "type": "string" },
                           "password": { "type": "string" },
                           "token": { "type": "string" },
@@ -6237,7 +6553,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -6275,7 +6594,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -6329,7 +6651,10 @@
                             },
                             "type": "object"
                           },
-                          "extensions": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                          "extensions": {
+                            "patternProperties": { ".": { "type": "string" } },
+                            "type": "object"
+                          },
                           "mechanism": { "type": "string" },
                           "password": { "type": "string" },
                           "token": { "type": "string" },
@@ -6451,7 +6776,10 @@
                             },
                             "type": "object"
                           },
-                          "extensions": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                          "extensions": {
+                            "patternProperties": { ".": { "type": "string" } },
+                            "type": "object"
+                          },
                           "mechanism": { "type": "string" },
                           "password": { "type": "string" },
                           "token": { "type": "string" },
@@ -6682,7 +7010,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -6727,13 +7058,19 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
                     "build_options": {
                       "additionalProperties": false,
-                      "properties": { "chunk_size": { "type": "number" }, "parallelism": { "type": "number" } },
+                      "properties": {
+                        "chunk_size": { "type": "number" },
+                        "parallelism": { "type": "number" }
+                      },
                       "type": "object"
                     },
                     "channel_name": { "type": "string" },
@@ -6756,7 +7093,10 @@
                         "enabled": { "type": "boolean" },
                         "ignore_nulls": { "type": "boolean" },
                         "new_column_type_mapping": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "required": ["enabled"],
                       "type": "object"
@@ -6823,7 +7163,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -6885,7 +7228,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -6913,7 +7259,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -6951,7 +7300,10 @@
                         "check": { "type": "string" },
                         "count": { "type": "number" },
                         "period": { "type": "string" },
-                        "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                        "processors": {
+                          "items": { "$ref": "#/definitions/processor" },
+                          "type": "array"
+                        }
                       },
                       "type": "object"
                     },
@@ -6967,7 +7319,10 @@
                     "queries": {
                       "items": {
                         "additionalProperties": false,
-                        "properties": { "args_mapping": { "type": "string" }, "query": { "type": "string" } },
+                        "properties": {
+                          "args_mapping": { "type": "string" },
+                          "query": { "type": "string" }
+                        },
                         "required": ["query"],
                         "type": "object"
                       },
@@ -7035,7 +7390,9 @@
               "type": "object"
             },
             {
-              "properties": { "sync_response": { "additionalProperties": false, "properties": {}, "type": "object" } },
+              "properties": {
+                "sync_response": { "additionalProperties": false, "properties": {}, "type": "object" }
+              },
               "type": "object"
             },
             {
@@ -7329,7 +7686,10 @@
               "properties": {
                 "benchmark": {
                   "additionalProperties": false,
-                  "properties": { "count_bytes": { "type": "boolean" }, "interval": { "type": "string" } },
+                  "properties": {
+                    "count_bytes": { "type": "boolean" },
+                    "interval": { "type": "string" }
+                  },
                   "type": "object"
                 }
               },
@@ -7356,7 +7716,10 @@
                 "branch": {
                   "additionalProperties": false,
                   "properties": {
-                    "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" },
+                    "processors": {
+                      "items": { "$ref": "#/definitions/processor" },
+                      "type": "array"
+                    },
                     "request_map": { "type": "string" },
                     "result_map": { "type": "string" }
                   },
@@ -7390,7 +7753,10 @@
                   "properties": {
                     "cache": { "type": "string" },
                     "key": { "type": "string" },
-                    "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" },
+                    "processors": {
+                      "items": { "$ref": "#/definitions/processor" },
+                      "type": "array"
+                    },
                     "skip_on": { "type": "string" },
                     "ttl": { "type": "string" }
                   },
@@ -7401,7 +7767,9 @@
               "type": "object"
             },
             {
-              "properties": { "catch": { "items": { "$ref": "#/definitions/processor" }, "type": "array" } },
+              "properties": {
+                "catch": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+              },
               "type": "object"
             },
             {
@@ -7434,9 +7802,15 @@
                         "jwt": {
                           "additionalProperties": false,
                           "properties": {
-                            "claims": { "patternProperties": { ".": {} }, "type": "object" },
+                            "claims": {
+                              "patternProperties": { ".": {} },
+                              "type": "object"
+                            },
                             "enabled": { "type": "boolean" },
-                            "headers": { "patternProperties": { ".": {} }, "type": "object" },
+                            "headers": {
+                              "patternProperties": { ".": {} },
+                              "type": "object"
+                            },
                             "private_key_file": { "type": "string" },
                             "signing_method": { "type": "string" }
                           },
@@ -7503,7 +7877,10 @@
                                     "additionalProperties": false,
                                     "properties": {
                                       "description": { "type": "string" },
-                                      "enum": { "items": { "type": "string" }, "type": "array" },
+                                      "enum": {
+                                        "items": { "type": "string" },
+                                        "type": "array"
+                                      },
                                       "type": { "type": "string" }
                                     },
                                     "required": ["type", "description"],
@@ -7512,12 +7889,18 @@
                                 },
                                 "type": "object"
                               },
-                              "required": { "items": { "type": "string" }, "type": "array" }
+                              "required": {
+                                "items": { "type": "string" },
+                                "type": "array"
+                              }
                             },
                             "required": ["properties"],
                             "type": "object"
                           },
-                          "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                          "processors": {
+                            "items": { "$ref": "#/definitions/processor" },
+                            "type": "array"
+                          }
                         },
                         "required": ["name", "description", "parameters"],
                         "type": "object"
@@ -7573,7 +7956,10 @@
               "properties": {
                 "command": {
                   "additionalProperties": false,
-                  "properties": { "args_mapping": { "type": "string" }, "name": { "type": "string" } },
+                  "properties": {
+                    "args_mapping": { "type": "string" },
+                    "name": { "type": "string" }
+                  },
                   "required": ["name"],
                   "type": "object"
                 }
@@ -7642,7 +8028,9 @@
               "type": "object"
             },
             {
-              "properties": { "for_each": { "items": { "$ref": "#/definitions/processor" }, "type": "array" } },
+              "properties": {
+                "for_each": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+              },
               "type": "object"
             },
             {
@@ -7653,7 +8041,10 @@
                     "args_mapping": { "type": "string" },
                     "columns": { "items": { "type": "string" }, "type": "array" },
                     "credentials_json": { "type": "string" },
-                    "job_labels": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "job_labels": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "prefix": { "type": "string" },
                     "project": { "type": "string" },
                     "suffix": { "type": "string" },
@@ -7701,7 +8092,10 @@
                                     "additionalProperties": false,
                                     "properties": {
                                       "description": { "type": "string" },
-                                      "enum": { "items": { "type": "string" }, "type": "array" },
+                                      "enum": {
+                                        "items": { "type": "string" },
+                                        "type": "array"
+                                      },
                                       "type": { "type": "string" }
                                     },
                                     "required": ["type", "description"],
@@ -7710,12 +8104,18 @@
                                 },
                                 "type": "object"
                               },
-                              "required": { "items": { "type": "string" }, "type": "array" }
+                              "required": {
+                                "items": { "type": "string" },
+                                "type": "array"
+                              }
                             },
                             "required": ["properties"],
                             "type": "object"
                           },
-                          "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                          "processors": {
+                            "items": { "$ref": "#/definitions/processor" },
+                            "type": "array"
+                          }
                         },
                         "required": ["name", "description", "parameters"],
                         "type": "object"
@@ -7756,7 +8156,10 @@
                   "additionalProperties": false,
                   "properties": {
                     "credentials_json": { "type": "string" },
-                    "export_mime_types": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "export_mime_types": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "file_id": { "type": "string" },
                     "mime_type": { "type": "string" }
                   },
@@ -7800,7 +8203,10 @@
                   "properties": {
                     "expressions": { "items": { "type": "string" }, "type": "array" },
                     "named_captures_only": { "type": "boolean" },
-                    "pattern_definitions": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "pattern_definitions": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "pattern_paths": { "items": { "type": "string" }, "type": "array" },
                     "remove_empty_values": { "type": "boolean" },
                     "use_default_patterns": { "type": "boolean" }
@@ -7818,7 +8224,10 @@
                     "additionalProperties": false,
                     "properties": {
                       "check": { "type": "string" },
-                      "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                      "processors": {
+                        "items": { "$ref": "#/definitions/processor" },
+                        "type": "array"
+                      }
                     },
                     "required": ["check"],
                     "type": "object"
@@ -7867,7 +8276,10 @@
                       "type": "object"
                     },
                     "follow_redirects": { "type": "boolean" },
-                    "headers": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "headers": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "jwt": {
                       "additionalProperties": false,
                       "properties": {
@@ -7905,7 +8317,10 @@
                         "client_key": { "type": "string" },
                         "client_secret": { "type": "string" },
                         "enabled": { "type": "boolean" },
-                        "endpoint_params": { "patternProperties": { ".": {} }, "type": "object" },
+                        "endpoint_params": {
+                          "patternProperties": { ".": {} },
+                          "type": "object"
+                        },
                         "scopes": { "items": { "type": "string" }, "type": "array" },
                         "token_url": { "type": "string" }
                       },
@@ -8006,7 +8421,10 @@
               "properties": {
                 "json_schema": {
                   "additionalProperties": false,
-                  "properties": { "schema": { "type": "string" }, "schema_path": { "type": "string" } },
+                  "properties": {
+                    "schema": { "type": "string" },
+                    "schema_path": { "type": "string" }
+                  },
                   "type": "object"
                 }
               },
@@ -8017,7 +8435,10 @@
                 "log": {
                   "additionalProperties": false,
                   "properties": {
-                    "fields": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "fields": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "fields_mapping": { "type": "string" },
                     "level": { "type": "string" },
                     "message": { "type": "string" }
@@ -8033,7 +8454,10 @@
                 "metric": {
                   "additionalProperties": false,
                   "properties": {
-                    "labels": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "labels": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "name": { "type": "string" },
                     "type": { "type": "string" },
                     "value": { "type": "string" }
@@ -8171,7 +8595,10 @@
                       },
                       "type": "object"
                     },
-                    "headers": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "headers": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "inbox_prefix": { "type": "string" },
                     "max_reconnects": { "type": "number" },
                     "metadata": {
@@ -8219,7 +8646,9 @@
               "type": "object"
             },
             {
-              "properties": { "noop": { "additionalProperties": false, "properties": {}, "type": "object" } },
+              "properties": {
+                "noop": { "additionalProperties": false, "properties": {}, "type": "object" }
+              },
               "type": "object"
             },
             {
@@ -8272,7 +8701,10 @@
                                     "additionalProperties": false,
                                     "properties": {
                                       "description": { "type": "string" },
-                                      "enum": { "items": { "type": "string" }, "type": "array" },
+                                      "enum": {
+                                        "items": { "type": "string" },
+                                        "type": "array"
+                                      },
                                       "type": { "type": "string" }
                                     },
                                     "required": ["type", "description"],
@@ -8281,12 +8713,18 @@
                                 },
                                 "type": "object"
                               },
-                              "required": { "items": { "type": "string" }, "type": "array" }
+                              "required": {
+                                "items": { "type": "string" },
+                                "type": "array"
+                              }
                             },
                             "required": ["properties"],
                             "type": "object"
                           },
-                          "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                          "processors": {
+                            "items": { "$ref": "#/definitions/processor" },
+                            "type": "array"
+                          }
                         },
                         "required": ["name", "description", "parameters"],
                         "type": "object"
@@ -8398,9 +8836,15 @@
                         "jwt": {
                           "additionalProperties": false,
                           "properties": {
-                            "claims": { "patternProperties": { ".": {} }, "type": "object" },
+                            "claims": {
+                              "patternProperties": { ".": {} },
+                              "type": "object"
+                            },
                             "enabled": { "type": "boolean" },
-                            "headers": { "patternProperties": { ".": {} }, "type": "object" },
+                            "headers": {
+                              "patternProperties": { ".": {} },
+                              "type": "object"
+                            },
                             "private_key_file": { "type": "string" },
                             "signing_method": { "type": "string" }
                           },
@@ -8469,7 +8913,10 @@
                                     "additionalProperties": false,
                                     "properties": {
                                       "description": { "type": "string" },
-                                      "enum": { "items": { "type": "string" }, "type": "array" },
+                                      "enum": {
+                                        "items": { "type": "string" },
+                                        "type": "array"
+                                      },
                                       "type": { "type": "string" }
                                     },
                                     "required": ["type", "description"],
@@ -8478,12 +8925,18 @@
                                 },
                                 "type": "object"
                               },
-                              "required": { "items": { "type": "string" }, "type": "array" }
+                              "required": {
+                                "items": { "type": "string" },
+                                "type": "array"
+                              }
                             },
                             "required": ["properties"],
                             "type": "object"
                           },
-                          "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                          "processors": {
+                            "items": { "$ref": "#/definitions/processor" },
+                            "type": "array"
+                          }
                         },
                         "required": ["name", "description"],
                         "type": "object"
@@ -8594,7 +9047,10 @@
                   "additionalProperties": false,
                   "properties": {
                     "cap": { "type": "number" },
-                    "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                    "processors": {
+                      "items": { "$ref": "#/definitions/processor" },
+                      "type": "array"
+                    }
                   },
                   "required": ["processors"],
                   "type": "object"
@@ -8679,7 +9135,9 @@
               "type": "object"
             },
             {
-              "properties": { "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" } },
+              "properties": {
+                "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+              },
               "type": "object"
             },
             {
@@ -8912,7 +9370,10 @@
                     },
                     "max_retries": { "type": "number" },
                     "parallel": { "type": "boolean" },
-                    "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                    "processors": {
+                      "items": { "$ref": "#/definitions/processor" },
+                      "type": "array"
+                    }
                   },
                   "required": ["processors"],
                   "type": "object"
@@ -9107,7 +9568,10 @@
                     "message": { "type": "string" },
                     "release": { "type": "string" },
                     "sampling_rate": { "type": "number" },
-                    "tags": { "patternProperties": { ".": { "type": "string" } }, "type": "object" },
+                    "tags": {
+                      "patternProperties": { ".": { "type": "string" } },
+                      "type": "object"
+                    },
                     "transport_mode": { "type": "string" }
                   },
                   "required": ["message"],
@@ -9284,7 +9748,10 @@
                     "properties": {
                       "check": { "type": "string" },
                       "fallthrough": { "type": "boolean" },
-                      "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                      "processors": {
+                        "items": { "$ref": "#/definitions/processor" },
+                        "type": "array"
+                      }
                     },
                     "type": "object"
                   },
@@ -9294,7 +9761,9 @@
               "type": "object"
             },
             {
-              "properties": { "sync_response": { "additionalProperties": false, "properties": {}, "type": "object" } },
+              "properties": {
+                "sync_response": { "additionalProperties": false, "properties": {}, "type": "object" }
+              },
               "type": "object"
             },
             {
@@ -9320,7 +9789,9 @@
               "type": "object"
             },
             {
-              "properties": { "try": { "items": { "$ref": "#/definitions/processor" }, "type": "array" } },
+              "properties": {
+                "try": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+              },
               "type": "object"
             },
             {
@@ -9338,7 +9809,10 @@
               "properties": {
                 "wasm": {
                   "additionalProperties": false,
-                  "properties": { "function": { "type": "string" }, "module_path": { "type": "string" } },
+                  "properties": {
+                    "function": { "type": "string" },
+                    "module_path": { "type": "string" }
+                  },
                   "required": ["module_path"],
                   "type": "object"
                 }
@@ -9353,7 +9827,10 @@
                     "at_least_once": { "type": "boolean" },
                     "check": { "type": "string" },
                     "max_loops": { "type": "number" },
-                    "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" }
+                    "processors": {
+                      "items": { "$ref": "#/definitions/processor" },
+                      "type": "array"
+                    }
                   },
                   "required": ["processors"],
                   "type": "object"
@@ -9372,7 +9849,10 @@
                         ".": {
                           "additionalProperties": false,
                           "properties": {
-                            "processors": { "items": { "$ref": "#/definitions/processor" }, "type": "array" },
+                            "processors": {
+                              "items": { "$ref": "#/definitions/processor" },
+                              "type": "array"
+                            },
                             "request_map": { "type": "string" },
                             "result_map": { "type": "string" }
                           },
@@ -9383,7 +9863,10 @@
                       "type": "object"
                     },
                     "meta_path": { "type": "string" },
-                    "order": { "items": { "items": { "type": "string" }, "type": "array" }, "type": "array" }
+                    "order": {
+                      "items": { "items": { "type": "string" }, "type": "array" },
+                      "type": "array"
+                    }
                   },
                   "type": "object"
                 }
@@ -9527,7 +10010,10 @@
               "properties": {
                 "decompress": {
                   "additionalProperties": false,
-                  "properties": { "algorithm": { "type": "string" }, "into": { "$ref": "#/definitions/scanner" } },
+                  "properties": {
+                    "algorithm": { "type": "string" },
+                    "into": { "$ref": "#/definitions/scanner" }
+                  },
                   "required": ["algorithm"],
                   "type": "object"
                 }
@@ -9535,11 +10021,15 @@
               "type": "object"
             },
             {
-              "properties": { "json_array": { "additionalProperties": false, "properties": {}, "type": "object" } },
+              "properties": {
+                "json_array": { "additionalProperties": false, "properties": {}, "type": "object" }
+              },
               "type": "object"
             },
             {
-              "properties": { "json_documents": { "additionalProperties": false, "properties": {}, "type": "object" } },
+              "properties": {
+                "json_documents": { "additionalProperties": false, "properties": {}, "type": "object" }
+              },
               "type": "object"
             },
             {
@@ -9560,7 +10050,10 @@
               "properties": {
                 "re_match": {
                   "additionalProperties": false,
-                  "properties": { "max_buffer_size": { "type": "number" }, "pattern": { "type": "string" } },
+                  "properties": {
+                    "max_buffer_size": { "type": "number" },
+                    "pattern": { "type": "string" }
+                  },
                   "required": ["pattern"],
                   "type": "object"
                 }
@@ -9595,11 +10088,15 @@
               "type": "object"
             },
             {
-              "properties": { "tar": { "additionalProperties": false, "properties": {}, "type": "object" } },
+              "properties": {
+                "tar": { "additionalProperties": false, "properties": {}, "type": "object" }
+              },
               "type": "object"
             },
             {
-              "properties": { "to_the_end": { "additionalProperties": false, "properties": {}, "type": "object" } },
+              "properties": {
+                "to_the_end": { "additionalProperties": false, "properties": {}, "type": "object" }
+              },
               "type": "object"
             }
           ]
@@ -9652,7 +10149,9 @@
               "type": "object"
             },
             {
-              "properties": { "none": { "additionalProperties": false, "properties": {}, "type": "object" } },
+              "properties": {
+                "none": { "additionalProperties": false, "properties": {}, "type": "object" }
+              },
               "type": "object"
             },
             {
@@ -9686,7 +10185,10 @@
                     },
                     "sampling": {
                       "additionalProperties": false,
-                      "properties": { "enabled": { "type": "boolean" }, "ratio": { "type": "number" } },
+                      "properties": {
+                        "enabled": { "type": "boolean" },
+                        "ratio": { "type": "number" }
+                      },
                       "type": "object"
                     },
                     "service": { "type": "string" },

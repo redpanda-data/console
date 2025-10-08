@@ -1,17 +1,19 @@
+/** biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
 import { type ChatMessage, chatDb } from 'database/chat-db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useRef, useState } from 'react';
+
 import { SendMessageButton } from './send-message-button';
 import { sendMessageToApi } from './send-message-to-api';
 
-interface ChatInputProps {
+type ChatInputProps = {
   setIsTyping: (isTyping: boolean) => void;
   agentUrl?: string;
   agentId: string;
   initialValue?: string;
   onInputChange?: () => void;
   messagesEndRef: React.RefObject<HTMLDivElement>;
-}
+};
 
 export const ChatInput = ({
   setIsTyping,
@@ -51,7 +53,9 @@ export const ChatInput = ({
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!inputValue.trim() || isSending) return;
+    if (!inputValue.trim() || isSending) {
+      return;
+    }
 
     // Create user message
     const userMessage: ChatMessage = {
@@ -104,6 +108,7 @@ export const ChatInput = ({
       // Add to database
       await chatDb.addMessage(systemMessage);
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: error logging for debugging message send failures
       console.error('Error sending message:', error);
 
       // Hide typing indicator
@@ -129,41 +134,43 @@ export const ChatInput = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage(e);
+      // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
+      handleSendMessage(e).catch(console.error);
     }
   };
 
   return (
-    <div className="border border-slate-200 p-4 bg-white shadow-sm backdrop-blur-sm">
+    <div className="border border-slate-200 bg-white p-4 shadow-sm backdrop-blur-sm">
       <form
         className="space-y-2"
         onSubmit={(e) => {
           if (agentUrl) {
-            handleSendMessage(e);
+            // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
+            handleSendMessage(e).catch(console.error);
           }
         }}
       >
         <div className="relative">
           <textarea
-            ref={textareaRef}
+            aria-label="Type your message"
+            autoCapitalize="off"
+            autoCorrect="off"
+            className="min-h-[80px] w-full resize-none rounded-md border-none text-sm outline-none focus:outline-none focus:ring-0"
             id="chat-input"
-            className="w-full rounded-md outline-none focus:outline-none focus:ring-0 border-none resize-none min-h-[80px] text-sm"
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Type your message here..."
+            ref={textareaRef}
+            spellCheck="false"
             style={{
               resize: 'none',
             }}
-            placeholder="Type your message here..."
             value={inputValue}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            aria-label="Type your message"
-            spellCheck="false"
-            autoCorrect="off"
-            autoCapitalize="off"
           />
           <SendMessageButton inputValue={inputValue} isSending={isSending} onClick={handleSendMessage} />
         </div>
       </form>
-      <p className="text-xs text-slate-500 mt-2">Press Enter to send, Shift+Enter for a new line</p>
+      <p className="mt-2 text-slate-500 text-xs">Press Enter to send, Shift+Enter for a new line</p>
     </div>
   );
 };

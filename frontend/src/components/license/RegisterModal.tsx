@@ -24,8 +24,12 @@ import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
 import { capitalizeFirst } from 'utils/utils';
+
 import { useLicenseSignupMutation } from '../../react-query/api/signup';
 import { api } from '../../state/backendApi';
+
+const NAME_VALIDATION_REGEX = /^[\p{L}\p{M}\p{N} '_-]+$/u;
+const EMAIL_VALIDATION_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 
 type FieldViolation = {
   field: string;
@@ -40,17 +44,17 @@ function isBadRequest(obj: any): obj is { type: string; debug: BadRequest } {
   return obj && obj.type === 'google.rpc.BadRequest';
 }
 
-interface RegisterFormData {
+type RegisterFormData = {
   givenName: string;
   familyName: string;
   email: string;
   companyName?: string;
-}
+};
 
-interface RegisterModalProps {
+type RegisterModalProps = {
   isOpen: boolean;
   onClose: () => void;
-}
+};
 
 export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,17 +98,18 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
       if (error instanceof ConnectError) {
         const newFieldErrors: Record<string, string> = {};
 
-        error.details?.forEach((detail) => {
+        for (const detail of error.details ?? []) {
           if (isBadRequest(detail)) {
-            detail.debug.fieldViolations.forEach((violation) => {
+            for (const violation of detail.debug.fieldViolations) {
               newFieldErrors[violation.field] = violation.description;
-            });
+            }
           }
-        });
+        }
 
         setFieldErrors(newFieldErrors);
       }
 
+      // biome-ignore lint/suspicious/noConsole: error logging for debugging registration failures
       console.error('Registration failed:', error);
     } finally {
       setIsSubmitting(false);
@@ -125,26 +130,26 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} isCentered size="md">
+    <Modal isCentered isOpen={isOpen} onClose={handleClose} size="md">
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Register</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           {isSuccess ? (
-            <VStack spacing={6} align="center" py={4}>
+            <VStack align="center" py={4} spacing={6}>
               <Box
-                w="80px"
-                h="80px"
-                borderRadius="full"
-                bg="green.100"
-                display="flex"
                 alignItems="center"
+                bg="green.100"
+                borderRadius="full"
+                display="flex"
+                h="80px"
                 justifyContent="center"
+                w="80px"
               >
-                <CheckIcon w="40px" h="40px" color="green.500" />
+                <CheckIcon color="green.500" h="40px" w="40px" />
               </Box>
-              <VStack spacing={2} align="center">
+              <VStack align="center" spacing={2}>
                 <Text fontSize="lg" fontWeight="bold" textAlign="center">
                   This cluster has been successfully registered
                 </Text>
@@ -155,12 +160,12 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
             </VStack>
           ) : (
             <Box>
-              <Text mb={4} color="gray.600">
+              <Text color="gray.600" mb={4}>
                 Register this cluster for an additional 30 days of enterprise features.
               </Text>
 
               {signupMutation.error && Object.keys(fieldErrors).length === 0 && (
-                <Alert status="error" variant="left-accent" mb={4}>
+                <Alert mb={4} status="error" variant="left-accent">
                   <AlertIcon />
                   <AlertDescription>
                     {capitalizeFirst(signupMutation.error.rawMessage) || 'Registration failed. Please try again.'}
@@ -171,18 +176,19 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
               <form onSubmit={handleSubmit(onSubmit)}>
                 <Flex gap={4} mb={4}>
                   <FormField
-                    label="First name"
-                    isInvalid={!!errors.givenName || !!fieldErrors.givenName}
                     errorText={errors.givenName?.message || fieldErrors.givenName}
                     flex={1}
+                    isInvalid={!!errors.givenName || !!fieldErrors.givenName}
+                    label="First name"
                   >
                     <Controller
-                      name="givenName"
                       control={control}
+                      name="givenName"
+                      render={({ field }) => <Input {...field} autoComplete="given-name" placeholder="First name" />}
                       rules={{
                         required: 'First name is required',
                         pattern: {
-                          value: /^[\p{L}\p{M}\p{N} '_-]+$/u,
+                          value: NAME_VALIDATION_REGEX,
                           message: 'First name contains invalid characters',
                         },
                         minLength: {
@@ -194,23 +200,23 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
                           message: 'First name is too long',
                         },
                       }}
-                      render={({ field }) => <Input {...field} placeholder="First name" autoComplete="given-name" />}
                     />
                   </FormField>
 
                   <FormField
-                    label="Last name"
-                    isInvalid={!!errors.familyName || !!fieldErrors.familyName}
                     errorText={errors.familyName?.message || fieldErrors.familyName}
                     flex={1}
+                    isInvalid={!!errors.familyName || !!fieldErrors.familyName}
+                    label="Last name"
                   >
                     <Controller
-                      name="familyName"
                       control={control}
+                      name="familyName"
+                      render={({ field }) => <Input {...field} autoComplete="family-name" placeholder="Last name" />}
                       rules={{
                         required: 'Last name is required',
                         pattern: {
-                          value: /^[\p{L}\p{M}\p{N} '_-]+$/u,
+                          value: NAME_VALIDATION_REGEX,
                           message: 'Last name contains invalid characters',
                         },
                         minLength: {
@@ -222,43 +228,48 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
                           message: 'Last name is too long',
                         },
                       }}
-                      render={({ field }) => <Input {...field} placeholder="Last name" autoComplete="family-name" />}
                     />
                   </FormField>
                 </Flex>
 
                 <FormField
-                  label="Email address"
-                  isInvalid={!!errors.email || !!fieldErrors.email}
                   errorText={errors.email?.message || fieldErrors.email}
+                  isInvalid={!!errors.email || !!fieldErrors.email}
+                  label="Email address"
                   mb={4}
                 >
                   <Controller
-                    name="email"
                     control={control}
+                    name="email"
+                    render={({ field }) => (
+                      <Input {...field} autoComplete="email" placeholder="Email address" type="email" />
+                    )}
                     rules={{
                       required: 'Email address is required',
                       pattern: {
-                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        value: EMAIL_VALIDATION_REGEX,
                         message: 'Please enter a valid email address',
                       },
                     }}
-                    render={({ field }) => (
-                      <Input {...field} type="email" placeholder="Email address" autoComplete="email" />
-                    )}
                   />
                 </FormField>
 
-                <Text fontSize="sm" color="gray.600" mb={4}>
+                <Text color="gray.600" fontSize="sm" mb={4}>
                   By registering you acknowledge having read and accepted our{' '}
-                  <Link href="https://www.redpanda.com/legal/privacy-policy" target="_blank" color="blue.500">
+                  <Link
+                    color="blue.500"
+                    href="https://www.redpanda.com/legal/privacy-policy"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
                     Privacy Policy
                   </Link>{' '}
                   and{' '}
                   <Link
-                    href="https://www.redpanda.com/legal/redpanda-subscription-terms-and-conditions"
-                    target="_blank"
                     color="blue.500"
+                    href="https://www.redpanda.com/legal/redpanda-subscription-terms-and-conditions"
+                    rel="noopener noreferrer"
+                    target="_blank"
                   >
                     Terms of Service
                   </Link>
@@ -274,14 +285,14 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
             <Button onClick={handleClose}>Close</Button>
           ) : (
             <>
-              <Button variant="ghost" onClick={handleClose} mr={3}>
+              <Button mr={3} onClick={handleClose} variant="ghost">
                 Close
               </Button>
               <Button
-                onClick={handleSubmit(onSubmit)}
+                isDisabled={signupMutation.isPending}
                 isLoading={isSubmitting || signupMutation.isPending}
                 loadingText="Registering..."
-                isDisabled={signupMutation.isPending}
+                onClick={handleSubmit(onSubmit)}
               >
                 Register
               </Button>

@@ -8,6 +8,7 @@ import {
   USERNAME_REGEX,
 } from 'utils/user';
 import { z } from 'zod';
+
 import { CONNECT_COMPONENT_TYPE } from './schema';
 
 export const connectTilesFormSchema = z.object({
@@ -24,16 +25,16 @@ export type WizardFormData = z.infer<typeof wizardFormSchema>;
 
 export type ConnectTilesFormData = z.infer<typeof connectTilesFormSchema>;
 
-export interface StepSubmissionResult {
+export type StepSubmissionResult = {
   success: boolean;
   message?: string;
   error?: string;
-}
+};
 
-export interface BaseStepRef {
+export type BaseStepRef = {
   triggerSubmit: () => Promise<StepSubmissionResult>;
   isLoading: boolean;
-}
+};
 
 export const retentionTimeUnits = enumFromKeys(timeFactors);
 export const retentionSizeUnits = enumFromKeys(sizeFactors);

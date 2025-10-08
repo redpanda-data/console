@@ -12,11 +12,12 @@
 import axios from 'axios';
 // biome-ignore lint/performance/noNamespaceImport: part of es-cookie
 import * as Cookies from 'es-cookie';
+
 import { isAnalyticsEnabled } from '../utils/analytics';
 
-interface Fields {
+type Fields = {
   [key: string]: string | number;
-}
+};
 
 // HubSpot Configuration Constants
 export const HUBSPOT_REGION = 'na1';
@@ -24,22 +25,22 @@ export const HUBSPOT_PORTAL_ID = '7733588';
 export const HUBSPOT_TRACKING_COOKIE_TOKEN = 'hubspotutk';
 export const HUBSPOT_AI_AGENTS_FORM_ID = '79585297-4032-440e-bb62-4f3b72954e81';
 
-interface HubspotSubmitProps {
+type HubspotSubmitProps = {
   fields: Fields;
   formId: string;
   portalId?: string;
   onSuccess?: (data: any) => void;
   onError?: (error: any) => void;
-}
+};
 
-interface HubspotUserData {
+type HubspotUserData = {
   email?: string;
   firstName?: string;
   lastName?: string;
   company?: string;
   avatarUrl?: string;
   [key: string]: string | number | undefined;
-}
+};
 
 declare global {
   interface Window {
@@ -55,7 +56,9 @@ export const hubspotSubmit = ({
   onError,
 }: HubspotSubmitProps) => {
   // Check if analytics is enabled
-  if (!isAnalyticsEnabled()) return;
+  if (!isAnalyticsEnabled()) {
+    return;
+  }
   const prepareFields = (fields: Fields) =>
     Object.entries(fields).map(([name, value]) => ({
       name,
@@ -72,10 +75,14 @@ export const hubspotSubmit = ({
       },
     })
     .then((response) => {
-      if (onSuccess) onSuccess(response);
+      if (onSuccess) {
+        onSuccess(response);
+      }
     })
     .catch((error) => {
-      if (onError) onError(error);
+      if (onError) {
+        onError(error);
+      }
     });
 };
 
@@ -84,7 +91,9 @@ export const hubspotSubmit = ({
  * @param userData - User data to track in HubSpot
  */
 export const trackHubspotUser = (userData: HubspotUserData) => {
-  if (!isAnalyticsEnabled()) return;
+  if (!isAnalyticsEnabled()) {
+    return;
+  }
   window._hsq = window._hsq || [];
   window._hsq.push(['identify', userData]);
 };
@@ -94,7 +103,9 @@ export const trackHubspotUser = (userData: HubspotUserData) => {
  * @param path - The current page path to track
  */
 export const trackHubspotPage = (path: string) => {
-  if (!isAnalyticsEnabled()) return;
+  if (!isAnalyticsEnabled()) {
+    return;
+  }
   window._hsq = window._hsq || [];
   window._hsq.push(['setPath', { path }]);
 };

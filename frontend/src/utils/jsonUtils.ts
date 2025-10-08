@@ -46,7 +46,7 @@ export function toJson(obj: any, space?: string | number | undefined): string {
 
         return value;
       },
-      space,
+      space
     );
   } finally {
     seen.clear();
@@ -55,14 +55,18 @@ export function toJson(obj: any, space?: string | number | undefined): string {
 // Clone object using serialization
 
 export function clone<T>(obj: T): T {
-  if (!obj) return obj;
+  if (!obj) {
+    return obj;
+  }
   return JSON.parse(toJson(obj));
 }
 // Accesses all members of an object by serializing it
 
 export function touch(obj: any): void {
   JSON.stringify(obj, (_k, v) => {
-    if (typeof v === 'object') return v;
+    if (typeof v === 'object') {
+      return v;
+    }
     return '';
   });
 }
@@ -73,8 +77,12 @@ export function touch(obj: any): void {
  * @returns The specific data type including "array" and "null" as distinct types
  */
 export function getDataType(value: JsonValue): DataType {
-  if (Array.isArray(value)) return 'array';
-  if (value === null) return 'null';
+  if (Array.isArray(value)) {
+    return 'array';
+  }
+  if (value === null) {
+    return 'null';
+  }
   return typeof value;
 }
 
@@ -88,7 +96,7 @@ export function tryParseJson(str: string): {
   data: JsonValue;
 } {
   const trimmed = str.trim();
-  if (!(trimmed.startsWith('{') && trimmed.endsWith('}')) && !(trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+  if (!((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']')))) {
     return { success: false, data: str };
   }
   try {
@@ -106,10 +114,12 @@ export function tryParseJson(str: string): {
  * @returns A new JSON value with the updated path
  */
 export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonValue): JsonValue {
-  if (path.length === 0) return value;
+  if (path.length === 0) {
+    return value;
+  }
 
   if (obj === null || obj === undefined) {
-    obj = !Number.isNaN(Number(path[0])) ? [] : {};
+    obj = Number.isNaN(Number(path[0])) ? {} : [];
   }
 
   if (Array.isArray(obj)) {
@@ -118,6 +128,7 @@ export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonVal
   if (typeof obj === 'object' && obj !== null) {
     return updateObject(obj as JsonObject, path, value);
   }
+  // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.error(`Cannot update path ${path.join('.')} in non-object/array value:`, obj);
   return obj;
 }
@@ -130,11 +141,13 @@ function updateArray(array: JsonValue[], path: string[], value: JsonValue): Json
   const arrayIndex = Number(index);
 
   if (Number.isNaN(arrayIndex)) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error(`Invalid array index: ${index}`);
     return array;
   }
 
   if (arrayIndex < 0) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error(`Array index out of bounds: ${arrayIndex} < 0`);
     return array;
   }
@@ -169,6 +182,7 @@ function updateObject(obj: JsonObject, path: string[], value: JsonValue): JsonOb
 
   // Validate object key
   if (typeof key !== 'string') {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error(`Invalid object key: ${key}`);
     return obj;
   }
@@ -195,7 +209,9 @@ function updateObject(obj: JsonObject, path: string[], value: JsonValue): JsonOb
  * @returns The value at the path, or defaultValue if not found
  */
 export function getValueAtPath(obj: JsonValue, path: string[], defaultValue: JsonValue = null): JsonValue {
-  if (path.length === 0) return obj;
+  if (path.length === 0) {
+    return obj;
+  }
 
   const [first, ...rest] = path;
 

@@ -14,15 +14,16 @@ import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { Command } from 'lucide-react';
+
 import WindsurfLogo from '../../../../../assets/windsurf.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
 import { ClientType, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
-interface ClientWindsurfProps {
+type ClientWindsurfProps = {
   mcpServer: MCPServer;
-}
+};
 
 export const ClientWindsurf = ({ mcpServer }: ClientWindsurfProps) => {
   const clusterId = config?.clusterId;
@@ -38,14 +39,14 @@ export const ClientWindsurf = ({ mcpServer }: ClientWindsurfProps) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>In</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                <img src={WindsurfLogo} alt="Windsurf" className="h-4 w-4" /> Windsurf
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+                <img alt="Windsurf" className="h-4 w-4" src={WindsurfLogo} /> Windsurf
               </Text>
               <div className="inline-flex items-center gap-1 whitespace-nowrap">
                 <Kbd>
@@ -65,14 +66,14 @@ export const ClientWindsurf = ({ mcpServer }: ClientWindsurfProps) => {
               <InlineCode className="whitespace-nowrap">~/.codeium/windsurf/mcp_config.json</InlineCode>
               <span>with:</span>
             </div>
-            <DynamicCodeBlock lang="json" code={windsurfConfigJson} />
+            <DynamicCodeBlock code={windsurfConfigJson} lang="json" />
           </ListItem>
           <ListItem>Restart Windsurf and the MCP server should be available for use.</ListItem>
         </List>
       </div>
       <RemoteMCPConnectDocsAlert
-        documentationUrl="https://docs.windsurf.com/windsurf/cascade/mcp"
         clientName="Windsurf"
+        documentationUrl="https://docs.windsurf.com/windsurf/cascade/mcp"
       />
     </div>
   );

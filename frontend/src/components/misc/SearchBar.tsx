@@ -13,6 +13,7 @@ import { SearchField } from '@redpanda-data/ui';
 import { type IReactionDisposer, reaction } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
+
 import { AnimatePresence, animProps_span_searchResult, MotionSpan } from '../../utils/animationProps';
 import { FilterableDataSource } from '../../utils/filterableDataSource';
 
@@ -28,7 +29,7 @@ class SearchBar<TItem> extends Component<{
   placeholderText?: string;
 }> {
   private filteredSource = {} as FilterableDataSource<TItem>;
-  reactionDisposer: IReactionDisposer | undefined = undefined;
+  reactionDisposer: IReactionDisposer | undefined;
 
   /*
         todo: autocomplete:
@@ -50,7 +51,7 @@ class SearchBar<TItem> extends Component<{
       () => this.filteredSource.data,
       (filteredData) => {
         this.props.onFilteredDataChanged(filteredData);
-      },
+      }
     );
   }
 
@@ -61,22 +62,32 @@ class SearchBar<TItem> extends Component<{
 
   componentWillUnmount() {
     this.filteredSource.dispose();
-    if (this.reactionDisposer) this.reactionDisposer();
+    if (this.reactionDisposer) {
+      this.reactionDisposer();
+    }
   }
 
   render() {
     return (
-      <div style={{ marginBottom: '.5rem', padding: '0', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
+      <div
+        style={{
+          marginBottom: '.5rem',
+          padding: '0',
+          whiteSpace: 'nowrap',
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
         {/* <AutoComplete placeholder='Quick Search' size='large'
                 style={{ width: 'auto', padding: '0' }}
                 onChange={v => this.filteredSource.filterText = String(v)}
                 dataSource={['battle-logs', 'customer', 'asdfg', 'kafka', 'some word']}
             > */}
         <SearchField
-          width="350px"
+          placeholderText={this.props.placeholderText}
           searchText={this.props.filterText}
           setSearchText={this.onChange}
-          placeholderText={this.props.placeholderText}
+          width="350px"
           // addonAfter={
           //     <Popover trigger='click' placement='right' title='Search Settings' content={<this.Settings />}>
           //         <Icon type='setting' style={{ color: '#0006' }} />
@@ -105,7 +116,7 @@ class SearchBar<TItem> extends Component<{
           )}
         </AnimatePresence>
       );
-    }).bind(this),
+    }).bind(this)
   );
 
   computeFilterSummary(): { identity: string; node: React.ReactNode } | null {
@@ -117,12 +128,16 @@ class SearchBar<TItem> extends Component<{
       return null;
     }
 
-    if (!this.filteredSource.lastFilterText) return null;
+    if (!this.filteredSource.lastFilterText) {
+      return null;
+    }
 
     const sourceLength = source.length;
     const resultLength = this.filteredSource.data.length;
 
-    if (sourceLength === resultLength) return { identity: 'all', node: <span>Filter matched everything</span> };
+    if (sourceLength === resultLength) {
+      return { identity: 'all', node: <span>Filter matched everything</span> };
+    }
 
     return {
       identity: 'r',

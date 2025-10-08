@@ -16,21 +16,19 @@ export const DeleteUserConfirmModal: FC<{
   userName: string;
   onConfirm: () => void;
   buttonEl: React.ReactElement;
-}> = ({ userName, onConfirm, buttonEl }) => {
-  return (
-    <ConfirmItemDeleteModal
-      heading={`Delete user ${userName}`}
-      itemType="user"
-      trigger={buttonEl}
-      primaryActionLabel="Delete"
-      secondaryActionLabel="Cancel"
-      onConfirm={onConfirm}
-      inputMatchText={userName}
-    >
-      <Text>
-        This user has roles and ACLs assigned to it. Those roles and ACLs will not be deleted, but the user will need to
-        be recreated and reassigned to them to be used again. To confirm, type the user name in the box below.
-      </Text>
-    </ConfirmItemDeleteModal>
-  );
-};
+}> = ({ userName, onConfirm, buttonEl }) => (
+  <ConfirmItemDeleteModal
+    heading={`Delete user ${userName}`}
+    inputMatchText={userName}
+    itemType="user"
+    onConfirm={onConfirm}
+    primaryActionLabel="Delete"
+    secondaryActionLabel="Cancel"
+    trigger={buttonEl}
+  >
+    <Text>
+      This user has roles and ACLs assigned to it. Those roles and ACLs will not be deleted, but the user will need to
+      be recreated and reassigned to them to be used again. To confirm, type the user name in the box below.
+    </Text>
+  </ConfirmItemDeleteModal>
+);

@@ -12,6 +12,8 @@
 import { comparer, observable, transaction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
 import React, { useEffect, useState } from 'react';
+
+import { ConfigPage } from './dynamic-ui/components';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, createMessageSearch, type MessageSearch, type MessageSearchRequest } from '../../../state/backendApi';
 import { ConnectClusterStore } from '../../../state/connect/state';
@@ -25,7 +27,6 @@ import {
 } from '../../../state/restInterfaces';
 import { Code, TimestampDisplay } from '../../../utils/tsxUtils';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { ConfigPage } from './dynamic-ui/components';
 import './helper';
 import {
   Alert,
@@ -52,6 +53,9 @@ import {
   useDisclosure,
 } from '@redpanda-data/ui';
 import type { ColumnDef } from '@tanstack/react-table';
+
+import { getConnectorFriendlyName } from './ConnectorBoxCard';
+import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { PartitionOffsetOrigin, uiSettings } from '../../../state/ui';
@@ -61,20 +65,18 @@ import { delay, encodeBase64, titleCase } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
-import { getConnectorFriendlyName } from './ConnectorBoxCard';
-import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
 
 const LOGS_TOPIC_NAME = '__redpanda.connectors_logs';
 
 export type UpdatingConnectorData = { clusterName: string; connectorName: string };
 export type RestartingTaskData = { clusterName: string; connectorName: string; taskId: number };
-interface LocalConnectorState {
+type LocalConnectorState = {
   pausingConnector: ClusterConnectorInfo | null;
   restartingConnector: ClusterConnectorInfo | null;
   updatingConnector: UpdatingConnectorData | null;
   restartingTask: RestartingTaskData | null;
   deletingConnector: string | null;
-}
+};
 const KafkaConnectorMain = observer(
   ({
     clusterName,
@@ -93,7 +95,8 @@ const KafkaConnectorMain = observer(
       const init = async () => {
         await connectClusterStore.setup();
       };
-      init();
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
+      init().catch(console.error);
     }, [connectClusterStore]);
 
     const $state = useLocalObservable<LocalConnectorState>(() => ({
@@ -104,7 +107,7 @@ const KafkaConnectorMain = observer(
       deletingConnector: null,
     }));
     if (!connectClusterStore.isInitialized) {
-      return <Skeleton mt={5} noOfLines={20} height={4} />;
+      return <Skeleton height={4} mt={5} noOfLines={20} />;
     }
 
     const connectorStore = connectClusterStore.getConnectorStore(connectorName);
@@ -112,25 +115,27 @@ const KafkaConnectorMain = observer(
     const connector = connectClusterStore.getRemoteConnector(connectorName);
 
     const canEdit = connectClusterStore.canEdit;
-    if (!connector) return null;
+    if (!connector) {
+      return null;
+    }
 
     return (
       <>
         {/* [Pause] [Restart] [Delete] */}
-        <Flex flexDirection="row" alignItems="center" gap="3">
+        <Flex alignItems="center" flexDirection="row" gap="3">
           {/* [Pause/Resume] */}
           {connectClusterStore.validateConnectorState(connectorName, ['RUNNING', 'PAUSED']) ? (
             <Tooltip
-              placement="top"
+              hasArrow={true}
               isDisabled={canEdit === true}
               label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
-              hasArrow={true}
+              placement="top"
             >
               <Button
                 isDisabled={!canEdit}
+                minWidth="32"
                 onClick={() => ($state.pausingConnector = connector)}
                 variant="outline"
-                minWidth="32"
               >
                 {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'}
               </Button>
@@ -139,16 +144,16 @@ const KafkaConnectorMain = observer(
 
           {/* [Restart] */}
           <Tooltip
-            placement="top"
+            hasArrow={true}
             isDisabled={canEdit === true}
             label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
-            hasArrow={true}
+            placement="top"
           >
             <Button
               isDisabled={!canEdit}
+              minWidth="32"
               onClick={() => ($state.restartingConnector = connector)}
               variant="outline"
-              minWidth="32"
             >
               Restart
             </Button>
@@ -156,17 +161,17 @@ const KafkaConnectorMain = observer(
 
           {/* [Delete] */}
           <Tooltip
-            placement="top"
+            hasArrow={true}
             isDisabled={canEdit === true}
             label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
-            hasArrow={true}
+            placement="top"
           >
             <Button
-              variant="outline"
               colorScheme="red"
               isDisabled={!canEdit}
-              onClick={() => ($state.deletingConnector = connectorName)}
               minWidth="32"
+              onClick={() => ($state.deletingConnector = connectorName)}
+              variant="outline"
             >
               Delete
             </Button>
@@ -174,8 +179,6 @@ const KafkaConnectorMain = observer(
         </Flex>
 
         <Tabs
-          marginBlock="2"
-          size="lg"
           items={[
             {
               key: 'overview',
@@ -202,17 +205,19 @@ const KafkaConnectorMain = observer(
                   {/* Update Config Button */}
                   <Flex m={4} mb={6}>
                     <Tooltip
-                      placement="top"
+                      hasArrow={true}
                       isDisabled={canEdit === true}
                       label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
-                      hasArrow={true}
+                      placement="top"
                     >
                       <Button
-                        variant="outline"
-                        style={{ width: '200px' }}
                         isDisabled={(() => {
-                          if (!canEdit) return true;
-                          if (!connector) return true;
+                          if (!canEdit) {
+                            return true;
+                          }
+                          if (!connector) {
+                            return true;
+                          }
                           const connectorConfigObject = connectorStore?.getConfigObject();
                           if (connectorConfigObject && comparer.shallow(connector.config, connectorConfigObject)) {
                             return true;
@@ -221,6 +226,8 @@ const KafkaConnectorMain = observer(
                         onClick={() => {
                           $state.updatingConnector = { clusterName, connectorName };
                         }}
+                        style={{ width: '200px' }}
+                        variant="outline"
                       >
                         Update Config
                       </Button>
@@ -240,11 +247,12 @@ const KafkaConnectorMain = observer(
               ),
             },
           ]}
+          marginBlock="2"
+          size="lg"
         />
 
         {/* Pause/Resume Modal */}
         <ConfirmModal<ClusterConnectorInfo>
-          target={() => $state.pausingConnector}
           clearTarget={() => ($state.pausingConnector = null)}
           content={(c) => (
             <>
@@ -252,53 +260,50 @@ const KafkaConnectorMain = observer(
               <strong>{c.name}</strong>?
             </>
           )}
+          onOk={async (c) => {
+            if (connectClusterStore.validateConnectorState(connectorName, ['RUNNING'])) {
+              await api.pauseConnector(clusterName, c.name);
+            } else {
+              await api.resumeConnector(clusterName, c.name);
+            }
+            await delay(500);
+            await refreshData(true);
+          }}
           successMessage={(c) => (
             <>
               {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Resumed' : 'Paused'} connector{' '}
               <strong>{c.name}</strong>
             </>
           )}
-          onOk={async (c) => {
-            if (connectClusterStore.validateConnectorState(connectorName, ['RUNNING']))
-              await api.pauseConnector(clusterName, c.name);
-            else await api.resumeConnector(clusterName, c.name);
-            await delay(500);
-            await refreshData(true);
-          }}
+          target={() => $state.pausingConnector}
         />
 
         {/* Restart */}
         <ConfirmModal<ClusterConnectorInfo>
-          target={() => $state.restartingConnector}
           clearTarget={() => ($state.restartingConnector = null)}
           content={(c) => (
             <>
               Restart connector <strong>{c.name}</strong>?
             </>
           )}
+          onOk={async (c) => {
+            await api.restartConnector(clusterName, c.name);
+            await refreshData(true);
+          }}
           successMessage={(c) => (
             <>
               Successfully restarted connector <strong>{c.name}</strong>
             </>
           )}
-          onOk={async (c) => {
-            await api.restartConnector(clusterName, c.name);
-            await refreshData(true);
-          }}
+          target={() => $state.restartingConnector}
         />
 
         {/* Update Config */}
         <ConfirmModal<UpdatingConnectorData>
-          target={() => $state.updatingConnector}
           clearTarget={() => ($state.updatingConnector = null)}
           content={(c) => (
             <>
               Update configuration of connector <strong>{c.connectorName}</strong>?
-            </>
-          )}
-          successMessage={(c) => (
-            <>
-              Successfully updated config of <strong>{c.connectorName}</strong>
             </>
           )}
           onOk={async (c) => {
@@ -307,40 +312,40 @@ const KafkaConnectorMain = observer(
             appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(clusterName)}`);
             await refreshData(true);
           }}
+          successMessage={(c) => (
+            <>
+              Successfully updated config of <strong>{c.connectorName}</strong>
+            </>
+          )}
+          target={() => $state.updatingConnector}
         />
 
         {/* Restart Task */}
         <ConfirmModal<RestartingTaskData>
-          target={() => $state.restartingTask}
           clearTarget={() => ($state.restartingTask = null)}
           content={(c) => (
             <>
               Restart task <strong>{c.taskId}</strong> of <strong>{c.connectorName}</strong>?
             </>
           )}
+          onOk={async (c) => {
+            await api.restartTask(c.clusterName, c.connectorName, c.taskId);
+            await refreshData(true);
+          }}
           successMessage={(c) => (
             <>
               Successfully restarted <strong>{c.taskId}</strong> of <strong>{c.connectorName}</strong>
             </>
           )}
-          onOk={async (c) => {
-            await api.restartTask(c.clusterName, c.connectorName, c.taskId);
-            await refreshData(true);
-          }}
+          target={() => $state.restartingTask}
         />
 
         {/* Delete Connector */}
         <ConfirmModal<string>
-          target={() => $state.deletingConnector}
           clearTarget={() => ($state.deletingConnector = null)}
           content={(c) => (
             <>
               Delete connector <strong>{c}</strong>?
-            </>
-          )}
-          successMessage={(c) => (
-            <>
-              Deleted connector <strong>{c}</strong>
             </>
           )}
           onOk={async (_connectorName) => {
@@ -348,10 +353,16 @@ const KafkaConnectorMain = observer(
             await refreshData(true);
             appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(clusterName)}`);
           }}
+          successMessage={(c) => (
+            <>
+              Deleted connector <strong>{c}</strong>
+            </>
+          )}
+          target={() => $state.deletingConnector}
         />
       </>
     );
-  },
+  }
 );
 
 const ConfigOverviewTab = observer(
@@ -361,27 +372,27 @@ const ConfigOverviewTab = observer(
 
     return (
       <Grid
+        alignItems="start"
+        gap="6"
+        gridTemplateRows="auto"
         templateAreas={`
                 "errors errors"
                 "health details"
                 "tasks details"
             `}
-        gridTemplateRows="auto"
-        alignItems="start"
-        gap="6"
       >
-        <Flex gridArea="errors" flexDirection="column" gap="2">
+        <Flex flexDirection="column" gap="2" gridArea="errors">
           {connector.errors.map((e) => (
-            <ConnectorErrorModal key={e.title} error={e} />
+            <ConnectorErrorModal error={e} key={e.title} />
           ))}
         </Flex>
 
         <Section gridArea="health">
           <Flex flexDirection="row" gap="4" m="1">
-            <Box width="5px" borderRadius="3px" background={statusColors[connector.status]} />
+            <Box background={statusColors[connector.status]} borderRadius="3px" width="5px" />
 
             <Flex flexDirection="column">
-              <Text fontWeight="semibold" fontSize="3xl">
+              <Text fontSize="3xl" fontWeight="semibold">
                 {titleCase(connector.status)}
               </Text>
               <Text opacity=".5">Status</Text>
@@ -389,20 +400,16 @@ const ConfigOverviewTab = observer(
           </Flex>
         </Section>
 
-        <Section py={4} gridArea="tasks" minWidth="500px">
-          <Flex alignItems="center" mt="2" mb="6" gap="2">
-            <Heading as="h3" fontSize="1rem" fontWeight="semibold" textTransform="uppercase" color="blackAlpha.800">
+        <Section gridArea="tasks" minWidth="500px" py={4}>
+          <Flex alignItems="center" gap="2" mb="6" mt="2">
+            <Heading as="h3" color="blackAlpha.800" fontSize="1rem" fontWeight="semibold" textTransform="uppercase">
               Tasks
             </Heading>
-            <Text opacity=".5" fontWeight="normal">
+            <Text fontWeight="normal" opacity=".5">
               ({connectClusterStore.getConnectorTasks(connectorName)?.length || 0})
             </Text>
           </Flex>
           <DataTable<ClusterConnectorTaskInfo>
-            data={connectClusterStore.getConnectorTasks(connectorName) ?? []}
-            pagination
-            defaultPageSize={10}
-            sorting
             columns={[
               {
                 header: 'Task',
@@ -425,18 +432,22 @@ const ConfigOverviewTab = observer(
                 cell: ({ row: { original } }) => <Code nowrap>{original.workerId}</Code>,
               },
             ]}
+            data={connectClusterStore.getConnectorTasks(connectorName) ?? []}
+            defaultPageSize={10}
+            pagination
+            sorting
           />
         </Section>
 
-        <Section py={4} gridArea="details">
+        <Section gridArea="details" py={4}>
           <Heading
             as="h3"
-            mb="6"
-            mt="2"
+            color="blackAlpha.800"
             fontSize="1rem"
             fontWeight="semibold"
+            mb="6"
+            mt="2"
             textTransform="uppercase"
-            color="blackAlpha.800"
           >
             Connector Details
           </Heading>
@@ -449,7 +460,7 @@ const ConfigOverviewTab = observer(
         </Section>
       </Grid>
     );
-  },
+  }
 );
 
 const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
@@ -461,27 +472,27 @@ const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
 
   return (
     <>
-      <Alert status={errorType} variant="solid" height="12" borderRadius="8px" onClick={onOpen}>
+      <Alert borderRadius="8px" height="12" onClick={onOpen} status={errorType} variant="solid">
         <AlertIcon />
-        <Box wordBreak="break-all" whiteSpace="break-spaces">
+        <Box whiteSpace="break-spaces" wordBreak="break-all">
           {p.error.title}
         </Box>
-        <Button ml="auto" variant="ghost" colorScheme="gray" size="sm" mt="1px">
+        <Button colorScheme="gray" ml="auto" mt="1px" size="sm" variant="ghost">
           View details
         </Button>
       </Alert>
 
-      <RPModal onClose={onClose} size="6xl" isOpen={isOpen}>
+      <RPModal isOpen={isOpen} onClose={onClose} size="6xl">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>{p.error.title}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <CodeBlock language="json" codeString={p.error.content} showScroll={false} />
+            <CodeBlock codeString={p.error.content} language="json" showScroll={false} />
           </ModalBody>
           <ModalFooter gap={2}>
             {hasConnectorLogs && (
-              <Button onClick={() => appGlobal.historyPush(`/topics/${LOGS_TOPIC_NAME}`)} mr="auto">
+              <Button mr="auto" onClick={() => appGlobal.historyPush(`/topics/${LOGS_TOPIC_NAME}`)}>
                 Show Logs
               </Button>
             )}
@@ -508,10 +519,12 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
       {
         canBeTruncated: true,
         canBeCopied: true,
-      },
+      }
     );
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    this.refreshData(true).catch(console.error);
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
   async refreshData(force: boolean): Promise<void> {
@@ -527,7 +540,9 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
     const clusterName = decodeURIComponent(this.props.clusterName);
     const connectorName = decodeURIComponent(this.props.connector);
 
-    if (api.connectConnectors?.isConfigured === false) return <NotConfigured />;
+    if (api.connectConnectors?.isConfigured === false) {
+      return <NotConfigured />;
+    }
 
     return (
       <PageContent>
@@ -547,23 +562,37 @@ const ConnectorDetails = observer(
 
     const items = allProps
       .filter((x) => {
-        if (x.isHidden) return false;
-        if (x.entry.definition.type === DataType.Password) return false;
-        if (x.entry.definition.importance !== PropertyImportance.High) return false;
+        if (x.isHidden) {
+          return false;
+        }
+        if (x.entry.definition.type === DataType.Password) {
+          return false;
+        }
+        if (x.entry.definition.importance !== PropertyImportance.High) {
+          return false;
+        }
 
-        if (!x.value) return false;
-        if (x.name === 'name') return false;
+        if (!x.value) {
+          return false;
+        }
+        if (x.name === 'name') {
+          return false;
+        }
 
         return true;
       })
       .orderBy((x) => {
         let i = 0;
-        for (const s of store?.connectorStepDefinitions ?? [])
-          for (const g of s.groups)
+        for (const s of store?.connectorStepDefinitions ?? []) {
+          for (const g of s.groups) {
             for (const p of g.config_keys) {
-              if (p === x.name) return i;
+              if (p === x.name) {
+                return i;
+              }
               i++;
             }
+          }
+        }
 
         return 0;
       });
@@ -591,20 +620,20 @@ const ConnectorDetails = observer(
     });
 
     return (
-      <Grid templateColumns="auto 1fr" rowGap="3" columnGap="10">
+      <Grid columnGap="10" rowGap="3" templateColumns="auto 1fr">
         {displayEntries.map((x) => (
           <React.Fragment key={x.name}>
             <Text fontWeight="semibold" whiteSpace="nowrap">
               {x.name}
             </Text>
-            <Text whiteSpace="nowrap" textOverflow="ellipsis" overflow="hidden" title={x.value}>
+            <Text overflow="hidden" textOverflow="ellipsis" title={x.value} whiteSpace="nowrap">
               {x.value}
             </Text>
           </React.Fragment>
         ))}
       </Grid>
     );
-  },
+  }
 );
 
 const LogsTab = observer(
@@ -640,7 +669,7 @@ const LogsTab = observer(
         partitionId: partitionID,
         startOffset: offset,
         startTimestamp: 0,
-        topicName: topicName,
+        topicName,
         includeRawPayload: true,
         ignoreSizeLimit: true,
         keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
@@ -655,15 +684,17 @@ const LogsTab = observer(
         if (indexOfOldMessage > -1) {
           state.messages[indexOfOldMessage] = messages[0];
         } else {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error('LoadLargeMessage: cannot find old message to replace', {
             searchReq,
             messages,
           });
           throw new Error(
-            'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)',
+            'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
           );
         }
       } else {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error('LoadLargeMessage: messages response is empty', { messages });
         throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
       }
@@ -678,7 +709,7 @@ const LogsTab = observer(
           row: {
             original: { timestamp },
           },
-        }) => <TimestampDisplay unixEpochMillisecond={timestamp} format="default" />,
+        }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
         size: 30,
       },
       {
@@ -686,9 +717,9 @@ const LogsTab = observer(
         accessorKey: 'value',
         cell: ({ row: { original } }) => (
           <MessagePreview
+            isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
             msg={original}
             previewFields={() => []}
-            isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
           />
         ),
         size: Number.MAX_SAFE_INTEGER,
@@ -696,7 +727,9 @@ const LogsTab = observer(
     ];
 
     const filteredMessages = state.messages.filter((x) => {
-      if (!uiSettings.connectorsDetails.logsQuickSearch) return true;
+      if (!uiSettings.connectorsDetails.logsQuickSearch) {
+        return true;
+      }
       return isFilterMatch(uiSettings.connectorsDetails.logsQuickSearch, x);
     });
 
@@ -707,49 +740,55 @@ const LogsTab = observer(
         <Section minWidth="800px">
           <Flex mb="6">
             <SearchField
-              width="230px"
               searchText={uiSettings.connectorsDetails.logsQuickSearch}
               setSearchText={(x) => (uiSettings.connectorsDetails.logsQuickSearch = x)}
+              width="230px"
             />
-            <Button variant="outline" ml="auto" onClick={() => setState(createLogsTabState())}>
+            <Button ml="auto" onClick={() => setState(createLogsTabState())} variant="outline">
               Refresh logs
             </Button>
           </Flex>
 
           <DataTable<TopicMessage>
+            columns={messageTableColumns}
             data={filteredMessages}
             emptyText="No messages"
-            columns={messageTableColumns}
-            sorting={uiSettings.connectorsDetails.sorting ?? []}
             onSortingChange={(sorting) => {
               uiSettings.connectorsDetails.sorting =
                 typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
             }}
             pagination={paginationParams}
+            sorting={uiSettings.connectorsDetails.sorting ?? []}
             subComponent={({ row: { original } }) => (
               <ExpandedMessage
-                msg={original}
                 loadLargeMessage={() =>
                   loadLargeMessage(state.search.searchRequest?.topicName ?? '', original.partitionID, original.offset)
                 }
+                msg={original}
               />
             )}
           />
         </Section>
       </>
     );
-  },
+  }
 );
 
 function isFilterMatch(str: string, m: TopicMessage) {
   str = str.toLowerCase();
-  if (m.offset.toString().toLowerCase().includes(str)) return true;
-  if (m.keyJson?.toLowerCase().includes(str)) return true;
-  if (m.valueJson?.toLowerCase().includes(str)) return true;
+  if (m.offset.toString().toLowerCase().includes(str)) {
+    return true;
+  }
+  if (m.keyJson?.toLowerCase().includes(str)) {
+    return true;
+  }
+  if (m.valueJson?.toLowerCase().includes(str)) {
+    return true;
+  }
   return false;
 }
 
-async function executeMessageSearch(search: MessageSearch, topicName: string, connectorKey: string) {
+function executeMessageSearch(search: MessageSearch, topicName: string, connectorKey: string) {
   const filterCode: string = `return key == "${connectorKey}";`;
 
   const lastXHours = 5;
@@ -757,7 +796,7 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, co
   startTime.setHours(startTime.getHours() - lastXHours);
 
   const request = {
-    topicName: topicName,
+    topicName,
     partitionId: -1,
 
     startOffset: PartitionOffsetOrigin.Timestamp,
@@ -772,16 +811,18 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, co
 
   // All of this should be part of "backendApi.ts", starting a message search should return an observable object,
   // so any changes in phase, messages, error, etc can be used immediately in the ui
-  return transaction(async () => {
+  return transaction(() => {
     try {
-      search.startSearch(request).catch((err) => {
+      return search.startSearch(request).catch((err) => {
         const msg = (err as Error).message ?? String(err);
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(`error in connectorLogsMessageSearch: ${msg}`);
         return [];
       });
     } catch (error: any) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`error in connectorLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
-      return [];
+      return Promise.resolve([]);
     }
   });
 }

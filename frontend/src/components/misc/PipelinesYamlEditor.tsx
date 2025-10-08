@@ -14,12 +14,14 @@ import 'monaco-editor';
 import type { editor } from 'monaco-editor';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
 import { useCallback, useEffect, useState } from 'react';
-import benthosSchema from '../../assets/rp-connect-schema.json';
+
+import benthosSchema from '../../assets/rp-connect-schema.json' with { type: 'json' };
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;
 
-export type { IStandaloneCodeEditor, IStandaloneDiffEditor, Monaco };
+export type { IStandaloneCodeEditor, IStandaloneDiffEditor };
+export type { EditorProps, Monaco } from '@monaco-editor/react';
 
 export type PipelinesYamlEditorProps = EditorProps & {
   'data-testid'?: string;
@@ -79,7 +81,7 @@ export const monacoYamlOptions = {
 
 export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
   const { options: givenOptions, ...rest } = props;
-  const options = Object.assign({}, defaultOptions, givenOptions ?? {});
+  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
   const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
 
   useEffect(() => {
@@ -91,23 +93,23 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
     };
   }, [yaml]);
 
-  const setMonacoOptions = useCallback(async (monaco: Monaco) => {
+  const setMonacoOptions = useCallback((monaco: Monaco) => {
     const yaml = configureMonacoYaml(monaco, monacoYamlOptions);
     setYaml(yaml);
   }, []);
 
   return (
     <Editor
+      beforeMount={(monaco) => setMonacoOptions(monaco)}
+      defaultLanguage="yaml"
+      defaultValue={''}
       loading={<LoadingPlaceholder />}
+      options={options}
+      path={'new-connector.yaml'}
       wrapperProps={{
         className: 'kowlEditor',
         style: { minWidth: 0, width: '100px', display: 'flex', flexBasis: '100%' },
       }}
-      defaultValue={''}
-      path={'new-connector.yaml'}
-      defaultLanguage="yaml"
-      options={options}
-      beforeMount={(monaco) => setMonacoOptions(monaco)}
       {...rest}
     />
   );

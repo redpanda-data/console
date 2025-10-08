@@ -2,6 +2,7 @@ import { create } from '@bufbuild/protobuf';
 import { Button, ButtonGroup, createStandaloneToast, Flex, FormField, Input, PasswordInput } from '@redpanda-data/ui';
 import { action, computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+
 import { CreateSecretRequestSchema, Scope } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../../state/backendApi';
@@ -14,6 +15,7 @@ import { formatPipelineError } from '../errors';
 const { ToastContainer, toast } = createStandaloneToast();
 
 const returnSecretTab = '/connect-clusters?defaultTab=redpanda-connect-secret';
+const SECRET_NAME_VALIDATION_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/;
 
 @observer
 class RpConnectSecretCreate extends PageComponent {
@@ -45,26 +47,25 @@ class RpConnectSecretCreate extends PageComponent {
     appGlobal.historyPush(returnSecretTab);
   }
 
-  async createSecret() {
+  createSecret() {
     this.isCreating = true;
     this.id = this.id.toUpperCase();
     rpcnSecretManagerApi
       .create(
         create(CreateSecretRequestSchema, {
           id: this.id,
-          // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
           secretData: base64ToUInt8Array(encodeBase64(this.secret)),
           scopes: [Scope.REDPANDA_CONNECT],
-        }),
+        })
       )
-      .then(async () => {
+      .then(() => {
         toast({
           status: 'success',
           duration: 4000,
           isClosable: false,
           title: 'Secret created',
         });
-        await pipelinesApi.refreshPipelines(true);
+        pipelinesApi.refreshPipelines(true);
         appGlobal.historyPush(returnSecretTab);
       })
       .catch((err) => {
@@ -89,7 +90,7 @@ class RpConnectSecretCreate extends PageComponent {
     if (this.id === '') {
       return '';
     }
-    if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(this.id)) {
+    if (!SECRET_NAME_VALIDATION_REGEX.test(this.id)) {
       return 'The name you entered is invalid. It must start with an letter (A–Z) and can only contain letters (A–Z), digits (0–9), and underscores (_).';
     }
     if (this.id.length > 255) {
@@ -99,7 +100,9 @@ class RpConnectSecretCreate extends PageComponent {
   }
 
   render() {
-    if (!rpcnSecretManagerApi.secrets) return DefaultSkeleton;
+    if (!rpcnSecretManagerApi.secrets) {
+      return DefaultSkeleton;
+    }
 
     const isIdEmpty = this.id.trim().length === 0;
     const isSecretEmpty = this.secret.trim().length === 0;
@@ -109,23 +112,23 @@ class RpConnectSecretCreate extends PageComponent {
         <ToastContainer />
         <Flex flexDirection="column" gap={5}>
           <FormField
-            label="Secret name"
-            isInvalid={Boolean(this.isNameValid)}
-            errorText={this.isNameValid}
             description={'This secret name will be stored in upper case.'}
+            errorText={this.isNameValid}
+            isInvalid={Boolean(this.isNameValid)}
+            label="Secret name"
           >
             <Flex alignItems="center" gap="2">
               <Input
-                placeholder="Enter a secret name..."
                 data-testid="secretId"
-                pattern="^[A-Z][A-Z0-9_]*$"
-                min={1}
-                max={255}
-                isRequired
-                value={this.id}
-                onChange={(x) => (this.id = x.target.value)}
-                width={500}
                 disabled={this.isCreating}
+                isRequired
+                max={255}
+                min={1}
+                onChange={(x) => (this.id = x.target.value)}
+                pattern="^[A-Z][A-Z0-9_]*$"
+                placeholder="Enter a secret name..."
+                value={this.id}
+                width={500}
               />
             </Flex>
           </FormField>
@@ -133,32 +136,32 @@ class RpConnectSecretCreate extends PageComponent {
           <FormField label="Secret value">
             <Flex alignItems="center" width={500}>
               <PasswordInput
-                placeholder="Enter a secret value..."
                 data-testid="secretValue"
-                isRequired
-                value={this.secret}
-                onChange={(x) => (this.secret = x.target.value)}
-                width={500}
-                type="password"
                 isDisabled={this.isCreating}
+                isRequired
+                onChange={(x) => (this.secret = x.target.value)}
+                placeholder="Enter a secret value..."
+                type="password"
+                value={this.secret}
+                width={500}
               />
             </Flex>
           </FormField>
 
           <ButtonGroup>
             <Button
-              isLoading={this.isCreating}
-              isDisabled={isIdEmpty || isSecretEmpty || Boolean(this.isNameValid)}
-              onClick={action(() => this.createSecret())}
               data-testid={'submit-create-rpcn-secret'}
+              isDisabled={isIdEmpty || isSecretEmpty || Boolean(this.isNameValid)}
+              isLoading={this.isCreating}
+              onClick={action(() => this.createSecret())}
             >
               Create secret
             </Button>
             <Button
-              variant="link"
+              data-testid={'cancel-create-rpcn-secret'}
               disabled={this.isCreating}
               onClick={action(() => this.cancel())}
-              data-testid={'cancel-create-rpcn-secret'}
+              variant="link"
             >
               Cancel
             </Button>

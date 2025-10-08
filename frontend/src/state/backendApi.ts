@@ -25,67 +25,7 @@ import {
 import { comparer, computed, observable, runInAction, transaction } from 'mobx';
 import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
-import { config as appConfig, isEmbedded } from '../config';
-import { addHeapEventProperties, trackHeapUser } from '../heap/heap.helper';
-import { trackHubspotUser } from '../hubspot/hubspot.helper';
-import {
-  AuthenticationMethod,
-  type GetIdentityResponse,
-  KafkaAclOperation,
-  RedpandaCapability,
-  SchemaRegistryCapability,
-} from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
-import { KafkaDistribution } from '../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
-import {
-  PayloadEncoding,
-  PayloadEncodingSchema,
-  CompressionType as ProtoCompressionType,
-} from '../protogen/redpanda/api/console/v1alpha1/common_pb';
-import {
-  type CreateDebugBundleRequest,
-  type CreateDebugBundleResponse,
-  type DebugBundleStatus,
-  DebugBundleStatus_Status,
-  type GetClusterHealthResponse,
-  type GetDebugBundleStatusResponse_DebugBundleBrokerStatus,
-} from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
-import type {
-  License,
-  ListEnterpriseFeaturesResponse_Feature,
-  SetLicenseRequest,
-  SetLicenseResponse,
-} from '../protogen/redpanda/api/console/v1alpha1/license_pb';
-import type {
-  PublishMessageRequest,
-  PublishMessageResponse,
-} from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
-import type { ListTransformsResponse } from '../protogen/redpanda/api/console/v1alpha1/transform_pb';
-import {
-  GetPipelinesBySecretsRequestSchema as GetPipelinesBySecretsRequestSchemaDataPlane,
-  type Pipeline,
-  type PipelineCreate,
-  type PipelineUpdate,
-} from '../protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import {
-  type CreateSecretRequest,
-  type DeleteSecretRequest,
-  type ListSecretScopesRequest,
-  ListSecretsRequestSchema as ListSecretsRequestSchemaDataPlane,
-  Scope,
-  type Secret,
-  type UpdateSecretRequest,
-} from '../protogen/redpanda/api/dataplane/v1/secret_pb';
-import type {
-  KnowledgeBase,
-  KnowledgeBaseCreate,
-  KnowledgeBaseUpdate,
-} from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { getBasePath, getBuildDate } from '../utils/env';
-import fetchWithTimeout from '../utils/fetchWithTimeout';
-import { toJson } from '../utils/jsonUtils';
-import { LazyMap } from '../utils/LazyMap';
-import { ObjToKv } from '../utils/tsxUtils';
-import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
+
 import { appGlobal } from './appGlobal';
 import {
   AclRequestDefault,
@@ -178,6 +118,67 @@ import {
 import { Features } from './supportedFeatures';
 import { PartitionOffsetOrigin } from './ui';
 import { uiState } from './uiState';
+import { config as appConfig, isEmbedded } from '../config';
+import { addHeapEventProperties, trackHeapUser } from '../heap/heap.helper';
+import { trackHubspotUser } from '../hubspot/hubspot.helper';
+import {
+  AuthenticationMethod,
+  type GetIdentityResponse,
+  KafkaAclOperation,
+  RedpandaCapability,
+  SchemaRegistryCapability,
+} from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import { KafkaDistribution } from '../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
+import {
+  PayloadEncoding,
+  PayloadEncodingSchema,
+  CompressionType as ProtoCompressionType,
+} from '../protogen/redpanda/api/console/v1alpha1/common_pb';
+import {
+  type CreateDebugBundleRequest,
+  type CreateDebugBundleResponse,
+  type DebugBundleStatus,
+  DebugBundleStatus_Status,
+  type GetClusterHealthResponse,
+  type GetDebugBundleStatusResponse_DebugBundleBrokerStatus,
+} from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import type {
+  License,
+  ListEnterpriseFeaturesResponse_Feature,
+  SetLicenseRequest,
+  SetLicenseResponse,
+} from '../protogen/redpanda/api/console/v1alpha1/license_pb';
+import type {
+  PublishMessageRequest,
+  PublishMessageResponse,
+} from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
+import type { ListTransformsResponse } from '../protogen/redpanda/api/console/v1alpha1/transform_pb';
+import {
+  GetPipelinesBySecretsRequestSchema as GetPipelinesBySecretsRequestSchemaDataPlane,
+  type Pipeline,
+  type PipelineCreate,
+  type PipelineUpdate,
+} from '../protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import {
+  type CreateSecretRequest,
+  type DeleteSecretRequest,
+  type ListSecretScopesRequest,
+  ListSecretsRequestSchema as ListSecretsRequestSchemaDataPlane,
+  Scope,
+  type Secret,
+  type UpdateSecretRequest,
+} from '../protogen/redpanda/api/dataplane/v1/secret_pb';
+import type {
+  KnowledgeBase,
+  KnowledgeBaseCreate,
+  KnowledgeBaseUpdate,
+} from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { getBasePath, getBuildDate } from '../utils/env';
+import fetchWithTimeout from '../utils/fetchWithTimeout';
+import { toJson } from '../utils/jsonUtils';
+import { LazyMap } from '../utils/LazyMap';
+import { ObjToKv } from '../utils/tsxUtils';
+import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -226,6 +227,7 @@ async function handle401(res: Response) {
   try {
     const text = await res.text();
     const obj = JSON.parse(text);
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.log(`unauthorized message: ${text}`);
 
     const err = obj as ApiError;
@@ -255,11 +257,18 @@ async function handle401(res: Response) {
 function processVersionInfo(headers: Headers) {
   try {
     for (const [k, v] of headers) {
-      if (k.toLowerCase() !== 'app-build-timestamp') continue;
+      if (k.toLowerCase() !== 'app-build-timestamp') {
+        continue;
+      }
 
       const serverBuildTimestamp = Number(v);
-      if (v != null && v !== '' && Number.isFinite(serverBuildTimestamp)) {
-        if (uiState.serverBuildTimestamp !== serverBuildTimestamp) uiState.serverBuildTimestamp = serverBuildTimestamp;
+      if (
+        v != null &&
+        v !== '' &&
+        Number.isFinite(serverBuildTimestamp) &&
+        uiState.serverBuildTimestamp !== serverBuildTimestamp
+      ) {
+        uiState.serverBuildTimestamp = serverBuildTimestamp;
       }
 
       return;
@@ -462,7 +471,9 @@ const apiStore = {
   },
   async refreshUserData() {
     const client = appConfig.authenticationClient;
-    if (!client) throw new Error('security client is not initialized');
+    if (!client) {
+      throw new Error('security client is not initialized');
+    }
 
     await client
       .getIdentity({})
@@ -602,7 +613,8 @@ const apiStore = {
     cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force).then((v) => {
       if (v?.topics != null) {
         for (const t of v.topics) {
-          if (!t.allowedActions) continue;
+          if (!t.allowedActions) {
+          }
 
           // DEBUG: randomly remove some allowedActions
           /*
@@ -618,10 +630,10 @@ const apiStore = {
     }, addError);
   },
 
-  async refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
+  refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
     const promise = cachedApiRequest<TopicConfigResponse | null>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/configuration`,
-      force,
+      force
     ).then((v) => {
       if (!v) {
         this.topicConfig.delete(topicName);
@@ -657,7 +669,7 @@ const apiStore = {
   refreshTopicDocumentation(topicName: string, force?: boolean) {
     cachedApiRequest<TopicDocumentationResponse>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/documentation`,
-      force,
+      force
     ).then((v) => {
       const text = v.documentation.markdown == null ? null : decodeBase64(v.documentation.markdown);
       v.documentation.text = text;
@@ -672,7 +684,7 @@ const apiStore = {
     return parseOrUnwrap<any>(response, null);
   },
 
-  async deleteTopicRecords(topicName: string, offset: number, partitionId?: number) {
+  deleteTopicRecords(topicName: string, offset: number, partitionId?: number) {
     const partitions =
       partitionId !== undefined
         ? [{ partitionId, offset }]
@@ -686,7 +698,7 @@ const apiStore = {
     return this.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, partitions);
   },
 
-  async deleteTopicRecordsFromAllPartitionsHighWatermark(topicName: string) {
+  deleteTopicRecordsFromAllPartitionsHighWatermark(topicName: string) {
     const partitions = this.topicPartitions?.get(topicName)?.map(({ waterMarkHigh, id }) => ({
       partitionId: id,
       offset: waterMarkHigh,
@@ -700,9 +712,9 @@ const apiStore = {
     return this.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, partitions);
   },
 
-  async deleteTopicRecordsFromMultiplePartitionOffsetPairs(
+  deleteTopicRecordsFromMultiplePartitionOffsetPairs(
     topicName: string,
-    pairs: Array<{ partitionId: number; offset: number }>,
+    pairs: Array<{ partitionId: number; offset: number }>
   ) {
     return rest<DeleteRecordsResponseData>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/records`,
@@ -710,14 +722,15 @@ const apiStore = {
         method: 'DELETE',
         headers: [['Content-Type', 'application/json']],
         body: JSON.stringify({ partitions: pairs }),
-      },
+      }
     ).catch(addError);
   },
 
   refreshPartitions(topics: 'all' | string[] = 'all', force?: boolean): Promise<void> {
-    if (Array.isArray(topics))
+    if (Array.isArray(topics)) {
       // sort in order to maximize cache hits (todo: track/cache each topic individually instead)
       topics = topics.sort().map((t) => encodeURIComponent(t));
+    }
 
     const url =
       topics === 'all'
@@ -725,7 +738,10 @@ const apiStore = {
         : `${appConfig.restBasePath}/operations/topic-details?topicNames=${topics.joinStr(',')}`;
 
     return cachedApiRequest<GetAllPartitionsResponse | null>(url, force).then((response) => {
-      if (!response?.topics) return;
+      if (!response?.topics) {
+        return;
+      }
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 42, refactor later
       transaction(() => {
         const errors: {
           topicName: string;
@@ -735,7 +751,8 @@ const apiStore = {
 
         for (const t of response.topics) {
           if (t.error != null) {
-            // console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
+            console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
             continue;
           }
 
@@ -748,11 +765,17 @@ const apiStore = {
 
             let partitionHasError = false;
             if (p.partitionError) {
-              partitionErrors.push({ partitionId: p.id, error: p.partitionError });
+              partitionErrors.push({
+                partitionId: p.id,
+                error: p.partitionError,
+              });
               partitionHasError = true;
             }
             if (p.waterMarksError) {
-              waterMarkErrors.push({ partitionId: p.id, error: p.waterMarksError });
+              waterMarkErrors.push({
+                partitionId: p.id,
+                error: p.waterMarksError,
+              });
               partitionHasError = true;
             }
             if (partitionHasError) {
@@ -773,14 +796,11 @@ const apiStore = {
           } else {
             errors.push({
               topicName: t.topicName,
-              partitionErrors: partitionErrors,
-              waterMarkErrors: waterMarkErrors,
+              partitionErrors,
+              waterMarkErrors,
             });
           }
         }
-
-        // if (errors.length > 0)
-        //     console.error('refreshAllTopicPartitions: response had errors', errors);
       });
     }, addError);
   },
@@ -788,20 +808,78 @@ const apiStore = {
   refreshPartitionsForTopic(topicName: string, force?: boolean) {
     cachedApiRequest<GetPartitionsResponse | null>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/partitions`,
-      force,
-    ).then((response) => {
-      if (response?.partitions) {
-        const partitionErrors: Array<{ id: number; partitionError: string }> = [];
-        const waterMarksErrors: Array<{ id: number; waterMarksError: string }> = [];
+      force
+    )
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 46, refactor later
+      .then((response) => {
+        if (response?.partitions) {
+          const partitionErrors: Array<{ id: number; partitionError: string }> = [];
+          const waterMarksErrors: Array<{ id: number; waterMarksError: string }> = [];
+
+          // Add some local/cached properties to make working with the data easier
+          for (const p of response.partitions) {
+            // topicName
+            p.topicName = topicName;
+
+            if (p.partitionError) {
+              partitionErrors.push({
+                id: p.id,
+                partitionError: p.partitionError,
+              });
+            }
+            if (p.waterMarksError) {
+              waterMarksErrors.push({
+                id: p.id,
+                waterMarksError: p.waterMarksError,
+              });
+            }
+            if (partitionErrors.length || waterMarksErrors.length) {
+              continue;
+            }
+
+            // replicaSize
+            const validLogDirs = p.partitionLogDirs.filter((e) => (e.error == null || e.error === '') && e.size >= 0);
+            const replicaSize = validLogDirs.length > 0 ? validLogDirs.max((e) => e.size) : 0;
+            p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
+          }
+
+          if (partitionErrors.length === 0 && waterMarksErrors.length === 0) {
+            // Set partitions
+            this.topicPartitionErrors.delete(topicName);
+            this.topicWatermarksErrors.delete(topicName);
+            this.topicPartitions.set(topicName, response.partitions);
+          } else {
+            this.topicPartitionErrors.set(topicName, partitionErrors);
+            this.topicWatermarksErrors.set(topicName, waterMarksErrors);
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
+            console.error(
+              `refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${partitionErrors.length}, w=${waterMarksErrors.length})`
+            );
+          }
+        } else {
+          // Set null to indicate that we're not allowed to see the partitions
+          this.topicPartitions.set(topicName, null);
+          return;
+        }
+
+        let partitionErrors = 0;
+        let waterMarkErrors = 0;
 
         // Add some local/cached properties to make working with the data easier
         for (const p of response.partitions) {
           // topicName
           p.topicName = topicName;
 
-          if (p.partitionError) partitionErrors.push({ id: p.id, partitionError: p.partitionError });
-          if (p.waterMarksError) waterMarksErrors.push({ id: p.id, waterMarksError: p.waterMarksError });
-          if (partitionErrors.length || waterMarksErrors.length) continue;
+          if (p.partitionError) {
+            partitionErrors++;
+          }
+          if (p.waterMarksError) {
+            waterMarkErrors++;
+          }
+          if (partitionErrors || waterMarkErrors) {
+            p.hasErrors = true;
+            continue;
+          }
 
           // replicaSize
           const validLogDirs = p.partitionLogDirs.filter((e) => (e.error == null || e.error === '') && e.size >= 0);
@@ -809,53 +887,16 @@ const apiStore = {
           p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
         }
 
-        if (partitionErrors.length === 0 && waterMarksErrors.length === 0) {
-          // Set partitions
-          this.topicPartitionErrors.delete(topicName);
-          this.topicWatermarksErrors.delete(topicName);
-          this.topicPartitions.set(topicName, response.partitions);
-        } else {
-          this.topicPartitionErrors.set(topicName, partitionErrors);
-          this.topicWatermarksErrors.set(topicName, waterMarksErrors);
-          console.error(
-            `refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${partitionErrors.length}, w=${waterMarksErrors.length})`,
+        // Set partitions
+        this.topicPartitions.set(topicName, response.partitions);
+
+        if (partitionErrors > 0 || waterMarkErrors > 0) {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          console.warn(
+            `refreshPartitionsForTopic: response has partition errors (topic=${topicName} partitionErrors=${partitionErrors}, waterMarkErrors=${waterMarkErrors})`
           );
         }
-      } else {
-        // Set null to indicate that we're not allowed to see the partitions
-        this.topicPartitions.set(topicName, null);
-        return;
-      }
-
-      let partitionErrors = 0;
-      let waterMarkErrors = 0;
-
-      // Add some local/cached properties to make working with the data easier
-      for (const p of response.partitions) {
-        // topicName
-        p.topicName = topicName;
-
-        if (p.partitionError) partitionErrors++;
-        if (p.waterMarksError) waterMarkErrors++;
-        if (partitionErrors || waterMarkErrors) {
-          p.hasErrors = true;
-          continue;
-        }
-
-        // replicaSize
-        const validLogDirs = p.partitionLogDirs.filter((e) => (e.error == null || e.error === '') && e.size >= 0);
-        const replicaSize = validLogDirs.length > 0 ? validLogDirs.max((e) => e.size) : 0;
-        p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
-      }
-
-      // Set partitions
-      this.topicPartitions.set(topicName, response.partitions);
-
-      if (partitionErrors > 0 || waterMarkErrors > 0)
-        console.warn(
-          `refreshPartitionsForTopic: response has partition errors (topic=${topicName} partitionErrors=${partitionErrors}, waterMarkErrors=${waterMarkErrors})`,
-        );
-    }, addError);
+      }, addError);
   },
 
   get getTopicPartitionArray() {
@@ -879,16 +920,21 @@ const apiStore = {
       resourceType: 'Topic',
       resourceName: topicName,
     });
-    cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force).then((v) => {
-      if (v) normalizeAcls(v.aclResources);
-      this.topicAcls.set(topicName, v);
-    });
+    cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force)
+      .then((v) => {
+        if (v) {
+          normalizeAcls(v.aclResources);
+        }
+        this.topicAcls.set(topicName, v);
+      })
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
+      .catch(console.error);
   },
 
   refreshTopicConsumers(topicName: string, force?: boolean) {
     cachedApiRequest<GetTopicConsumersResponse>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/consumers`,
-      force,
+      force
     ).then((v) => this.topicConsumers.set(topicName, v.topicConsumers), addError);
   },
 
@@ -903,20 +949,22 @@ const apiStore = {
           this.ACLs = null;
         }
       },
-      addError,
+      addError
     );
   },
 
   refreshQuotas(force?: boolean) {
     cachedApiRequest<QuotaResponse | null>(`${appConfig.restBasePath}/quotas`, force).then(
       (v) => (this.Quotas = v ?? null),
-      addError,
+      addError
     );
   },
 
   async refreshSupportedEndpoints(): Promise<EndpointCompatibilityResponse | null> {
     const r = await rest<EndpointCompatibilityResponse>(`${appConfig.restBasePath}/console/endpoints`);
-    if (!r) return null;
+    if (!r) {
+      return null;
+    }
     this.endpointCompatibility = r.endpointCompatibility;
     return r;
   },
@@ -928,25 +976,30 @@ const apiStore = {
       throw new Error('Cluster status client is not initialized');
     }
 
-    const requests: Array<Promise<any>> = [
+    const requests: Promise<any>[] = [
       client.getKafkaAuthorizerInfo({}).catch((e) => {
         this.clusterOverview.kafkaAuthorizerError = e;
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(e);
         return null;
       }),
       client.getConsoleInfo({}).catch((e) => {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(e);
         return null;
       }),
       client.getKafkaInfo({}).catch((e) => {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(e);
         return null;
       }),
       client.getRedpandaInfo({}).catch((e) => {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(e);
         return null;
       }),
       client.getKafkaConnectInfo({}).catch((e) => {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(e);
         return null;
       }),
@@ -956,9 +1009,10 @@ const apiStore = {
     if (api.userData?.canViewSchemas) {
       requests.push(
         client.getSchemaRegistryInfo({}).catch((e) => {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error(e);
           return null;
-        }),
+        })
       );
     }
 
@@ -1003,17 +1057,26 @@ const apiStore = {
       if (v?.clusterInfo != null) {
         transaction(() => {
           // add 'type' to each synonym entry
-          for (const broker of v.clusterInfo.brokers)
-            if (broker.config && !broker.config.error) prepareSynonyms(broker.config.configs ?? []);
+          for (const broker of v.clusterInfo.brokers) {
+            if (broker.config && !broker.config.error) {
+              prepareSynonyms(broker.config.configs ?? []);
+            }
+          }
 
           // don't assign if the value didn't change
           // we'd re-trigger all observers!
           // TODO: it would probably be easier to just annotate 'clusterInfo' with a structural comparer
-          if (!comparer.structural(this.clusterInfo, v.clusterInfo)) this.clusterInfo = v.clusterInfo;
+          if (!comparer.structural(this.clusterInfo, v.clusterInfo)) {
+            this.clusterInfo = v.clusterInfo;
+          }
 
-          for (const b of v.clusterInfo.brokers)
-            if (b.config.error) this.brokerConfigs.set(b.brokerId, b.config.error);
-            else this.brokerConfigs.set(b.brokerId, b.config.configs ?? []);
+          for (const b of v.clusterInfo.brokers) {
+            if (b.config.error) {
+              this.brokerConfigs.set(b.brokerId, b.config.error);
+            } else {
+              this.brokerConfigs.set(b.brokerId, b.config.configs ?? []);
+            }
+          }
         });
       }
     }, addError);
@@ -1033,7 +1096,7 @@ const apiStore = {
   refreshConsumerGroup(groupId: string, force?: boolean) {
     cachedApiRequest<GetConsumerGroupResponse>(
       `${appConfig.restBasePath}/consumer-groups/${encodeURIComponent(groupId)}`,
-      force,
+      force
     ).then((v) => {
       addFrontendFieldsForConsumerGroup(v.consumerGroup);
       this.consumerGroups.set(v.consumerGroup.groupId, v.consumerGroup);
@@ -1043,11 +1106,15 @@ const apiStore = {
   refreshConsumerGroups(force?: boolean) {
     cachedApiRequest<GetConsumerGroupsResponse>(`${appConfig.restBasePath}/consumer-groups`, force).then((v) => {
       if (v?.consumerGroups != null) {
-        for (const g of v.consumerGroups) addFrontendFieldsForConsumerGroup(g);
+        for (const g of v.consumerGroups) {
+          addFrontendFieldsForConsumerGroup(g);
+        }
 
         transaction(() => {
           this.consumerGroups.clear();
-          for (const g of v.consumerGroups) this.consumerGroups.set(g.groupId, g);
+          for (const g of v.consumerGroups) {
+            this.consumerGroups.set(g.groupId, g);
+          }
         });
       }
     }, addError);
@@ -1060,21 +1127,24 @@ const apiStore = {
       resourceType: 'Group',
       resourceName: groupName,
     });
-    cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force).then((v) => {
-      if (v) {
-        normalizeAcls(v.aclResources);
-      }
-      this.consumerGroupAcls.set(groupName, v);
-    });
+    cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force)
+      .then((v) => {
+        if (v) {
+          normalizeAcls(v.aclResources);
+        }
+        this.consumerGroupAcls.set(groupName, v);
+      })
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
+      .catch(console.error);
   },
 
   async editConsumerGroupOffsets(
     groupId: string,
-    topics: EditConsumerGroupOffsetsTopic[],
+    topics: EditConsumerGroupOffsetsTopic[]
   ): Promise<EditConsumerGroupOffsetsResponseTopic[]> {
     const request: EditConsumerGroupOffsetsRequest = {
-      groupId: groupId,
-      topics: topics,
+      groupId,
+      topics,
     };
 
     const response = await appConfig.fetch(`${appConfig.restBasePath}/consumer-groups/${encodeURIComponent(groupId)}`, {
@@ -1089,11 +1159,11 @@ const apiStore = {
 
   async deleteConsumerGroupOffsets(
     groupId: string,
-    topics: DeleteConsumerGroupOffsetsTopic[],
+    topics: DeleteConsumerGroupOffsetsTopic[]
   ): Promise<DeleteConsumerGroupOffsetsResponseTopic[]> {
     const request: DeleteConsumerGroupOffsetsRequest = {
-      groupId: groupId,
-      topics: topics,
+      groupId,
+      topics,
     };
 
     const response = await appConfig.fetch(
@@ -1102,7 +1172,7 @@ const apiStore = {
         method: 'DELETE',
         headers: [['Content-Type', 'application/json']],
         body: toJson(request),
-      },
+      }
     );
 
     const r = await parseOrUnwrap<DeleteConsumerGroupOffsetsResponse>(response, null);
@@ -1127,37 +1197,47 @@ const apiStore = {
 
       // normalize responses (missing arrays, or arrays with an empty string)
       // todo: not needed anymore, responses are always correct now
-      for (const role of info.roles)
-        for (const permission of role.permissions)
+      for (const role of info.roles) {
+        for (const permission of role.permissions) {
           for (const k of ['allowedActions', 'includes', 'excludes']) {
             const ar: string[] = (permission as any)[k] ?? [];
             (permission as any)[k] = ar.filter((x) => x.length > 0);
           }
+        }
+      }
 
       // resolve role of each binding
       for (const binding of info.roleBindings) {
         // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
         binding.resolvedRole = info.roles.first((r) => r.name === binding.roleName)!;
-        if (binding.resolvedRole == null) console.error(`could not resolve roleBinding to role: ${toJson(binding)}`);
+        if (binding.resolvedRole == null) {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          console.error(`could not resolve roleBinding to role: ${toJson(binding)}`);
+        }
       }
 
       // resolve bindings, and roles of each user
       for (const user of info.users) {
         // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
         user.bindings = user.bindingIds.map((id) => info.roleBindings.first((rb) => rb.ephemeralId === id)!);
-        if (user.bindings.any((b) => b == null))
+        if (user.bindings.any((b) => b == null)) {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error(`one or more rolebindings could not be resolved for user: ${toJson(user)}`);
+        }
 
         user.grantedRoles = [];
-        for (const roleName in user.audits)
-          user.grantedRoles.push({
-            // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
-            role: info.roles.first((r) => r.name === roleName)!,
-            grantedBy: user.audits[roleName].map(
+        for (const roleName in user.audits) {
+          if (Object.hasOwn(user.audits, roleName)) {
+            user.grantedRoles.push({
               // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
-              (bindingId) => info.roleBindings.first((b) => b.ephemeralId === bindingId)!,
-            ),
-          });
+              role: info.roles.first((r) => r.name === roleName)!,
+              grantedBy: user.audits[roleName].map(
+                // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
+                (bindingId) => info.roleBindings.first((b) => b.ephemeralId === bindingId)!
+              ),
+            });
+          }
+        }
       }
 
       this.adminInfo = info;
@@ -1183,6 +1263,7 @@ const apiStore = {
       })
       .catch((err) => {
         this.schemaMode = 'Unknown';
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('failed to request schema mode', err);
       });
   },
@@ -1215,14 +1296,14 @@ const apiStore = {
           this.schemaSubjects = subjects;
         }
       },
-      addError,
+      addError
     );
   },
 
   refreshSchemaTypes(force?: boolean) {
     cachedApiRequest<SchemaRegistrySchemaTypesResponse>(
       `${appConfig.restBasePath}/schema-registry/schemas/types`,
-      force,
+      force
     )
       .then((types) => {
         // could also be a "not configured" response
@@ -1232,6 +1313,7 @@ const apiStore = {
       })
       .catch((err) => {
         this.schemaTypes = undefined;
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('failed to request schema type', err);
       });
   },
@@ -1242,7 +1324,7 @@ const apiStore = {
     const version = 'all';
     const rq = cachedApiRequest(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}`,
-      force,
+      force
     ) as Promise<SchemaRegistrySubjectDetails>;
 
     return rq
@@ -1255,7 +1337,7 @@ const apiStore = {
   refreshSchemaReferencedBy(subjectName: string, version: number, force?: boolean) {
     const rq = cachedApiRequest<SchemaReferencedByEntry[]>(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/referencedby`,
-      force,
+      force
     );
 
     return rq
@@ -1263,6 +1345,7 @@ const apiStore = {
         const cleanedReferences = [] as SchemaReferencedByEntry[];
         for (const ref of references) {
           if (ref.error) {
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.error('error in refreshSchemaReferencedBy, reference entry has error', {
               subjectName,
               version,
@@ -1276,7 +1359,6 @@ const apiStore = {
 
         let subjectVersions = this.schemaReferencedBy.get(subjectName);
         if (!subjectVersions) {
-          // @ts-ignore MobX does not play nice with TypeScript 5: Type 'ObservableMap<number, SchemaReferencedByEntry[]>' is not assignable to type 'Map<number, SchemaReferencedByEntry[]>'.
           subjectVersions = observable(new Map<number, SchemaReferencedByEntry[]>());
           if (subjectVersions) {
             this.schemaReferencedBy.set(subjectName, subjectVersions);
@@ -1296,7 +1378,7 @@ const apiStore = {
 
     await cachedApiRequest<SchemaVersion[] | { isConfigured: false }>(
       `${appConfig.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`,
-      force,
+      force
     ).then(
       (r) => {
         if (isSchemaVersionArray(r)) {
@@ -1304,39 +1386,39 @@ const apiStore = {
         }
       },
       (err) => {
-        if (err instanceof Error) {
-          // Currently we don't get helpful status codes (502) so we have to inspect the message
-          if (err.message.includes('404') && err.message.includes('not found')) {
-            // Do nothing, most likely cause is that the user has entered a value into the search box that doesn't exist
-            return null;
-          }
+        // Currently we don't get helpful status codes (502) so we have to inspect the message
+        if (err instanceof Error && err.message.includes('404') && err.message.includes('not found')) {
+          // Do nothing, most likely cause is that the user has entered a value into the search box that doesn't exist
+          return null;
         }
         throw err;
-      },
+      }
     );
   },
 
   async setSchemaRegistryCompatibilityMode(
-    mode: SchemaRegistryCompatibilityMode,
+    mode: SchemaRegistryCompatibilityMode
   ): Promise<SchemaRegistryConfigResponse> {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config`, {
       method: 'PUT',
       headers: [['Content-Type', 'application/json']],
-      body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatibilityModeRequest),
+      body: JSON.stringify({
+        compatibility: mode,
+      } as SchemaRegistrySetCompatibilityModeRequest),
     });
     return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
   },
 
   async setSchemaRegistrySubjectCompatibilityMode(
     subjectName: string,
-    mode: 'DEFAULT' | SchemaRegistryCompatibilityMode,
+    mode: 'DEFAULT' | SchemaRegistryCompatibilityMode
   ): Promise<SchemaRegistryConfigResponse> {
     if (mode === 'DEFAULT') {
       const response = await appConfig.fetch(
         `${appConfig.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`,
         {
           method: 'DELETE',
-        },
+        }
       );
       return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
     }
@@ -1345,8 +1427,10 @@ const apiStore = {
       {
         method: 'PUT',
         headers: [['Content-Type', 'application/json']],
-        body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatibilityModeRequest),
-      },
+        body: JSON.stringify({
+          compatibility: mode,
+        } as SchemaRegistrySetCompatibilityModeRequest),
+      }
     );
     return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
   },
@@ -1354,7 +1438,7 @@ const apiStore = {
   async validateSchema(
     subjectName: string,
     version: number | 'latest',
-    request: SchemaRegistryCreateSchema,
+    request: SchemaRegistryCreateSchema
   ): Promise<SchemaRegistryValidateSchemaResponse> {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/validate`,
@@ -1362,13 +1446,13 @@ const apiStore = {
         method: 'POST',
         headers: [['Content-Type', 'application/json']],
         body: JSON.stringify(request),
-      },
+      }
     );
     return parseOrUnwrap<SchemaRegistryValidateSchemaResponse>(response, null);
   },
   async createSchema(
     subjectName: string,
-    request: SchemaRegistryCreateSchema,
+    request: SchemaRegistryCreateSchema
   ): Promise<SchemaRegistryCreateSchemaResponse> {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions`,
@@ -1376,7 +1460,7 @@ const apiStore = {
         method: 'POST',
         headers: [['Content-Type', 'application/json']],
         body: JSON.stringify(request),
-      },
+      }
     );
     return parseOrUnwrap<SchemaRegistryCreateSchemaResponse>(response, null);
   },
@@ -1387,7 +1471,7 @@ const apiStore = {
       {
         method: 'DELETE',
         headers: [['Content-Type', 'application/json']],
-      },
+      }
     );
     return parseOrUnwrap<SchemaRegistryDeleteSubjectResponse>(response, null);
   },
@@ -1395,14 +1479,14 @@ const apiStore = {
   async deleteSchemaSubjectVersion(
     subjectName: string,
     version: 'latest' | number,
-    permanent: boolean,
+    permanent: boolean
   ): Promise<SchemaRegistryDeleteSubjectVersionResponse> {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${encodeURIComponent(version)}?permanent=${permanent ? 'true' : 'false'}`,
       {
         method: 'DELETE',
         headers: [['Content-Type', 'application/json']],
-      },
+      }
     );
     return parseOrUnwrap<SchemaRegistryDeleteSubjectVersionResponse>(response, null);
   },
@@ -1410,15 +1494,18 @@ const apiStore = {
   refreshPartitionReassignments(force?: boolean): Promise<void> {
     return cachedApiRequest<PartitionReassignmentsResponse | null>(
       `${appConfig.restBasePath}/operations/reassign-partitions`,
-      force,
+      force
     ).then((v) => {
-      if (v === null) this.partitionReassignments = null;
-      else this.partitionReassignments = v.topics;
+      if (v === null) {
+        this.partitionReassignments = null;
+      } else {
+        this.partitionReassignments = v.topics;
+      }
     }, addError);
   },
 
   async startPartitionReassignment(
-    request: PartitionReassignmentRequest,
+    request: PartitionReassignmentRequest
   ): Promise<AlterPartitionReassignmentsResponse> {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/operations/reassign-partitions`, {
       method: 'PATCH',
@@ -1438,7 +1525,11 @@ const apiStore = {
         resourceType: ConfigResourceType.Broker,
         resourceName: String(b),
         configs: [
-          { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
+          {
+            name: 'leader.replication.throttled.rate',
+            op: AlterConfigOperation.Set,
+            value: String(maxBytesPerSecond),
+          },
           {
             name: 'follower.replication.throttled.rate',
             op: AlterConfigOperation.Set,
@@ -1456,7 +1547,7 @@ const apiStore = {
       topicName: string;
       leaderReplicas: { brokerId: number; partitionId: number }[];
       followerReplicas: { brokerId: number; partitionId: number }[];
-    }[],
+    }[]
   ): Promise<PatchConfigsResponse> {
     const configRequest: PatchConfigsRequest = { resources: [] };
 
@@ -1497,8 +1588,14 @@ const apiStore = {
         resourceType: ConfigResourceType.Topic,
         resourceName: t,
         configs: [
-          { name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Delete },
-          { name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Delete },
+          {
+            name: 'leader.replication.throttled.replicas',
+            op: AlterConfigOperation.Delete,
+          },
+          {
+            name: 'follower.replication.throttled.replicas',
+            op: AlterConfigOperation.Delete,
+          },
         ],
       });
     }
@@ -1528,8 +1625,14 @@ const apiStore = {
         resourceType: ConfigResourceType.Broker,
         resourceName: String(b),
         configs: [
-          { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
-          { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
+          {
+            name: 'leader.replication.throttled.rate',
+            op: AlterConfigOperation.Delete,
+          },
+          {
+            name: 'follower.replication.throttled.rate',
+            op: AlterConfigOperation.Delete,
+          },
         ],
       });
     }
@@ -1568,13 +1671,15 @@ const apiStore = {
         }
 
         // prepare helper properties
-        for (const cluster of v.clusters) addFrontendFieldsForConnectCluster(cluster);
+        for (const cluster of v.clusters) {
+          addFrontendFieldsForConnectCluster(cluster);
+        }
 
         this.connectConnectors = v;
       },
       (error: WrappedApiError) => {
         this.connectConnectorsError = error;
-      },
+      }
     );
   },
 
@@ -1597,12 +1702,12 @@ const apiStore = {
   refreshClusterAdditionalInfo(clusterName: string, force?: boolean): Promise<void> {
     return cachedApiRequest<ClusterAdditionalInfo | null>(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}`,
-      force,
+      force
     ).then((v) => {
-      if (!v) {
-        this.connectAdditionalClusterInfo.delete(clusterName);
-      } else {
+      if (v) {
         this.connectAdditionalClusterInfo.set(clusterName, v);
+      } else {
+        this.connectAdditionalClusterInfo.delete(clusterName);
       }
     }, addError);
   },
@@ -1682,7 +1787,7 @@ const apiStore = {
       {
         method: 'DELETE',
         headers: [['Content-Type', 'application/json']],
-      },
+      }
     );
     return parseOrUnwrap<void>(response, null);
   },
@@ -1694,7 +1799,7 @@ const apiStore = {
       {
         method: 'PUT',
         headers: [['Content-Type', 'application/json']],
-      },
+      }
     );
     return parseOrUnwrap<void>(response, null);
   },
@@ -1706,7 +1811,7 @@ const apiStore = {
       {
         method: 'PUT',
         headers: [['Content-Type', 'application/json']],
-      },
+      }
     );
     return parseOrUnwrap<void>(response, null);
   },
@@ -1718,7 +1823,7 @@ const apiStore = {
       {
         method: 'POST',
         headers: [['Content-Type', 'application/json']],
-      },
+      }
     );
     return parseOrUnwrap<void>(response, null);
   },
@@ -1730,8 +1835,8 @@ const apiStore = {
       {
         method: 'PUT',
         headers: [['Content-Type', 'application/json']],
-        body: JSON.stringify({ config: config }),
-      },
+        body: JSON.stringify({ config }),
+      }
     );
     return parseOrUnwrap<void>(response, null);
   },
@@ -1743,7 +1848,7 @@ const apiStore = {
       {
         method: 'POST',
         headers: [['Content-Type', 'application/json']],
-      },
+      }
     );
 
     return parseOrUnwrap<void>(response, null);
@@ -1752,7 +1857,7 @@ const apiStore = {
   async validateConnectorConfig(
     clusterName: string,
     pluginClassName: string,
-    config: object,
+    config: object
   ): Promise<ConnectorValidationResult> {
     // PUT "/kafka-connect/clusters/{clusterName}/connector-plugins/{pluginClassName}/config/validate"
     const response = await appConfig.fetch(
@@ -1761,7 +1866,7 @@ const apiStore = {
         method: 'PUT',
         headers: [['Content-Type', 'application/json']],
         body: JSON.stringify(config),
-      },
+      }
     );
     const result = await parseOrUnwrap<ConnectorValidationResult>(response, null);
 
@@ -1776,7 +1881,7 @@ const apiStore = {
     clusterName: string,
     connectorName: string,
     _pluginClassName: string, // needs to be kept to avoid larger refactor despite not being used.
-    config: object,
+    config: object
   ): Promise<void> {
     // POST "/kafka-connect/clusters/{clusterName}/connectors"
     const response = await appConfig.fetch(
@@ -1785,10 +1890,10 @@ const apiStore = {
         method: 'POST',
         headers: [['Content-Type', 'application/json']],
         body: JSON.stringify({
-          connectorName: connectorName,
-          config: config,
+          connectorName,
+          config,
         }),
-      },
+      }
     );
     return parseOrUnwrap<void>(response, null);
   },
@@ -1896,7 +2001,7 @@ const apiStore = {
             component: 'connectors',
           },
         }),
-      },
+      }
     );
     return parseOrUnwrap<any>(response, null);
   },
@@ -1910,7 +2015,7 @@ const apiStore = {
         body: JSON.stringify({
           secretData: secretValue,
         }),
-      },
+      }
     );
     return parseOrUnwrap<any>(response, null);
   },
@@ -1920,7 +2025,7 @@ const apiStore = {
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets/${encodeURIComponent(secretId)}`,
       {
         method: 'DELETE',
-      },
+      }
     );
     return parseOrUnwrap<void>(response, null);
   },
@@ -1961,6 +2066,7 @@ const apiStore = {
           this.licensesLoaded = 'failed';
           const errorText = err instanceof Error ? err.message : String(err);
 
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.log(`error refreshing licenses: ${errorText}`);
           return err;
         }),
@@ -1981,7 +2087,7 @@ const apiStore = {
     });
   },
 
-  async refreshClusterHealth() {
+  refreshClusterHealth() {
     // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
@@ -1989,7 +2095,7 @@ const apiStore = {
       throw new Error('Debug bundle client is not initialized');
     }
 
-    client.getClusterHealth({}).then((response) => {
+    return client.getClusterHealth({}).then((response) => {
       this.clusterHealth = response;
     });
   },
@@ -2024,7 +2130,7 @@ const apiStore = {
       this.isDebugBundleReady &&
       this.debugBundleStatuses.some(
         (status) =>
-          status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.SUCCESS,
+          status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.SUCCESS
       )
     );
   },
@@ -2033,8 +2139,7 @@ const apiStore = {
     return (
       this.isDebugBundleReady &&
       this.debugBundleStatuses.all(
-        (status) =>
-          status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.ERROR,
+        (status) => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.ERROR
       )
     );
   },
@@ -2044,15 +2149,14 @@ const apiStore = {
       this.isDebugBundleReady &&
       this.debugBundleStatuses.some(
         (status) =>
-          status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.EXPIRED,
+          status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.EXPIRED
       )
     );
   },
 
   get isDebugBundleInProgress() {
     return this.debugBundleStatuses.some(
-      (status) =>
-        status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING,
+      (status) => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
     );
   },
 
@@ -2071,7 +2175,8 @@ const apiStore = {
     }
 
     return await client.createDebugBundle(request).finally(() => {
-      this.refreshDebugBundleStatuses();
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
+      this.refreshDebugBundleStatuses().catch(console.error);
     });
   },
 
@@ -2088,7 +2193,8 @@ const apiStore = {
         jobId,
       })
       .finally(() => {
-        this.refreshDebugBundleStatuses();
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
+        this.refreshDebugBundleStatuses().catch(console.error);
       });
   },
 
@@ -2104,7 +2210,8 @@ const apiStore = {
         deleteAll: true,
       })
       .finally(() => {
-        this.refreshDebugBundleStatuses();
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
+        this.refreshDebugBundleStatuses().catch(console.error);
       });
   },
 };
@@ -2118,7 +2225,9 @@ export const rolesApi = observable({
   async refreshRoles(): Promise<void> {
     this.rolesError = null;
     const client = appConfig.securityClient;
-    if (!client) throw new Error('security client is not initialized');
+    if (!client) {
+      throw new Error('security client is not initialized');
+    }
 
     const roles: string[] = [];
 
@@ -2138,7 +2247,9 @@ export const rolesApi = observable({
           const newRoles = res.response?.roles.map((x) => x.name);
           roles.push(...newRoles);
 
-          if (!res.response?.nextPageToken || res.response?.nextPageToken.length === 0) break;
+          if (!res.response?.nextPageToken || res.response?.nextPageToken.length === 0) {
+            break;
+          }
 
           nextPageToken = res.response?.nextPageToken;
         }
@@ -2150,7 +2261,9 @@ export const rolesApi = observable({
 
   async refreshRoleMembers() {
     const client = appConfig.securityClient;
-    if (!client) throw new Error('security client is not initialized');
+    if (!client) {
+      throw new Error('security client is not initialized');
+    }
 
     const rolePromises = [];
 
@@ -2166,21 +2279,31 @@ export const rolesApi = observable({
 
     for (const r of rolePromises) {
       const res = await r;
-      if (res.response == null || res.response.role == null) continue; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
+      if (res.response == null || res.response.role == null) {
+        continue; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
+      }
       const roleName = res.response.role.name;
 
       const members = res.response.members
         .map((x) => {
           const principalParts = x.principal.split(':');
           if (principalParts.length !== 2) {
-            console.error('failed to split principal of role', { roleName, principal: x.principal });
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
+            console.error('failed to split principal of role', {
+              roleName,
+              principal: x.principal,
+            });
             return null;
           }
           const principalType = principalParts[0];
           const name = principalParts[1];
 
           if (principalType !== 'User') {
-            console.error('unexpected principal type in refreshRoleMembers', { roleName, principal: x.principal });
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
+            console.error('unexpected principal type in refreshRoleMembers', {
+              roleName,
+              principal: x.principal,
+            });
           }
 
           return { principalType, name } as RolePrincipal;
@@ -2193,7 +2316,9 @@ export const rolesApi = observable({
 
   async createRole(name: string) {
     const client = appConfig.securityClient;
-    if (!client) throw new Error('security client is not initialized');
+    if (!client) {
+      throw new Error('security client is not initialized');
+    }
 
     if (Features.rolesApi) {
       await client.createRole({ request: { role: { name } } });
@@ -2202,7 +2327,9 @@ export const rolesApi = observable({
 
   async deleteRole(name: string, deleteAcls: boolean) {
     const client = appConfig.securityClient;
-    if (!client) throw new Error('security client is not initialized');
+    if (!client) {
+      throw new Error('security client is not initialized');
+    }
 
     if (Features.rolesApi) {
       await client.deleteRole({ request: { roleName: name, deleteAcls } });
@@ -2211,11 +2338,13 @@ export const rolesApi = observable({
 
   async updateRoleMembership(roleName: string, addUsers: string[], removeUsers: string[], create = false) {
     const client = appConfig.securityClient;
-    if (!client) throw new Error('security client is not initialized');
+    if (!client) {
+      throw new Error('security client is not initialized');
+    }
 
     return await client.updateRoleMembership({
       request: {
-        roleName: roleName,
+        roleName,
         add: addUsers.map((u) => ({ principal: `User:${u}` })),
         remove: removeUsers.map((u) => ({ principal: `User:${u}` })),
         create,
@@ -2230,7 +2359,9 @@ export const pipelinesApi = observable({
 
   async refreshPipelines(_force: boolean): Promise<void> {
     const client = appConfig.pipelinesClient;
-    if (!client) throw new Error('pipelines client is not initialized');
+    if (!client) {
+      throw new Error('pipelines client is not initialized');
+    }
 
     const pipelines = [];
     this.pipelinesError = null;
@@ -2243,11 +2374,15 @@ export const pipelinesApi = observable({
           this.pipelinesError = error;
         });
       const response = res?.response;
-      if (!response) break;
+      if (!response) {
+        break;
+      }
 
       pipelines.push(...response.pipelines);
 
-      if (!response.nextPageToken || response.nextPageToken.length === 0) break;
+      if (!response.nextPageToken || response.nextPageToken.length === 0) {
+        break;
+      }
       nextPageToken = response.nextPageToken;
     }
 
@@ -2256,19 +2391,25 @@ export const pipelinesApi = observable({
 
   async deletePipeline(id: string) {
     const client = appConfig.pipelinesClient;
-    if (!client) throw new Error('pipelines client is not initialized');
+    if (!client) {
+      throw new Error('pipelines client is not initialized');
+    }
 
-    await client.deletePipeline({ request: { id: id } });
+    await client.deletePipeline({ request: { id } });
   },
   async createPipeline(pipeline: PipelineCreate) {
     const client = appConfig.pipelinesClient;
-    if (!client) throw new Error('pipelines client is not initialized');
+    if (!client) {
+      throw new Error('pipelines client is not initialized');
+    }
 
     return await client.createPipeline({ request: { pipeline } });
   },
   async updatePipeline(id: string, pipelineUpdate: PipelineUpdate) {
     const client = appConfig.pipelinesClient;
-    if (!client) throw new Error('pipelines client is not initialized');
+    if (!client) {
+      throw new Error('pipelines client is not initialized');
+    }
 
     return await client.updatePipeline({
       request: {
@@ -2279,13 +2420,17 @@ export const pipelinesApi = observable({
   },
   async startPipeline(id: string) {
     const client = appConfig.pipelinesClient;
-    if (!client) throw new Error('pipelines client is not initialized');
+    if (!client) {
+      throw new Error('pipelines client is not initialized');
+    }
 
     await client.startPipeline({ request: { id } });
   },
   async stopPipeline(id: string) {
     const client = appConfig.pipelinesClient;
-    if (!client) throw new Error('pipelines client is not initialized');
+    if (!client) {
+      throw new Error('pipelines client is not initialized');
+    }
 
     await client.stopPipeline({ request: { id } });
   },
@@ -2297,7 +2442,9 @@ export const knowledgebaseApi = observable({
 
   async refreshKnowledgeBases(_force: boolean): Promise<void> {
     const client = appConfig.knowledgebaseClient;
-    if (!client) throw new Error('knowledgebase client is not initialized');
+    if (!client) {
+      throw new Error('knowledgebase client is not initialized');
+    }
 
     const knowledgeBases = [];
     this.knowledgeBasesError = null;
@@ -2308,16 +2455,20 @@ export const knowledgebaseApi = observable({
         .listKnowledgeBases({ pageSize: 10, pageToken: nextPageToken })
         .catch((error: ConnectError) => {
           this.knowledgeBasesError = error;
-          return undefined;
+          return;
         });
 
       // Handle response structure (some APIs return res.response, others return res directly)
       const response = (res as any)?.response || res;
-      if (!response) break;
+      if (!response) {
+        break;
+      }
 
       knowledgeBases.push(...response.knowledgeBases);
 
-      if (!response.nextPageToken || response.nextPageToken.length === 0) break;
+      if (!response.nextPageToken || response.nextPageToken.length === 0) {
+        break;
+      }
       nextPageToken = response.nextPageToken;
     }
 
@@ -2326,19 +2477,25 @@ export const knowledgebaseApi = observable({
 
   async deleteKnowledgeBase(id: string) {
     const client = appConfig.knowledgebaseClient;
-    if (!client) throw new Error('knowledgebase client is not initialized');
+    if (!client) {
+      throw new Error('knowledgebase client is not initialized');
+    }
 
     await client.deleteKnowledgeBase({ id });
   },
   async createKnowledgeBase(knowledgeBase: KnowledgeBaseCreate) {
     const client = appConfig.knowledgebaseClient;
-    if (!client) throw new Error('knowledgebase client is not initialized');
+    if (!client) {
+      throw new Error('knowledgebase client is not initialized');
+    }
     const result = await client.createKnowledgeBase({ knowledgeBase });
     return result;
   },
   async updateKnowledgeBase(id: string, knowledgeBaseUpdate: KnowledgeBaseUpdate, updateMask?: string[]) {
     const client = appConfig.knowledgebaseClient;
-    if (!client) throw new Error('knowledgebase client is not initialized');
+    if (!client) {
+      throw new Error('knowledgebase client is not initialized');
+    }
 
     await client.updateKnowledgeBase({
       id,
@@ -2352,7 +2509,9 @@ export const knowledgebaseApi = observable({
   },
   async getKnowledgeBase(id: string): Promise<KnowledgeBase> {
     const client = appConfig.knowledgebaseClient;
-    if (!client) throw new Error('knowledgebase client is not initialized');
+    if (!client) {
+      throw new Error('knowledgebase client is not initialized');
+    }
 
     const response = await client.getKnowledgeBase({ id });
     if (!response.knowledgeBase) {
@@ -2369,7 +2528,9 @@ export const rpcnSecretManagerApi = observable({
 
   async refreshSecrets(_force: boolean): Promise<void> {
     const client = appConfig.rpcnSecretsClient;
-    if (!client) throw new Error('redpanda connect secret client is not initialized');
+    if (!client) {
+      throw new Error('redpanda connect secret client is not initialized');
+    }
 
     // handle error in order to avoid crash app for this request
     this.secretsByPipeline = await this.getPipelinesBySecret().catch(() => []);
@@ -2386,11 +2547,15 @@ export const rpcnSecretManagerApi = observable({
       });
 
       const response = res.response;
-      if (!response) break;
+      if (!response) {
+        break;
+      }
 
       secrets.push(...response.secrets);
 
-      if (!res || response.nextPageToken.length === 0) break;
+      if (!res || response.nextPageToken.length === 0) {
+        break;
+      }
       nextPageToken = response.nextPageToken;
     }
 
@@ -2399,27 +2564,37 @@ export const rpcnSecretManagerApi = observable({
 
   async delete(secret: DeleteSecretRequest) {
     const client = appConfig.rpcnSecretsClient;
-    if (!client) throw new Error('redpanda connect secret client is not initialized');
+    if (!client) {
+      throw new Error('redpanda connect secret client is not initialized');
+    }
 
     await client.deleteSecret({ request: secret });
   },
   async create(secret: CreateSecretRequest) {
     const client = appConfig.rpcnSecretsClient;
-    if (!client) throw new Error('redpanda connect secret client is not initialized');
+    if (!client) {
+      throw new Error('redpanda connect secret client is not initialized');
+    }
 
     await client.createSecret({ request: secret });
   },
   async update(_id: string, updateSecretRequest: UpdateSecretRequest) {
     const client = appConfig.rpcnSecretsClient;
-    if (!client) throw new Error('redpanda connect secret client is not initialized');
+    if (!client) {
+      throw new Error('redpanda connect secret client is not initialized');
+    }
 
     await client.updateSecret({ request: updateSecretRequest });
   },
   async checkScope(listSecretScopesRequest: ListSecretScopesRequest) {
     const client = appConfig.rpcnSecretsClient;
-    if (!client) throw new Error('redpanda connect secret client is not initialized');
+    if (!client) {
+      throw new Error('redpanda connect secret client is not initialized');
+    }
 
-    const res = await client.listSecretScopes({ request: listSecretScopesRequest });
+    const res = await client.listSecretScopes({
+      request: listSecretScopesRequest,
+    });
 
     if (!res.response) {
       this.isEnable = false;
@@ -2432,17 +2607,17 @@ export const rpcnSecretManagerApi = observable({
   },
   async getPipelinesBySecret() {
     const client = appConfig.pipelinesClient;
-    if (!client) throw new Error('redpanda connect dataplane pipeline is not initialized');
+    if (!client) {
+      throw new Error('redpanda connect dataplane pipeline is not initialized');
+    }
 
     const pipelinesBySecrets = await client.getPipelinesBySecrets({
       request: create(GetPipelinesBySecretsRequestSchemaDataPlane),
     });
-    return pipelinesBySecrets.response?.pipelinesForSecret.map(({ secretId, pipelines }) => {
-      return {
-        secretId: secretId,
-        pipelines: pipelines,
-      };
-    });
+    return pipelinesBySecrets.response?.pipelinesForSecret.map(({ secretId, pipelines }) => ({
+      secretId,
+      pipelines,
+    }));
   },
 });
 
@@ -2452,48 +2627,66 @@ export const transformsApi = observable({
 
   async refreshTransforms(_force: boolean): Promise<void> {
     const client = appConfig.transformsClient;
-    if (!client) throw new Error('transforms client is not initialized');
+    if (!client) {
+      throw new Error('transforms client is not initialized');
+    }
     const transforms: TransformMetadata[] = [];
     let nextPageToken = '';
     while (true) {
       let res: ListTransformsResponse;
       try {
-        res = await client.listTransforms({ request: { pageSize: 500, pageToken: nextPageToken } });
+        res = await client.listTransforms({
+          request: { pageSize: 500, pageToken: nextPageToken },
+        });
       } catch (_err) {
         break;
       }
       const r = res.response;
-      if (!r) break;
+      if (!r) {
+        break;
+      }
 
       transforms.push(...r.transforms);
 
-      if (!r.nextPageToken || r.nextPageToken.length === 0) break;
+      if (!r.nextPageToken || r.nextPageToken.length === 0) {
+        break;
+      }
       nextPageToken = r.nextPageToken;
     }
 
     runInAction(() => {
       this.transforms = transforms;
       this.transformDetails.clear();
-      for (const t of transforms) this.transformDetails.set(t.name, t);
+      for (const t of transforms) {
+        this.transformDetails.set(t.name, t);
+      }
     });
   },
 
   async refreshTransformDetails(name: string, _force: boolean): Promise<void> {
     const client = appConfig.transformsClient;
-    if (!client) throw new Error('transforms client is not initialized');
+    if (!client) {
+      throw new Error('transforms client is not initialized');
+    }
 
     const res = await client.getTransform({ request: { name } });
     const r = res.response;
-    if (!r) throw new Error('got empty response from getTransform');
+    if (!r) {
+      throw new Error('got empty response from getTransform');
+    }
 
-    if (!r.transform) return;
+    if (!r.transform) {
+      return;
+    }
 
     this.transformDetails.set(r.transform.name, r.transform);
   },
 
   async deleteTransform(name: string) {
     const client = appConfig.transformsClient;
-    if (!client) throw new Error('transforms client is not initialized');
+    if (!client) {
+      throw new Error('transforms client is not initialized');
+    }
 
     await client.deleteTransform({ request: { name } });
   },
@@ -2516,6 +2709,7 @@ export function createMessageSearch() {
     // Live view of messages, gets updated as new messages arrive
     messages: observable([] as TopicMessage[], { deep: false }),
 
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 64, refactor later
     async startSearch(_searchRequest: MessageSearchRequest): Promise<TopicMessage[]> {
       // https://connectrpc.com/docs/web/using-clients
       // https://github.com/connectrpc/connect-es
@@ -2575,16 +2769,23 @@ export function createMessageSearch() {
       }
 
       try {
-        for await (const res of client.listMessages(req, { signal: messageSearchAbortController.signal, timeoutMs })) {
-          if (messageSearchAbortController.signal.aborted) break;
+        for await (const res of client.listMessages(req, {
+          signal: messageSearchAbortController.signal,
+          timeoutMs,
+        })) {
+          if (messageSearchAbortController.signal.aborted) {
+            break;
+          }
 
           try {
             switch (res.controlMessage.case) {
               case 'phase':
+                // biome-ignore lint/suspicious/noConsole: intentional console usage
                 console.log(`phase: ${res.controlMessage.value.phase}`);
                 this.searchPhase = res.controlMessage.value.phase;
                 break;
               case 'progress':
+                // biome-ignore lint/suspicious/noConsole: intentional console usage
                 console.log(`progress: ${res.controlMessage.value.messagesConsumed}`);
                 this.bytesConsumed = Number(res.controlMessage.value.bytesConsumed);
                 this.totalMessagesConsumed = Number(res.controlMessage.value.messagesConsumed);
@@ -2598,6 +2799,7 @@ export function createMessageSearch() {
                 break;
               case 'error':
                 // error doesn't necessarily mean the whole request is done
+                // biome-ignore lint/suspicious/noConsole: intentional console usage
                 console.info(`ws backend error: ${res.controlMessage.value.message}`);
                 toast({
                   title: 'Backend Error',
@@ -2630,6 +2832,9 @@ export function createMessageSearch() {
                     break;
                   case ProtoCompressionType.ZSTD:
                     m.compression = CompressionType.ZStd;
+                    break;
+                  default:
+                    m.compression = CompressionType.Unknown;
                     break;
                 }
 
@@ -2698,6 +2903,7 @@ export function createMessageSearch() {
                     m.key.encoding = 'cbor';
                     break;
                   default:
+                    // biome-ignore lint/suspicious/noConsole: intentional console usage
                     console.log('unhandled key encoding type', {
                       encoding: key?.encoding,
                       encodingName:
@@ -2721,8 +2927,6 @@ export function createMessageSearch() {
                 m.keyJson = JSON.stringify(m.key.payload);
                 m.key.size = Number(key?.payloadSize);
                 m.key.isPayloadTooLarge = key?.isPayloadTooLarge;
-
-                // console.log(m.keyJson)
 
                 // value
                 const val = res.controlMessage.value.value;
@@ -2774,6 +2978,7 @@ export function createMessageSearch() {
                     m.value.encoding = 'cbor';
                     break;
                   default:
+                    // biome-ignore lint/suspicious/noConsole: intentional console usage
                     console.log('unhandled value encoding type', {
                       encoding: val?.encoding,
                       encodingName:
@@ -2800,8 +3005,11 @@ export function createMessageSearch() {
                 this.messages.push(m);
                 break;
               }
+              default:
+                break;
             }
           } catch (e) {
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.error('error in listMessages loop', { error: e });
           }
         }
@@ -2815,6 +3023,7 @@ export function createMessageSearch() {
         if (messageSearchAbortController.signal.aborted) {
           // Do not throw, this is a user cancellation
         } else {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error('startMessageSearchNew: error in await loop of client.listMessages', { error: e });
           throw e;
         }
@@ -2852,9 +3061,13 @@ function addFrontendFieldsForConnectCluster(cluster: ClusterConnectors) {
   cluster.canEditCluster = allowAll || allowedActions.includes('editConnectCluster');
   cluster.canDeleteCluster = allowAll || allowedActions.includes('deleteConnectCluster');
 
-  for (const connector of cluster.connectors)
-    if (connector.config) connector.jsonConfig = JSON.stringify(connector.config, undefined, 4);
-    else connector.jsonConfig = '';
+  for (const connector of cluster.connectors) {
+    if (connector.config) {
+      connector.jsonConfig = JSON.stringify(connector.config, undefined, 4);
+    } else {
+      connector.jsonConfig = '';
+    }
+  }
 }
 
 function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
@@ -2875,32 +3088,44 @@ function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
 export const brokerMap = computed(
   () => {
     const brokers = api.clusterInfo?.brokers;
-    if (brokers == null) return null;
+    if (brokers == null) {
+      return null;
+    }
 
     const map = new Map<number, Broker>();
-    for (const b of brokers) map.set(b.brokerId, b);
+    for (const b of brokers) {
+      map.set(b.brokerId, b);
+    }
 
     return map;
   },
-  { name: 'brokerMap', equals: comparer.structural },
+  { name: 'brokerMap', equals: comparer.structural }
 );
 
 // 1. add 'type' to each synonym, so when expanding a config entry (to view its synonyms), we can still see the type
 // 2. remove redundant synonym entries (those that have the same source as the root config entry)
 function prepareSynonyms(configEntries: ConfigEntry[]) {
-  if (!Array.isArray(configEntries)) return;
+  if (!Array.isArray(configEntries)) {
+    return;
+  }
 
   for (const e of configEntries) {
-    if (e.synonyms === undefined) continue;
+    if (e.synonyms === undefined) {
+      continue;
+    }
 
     // add 'type' from root object
-    for (const s of e.synonyms) s.type = e.type;
+    for (const s of e.synonyms) {
+      s.type = e.type;
+    }
   }
 }
 
 function normalizeAcls(acls: AclResource[]) {
   function upperFirst(str: string): string {
-    if (!str) return str;
+    if (!str) {
+      return str;
+    }
     const lower = str.toLowerCase();
     const first = lower[0];
     const result = first.toUpperCase() + lower.slice(1);
@@ -2912,8 +3137,12 @@ function normalizeAcls(acls: AclResource[]) {
   } as { [key: string]: string };
 
   function normalizeStringEnum<T extends string>(str: T): T {
-    if (!str) return str;
-    if (specialCaseMap[str]) return specialCaseMap[str] as T;
+    if (!str) {
+      return str;
+    }
+    if (specialCaseMap[str]) {
+      return specialCaseMap[str] as T;
+    }
 
     const parts = str.split('_');
     for (let i = 0; i < parts.length; i++) {
@@ -2945,7 +3174,7 @@ export function aclRequestToQuery(request: GetAclsRequest): string {
 
 export async function partialTopicConfigs(
   configKeys: string[],
-  topics?: string[],
+  topics?: string[]
 ): Promise<PartialTopicConfigsResponse> {
   const keys = configKeys.map((k) => encodeURIComponent(k)).join(',');
   const topicNames = topics?.map((t) => encodeURIComponent(t)).join(',');
@@ -2955,7 +3184,7 @@ export async function partialTopicConfigs(
   return parseOrUnwrap<PartialTopicConfigsResponse>(response, null);
 }
 
-export interface MessageSearchRequest {
+export type MessageSearchRequest = {
   topicName: string;
   startOffset: number;
   startTimestamp: number;
@@ -2972,12 +3201,14 @@ export interface MessageSearchRequest {
 
   keyDeserializer?: PayloadEncoding;
   valueDeserializer?: PayloadEncoding;
-}
+};
 
 async function parseOrUnwrap<T>(response: Response, text: string | null): Promise<T> {
   let obj: undefined | any;
   if (text === null) {
-    if (response.bodyUsed) throw new Error('response content already consumed');
+    if (response.bodyUsed) {
+      throw new Error('response content already consumed');
+    }
     text = await response.text();
   }
   try {
@@ -2985,7 +3216,9 @@ async function parseOrUnwrap<T>(response: Response, text: string | null): Promis
   } catch {}
 
   // api error?
-  if (isApiError(obj)) throw new WrappedApiError(response, obj);
+  if (isApiError(obj)) {
+    throw new WrappedApiError(response, obj);
+  }
 
   // server/proxy error?
   if (!response.ok) {

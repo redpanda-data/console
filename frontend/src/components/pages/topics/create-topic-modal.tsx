@@ -31,10 +31,10 @@ export const topicSchema = z.object({
     .regex(/^[a-z0-9._-]+$/, 'Topic name must only contain lowercase letters, numbers, dots, underscores, and hyphens'),
 });
 
-interface CreateTopicModalProps {
+type CreateTopicModalProps = {
   isOpen: boolean;
   onClose: (createdTopicLabel?: string) => void;
-}
+};
 
 export const DEFAULT_TOPIC_PARTITION_COUNT = 1;
 export const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;
@@ -101,7 +101,7 @@ export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => 
                   }}
                 >
                   {(field) => (
-                    <field.TextField label="Name" placeholder="Enter topic name" data-testid="topic-name-field" />
+                    <field.TextField data-testid="topic-name-field" label="Name" placeholder="Enter topic name" />
                   )}
                 </form.AppField>
               </Stack>
@@ -110,18 +110,18 @@ export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => 
             <ModalFooter>
               <ButtonGroup isDisabled={isCreateTopicPending}>
                 <form.SubscribeButton
-                  label="Create"
-                  variant="brand"
                   data-testid="create-topic-button"
+                  label="Create"
                   loadingText="Creating"
+                  variant="brand"
                 />
 
                 <Button
-                  variant="ghost"
                   data-testid="cancel-button"
                   onClick={() => {
                     onClose(undefined);
                   }}
+                  variant="ghost"
                 >
                   Cancel
                 </Button>

@@ -55,7 +55,7 @@ export type JsonSchemaType = {
 export function generateDefaultFromJsonSchema(
   schema: JsonSchemaType,
   propertyName?: string,
-  parentSchema?: JsonSchemaType,
+  parentSchema?: JsonSchemaType
 ): JsonValue {
   if ('default' in schema && schema.default !== undefined) {
     return schema.default;
@@ -74,29 +74,33 @@ export function generateDefaultFromJsonSchema(
       return isRequired ? false : undefined;
     case 'array': {
       // Always start arrays with at least 1 item to reduce user clicks
-      if (!schema.items) return [];
+      if (!schema.items) {
+        return [];
+      }
       const defaultItem = generateDefaultFromJsonSchema(schema.items);
       return [defaultItem];
     }
     case 'object': {
-      if (!schema.properties) return {};
+      if (!schema.properties) {
+        return {};
+      }
 
       const obj: JsonObject = {};
       // Only include properties that are required according to the schema's required array
-      Object.entries(schema.properties).forEach(([key, prop]) => {
+      for (const [key, prop] of Object.entries(schema.properties)) {
         if (isPropertyRequired(key, schema)) {
           const value = generateDefaultFromJsonSchema(prop, key, schema);
           if (value !== undefined) {
             obj[key] = value;
           }
         }
-      });
+      }
       return obj;
     }
     case 'null':
       return null;
     default:
-      return undefined;
+      return;
   }
 }
 

@@ -37,6 +37,9 @@ import {
   MdOutlineQuiz,
   MdOutlineWarningAmber,
 } from 'react-icons/md';
+
+import type { GroupDeletingMode } from './Modals';
+import { DeleteOffsetsModal, EditOffsetsModal, type GroupOffset } from './Modals';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import type { GroupDescription, GroupMemberDescription } from '../../../state/restInterfaces';
@@ -49,8 +52,25 @@ import { ShortNum } from '../../misc/ShortNum';
 import { Statistic } from '../../misc/Statistic';
 import { PageComponent, type PageInitHelper } from '../Page';
 import AclList from '../topics/Tab.Acl/AclList';
-import type { GroupDeletingMode } from './Modals';
-import { DeleteOffsetsModal, EditOffsetsModal, type GroupOffset } from './Modals';
+
+const DEFAULT_MATCH_ALL_REGEX = /.*/s;
+const QUICK_SEARCH_REGEX_CACHE = new Map<string, RegExp>();
+
+function getQuickSearchRegex(pattern: string): RegExp {
+  if (QUICK_SEARCH_REGEX_CACHE.has(pattern)) {
+    // biome-ignore lint/style/noNonNullAssertion: cache hit guarantees value exists
+    return QUICK_SEARCH_REGEX_CACHE.get(pattern)!;
+  }
+  let regExp = DEFAULT_MATCH_ALL_REGEX; // match everything by default
+  try {
+    regExp = new RegExp(pattern, 'i');
+  } catch (_e) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.warn('Invalid expression');
+  }
+  QUICK_SEARCH_REGEX_CACHE.set(pattern, regExp);
+  return regExp;
+}
 
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
@@ -74,11 +94,12 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
     p.title = this.props.groupId;
     p.addBreadcrumb('Consumer Groups', '/groups');
-    if (group)
+    if (group) {
       p.addBreadcrumb(group, `/${group}`, undefined, {
         canBeCopied: true,
         canBeTruncated: true,
       });
+    }
 
     this.refreshData(true);
     appGlobal.onRefresh = () => this.refreshData(true);
@@ -93,9 +114,8 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
   renderTopics(group: GroupDescription) {
     return (
       <>
-        <Flex mb={6} gap={4} alignItems="center">
+        <Flex alignItems="center" gap={4} mb={6}>
           <SearchField
-            width={300}
             placeholderText="Filter by member"
             searchText={this.quickSearch}
             setSearchText={(filterText) => {
@@ -105,6 +125,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 query.q = q;
               });
             }}
+            width={300}
           />
           <Checkbox
             isChecked={this.showWithLagOnly}
@@ -121,7 +142,10 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
         <GroupByTopics
           group={group}
-          onlyShowPartitionsWithLag={this.showWithLagOnly}
+          onDeleteOffsets={(offsets, mode) => {
+            this.deletingMode = mode;
+            this.deletingOffsets = offsets;
+          }}
           onEditOffsets={(g) => {
             this.editGroup();
             this.editedTopic = g[0].topicName;
@@ -131,11 +155,8 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
               this.editedPartition = null;
             }
           }}
+          onlyShowPartitionsWithLag={this.showWithLagOnly}
           quickSearch={this.quickSearch}
-          onDeleteOffsets={(offsets, mode) => {
-            this.deletingMode = mode;
-            this.deletingOffsets = offsets;
-          }}
         />
       </>
     );
@@ -143,9 +164,13 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
   render() {
     // Get info about the group
-    if (api.consumerGroups.size === 0) return DefaultSkeleton;
+    if (api.consumerGroups.size === 0) {
+      return DefaultSkeleton;
+    }
     const group = this.group;
-    if (!group) return DefaultSkeleton;
+    if (!group) {
+      return DefaultSkeleton;
+    }
 
     // Get info about each topic
     const totalPartitions = group.members.flatMap((m) => m.assignments).sum((a) => a.partitionIds.length);
@@ -153,10 +178,10 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
     return (
       <PageContent className="groupDetails">
         <Flex gap={2}>
-          <Button variant="outline" onClick={() => this.editGroup()} disabledReason={cannotEditGroupReason(group)}>
+          <Button disabledReason={cannotEditGroupReason(group)} onClick={() => this.editGroup()} variant="outline">
             Edit Group
           </Button>
-          <Button variant="outline" onClick={() => this.deleteGroup()} disabledReason={cannotDeleteGroupReason(group)}>
+          <Button disabledReason={cannotDeleteGroupReason(group)} onClick={() => this.deleteGroup()} variant="outline">
             Delete Group
           </Button>
         </Flex>
@@ -188,7 +213,6 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
           {/* View Buttons */}
           <Tabs
             isFitted
-            variant="fitted"
             items={[
               {
                 key: 'topics',
@@ -201,25 +225,26 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 component: <AclList acl={api.consumerGroupAcls.get(group.groupId)} />,
               },
             ]}
+            variant="fitted"
           />
         </Section>
 
         {/* Modals */}
         <EditOffsetsModal
-          key={`${this.editedTopic ?? ''}-${this.editedPartition ?? ''}`}
           group={group}
+          initialPartition={this.editedPartition}
+          initialTopic={this.editedTopic}
+          key={`${this.editedTopic ?? ''}-${this.editedPartition ?? ''}`}
           offsets={this.edittingOffsets}
           onClose={() => (this.edittingOffsets = null)}
-          initialTopic={this.editedTopic}
-          initialPartition={this.editedPartition}
         />
         <DeleteOffsetsModal
+          disabledReason={cannotDeleteGroupReason(group)}
           group={group}
           mode={this.deletingMode}
           offsets={this.deletingOffsets}
           onClose={() => (this.deletingOffsets = null)}
           onInit={() => this.deleteGroup()}
-          disabledReason={cannotDeleteGroupReason(group)}
         />
       </PageContent>
     );
@@ -231,13 +256,15 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
   }
 
   @action editGroup() {
-    const groupOffsets = this.group?.topicOffsets.flatMap((x) => {
-      return x.partitionOffsets.map((p) => {
-        return { topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset } as GroupOffset;
-      });
-    });
+    const groupOffsets = this.group?.topicOffsets.flatMap((x) =>
+      x.partitionOffsets.map(
+        (p) => ({ topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset }) as GroupOffset
+      )
+    );
 
-    if (!groupOffsets) return;
+    if (!groupOffsets) {
+      return;
+    }
 
     this.editedTopic = null;
     this.editedPartition = null;
@@ -245,13 +272,15 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
   }
 
   @action deleteGroup() {
-    const groupOffsets = this.group?.topicOffsets.flatMap((x) => {
-      return x.partitionOffsets.map((p) => {
-        return { topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset } as GroupOffset;
-      });
-    });
+    const groupOffsets = this.group?.topicOffsets.flatMap((x) =>
+      x.partitionOffsets.map(
+        (p) => ({ topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset }) as GroupOffset
+      )
+    );
 
-    if (!groupOffsets) return;
+    if (!groupOffsets) {
+      return;
+    }
 
     this.deletingOffsets = groupOffsets;
     this.deletingMode = 'group';
@@ -265,26 +294,18 @@ const GroupByTopics = observer(function GroupByTopics(props: {
   onEditOffsets: (offsets: GroupOffset[]) => void;
   onDeleteOffsets: (offsets: GroupOffset[], mode: GroupDeletingMode) => void;
 }) {
-  const quickSearchRegExp = useMemo(() => {
-    let regExp = /.*/s; // match everything by default
-    try {
-      regExp = new RegExp(props.quickSearch, 'i');
-    } catch (_e) {
-      console.warn('Invalid expression');
-    }
-    return regExp;
-  }, [props.quickSearch]);
+  const quickSearchRegExp = useMemo(() => getQuickSearchRegex(props.quickSearch), [props.quickSearch]);
 
   const topicLags = props.group.topicOffsets;
   const p = props;
-  const allAssignments = p.group.members.flatMap((m) => {
-    return m.assignments.map((as) => ({ member: m, topicName: as.topicName, partitions: as.partitionIds }));
-  });
+  const allAssignments = p.group.members.flatMap((m) =>
+    m.assignments.map((as) => ({ member: m, topicName: as.topicName, partitions: as.partitionIds }))
+  );
 
   const lagsFlat = topicLags.flatMap((topicLag) =>
     topicLag.partitionOffsets.map((partLag) => {
       const assignedMember = allAssignments.find(
-        (e) => e.topicName === topicLag.topic && e.partitions.includes(partLag.partitionId),
+        (e) => e.topicName === topicLag.topic && e.partitions.includes(partLag.partitionId)
       );
 
       return {
@@ -299,7 +320,7 @@ const GroupByTopics = observer(function GroupByTopics(props: {
         clientId: assignedMember?.member.clientId,
         host: assignedMember?.member.clientHost,
       };
-    }),
+    })
   );
 
   const lagGroupsByTopic = lagsFlat
@@ -312,47 +333,51 @@ const GroupByTopics = observer(function GroupByTopics(props: {
     const totalLagAll = g.partitions.sum((c) => c.lag ?? 0);
     const partitionsAssigned = g.partitions.filter((c) => c.assignedMember).length;
 
-    if (p.onlyShowPartitionsWithLag) g.partitions.removeAll((e) => e.lag === 0);
+    if (p.onlyShowPartitionsWithLag) {
+      g.partitions.removeAll((e) => e.lag === 0);
+    }
 
-    if (g.partitions.length === 0) return null;
+    if (g.partitions.length === 0) {
+      return null;
+    }
 
     return {
       heading: (
         <Flex flexDirection="column" gap={4}>
           <Flex gap={2}>
             {/* Title */}
-            <Text fontWeight={600} fontSize="lg">
+            <Text fontSize="lg" fontWeight={600}>
               {g.topicName}
             </Text>
 
             <Flex gap={2}>
               <IconButton
+                disabledReason={cannotEditGroupReason(props.group)}
                 onClick={(e) => {
                   p.onEditOffsets(g.partitions);
                   e.stopPropagation();
                 }}
-                disabledReason={cannotEditGroupReason(props.group)}
               >
                 <PencilIcon />
               </IconButton>
               <IconButton
+                disabledReason={cannotDeleteGroupOffsetsReason(props.group)}
                 onClick={(e) => {
                   p.onDeleteOffsets(g.partitions, 'topic');
                   e.stopPropagation();
                 }}
-                disabledReason={cannotDeleteGroupOffsetsReason(props.group)}
               >
                 <TrashIcon />
               </IconButton>
             </Flex>
           </Flex>
-          <Flex gap={4} fontSize="sm" alignItems="center" fontWeight="normal" color="gray.600">
+          <Flex alignItems="center" color="gray.600" fontSize="sm" fontWeight="normal" gap={4}>
             <span>Lag: {numberToThousandsString(totalLagAll)}</span>
             <span>Assigned partitions: {partitionsAssigned}</span>
             <Button
-              variant="link"
-              size="sm"
               onClick={() => appGlobal.historyPush(`/topics/${encodeURIComponent(g.topicName)}`)}
+              size="sm"
+              variant="link"
             >
               Go to topic
             </Button>
@@ -371,9 +396,6 @@ const GroupByTopics = observer(function GroupByTopics(props: {
           clientId: string | undefined;
           host: string | undefined;
         }>
-          pagination
-          sorting
-          data={g.partitions}
           columns={[
             {
               size: 100,
@@ -434,16 +456,16 @@ const GroupByTopics = observer(function GroupByTopics(props: {
               header: '',
               id: 'action',
               cell: ({ row: { original } }) => (
-                <Flex pr={2} gap={1}>
+                <Flex gap={1} pr={2}>
                   <IconButton
-                    onClick={() => p.onEditOffsets([original])}
                     disabledReason={cannotEditGroupReason(props.group)}
+                    onClick={() => p.onEditOffsets([original])}
                   >
                     <PencilIcon />
                   </IconButton>
                   <IconButton
-                    onClick={() => p.onDeleteOffsets([original], 'partition')}
                     disabledReason={cannotDeleteGroupOffsetsReason(props.group)}
+                    onClick={() => p.onDeleteOffsets([original], 'partition')}
                   >
                     <TrashIcon />
                   </IconButton>
@@ -451,6 +473,9 @@ const GroupByTopics = observer(function GroupByTopics(props: {
               ),
             },
           ]}
+          data={g.partitions}
+          pagination
+          sorting
         />
       ),
     };
@@ -476,7 +501,7 @@ const GroupByTopics = observer(function GroupByTopics(props: {
     );
   }
 
-  return <Accordion allowToggle items={topicEntries.filterNull()} defaultIndex={defaultExpand} />;
+  return <Accordion allowToggle defaultIndex={defaultExpand} items={topicEntries.filterNull()} />;
 });
 
 const renderMergedID = (id?: string, clientId?: string) => {
@@ -502,11 +527,11 @@ const renderMergedID = (id?: string, clientId?: string) => {
 type StateIcon = 'stable' | 'completingrebalance' | 'preparingrebalance' | 'empty' | 'dead' | 'unknown';
 
 const stateIcons = new Map<StateIcon, JSX.Element>([
-  ['stable', <MdCheckCircleOutline key="stable" size={16} color="#52c41a" />],
-  ['completingrebalance', <MdHourglassBottom key="completingrebalance" size={16} color="#52c41a" />],
-  ['preparingrebalance', <MdHourglassEmpty key="preparingrebalance" size={16} color="orange" />],
-  ['empty', <MdOutlineWarningAmber key="empty" size={16} color="orange" />],
-  ['dead', <MdLocalFireDepartment key="dead" size={16} color="orangered" />],
+  ['stable', <MdCheckCircleOutline color="#52c41a" key="stable" size={16} />],
+  ['completingrebalance', <MdHourglassBottom color="#52c41a" key="completingrebalance" size={16} />],
+  ['preparingrebalance', <MdHourglassEmpty color="orange" key="preparingrebalance" size={16} />],
+  ['empty', <MdOutlineWarningAmber color="orange" key="empty" size={16} />],
+  ['dead', <MdLocalFireDepartment color="orangered" key="dead" size={16} />],
   ['unknown', <MdOutlineQuiz key="unknown" size={16} />],
 ]);
 
@@ -529,11 +554,11 @@ const stateIconDescriptions: Record<StateIcon, string> = {
 };
 
 const consumerGroupStateTable = (
-  <Grid templateColumns="auto 300px" gap={4}>
+  <Grid gap={4} templateColumns="auto 300px">
     {Array.from(stateIcons.entries()).map(([key, icon]) => (
       <React.Fragment key={key}>
         {/* Icon column */}
-        <GridItem display="flex" alignItems="center" gap={2}>
+        <GridItem alignItems="center" display="flex" gap={2}>
           {icon} <strong>{stateIconNames[key]}</strong>
         </GridItem>
 
@@ -549,8 +574,8 @@ export const GroupState = (p: { group: GroupDescription }) => {
   const icon = stateIcons.get(state as StateIcon);
 
   return (
-    <Popover isInPortal trigger="hover" size="auto" placement="right" hideCloseButton content={consumerGroupStateTable}>
-      <Flex gap={2} alignItems="center">
+    <Popover content={consumerGroupStateTable} hideCloseButton isInPortal placement="right" size="auto" trigger="hover">
+      <Flex alignItems="center" gap={2}>
         {icon}
         <span> {p.group.state}</span>
       </Flex>
@@ -559,27 +584,47 @@ export const GroupState = (p: { group: GroupDescription }) => {
 };
 const ProtocolType = (p: { group: GroupDescription }) => {
   const protocol = p.group.protocolType;
-  if (protocol === 'consumer') return null;
+  if (protocol === 'consumer') {
+    return null;
+  }
 
   return <Statistic title="Protocol" value={protocol} />;
 };
 
 function cannotEditGroupReason(group: GroupDescription): string | undefined {
-  if (group.noEditPerms) return "You don't have 'editConsumerGroup' permissions for this group";
-  if (group.isInUse) return 'Consumer groups with active members cannot be edited';
-  if (!Features.patchGroup) return 'This cluster does not support editing group offsets';
+  if (group.noEditPerms) {
+    return "You don't have 'editConsumerGroup' permissions for this group";
+  }
+  if (group.isInUse) {
+    return 'Consumer groups with active members cannot be edited';
+  }
+  if (!Features.patchGroup) {
+    return 'This cluster does not support editing group offsets';
+  }
 }
 
 function cannotDeleteGroupReason(group: GroupDescription): string | undefined {
-  if (group.noDeletePerms) return "You don't have 'deleteConsumerGroup' permissions for this group";
-  if (group.isInUse) return 'Consumer groups with active members cannot be deleted';
-  if (!Features.deleteGroup) return 'This cluster does not support deleting groups';
+  if (group.noDeletePerms) {
+    return "You don't have 'deleteConsumerGroup' permissions for this group";
+  }
+  if (group.isInUse) {
+    return 'Consumer groups with active members cannot be deleted';
+  }
+  if (!Features.deleteGroup) {
+    return 'This cluster does not support deleting groups';
+  }
 }
 
 function cannotDeleteGroupOffsetsReason(group: GroupDescription): string | undefined {
-  if (group.noEditPerms) return "You don't have 'deleteConsumerGroup' permissions for this group";
-  if (group.isInUse) return 'Consumer groups with active members cannot be deleted';
-  if (!Features.deleteGroupOffsets) return 'This cluster does not support deleting group offsets';
+  if (group.noEditPerms) {
+    return "You don't have 'deleteConsumerGroup' permissions for this group";
+  }
+  if (group.isInUse) {
+    return 'Consumer groups with active members cannot be deleted';
+  }
+  if (!Features.deleteGroupOffsets) {
+    return 'This cluster does not support deleting group offsets';
+  }
 }
 
 export default GroupDetails;

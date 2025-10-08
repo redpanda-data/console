@@ -1,5 +1,6 @@
 import { Button, type ButtonProps } from '@redpanda-data/ui';
 import type { ReactNode } from 'react';
+
 import { useFormContext } from '../form-hook-contexts';
 
 export interface SubscribeButtonProps extends Omit<ButtonProps, 'onClick' | 'isLoading' | 'isDisabled'> {
@@ -18,15 +19,15 @@ export const SubscribeButton = ({
     <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
       {([canSubmit, isSubmitting]) => (
         <Button
-          variant={variant}
-          isLoading={isSubmitting}
           isDisabled={!canSubmit || isSubmitting}
+          isLoading={isSubmitting}
           loadingText={loadingText}
           onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
             e.preventDefault();
             e.stopPropagation();
             form.handleSubmit();
           }}
+          variant={variant}
           {...rest}
         >
           {label ?? 'Submit'}

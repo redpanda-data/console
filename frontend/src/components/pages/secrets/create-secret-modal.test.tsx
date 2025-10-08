@@ -11,6 +11,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { fireEvent, render, screen, waitFor } from 'test-utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
+
 import { CreateSecretModal } from './create-secret-modal';
 
 describe('CreateSecretModal', () => {
@@ -34,7 +35,7 @@ describe('CreateSecretModal', () => {
     const createSecretMock = vi.fn().mockReturnValue(
       create(CreateSecretResponseSchema, {
         secret,
-      }),
+      })
     );
 
     const transport = createRouterTransport(({ rpc }) => {
@@ -77,7 +78,7 @@ describe('CreateSecretModal', () => {
         create(CreateSecretRequestSchema, {
           request: create(CreateSecretRequestSchemaDataPlane, {
             id: secretId,
-            // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
+            // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
             secretData: base64ToUInt8Array(encodeBase64(secretValue)),
             scopes: [Scope.REDPANDA_CONNECT],
             labels: {
@@ -86,7 +87,7 @@ describe('CreateSecretModal', () => {
             },
           }),
         }),
-        expect.anything(),
+        expect.anything()
       );
     });
   });

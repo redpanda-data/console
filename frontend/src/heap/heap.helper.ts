@@ -12,14 +12,14 @@
 // Heap Analytics Configuration Constants
 export const HEAP_APP_ID = '328327039';
 
-interface HeapUserData {
+type HeapUserData = {
   email?: string;
   firstName?: string;
   lastName?: string;
   company?: string;
   avatarUrl?: string;
   [key: string]: string | number | undefined;
-}
+};
 
 declare global {
   interface Window {

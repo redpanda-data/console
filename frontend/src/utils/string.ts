@@ -9,6 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+const CAMEL_CASE_REGEX = /([A-Z])/g;
+const FIRST_CHAR_REGEX = /^\w/;
+
 /**
  * Formats a field key into a human-readable label
  * Examples:
@@ -21,7 +24,7 @@
  */
 export function formatFieldLabel(key: string): string {
   return key
-    .replace(/([A-Z])/g, ' $1') // Insert space before capital letters
+    .replace(CAMEL_CASE_REGEX, ' $1') // Insert space before capital letters
     .replace(/_/g, ' ') // Replace underscores with spaces
-    .replace(/^\w/, (c) => c.toUpperCase()); // Capitalize first letter
+    .replace(FIRST_CHAR_REGEX, (c) => c.toUpperCase()); // Capitalize first letter
 }

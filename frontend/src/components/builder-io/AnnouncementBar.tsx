@@ -15,11 +15,16 @@ export default function AnnouncementBar() {
       userAttributes: {
         urlPath: window.location.pathname,
       },
-    }).then((content) => {
-      if (content) {
-        setContent(content);
-      }
-    });
+    })
+      .then((content) => {
+        if (content) {
+          setContent(content);
+        }
+      })
+      .catch((error) => {
+        // biome-ignore lint/suspicious/noConsole: error logging for debugging fetch failures
+        console.error('Failed to fetch announcement bar content:', error);
+      });
   }, []);
 
   const shouldRenderBuilderContent = content || isPreviewing();
@@ -27,10 +32,10 @@ export default function AnnouncementBar() {
   return shouldRenderBuilderContent
     ? content && (
         <Content
-          content={content}
-          model={MODEL_NAME}
           apiKey={BUILDER_API_KEY}
+          content={content}
           customComponents={builderCustomComponents}
+          model={MODEL_NAME}
         />
       )
     : null;

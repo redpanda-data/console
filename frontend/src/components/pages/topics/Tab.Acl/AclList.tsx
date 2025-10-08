@@ -11,6 +11,7 @@
 
 import { Alert, AlertIcon, DataTable } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
+
 import type {
   AclRule,
   AclStrOperation,
@@ -23,13 +24,15 @@ import { toJson } from '../../../../utils/jsonUtils';
 
 type Acls = GetAclOverviewResponse | null | undefined;
 
-interface AclListProps {
+type AclListProps = {
   acl: Acls;
-}
+};
 
 function flatResourceList(store: Acls) {
   const acls = store;
-  if (acls?.aclResources == null) return [];
+  if (acls?.aclResources == null) {
+    return [];
+  }
   const flatResources = acls.aclResources
     .flatMap((res) => res.acls.map((rule) => ({ ...res, ...rule })))
     .map((x) => ({ ...x, eqKey: toJson(x) }));
@@ -47,12 +50,12 @@ export default observer(({ acl }: AclListProps) => {
           You do not have the necessary permissions to view ACLs
         </Alert>
       ) : null}
-      {!acl?.isAuthorizerEnabled ? (
+      {acl?.isAuthorizerEnabled ? null : (
         <Alert status="warning" style={{ marginBottom: '1em' }}>
           <AlertIcon />
           There's no authorizer configured in your Kafka cluster
         </Alert>
-      ) : null}
+      )}
       <DataTable<{
         eqKey: string;
         principal: string;
@@ -64,9 +67,6 @@ export default observer(({ acl }: AclListProps) => {
         resourcePatternType: AclStrResourcePatternType;
         acls: AclRule[];
       }>
-        data={resources}
-        pagination
-        sorting
         columns={[
           {
             size: 120,
@@ -101,6 +101,9 @@ export default observer(({ acl }: AclListProps) => {
             accessorKey: 'host',
           },
         ]}
+        data={resources}
+        pagination
+        sorting
       />
     </>
   );

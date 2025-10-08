@@ -26,19 +26,28 @@ import {
 import { observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { useEffect, useState } from 'react';
+
+import { openSwitchSchemaFormatModal, openValidationErrorsModal } from './modals';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { type SchemaRegistryValidateSchemaResponse, SchemaType } from '../../../state/restInterfaces';
+import {
+  type SchemaRegistryValidateSchemaResponse,
+  SchemaType,
+  type SchemaTypeType,
+} from '../../../state/restInterfaces';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import type { ElementOf } from '../../../utils/utils';
 import KowlEditor from '../../misc/KowlEditor';
 import PageContent from '../../misc/PageContent';
 import { SingleSelect } from '../../misc/Select';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { openSwitchSchemaFormatModal, openValidationErrorsModal } from './modals';
+
+// Regex for extracting record names from schema text
+const JSON_NAME_REGEX = /"name"\s*:\s*"(.*)"/;
+const PROTOBUF_MESSAGE_NAME_REGEX = /message\s+(\S+)\s*\{/;
 
 @observer
-export class SchemaCreatePage extends PageComponent<{}> {
+export class SchemaCreatePage extends PageComponent {
   initPage(p: PageInitHelper): void {
     p.title = 'Create schema';
     p.addBreadcrumb('Schema Registry', '/schema-registry');
@@ -59,7 +68,7 @@ export class SchemaCreatePage extends PageComponent<{}> {
       <PageContent key="b">
         <Heading variant="xl">Create schema</Heading>
 
-        <SchemaEditor state={this.editorState} mode="CREATE" />
+        <SchemaEditor mode="CREATE" state={this.editorState} />
 
         <SchemaPageButtons editorState={this.editorState} />
       </PageContent>
@@ -104,11 +113,14 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
   render() {
     const subjectName = decodeURIComponent(this.props.subjectName);
     const subject = api.schemaDetails.get(subjectName);
-    if (!subject) return DefaultSkeleton;
+    if (!subject) {
+      return DefaultSkeleton;
+    }
 
     if (this.editorState == null) {
       const schema = subject.schemas.first((x) => x.version === subject.latestActiveVersion);
       if (!schema) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error('Cannot find last active schema version of subject', {
           name: subject.name,
           lastActiveVersion: subject.latestActiveVersion,
@@ -122,8 +134,9 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
       this.editorState.format = schema.type as 'AVRO' | 'PROTOBUF';
       this.editorState.keyOrValue = undefined;
 
-      if (schema.type === SchemaType.AVRO || schema.type === SchemaType.JSON)
+      if (schema.type === SchemaType.AVRO || schema.type === SchemaType.JSON) {
         schema.schema = JSON.stringify(JSON.parse(schema.schema), undefined, 4);
+      }
 
       this.editorState.schemaText = schema.schema;
       this.editorState.references = schema.references;
@@ -135,7 +148,7 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
       <PageContent key="b">
         <Heading variant="xl">Add schema version</Heading>
 
-        <SchemaEditor state={this.editorState} mode="ADD_VERSION" />
+        <SchemaEditor mode="ADD_VERSION" state={this.editorState} />
 
         <SchemaPageButtons editorState={this.editorState} parentSubjectName={subjectName} />
       </PageContent>
@@ -162,7 +175,6 @@ const SchemaPageButtons = observer(
       <Flex gap="4" mt="4">
         <Button
           colorScheme="brand"
-          variant="solid"
           isDisabled={isCreating || isMissingName || isValidating || editorState.isInvalidKeyOrValue}
           isLoading={isCreating}
           loadingText="Creating..."
@@ -183,7 +195,7 @@ const SchemaPageButtons = observer(
               const subjectName = editorState.computedSubjectName;
               const r = await api
                 .createSchema(editorState.computedSubjectName, {
-                  schemaType: editorState.format as SchemaType,
+                  schemaType: editorState.format as SchemaTypeType,
                   schema: editorState.schemaText,
                   references: editorState.references.filter((x) => x.name && x.subject),
                 })
@@ -193,13 +205,16 @@ const SchemaPageButtons = observer(
 
               // success: navigate to details
               const latestVersion = api.schemaDetails.get(subjectName)?.latestActiveVersion;
+              // biome-ignore lint/suspicious/noConsole: intentional console usage
               console.log('schema created', { response: r });
+              // biome-ignore lint/suspicious/noConsole: intentional console usage
               console.log('navigating to details', { subjectName, latestVersion });
               appGlobal.historyReplace(
-                `/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=${latestVersion}`,
+                `/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=${latestVersion}`
               );
             } catch (err) {
               // error: open modal
+              // biome-ignore lint/suspicious/noConsole: intentional console usage
               console.log('failed to create schema', { err });
               toast({
                 status: 'error',
@@ -210,12 +225,12 @@ const SchemaPageButtons = observer(
               });
             }
           }}
+          variant="solid"
         >
           Save
         </Button>
 
         <Button
-          variant="solid"
           isDisabled={isValidating || isMissingName || isValidating || editorState.isInvalidKeyOrValue}
           isLoading={isValidating}
           loadingText="Validate"
@@ -234,23 +249,26 @@ const SchemaPageButtons = observer(
               openValidationErrorsModal(r);
             }
           }}
+          variant="solid"
         >
           Validate
         </Button>
 
         <Button
-          variant="link"
           onClick={() => {
-            if (p.parentSubjectName)
+            if (p.parentSubjectName) {
               appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(p.parentSubjectName)}`);
-            else appGlobal.historyReplace('/schema-registry');
+            } else {
+              appGlobal.historyReplace('/schema-registry');
+            }
           }}
+          variant="link"
         >
           Cancel
         </Button>
       </Flex>
     );
-  },
+  }
 );
 
 async function validateSchema(state: SchemaEditorStateHelper): Promise<{
@@ -258,26 +276,29 @@ async function validateSchema(state: SchemaEditorStateHelper): Promise<{
   errorDetails?: string; // details about why the schema is not valid
   isCompatible?: boolean; // is the new schema not compatible with older versions; only set when the schema is valid
 }> {
-  if (!state.computedSubjectName) return { isValid: false, errorDetails: 'Missing subject name' };
+  if (!state.computedSubjectName) {
+    return { isValid: false, errorDetails: 'Missing subject name' };
+  }
 
   const r = await api
     .validateSchema(state.computedSubjectName, 'latest', {
-      schemaType: state.format as SchemaType,
+      schemaType: state.format as SchemaTypeType,
       schema: state.schemaText,
       references: state.references.filter((x) => x.name && x.subject),
     })
-    .catch((err) => {
-      return {
-        compatibility: { isCompatible: false },
-        isValid: false,
-        parsingError: String(err),
-      } as SchemaRegistryValidateSchemaResponse;
-    });
+    .catch(
+      (err) =>
+        ({
+          compatibility: { isCompatible: false },
+          isValid: false,
+          parsingError: String(err),
+        }) as SchemaRegistryValidateSchemaResponse
+    );
 
   return {
     isValid: r.isValid,
     errorDetails: r.parsingError,
-    isCompatible: !r.isValid ? undefined : r.compatibility.isCompatible,
+    isCompatible: r.isValid ? r.compatibility.isCompatible : undefined,
   };
 }
 
@@ -326,17 +347,17 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
           <FormField label="Strategy">
             <SingleSelect<NamingStrategy>
               isDisabled={isAddVersion}
-              value={state.strategy}
+              onChange={(e) => {
+                state.userInput = '';
+                state.strategy = e;
+              }}
               options={[
                 { value: 'TOPIC', label: 'Topic Name' },
                 { value: 'RECORD_NAME', label: 'Record Name' },
                 { value: 'TOPIC_RECORD_NAME', label: 'Topic-Record Name' },
                 { value: 'CUSTOM', label: 'Custom' },
               ]}
-              onChange={(e) => {
-                state.userInput = '';
-                state.strategy = e;
-              }}
+              value={state.strategy}
             />
           </FormField>
 
@@ -344,11 +365,11 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
             <FormField label="Topic name">
               <SingleSelect
                 isDisabled={isAddVersion}
-                value={state.userInput}
                 onChange={(e) => (state.userInput = e)}
                 options={
                   api.topics?.filter((x) => !x.topicName.startsWith('_')).map((x) => ({ value: x.topicName })) ?? []
                 }
+                value={state.userInput}
               />
             </FormField>
           ) : (
@@ -358,42 +379,42 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
         </Flex>
 
         <Flex gap="8">
-          <FormField label="Key or value" width="auto" isInvalid={state.isInvalidKeyOrValue} errorText="Required">
+          <FormField errorText="Required" isInvalid={state.isInvalidKeyOrValue} label="Key or value" width="auto">
             <RadioGroup
-              name="keyOrValue"
               isDisabled={isAddVersion}
-              value={state.keyOrValue}
+              name="keyOrValue"
               onChange={(e) => (state.keyOrValue = e)}
               options={[
                 { value: 'KEY', label: 'Key' },
                 { value: 'VALUE', label: 'Value' },
               ]}
+              value={state.keyOrValue}
             />
           </FormField>
 
           <FormField
-            label={isCustom ? 'Subject name' : 'Computed subject name'}
-            isInvalid={!state.computedSubjectName}
             errorText="Subject name is required"
+            isInvalid={!state.computedSubjectName}
+            label={isCustom ? 'Subject name' : 'Computed subject name'}
           >
             <Input
-              value={state.computedSubjectName}
-              onChange={(e) => (state.userInput = e.target.value)}
               isDisabled={!isCustom || isAddVersion}
+              onChange={(e) => (state.userInput = e.target.value)}
+              value={state.computedSubjectName}
             />
           </FormField>
         </Flex>
       </Flex>
 
-      <Heading variant="lg" mt="8">
+      <Heading mt="8" variant="lg">
         Schema definition
       </Heading>
 
       <Flex direction="column" gap="4" maxWidth="1000px">
         <FormField label="Format">
           <RadioGroup
+            isDisabled={isAddVersion}
             name="format"
-            value={state.format}
             onChange={(e) => {
               if (state.format === e) {
                 return;
@@ -406,18 +427,18 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
               });
             }}
             options={formatOptions}
-            isDisabled={isAddVersion}
+            value={state.format}
           />
         </FormField>
 
         <KowlEditor
-          value={state.schemaText}
-          onChange={(e) => (state.schemaText = e ?? '')}
           height="400px"
           language={state.format === 'PROTOBUF' ? 'proto' : 'json'}
+          onChange={(e) => (state.schemaText = e ?? '')}
+          value={state.schemaText}
         />
 
-        <Heading variant="lg" mt="8">
+        <Heading mt="8" variant="lg">
           Schema references
         </Heading>
         {/* <Text>This is an example help text about the references list, to be updated later</Text> */}
@@ -433,13 +454,12 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
   const refs = state.references;
 
   const renderRow = (ref: ElementOf<typeof refs>) => (
-    <Flex gap="4" alignItems="flex-end">
+    <Flex alignItems="flex-end" gap="4">
       <FormField label="Schema reference">
-        <Input value={ref.name} onChange={(e) => (ref.name = e.target.value)} />
+        <Input onChange={(e) => (ref.name = e.target.value)} value={ref.name} />
       </FormField>
       <FormField label="Subject">
         <SingleSelect
-          value={ref.subject}
           onChange={async (e) => {
             ref.subject = e;
 
@@ -449,7 +469,9 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
               details = api.schemaDetails.get(e);
             }
 
-            if (!details) return; // failed to get details
+            if (!details) {
+              return; // failed to get details
+            }
 
             // Need to make sure that, after refreshing, the subject is still the same
             // otherwise, when the user switches between subjects very quickly, we might refresh 3 subjectDetails,
@@ -459,11 +481,11 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
             }
           }}
           options={api.schemaSubjects?.filter((x) => !x.isSoftDeleted).map((x) => ({ value: x.name })) ?? []}
+          value={ref.subject}
         />
       </FormField>
       <FormField label="Version">
         <SingleSelect<number>
-          value={ref.version}
           onChange={(e) => (ref.version = e)}
           options={
             api.schemaDetails
@@ -471,13 +493,14 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
               ?.versions.filter((v) => !v.isSoftDeleted)
               ?.map((x) => ({ value: x.version })) ?? []
           }
+          value={ref.version}
         />
       </FormField>
       <IconButton
         aria-label="delete"
         icon={<DeleteIcon fontSize="19px" />}
-        variant="ghost"
         onClick={() => refs.remove(ref)}
+        variant="ghost"
       />
     </Flex>
   );
@@ -487,10 +510,10 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
       {refs.map((x) => renderRow(x))}
 
       <Button
-        variant="outline"
-        size="sm"
-        width="fit-content"
         onClick={() => refs.push({ name: '', subject: '', version: 1 })}
+        size="sm"
+        variant="outline"
+        width="fit-content"
       >
         Add reference
       </Button>
@@ -522,15 +545,20 @@ function createSchemaState() {
 
     get computedSubjectName() {
       let subjectName = '';
-      if (this.strategy === 'TOPIC')
+      if (this.strategy === 'TOPIC') {
         // was switch-case earlier, but if-cascade is actually more readable
         subjectName = this.userInput;
-      else if (this.strategy === 'RECORD_NAME') subjectName = this.computeRecordName();
-      else if (this.strategy === 'TOPIC_RECORD_NAME') subjectName = `${this.userInput}-${this.computeRecordName()}`;
-      else subjectName = this.userInput;
+      } else if (this.strategy === 'RECORD_NAME') {
+        subjectName = this.computeRecordName();
+      } else if (this.strategy === 'TOPIC_RECORD_NAME') {
+        subjectName = `${this.userInput}-${this.computeRecordName()}`;
+      } else {
+        subjectName = this.userInput;
+      }
 
-      if (this.strategy !== 'CUSTOM')
-        if (this.keyOrValue !== undefined) subjectName += `-${this.keyOrValue.toLowerCase()}`;
+      if (this.strategy !== 'CUSTOM' && this.keyOrValue !== undefined) {
+        subjectName += `-${this.keyOrValue.toLowerCase()}`;
+      }
 
       return subjectName;
     },
@@ -547,23 +575,29 @@ function createSchemaState() {
 
         // The above will obviously only work when the schema is complete,
         // when the user is editting the text, it might not parse, so we fall back to regex matching
-        const jsonNameRegex = /"name"\s*:\s*"(.*)"/;
-        const ar = jsonNameRegex.exec(this.schemaText);
-        if (!ar) return ''; // no match
-        if (ar.length < 2) return ''; // capture group missing?
+        const ar = JSON_NAME_REGEX.exec(this.schemaText);
+        if (!ar) {
+          return ''; // no match
+        }
+        if (ar.length < 2) {
+          return ''; // capture group missing?
+        }
         return ar[1]; // return only first capture group
       }
       // Protobuf
-      const messageNameRegex = /message\s+(\S+)\s*\{/;
-      const ar = messageNameRegex.exec(this.schemaText);
-      if (!ar) return ''; // no match
-      if (ar.length < 2) return ''; // capture group missing?
+      const ar = PROTOBUF_MESSAGE_NAME_REGEX.exec(this.schemaText);
+      if (!ar) {
+        return ''; // no match
+      }
+      if (ar.length < 2) {
+        return ''; // capture group missing?
+      }
       return ar[1]; // return only first capture group
     },
   });
 }
 
-const exampleSchema: Record<SchemaType, string> = {
+const exampleSchema: Record<SchemaTypeType, string> = {
   AVRO: `
 {
    "type": "record",

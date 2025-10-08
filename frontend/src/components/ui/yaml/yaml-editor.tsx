@@ -70,25 +70,29 @@ const monacoYamlOptions: MonacoYamlOptions = {
 
 export const YamlEditor = (props: YamlEditorProps) => {
   const { options: givenOptions, ...rest } = props;
-  const options = Object.assign({}, defaultOptions, givenOptions ?? {});
+  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
   const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
 
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (yaml) {
         yaml.dispose();
       }
-    };
-  }, [yaml]);
+    },
+    [yaml]
+  );
 
-  const setMonacoOptions = useCallback(async (monaco: Monaco) => {
+  const setMonacoOptions = useCallback((monaco: Monaco) => {
     const yaml = configureMonacoYaml(monaco, monacoYamlOptions);
     setYaml(yaml);
   }, []);
 
   return (
     <Editor
+      beforeMount={(monaco) => setMonacoOptions(monaco)}
+      defaultLanguage="yaml"
       loading={<LoadingPlaceholder />}
+      options={options}
       wrapperProps={{
         className: 'kowlEditor',
         style: {
@@ -99,9 +103,6 @@ export const YamlEditor = (props: YamlEditorProps) => {
           flexBasis: '100%',
         },
       }}
-      defaultLanguage="yaml"
-      options={options}
-      beforeMount={(monaco) => setMonacoOptions(monaco)}
       {...rest}
     />
   );

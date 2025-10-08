@@ -14,6 +14,8 @@ import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+
+import { KnowledgeBaseEditTabs } from './KnowledgeBase.EditTabs';
 import type {
   KnowledgeBase,
   KnowledgeBaseUpdate,
@@ -27,13 +29,12 @@ import PageContent from '../../misc/PageContent';
 import { ShortNum } from '../../misc/ShortNum';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { ExplicitConfirmModal } from '../rp-connect/modals';
-import { KnowledgeBaseEditTabs } from './KnowledgeBase.EditTabs';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
-interface KnowledgeBaseDetailsProps {
+type KnowledgeBaseDetailsProps = {
   knowledgebaseId: string;
-}
+};
 
 @observer
 class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
@@ -64,7 +65,9 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
   }
 
   refreshData(): void {
-    if (!Features.pipelinesApi) return;
+    if (!Features.pipelinesApi) {
+      return;
+    }
 
     this.loading = true;
 
@@ -73,13 +76,15 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
       knowledgebaseApi.getKnowledgeBase(this.props.knowledgebaseId),
       rpcnSecretManagerApi.refreshSecrets(true).catch((err) => {
         // Silently handle secrets loading error - secrets are optional
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('KnowledgeBase.Details: Failed to load secrets for Knowledge Base page:', err);
       }),
     ])
       .then(([kb]) => {
         this.knowledgeBase = kb;
         // Load consumer group data after knowledge base is loaded
-        this.loadConsumerGroupData();
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
+        this.loadConsumerGroupData().catch(console.error);
       })
       .catch((err) => {
         toast({
@@ -96,7 +101,9 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
   }
 
   loadConsumerGroupData = async (): Promise<void> => {
-    if (!this.knowledgeBase) return;
+    if (!this.knowledgeBase) {
+      return;
+    }
 
     const consumerGroupId = `${this.knowledgeBase.id}-indexer`;
     this.consumerGroupLoading = true;
@@ -113,6 +120,7 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
       const errorStr = String(err);
       if (errorStr.includes('404') || errorStr.includes('not found')) {
       } else {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('KnowledgeBase.Details: Failed to load consumer group data:', err);
       }
     } finally {
@@ -121,13 +129,17 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
   };
 
   get consumerGroup() {
-    if (!this.knowledgeBase) return null;
+    if (!this.knowledgeBase) {
+      return null;
+    }
     const consumerGroupId = `${this.knowledgeBase.id}-indexer`;
     return api.consumerGroups.get(consumerGroupId);
   }
 
   handleUpdate = async (updatedKnowledgeBase: KnowledgeBaseUpdate, updateMask?: string[]) => {
-    if (!this.knowledgeBase) return;
+    if (!this.knowledgeBase) {
+      return;
+    }
 
     this.isUpdating = true;
     try {
@@ -178,14 +190,16 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
   };
 
   openDeleteKnowledgeBaseModal = () => {
-    if (!this.knowledgeBase) return;
+    if (!this.knowledgeBase) {
+      return;
+    }
 
     openModal(ExplicitConfirmModal, {
       title: <>Delete Knowledge Base</>,
       body: (
         <Box>
           <Text>Are you sure you want to delete the knowledge base "{this.knowledgeBase.displayName}"?</Text>
-          <Text mt={2} color="red.600" fontSize="sm">
+          <Text color="red.600" fontSize="sm" mt={2}>
             This action cannot be undone.
           </Text>
         </Box>
@@ -196,7 +210,8 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
       requiredText: this.knowledgeBase.displayName.trim(),
 
       onPrimaryButton: (closeModal) => {
-        this.handleDeleteConfirmed();
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
+        this.handleDeleteConfirmed().catch(console.error);
         closeModal();
       },
 
@@ -207,7 +222,9 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
   };
 
   handleDeleteConfirmed = async () => {
-    if (!this.knowledgeBase) return;
+    if (!this.knowledgeBase) {
+      return;
+    }
 
     try {
       await knowledgebaseApi.deleteKnowledgeBase(this.knowledgeBase.id);
@@ -233,26 +250,28 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
   };
 
   renderKnowledgeBaseDetails(): JSX.Element {
-    if (!this.knowledgeBase) return <Box>Knowledge base not found</Box>;
+    if (!this.knowledgeBase) {
+      return <Box>Knowledge base not found</Box>;
+    }
 
     const kb = this.knowledgeBase;
 
     return (
       <Box>
-        <Flex justifyContent="space-between" alignItems="center" mb={6}>
+        <Flex alignItems="center" justifyContent="space-between" mb={6}>
           <Heading size="lg">{kb.displayName}</Heading>
           <Flex gap={2}>
             {this.isEditMode ? (
               <>
-                <Button variant="outline" onClick={this.handleCancelEdit}>
+                <Button onClick={this.handleCancelEdit} variant="outline">
                   Cancel
                 </Button>
                 <Button
                   colorScheme="darkblue"
-                  onClick={this.handleSave}
+                  isDisabled={!this.hasChanges}
                   isLoading={this.loading}
                   loadingText="Saving..."
-                  isDisabled={!this.hasChanges}
+                  onClick={this.handleSave}
                 >
                   Save Changes
                 </Button>
@@ -262,54 +281,62 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
                 Edit
               </Button>
             )}
-            <Button colorScheme="red" variant="outline" onClick={this.openDeleteKnowledgeBaseModal}>
+            <Button colorScheme="red" onClick={this.openDeleteKnowledgeBaseModal} variant="outline">
               Delete
             </Button>
           </Flex>
         </Flex>
 
         {/* Consumer Lag Section */}
-        <Box mb={6} p={4} bg="gray.50" borderRadius="md">
+        <Box bg="gray.50" borderRadius="md" mb={6} p={4}>
           <HStack spacing={6}>
             <Box>
-              <Text fontSize="sm" fontWeight="medium" color="gray.600">
+              <Text color="gray.600" fontSize="sm" fontWeight="medium">
                 Indexer Status
               </Text>
-              {this.consumerGroup ? (
-                <HStack spacing={2}>
-                  <Text fontSize="lg" fontWeight="semibold">
-                    {this.consumerGroup.state}
+              {(() => {
+                if (this.consumerGroup) {
+                  return (
+                    <HStack spacing={2}>
+                      <Text fontSize="lg" fontWeight="semibold">
+                        {this.consumerGroup.state}
+                      </Text>
+                      <Text color="gray.500" fontSize="sm">
+                        ({this.consumerGroup.members.length} members)
+                      </Text>
+                    </HStack>
+                  );
+                }
+                if (this.consumerGroupLoadFailed) {
+                  return (
+                    <Text color="gray.500" fontSize="lg" title="Consumer group not yet available">
+                      Initializing...
+                    </Text>
+                  );
+                }
+                return (
+                  <Text color="gray.500" fontSize="lg">
+                    -
                   </Text>
-                  <Text fontSize="sm" color="gray.500">
-                    ({this.consumerGroup.members.length} members)
-                  </Text>
-                </HStack>
-              ) : this.consumerGroupLoadFailed ? (
-                <Text fontSize="lg" color="gray.500" title="Consumer group not yet available">
-                  Initializing...
-                </Text>
-              ) : (
-                <Text fontSize="lg" color="gray.500">
-                  -
-                </Text>
-              )}
+                );
+              })()}
             </Box>
 
             <Box>
-              <Text fontSize="sm" fontWeight="medium" color="gray.600">
+              <Text color="gray.600" fontSize="sm" fontWeight="medium">
                 Consumer Lag
               </Text>
               {this.consumerGroup ? (
                 <HStack spacing={2}>
                   <Text fontSize="lg" fontWeight="semibold">
-                    <ShortNum value={this.consumerGroup.lagSum} tooltip={false} />
+                    <ShortNum tooltip={false} value={this.consumerGroup.lagSum} />
                   </Text>
-                  <Text fontSize="sm" color="gray.500">
+                  <Text color="gray.500" fontSize="sm">
                     messages
                   </Text>
                 </HStack>
               ) : (
-                <Text fontSize="lg" color="gray.500">
+                <Text color="gray.500" fontSize="lg">
                   -
                 </Text>
               )}
@@ -318,19 +345,21 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
         </Box>
 
         <KnowledgeBaseEditTabs
-          ref={this.editTabsRef}
-          knowledgeBase={kb}
           isEditMode={this.isEditMode}
-          onSave={this.handleUpdate}
+          knowledgeBase={kb}
           onCancel={this.handleCancelEdit}
           onFormChange={this.onFormChange}
+          onSave={this.handleUpdate}
+          ref={this.editTabsRef}
         />
       </Box>
     );
   }
 
   render(): JSX.Element {
-    if (this.loading) return DefaultSkeleton;
+    if (this.loading) {
+      return DefaultSkeleton;
+    }
 
     return (
       <PageContent>
@@ -338,7 +367,7 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
 
         <Box mb={4}>
           <RouterLink to="/knowledgebases">
-            <Button variant="ghost" size="sm">
+            <Button size="sm" variant="ghost">
               ← Back to Knowledge Bases
             </Button>
           </RouterLink>

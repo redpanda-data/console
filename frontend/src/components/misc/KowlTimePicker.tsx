@@ -33,11 +33,11 @@ export class KowlTimePicker extends Component<{
     return (
       <Box maxW={300}>
         <DateTimeInput
-          value={this.timestampUtcMs}
           onChange={(value) => {
             this.timestampUtcMs = value;
             this.props.onChange(this.timestampUtcMs);
           }}
+          value={this.timestampUtcMs}
         />
       </Box>
     );

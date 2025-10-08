@@ -18,14 +18,13 @@ export const runDeveloperView = (): boolean => {
     const storedViewSetting = window.localStorage.getItem('dv');
     developerView = storedViewSetting ? JSON.parse(storedViewSetting) : false;
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error(error);
   }
 
   const onDown = (event: KeyboardEvent) => {
-    if (event.key.toLowerCase() === '?') {
-      if (process.env.NODE_ENV !== 'production') {
-        window.localStorage.setItem('dv', JSON.stringify(!developerView));
-      }
+    if (event.key.toLowerCase() === '?' && process.env.NODE_ENV !== 'production') {
+      window.localStorage.setItem('dv', JSON.stringify(!developerView));
     }
   };
 

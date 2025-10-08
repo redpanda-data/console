@@ -25,6 +25,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useSt
 import { useForm } from 'react-hook-form';
 import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
 import { SASL_MECHANISMS } from 'utils/user';
+
 import { CreateACLRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import {
   CreateUserRequestSchema,
@@ -213,20 +214,20 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <div className="space-y-8 max-w-2xl">
+          <div className="max-w-2xl space-y-8">
             <FormField
               control={form.control}
-              name="username"
               disabled={isLoading}
+              name="username"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
                     <Combobox
                       {...field}
-                      options={userOptions}
                       creatable
                       onCreateOption={handleCreateUserOption}
+                      options={userOptions}
                       placeholder="Select or create a user..."
                     />
                   </FormControl>
@@ -253,16 +254,16 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
               <>
                 <FormField
                   control={form.control}
-                  name="password"
                   disabled={isLoading}
+                  name="password"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
                         <Group>
                           <Input type="password" {...field} />
-                          <CopyButton size="icon" content={field.value} variant="outline" />
-                          <Button type="button" size="icon" variant="outline" onClick={generateNewPassword}>
+                          <CopyButton content={field.value} size="icon" variant="outline" />
+                          <Button onClick={generateNewPassword} size="icon" type="button" variant="outline">
                             <RefreshCcw size={15} />
                           </Button>
                         </Group>
@@ -273,7 +274,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                         control={form.control}
                         name="specialCharactersEnabled"
                         render={({ field: specialCharsField }) => (
-                          <Label className="flex-row items-center text-muted-foreground font-normal">
+                          <Label className="flex-row items-center font-normal text-muted-foreground">
                             <Checkbox
                               checked={specialCharsField.value}
                               onCheckedChange={(val) => handleSpecialCharsChange(val, specialCharsField.onChange)}
@@ -287,8 +288,8 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                 />
                 <FormField
                   control={form.control}
-                  name="saslMechanism"
                   disabled={isLoading}
+                  name="saslMechanism"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>SASL Mechanism</FormLabel>
@@ -314,36 +315,36 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                 {topicData?.topicName && (
                   <FormField
                     control={form.control}
-                    name="superuser"
                     disabled={isLoading}
+                    name="superuser"
                     render={({ field }) => (
                       <FormItem>
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center space-x-3">
                             <FormControl>
                               <Checkbox
-                                disabled={field.disabled}
                                 checked={field.value}
+                                disabled={field.disabled}
                                 onCheckedChange={field.onChange}
                               />
                             </FormControl>
-                            <FormLabel className="text-sm font-medium">
+                            <FormLabel className="font-medium text-sm">
                               Enable topic-specific permissions for this user for "{topicData.topicName}"
                             </FormLabel>
                           </div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-muted-foreground text-sm">
                             {field.value ? (
                               `This user will have full permissions (read, write, create, delete, describe, alter) on the selected topic "${topicData.topicName}".`
                             ) : (
                               <Alert variant="destructive">
-                                <AlertTitle className="flex gap-2 items-center">
+                                <AlertTitle className="flex items-center gap-2">
                                   <CircleAlert size={15} />
                                   Want custom User Permissions?
                                 </AlertTitle>
                                 <AlertDescription>
                                   <Text>
                                     You can configure custom ACLs to connect your data to Redpanda{' '}
-                                    <Link href="/security/acls" target="_blank" rel="noopener noreferrer">
+                                    <Link href="/security/acls" rel="noopener noreferrer" target="_blank">
                                       here
                                     </Link>
                                   </Text>

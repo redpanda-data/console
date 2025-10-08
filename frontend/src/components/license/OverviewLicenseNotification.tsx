@@ -1,8 +1,7 @@
 import { Alert, AlertDescription, AlertIcon, Box, Flex, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { type FC, type ReactElement, useEffect, useState } from 'react';
-import { type License, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { api } from '../../state/backendApi';
+
 import {
   consoleHasEnterpriseFeature,
   DISABLE_SSO_DOCS_LINK,
@@ -19,10 +18,12 @@ import {
   UploadLicenseButton,
 } from './licenseUtils';
 import { RegisterModal } from './RegisterModal';
+import { type License, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { api } from '../../state/backendApi';
 
 const getLicenseAlertContent = (
   licenses: License[],
-  onRegisterModalOpen: () => void,
+  onRegisterModalOpen: () => void
 ): { message: ReactElement; status: 'warning' | 'info' } | null => {
   if (licenses.length === 0) {
     return null;
@@ -51,7 +52,7 @@ const getLicenseAlertContent = (
           message: (
             <Box>
               This cluster's Enterprise Trial has expired. Register for an additional 30 days of{' '}
-              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
                 enterprise features
               </Link>
               .
@@ -66,12 +67,13 @@ const getLicenseAlertContent = (
       }
 
       // Trial is baked-in and has > 5 days left
-      if (msToExpiration > 5 * MS_IN_DAY) {
+      const WARNING_THRESHOLD_DAYS = 5;
+      if (msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY) {
         return {
           message: (
             <Box>
               This cluster is on an Enterprise trial. Register for an additional 30 days of{' '}
-              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
                 enterprise features
               </Link>
               .
@@ -93,7 +95,7 @@ const getLicenseAlertContent = (
               This cluster's Enterprise trial will expire in {getPrettyTimeToExpiration(license)}. SSO/RBAC is enabled
               and Console will be inaccessible after license expiry. Disable SSO/RBAC, or register for an additional 30
               days of{' '}
-              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
                 enterprise features
               </Link>
               .
@@ -111,7 +113,7 @@ const getLicenseAlertContent = (
           <Box>
             This cluster's Enterprise trial will expire in {getPrettyTimeToExpiration(license)}. Register for an
             additional 30 days of{' '}
-            <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+            <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
               enterprise features
             </Link>
             .
@@ -131,7 +133,7 @@ const getLicenseAlertContent = (
         message: (
           <Box>
             This Extended Enterprise trial has expired. The fastest way to continue is with{' '}
-            <Link href={SERVERLESS_LINK} target="_blank">
+            <Link href={SERVERLESS_LINK} rel="noopener noreferrer" target="_blank">
               Redpanda Serverless
             </Link>
             .
@@ -142,13 +144,14 @@ const getLicenseAlertContent = (
     }
 
     // Trial is baked-in and has > 5 days left
-    if (msToExpiration > 5 * MS_IN_DAY) {
+    const WARNING_THRESHOLD_DAYS = 5;
+    if (msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY) {
       return {
         message: (
           <Box>
             This cluster is on an Extended Enterprise trial. When your trial expires, the fastest way to continue is
             with{' '}
-            <Link href={SERVERLESS_LINK} target="_blank">
+            <Link href={SERVERLESS_LINK} rel="noopener noreferrer" target="_blank">
               Redpanda Serverless
             </Link>
             .
@@ -166,7 +169,7 @@ const getLicenseAlertContent = (
             This Extended Enterprise trial expires in {getPrettyTimeToExpiration(license)}. Enterprise features like
             SSO/RBAC will be unavailable after the trial expires. When your trial expires, the fastest way to continue
             is with{' '}
-            <Link href={SERVERLESS_LINK} target="_blank">
+            <Link href={SERVERLESS_LINK} rel="noopener noreferrer" target="_blank">
               Redpanda Serverless
             </Link>
             .
@@ -183,7 +186,7 @@ const getLicenseAlertContent = (
         <Box>
           This Extended Enterprise trial expires in {getPrettyTimeToExpiration(license)}. When your trial expires, the
           fastest way to continue is with{' '}
-          <Link href={SERVERLESS_LINK} target="_blank">
+          <Link href={SERVERLESS_LINK} rel="noopener noreferrer" target="_blank">
             Redpanda Serverless
           </Link>
           .
@@ -204,11 +207,11 @@ const getLicenseAlertContent = (
             <Text>
               Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)} and Console SSO/RBAC is
               enabled. As a result, Console will be inaccessible after license expiry. To prevent this,{' '}
-              <Link href={DISABLE_SSO_DOCS_LINK} target="_blank">
+              <Link href={DISABLE_SSO_DOCS_LINK} rel="noopener noreferrer" target="_blank">
                 disable
               </Link>{' '}
               SSO and RBAC, or get a{' '}
-              <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
+              <Link href={getEnterpriseCTALink('upgrade')} rel="noopener noreferrer" target="_blank">
                 full Redpanda Enterprise license
               </Link>
               .
@@ -227,11 +230,11 @@ const getLicenseAlertContent = (
         <Box>
           <Text>
             Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
-            <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+            <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
               enterprise features
             </Link>{' '}
             will become unavailable. To get a full Redpanda Enterprise license,{' '}
-            <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
+            <Link href={getEnterpriseCTALink('upgrade')} rel="noopener noreferrer" target="_blank">
               contact us
             </Link>
             .
@@ -253,8 +256,12 @@ export const OverviewLicenseNotification: FC = observer(() => {
   const [registerModalOpen, setIsRegisterModalOpen] = useState(false);
 
   useEffect(() => {
-    void api.refreshClusterOverview();
-    void api.listLicenses();
+    api.refreshClusterOverview().catch(() => {
+      // Error handling managed by API layer
+    });
+    api.listLicenses().catch(() => {
+      // Error handling managed by API layer
+    });
   }, []);
 
   const trialLicenses = api.licenses.filter((license) => license.type === License_Type.TRIAL);

@@ -11,14 +11,15 @@
 
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+
+import { principalGroupsView } from './Models';
+import { RoleForm } from './RoleForm';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { principalGroupsView } from './Models';
-import { RoleForm } from './RoleForm';
 
 @observer
 class RoleEditPage extends PageComponent<{ roleName: string }> {
@@ -37,15 +38,19 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
     p.addBreadcrumb('Roles', '/security/roles');
     p.addBreadcrumb(
       decodeURIComponent(this.props.roleName),
-      `/security/roles/${encodeURIComponent(this.props.roleName)}`,
+      `/security/roles/${encodeURIComponent(this.props.roleName)}`
     );
 
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
+    this.refreshData(true).catch(console.error);
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
+    appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
   async refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListAcls) return;
+    if (api.userData != null && !api.userData.canListAcls) {
+      return;
+    }
 
     await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts()]);
 
@@ -58,10 +63,12 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
   render() {
     // if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
     // if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
-    if (!this.allDataLoaded) return DefaultSkeleton;
+    if (!this.allDataLoaded) {
+      return DefaultSkeleton;
+    }
 
     const aclPrincipalGroup = principalGroupsView.principalGroups.find(
-      ({ principalType, principalName }) => principalType === 'RedpandaRole' && principalName === this.props.roleName,
+      ({ principalType, principalName }) => principalType === 'RedpandaRole' && principalName === this.props.roleName
     );
 
     const principals = rolesApi.roleMembers.get(this.props.roleName);

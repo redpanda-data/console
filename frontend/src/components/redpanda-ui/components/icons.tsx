@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/correctness/useUniqueElementIds: no need to do this for SVGs */
 export function AnimateUIIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg role="img" fill="currentColor" aria-label="Redpanda UI" viewBox="0 0 40 40" {...props}>

@@ -34,6 +34,7 @@ import { SecurityService } from 'protogen/redpanda/api/console/v1alpha1/security
 import { TransformService } from 'protogen/redpanda/api/console/v1alpha1/transform_pb';
 import { UserService } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { KnowledgeBaseService } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { APP_ROUTES } from './components/routes';
 import { appGlobal } from './state/appGlobal';
@@ -54,7 +55,9 @@ const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BAS
 export const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
 
 export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
-  if (config.jwt) request.header.set('Authorization', `Bearer ${config.jwt}`);
+  if (config.jwt) {
+    request.header.set('Authorization', `Bearer ${config.jwt}`);
+  }
   return await next(request);
 };
 
@@ -71,20 +74,17 @@ export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => a
   try {
     return await next(request);
   } catch (error) {
-    if (error instanceof ConnectError) {
-      if (error.code === Code.FailedPrecondition) {
-        for (const detail of error.details) {
-          // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
-          if (detail?.type && detail?.debug) {
-            if (
-              // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
-              detail.type === 'google.rpc.ErrorInfo' &&
-              // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
-              detail.debug.reason === 'REASON_ENTERPRISE_LICENSE_EXPIRED'
-            ) {
-              appGlobal.historyReplace('/trial-expired');
-            }
-          }
+    if (error instanceof ConnectError && error.code === Code.FailedPrecondition) {
+      for (const detail of error.details) {
+        // TODO fix type checks for IncomingDetail, BE should provide types for debug field
+        const detailWithDebug = detail as any;
+        if (
+          detailWithDebug?.type &&
+          detailWithDebug?.debug &&
+          detailWithDebug.type === 'google.rpc.ErrorInfo' &&
+          detailWithDebug.debug.reason === 'REASON_ENTERPRISE_LICENSE_EXPIRED'
+        ) {
+          appGlobal.historyReplace('/trial-expired');
         }
       }
     }
@@ -93,7 +93,7 @@ export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => a
   }
 };
 
-export interface SetConfigArguments {
+export type SetConfigArguments = {
   fetch?: WindowOrWorkerGlobalScope['fetch'];
   jwt?: string;
   clusterId?: string;
@@ -107,21 +107,21 @@ export interface SetConfigArguments {
   setBreadcrumbs?: (items: Breadcrumb[]) => void;
   isServerless?: boolean;
   featureFlags?: Record<keyof typeof FEATURE_FLAGS, boolean>;
-}
+};
 
-export interface SidebarItem {
+export type SidebarItem = {
   title: string; // "Topics"
   to: string; // '/topics'
   icon?: JSX.Element;
   order: number;
-}
+};
 
-export interface Breadcrumb {
+export type Breadcrumb = {
   title: string; // "Topics"
   to: string; // '/topics'
-}
+};
 
-interface Config {
+type Config = {
   restBasePath: string;
   grpcBasePath: string;
   authenticationClient?: Client<typeof AuthenticationService>;
@@ -143,7 +143,7 @@ interface Config {
   setBreadcrumbs: (items: Breadcrumb[]) => void;
   isServerless: boolean;
   featureFlags: Record<keyof typeof FEATURE_FLAGS, boolean>;
-}
+};
 
 // Config object is an mobx observable, always make sure you call it from
 // inside a componenet, don't be tempted to used it as singleton you might find
@@ -229,7 +229,9 @@ export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, mon
 setTimeout(() => {
   autorun(() => {
     const setBreadcrumbs = config.setBreadcrumbs;
-    if (!setBreadcrumbs) return;
+    if (!setBreadcrumbs) {
+      return;
+    }
 
     const breadcrumbs = uiState.pageBreadcrumbs.map((v) => ({
       title: v.title,
@@ -241,7 +243,9 @@ setTimeout(() => {
 
   autorun(() => {
     const setSidebarItems = config.setSidebarItems;
-    if (!setSidebarItems) return;
+    if (!setSidebarItems) {
+      return;
+    }
 
     const sidebarItems = embeddedAvailableRoutesObservable.routes.map(
       (r, i) =>
@@ -250,7 +254,7 @@ setTimeout(() => {
           to: r.path,
           icon: r.icon,
           order: i,
-        }) as SidebarItem,
+        }) as SidebarItem
     );
 
     setSidebarItems(sidebarItems);
@@ -300,7 +304,9 @@ export const embeddedAvailableRoutesObservable = observable({
         return true;
       })
       .filter((x) => {
-        if (isServerless() && routesIgnoredInServerless.includes(x.path)) return false;
+        if (isServerless() && routesIgnoredInServerless.includes(x.path)) {
+          return false;
+        }
         return true;
       });
   },
@@ -313,7 +319,7 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   loader.config({ monaco });
 
   // Ensure yaml workers are being loaded locally as well
-  loader.init().then(async () => {
+  loader.init().then(() => {
     window.MonacoEnvironment = {
       getWorkerUrl(_, label: string): string {
         switch (label) {
@@ -340,10 +346,7 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   // Get supported endpoints / kafka cluster version
   // In the business version, that endpoint (like any other api endpoint) is
   // protected, so we need to delay the call until the user is logged in.
-  if (!AppFeatures.SINGLE_SIGN_ON) {
-    api.refreshSupportedEndpoints();
-    api.listLicenses();
-  } else {
+  if (AppFeatures.SINGLE_SIGN_ON) {
     when(
       () => Boolean(api.userData),
       () => {
@@ -351,7 +354,10 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
           api.refreshSupportedEndpoints();
           api.listLicenses();
         });
-      },
+      }
     );
+  } else {
+    api.refreshSupportedEndpoints();
+    api.listLicenses();
   }
 });

@@ -10,16 +10,18 @@
  */
 
 import { observer } from 'mobx-react';
+
 import { api } from '../../../state/backendApi';
 import type { ConfigEntry, Topic } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
 import { Box, Divider, Flex, Text, Tooltip } from '@redpanda-data/ui';
 import type { ReactNode } from 'react';
 import { MdInfoOutline } from 'react-icons/md';
+
+import type { CleanupPolicyType } from './types';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import { numberToThousandsString } from '../../../utils/tsxUtils';
 import { prettyBytesOrNA } from '../../../utils/utils';
-import type { CleanupPolicyType } from './types';
 
 // todo: rename QuickInfo
 export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
@@ -50,7 +52,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
   const segmentMs = filteredConfigEntries?.find((e) => e.name === 'segment.ms');
   const segmentBytes = filteredConfigEntries?.find((e) => e.name === 'segment.bytes');
 
-  if (!configEntries || !filteredConfigEntries || !cleanupPolicy) {
+  if (!(configEntries && filteredConfigEntries && cleanupPolicy)) {
     return null;
   }
 
@@ -67,8 +69,8 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
       </Box>
       <Flex gap={2}>
         <Tooltip
-          label="The number of messages shown is an estimate. This is calculated by summing the differences between the highest and lowest offsets in each partition. The actual number of messages may vary due to factors such as message deletions, log compaction, and uncommitted or transactional messages."
           hasArrow
+          label="The number of messages shown is an estimate. This is calculated by summing the differences between the highest and lowest offsets in each partition. The actual number of messages may vary due to factors such as message deletions, log compaction, and uncommitted or transactional messages."
           placement="bottom"
         >
           <Flex alignItems="flex-end">
@@ -147,10 +149,14 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
 });
 
 function filterTopicConfig(config: ConfigEntry[] | null | undefined): ConfigEntry[] | null | undefined {
-  if (!config) return config;
+  if (!config) {
+    return config;
+  }
 
   const newConfig: ConfigEntry[] = [];
-  for (const e of config) newConfig.push(e);
+  for (const e of config) {
+    newConfig.push(e);
+  }
 
   if (config.find((e) => e.name === 'cleanup.policy' && (e.value ?? '').includes('compact'))) {
     // this is a compacted topic, 'retention.bytes', 'retention.ms' don't apply, so hide them

@@ -11,10 +11,11 @@
 
 import { Accordion, Box, Divider, Flex, Heading, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import type { PropertyGroup } from '../../../../state/connect/state';
+
 import type { ConfigPageProps } from './components';
 import { TopicInput } from './forms/TopicInput';
 import { PropertyComponent } from './PropertyComponent';
+import type { PropertyGroup } from '../../../../state/connect/state';
 
 const topicsFields = ['topics', 'topics.regex'];
 
@@ -30,7 +31,9 @@ export const PropertyGroupComponent = observer(
 
     const filteredProperties = g.filteredProperties;
 
-    if (filteredProperties.length === 0) return null;
+    if (filteredProperties.length === 0) {
+      return null;
+    }
 
     if (g.group.name === 'Transforms') {
       // Transforms + its sub groups
@@ -60,11 +63,11 @@ export const PropertyGroupComponent = observer(
                 ),
                 description: (
                   <PropertyGroupComponent
-                    group={subGroup}
                     allGroups={props.allGroups}
-                    showAdvancedOptions={props.showAdvancedOptions}
                     connectorType={props.connectorType}
                     context={props.context}
+                    group={subGroup}
+                    showAdvancedOptions={props.showAdvancedOptions}
                   />
                 ),
               }))}
@@ -77,7 +80,7 @@ export const PropertyGroupComponent = observer(
     return (
       <Box>
         {g.group.name && (
-          <Heading as="h3" size="md" mt="8" mb="4">
+          <Heading as="h3" mb="4" mt="8" size="md">
             {g.group.name}
           </Heading>
         )}
@@ -97,8 +100,8 @@ export const PropertyGroupComponent = observer(
         <div>
           {
             <TopicInput
-              properties={g.properties.filter((p) => topicsFields.any((v) => v === p.name))}
               connectorType={props.connectorType}
+              properties={g.properties.filter((p) => topicsFields.any((v) => v === p.name))}
             />
           }
           {filteredProperties
@@ -113,5 +116,5 @@ export const PropertyGroupComponent = observer(
         <Divider my={10} />
       </Box>
     );
-  },
+  }
 );

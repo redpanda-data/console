@@ -16,6 +16,7 @@ import {
   type Transition,
 } from 'framer-motion';
 import React, { type CSSProperties, type FC } from 'react';
+
 import { alwaysChanging } from './utils';
 
 export const AnimatePresence = AnimatePresenceRaw as React.FunctionComponent<
@@ -50,7 +51,7 @@ const transition: Transition = {
 
 // Page switch
 export const animProps = {
-  transition: transition,
+  transition,
   initial: { opacity: 0, position: 'static' as PositionProp },
   animate: { opacity: 1, position: 'static' as PositionProp },
   exit: { opacity: 0, position: 'absolute' as PositionProp, width: 'auto' },
@@ -64,7 +65,7 @@ export const animProps_span_searchResult = {
 };
 
 export const animProps_radioOptionGroup = {
-  transition: transition,
+  transition,
   initial: { opacity: 0, y: '-1em', height: 0, marginTop: 0 },
   animate: { opacity: 1, y: '0em', height: 'auto' },
   exit: { opacity: 0, y: '0em', height: 0, marginTop: 0 },

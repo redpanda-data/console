@@ -29,7 +29,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useListSecretsQuery = (
   input?: MessageInit<ListSecretsRequestDataPlane>,
-  options?: QueryOptions<GenMessage<ListSecretsRequest>, ListSecretsResponse>,
+  options?: QueryOptions<GenMessage<ListSecretsRequest>, ListSecretsResponse>
 ) => {
   const listSecretsRequestDataPlane = create(ListSecretsRequestSchemaDataPlane, {
     pageToken: '',
@@ -88,13 +88,12 @@ export const useCreateSecretMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'create',
         entity: 'secret',
-      });
-    },
+      }),
   });
 };
 
@@ -111,13 +110,12 @@ export const useUpdateSecretMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'update',
         entity: 'secret',
-      });
-    },
+      }),
   });
 };
 
@@ -134,12 +132,11 @@ export const useDeleteSecretMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'delete',
         entity: 'secret',
-      });
-    },
+      }),
   });
 };

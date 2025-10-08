@@ -8,6 +8,7 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+/** biome-ignore-all lint/correctness/useUniqueElementIds: legacy, needs refactor */
 
 import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
 import {
@@ -35,6 +36,18 @@ import { motion } from 'framer-motion';
 import { autorun, computed, type IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { MdOutlineErrorOutline } from 'react-icons/md';
+
+import { ActiveReassignments } from './components/ActiveReassignments';
+import { type ApiData, computeReassignments, type TopicPartitions } from './logic/reassignLogic';
+import { ReassignmentTracker } from './logic/reassignmentTracker';
+import {
+  computeMovedReplicas,
+  partitionSelectionToTopicPartitions,
+  topicAssignmentsToReassignmentRequest,
+} from './logic/utils';
+import { StepSelectPartitions } from './Step1.Partitions';
+import { StepSelectBrokers } from './Step2.Brokers';
+import { StepReview, type TopicWithMoves } from './Step3.Review';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, partialTopicConfigs } from '../../../state/backendApi';
 import type {
@@ -57,22 +70,11 @@ import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { ActiveReassignments } from './components/ActiveReassignments';
-import { type ApiData, computeReassignments, type TopicPartitions } from './logic/reassignLogic';
-import { ReassignmentTracker } from './logic/reassignmentTracker';
-import {
-  computeMovedReplicas,
-  partitionSelectionToTopicPartitions,
-  topicAssignmentsToReassignmentRequest,
-} from './logic/utils';
-import { StepSelectPartitions } from './Step1.Partitions';
-import { StepSelectBrokers } from './Step2.Brokers';
-import { StepReview, type TopicWithMoves } from './Step3.Review';
 
-export interface PartitionSelection {
+export type PartitionSelection = {
   // Which partitions are selected?
   [topicName: string]: number[]; // topicName -> array of partitionIds
-}
+};
 
 const reassignmentTracker = new ReassignmentTracker();
 export { reassignmentTracker };
@@ -143,27 +145,35 @@ class ReassignPartitions extends PageComponent {
     this.stopRefreshingTopicConfigs = this.stopRefreshingTopicConfigs.bind(this);
 
     this.refreshTopicConfigs = this.refreshTopicConfigs.bind(this);
-    this.refreshTopicConfigs();
+    // biome-ignore lint/suspicious/noConsole: existing console error logging
+    this.refreshTopicConfigs().catch(console.error);
     this.startRefreshingTopicConfigs();
 
     this.autoScrollReactionDisposer = autorun(() => {
       const currentStep = this.currentStep;
-      if (currentStep !== 0) setTimeout(() => scrollTo('wizard', 'start', -20), 20);
+      if (currentStep !== 0) {
+        setTimeout(() => scrollTo('wizard', 'start', -20), 20);
+      }
     });
     this.resetSelectionOnErrorsReactionDisposer = autorun(() => {
       if (this.selectedBrokerIds.length === 0) {
         const selectedTopicPartitions = Object.values(this.partitionSelection);
-        if (selectedTopicPartitions.length === 0 || selectedTopicPartitions.all((x) => x.length === 0)) return; // nothing selected so far
+        if (selectedTopicPartitions.length === 0 || selectedTopicPartitions.all((x) => x.length === 0)) {
+          return; // nothing selected so far
+        }
       }
 
       let reset = false;
 
       // has user selected a broker that is not available anymore?
-      if (this.selectedBrokerIds.any((x) => api.clusterInfo?.brokers.find((b) => b.brokerId === x) === undefined))
+      if (this.selectedBrokerIds.any((x) => api.clusterInfo?.brokers.find((b) => b.brokerId === x) === undefined)) {
         reset = true;
+      }
 
       // has user selected a topic partition that is not available anymore?
-      if (reset === false) if (this.selectedTopicPartitions == null) reset = true;
+      if (reset === false && this.selectedTopicPartitions == null) {
+        reset = true;
+      }
 
       if (reset) {
         this.resetSelectionAndPage(true, true);
@@ -182,26 +192,39 @@ class ReassignPartitions extends PageComponent {
 
   componentWillUnmount() {
     reassignmentTracker.stop();
-    if (this.autoScrollReactionDisposer) this.autoScrollReactionDisposer();
-    if (this.resetSelectionOnErrorsReactionDisposer) this.resetSelectionOnErrorsReactionDisposer();
+    if (this.autoScrollReactionDisposer) {
+      this.autoScrollReactionDisposer();
+    }
+    if (this.resetSelectionOnErrorsReactionDisposer) {
+      this.resetSelectionOnErrorsReactionDisposer();
+    }
 
     this.stopRefreshingTopicConfigs();
   }
 
   render() {
-    if (!api.clusterInfo) return DefaultSkeleton;
-    if (!api.topics) return DefaultSkeleton;
+    if (!api.clusterInfo) {
+      return DefaultSkeleton;
+    }
+    if (!api.topics) {
+      return DefaultSkeleton;
+    }
 
     // wait until every topic has partitions, and no partitions have errors
     for (const t of api.topics) {
       const p = api.topicPartitions.get(t.topicName);
-      if (!p)
+      if (!p) {
         // no partitions for this topic yet...
         return null;
+      }
     }
 
-    if (api.topicPartitions.size < api.topics.length) return DefaultSkeleton;
-    if (api.partitionReassignments === undefined) return DefaultSkeleton;
+    if (api.topicPartitions.size < api.topics.length) {
+      return DefaultSkeleton;
+    }
+    if (api.partitionReassignments === undefined) {
+      return DefaultSkeleton;
+    }
 
     const partitionCountLeaders = api.topics?.sum((t) => t.partitionCount);
     const partitionCountOnlyReplicated = api.topics?.sum((t) => t.partitionCount * (t.replicationFactor - 1));
@@ -240,8 +263,8 @@ class ReassignPartitions extends PageComponent {
             {/* Active Reassignments */}
             <Section id="activeReassignments">
               <ActiveReassignments
-                throttledTopics={this.topicsWithThrottle}
                 onRemoveThrottleFromTopics={this.removeThrottleFromTopics}
+                throttledTopics={this.topicsWithThrottle}
               />
             </Section>
 
@@ -249,11 +272,11 @@ class ReassignPartitions extends PageComponent {
             <Section id="wizard">
               {/* Steps */}
               <div style={{ margin: '.75em 1em 1em 1em' }}>
-                <Stepper index={this.currentStep} colorScheme="brand">
+                <Stepper colorScheme="brand" index={this.currentStep}>
                   {steps.map((item, index) => (
                     <Step key={index} title={item.title}>
                       <StepIndicator>
-                        <StepStatus complete={<StepIcon />} incomplete={<StepNumber />} active={<StepNumber />} />
+                        <StepStatus active={<StepNumber />} complete={<StepIcon />} incomplete={<StepNumber />} />
                       </StepIndicator>
                       <Box>{item.title}</Box>
                       <StepSeparator />
@@ -284,13 +307,15 @@ class ReassignPartitions extends PageComponent {
                     case 2:
                       return (
                         <StepReview
-                          partitionSelection={this.partitionSelection}
-                          topicsWithMoves={this.topicsWithMoves}
                           // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
                           assignments={this.reassignmentRequest!}
+                          partitionSelection={this.partitionSelection}
                           reassignPartitions={this}
+                          topicsWithMoves={this.topicsWithMoves}
                         />
                       );
+                    default:
+                      return null;
                   }
                 })()}
               </motion.div>
@@ -307,8 +332,8 @@ class ReassignPartitions extends PageComponent {
                 {/* Back */}
                 {step.backButton && (
                   <Button
-                    onClick={this.onPreviousPage}
                     isDisabled={this.currentStep <= 0 || this.requestInProgress}
+                    onClick={this.onPreviousPage}
                     style={{ minWidth: '14em' }}
                   >
                     <span>
@@ -322,11 +347,11 @@ class ReassignPartitions extends PageComponent {
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '2em' }}>
                   <div>{nextButtonHelp}</div>
                   <Button
-                    variant="solid"
-                    style={{ minWidth: '14em', marginLeft: 'auto' }}
+                    autoFocus={true}
                     isDisabled={!nextButtonEnabled || this.requestInProgress}
                     onClick={this.onNextPage}
-                    autoFocus={true}
+                    style={{ minWidth: '14em', marginLeft: 'auto' }}
+                    variant="solid"
                   >
                     <span>{step.nextButton.text}</span>
                     <span>
@@ -346,7 +371,7 @@ class ReassignPartitions extends PageComponent {
             <ModalOverlay />
             <ModalContent minW="5xl">
               <ModalHeader>
-                <Flex gap={2} alignItems="center">
+                <Flex alignItems="center" gap={2}>
                   <MdOutlineErrorOutline size={18} />
                   Remove throttle config from topics
                 </Flex>
@@ -386,14 +411,15 @@ class ReassignPartitions extends PageComponent {
               </ModalBody>
               <ModalFooter gap={2}>
                 <Button
-                  variant="outline"
                   onClick={() => {
                     this.removeThrottleFromTopicsContent = null;
                   }}
+                  variant="outline"
                 >
                   Cancel
                 </Button>
                 <Button
+                  colorScheme="red"
                   onClick={async () => {
                     if (this.removeThrottleFromTopicsContent === null) {
                       return;
@@ -421,12 +447,10 @@ class ReassignPartitions extends PageComponent {
                         description: `${baseText}: ${errors.length} errors`,
                         duration: 2500,
                       });
-                      console.error('errors in removeThrottleFromTopics', errors);
                     }
 
-                    this.refreshTopicConfigs();
+                    await this.refreshTopicConfigs();
                   }}
-                  colorScheme="red"
                 >
                   Remove throttle
                 </Button>
@@ -455,11 +479,12 @@ class ReassignPartitions extends PageComponent {
         });
       }
 
-      if (scrollTop)
+      if (scrollTop) {
         setTimeout(() => {
           this.currentStep = 0;
           setTimeout(() => scrollToTop());
         }, 300);
+      }
     });
   }
 
@@ -480,12 +505,15 @@ class ReassignPartitions extends PageComponent {
       const targetBrokers = this.selectedBrokerIds
         .map((id) => api.clusterInfo?.brokers.first((b) => b.brokerId === id))
         .filterFalsy();
-      if (targetBrokers.any((b) => b == null))
+      if (targetBrokers.any((b) => b == null)) {
         throw new Error('one or more broker ids could not be mapped to broker entries');
+      }
 
       const apiTopicPartitions = new Map<string, Partition[]>();
       for (const [topicName, partitions] of api.topicPartitions) {
-        if (!partitions) continue;
+        if (!partitions) {
+          continue;
+        }
         const validOnly = partitions.filter((x) => !x.hasErrors);
         apiTopicPartitions.set(topicName, validOnly);
       }
@@ -529,13 +557,12 @@ class ReassignPartitions extends PageComponent {
             // Reset settings, go back to first page
             this.resetSelectionAndPage(true, false);
           }
-        } catch (err) {
+        } catch (_err) {
           toast({
             status: 'error',
             description: 'Error starting partition reassignment.\nSee console for more information.',
             duration: 3000,
           });
-          console.error('error starting partition reassignment', { error: err });
         } finally {
           this.requestInProgress = false;
         }
@@ -553,7 +580,9 @@ class ReassignPartitions extends PageComponent {
   async startReassignment(request: PartitionReassignmentRequest): Promise<boolean> {
     if (uiSettings.reassignment.maxReplicationTraffic != null && uiSettings.reassignment.maxReplicationTraffic > 0) {
       const success = await this.setTrafficLimit(request);
-      if (!success) return false;
+      if (!success) {
+        return false;
+      }
     }
 
     const toastRef = toast({
@@ -567,7 +596,9 @@ class ReassignPartitions extends PageComponent {
       const errors = response.reassignPartitionsResponses
         .map((e) => {
           const partErrors = e.partitions.filter((p) => p.errorMessage != null);
-          if (partErrors.length === 0) return null;
+          if (partErrors.length === 0) {
+            return null;
+          }
           return { topicName: e.topicName, partitions: partErrors };
         })
         .filterNull();
@@ -616,7 +647,6 @@ class ReassignPartitions extends PageComponent {
     }[] = [];
 
     for (const t of request.topics) {
-      const topicName = t.topicName;
       const leaderReplicas: { partitionId: number; brokerId: number }[] = [];
       const followerReplicas: { partitionId: number; brokerId: number }[] = [];
       for (const p of t.partitions) {
@@ -625,29 +655,25 @@ class ReassignPartitions extends PageComponent {
         const brokersNew = p.replicas;
 
         if (brokersOld == null || brokersNew == null) {
-          console.log("traffic limit: skipping partition because old or new brokers can't be found", {
-            topicName,
-            partitionId,
-            brokersOld,
-            brokersNew,
-          });
           continue;
         }
 
         // leader throttling is applied to all sources (all brokers that have a replica of this partition)
-        for (const sourceBroker of brokersOld)
-          leaderReplicas.push({ partitionId: partitionId, brokerId: sourceBroker });
+        for (const sourceBroker of brokersOld) {
+          leaderReplicas.push({ partitionId, brokerId: sourceBroker });
+        }
 
         // follower throttling is applied only to target brokers that do not yet have a copy
         const newBrokers = brokersNew.except(brokersOld);
-        for (const targetBroker of newBrokers)
-          followerReplicas.push({ partitionId: partitionId, brokerId: targetBroker });
+        for (const targetBroker of newBrokers) {
+          followerReplicas.push({ partitionId, brokerId: targetBroker });
+        }
       }
 
       topicReplicas.push({
         topicName: t.topicName,
-        leaderReplicas: leaderReplicas,
-        followerReplicas: followerReplicas,
+        leaderReplicas,
+        followerReplicas,
       });
     }
 
@@ -660,7 +686,9 @@ class ReassignPartitions extends PageComponent {
       const brokerIds = api.clusterInfo?.brokers.map((b) => b.brokerId) ?? [];
       let response = await api.setReplicationThrottleRate(brokerIds, maxBytesPerSecond);
       let errors = response.patchedConfigs.filter((c) => c.error);
-      if (errors.length > 0) throw new Error(toJson(errors));
+      if (errors.length > 0) {
+        throw new Error(toJson(errors));
+      }
 
       toast.update(toastRef, {
         description: 'Setting bandwidth throttle... 2/2',
@@ -669,7 +697,9 @@ class ReassignPartitions extends PageComponent {
 
       response = await api.setThrottledReplicas(topicReplicas);
       errors = response.patchedConfigs.filter((c) => c.error);
-      if (errors.length > 0) throw new Error(toJson(errors));
+      if (errors.length > 0) {
+        throw new Error(toJson(errors));
+      }
 
       toast.update(toastRef, {
         status: 'success',
@@ -677,9 +707,8 @@ class ReassignPartitions extends PageComponent {
         duration: 2500,
       });
       return true;
-    } catch (err) {
+    } catch (_err) {
       toast.close(toastRef);
-      console.error('error setting throttle', err);
       return false;
     }
   }
@@ -689,7 +718,7 @@ class ReassignPartitions extends PageComponent {
     errors: {
       topicName: string;
       partitions: AlterPartitionReassignmentsPartitionResponse[];
-    }[],
+    }[]
   ) {
     showErrorModal(
       'Reassign Partitions',
@@ -709,18 +738,17 @@ class ReassignPartitions extends PageComponent {
             </div>
           </div>
         ))}
-      </div>,
+      </div>
     );
   }
 
   startRefreshingTopicConfigs() {
-    if (IsDev) console.log('starting refreshTopicConfigs', { stack: new Error().stack });
-    if (this.refreshTopicConfigsTimer == null)
+    if (IsDev && this.refreshTopicConfigsTimer == null) {
       this.refreshTopicConfigsTimer = window.setInterval(this.refreshTopicConfigs, 6000);
+    }
   }
   stopRefreshingTopicConfigs() {
-    if (IsDev) console.log('stopping refreshTopicConfigs', { stack: new Error().stack });
-    if (this.refreshTopicConfigsTimer) {
+    if (IsDev && this.refreshTopicConfigsTimer) {
       window.clearInterval(this.refreshTopicConfigsTimer);
       this.refreshTopicConfigsTimer = null;
     }
@@ -728,7 +756,9 @@ class ReassignPartitions extends PageComponent {
 
   async refreshTopicConfigs() {
     try {
-      if (this.refreshTopicConfigsRequestsInProgress > 0) return;
+      if (this.refreshTopicConfigsRequestsInProgress > 0) {
+        return;
+      }
       this.refreshTopicConfigsRequestsInProgress++;
       const topicConfigs = await partialTopicConfigs([
         'follower.replication.throttled.replicas',
@@ -746,27 +776,30 @@ class ReassignPartitions extends PageComponent {
       newThrottledTopics.removeAll((t) => inProgress.includes(t));
 
       // Update observable
-      // @ts-ignore perhaps this is needed later on?
+      // @ts-expect-error perhaps this is needed later on?
       const _changes = this.topicsWithThrottle.updateWith(newThrottledTopics);
       // if (changes.added || changes.removed)
       //     if (IsDev) console.log('refreshTopicConfigs updated', changes);
-    } catch (err) {
-      console.error('error while refreshing topic configs, stopping auto refresh', { error: err });
+    } catch (_err) {
       this.stopRefreshingTopicConfigs();
     } finally {
       this.refreshTopicConfigsRequestsInProgress--;
     }
   }
 
-  async removeThrottleFromTopics() {
+  removeThrottleFromTopics() {
     this.removeThrottleFromTopicsContent = clone(this.topicsWithThrottle);
   }
 
   @computed get selectedTopicPartitions(): TopicPartitions[] | undefined {
     const apiTopics = api.topics;
-    if (!apiTopics) return undefined;
+    if (!apiTopics) {
+      return undefined;
+    }
     const apiPartitions = api.topicPartitions;
-    if (!apiPartitions) return undefined;
+    if (!apiPartitions) {
+      return undefined;
+    }
 
     return partitionSelectionToTopicPartitions(this.partitionSelection, apiPartitions, apiTopics);
   }
@@ -774,15 +807,23 @@ class ReassignPartitions extends PageComponent {
   @computed get maximumSelectedReplicationFactor(): number {
     let maxRf = 0;
     for (const topicName in this.partitionSelection) {
-      const topic = api.topics?.first((x) => x.topicName === topicName);
-      if (topic) if (topic.replicationFactor > maxRf) maxRf = topic.replicationFactor;
+      if (Object.hasOwn(this.partitionSelection, topicName)) {
+        const topic = api.topics?.first((x) => x.topicName === topicName);
+        if (topic && topic.replicationFactor > maxRf) {
+          maxRf = topic.replicationFactor;
+        }
+      }
     }
     return maxRf;
   }
 
   @computed get topicsWithMoves(): TopicWithMoves[] {
-    if (this.reassignmentRequest == null) return [];
-    if (api.topics == null) return [];
+    if (this.reassignmentRequest == null) {
+      return [];
+    }
+    if (api.topics == null) {
+      return [];
+    }
     return computeMovedReplicas(this.partitionSelection, this.reassignmentRequest, api.topics, api.topicPartitions);
   }
 
@@ -792,7 +833,7 @@ class ReassignPartitions extends PageComponent {
 }
 export default ReassignPartitions;
 
-interface WizardStep {
+type WizardStep = {
   step: number;
   title: string;
   backButton?: string;
@@ -801,7 +842,7 @@ interface WizardStep {
     isEnabled: (rp: ReassignPartitions) => boolean | string;
     computeWarning?: (rp: ReassignPartitions) => string | undefined;
   };
-}
+};
 const steps: WizardStep[] = [
   {
     step: 0,
@@ -823,19 +864,27 @@ const steps: WizardStep[] = [
       isEnabled: (rp) => {
         const maxRf = rp.maximumSelectedReplicationFactor;
 
-        if (rp.selectedBrokerIds.length < maxRf) return `Select at least ${maxRf} brokers`;
+        if (rp.selectedBrokerIds.length < maxRf) {
+          return `Select at least ${maxRf} brokers`;
+        }
 
         return true;
       },
       computeWarning: (rp) => {
         const allBrokers = api.clusterInfo?.brokers;
-        if (!allBrokers) return undefined;
+        if (!allBrokers) {
+          return;
+        }
 
         // Show a warning if the user has selected brokers that are all in the same rack, but
         // could theoretically select brokers that are in different racks.
         const allRacks = allBrokers.map((x) => x.rack ?? '').distinct();
-        if (!allRacks) return undefined; // can't happen since no brokers == can't reach this page anyway
-        if (allRacks.length <= 1) return undefined; // Ok, all available brokers are on the same rack
+        if (!allRacks) {
+          return; // can't happen since no brokers == can't reach this page anyway
+        }
+        if (allRacks.length <= 1) {
+          return; // Ok, all available brokers are on the same rack
+        }
 
         // At least 2 racks available
         const selectedBrokers = rp.selectedBrokerIds
@@ -845,13 +894,16 @@ const steps: WizardStep[] = [
 
         if (selectedRacks.length === 1 && allRacks.length >= 2) {
           let selectedRack = selectedRacks[0];
-          if (!selectedRack || selectedRack.length === 0) selectedRack = '(empty)';
-          // @ts-ignore perhaps this is needed later on?
+          if (!selectedRack || selectedRack.length === 0) {
+            selectedRack = '(empty)';
+          }
+          // @ts-expect-error perhaps this is needed later on?
           const _msgStart =
             selectedBrokers.length === 1
               ? `Your selected Brokers, Your cluster contains ${allBrokers.length} brokers across `
               : '';
         }
+        return undefined;
       },
     },
   },

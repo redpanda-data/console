@@ -11,12 +11,13 @@
 
 import { Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
+
+import { RoleForm } from './RoleForm';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { RoleForm } from './RoleForm';
 
 @observer
 class RoleCreatePage extends PageComponent {
@@ -26,8 +27,10 @@ class RoleCreatePage extends PageComponent {
     p.addBreadcrumb('Roles', '/security/roles');
     p.addBreadcrumb('Create role', '/security/roles/create');
 
-    this.refreshData();
-    appGlobal.onRefresh = () => this.refreshData();
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
+    this.refreshData().catch(console.error);
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
+    appGlobal.onRefresh = () => this.refreshData().catch(console.error);
   }
 
   async refreshData() {
@@ -35,7 +38,9 @@ class RoleCreatePage extends PageComponent {
   }
 
   render() {
-    if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
+    if (!api.serviceAccounts?.users) {
+      return DefaultSkeleton;
+    }
 
     return (
       <PageContent>

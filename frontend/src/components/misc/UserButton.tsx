@@ -12,16 +12,19 @@
 import { Avatar, Button, Popover, PopoverBody, PopoverContent, PopoverHeader, PopoverTrigger } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { useEffect, useState } from 'react';
+
+import { UserPreferencesDialog } from './UserPreferences';
 import { AuthenticationMethod } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { api } from '../../state/backendApi';
 import { AppFeatures } from '../../utils/env';
-import { UserPreferencesDialog } from './UserPreferences';
 
 export const UserProfile = observer(() => {
   const [preferencesOpen, setPreferencesOpen] = useState(false);
 
   useEffect(() => {
-    void api.refreshUserData();
+    api.refreshUserData().catch(() => {
+      // Error handling managed by API layer
+    });
   }, []);
 
   const userName = api.userData?.displayName ?? 'null';
@@ -46,7 +49,7 @@ export const UserProfile = observer(() => {
         <PopoverTrigger>
           <div className="profile">
             <div className="avatar">
-              <Avatar name={user.displayName} src={user.avatarUrl} size="sm" />
+              <Avatar name={user.displayName} size="sm" src={user.avatarUrl} />
             </div>
             <div className="text">
               <div className="userName">{user.displayName}</div>
@@ -60,23 +63,23 @@ export const UserProfile = observer(() => {
           </PopoverHeader>
           <PopoverBody>
             <Button
-              w="full"
               justifyContent="start"
-              variant="ghost"
               onClick={() => {
                 setPreferencesOpen(true);
               }}
+              variant="ghost"
+              w="full"
             >
               Preferences
             </Button>
             <Button
-              w="full"
               justifyContent="start"
-              variant="ghost"
               onClick={async () => {
                 await api.logout();
                 window.location.reload();
               }}
+              variant="ghost"
+              w="full"
             >
               Logout
             </Button>

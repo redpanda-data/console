@@ -34,12 +34,13 @@ import { Trash2 } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import type { UseFormReturn } from 'react-hook-form';
-import { RemoteMCPComponentTypeDescription } from '../remote-mcp-component-type-description';
-import { templates } from '../templates/remote-mcp-templates';
+
 import { applyTemplateToTool } from './form-helpers';
 import type { FormValues } from './schemas';
+import { RemoteMCPComponentTypeDescription } from '../remote-mcp-component-type-description';
+import { templates } from '../templates/remote-mcp-templates';
 
-interface ToolCardProps {
+type ToolCardProps = {
   form: UseFormReturn<FormValues>;
   toolIndex: number;
   canRemove: boolean;
@@ -48,7 +49,7 @@ interface ToolCardProps {
   onRemove: () => void;
   onExpand: () => void;
   onLint: () => void;
-}
+};
 
 export const ToolCard: React.FC<ToolCardProps> = ({
   form,
@@ -84,13 +85,13 @@ export const ToolCard: React.FC<ToolCardProps> = ({
           <div className="flex items-center justify-between">
             <Text>Tool {toolIndex + 1}</Text>
             {canRemove && (
-              <Button type="button" variant="outline" onClick={onRemove}>
+              <Button onClick={onRemove} type="button" variant="outline">
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
             <FormField
               control={form.control}
               name={`tools.${toolIndex}.componentType` as const}
@@ -99,7 +100,6 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                   <FormLabel>Component Type</FormLabel>
                   <FormControl>
                     <Select
-                      value={String(field.value)}
                       onValueChange={(v) => {
                         const numericValue = Number(v);
                         field.onChange(numericValue);
@@ -109,6 +109,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                           shouldValidate: false,
                         });
                       }}
+                      value={String(field.value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select component type" />
@@ -117,7 +118,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                         {Object.values(MCPServer_Tool_ComponentType)
                           .filter(
                             (type): type is MCPServer_Tool_ComponentType =>
-                              typeof type === 'number' && type !== MCPServer_Tool_ComponentType.UNSPECIFIED,
+                              typeof type === 'number' && type !== MCPServer_Tool_ComponentType.UNSPECIFIED
                           )
                           .map((componentType) => (
                             <SelectItem key={componentType} value={String(componentType)}>
@@ -152,7 +153,6 @@ export const ToolCard: React.FC<ToolCardProps> = ({
             <FormItem>
               <FormLabel>Template (Optional)</FormLabel>
               <Select
-                value={templateSelectionValue}
                 onValueChange={(value) => {
                   const tpl = templates.find((x) => x.name === value);
                   if (tpl) {
@@ -164,6 +164,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                     });
                   }
                 }}
+                value={templateSelectionValue}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Choose template (optional)">
@@ -191,7 +192,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                           <RedpandaConnectComponentTypeBadge componentType={tpl.componentType} />
                           <span className="font-medium text-sm">{tpl.name}</span>
                         </div>
-                        <Text variant="muted" className="text-xs leading-tight">
+                        <Text className="text-xs leading-tight" variant="muted">
                           {tpl.description}
                         </Text>
                       </div>
@@ -201,8 +202,9 @@ export const ToolCard: React.FC<ToolCardProps> = ({
               </Select>
               <Text variant="muted">
                 {(() => {
-                  if (!templateSelectionValue || templateSelectionValue.length === 0)
+                  if (!templateSelectionValue || templateSelectionValue.length === 0) {
                     return 'Select a template to prefill configuration';
+                  }
                   const selectedTemplate = templates.find((t) => t.name === templateSelectionValue);
                   if (!selectedTemplate || selectedTemplate.componentType !== selectedComponentType) {
                     return 'Select a template to prefill configuration';
@@ -215,14 +217,14 @@ export const ToolCard: React.FC<ToolCardProps> = ({
 
           <div className="space-y-2">
             <YamlEditorCard
-              value={form.watch(`tools.${toolIndex}.config`)}
-              onChange={(val) => form.setValue(`tools.${toolIndex}.config`, val, { shouldDirty: true })}
               height="500px"
-              showLint
-              showExpand
-              onLint={onLint}
-              onExpand={onExpand}
               isLinting={isLintConfigPending}
+              onChange={(val) => form.setValue(`tools.${toolIndex}.config`, val, { shouldDirty: true })}
+              onExpand={onExpand}
+              onLint={onLint}
+              showExpand
+              showLint
+              value={form.watch(`tools.${toolIndex}.config`)}
             />
             <FormMessage />
             <LintHintList lintHints={lintHints} />

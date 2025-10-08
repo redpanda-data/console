@@ -14,11 +14,12 @@ import type { Row } from '@tanstack/react-table';
 import { transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
+
+import { SelectionInfoBar } from './components/StatisticsBar';
+import type { PartitionSelection } from './ReassignPartitions';
 import { api } from '../../../state/backendApi';
 import type { Broker } from '../../../state/restInterfaces';
 import { eqSet, prettyBytesOrNA } from '../../../utils/utils';
-import { SelectionInfoBar } from './components/StatisticsBar';
-import type { PartitionSelection } from './ReassignPartitions';
 
 @observer
 export class StepSelectBrokers extends Component<{
@@ -34,7 +35,6 @@ export class StepSelectBrokers extends Component<{
 
   render() {
     if (!this.brokers || this.brokers.length === 0) {
-      console.error('brokers', { brokers: this.brokers, apiClusterInfo: api.clusterInfo });
       return <div>Error: no brokers available</div>;
     }
 
@@ -50,11 +50,9 @@ export class StepSelectBrokers extends Component<{
           </p>
         </div>
 
-        <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="1em" />
+        <SelectionInfoBar margin="1em" partitionSelection={this.props.partitionSelection} />
 
         <DataTable<Broker>
-          data={this.brokers}
-          pagination={true}
           columns={[
             {
               id: 'check',
@@ -64,18 +62,18 @@ export class StepSelectBrokers extends Component<{
                 const allIsSelected = eqSet<number>(selectedSet, allIdsSet);
                 return (
                   <Checkbox
-                    isIndeterminate={!allIsSelected && selectedSet.size > 0}
                     isChecked={allIsSelected}
+                    isIndeterminate={!allIsSelected && selectedSet.size > 0}
                     onChange={() => {
-                      if (!allIsSelected) {
+                      if (allIsSelected) {
+                        selectedBrokers.splice(0);
+                      } else {
                         transaction(() => {
                           selectedBrokers.splice(0);
                           for (const broker of this.brokers) {
                             selectedBrokers.push(broker.brokerId);
                           }
                         });
-                      } else {
-                        selectedBrokers.splice(0);
                       }
                     }}
                   />
@@ -104,6 +102,8 @@ export class StepSelectBrokers extends Component<{
               cell: ({ row: { original } }) => prettyBytesOrNA(original.logDirSize),
             },
           ]}
+          data={this.brokers}
+          pagination={true}
         />
       </>
     );

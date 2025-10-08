@@ -2,6 +2,7 @@ import { create } from '@bufbuild/protobuf';
 import { Button, ButtonGroup, createStandaloneToast, Flex, FormField, Input, PasswordInput } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+
 import { Scope, UpdateSecretRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../../state/backendApi';
@@ -43,7 +44,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
     appGlobal.historyPush(returnSecretTab);
   }
 
-  async updateSecret() {
+  updateSecret() {
     this.isUpdating = true;
 
     rpcnSecretManagerApi
@@ -51,12 +52,11 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
         this.props.secretId,
         create(UpdateSecretRequestSchema, {
           id: this.props.secretId,
-          // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
           secretData: base64ToUInt8Array(encodeBase64(this.secret)),
           scopes: [Scope.REDPANDA_CONNECT],
-        }),
+        })
       )
-      .then(async () => {
+      .then(() => {
         toast({
           status: 'success',
           duration: 4000,
@@ -64,7 +64,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
           title: 'Secret updated',
           id: 'secret-update-success',
         });
-        await pipelinesApi.refreshPipelines(true);
+        pipelinesApi.refreshPipelines(true);
         appGlobal.historyPush(returnSecretTab);
       })
       .catch((err) => {
@@ -82,7 +82,9 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
   }
 
   render() {
-    if (!rpcnSecretManagerApi.secrets) return DefaultSkeleton;
+    if (!rpcnSecretManagerApi.secrets) {
+      return DefaultSkeleton;
+    }
 
     const isSecretEmpty = this.secret.trim().length === 0;
 
@@ -93,11 +95,11 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
           <FormField label="Secret name">
             <Flex alignItems="center" gap="2">
               <Input
-                placeholder="Enter a secret name..."
                 data-testid="secretId"
-                pattern="^[A-Z][A-Z0-9_]*$"
-                isRequired
                 disabled={true}
+                isRequired
+                pattern="^[A-Z][A-Z0-9_]*$"
+                placeholder="Enter a secret name..."
                 value={this.props.secretId}
                 width={500}
               />
@@ -107,28 +109,28 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
           <FormField label="Secret value">
             <Flex alignItems="center" gap="2" width={500}>
               <PasswordInput
-                placeholder="Enter a new secret value..."
                 data-testid="secretValue"
-                isRequired
-                value={this.secret}
-                onChange={(x) => (this.secret = x.target.value)}
-                width={500}
-                type="password"
                 isDisabled={this.isUpdating}
+                isRequired
+                onChange={(x) => (this.secret = x.target.value)}
+                placeholder="Enter a new secret value..."
+                type="password"
+                value={this.secret}
+                width={500}
               />
             </Flex>
           </FormField>
 
           <ButtonGroup>
             <Button
-              isLoading={this.isUpdating}
               data-testid="submit-update-secret"
               isDisabled={isSecretEmpty}
+              isLoading={this.isUpdating}
               onClick={action(() => this.updateSecret())}
             >
               Update secret
             </Button>
-            <Button variant="link" disabled={this.isUpdating} onClick={action(() => this.cancel())}>
+            <Button disabled={this.isUpdating} onClick={action(() => this.cancel())} variant="link">
               Cancel
             </Button>
           </ButtonGroup>

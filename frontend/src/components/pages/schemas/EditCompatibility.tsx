@@ -11,16 +11,18 @@
 
 import { observer } from 'mobx-react';
 import { useState } from 'react';
+
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { Button, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { PageComponent, type PageInitHelper } from '../Page';
 import './Schema.List.scss';
 import { Box, CodeBlock, Empty, Flex, Grid, GridItem, RadioGroup, Text, useToast, VStack } from '@redpanda-data/ui';
+
+import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './Schema.Details';
 import type { SchemaRegistryCompatibilityMode } from '../../../state/restInterfaces';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
-import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './Schema.Details';
 
 function renderNotConfigured() {
   return (
@@ -35,7 +37,7 @@ function renderNotConfigured() {
             connection credentials in the Redpanda Console config.
           </Text>
           {/* todo: fix link once we have a better guide */}
-          <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
+          <a href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
             <Button variant="solid">Redpanda Console Config Documentation</Button>
           </a>
         </VStack>
@@ -68,14 +70,20 @@ class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }>
     api.refreshSchemaMode();
     const subjectName = this.props.subjectName ? decodeURIComponent(this.props.subjectName) : undefined;
 
-    if (subjectName) api.refreshSchemaDetails(subjectName, force);
+    if (subjectName) {
+      api.refreshSchemaDetails(subjectName, force);
+    }
   }
 
   render() {
-    if (api.schemaOverviewIsConfigured === false) return renderNotConfigured();
-    if (!api.schemaMode) return DefaultSkeleton; // request in progress
+    if (api.schemaOverviewIsConfigured === false) {
+      return renderNotConfigured();
+    }
+    if (!api.schemaMode) {
+      return DefaultSkeleton; // request in progress
+    }
 
-    if (!api.schemaDetails && !api.schemaCompatibility) {
+    if (!(api.schemaDetails || api.schemaCompatibility)) {
       return DefaultSkeleton;
     }
 
@@ -84,13 +92,16 @@ class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }>
     return (
       <PageContent key="b">
         <EditSchemaCompatibility
-          subjectName={subjectName}
           onClose={() => {
             // Navigate back to the "caller" of the page, depending on what
             // variant of the editCompatibility page we are on(can be global, or subject)
-            if (subjectName) appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
-            else appGlobal.historyReplace('/schema-registry');
+            if (subjectName) {
+              appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
+            } else {
+              appGlobal.historyReplace('/schema-registry');
+            }
           }}
+          subjectName={subjectName}
         />
       </PageContent>
     );
@@ -109,10 +120,12 @@ function EditSchemaCompatibility(p: {
 
   // type should be just "SchemaRegistryCompatibilityMode"
   const [configMode, setConfigMode] = useState<string>(
-    (subjectName ? subject?.compatibility : api.schemaCompatibility) ?? 'DEFAULT',
+    (subjectName ? subject?.compatibility : api.schemaCompatibility) ?? 'DEFAULT'
   );
 
-  if (subjectName && !schema) return DefaultSkeleton;
+  if (subjectName && !schema) {
+    return DefaultSkeleton;
+  }
 
   const onSave = () => {
     const changeReq = subjectName
@@ -129,8 +142,11 @@ function EditSchemaCompatibility(p: {
           position: 'top-right',
         });
 
-        if (subjectName) await api.refreshSchemaDetails(subjectName, true);
-        else await api.refreshSchemaCompatibilityConfig();
+        if (subjectName) {
+          await api.refreshSchemaDetails(subjectName, true);
+        } else {
+          await api.refreshSchemaCompatibilityConfig();
+        }
 
         p.onClose();
       })
@@ -153,12 +169,15 @@ function EditSchemaCompatibility(p: {
         {/* <Link>Learn more.</Link> */}
       </Text>
 
-      <Grid templateColumns="1fr 1fr" gap="4rem">
-        <GridItem mt="4" mb="8">
+      <Grid gap="4rem" templateColumns="1fr 1fr">
+        <GridItem mb="8" mt="4">
           <RadioGroup
-            name="configMode"
             direction="column"
             isAttached={false}
+            name="configMode"
+            onChange={(e) => {
+              setConfigMode(e);
+            }}
             options={[
               {
                 value: 'DEFAULT',
@@ -252,29 +271,26 @@ function EditSchemaCompatibility(p: {
               },
             ]}
             value={configMode}
-            onChange={(e) => {
-              setConfigMode(e);
-            }}
           />
         </GridItem>
 
         <GridItem>
           {subjectName && schema && (
             <>
-              <Text mt="4" fontSize="lg" fontWeight="bold" wordBreak="break-word" whiteSpace="break-spaces">
+              <Text fontSize="lg" fontWeight="bold" mt="4" whiteSpace="break-spaces" wordBreak="break-word">
                 {subjectName}
               </Text>
 
-              <Text mt="8" mb="4" fontSize="lg" fontWeight="bold">
+              <Text fontSize="lg" fontWeight="bold" mb="4" mt="8">
                 Schema
               </Text>
               <Box maxHeight="600px" overflow="scroll">
                 <CodeBlock
                   codeString={getFormattedSchemaText(schema)}
                   language={schemaTypeToCodeBlockLanguage(schema.type)}
-                  theme="light"
-                  showLineNumbers
                   showCopyButton={false}
+                  showLineNumbers
+                  theme="light"
                 />
               </Box>
             </>
@@ -285,16 +301,16 @@ function EditSchemaCompatibility(p: {
       <Flex gap="4">
         <Button
           colorScheme="brand"
-          onClick={onSave}
           disabledReason={
             api.userData?.canManageSchemaRegistry === false
               ? "You don't have the 'canManageSchemaRegistry' permission"
               : undefined
           }
+          onClick={onSave}
         >
           Save
         </Button>
-        <Button variant="link" onClick={p.onClose}>
+        <Button onClick={p.onClose} variant="link">
           Cancel
         </Button>
       </Flex>

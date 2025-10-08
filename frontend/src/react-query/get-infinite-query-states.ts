@@ -33,7 +33,7 @@ export const getInfiniteQueryStates = (results: QueryObserverBaseResult[]): Quer
       ...accumulatedStates,
       [currentPendingState]: results.some((result) => result[currentPendingState]),
     }),
-    {},
+    {}
   );
 
   const completedStates = queryCompletedStates.reduce(
@@ -42,7 +42,7 @@ export const getInfiniteQueryStates = (results: QueryObserverBaseResult[]): Quer
       ...accumulatedStates,
       [currentCompletedState]: results.every((result) => result[currentCompletedState]),
     }),
-    {},
+    {}
   );
 
   return {

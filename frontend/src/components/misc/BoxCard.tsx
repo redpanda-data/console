@@ -10,19 +10,20 @@
  */
 
 import React from 'react';
+
 import styles from './BoxCard.module.scss';
 
-export interface BoxCardProps {
+export type BoxCardProps = {
   id?: string;
   borderStyle?: 'solid' | 'dashed';
   borderWidth?: 'thin' | 'medium';
   hoverable?: boolean;
   active?: boolean;
   children?: React.ReactNode;
-}
+};
 
 export default function BoxCard({
-  id = undefined,
+  id,
   borderStyle = 'solid',
   borderWidth = 'thin',
   hoverable = true,
@@ -31,10 +32,18 @@ export default function BoxCard({
 }: BoxCardProps) {
   const classes = [styles.boxCard];
 
-  borderStyle === 'dashed' && classes.push(styles.dashed);
-  borderWidth === 'medium' && classes.push(styles.medium);
-  hoverable && classes.push(styles.hoverable);
-  active && classes.push(styles.active);
+  if (borderStyle === 'dashed') {
+    classes.push(styles.dashed);
+  }
+  if (borderWidth === 'medium') {
+    classes.push(styles.medium);
+  }
+  if (hoverable) {
+    classes.push(styles.hoverable);
+  }
+  if (active) {
+    classes.push(styles.active);
+  }
 
   return (
     <div className={classes.join(' ')} id={id}>

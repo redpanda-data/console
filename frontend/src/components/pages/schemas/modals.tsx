@@ -18,6 +18,7 @@ import {
 } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { type ReactNode, useState } from 'react';
+
 import { openModal } from '../../../utils/ModalContainer';
 
 const GenericModal = observer(
@@ -33,27 +34,25 @@ const GenericModal = observer(
     primaryColorScheme?: ThemeTypings['colorSchemes'];
 
     closeModal: () => void;
-  }) => {
-    return (
-      <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader mr="4">{p.title}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>{p.body}</ModalBody>
+  }) => (
+    <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader mr="4">{p.title}</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>{p.body}</ModalBody>
 
-          <ModalFooter>
-            <Button mr={3} onClick={() => p.onPrimaryButton(p.closeModal)} colorScheme={p.primaryColorScheme}>
-              {p.primaryButtonContent}
-            </Button>
-            <Button variant="outline" onClick={() => p.onSecondaryButton(p.closeModal)}>
-              {p.secondaryButtonContent}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  },
+        <ModalFooter>
+          <Button colorScheme={p.primaryColorScheme} mr={3} onClick={() => p.onPrimaryButton(p.closeModal)}>
+            {p.primaryButtonContent}
+          </Button>
+          <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="outline">
+            {p.secondaryButtonContent}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  )
 );
 
 const ExplicitConfirmModal = observer(
@@ -72,7 +71,7 @@ const ExplicitConfirmModal = observer(
     const isConfirmEnabled = confirmBoxText === 'delete';
 
     return (
-      <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
+      <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader mr="4">{p.title}</ModalHeader>
@@ -82,27 +81,27 @@ const ExplicitConfirmModal = observer(
 
             <Box mt="4">
               To confirm, enter "delete":
-              <Input onChange={(e) => setConfirmBoxText(e.target.value)} autoFocus />
+              <Input autoFocus onChange={(e) => setConfirmBoxText(e.target.value)} />
             </Box>
           </ModalBody>
 
           <ModalFooter>
             <Button
-              mr={3}
-              isDisabled={!isConfirmEnabled}
-              onClick={() => p.onPrimaryButton(p.closeModal)}
               colorScheme="red"
+              isDisabled={!isConfirmEnabled}
+              mr={3}
+              onClick={() => p.onPrimaryButton(p.closeModal)}
             >
               {p.primaryButtonContent}
             </Button>
-            <Button variant="outline" onClick={() => p.onSecondaryButton(p.closeModal)}>
+            <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="outline">
               {p.secondaryButtonContent}
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
     );
-  },
+  }
 );
 
 // A type of modal that simply shows some stuff and only has an "ok" button
@@ -113,28 +112,28 @@ const InfoModal = observer(
     primaryButtonContent: ReactNode;
     onClose?: () => void;
     closeModal: () => void;
-  }) => {
-    return (
-      <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader mr="4">{p.title}</ModalHeader>
-          <ModalBody>{p.body}</ModalBody>
-          <ModalFooter>
-            <Button
-              mr={3}
-              onClick={() => {
-                if (p.onClose) p.onClose();
-                p.closeModal();
-              }}
-            >
-              {p.primaryButtonContent}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  },
+  }) => (
+    <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader mr="4">{p.title}</ModalHeader>
+        <ModalBody>{p.body}</ModalBody>
+        <ModalFooter>
+          <Button
+            mr={3}
+            onClick={() => {
+              if (p.onClose) {
+                p.onClose();
+              }
+              p.closeModal();
+            }}
+          >
+            {p.primaryButtonContent}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  )
 );
 
 export function openInfoModal(p: {
@@ -158,22 +157,29 @@ export function openValidationErrorsModal(result: {
 }) {
   const { isValid, errorDetails, isCompatible } = result;
 
-  const compatBox =
-    isCompatible === undefined || isValid === false ? null : isCompatible ? (
-      <Alert status="success" variant="subtle">
-        <AlertIcon />
-        No compatibility issues
-      </Alert>
-    ) : (
+  const compatBox = (() => {
+    if (isCompatible === undefined || isValid === false) {
+      return null;
+    }
+    if (isCompatible) {
+      return (
+        <Alert status="success" variant="subtle">
+          <AlertIcon />
+          No compatibility issues
+        </Alert>
+      );
+    }
+    return (
       <Alert status="error" variant="subtle">
         <AlertIcon />
         Compatibility issues found
       </Alert>
     );
+  })();
 
   const errDetailsBox = errorDetails ? (
     <Box>
-      <Box maxHeight="400px" overflowY="auto" p="6" background="gray.100" fontFamily="monospace" letterSpacing="-0.5px">
+      <Box background="gray.100" fontFamily="monospace" letterSpacing="-0.5px" maxHeight="400px" overflowY="auto" p="6">
         {errorDetails?.trim()}
       </Box>
     </Box>
@@ -182,7 +188,7 @@ export function openValidationErrorsModal(result: {
   openInfoModal({
     title: (
       <>
-        <Text color="red.500" display="flex" alignItems="center">
+        <Text alignItems="center" color="red.500" display="flex">
           <WarningIcon fontSize="1.18em" mr="3" />
           Schema validation error
         </Text>

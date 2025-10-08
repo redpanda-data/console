@@ -35,6 +35,7 @@ import { useCallMCPServerToolMutation, useGetMCPServerQuery, useListMCPServerToo
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+
 import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 
 const generateDefaultValue = (fieldSchema: JSONSchemaType): JSONValue => {
@@ -49,7 +50,7 @@ const generateDefaultValue = (fieldSchema: JSONSchemaType): JSONValue => {
     case 'integer':
       return (fieldSchema as any).examples?.[0] || 42;
     case 'boolean':
-      return (fieldSchema as any).examples?.[0] || true;
+      return true;
     case 'array':
       if (fieldSchema.items) {
         return [generateDefaultValue(fieldSchema.items as JSONSchemaType)];
@@ -58,21 +59,19 @@ const generateDefaultValue = (fieldSchema: JSONSchemaType): JSONValue => {
     case 'object':
       if (fieldSchema.properties) {
         const result: Record<string, JSONValue> = {};
-        Object.entries(fieldSchema.properties).forEach(([propKey, propSchema]) => {
+        for (const [propKey, propSchema] of Object.entries(fieldSchema.properties)) {
           // Generate defaults for object properties, especially if they're required
           if (fieldSchema.required?.includes(propKey)) {
             result[propKey] = generateDefaultValue(propSchema as JSONSchemaType);
-          } else {
+          } else if (propKey === 'key') {
             // Use specific example values for common property names
-            if (propKey === 'key') {
-              result[propKey] = 'key';
-            } else if (propKey === 'value') {
-              result[propKey] = 'value';
-            } else {
-              result[propKey] = generateDefaultValue(propSchema as JSONSchemaType);
-            }
+            result[propKey] = 'key';
+          } else if (propKey === 'value') {
+            result[propKey] = 'value';
+          } else {
+            result[propKey] = generateDefaultValue(propSchema as JSONSchemaType);
           }
-        });
+        }
         return result;
       }
       return {};
@@ -84,14 +83,14 @@ const generateDefaultValue = (fieldSchema: JSONSchemaType): JSONValue => {
 };
 
 const initializeFormData = (schema: JSONSchemaType | undefined): JSONValue => {
-  if (!schema || !schema.properties) {
+  if (!schema?.properties) {
     return {};
   }
 
   const initialData: Record<string, unknown> = {};
 
   // Initialize all fields with appropriate default values, prioritizing required fields
-  Object.entries(schema.properties).forEach(([key, propSchema]) => {
+  for (const [key, propSchema] of Object.entries(schema.properties)) {
     const fieldSchema = propSchema as JSONSchemaType;
     const isRequired = schema.required?.includes(key) ?? false;
 
@@ -102,7 +101,7 @@ const initializeFormData = (schema: JSONSchemaType | undefined): JSONValue => {
       // Still initialize arrays even if not required, for better UX
       initialData[key] = generateDefaultValue(fieldSchema);
     }
-  });
+  }
 
   return initialData as JSONValue;
 };
@@ -182,13 +181,14 @@ export const RemoteMCPInspectorTab = () => {
     }
   }, [selectedTool, mcpServerTools, resetMCPServerToolCall]);
 
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-    };
-  }, []);
+    },
+    []
+  );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Remote MCP Inspector Tab useEffect dependencies
   useEffect(() => {
@@ -231,7 +231,7 @@ export const RemoteMCPInspectorTab = () => {
           updatedParams = {
             ...updatedParams,
             messages: updatedParams.messages.map((msg: any) =>
-              !msg?.topic_name ? { ...msg, topic_name: availableTopic } : msg,
+              msg?.topic_name ? msg : { ...msg, topic_name: availableTopic }
             ),
           };
         } else {
@@ -251,8 +251,10 @@ export const RemoteMCPInspectorTab = () => {
     }
   }, [selectedTool, topicsData, mcpServerData, toolParameters, mcpServerTools]);
 
-  const executeToolRequest = async () => {
-    if (!selectedTool || !mcpServerData?.mcpServer?.url) return;
+  const executeToolRequest = () => {
+    if (!(selectedTool && mcpServerData?.mcpServer?.url)) {
+      return;
+    }
 
     // Cancel any existing request
     if (abortControllerRef.current) {
@@ -284,7 +286,7 @@ export const RemoteMCPInspectorTab = () => {
             abortControllerRef.current = null;
           }
         },
-      },
+      }
     );
   };
 
@@ -297,11 +299,12 @@ export const RemoteMCPInspectorTab = () => {
 
   const validateRequiredFields = (
     schema: JSONSchemaType | undefined,
-    values: JSONValue,
+    values: JSONValue
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 42, refactor later
   ): { isValid: boolean; errors: Record<string, string> } => {
     const errors: Record<string, string> = {};
 
-    if (!schema || !schema.properties || !schema.required) {
+    if (!(schema?.properties && schema.required)) {
       return { isValid: true, errors }; // No validation needed if no required fields
     }
 
@@ -328,15 +331,17 @@ export const RemoteMCPInspectorTab = () => {
         const componentType =
           mcpServerData?.mcpServer?.tools?.[selectedTool]?.componentType || getComponentTypeFromToolName(selectedTool);
 
-        if (componentType === MCPServer_Tool_ComponentType.OUTPUT) {
+        if (
+          componentType === MCPServer_Tool_ComponentType.OUTPUT &&
+          topicsData?.topics &&
+          Array.isArray(topicsData.topics)
+        ) {
           // Validate that the topic_name exists in the available topics
-          if (topicsData?.topics && Array.isArray(topicsData.topics)) {
-            const topicExists = topicsData.topics.some((topic: { topicName: string }) => topic.topicName === value);
-            if (!topicExists) {
-              errors[requiredField] =
-                `Topic '${value}' does not exist. Please select a valid topic name or create a new one.`;
-              continue;
-            }
+          const topicExists = topicsData.topics.some((topic: { topicName: string }) => topic.topicName === value);
+          if (!topicExists) {
+            errors[requiredField] =
+              `Topic '${value}' does not exist. Please select a valid topic name or create a new one.`;
+            continue;
           }
         }
       }
@@ -354,7 +359,9 @@ export const RemoteMCPInspectorTab = () => {
   };
 
   const getToolResponseData = () => {
-    if (!serverToolResponse) return null;
+    if (!serverToolResponse) {
+      return null;
+    }
 
     // Process content array if it exists and show only the first content item
     if (
@@ -383,10 +390,10 @@ export const RemoteMCPInspectorTab = () => {
   const toolResponseData = getToolResponseData();
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {/* Left Panel - Tools */}
-      <Card size="full" className="px-0 py-0 h-fit">
-        <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+      <Card className="h-fit px-0 py-0" size="full">
+        <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
           <CardTitle className="flex items-center gap-2">
             <Hammer className="h-4 w-4" />
             <Text className="font-semibold">Tools</Text>
@@ -397,15 +404,15 @@ export const RemoteMCPInspectorTab = () => {
           {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING && (
             <div className="space-y-2">
               <div className="flex items-center justify-center py-4">
-                <Badge variant="outline" className="text-xs">
-                  <Clock className="h-3 w-3 mr-1 animate-spin" />
+                <Badge className="text-xs" variant="outline">
+                  <Clock className="mr-1 h-3 w-3 animate-spin" />
                   Server starting...
                 </Badge>
               </div>
               <div className="space-y-2">
-                <Skeleton className="h-[60px] rounded w-full" />
-                <Skeleton className="h-[60px] rounded w-full" />
-                <Skeleton className="h-[60px] rounded w-full" />
+                <Skeleton className="h-[60px] w-full rounded" />
+                <Skeleton className="h-[60px] w-full rounded" />
+                <Skeleton className="h-[60px] w-full rounded" />
               </div>
             </div>
           )}
@@ -415,15 +422,15 @@ export const RemoteMCPInspectorTab = () => {
             <div className="space-y-2">
               {(isLoadingTools || isRefetchingTools) && (
                 <div className="flex items-center justify-center py-4">
-                  <Badge variant="outline" className="text-xs">
-                    <Clock className="h-3 w-3 mr-1 animate-spin" />
+                  <Badge className="text-xs" variant="outline">
+                    <Clock className="mr-1 h-3 w-3 animate-spin" />
                     {isRefetchingTools ? 'Refreshing tools...' : 'Loading tools...'}
                   </Badge>
                 </div>
               )}
               {toolsError && !isRefetchToolsError && (
                 <div className="flex items-center justify-center py-4">
-                  <Badge variant="destructive" className="text-xs">
+                  <Badge className="text-xs" variant="destructive">
                     Failed to fetch tools
                   </Badge>
                 </div>
@@ -431,15 +438,15 @@ export const RemoteMCPInspectorTab = () => {
               {mcpServerTools?.tools?.length && mcpServerTools?.tools?.length > 0
                 ? mcpServerTools.tools.map((tool) => (
                     <RemoteMCPToolButton
-                      key={tool.name}
-                      id={tool.name}
-                      name={tool.name}
-                      description={tool.description || ''}
                       componentType={
                         mcpServerData?.mcpServer?.tools?.[tool.name]?.componentType ||
                         getComponentTypeFromToolName(tool.name)
                       }
+                      description={tool.description || ''}
+                      id={tool.name}
                       isSelected={selectedTool === tool.name}
+                      key={tool.name}
+                      name={tool.name}
                       onClick={() => {
                         // Cancel any pending request when switching tools
                         if (abortControllerRef.current) {
@@ -455,10 +462,8 @@ export const RemoteMCPInspectorTab = () => {
                       }}
                     />
                   ))
-                : !isLoadingTools &&
-                  !isRefetchingTools &&
-                  !toolsError && (
-                    <Text variant="small" className="text-muted-foreground py-8 text-center">
+                : !(isLoadingTools || isRefetchingTools || toolsError) && (
+                    <Text className="py-8 text-center text-muted-foreground" variant="small">
                       No tools available on this MCP server.
                     </Text>
                   )}
@@ -468,10 +473,10 @@ export const RemoteMCPInspectorTab = () => {
       </Card>
 
       {/* Right Panel - Selected Tool */}
-      <Card size="full" className="px-0 py-0 flex flex-col">
+      <Card className="flex flex-col px-0 py-0" size="full">
         {selectedTool && mcpServerData?.mcpServer?.state === MCPServer_State.RUNNING ? (
           <>
-            <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+            <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
               <CardTitle className="flex items-center gap-2">
                 <RedpandaConnectComponentTypeBadge
                   componentType={
@@ -482,29 +487,25 @@ export const RemoteMCPInspectorTab = () => {
                 <Text className="font-semibold">{selectedTool}</Text>
               </CardTitle>
             </CardHeader>
-            <div className="flex flex-col flex-1 relative">
+            <div className="relative flex flex-1 flex-col">
               {(() => {
                 const selectedToolData = mcpServerTools?.tools?.find((t) => t.name === selectedTool);
                 return (
                   <>
-                    <div className="flex-1 p-4 space-y-4 overflow-y-auto pb-20">
+                    <div className="flex-1 space-y-4 overflow-y-auto p-4 pb-20">
                       {(() => {
                         const handleFormChange = (newValue: JSONValue) => {
                           setToolParameters(newValue);
                           // Update validation errors when parameters change
                           const validation = validateRequiredFields(
                             selectedToolData?.inputSchema as JSONSchemaType,
-                            newValue,
+                            newValue
                           );
                           setValidationErrors(validation.errors);
                         };
 
                         return (
                           <DynamicJSONForm
-                            schema={(selectedToolData?.inputSchema as JSONSchemaType) || { type: 'object' }}
-                            value={toolParameters}
-                            onChange={handleFormChange}
-                            showPlaceholder={true}
                             customFields={
                               (mcpServerData?.mcpServer?.tools?.[selectedTool]?.componentType ||
                                 getComponentTypeFromToolName(selectedTool)) === MCPServer_Tool_ComponentType.OUTPUT &&
@@ -520,7 +521,7 @@ export const RemoteMCPInspectorTab = () => {
                                       onCreateOption: async (
                                         newTopicName: string,
                                         path: string[],
-                                        handleFieldChange: (path: string[], value: JSONValue) => void,
+                                        handleFieldChange: (path: string[], value: JSONValue) => void
                                       ) => {
                                         try {
                                           const request = create(CreateTopicRequestSchema, {
@@ -551,6 +552,14 @@ export const RemoteMCPInspectorTab = () => {
                                   ]
                                 : []
                             }
+                            onChange={handleFormChange}
+                            schema={
+                              (selectedToolData?.inputSchema as JSONSchemaType) || {
+                                type: 'object',
+                              }
+                            }
+                            showPlaceholder={true}
+                            value={toolParameters}
                           />
                         );
                       })()}
@@ -560,11 +569,11 @@ export const RemoteMCPInspectorTab = () => {
                         <div className="space-y-2">
                           {Object.entries(validationErrors).map(([field, error]) => (
                             <div
+                              className="rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950/20"
                               key={field}
-                              className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-md"
                             >
                               <div className="flex items-start">
-                                <Text variant="small" className="text-red-700 dark:text-red-400">
+                                <Text className="text-red-700 dark:text-red-400" variant="small">
                                   <Text as="span" className="font-medium">
                                     {field}:
                                   </Text>{' '}
@@ -579,9 +588,9 @@ export const RemoteMCPInspectorTab = () => {
                       {/* Response Section */}
                       {isServerToolPending && (
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium">Response</Label>
+                          <Label className="font-medium text-sm">Response</Label>
                           <div className="flex flex-col space-y-3">
-                            <Skeleton className="h-[250px] rounded-xl w-full" />
+                            <Skeleton className="h-[250px] w-full rounded-xl" />
                             <div className="space-y-2">
                               <Skeleton className="h-4 w-full" />
                               <Skeleton className="h-4 w-full" />
@@ -592,48 +601,48 @@ export const RemoteMCPInspectorTab = () => {
 
                       {!isServerToolPending && (toolError || toolResponseData) && (
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium">Response</Label>
+                          <Label className="font-medium text-sm">Response</Label>
                           <JSONView
-                            data={toolError ? toolError?.message : toolResponseData}
-                            isError={!!toolError}
-                            initialExpandDepth={3}
                             className="border-gray-200 dark:border-gray-800"
+                            data={toolError ? toolError?.message : toolResponseData}
+                            initialExpandDepth={3}
+                            isError={!!toolError}
                           />
                         </div>
                       )}
                     </div>
 
                     {/* Buttons positioned at bottom left within card */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-card border-t border-gray-200 dark:border-border rounded-b-lg">
+                    <div className="absolute right-0 bottom-0 left-0 rounded-b-lg border-gray-200 border-t bg-card p-4 dark:border-border">
                       <div className="flex gap-2">
                         {isServerToolPending ? (
                           <>
-                            <Button onClick={executeToolRequest} disabled variant="secondary">
-                              <Clock className="w-4 h-4 animate-spin" />
+                            <Button disabled onClick={executeToolRequest} variant="secondary">
+                              <Clock className="h-4 w-4 animate-spin" />
                               Run Tool
                             </Button>
                             <Button onClick={cancelToolRequest} variant="destructive">
-                              <X className="w-4 h-4" />
+                              <X className="h-4 w-4" />
                               Cancel
                             </Button>
                           </>
                         ) : (
                           <Button
-                            onClick={executeToolRequest}
                             disabled={
                               !validateRequiredFields(selectedToolData?.inputSchema as JSONSchemaType, toolParameters)
                                 .isValid
                             }
+                            onClick={executeToolRequest}
                             variant="secondary"
                           >
-                            <Send className="w-4 h-4" />
+                            <Send className="h-4 w-4" />
                             Run Tool
                           </Button>
                         )}
                         <CopyButton
-                          variant="outline"
                           content={JSON.stringify(toolParameters, null, 2)}
                           onCopy={() => toast.success('Input copied to clipboard')}
+                          variant="outline"
                         >
                           Copy Input
                         </CopyButton>
@@ -645,7 +654,7 @@ export const RemoteMCPInspectorTab = () => {
             </div>
           </>
         ) : (
-          <CardContent className="px-4 pb-4 flex-1 flex items-center justify-center">
+          <CardContent className="flex flex-1 items-center justify-center px-4 pb-4">
             <div className="text-center">
               <Text className="text-muted-foreground">
                 {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING

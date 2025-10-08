@@ -22,24 +22,32 @@ export const RemoteMCPToggleButton = () => {
   const { mutateAsync: stopMCPServer, isPending: isStopping } = useStopMCPServerMutation();
 
   const handleStartServer = async () => {
-    if (!id) return;
+    if (!id) {
+      return;
+    }
     try {
       await startMCPServer({ id });
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('Failed to start MCP server:', error);
     }
   };
 
   const handleStopServer = async () => {
-    if (!id) return;
+    if (!id) {
+      return;
+    }
     try {
       await stopMCPServer({ id });
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('Failed to stop MCP server:', error);
     }
   };
 
-  if (!mcpServerData?.mcpServer) return null;
+  if (!mcpServerData?.mcpServer) {
+    return null;
+  }
 
   if (
     mcpServerData.mcpServer.state === MCPServer_State.RUNNING ||
@@ -47,11 +55,11 @@ export const RemoteMCPToggleButton = () => {
   ) {
     return (
       <Button
-        variant="outline"
-        size="sm"
-        onClick={handleStopServer}
-        disabled={isStopping || mcpServerData.mcpServer.state === MCPServer_State.STOPPING}
         className="gap-2"
+        disabled={isStopping || mcpServerData.mcpServer.state === MCPServer_State.STOPPING}
+        onClick={handleStopServer}
+        size="sm"
+        variant="outline"
       >
         {isStopping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
         {isStopping ? 'Stopping...' : 'Stop'}
@@ -61,11 +69,11 @@ export const RemoteMCPToggleButton = () => {
 
   return (
     <Button
-      variant="outline"
-      size="sm"
-      onClick={handleStartServer}
-      disabled={isStarting || mcpServerData.mcpServer.state === MCPServer_State.STARTING}
       className="gap-2"
+      disabled={isStarting || mcpServerData.mcpServer.state === MCPServer_State.STARTING}
+      onClick={handleStartServer}
+      size="sm"
+      variant="outline"
     >
       {isStarting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
       {isStarting ? 'Starting...' : 'Start'}

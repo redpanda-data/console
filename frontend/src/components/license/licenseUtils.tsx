@@ -1,6 +1,7 @@
 import { Button, Link } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { prettyMilliseconds } from 'utils/utils';
+
 import {
   type License,
   License_Source,
@@ -10,10 +11,10 @@ import {
 import { api } from '../../state/backendApi';
 import { AppFeatures } from '../../utils/env';
 
-enum Platform {
-  PLATFORM_REDPANDA = 1,
-  PLATFORM_NON_REDPANDA = 2,
-}
+const Platform = {
+  PLATFORM_REDPANDA: 1,
+  PLATFORM_NON_REDPANDA: 2,
+} as const;
 
 export const MS_IN_DAY = 24 * 60 * 60 * 1000;
 
@@ -41,9 +42,8 @@ export const isBakedInTrial = (license: License): boolean =>
  *
  * @returns {boolean} - Returns `true` if an enabled feature with name 'sso' or 'reassign partitions' is found, otherwise `false`.
  */
-export const consoleHasEnterpriseFeature = (feature: 'SINGLE_SIGN_ON' | 'REASSIGN_PARTITIONS'): boolean => {
-  return AppFeatures[feature] ?? false;
-};
+export const consoleHasEnterpriseFeature = (feature: 'SINGLE_SIGN_ON' | 'REASSIGN_PARTITIONS'): boolean =>
+  AppFeatures[feature] ?? false;
 
 /**
  * Determines if the CORE system includes any enabled enterprise features.
@@ -56,9 +56,8 @@ export const consoleHasEnterpriseFeature = (feature: 'SINGLE_SIGN_ON' | 'REASSIG
  *
  * @returns `true` if at least one enterprise feature is enabled; otherwise, `false`.
  */
-export const coreHasEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): boolean => {
-  return features.some((feature) => feature.enabled);
-};
+export const coreHasEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): boolean =>
+  features.some((feature) => feature.enabled);
 
 /**
  * Checks if a license is expired.
@@ -87,7 +86,7 @@ export const licenseSoonToExpire = (
   offsetInDays: Partial<Record<License_Type, number>> = {
     [License_Type.TRIAL]: 15,
     [License_Type.ENTERPRISE]: 30,
-  },
+  }
 ): boolean => {
   const daysToExpire: number | undefined = offsetInDays[license.type];
 
@@ -110,9 +109,7 @@ export const licenseSoonToExpire = (
  * @param {License} license - The license object containing the expiration timestamp.
  * @returns {Date} The expiration date as a JavaScript Date object.
  */
-export const getExpirationDate = (license: License): Date => {
-  return new Date(Number(license.expiresAt) * 1000);
-};
+export const getExpirationDate = (license: License): Date => new Date(Number(license.expiresAt) * 1000);
 
 /**
  * Formats the expiration date of a given license into a user-friendly string format.
@@ -125,13 +122,12 @@ export const getExpirationDate = (license: License): Date => {
  * regardless of the user's local environment. It formats the date using the 'en-US' locale
  * with two-digit month, day, and four-digit year.
  */
-export const getPrettyExpirationDate = (license: License): string => {
-  return new Intl.DateTimeFormat('en-US', {
+export const getPrettyExpirationDate = (license: License): string =>
+  new Intl.DateTimeFormat('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
   }).format(getExpirationDate(license));
-};
 
 /**
  * Calculates the time remaining until a license expires.
@@ -219,7 +215,11 @@ export const prettyExpirationDate = (license: License): string => {
     return '';
   }
 
-  return new Date(Number(license.expiresAt) * 1000).toLocaleDateString();
+  const date = new Date(Number(license.expiresAt) * 1000);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${month}/${day}/${year}`;
 };
 
 /**
@@ -252,7 +252,7 @@ export const isLicenseWithEnterpriseAccess = (license: License): boolean =>
  */
 export const getLatestExpiringLicense = (licenses: License[]): License | undefined => {
   if (licenses.length === 0) {
-    return undefined;
+    return;
   }
 
   return licenses.reduce((latest, current) => {
@@ -328,7 +328,7 @@ export const getLatestExpiringLicense = (licenses: License[]): License | undefin
  * ```
  */
 export const licensesToSimplifiedPreview = (
-  licenses: License[],
+  licenses: License[]
 ): Array<{
   name: string;
   expiresAt: string;
@@ -361,7 +361,7 @@ type EnterpriseLinkType = 'tryEnterprise' | 'upgrade';
 export const resolveEnterpriseCTALink = (
   type: EnterpriseLinkType,
   cluster_uuid: string | undefined,
-  isRedpanda: boolean,
+  isRedpanda: boolean
 ) => {
   const urls: Record<EnterpriseLinkType, string> = {
     tryEnterprise: TRY_ENTERPRISE_LINK,
@@ -377,9 +377,8 @@ export const resolveEnterpriseCTALink = (
   return url.toString();
 };
 
-export const getEnterpriseCTALink = (type: EnterpriseLinkType): string => {
-  return resolveEnterpriseCTALink(type, api.clusterOverview?.kafka?.clusterId, api.isRedpanda);
-};
+export const getEnterpriseCTALink = (type: EnterpriseLinkType): string =>
+  resolveEnterpriseCTALink(type, api.clusterOverview?.kafka?.clusterId, api.isRedpanda);
 
 export const DISABLE_SSO_DOCS_LINK = 'https://docs.redpanda.com/current/console/config/configure-console/';
 
@@ -390,21 +389,22 @@ export const SERVERLESS_LINK = 'https://www.redpanda.com/product/serverless';
 
 export const UploadLicenseButton = () =>
   api.isAdminApiConfigured ? (
-    <Button variant="outline" size="sm" as={ReactRouterLink} to="/upload-license">
+    <Button as={ReactRouterLink} size="sm" to="/upload-license" variant="outline">
       Upload license
     </Button>
   ) : null;
 
 export const UpgradeButton = () => (
   <Button
-    variant="outline"
-    size="sm"
     as={Link}
-    target="_blank"
     href={getEnterpriseCTALink('upgrade')}
+    rel="noopener noreferrer"
+    size="sm"
     style={{
       textDecoration: 'none',
     }}
+    target="_blank"
+    variant="outline"
   >
     Upgrade
   </Button>
@@ -412,11 +412,18 @@ export const UpgradeButton = () => (
 
 export const RegisterButton = ({ onRegisterModalOpen }: { onRegisterModalOpen: () => void }) =>
   api.isAdminApiConfigured ? (
-    <Button variant="outline" size="sm" onClick={onRegisterModalOpen}>
+    <Button onClick={onRegisterModalOpen} size="sm" variant="outline">
       Register
     </Button>
   ) : (
-    <Button variant="outline" size="sm" as={Link} target="_blank" href={getEnterpriseCTALink('tryEnterprise')}>
+    <Button
+      as={Link}
+      href={getEnterpriseCTALink('tryEnterprise')}
+      rel="noopener noreferrer"
+      size="sm"
+      target="_blank"
+      variant="outline"
+    >
       Register
     </Button>
   );

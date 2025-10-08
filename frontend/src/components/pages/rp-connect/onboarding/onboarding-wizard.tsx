@@ -10,12 +10,13 @@ import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CONNECT_WIZARD_CONNECTOR_KEY } from 'state/connect/state';
-import type { ConnectComponentType } from '../types/schema';
-import type { BaseStepRef, WizardFormData } from '../types/wizard';
-import { handleStepResult, WizardStep } from '../utils/wizard';
+
 import { AddTopicStep } from './add-topic-step';
 import { AddUserStep } from './add-user-step';
 import { ConnectTiles } from './connect-tiles';
+import type { ConnectComponentType } from '../types/schema';
+import type { BaseStepRef, WizardFormData } from '../types/wizard';
+import { handleStepResult, WizardStep } from '../utils/wizard';
 
 const stepDefinitions = [
   {
@@ -32,7 +33,7 @@ const { Stepper } = defineStepper(...stepDefinitions);
 export const ConnectOnboardingWizard = () => {
   const [persistedConnector, setPersistedConnector] = useSessionStorage<Partial<WizardFormData>>(
     CONNECT_WIZARD_CONNECTOR_KEY,
-    {},
+    {}
   );
 
   const navigate = useNavigate();
@@ -71,7 +72,7 @@ export const ConnectOnboardingWizard = () => {
         ...(persistedConnector.output && { output: persistedConnector.output }),
       });
     },
-    [setPersistedConnector, persistedConnector],
+    [setPersistedConnector, persistedConnector]
   );
 
   const handleOutputChange = useCallback(
@@ -81,7 +82,7 @@ export const ConnectOnboardingWizard = () => {
         ...(persistedConnector.input && { input: persistedConnector.input }),
       });
     },
-    [setPersistedConnector, persistedConnector],
+    [setPersistedConnector, persistedConnector]
   );
 
   const handleNext = async (methods: { current: { id: WizardStep }; next: () => void }) => {
@@ -137,8 +138,8 @@ export const ConnectOnboardingWizard = () => {
           const isCurrentStepLoading = getCurrentStepLoading(methods.current.id);
 
           return (
-            <div className="flex flex-col gap-6 relative">
-              <div className="flex flex-col gap-6 pt-4 h-full">
+            <div className="relative flex flex-col gap-6">
+              <div className="flex h-full flex-col gap-6 pt-4">
                 <div className="flex flex-col space-y-2 text-center">
                   <Stepper.Navigation>
                     {stepDefinitions.map((step) => (
@@ -153,24 +154,24 @@ export const ConnectOnboardingWizard = () => {
                     <ConnectTiles
                       key="input-connector-tiles"
                       componentTypeFilter={['input']}
-                      onChange={handleInputChange}
                       defaultConnectionName={persistedConnector.input?.connectionName}
                       defaultConnectionType={persistedConnector.input?.connectionType}
+                      onChange={handleInputChange}
                       ref={addInputStepRef}
-                      title="Send data to your pipeline"
                       tileWrapperClassName="min-h-[300px] max-h-[40vh]"
+                      title="Send data to your pipeline"
                     />
                   ),
                   [WizardStep.ADD_OUTPUT]: () => (
                     <ConnectTiles
                       key="output-connector-tiles"
                       componentTypeFilter={['output']}
-                      onChange={handleOutputChange}
                       defaultConnectionName={persistedConnector.output?.connectionName}
                       defaultConnectionType={persistedConnector.output?.connectionType}
+                      onChange={handleOutputChange}
                       ref={addOutputStepRef}
-                      title="Read data from your pipeline"
                       tileWrapperClassName="min-h-[300px] max-h-[40vh]"
+                      title="Read data from your pipeline"
                     />
                   ),
                   // TODO add persisted data to both steps
@@ -180,12 +181,12 @@ export const ConnectOnboardingWizard = () => {
               </div>
               <Stepper.Controls className={cn(!methods.isFirst && 'justify-between')}>
                 {!methods.isFirst && (
-                  <Button type="button" variant="secondary" onClick={methods.prev}>
+                  <Button onClick={methods.prev} type="button" variant="secondary">
                     Previous
                   </Button>
                 )}
                 <div className="flex gap-2">
-                  <Button type="button" variant="outline" onClick={handleSkip}>
+                  <Button onClick={handleSkip} type="button" variant="outline">
                     Skip
                   </Button>
                   {(methods.current.id === WizardStep.ADD_INPUT &&
@@ -196,7 +197,7 @@ export const ConnectOnboardingWizard = () => {
                     persistedConnector.output?.connectionType) ||
                   methods.current.id === WizardStep.ADD_TOPIC ||
                   methods.current.id === WizardStep.ADD_USER ? (
-                    <Button onClick={() => handleNext(methods)} disabled={isCurrentStepLoading}>
+                    <Button disabled={isCurrentStepLoading} onClick={() => handleNext(methods)}>
                       {isCurrentStepLoading ? 'Loading...' : 'Next'}
                     </Button>
                   ) : null}

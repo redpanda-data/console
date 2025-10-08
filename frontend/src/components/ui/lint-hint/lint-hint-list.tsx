@@ -12,9 +12,9 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { PencilRuler } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 
-interface LintHintListProps {
+type LintHintListProps = {
   lintHints: Record<string, LintHint>;
-}
+};
 
 export const LintHintList: React.FC<LintHintListProps> = ({ lintHints }) => {
   if (!lintHints || Object.keys(lintHints).length === 0) {
@@ -25,30 +25,30 @@ export const LintHintList: React.FC<LintHintListProps> = ({ lintHints }) => {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <PencilRuler className="h-4 w-4" />
-        <Text variant="label" className="font-medium">
+        <Text className="font-medium" variant="label">
           Linting Issues
         </Text>
       </div>
-      <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-        <div className="p-3 space-y-3">
+      <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+        <div className="space-y-3 p-3">
           {Object.entries(lintHints).map(([toolName, hint]) => (
-            <div key={toolName} className="space-y-1">
+            <div className="space-y-1" key={toolName}>
               {hint.line > 0 ? (
                 <div className="flex flex-col gap-1">
-                  <Text className="text-xs font-medium text-gray-600">
+                  <Text className="font-medium text-gray-600 text-xs">
                     Line {hint.line}, Col {hint.column}
                   </Text>
-                  <Text className="text-sm font-mono leading-relaxed bg-white px-2 py-1 rounded border text-gray-800">
+                  <Text className="rounded border bg-white px-2 py-1 font-mono text-gray-800 text-sm leading-relaxed">
                     {hint.hint}
                   </Text>
                 </div>
               ) : (
-                <Text className="text-sm font-mono leading-relaxed bg-white px-2 py-1 rounded border text-gray-800">
+                <Text className="rounded border bg-white px-2 py-1 font-mono text-gray-800 text-sm leading-relaxed">
                   {hint.hint}
                 </Text>
               )}
               {hint.lintType && (
-                <Text className="text-xs font-medium uppercase tracking-wide text-gray-500">{hint.lintType}</Text>
+                <Text className="font-medium text-gray-500 text-xs uppercase tracking-wide">{hint.lintType}</Text>
               )}
             </div>
           ))}

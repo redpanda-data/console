@@ -10,27 +10,37 @@
  */
 
 import { FaGithub, FaLinkedin, FaSlack, FaTwitter } from 'react-icons/fa';
+
 import { isEmbedded } from '../../config';
 import env, { getBuildDate, IsCI, IsDev } from '../../utils/env';
 
 export const VersionInfo = () => {
   const appName = 'Redpanda Console';
   let mode = '';
-  if (IsDev) mode = ' - DEV';
-  if (IsCI) mode = ' - CI';
+  if (IsDev) {
+    mode = ' - DEV';
+  }
+  if (IsCI) {
+    mode = ' - CI';
+  }
 
-  if (env.REACT_APP_CONSOLE_PLATFORM_VERSION) mode += ` (Platform Version ${env.REACT_APP_CONSOLE_PLATFORM_VERSION})`;
+  if (env.REACT_APP_CONSOLE_PLATFORM_VERSION) {
+    mode += ` (Platform Version ${env.REACT_APP_CONSOLE_PLATFORM_VERSION})`;
+  }
 
   let ref = env.REACT_APP_CONSOLE_GIT_REF;
-  if (!ref || ref === 'master') ref = '';
+  if (!ref || ref === 'master') {
+    ref = '';
+  }
 
-  const sha = IsDev ? '<no git sha in dev>' : env.REACT_APP_CONSOLE_GIT_SHA.slice(0, 7);
+  const GIT_SHA_SHORT_LENGTH = 7;
+  const sha = IsDev ? '<no git sha in dev>' : env.REACT_APP_CONSOLE_GIT_SHA.slice(0, GIT_SHA_SHORT_LENGTH);
 
   const buildDate = IsDev ? new Date() : getBuildDate();
 
   return (
     <>
-      <div data-testid="versionTitle" className="versionTitle">
+      <div className="versionTitle" data-testid="versionTitle">
         {appName} {mode}
       </div>
       <div className="versionDate">
@@ -46,7 +56,7 @@ export const VersionInfo = () => {
 export const AppFooter = () => {
   const gitHub = (link: string, title: string) => (
     <>
-      <a href={link} title={title} target="_blank" rel="noopener noreferrer">
+      <a href={link} rel="noopener noreferrer" target="_blank" title={title}>
         <FaGithub />
       </a>
     </>
@@ -59,17 +69,17 @@ export const AppFooter = () => {
         {isEmbedded()
           ? gitHub('https://github.com/redpanda-data/redpanda', "Visit Redpanda's GitHub repository")
           : gitHub('https://github.com/redpanda-data/console', "Visit Redpanda Console's GitHub repository")}
-        <a href="https://redpanda.com/slack" title="Slack" target="_blank" rel="noopener noreferrer">
+        <a href="https://redpanda.com/slack" rel="noopener noreferrer" target="_blank" title="Slack">
           <FaSlack />
         </a>
-        <a href="https://twitter.com/redpandadata" title="Twitter" target="_blank" rel="noopener noreferrer">
+        <a href="https://twitter.com/redpandadata" rel="noopener noreferrer" target="_blank" title="Twitter">
           <FaTwitter />
         </a>
         <a
           href="https://www.linkedin.com/company/redpanda-data"
-          title="LinkedIn"
-          target="_blank"
           rel="noopener noreferrer"
+          target="_blank"
+          title="LinkedIn"
         >
           <FaLinkedin />
         </a>

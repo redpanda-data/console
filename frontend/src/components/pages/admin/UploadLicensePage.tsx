@@ -15,6 +15,7 @@ import {
 import { makeObservable, observable } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
 import type { FC } from 'react';
+
 import type { SetLicenseRequest, SetLicenseResponse } from '../../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
@@ -61,7 +62,7 @@ const UploadLicenseForm: FC<{
       <Flex flexDirection="column" gap={2} my={4}>
         {state.showFileUpload && (
           <Box>
-            <Box border="1px dashed" borderColor="gray.200" padding="4" borderRadius="md">
+            <Box border="1px dashed" borderColor="gray.200" borderRadius="md" padding="4">
               <Dropzone
                 setRawString={(value) => {
                   state.setLicenseFile(value);
@@ -70,10 +71,10 @@ const UploadLicenseForm: FC<{
             </Box>
             or
             <Button
-              variant="link"
               onClick={() => {
                 state.showFileUpload = false;
               }}
+              variant="link"
             >
               import text directly
             </Button>
@@ -84,21 +85,21 @@ const UploadLicenseForm: FC<{
           <Box>
             <FormField label="License content">
               <Textarea
-                rows={10}
+                autoComplete="off"
                 data-testid="license"
                 onChange={(e) => state.setLicense(e.target.value)}
+                rows={10}
                 spellCheck={false}
-                autoComplete="off"
               >
                 {state.license}
               </Textarea>
             </FormField>
             or
             <Button
-              variant="link"
               onClick={() => {
                 state.showFileUpload = true;
               }}
+              variant="link"
             >
               upload file
             </Button>
@@ -112,7 +113,7 @@ const UploadLicenseForm: FC<{
           </Alert>
         )}
         <Flex gap={2} mt={2}>
-          <Button type="submit" data-testid="upload-license">
+          <Button data-testid="upload-license" type="submit">
             Upload
           </Button>
           <Button
@@ -131,7 +132,7 @@ const UploadLicenseForm: FC<{
 });
 
 @observer
-export default class UploadLicensePage extends PageComponent<{}> {
+export default class UploadLicensePage extends PageComponent {
   @observable success = false;
 
   constructor(p: any) {
@@ -151,7 +152,6 @@ export default class UploadLicensePage extends PageComponent<{}> {
           <Box mb={20}>
             <Result
               status="success"
-              title="License uploaded successfully"
               subTitle={
                 <Flex flexDirection="column" gap={4}>
                   <Box>
@@ -159,7 +159,7 @@ export default class UploadLicensePage extends PageComponent<{}> {
                       A restart will be needed to use Redpanda Console's enterprise features.
                     </Text>
                     <Text fontWeight="normal">
-                      <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+                      <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
                         Enterprise features
                       </Link>{' '}
                       in your Redpanda cluster will be available right away.
@@ -178,25 +178,27 @@ export default class UploadLicensePage extends PageComponent<{}> {
                   </Box>
                 </Flex>
               }
+              title="License uploaded successfully"
             />
           </Box>
         ) : (
           <>
             <Text>
               If you're interested in Redpanda Enterprise, please{' '}
-              <Link href="https://www.redpanda.com/contact" target="_blank">
+              <Link href="https://www.redpanda.com/contact" rel="noopener noreferrer" target="_blank">
                 contact us
               </Link>
               .
             </Text>
             <Text>
               If you're an existing customer, get in touch with{' '}
-              <Link href="https://support.redpanda.com/hc/en-us" target="_blank">
+              <Link href="https://support.redpanda.com/hc/en-us" rel="noopener noreferrer" target="_blank">
                 our support team
               </Link>{' '}
               to request a license. To see a list of what is available with Redpanda Enterprise, check{' '}
               <Link
                 href="https://docs.redpanda.com/current/get-started/licenses/#redpanda-enterprise-edition"
+                rel="noopener noreferrer"
                 target="_blank"
               >
                 our documentation
@@ -205,14 +207,14 @@ export default class UploadLicensePage extends PageComponent<{}> {
             </Text>
             <Box width={{ sm: '100%', md: '600px' }}>
               <UploadLicenseForm
-                onUploadLicense={async (license) => {
-                  return await api.uploadLicense({
-                    license,
-                  } as SetLicenseRequest);
-                }}
                 onSuccess={() => {
                   this.success = true;
                 }}
+                onUploadLicense={async (license) =>
+                  await api.uploadLicense({
+                    license,
+                  } as SetLicenseRequest)
+                }
               />
             </Box>
           </>

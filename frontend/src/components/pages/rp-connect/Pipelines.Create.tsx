@@ -38,13 +38,7 @@ import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useState
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { Link } from 'react-router-dom';
 import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
-import { appGlobal } from '../../../state/appGlobal';
-import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import PageContent from '../../misc/PageContent';
-import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
-import Tabs from '../../misc/tabs/Tabs';
-import { PageComponent, type PageInitHelper } from '../Page';
+
 import { extractLintHintsFromError, formatPipelineError } from './errors';
 import { CreatePipelineSidebar } from './onboarding/create-pipeline-sidebar';
 import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
@@ -52,11 +46,19 @@ import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import type { ConnectComponentType } from './types/schema';
 import type { AddUserFormData, WizardFormData } from './types/wizard';
 import { getConnectTemplate } from './utils/yaml';
+import { appGlobal } from '../../../state/appGlobal';
+import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import PageContent from '../../misc/PageContent';
+import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
+import Tabs from '../../misc/tabs/Tabs';
+import { PageComponent, type PageInitHelper } from '../Page';
 
 const exampleContent = `
 `;
 
 @observer
+// biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
 class RpConnectPipelinesCreate extends PageComponent<{}> {
   @observable fileName = '';
   @observable description = '';
@@ -95,7 +97,9 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   };
 
   render() {
-    if (!pipelinesApi.pipelines) return DefaultSkeleton;
+    if (!pipelinesApi.pipelines) {
+      return DefaultSkeleton;
+    }
     if (rpcnSecretManagerApi.secrets) {
       // inject secrets to editor
       this.secrets.updateWith(rpcnSecretManagerApi.secrets.map((value) => value.id));
@@ -109,11 +113,11 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
       return (
         <Button
-          variant="solid"
           isDisabled={alreadyExists || isNameEmpty || this.isCreating}
-          loadingText="Creating..."
           isLoading={this.isCreating}
+          loadingText="Creating..."
           onClick={action(() => this.createPipeline(enableRpcnTiles ? undefined : toast))}
+          variant="solid"
         >
           Create
         </Button>
@@ -129,7 +133,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
               <>
                 {' '}
                 try the{' '}
-                <UILink as={Link} to="/rp-connect/wizard" onClick={this.handleWizardClick}>
+                <UILink as={Link} onClick={this.handleWizardClick} to="/rp-connect/wizard">
                   wizard
                 </UILink>
                 ,{' '}
@@ -152,15 +156,15 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
         </div>
 
         <Flex flexDirection="column" gap={3}>
-          <FormField label="Pipeline name" isInvalid={alreadyExists} errorText="Pipeline name is already in use">
+          <FormField errorText="Pipeline name is already in use" isInvalid={alreadyExists} label="Pipeline name">
             <Flex alignItems="center" gap="2">
               <Input
-                placeholder="Enter a config name..."
                 data-testid="pipelineName"
-                pattern="[a-zA-Z0-9_\-]+"
                 isRequired
-                value={this.fileName}
                 onChange={(x) => (this.fileName = x.target.value)}
+                pattern="[a-zA-Z0-9_\-]+"
+                placeholder="Enter a config name..."
+                value={this.fileName}
                 width={500}
               />
             </Flex>
@@ -168,28 +172,28 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           <FormField label="Description">
             <Input
               data-testid="pipelineDescription"
-              value={this.description}
               onChange={(x) => (this.description = x.target.value)}
+              value={this.description}
               width={500}
             />
           </FormField>
           <FormField
-            label="Compute Units"
             description="One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines."
+            label="Compute Units"
             w={500}
           >
             <NumberInput
-              value={this.tasks}
-              onChange={(e) => (this.tasks = Number(e ?? MIN_TASKS))}
-              min={MIN_TASKS}
               max={MAX_TASKS}
               maxWidth={150}
+              min={MIN_TASKS}
+              onChange={(e) => (this.tasks = Number(e ?? MIN_TASKS))}
+              value={this.tasks}
             />
           </FormField>
         </Flex>
 
         <div className="mt-4">
-          <PipelineEditor yaml={this.editorContent} onChange={(x) => (this.editorContent = x)} secrets={this.secrets} />
+          <PipelineEditor onChange={(x) => (this.editorContent = x)} secrets={this.secrets} yaml={this.editorContent} />
         </div>
 
         {isFeatureFlagEnabled('enableRpcnTiles') && this.lintResults && Object.keys(this.lintResults).length > 0 && (
@@ -208,6 +212,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     );
   }
 
+  // biome-ignore lint/suspicious/useAwait: async needed for error handling in MobX action
   async createPipeline(toast?: CreateToastFnReturn) {
     this.isCreating = true;
 
@@ -225,7 +230,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
             ...this.tags,
             __redpanda_cloud_pipeline_type: 'pipeline',
           },
-        }),
+        })
       )
       .then(
         action(async (r) => {
@@ -254,7 +259,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
           await pipelinesApi.refreshPipelines(true);
           appGlobal.historyPush('/connect-clusters');
-        }),
+        })
       )
       .catch(
         action((err) => {
@@ -269,7 +274,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           } else {
             this.lintResults = extractLintHintsFromError(err);
           }
-        }),
+        })
       )
       .finally(() => {
         this.isCreating = false;
@@ -293,7 +298,9 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
 
   const onAddSecret = (secretNotation: string) => {
     const selection = editorInstance.getSelection();
-    if (selection === null) return;
+    if (selection === null) {
+      return;
+    }
     const id = { major: 1, minor: 1 };
     const op = { identifier: id, range: selection, text: secretNotation, forceMoveMarkers: true };
     editorInstance.executeEdits('my-source', [op]);
@@ -302,27 +309,27 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
   };
 
   return (
-    <div className="flex gap-3 flex-col">
+    <div className="flex flex-col gap-3">
       <Card>
         <CardHeader>
           <CardTitle>Variables</CardTitle>
           <CardDescription>Add a reference to a new or existing secret value, such as a key.</CardDescription>
         </CardHeader>
         <CardContent>
-          <NewButton variant="secondary" onClick={openAddSecret}>
+          <NewButton onClick={openAddSecret} variant="secondary">
             <PlusIcon className="size-4" color="white" />
             Add Secrets
           </NewButton>
         </CardContent>
       </Card>
-      <SecretsQuickAdd isOpen={isAddSecretOpen} onCloseAddSecret={closeAddSecret} onAdd={onAddSecret} />
+      <SecretsQuickAdd isOpen={isAddSecretOpen} onAdd={onAddSecret} onCloseAddSecret={closeAddSecret} />
     </div>
   );
 };
 
 const registerSecretsAutocomplete = async (
   monaco: Monaco,
-  setSecretAutocomplete: Dispatch<SetStateAction<IDisposable | undefined>>,
+  setSecretAutocomplete: Dispatch<SetStateAction<IDisposable | undefined>>
 ) => {
   await rpcnSecretManagerApi.refreshSecrets(true);
   const secrets = rpcnSecretManagerApi.secrets || [];
@@ -340,7 +347,7 @@ const registerSecretsAutocomplete = async (
         label: `{secrets.${secret.id}}`,
         kind: monaco.languages.CompletionItemKind.Variable,
         insertText: `{secrets.${secret.id}}`,
-        range: range,
+        range,
       }));
       return {
         suggestions: completeItems,
@@ -370,7 +377,7 @@ export const PipelineEditor = observer(
     const persistedConnectComponentTemplate = useMemo(() => {
       const persistedInput = persistedFormData?.input;
       const persistedOutput = persistedFormData?.output;
-      if (!persistedInput?.connectionName || !persistedInput?.connectionType) {
+      if (!(persistedInput?.connectionName && persistedInput?.connectionType)) {
         return undefined;
       }
       const inputTemplate = getConnectTemplate({
@@ -389,13 +396,16 @@ export const PipelineEditor = observer(
       return inputTemplate;
     }, [persistedFormData]);
 
-    const yaml = useMemo(() => {
-      return enableRpcnTiles && persistedConnectComponentTemplate ? persistedConnectComponentTemplate : p.yaml;
-    }, [enableRpcnTiles, persistedConnectComponentTemplate, p.yaml]);
+    const yaml = useMemo(
+      () => (enableRpcnTiles && persistedConnectComponentTemplate ? persistedConnectComponentTemplate : p.yaml),
+      [enableRpcnTiles, persistedConnectComponentTemplate, p.yaml]
+    );
 
     const { data: secretsData, refetch: refetchSecrets } = useListSecretsQuery();
     const existingSecrets = useMemo(() => {
-      if (!secretsData?.secrets) return [];
+      if (!secretsData?.secrets) {
+        return [];
+      }
       return secretsData.secrets.map((secret) => secret?.id).filter(Boolean) as string[];
     }, [secretsData]);
 
@@ -411,15 +421,23 @@ export const PipelineEditor = observer(
     const [wizardUserData] = useSessionStorage<AddUserFormData>(CONNECT_WIZARD_USER_KEY);
 
     const secretDefaultValues = useMemo(() => {
-      if (!wizardUserData) return {};
+      if (!wizardUserData) {
+        return {};
+      }
       const values: Record<string, string> = {};
-      if (wizardUserData.username) values.REDPANDA_USERNAME = wizardUserData.username;
-      if (wizardUserData.password) values.REDPANDA_PASSWORD = wizardUserData.password;
+      if (wizardUserData.username) {
+        values.REDPANDA_USERNAME = wizardUserData.username;
+      }
+      if (wizardUserData.password) {
+        values.REDPANDA_PASSWORD = wizardUserData.password;
+      }
       return values;
     }, [wizardUserData]);
 
     const handleAddConnector = (connectionName: string, connectionType: ConnectComponentType) => {
-      if (!editorInstance) return;
+      if (!editorInstance) {
+        return;
+      }
 
       const currentValue = editorInstance.getValue();
       // For explicitly-added components (scanner, processor, cache, buffer),
@@ -432,7 +450,9 @@ export const PipelineEditor = observer(
         existingYaml: currentValue,
       });
 
-      if (!mergedYaml) return;
+      if (!mergedYaml) {
+        return;
+      }
 
       editorInstance.setValue(mergedYaml);
     };
@@ -449,7 +469,9 @@ export const PipelineEditor = observer(
     // Sync actual editor content with editor instance
     // This ensures sidebar always sees what's actually in the editor
     useEffect(() => {
-      if (!editorInstance) return;
+      if (!editorInstance) {
+        return;
+      }
 
       // Read actual content from editor after mount
       const currentValue = editorInstance.getValue();
@@ -478,35 +500,37 @@ export const PipelineEditor = observer(
             content: () => (
               <div>
                 {/* yaml editor */}
-                <div className="min-h-[400px] flex gap-7">
+                <div className="flex min-h-[400px] gap-7">
                   <PipelinesYamlEditor
                     defaultPath="config.yaml"
-                    path="config.yaml"
                     defaultValue={yaml}
-                    onChange={(e) => {
-                      if (e) p.onChange?.(e);
-                    }}
                     language="yaml"
-                    options={{
-                      readOnly: p.isDisabled,
+                    onChange={(e) => {
+                      if (e) {
+                        p.onChange?.(e);
+                      }
                     }}
                     onMount={async (editor, monacoInstance) => {
                       setEditorInstance(editor);
                       setMonaco(monacoInstance);
                       await registerSecretsAutocomplete(monacoInstance, setSecretAutocomplete);
                     }}
+                    options={{
+                      readOnly: p.isDisabled,
+                    }}
+                    path="config.yaml"
                   />
 
                   {!p.isDisabled &&
                     (enableRpcnTiles ? (
                       <CreatePipelineSidebar
-                        editorInstance={editorInstance}
-                        onAddConnector={handleAddConnector}
                         detectedSecrets={detectedSecrets}
-                        existingSecrets={existingSecrets}
-                        secretDefaultValues={secretDefaultValues}
-                        onSecretsCreated={refetchSecrets}
                         editorContent={actualEditorContent}
+                        editorInstance={editorInstance}
+                        existingSecrets={existingSecrets}
+                        onAddConnector={handleAddConnector}
+                        onSecretsCreated={refetchSecrets}
+                        secretDefaultValues={secretDefaultValues}
                       />
                     ) : (
                       <QuickActions
@@ -514,7 +538,7 @@ export const PipelineEditor = observer(
                         resetAutocompleteSecrets={() => {
                           if (secretAutocomplete && monaco) {
                             secretAutocomplete.dispose();
-                            registerSecretsAutocomplete(monaco, setSecretAutocomplete);
+                            void registerSecretsAutocomplete(monaco, setSecretAutocomplete);
                           }
                         }}
                       />
@@ -528,8 +552,8 @@ export const PipelineEditor = observer(
                       <UIText>
                         This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations,{' '}
                         <UILink
-                          target="_blank"
                           href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
+                          target="_blank"
                         >
                           see our quickstart documentation
                         </UILink>
@@ -550,7 +574,7 @@ export const PipelineEditor = observer(
         ]}
       />
     );
-  },
+  }
 );
 
 /**

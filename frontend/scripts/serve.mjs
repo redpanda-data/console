@@ -29,7 +29,7 @@ const apiServer = 'http://localhost:9090';
 
 app.use(express.static(rootDir));
 
-app.use('/api/*', async function (req, res) {
+app.use('/api/*', async (req, res) => {
 
     const url = apiServer + req.baseUrl;
     // console.log('api request will be proxied', { targetUrl: url });
@@ -58,7 +58,7 @@ app.use('/api/*', async function (req, res) {
     }
 });
 
-app.get('/*', function (req, res) {
+app.get('/*', (req, res) => {
     res.sendFile(join(rootDir, 'index.html'));
 });
 

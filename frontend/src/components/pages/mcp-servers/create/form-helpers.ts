@@ -10,12 +10,15 @@
 
 import type { UseFormReturn } from 'react-hook-form';
 import { stringify } from 'yaml';
+
+import type { FormValues } from './schemas';
 import { RESOURCE_TIERS } from '../remote-mcp-constants';
 import type { Template } from '../templates/remote-mcp-templates';
-import type { FormValues } from './schemas';
 
 export function getTierById(id: string | undefined) {
-  if (!id) return undefined;
+  if (!id) {
+    return;
+  }
   return RESOURCE_TIERS.find((t) => t.id === id || t.name === id);
 }
 

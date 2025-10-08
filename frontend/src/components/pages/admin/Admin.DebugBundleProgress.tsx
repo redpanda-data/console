@@ -10,18 +10,20 @@
  */
 
 import { observer } from 'mobx-react';
+
 import { api } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { Box, Button, Flex, Text } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
+import DebugBundleOverview from './DebugBundleOverview';
 import { appGlobal } from '../../../state/appGlobal';
 import DebugBundleLink from '../../debugBundle/DebugBundleLink';
 import { PageComponent, type PageInitHelper } from '../Page';
-import DebugBundleOverview from './DebugBundleOverview';
 
 @observer
-export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
+export default class AdminPageDebugBundleProgress extends PageComponent {
   @observable advancedForm = false;
   @observable submitInProgress = false;
 
@@ -36,7 +38,9 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
   }
 
   refreshData() {
-    void api.refreshDebugBundleStatuses();
+    api.refreshDebugBundleStatuses().catch(() => {
+      // Error handling managed by API layer
+    });
   }
 
   constructor(p: any) {
@@ -62,7 +66,7 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
             <Box>
               <Flex gap={2}>
                 <Text fontWeight="bold">Debug bundle complete:</Text>
-                <DebugBundleLink statuses={api.debugBundleStatuses} showDatetime={false} />
+                <DebugBundleLink showDatetime={false} statuses={api.debugBundleStatuses} />
               </Flex>
             </Box>
           )}
@@ -75,19 +79,21 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
             <Box my={2}>
               {api.isDebugBundleInProgress ? (
                 <Button
-                  variant="outline"
                   onClick={() => {
                     for (const status of api.debugBundleStatuses) {
                       if (status.value.case === 'bundleStatus') {
-                        void api.cancelDebugBundleProcess({ jobId: status.value.value.jobId });
+                        api.cancelDebugBundleProcess({ jobId: status.value.value.jobId }).catch(() => {
+                          // Error handling managed by API layer
+                        });
                       }
                     }
                   }}
+                  variant="outline"
                 >
                   Stop
                 </Button>
               ) : (
-                <Button variant="outline" as={ReactRouterLink} to="/debug-bundle">
+                <Button as={ReactRouterLink} to="/debug-bundle" variant="outline">
                   {api.isDebugBundleError ? 'Try again' : 'Done'}
                 </Button>
               )}

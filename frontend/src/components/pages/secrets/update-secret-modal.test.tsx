@@ -18,6 +18,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { fireEvent, render, screen, waitFor, within } from 'test-utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
+
 import { UpdateSecretModal } from './update-secret-modal';
 
 describe('UpdateSecretModal', () => {
@@ -56,7 +57,7 @@ describe('UpdateSecretModal', () => {
             ],
           }),
         }),
-      }),
+      })
     );
 
     const transport = createRouterTransport(({ rpc }) => {
@@ -94,7 +95,7 @@ describe('UpdateSecretModal', () => {
         create(UpdateSecretRequestSchema, {
           request: create(UpdateSecretRequestSchemaDataPlane, {
             id: existingSecretId,
-            // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
+            // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
             secretData: base64ToUInt8Array(encodeBase64(updatedSecretValue)),
             scopes: [Scope.REDPANDA_CONNECT],
             labels: {
@@ -103,7 +104,7 @@ describe('UpdateSecretModal', () => {
             },
           }),
         }),
-        expect.anything(),
+        expect.anything()
       );
     });
   });
@@ -147,7 +148,7 @@ describe('UpdateSecretModal', () => {
       rpc(updateSecret, updateSecretMock);
     });
 
-    render(<UpdateSecretModal secretId={secretId} isOpen onClose={() => {}} />, { transport });
+    render(<UpdateSecretModal isOpen onClose={() => {}} secretId={secretId} />, { transport });
 
     await waitFor(() => {
       expect(screen.getByTestId('resource-in-use-alert')).toBeVisible();

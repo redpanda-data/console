@@ -11,13 +11,15 @@ const modals = observable([]) as {
 
 function removeModal(id: number) {
   const index = modals.findIndex((x) => x.id === id);
-  if (index < 0) return;
+  if (index < 0) {
+    return;
+  }
   modals.splice(index, 1);
 }
 
 export function openModal<P extends object>(
   component: React.FunctionComponent<P> | React.ComponentClass<P, any>,
-  props: Omit<P, 'closeModal'>,
+  props: Omit<P, 'closeModal'>
 ) {
   const id = nextModalId++;
   const p: typeof props & { closeModal: () => void } = {
@@ -27,17 +29,15 @@ export function openModal<P extends object>(
 
   const element = React.createElement(component, p as any, []);
   modals.push({
-    element: element,
-    id: id,
+    element,
+    id,
   });
 }
 
-export const ModalContainer = observer(() => {
-  return (
-    <Box id="modalContainer">
-      {modals.map((e) => (
-        <React.Fragment key={e.id}>{e.element}</React.Fragment>
-      ))}
-    </Box>
-  );
-});
+export const ModalContainer = observer(() => (
+  <Box id="modalContainer">
+    {modals.map((e) => (
+      <React.Fragment key={e.id}>{e.element}</React.Fragment>
+    ))}
+  </Box>
+));

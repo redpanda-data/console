@@ -13,6 +13,7 @@ import { Box, Breadcrumbs, Button, ColorModeSwitch, CopyButton, Flex, Text } fro
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link as ReactRouterLink, useMatch } from 'react-router-dom';
+
 import { isEmbedded } from '../../config';
 import { api } from '../../state/backendApi';
 import { type BreadcrumbEntry, uiState } from '../../state/uiState';
@@ -41,31 +42,33 @@ const AppPageHeader = observer(() => {
 
   const lastBreadcrumb = breadcrumbItems.pop();
 
-  if (shouldHideHeader) return null;
+  if (shouldHideHeader) {
+    return null;
+  }
 
   return (
     <Box>
       {/* we need to refactor out #mainLayout > div rule, for now I've added this box as a workaround */}
-      <Flex mb={5} alignItems="center" justifyContent="space-between">
+      <Flex alignItems="center" justifyContent="space-between" mb={5}>
         {!isEmbedded() && (
           <Breadcrumbs
-            showHomeIcon={false}
             items={breadcrumbItems.map((x) => ({
               name: x.title,
               heading: x.heading,
               to: x.linkTo,
             }))}
+            showHomeIcon={false}
           />
         )}
       </Flex>
 
-      <Flex pb={2} alignItems="center" justifyContent="space-between">
+      <Flex alignItems="center" justifyContent="space-between" pb={2}>
         <Flex alignItems="center">
           {lastBreadcrumb && (
             <Text
-              fontWeight={700}
               as="span"
               fontSize="xl"
+              fontWeight={700}
               mr={2}
               {...(lastBreadcrumb.options?.canBeTruncated
                 ? {
@@ -90,12 +93,12 @@ const AppPageHeader = observer(() => {
           {!isEmbedded() && api.isRedpanda && (
             <Button
               as={ReactRouterLink}
-              to={api.userData?.canViewDebugBundle ? '/debug-bundle' : undefined}
-              variant="ghost"
               isDisabled={!api.userData?.canViewDebugBundle}
+              to={api.userData?.canViewDebugBundle ? '/debug-bundle' : undefined}
               tooltip={
-                !api.userData?.canViewDebugBundle ? 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission' : null
+                api.userData?.canViewDebugBundle ? null : 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission'
               }
+              variant="ghost"
             >
               Debug bundle
             </Button>
@@ -150,10 +153,18 @@ function useShouldShowRefresh() {
   const roleDetailMatch = useMatch('/security/roles/:id/details');
   const isRoleRelated = roleCreateMatch || roleUpdateMatch || roleDetailMatch;
 
-  if (connectClusterMatch && connectClusterMatch.params.connectorName === 'create-connector') return false;
-  if (schemaCreateMatch) return false;
-  if (topicProduceRecordMatch) return false;
-  if (secretsMatch) return false;
+  if (connectClusterMatch && connectClusterMatch.params.connectorName === 'create-connector') {
+    return false;
+  }
+  if (schemaCreateMatch) {
+    return false;
+  }
+  if (topicProduceRecordMatch) {
+    return false;
+  }
+  if (secretsMatch) {
+    return false;
+  }
   if (isACLRelated) {
     return false;
   }

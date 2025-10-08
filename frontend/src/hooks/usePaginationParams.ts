@@ -20,7 +20,7 @@ import { useLocation } from 'react-router-dom';
  */
 const usePaginationParams = (
   totalDataLength: number,
-  defaultPageSize: number = DEFAULT_TABLE_PAGE_SIZE,
+  defaultPageSize: number = DEFAULT_TABLE_PAGE_SIZE
 ): { pageSize: number; pageIndex: number } => {
   const { search } = useLocation();
 

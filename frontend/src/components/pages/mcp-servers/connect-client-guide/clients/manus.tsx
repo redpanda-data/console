@@ -13,14 +13,15 @@ import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-d
 import { List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { Cable, FileJson, Plus, Send } from 'lucide-react';
+
 import ManusLogo from '../../../../../assets/manus.svg';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
 import { ClientType, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
-interface ClientManusProps {
+type ClientManusProps = {
   mcpServer: MCPServer;
-}
+};
 
 export const ClientManus = ({ mcpServer }: ClientManusProps) => {
   const clusterId = config?.clusterId;
@@ -37,14 +38,14 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
   return (
     <div>
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Open</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                <img src={ManusLogo} alt="Manus" className="h-4 w-4" />
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+                <img alt="Manus" className="h-4 w-4" src={ManusLogo} />
                 Manus
               </Text>
             </div>
@@ -52,7 +53,7 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <Text>Go to</Text>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <Cable className="h-4 w-4" /> Connect Apps
               </Text>
             </div>
@@ -60,7 +61,7 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Select</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <Plus className="h-4 w-4" />
                 Add Connectors
               </Text>
@@ -69,7 +70,7 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Choose</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <Plus className="h-4 w-4" />
                 Custom MCP
               </Text>
@@ -78,7 +79,7 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Select</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <FileJson className="h-4 w-4" /> Import by JSON
               </Text>
             </div>
@@ -87,7 +88,7 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
             <div className="flex flex-wrap items-center gap-1">
               <span>Copy and paste the following configuration:</span>
             </div>
-            <DynamicCodeBlock lang="json" code={manusConfigJson} />
+            <DynamicCodeBlock code={manusConfigJson} lang="json" />
           </ListItem>
           <ListItem>
             <div className="flex items-center gap-2">
@@ -100,26 +101,26 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Click</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <Send className="h-4 w-4" /> Try it out
               </Text>
             </div>
           </ListItem>
           <ListItem>
             Authenticate by running this command in your terminal:
-            <DynamicCodeBlock lang="bash" code="rpk cloud login --no-browser" />
+            <DynamicCodeBlock code="rpk cloud login --no-browser" lang="bash" />
           </ListItem>
           <ListItem>
             Finally, test the connection by listing available tools:
-            <DynamicCodeBlock lang="bash" code={`manus-mcp-cli tool list --server ${mcpServerName}`} />
+            <DynamicCodeBlock code={`manus-mcp-cli tool list --server ${mcpServerName}`} lang="bash" />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Alternatively, you can use a prompt:</span>
             </div>
             <DynamicCodeBlock
-              lang="text"
               code={`Help me test the ${mcpServerName} connector and show me how to use its feature (e.g. show any data you fetched with it). Do not forget to rpk cloud login initially. Give me a brief about its capabilities.`}
+              lang="text"
             />
           </ListItem>
         </List>

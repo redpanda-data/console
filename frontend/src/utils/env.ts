@@ -29,7 +29,9 @@ const envNames = [
 type Environment = { [key in (typeof envNames)[number]]: string };
 
 const env = {} as Environment;
-for (const k of envNames) env[k] = process.env[k] || '';
+for (const k of envNames) {
+  env[k] = process.env[k] || '';
+}
 
 export default env;
 
@@ -43,12 +45,16 @@ export const IsCI = env.REACT_APP_BUILT_FROM_PUSH && env.REACT_APP_BUILT_FROM_PU
 const appFeatureNames = ['SINGLE_SIGN_ON', 'REASSIGN_PARTITIONS'] as const;
 export type AppFeature = (typeof appFeatureNames)[number];
 
-if (env.REACT_APP_ENABLED_FEATURES) (window as any).ENABLED_FEATURES = env.REACT_APP_ENABLED_FEATURES;
+if (env.REACT_APP_ENABLED_FEATURES) {
+  (window as any).ENABLED_FEATURES = env.REACT_APP_ENABLED_FEATURES;
+}
 const featuresRaw = (window as any).ENABLED_FEATURES ?? '';
 const enabledFeatures = featuresRaw.split(',') as AppFeature[];
 
 const features = {} as { [key in AppFeature]: boolean };
-for (const f of appFeatureNames) features[f] = enabledFeatures.includes(f);
+for (const f of appFeatureNames) {
+  features[f] = enabledFeatures.includes(f);
+}
 
 export const AppFeatures = features;
 
@@ -64,7 +70,9 @@ export function getBasePath() {
 
 export function getBuildDate(): Date | undefined {
   const timestamp = +env.REACT_APP_BUILD_TIMESTAMP;
-  if (timestamp === 0) return undefined;
+  if (timestamp === 0) {
+    return;
+  }
   return new Date(timestamp * 1000);
 }
 
@@ -74,15 +82,22 @@ const envVarDebugObj = {} as any;
 const envVarDebugAr: { name: string; value: string }[] = [];
 
 const addProp = (key: string, value: any) => {
-  if (value === undefined || value === null || value === '') return;
+  if (value === undefined || value === null || value === '') {
+    return;
+  }
   key = key.removePrefix('REACT_APP_CONSOLE_').removePrefix('REACT_APP_');
   envVarDebugObj[key] = value;
-  envVarDebugAr.push({ name: key, value: value });
+  envVarDebugAr.push({ name: key, value });
 };
 // - add env vars
-for (const k in env) addProp(k, (env as any)[k]);
+for (const k in env) {
+  if (Object.hasOwn(env, k)) {
+    addProp(k, (env as any)[k]);
+  }
+}
 
 // - print
+// biome-ignore lint/suspicious/noConsole: intentional console usage
 console.log(toJson(envVarDebugObj));
 
 export { envVarDebugObj, envVarDebugAr };

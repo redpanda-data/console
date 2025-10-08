@@ -17,6 +17,8 @@ import { observer } from 'mobx-react';
 import { Component, useState } from 'react';
 import { DragDropContext, Draggable, Droppable, type DropResult, type ResponderProvided } from 'react-beautiful-dnd';
 
+const VALID_NAME_REGEX = /^[a-z][a-z_\d]*$/i;
+
 @observer
 export class CommaSeparatedStringList extends Component<{
   defaultValue: string;
@@ -38,8 +40,9 @@ export class CommaSeparatedStringList extends Component<{
     super(p);
     makeObservable(this);
 
-    if (!this.data)
+    if (!this.data) {
       this.data = this.props.defaultValue ? this.props.defaultValue.split(',').map((x) => ({ id: x.trim() })) : [];
+    }
 
     this.reactionDisposer = autorun(() => {
       const list = this.commaSeperatedList;
@@ -60,7 +63,7 @@ export class CommaSeparatedStringList extends Component<{
     return (
       <div className="stringList" style={{ maxWidth: '500px' }}>
         <this.AddButton />
-        <List observableAr={this.data} renderItem={(item, index) => <this.Item item={item} index={index} />} />
+        <List observableAr={this.data} renderItem={(item, index) => <this.Item index={index} item={item} />} />
       </div>
     );
   }
@@ -74,17 +77,16 @@ export class CommaSeparatedStringList extends Component<{
     return (
       <>
         {/* Input */}
-        <Tooltip label="[Enter] confirm, [ESC] cancel" isOpen={hasFocus} placement="top" hasArrow={true}>
+        <Tooltip hasArrow={true} isOpen={hasFocus} label="[Enter] confirm, [ESC] cancel" placement="top">
           <Input
             className="ghostInput"
-            size="sm"
-            style={{ flexGrow: 1, flexBasis: '400px' }}
+            onBlur={() => {
+              setHasFocus(false);
+            }}
+            onChange={(e) => setValuePending(e.target.value)}
             onFocus={() => {
               setValuePending(item.id);
               setHasFocus(true);
-            }}
-            onBlur={() => {
-              setHasFocus(false);
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -95,7 +97,7 @@ export class CommaSeparatedStringList extends Component<{
                   return;
                 }
 
-                if (/^[a-z][a-z_\d]*$/i.test(valuePending) === false) {
+                if (VALID_NAME_REGEX.test(valuePending) === false) {
                   // no, invalid characters
                   e.stopPropagation();
                   return;
@@ -107,22 +109,23 @@ export class CommaSeparatedStringList extends Component<{
                 (e.target as HTMLElement).blur();
               }
             }}
-            value={hasFocus ? valuePending : item.id}
-            onChange={(e) => setValuePending(e.target.value)}
+            size="sm"
             spellCheck={false}
+            style={{ flexGrow: 1, flexBasis: '400px' }}
+            value={hasFocus ? valuePending : item.id}
           />
         </Tooltip>
 
         {/* Delete */}
-        {/** biome-ignore lint/a11y/noStaticElementInteractions: part of CommaSeparatedStringList implementation */}
-        <span
+        <button
           className="deleteButton"
           onClick={() => {
             this.data.splice(index, 1);
           }}
+          type="button"
         >
           <XIcon />
-        </span>
+        </button>
       </>
     );
   });
@@ -130,38 +133,43 @@ export class CommaSeparatedStringList extends Component<{
   AddButton = observer(() => {
     return (
       <div className="createEntryRow">
-        <div className={`inputWrapper${this.newEntryError ? ' hasError' : ''}`} style={{ height: '100%' }}>
+        <div className={`inputWrapper${this.newEntryError ? 'hasError' : ''}`} style={{ height: '100%' }}>
           <Input
-            style={{ flexGrow: 1, height: '100%', flexBasis: '260px' }}
-            value={this.newEntry ?? ''}
             onChange={(e) => {
               this.newEntry = e.target.value;
 
               this.newEntryError = null;
 
-              if (!this.newEntry) return;
+              if (!this.newEntry) {
+                return;
+              }
 
-              if (this.data.any((x) => x.id === this.newEntry)) this.newEntryError = 'Entry already exists';
+              if (this.data.any((x) => x.id === this.newEntry)) {
+                this.newEntryError = 'Entry already exists';
+              }
 
-              if (/^[a-z][a-z_\d]*$/i.test(this.newEntry) === false)
+              if (VALID_NAME_REGEX.test(this.newEntry) === false) {
                 this.newEntryError = 'Name is not valid (only letters, digits, underscore)';
+              }
             }}
             placeholder={this.props.locale?.addInputPlaceholder ?? 'Enter a name...'}
             spellCheck={false}
+            style={{ flexGrow: 1, height: '100%', flexBasis: '260px' }}
+            value={this.newEntry ?? ''}
           />
 
           <div className="validationFeedback">{this.newEntryError ?? null}</div>
         </div>
 
         <Button
-          style={{ padding: '0px 16px', height: '100%', minWidth: '120px' }}
-          variant="solid"
           disabled={this.newEntryError != null || !this.newEntry || this.newEntry.trim().length === 0}
           onClick={() => {
             // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
             this.data.push({ id: this.newEntry! });
             this.newEntry = null;
           }}
+          style={{ padding: '0px 16px', height: '100%', minWidth: '120px' }}
+          variant="solid"
         >
           Add
         </Button>
@@ -179,7 +187,9 @@ export class List<T extends { id: string }> extends Component<{
     const { observableAr: list, renderItem } = this.props;
 
     const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
-      if (!result.destination) return;
+      if (!result.destination) {
+        return;
+      }
       arrayMoveMutable(this.props.observableAr, result.source.index, result.destination.index);
     };
 
@@ -190,7 +200,7 @@ export class List<T extends { id: string }> extends Component<{
             {(droppableProvided, _droppableSnapshot) => (
               <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
                 {list.map((tag, index) => (
-                  <Draggable key={String(index)} draggableId={String(index)} index={index}>
+                  <Draggable draggableId={String(index)} index={index} key={String(index)}>
                     {(draggableProvided, _draggableSnapshot) => (
                       <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
                         <div className="draggableItem">

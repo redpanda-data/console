@@ -12,6 +12,7 @@
 import { Box } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import type { CSSProperties } from 'react';
+
 import KowlEditor from './KowlEditor';
 
 export const KowlJsonView = observer((props: { srcObj: object | string | null | undefined; style?: CSSProperties }) => {
@@ -20,11 +21,11 @@ export const KowlJsonView = observer((props: { srcObj: object | string | null | 
   return (
     <Box
       display="block"
-      minHeight="40"
-      maxHeight="45rem" // no chakra space equivalent exists
       height="96"
-      style={props.style}
+      maxHeight="45rem" // no chakra space equivalent exists
+      minHeight="40"
       position="relative"
+      style={props.style}
     >
       {/*
          We have a problem in Safari with Monaco editor, when used with automaticLayout: true, which is a default,
@@ -33,14 +34,14 @@ export const KowlJsonView = observer((props: { srcObj: object | string | null | 
          We tried to play with overflow, boxSizing, even manually using ResizeObserver.
          Changing the parent to absolutely positioned element works around the issue for now.
          */}
-      <Box position="absolute" h="full" w="full">
+      <Box h="full" position="absolute" w="full">
         <KowlEditor
-          value={str}
           language="json"
           options={{
             readOnly: true,
             // automaticLayout: false // too much lag on chrome
           }}
+          value={str}
         />
       </Box>
     </Box>

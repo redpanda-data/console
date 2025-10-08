@@ -50,7 +50,9 @@ const searchComponents = (
 
       if (filters?.categories?.length) {
         const hasMatchingCategory = component.categories?.some((cat) => filters.categories?.includes(cat));
-        if (!hasMatchingCategory) return false;
+        if (!hasMatchingCategory) {
+          return false;
+        }
       }
 
       return true;
@@ -99,7 +101,9 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
 
     const checkScrollable = useCallback(() => {
       const container = scrollContainerRef.current;
-      if (!container) return;
+      if (!container) {
+        return;
+      }
 
       const { scrollTop, scrollHeight, clientHeight } = container;
       const isScrollable = scrollHeight > clientHeight;
@@ -165,7 +169,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
     }));
 
     return (
-      <Card size={size} variant={variant} className={cn(className, 'relative')}>
+      <Card className={cn(className, 'relative')} size={size} variant={variant}>
         {!hideHeader && (
           <CardHeader className="bg-background">
             <CardTitle>
@@ -202,20 +206,20 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
             </CardDescription>
           </CardHeader>
         )}
-        <CardContent id="rp-connect-onboarding-wizard" className="mt-2">
+        <CardContent className="mt-2" id="rp-connect-onboarding-wizard">
           <Form {...form}>
             {!hideFilters && (
-              <div className="flex flex-col gap-4 sticky top-0 bg-background z-10 border-b-2 pb-4 mb-0 pt-2">
+              <div className="sticky top-0 z-10 mb-0 flex flex-col gap-4 border-b-2 bg-background pt-2 pb-4">
                 <div className="flex justify-between gap-4">
                   <Label className="w-[240px]">
                     Search connectors
                     <Input
-                      value={filter}
+                      className="flex-1"
                       onChange={(e) => {
                         setFilter(e.target.value);
                       }}
                       placeholder="Snowflake, S3..."
-                      className="flex-1"
+                      value={filter}
                     >
                       <InputStart>
                         <SearchIcon className="size-4" />
@@ -233,7 +237,6 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                       value={selectedCategories}
                       onValueChange={setSelectedCategories}
                       placeholder="Databases, Social..."
-                      maxDisplay={3}
                       width="full"
                     />
                   </Label>
@@ -243,9 +246,9 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
 
             <div className="relative">
               <div
-                ref={scrollContainerRef}
                 className={cn('max-h-[50vh] min-h-[400px] overflow-y-auto py-4', tileWrapperClassName)}
                 onScroll={checkScrollable}
+                ref={scrollContainerRef}
               >
                 <FormField
                   control={form.control}
@@ -256,7 +259,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                         {filteredComponents.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-8 text-center">
                             <Text className="text-muted-foreground">No connections found matching your filters</Text>
-                            <Text className="text-sm text-muted-foreground mt-1">
+                            <Text className="mt-1 text-muted-foreground text-sm">
                               Try adjusting your search or category filters
                             </Text>
                           </div>
@@ -268,23 +271,23 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
 
                                 return (
                                   <ChoiceboxItem
-                                    value={component.name}
                                     checked={
                                       field.value === component.name &&
                                       form.getValues('connectionType') === component.type
                                     }
+                                    className="relative"
                                     key={uniqueKey}
                                     onClick={() => {
                                       field.onChange(component.name);
                                       form.setValue('connectionType', component.type as ConnectComponentType);
                                       onChange?.(component.name, component.type as ConnectComponentType);
                                     }}
-                                    className="relative"
+                                    value={component.name}
                                   >
-                                    <div className="flex gap-4 items-center justify-between w-full">
-                                      <div className="flex flex-col gap-1 min-w-0">
+                                    <div className="flex w-full items-center justify-between gap-4">
+                                      <div className="flex min-w-0 flex-col gap-1">
                                         <Text className="truncate font-medium">{component.name}</Text>
-                                        <Text className="text-sm text-muted-foreground line-clamp-2">
+                                        <Text className="line-clamp-2 text-muted-foreground text-sm">
                                           {component.summary}
                                         </Text>
                                       </div>
@@ -299,7 +302,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                                       </div>
                                       {field.value === component.name &&
                                         form.getValues('connectionType') === component.type && (
-                                          <ChoiceboxItemIndicator className="absolute right-2 top-2" />
+                                          <ChoiceboxItemIndicator className="absolute top-2 right-2" />
                                         )}
                                     </div>
                                   </ChoiceboxItem>
@@ -316,7 +319,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
               </div>
               {/* Gradient overlay to indicate scrollability - only show when not at bottom */}
               {showScrollGradient && (
-                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+                <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-gradient-to-t from-background to-transparent" />
               )}
             </div>
           </Form>

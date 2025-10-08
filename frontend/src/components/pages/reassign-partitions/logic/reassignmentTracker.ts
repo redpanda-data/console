@@ -14,6 +14,7 @@
 // - tracks progress history for each reassignment to estimate speed and ETA
 
 import { observable, transaction } from 'mobx';
+
 import { api } from '../../../../state/backendApi';
 import type { PartitionReassignments } from '../../../../state/restInterfaces';
 import { IsDev } from '../../../../utils/env';
@@ -25,7 +26,7 @@ const refreshIntervals = {
   // partitions = automatic, same as reassignment
 } as const;
 
-export interface ReassignmentState {
+export type ReassignmentState = {
   id: string; // used to match instances of 'ReassignmentState' and 'PartitionReassignments'
 
   topicName: string;
@@ -62,7 +63,7 @@ export interface ReassignmentState {
 
   // set when a reassignment has completed
   actualTimeCompleted: Date | null;
-}
+};
 
 export class ReassignmentTracker {
   clusterTimer: number | null = null;
@@ -81,17 +82,23 @@ export class ReassignmentTracker {
 
   start() {
     const alreadyStarted = this.reassignTimer != null;
-    if (alreadyStarted) return;
+    if (alreadyStarted) {
+      return;
+    }
 
     // Active reassignments
-    this.reassignTimer = window.setInterval(() => this.refreshReassignments(), refreshIntervals.reassignments);
+    this.reassignTimer = window.setInterval(
+      // biome-ignore lint/suspicious/noConsole: existing console error logging
+      () => this.refreshReassignments().catch(console.error),
+      refreshIntervals.reassignments
+    );
 
     // Broker status
     this.clusterTimer = window.setInterval(() => api.refreshCluster(true), refreshIntervals.cluster);
 
     // Immediately refresh as well
     setTimeout(() => {
-      this.refreshReassignments();
+      void this.refreshReassignments();
       api.refreshCluster(true);
     });
   }
@@ -101,11 +108,16 @@ export class ReassignmentTracker {
 
     // Save current state, refresh, save new state
     await api.refreshPartitionReassignments(true);
-    const liveReassignments = (clone(api.partitionReassignments) ?? []).map((r) => ({ id: this.computeId(r), ...r }));
+    const liveReassignments = (clone(api.partitionReassignments) ?? []).map((r) => ({
+      id: this.computeId(r),
+      ...r,
+    }));
 
     // Update relevant topic-partitions
     const topics = liveReassignments.map((r) => r.topicName);
-    if (topics.length > 0) await api.refreshPartitions(topics, true);
+    if (topics.length > 0) {
+      await api.refreshPartitions(topics, true);
+    }
 
     transaction(() => {
       // Add new reassignments
@@ -115,13 +127,14 @@ export class ReassignmentTracker {
           // console.log('adding new state', { id: r.id, reassignment: r });
           const state = this.createReassignmentState(r);
           this.trackingReassignments.push(state);
-          if (IsDev) console.log('tracking reassignment', r.topicName);
         }
       }
 
       // Mark removed reassignments as completed
       for (const r of this.trackingReassignments) {
-        if (r.actualTimeCompleted != null) continue; // no need to the ones already marked as completed
+        if (r.actualTimeCompleted != null) {
+          continue; // no need to the ones already marked as completed
+        }
 
         const live = liveReassignments.first((x) => x.id === r.id);
         if (!live) {
@@ -129,7 +142,6 @@ export class ReassignmentTracker {
           r.actualTimeCompleted = new Date();
           r.progressPercent = 100;
           r.remaining = { value: 0, timestamp: new Date() };
-          if (IsDev) console.log('completed reassignment', r.topicName);
         }
       }
 
@@ -140,10 +152,11 @@ export class ReassignmentTracker {
 
       // Remove reassignments that are in completed state for some time
       const expiredTrackers = this.trackingReassignments.filter((x) => {
-        if (x.actualTimeCompleted == null) return false; // not yet complete
+        if (x.actualTimeCompleted == null) {
+          return false; // not yet complete
+        }
         const age = (Date.now() - x.actualTimeCompleted.getTime()) / 1000;
-        if (age > 8) {
-          if (IsDev) console.log('removing reassignment', x.topicName);
+        if (age > 8 && IsDev) {
           return true;
         }
         return false;
@@ -183,14 +196,19 @@ export class ReassignmentTracker {
     const topicPartitions = api.topicPartitions.get(state.topicName);
     for (const p of state.partitions) {
       const logDirs = topicPartitions?.first((e) => e.id === p.partitionId)?.partitionLogDirs.filter((l) => !l.error);
-      if (!logDirs || logDirs.length === 0) continue;
+      if (!logDirs || logDirs.length === 0) {
+        continue;
+      }
 
       // current size (on new brokers)
       const newSizeOnBrokers: { brokerId: number; replicaSize: number }[] = [];
       for (const b of p.addingReplicas) {
         const logDir = logDirs.first((l) => l.brokerId === b);
-        if (logDir && !logDir.error) newSizeOnBrokers.push({ brokerId: b, replicaSize: logDir.size });
-        else newSizeOnBrokers.push({ brokerId: b, replicaSize: 0 });
+        if (logDir && !logDir.error) {
+          newSizeOnBrokers.push({ brokerId: b, replicaSize: logDir.size });
+        } else {
+          newSizeOnBrokers.push({ brokerId: b, replicaSize: 0 });
+        }
       }
       p.currentSize = newSizeOnBrokers;
 

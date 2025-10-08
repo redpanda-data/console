@@ -21,14 +21,15 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { ListUsersRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useState } from 'react';
+
 import { useListRoleMembersQuery, useUpdateRoleMembershipMutation } from '../../../react-query/api/security';
 import { useListUsersQuery } from '../../../react-query/api/user';
 import { AutocompleteInput } from '../acls/new-acl/AutocompleteInput';
 
-interface MatchingUsersCardProps {
+type MatchingUsersCardProps = {
   principalType: string;
   principal: string;
-}
+};
 
 export function MatchingUsersCard({ principalType, principal }: MatchingUsersCardProps) {
   // Extract role name from principal (format: "RedpandaRole:roleName")
@@ -45,7 +46,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
   const { data: membersData, isLoading } = useListRoleMembersQuery(
     create(ListRoleMembersRequestSchema, {
       roleName,
-    }),
+    })
   );
 
   // Fetch all users for the combobox
@@ -66,11 +67,11 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
     try {
       await updateMembership(
         create(UpdateRoleMembershipRequestSchema, {
-          roleName: roleName,
+          roleName,
           add: [{ principal: `User:${newUserName.trim()}` }],
           remove: [],
           create: true,
-        }),
+        })
       );
       toast({
         status: 'success',
@@ -90,11 +91,11 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
     try {
       await updateMembership(
         create(UpdateRoleMembershipRequestSchema, {
-          roleName: roleName,
+          roleName,
           add: [],
           remove: [{ principal: userPrincipal }],
           create: false,
-        }),
+        })
       );
 
       toast({
@@ -118,7 +119,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
 
   return (
     <div className="lg:col-span-1">
-      <Card size="full" className="bg-slate-100">
+      <Card className="bg-slate-100" size="full">
         <CardHeader>
           <h3>Matching users / principals ({membersCount})</h3>
         </CardHeader>
@@ -126,7 +127,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
           <div className="flex flex-col gap-1">
             {/* Loading state */}
             {isLoading && principalType === 'RedpandaRole' && (
-              <div className="text-sm text-gray-500 italic">Loading members...</div>
+              <div className="text-gray-500 text-sm italic">Loading members...</div>
             )}
 
             {/* Show role members if it's a RedpandaRole */}
@@ -140,50 +141,39 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
 
                   return (
                     <div
+                      className="group flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white/40 font-normal text-gray-900 text-sm transition-colors hover:bg-white/60"
                       key={member.principal}
-                      className="group flex items-center justify-between bg-white/40 border border-gray-200 rounded-lg text-sm font-normal text-gray-900 gap-2 hover:bg-white/60 transition-colors"
                       style={{ padding: '8px 10px' }}
                     >
                       <span className="flex-1 text-left">{username}</span>
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveUser(member.principal)}
-                        disabled={isDeleting}
-                        className="opacity-100 transition-opacity p-1 h-auto "
+                        className="h-auto p-1 opacity-100 transition-opacity"
                         data-testid={`remove-user-${username}-button`}
+                        disabled={isDeleting}
+                        onClick={() => handleRemoveUser(member.principal)}
+                        size="sm"
+                        variant="ghost"
                       >
-                        <Trash2 className="w-4 h-4 text-red-600" />
+                        <Trash2 className="h-4 w-4 text-red-600" />
                       </Button>
                     </div>
                   );
                 })
               ) : (
-                <div className="text-sm text-gray-500 italic">No members assigned to this role</div>
+                <div className="text-gray-500 text-sm italic">No members assigned to this role</div>
               ))}
           </div>
 
           {/* Add user/principal button and input - only for RedpandaRole */}
           {principalType === 'RedpandaRole' && (
-            <div className="pt-2 border-t border-gray-200">
-              {!isAddingUser ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start text-gray-600 hover:text-gray-900 hover:bg-white/60"
-                  onClick={() => setIsAddingUser(true)}
-                  data-testid="add-user-principal-button"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add user/principal
-                </Button>
-              ) : (
+            <div className="border-gray-200 border-t pt-2">
+              {isAddingUser ? (
                 <div className="flex gap-2">
                   <AutocompleteInput
-                    value={newUserName}
+                    className="flex-1 text-sm"
+                    data-testid={'add-user-input'}
                     onChange={setNewUserName}
                     placeholder="Select or enter username..."
-                    className="flex-1 text-sm"
                     suggestions={
                       usersData?.users
                         ?.filter((user) => {
@@ -193,22 +183,33 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
                         })
                         .map((user) => user.name) || []
                     }
-                    data-testid={'add-user-input'}
+                    value={newUserName}
                   />
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleAddUser}
-                    disabled={isSubmitting || !newUserName.trim()}
                     className="px-2"
                     data-testid="confirm-add-user-button"
+                    disabled={isSubmitting || !newUserName.trim()}
+                    onClick={handleAddUser}
+                    size="sm"
+                    variant="ghost"
                   >
-                    <Check className="w-4 h-4 text-green-600" />
+                    <Check className="h-4 w-4 text-green-600" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={handleCancel} disabled={isSubmitting} className="px-2">
-                    <X className="w-4 h-4 text-red-600" />
+                  <Button className="px-2" disabled={isSubmitting} onClick={handleCancel} size="sm" variant="ghost">
+                    <X className="h-4 w-4 text-red-600" />
                   </Button>
                 </div>
+              ) : (
+                <Button
+                  className="w-full justify-start text-gray-600 hover:bg-white/60 hover:text-gray-900"
+                  data-testid="add-user-principal-button"
+                  onClick={() => setIsAddingUser(true)}
+                  size="sm"
+                  variant="ghost"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add user/principal
+                </Button>
               )}
             </div>
           )}

@@ -34,12 +34,15 @@ import { useListSecretsQuery } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-import { RemoteMCPBackButton } from '../remote-mcp-back-button';
+
 import { getTierById } from './form-helpers';
 import { MetadataStep } from './metadata-step';
 import { FormSchema, type FormValues, initialValues } from './schemas';
 import { ToolsStep } from './tools-step';
 import { useMetadataValidation } from './use-metadata-validation';
+import { RemoteMCPBackButton } from '../remote-mcp-back-button';
+
+const TOOL_FIELD_REGEX = /mcp_server\.tools\.([^.]+)\.(.+)/;
 
 // Stepper definition
 const { Stepper } = defineStepper(
@@ -54,7 +57,7 @@ const { Stepper } = defineStepper(
     title: 'Tools',
     description: 'Define with YAML config',
     icon: <Hammer className="h-4 w-4" />,
-  },
+  }
 );
 
 export const RemoteMCPCreatePage: React.FC = () => {
@@ -99,7 +102,9 @@ export const RemoteMCPCreatePage: React.FC = () => {
 
   // Get existing secret names
   const existingSecrets = useMemo(() => {
-    if (!secretsData?.secrets) return [];
+    if (!secretsData?.secrets) {
+      return [];
+    }
     return secretsData.secrets.map((secret) => secret?.id).filter(Boolean) as string[];
   }, [secretsData]);
 
@@ -113,14 +118,16 @@ export const RemoteMCPCreatePage: React.FC = () => {
   const handleNext = async (isOnMetadataStep: boolean, goNext: () => void) => {
     if (isOnMetadataStep) {
       const valid = await form.trigger(['displayName', 'description', 'resourcesTier', 'tags']);
-      if (!valid) return;
+      if (!valid) {
+        return;
+      }
       goNext();
     }
   };
 
   const handleLintTool = async (toolIndex: number) => {
     const tool = form.getValues(`tools.${toolIndex}`);
-    if (!tool || !tool.name.trim() || !tool.config.trim()) {
+    if (!(tool?.name.trim() && tool.config.trim())) {
       toast.error('Tool name and configuration are required for linting');
       return;
     }
@@ -135,7 +142,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
     const response = await lintConfig(
       create(LintMCPConfigRequestSchema, {
         tools: toolsMap,
-      }),
+      })
     );
 
     // Update lint hints for this tool
@@ -145,13 +152,14 @@ export const RemoteMCPCreatePage: React.FC = () => {
     }));
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 56, refactor later
   const handleValidationError = (error: ConnectError) => {
     if (error.code === ConnectCode.InvalidArgument && error.details) {
       // Find BadRequest details
       const badRequest = error.details.find((detail) => (detail as any).type === 'google.rpc.BadRequest') as any;
       if (badRequest?.debug?.fieldViolations) {
         // Set form errors for specific fields
-        badRequest.debug.fieldViolations.forEach((violation: { field: string; description: string }) => {
+        for (const violation of badRequest.debug.fieldViolations) {
           const { field, description } = violation;
 
           // Map server field names to form field names
@@ -169,7 +177,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
             toast.error(`Description: ${description}`);
           } else if (field.startsWith('mcp_server.tools.')) {
             // Handle tool-specific validation errors
-            const toolFieldMatch = field.match(/mcp_server\.tools\.([^.]+)\.(.+)/);
+            const toolFieldMatch = field.match(TOOL_FIELD_REGEX);
             if (toolFieldMatch) {
               const [, toolName, toolField] = toolFieldMatch;
               // Find the tool index by name
@@ -195,7 +203,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
             // Generic field error
             toast.error(`${field}: ${description}`);
           }
-        });
+        }
         return;
       }
     }
@@ -207,19 +215,23 @@ export const RemoteMCPCreatePage: React.FC = () => {
   const onSubmit = async (values: FormValues) => {
     const tier = getTierById(values.resourcesTier);
     const tagsMap: Record<string, string> = {};
-    values.tags.forEach((t) => {
+    for (const t of values.tags) {
       const key = t.key?.trim();
-      if (key) tagsMap[key] = (t.value ?? '').trim();
-    });
+      if (key) {
+        tagsMap[key] = (t.value ?? '').trim();
+      }
+    }
 
     const toolsMap: Record<string, { componentType: number; configYaml: string }> = {};
-    values.tools.forEach((t) => {
-      if (!t.name.trim()) return;
+    for (const t of values.tools) {
+      if (!t.name.trim()) {
+        continue;
+      }
       toolsMap[t.name.trim()] = {
         componentType: t.componentType,
         configYaml: t.config,
       };
-    });
+    }
 
     await createServer(
       create(CreateMCPServerRequestSchema, {
@@ -242,7 +254,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
             navigate(`/mcp-servers/${data.mcpServer.id}`);
           }
         },
-      },
+      }
     );
   };
 
@@ -262,17 +274,17 @@ export const RemoteMCPCreatePage: React.FC = () => {
           <>
             <Stepper.Navigation>
               <Stepper.Step
+                disabled={hasFormErrors}
                 of="metadata"
                 onClick={hasFormErrors ? undefined : () => methods.goTo('metadata')}
-                disabled={hasFormErrors}
               >
                 <Stepper.Title>Metadata</Stepper.Title>
                 <Stepper.Description>Configure server information</Stepper.Description>
               </Stepper.Step>
               <Stepper.Step
+                disabled={!!isMetadataInvalid}
                 of="tools"
                 onClick={isMetadataInvalid ? undefined : () => methods.goTo('tools')}
-                disabled={!!isMetadataInvalid}
               >
                 <Stepper.Title>Tools</Stepper.Title>
                 <Stepper.Description>Define with YAML config</Stepper.Description>
@@ -284,11 +296,11 @@ export const RemoteMCPCreatePage: React.FC = () => {
               {methods.current.id === 'metadata' && (
                 <Stepper.Panel>
                   <MetadataStep
-                    form={form}
-                    tagFields={tagFields}
                     appendTag={appendTag}
-                    removeTag={removeTag}
+                    form={form}
                     onSubmit={onSubmit}
+                    removeTag={removeTag}
+                    tagFields={tagFields}
                   />
                 </Stepper.Panel>
               )}
@@ -297,33 +309,33 @@ export const RemoteMCPCreatePage: React.FC = () => {
               {methods.current.id === 'tools' && (
                 <Stepper.Panel>
                   <ToolsStep
-                    form={form}
-                    toolFields={toolFields}
                     appendTool={appendTool}
-                    removeTool={removeTool}
-                    lintHints={lintHints}
-                    isLintConfigPending={isLintConfigPending}
-                    hasSecretWarnings={hasSecretWarnings}
                     detectedSecrets={detectedSecrets}
                     existingSecrets={existingSecrets}
-                    onSubmit={onSubmit}
-                    onLintTool={handleLintTool}
+                    form={form}
+                    hasSecretWarnings={hasSecretWarnings}
+                    isLintConfigPending={isLintConfigPending}
+                    lintHints={lintHints}
                     onExpandTool={(index) => setExpandedTool({ index, isOpen: true })}
+                    onLintTool={handleLintTool}
+                    onSubmit={onSubmit}
+                    removeTool={removeTool}
+                    toolFields={toolFields}
                   />
                 </Stepper.Panel>
               )}
 
               <Stepper.Controls className={methods.isFirst ? 'flex justify-end' : 'flex justify-between'}>
                 {!methods.isFirst && (
-                  <Button variant="outline" onClick={methods.prev} disabled={isCreateMCPServerPending}>
+                  <Button disabled={isCreateMCPServerPending} onClick={methods.prev} variant="outline">
                     <ArrowLeft className="h-4 w-4" />
                     Previous
                   </Button>
                 )}
                 {methods.isLast ? (
                   <Button
-                    onClick={form.handleSubmit(onSubmit)}
                     disabled={isCreateMCPServerPending || hasFormErrors || hasLintingIssues || hasSecretWarnings}
+                    onClick={form.handleSubmit(onSubmit)}
                   >
                     {isCreateMCPServerPending ? (
                       <div className="flex items-center gap-2">
@@ -336,8 +348,8 @@ export const RemoteMCPCreatePage: React.FC = () => {
                   </Button>
                 ) : (
                   <Button
-                    onClick={() => handleNext(methods.current.id === 'metadata', methods.next)}
                     disabled={methods.current.id === 'metadata' ? !!isMetadataInvalid : false}
+                    onClick={() => handleNext(methods.current.id === 'metadata', methods.next)}
                   >
                     Next
                   </Button>
@@ -349,12 +361,12 @@ export const RemoteMCPCreatePage: React.FC = () => {
             {expandedTool && (
               <ExpandedYamlDialog
                 form={form}
-                toolIndex={expandedTool.index}
+                isLintConfigPending={isLintConfigPending}
                 isOpen={expandedTool.isOpen}
                 lintHints={lintHints[expandedTool.index] || {}}
-                isLintConfigPending={isLintConfigPending}
                 onClose={() => setExpandedTool(null)}
                 onLint={() => handleLintTool(expandedTool.index)}
+                toolIndex={expandedTool.index}
               />
             )}
           </>

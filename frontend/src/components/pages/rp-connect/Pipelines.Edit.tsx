@@ -62,14 +62,18 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   }
 
   render() {
-    if (!pipelinesApi.pipelines) return DefaultSkeleton;
+    if (!pipelinesApi.pipelines) {
+      return DefaultSkeleton;
+    }
     if (rpcnSecretManagerApi.secrets) {
       // inject secrets to editor
       this.secrets.updateWith(rpcnSecretManagerApi.secrets.map((value) => value.id));
     }
     const pipelineId = this.props.pipelineId;
     const pipeline = pipelinesApi.pipelines.first((x) => x.id === pipelineId);
-    if (!pipeline) return DefaultSkeleton;
+    if (!pipeline) {
+      return DefaultSkeleton;
+    }
 
     if (this.displayName === undefined) {
       this.displayName = pipeline.displayName;
@@ -86,11 +90,11 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
 
       return (
         <Button
-          variant="solid"
           isDisabled={isNameEmpty || this.isUpdating}
-          loadingText="Updating..."
           isLoading={this.isUpdating}
+          loadingText="Updating..."
           onClick={action(() => this.updatePipeline(toast))}
+          variant="solid"
         >
           Update
         </Button>
@@ -117,15 +121,15 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
           </UIText>
         </div>
 
-        <FormField label="Pipeline name" isInvalid={isNameEmpty} errorText="Name cannot be empty">
+        <FormField errorText="Name cannot be empty" isInvalid={isNameEmpty} label="Pipeline name">
           <Flex alignItems="center" gap="2">
             <Input
-              placeholder="Enter a config name..."
               data-testid="pipelineName"
-              pattern="[a-zA-Z0-9_\-]+"
               isRequired
-              value={this.displayName}
               onChange={(x) => (this.displayName = x.target.value)}
+              pattern="[a-zA-Z0-9_\-]+"
+              placeholder="Enter a config name..."
+              value={this.displayName}
               width={500}
             />
           </Flex>
@@ -133,8 +137,8 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
         <FormField label="Description">
           <Input
             data-testid="pipelineDescription"
-            value={this.description}
             onChange={(x) => (this.description = x.target.value)}
+            value={this.description}
             width={500}
           />
         </FormField>
@@ -144,11 +148,11 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
           w={500}
         >
           <NumberInput
-            value={this.tasks}
-            onChange={(e) => (this.tasks = Number(e ?? MIN_TASKS))}
-            min={MIN_TASKS}
             max={MAX_TASKS}
             maxWidth={150}
+            min={MIN_TASKS}
+            onChange={(e) => (this.tasks = Number(e ?? MIN_TASKS))}
+            value={this.tasks}
           />
         </FormField>
 
@@ -172,7 +176,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
     );
   }
 
-  async updatePipeline(toast: CreateToastFnReturn) {
+  updatePipeline(toast: CreateToastFnReturn) {
     this.isUpdating = true;
     const pipelineId = this.props.pipelineId;
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');

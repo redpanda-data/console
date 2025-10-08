@@ -149,7 +149,7 @@ export const builtInComponents = parseSchema();
  */
 export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptionalFields?: boolean) => {
   if (!componentSpec?.config) {
-    return undefined;
+    return;
   }
 
   // Generate the configuration object from the component's FieldSpec
@@ -296,11 +296,11 @@ export const mergeConnectConfigs = (
       const newProcessor = newProcessorNode || newConfigObject.pipeline?.processors?.[0];
 
       if (newProcessor) {
-        if (!Array.isArray(processors)) {
-          doc.setIn(['pipeline', 'processors'], [newProcessor]);
-        } else {
+        if (Array.isArray(processors)) {
           // Spread existing processors and append new one
           doc.setIn(['pipeline', 'processors'], [...processors, newProcessor]);
+        } else {
+          doc.setIn(['pipeline', 'processors'], [newProcessor]);
         }
       }
       break;
@@ -676,20 +676,17 @@ const addRootSpacing = (yamlString: string): string => {
   const lines = yamlString.split('\n');
   const processedLines: string[] = [];
   let previousRootKey: string | null = null;
-
   lines.forEach((line) => {
     if (!line.trim()) {
       processedLines.push(line);
       return;
     }
-
     // Check if this is a root-level key
     const currentIndent = line.length - line.trimStart().length;
     if (currentIndent === 0 && line.includes(':')) {
       const keyMatch = line.match(/^([^:#\n]+):/);
       if (keyMatch) {
         const cleanKey = keyMatch[1].trim();
-
         // Add spacing before root components (except first)
         if (previousRootKey !== null && cleanKey !== previousRootKey) {
           if (processedLines.length > 0 && processedLines[processedLines.length - 1].trim() !== '') {
@@ -699,10 +696,8 @@ const addRootSpacing = (yamlString: string): string => {
         previousRootKey = cleanKey;
       }
     }
-
     processedLines.push(line);
   });
-
   return processedLines.join('\n');
 };
 
@@ -914,7 +909,7 @@ export function generateDefaultValue(
     case 'map':
       return {};
     default:
-      return undefined;
+      return;
   }
 }
 
@@ -922,6 +917,7 @@ export function generateDefaultValue(
  * Get all components (built-in + external)
  * Used by connect-tiles.tsx for filtering and yaml.ts for template generation
  */
-export const getAllComponents = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectComponentSpec[] => {
-  return [...builtInComponents, ...(additionalComponents || [])];
-};
+export const getAllComponents = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectComponentSpec[] => [
+  ...builtInComponents,
+  ...(additionalComponents || []),
+];

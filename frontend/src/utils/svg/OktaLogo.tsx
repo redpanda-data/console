@@ -10,9 +10,9 @@
  */
 
 export default (
-  <svg viewBox="0 0 260 260" focusable={false}>
+  <svg focusable={false} viewBox="0 0 260 260">
     <title>Okta</title>
-    <g transform="translate(0,260) scale(0.100000,-0.100000)" fill="currentColor" stroke="none">
+    <g fill="currentColor" stroke="none" transform="translate(0,260) scale(0.100000,-0.100000)">
       <path
         d="M311 2393 c-13 -3 -45 -26 -71 -52 -68 -68 -71 -86 -72 -480 0 -402
 -1 -404 -106 -508 l-65 -65 49 -43 c27 -23 65 -69 84 -101 l35 -58 2 -351 c1

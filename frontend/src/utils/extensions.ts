@@ -19,15 +19,23 @@ declare global {
 }
 
 String.prototype.removePrefix = function (this: string, prefix: string) {
-  if (prefix.length === 0) return this;
+  if (prefix.length === 0) {
+    return this;
+  }
 
-  if (this.toLowerCase().startsWith(prefix.toLowerCase())) return this.slice(prefix.length);
+  if (this.toLowerCase().startsWith(prefix.toLowerCase())) {
+    return this.slice(prefix.length);
+  }
   return this;
 };
 
 String.prototype.removeSuffix = function (this: string, suffix: string) {
-  if (suffix.length === 0) return this;
+  if (suffix.length === 0) {
+    return this;
+  }
 
-  if (this.toLowerCase().endsWith(suffix.toLowerCase())) return this.slice(0, this.length - suffix.length);
+  if (this.toLowerCase().endsWith(suffix.toLowerCase())) {
+    return this.slice(0, this.length - suffix.length);
+  }
   return this;
 };

@@ -14,7 +14,9 @@ import { appGlobal } from '../state/appGlobal';
 export const queryToObj = (str: string) => {
   const query = new URLSearchParams(str);
   const obj = {} as Record<string, string>;
-  for (const [k, v] of query.entries()) obj[k] = v;
+  for (const [k, v] of query.entries()) {
+    obj[k] = v;
+  }
 
   return obj;
 };
@@ -22,7 +24,9 @@ export const objToQuery = (obj: { [key: string]: any }) => {
   // '?' + queryString.stringify(obj, stringifyOptions)
   const query = new URLSearchParams();
   for (const [k, v] of Object.entries(obj)) {
-    if (v === null || v === undefined || v === '') continue;
+    if (v === null || v === undefined || v === '') {
+      continue;
+    }
 
     query.append(k, String(v));
   }
@@ -35,6 +39,7 @@ export function editQuery(editFunction: (queryObject: Record<string, string | nu
   try {
     const location = appGlobal.historyLocation();
     if (!location) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn('Location not available yet, skipping query update');
       return;
     }
@@ -49,6 +54,7 @@ export function editQuery(editFunction: (queryObject: Record<string, string | nu
       appGlobal.historyReplace(`${path}${newQuery}`);
     }
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('Failed to update query:', error);
   }
 }

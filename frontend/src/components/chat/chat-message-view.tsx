@@ -1,27 +1,25 @@
 import type { ChatMessage } from 'database/chat-db';
+
 import { ChatMarkdown } from './chat-markdown';
 
-interface ChatMessageViewProps {
+type ChatMessageViewProps = {
   message: ChatMessage;
-}
-
-export const ChatMessageView = ({ message }: ChatMessageViewProps) => {
-  return (
-    <div key={message.id} className={`flex p-4 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-      <div
-        className={`p-4 rounded-xl max-w-[85%] shadow-sm ${
-          message.sender === 'user' ? 'bg-blue-500 text-white' : 'bg-white text-slate-900 border border-slate-200'
-        }`}
-        role="article"
-        aria-label={`${message.sender} message`}
-      >
-        <div className="text-sm leading-relaxed space-y-4">
-          <ChatMarkdown message={message} />
-        </div>
-        <p className={`text-xs mt-2 ${message.sender === 'user' ? 'text-blue-100' : 'text-slate-500'}`}>
-          {message.timestamp.toLocaleTimeString()}
-        </p>
-      </div>
-    </div>
-  );
 };
+
+export const ChatMessageView = ({ message }: ChatMessageViewProps) => (
+  <div className={`flex p-4 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`} key={message.id}>
+    <article
+      aria-label={`${message.sender} message`}
+      className={`max-w-[85%] rounded-xl p-4 shadow-sm ${
+        message.sender === 'user' ? 'bg-blue-500 text-white' : 'border border-slate-200 bg-white text-slate-900'
+      }`}
+    >
+      <div className="space-y-4 text-sm leading-relaxed">
+        <ChatMarkdown message={message} />
+      </div>
+      <p className={`mt-2 text-xs ${message.sender === 'user' ? 'text-blue-100' : 'text-slate-500'}`}>
+        {message.timestamp.toLocaleTimeString()}
+      </p>
+    </article>
+  </div>
+);

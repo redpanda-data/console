@@ -11,11 +11,13 @@
 
 import { observer } from 'mobx-react';
 import type { FC } from 'react';
+
 import type { Topic, TopicConsumer } from '../../../state/restInterfaces';
 
 import '../../../utils/arrayExtensions';
 
 import { DataTable } from '@redpanda-data/ui';
+
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
@@ -41,8 +43,11 @@ export const TopicConsumers: FC<TopicConsumersProps> = observer(({ topic }) => {
 
   return (
     <DataTable<TopicConsumer>
+      columns={[
+        { size: 1, header: 'Group', accessorKey: 'groupId' },
+        { header: 'Lag', accessorKey: 'summedLag' },
+      ]}
       data={consumers}
-      pagination={paginationParams}
       onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
         uiState.topicSettings.consumerPageSize = pageSize;
         editQuery((query) => {
@@ -50,14 +55,11 @@ export const TopicConsumers: FC<TopicConsumersProps> = observer(({ topic }) => {
           query.pageSize = String(pageSize);
         });
       })}
-      sorting
-      columns={[
-        { size: 1, header: 'Group', accessorKey: 'groupId' },
-        { header: 'Lag', accessorKey: 'summedLag' },
-      ]}
       onRow={(row) => {
         appGlobal.historyPush(`/groups/${encodeURIComponent(row.original.groupId)}`);
       }}
+      pagination={paginationParams}
+      sorting
     />
   );
 });

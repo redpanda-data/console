@@ -27,9 +27,7 @@ import {
 import { observer, useLocalObservable } from 'mobx-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { appGlobal } from '../../../state/appGlobal';
-import { api, type RolePrincipal, rolesApi } from '../../../state/backendApi';
-import type { AclStrOperation, AclStrResourceType } from '../../../state/restInterfaces';
+
 import {
   type AclPrincipalGroup,
   type ClusterACLs,
@@ -44,6 +42,9 @@ import {
   unpackPrincipalGroup,
 } from './Models';
 import { ResourceACLsEditor } from './PrincipalGroupEditor';
+import { appGlobal } from '../../../state/appGlobal';
+import { api, type RolePrincipal, rolesApi } from '../../../state/backendApi';
+import type { AclStrOperation, AclStrResourceType } from '../../../state/restInterfaces';
 
 type CreateRoleFormState = {
   roleName: string;
@@ -74,7 +75,9 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
     ...initialData,
   }));
 
-  if (!formState.clusterACLs) formState.clusterACLs = createEmptyClusterAcl();
+  if (!formState.clusterACLs) {
+    formState.clusterACLs = createEmptyClusterAcl();
+  }
 
   const [isFormValid, setIsFormValid] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -82,7 +85,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
 
   const originalUsernames = useMemo(
     () => initialData?.principals?.map(({ name }) => name) ?? [],
-    [initialData?.principals],
+    [initialData?.principals]
   );
   const currentUsernames = formState.principals.map(({ name }) => name) ?? [];
   const editMode: boolean = Boolean(initialData?.roleName);
@@ -128,7 +131,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
               formState.roleName,
               formState.principals.map((x) => x.name),
               usersToRemove,
-              true,
+              true
             );
 
             if (newRole.response) {
@@ -167,18 +170,18 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
           }
         }}
       >
-        <Flex gap={10} flexDirection="column">
+        <Flex flexDirection="column" gap={10}>
           <Flex flexDirection="row" gap={20}>
             <Box>
-              <FormField label="Role name" isInvalid={roleNameAlreadyExist} errorText="Role name already exist">
+              <FormField errorText="Role name already exist" isInvalid={roleNameAlreadyExist} label="Role name">
                 <Input
                   data-testid="create-role__role-name"
-                  pattern="^[^,=]+$"
-                  title="Please avoid using commas or equal signs."
                   isDisabled={editMode}
                   isRequired
-                  value={formState.roleName}
                   onChange={(v) => (formState.roleName = v.target.value)}
+                  pattern="^[^,=]+$"
+                  title="Please avoid using commas or equal signs."
+                  value={formState.roleName}
                   width={300}
                 />
               </FormField>
@@ -187,121 +190,125 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             <Button
               alignSelf="self-end"
               data-testid="roles-allow-all-operations"
-              variant="outline"
               onClick={() => {
-                if (formState.topicACLs.length === 0) formState.topicACLs.push(createEmptyTopicAcl());
+                if (formState.topicACLs.length === 0) {
+                  formState.topicACLs.push(createEmptyTopicAcl());
+                }
                 formState.topicACLs[0].selector = '*';
                 formState.topicACLs[0].all = 'Allow';
 
-                if (formState.consumerGroupsACLs.length === 0)
+                if (formState.consumerGroupsACLs.length === 0) {
                   formState.consumerGroupsACLs.push(createEmptyConsumerGroupAcl());
+                }
                 formState.consumerGroupsACLs[0].selector = '*';
                 formState.consumerGroupsACLs[0].all = 'Allow';
 
-                if (formState.transactionalIDACLs.length === 0)
+                if (formState.transactionalIDACLs.length === 0) {
                   formState.transactionalIDACLs.push(createEmptyTransactionalIdAcl());
+                }
                 formState.transactionalIDACLs[0].selector = '*';
                 formState.transactionalIDACLs[0].all = 'Allow';
 
                 formState.clusterACLs.all = 'Allow';
               }}
+              variant="outline"
             >
               Allow all operations
             </Button>
           </Flex>
 
           <FormField
-            label="Host"
             description="The host the user needs to connect from in order for the permissions to apply."
+            label="Host"
           >
-            <Input value={formState.host} onChange={(v) => (formState.host = v.target.value)} width={600} />
+            <Input onChange={(v) => (formState.host = v.target.value)} value={formState.host} width={600} />
           </FormField>
 
-          <Flex flexDirection="column" gap={4} data-testid="create-role-topics-section">
+          <Flex data-testid="create-role-topics-section" flexDirection="column" gap={4}>
             <Heading>Topics</Heading>
             {formState.topicACLs.map((topicACL, index) => (
               <ResourceACLsEditor
                 key={index}
-                resourceType="Topic"
-                resource={topicACL}
-                setIsFormValid={setIsFormValid}
                 onDelete={() => {
                   formState.topicACLs.splice(index, 1);
                 }}
+                resource={topicACL}
+                resourceType="Topic"
+                setIsFormValid={setIsFormValid}
               />
             ))}
 
             <Box>
               <Button
-                variant="outline"
                 onClick={() => {
                   formState.topicACLs.push(createEmptyTopicAcl());
                 }}
+                variant="outline"
               >
                 Add Topic ACL
               </Button>
             </Box>
           </Flex>
 
-          <Flex flexDirection="column" gap={4} data-testid="create-role-consumer-groups-section">
+          <Flex data-testid="create-role-consumer-groups-section" flexDirection="column" gap={4}>
             <Heading>Consumer Groups</Heading>
             {formState.consumerGroupsACLs.map((acl, index) => (
               <ResourceACLsEditor
                 key={index}
-                resourceType="Group"
-                resource={acl}
-                setIsFormValid={setIsFormValid}
                 onDelete={() => {
                   formState.consumerGroupsACLs.splice(index, 1);
                 }}
+                resource={acl}
+                resourceType="Group"
+                setIsFormValid={setIsFormValid}
               />
             ))}
 
             <Box>
               <Button
-                variant="outline"
                 onClick={() => {
                   formState.consumerGroupsACLs.push(createEmptyConsumerGroupAcl());
                 }}
+                variant="outline"
               >
                 Add consumer group ACL
               </Button>
             </Box>
           </Flex>
 
-          <Flex flexDirection="column" gap={4} data-testid="create-role-transactional-ids-section">
+          <Flex data-testid="create-role-transactional-ids-section" flexDirection="column" gap={4}>
             <Heading>Transactional IDs</Heading>
             {formState.transactionalIDACLs.map((acl, index) => (
               <ResourceACLsEditor
                 key={index}
-                resourceType="TransactionalID"
-                resource={acl}
-                setIsFormValid={setIsFormValid}
                 onDelete={() => {
                   formState.transactionalIDACLs.splice(index, 1);
                 }}
+                resource={acl}
+                resourceType="TransactionalID"
+                setIsFormValid={setIsFormValid}
               />
             ))}
 
             <Box>
               <Button
-                variant="outline"
                 onClick={() => {
                   formState.transactionalIDACLs.push(createEmptyTransactionalIdAcl());
                 }}
+                variant="outline"
               >
                 Add Transactional ID ACL
               </Button>
             </Box>
           </Flex>
 
-          <Flex flexDirection="column" gap={4} data-testid="create-role-cluster-section">
+          <Flex data-testid="create-role-cluster-section" flexDirection="column" gap={4}>
             <Heading>Cluster</Heading>
             <HStack>
               <Box flexGrow={1}>
                 <ResourceACLsEditor
-                  resourceType="Cluster"
                   resource={formState.clusterACLs}
+                  resourceType="Cluster"
                   setIsFormValid={setIsFormValid}
                 />
               </Box>
@@ -310,7 +317,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
 
           <Flex flexDirection="column" gap={4}>
             <Heading>Principals</Heading>
-            <FormField label="Assign this role to principals" description="This can be edited later">
+            <FormField description="This can be edited later" label="Assign this role to principals">
               <PrincipalSelector state={formState.principals} />
             </FormField>
           </Flex>
@@ -320,39 +327,39 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
           {editMode ? (
             <Button
               colorScheme="brand"
-              type="submit"
-              loadingText="Editing..."
-              isLoading={isLoading}
               isDisabled={roleNameAlreadyExist || !isFormValid}
+              isLoading={isLoading}
+              loadingText="Editing..."
+              type="submit"
             >
               Update
             </Button>
           ) : (
             <Button
               colorScheme="brand"
-              type="submit"
-              loadingText="Creating..."
-              isLoading={isLoading}
               isDisabled={roleNameAlreadyExist || !isFormValid}
+              isLoading={isLoading}
+              loadingText="Creating..."
+              type="submit"
             >
               Create
             </Button>
           )}
           {editMode ? (
             <Button
-              variant="link"
               onClick={() => {
                 appGlobal.historyPush(`/security/roles/${encodeURIComponent(initialData?.roleName as string)}/details`);
               }}
+              variant="link"
             >
               Go back
             </Button>
           ) : (
             <Button
-              variant="link"
               onClick={() => {
                 appGlobal.historyPush('/security/roles/');
               }}
+              variant="link"
             >
               Go back
             </Button>
@@ -367,7 +374,9 @@ const PrincipalSelector = observer((p: { state: RolePrincipal[] }) => {
   const [searchValue, setSearchValue] = useState<string>('');
 
   useEffect(() => {
-    void api.refreshServiceAccounts();
+    api.refreshServiceAccounts().catch(() => {
+      // Error handling managed by API layer
+    });
   }, []);
 
   const state = p.state;
@@ -379,41 +388,49 @@ const PrincipalSelector = observer((p: { state: RolePrincipal[] }) => {
 
   // Add all inferred users
   // In addition, find all principals that are referenced by roles, or acls, that are not service accounts
-  for (const g of principalGroupsView.principalGroups)
-    if (g.principalType === 'User' && !g.principalName.includes('*'))
-      if (!availableUsers.any((u) => u.value === g.principalName))
-        // is it a user that is being referenced?
-        // is the user already listed as a service account?
-        availableUsers.push({ value: g.principalName });
+  for (const g of principalGroupsView.principalGroups) {
+    if (
+      g.principalType === 'User' &&
+      !g.principalName.includes('*') &&
+      !availableUsers.any((u) => u.value === g.principalName)
+    ) {
+      // is it a user that is being referenced?
+      // is the user already listed as a service account?
+      availableUsers.push({ value: g.principalName });
+    }
+  }
 
-  for (const [_, roleMembers] of rolesApi.roleMembers)
-    for (const roleMember of roleMembers)
-      if (!availableUsers.any((u) => u.value === roleMember.name))
+  for (const [_, roleMembers] of rolesApi.roleMembers) {
+    for (const roleMember of roleMembers) {
+      if (!availableUsers.any((u) => u.value === roleMember.name)) {
         // make sure that user isn't already in the list
         availableUsers.push({ value: roleMember.name });
+      }
+    }
+  }
 
   return (
     <Flex direction="column" gap={4}>
       <Box w={200}>
         <Select<string>
-          placeholder="Find users"
-          inputValue={searchValue}
-          onInputChange={setSearchValue}
-          isMulti={false}
-          options={availableUsers}
           creatable={true}
+          inputValue={searchValue}
+          isMulti={false}
           onChange={(val) => {
             if (val && isSingleValue(val) && val.value) {
               state.push({ name: val.value, principalType: 'User' });
               setSearchValue('');
             }
           }}
+          onInputChange={setSearchValue}
+          options={availableUsers}
+          placeholder="Find users"
         />
       </Box>
 
       <Flex gap={2}>
         {state.map((principal, idx) => (
-          <Tag key={idx} cursor="pointer">
+          <Tag cursor="pointer" key={idx}>
             <TagLabel>{principal.name}</TagLabel>
             <TagCloseButton onClick={() => state.remove(principal)} />
           </Tag>

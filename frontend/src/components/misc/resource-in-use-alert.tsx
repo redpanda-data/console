@@ -2,11 +2,11 @@ import { Alert, AlertDescription, AlertTitle, Box, Flex, Icon, ListItem, Unorder
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { AiOutlineExclamationCircle } from 'react-icons/ai';
 
-interface ResourceInUseAlertProps {
+type ResourceInUseAlertProps = {
   resource: string;
   usedBy: string;
   pipelines?: Pipeline[];
-}
+};
 
 export const ResourceInUseAlert = ({ resource, usedBy, pipelines }: ResourceInUseAlertProps) => {
   if (pipelines?.length === 0) {
@@ -15,27 +15,27 @@ export const ResourceInUseAlert = ({ resource, usedBy, pipelines }: ResourceInUs
 
   return (
     <Alert
+      bg="white"
+      borderColor="red.200"
+      borderRadius="8px"
+      borderWidth="1px"
+      data-testid="resource-in-use-alert"
+      mt={4}
+      p={4}
       status="error"
       variant="subtle"
-      borderRadius="8px"
-      mt={4}
-      borderWidth="1px"
-      borderColor="red.200"
-      bg="white"
-      p={4}
-      data-testid="resource-in-use-alert"
     >
       <Flex gap="12px">
         <Icon as={AiOutlineExclamationCircle} boxSize={4} color="red.600" />
         <Box>
-          <AlertTitle fontSize="16px" fontWeight="500" color="red.600" lineHeight="1em" mb="4px">
+          <AlertTitle color="red.600" fontSize="16px" fontWeight="500" lineHeight="1em" mb="4px">
             Resource is in use
           </AlertTitle>
-          <AlertDescription fontSize="14px" fontWeight="400" color="red.600" lineHeight="1.71em">
+          <AlertDescription color="red.600" fontSize="14px" fontWeight="400" lineHeight="1.71em">
             The {resource} that you are about to delete is still in use by the following {usedBy}:
             <UnorderedList>
               {pipelines?.map((pipeline) => (
-                <ListItem key={pipeline.id} color="red.600" whiteSpace="pre-line">
+                <ListItem color="red.600" key={pipeline.id} whiteSpace="pre-line">
                   {pipeline.displayName || pipeline.id}
                 </ListItem>
               ))}

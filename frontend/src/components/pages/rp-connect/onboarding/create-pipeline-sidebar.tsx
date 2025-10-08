@@ -7,7 +7,7 @@ import { AddConnectorsCard } from './add-connectors-card';
 import { AddSecretsCard } from './add-secrets-card';
 import { AddSecretsDialog } from './add-secrets-dialog';
 
-interface CreatePipelineSidebarProps {
+type CreatePipelineSidebarProps = {
   editorInstance: editor.IStandaloneCodeEditor | null;
   onAddConnector: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
   detectedSecrets: string[];
@@ -15,7 +15,7 @@ interface CreatePipelineSidebarProps {
   secretDefaultValues: Record<string, string>;
   onSecretsCreated: () => void;
   editorContent: string;
-}
+};
 
 export const CreatePipelineSidebar = memo(
   ({
@@ -57,21 +57,21 @@ export const CreatePipelineSidebar = memo(
     };
 
     return (
-      <div className="flex gap-3 flex-col">
+      <div className="flex flex-col gap-3">
         <AddSecretsCard
           detectedSecrets={detectedSecrets}
-          missingSecrets={missingSecrets}
-          existingSecrets={existingSecrets}
           editorInstance={editorInstance}
+          existingSecrets={existingSecrets}
+          missingSecrets={missingSecrets}
           onOpenDialog={() => setIsSecretsDialogOpen(true)}
         />
 
         <AddSecretsDialog
-          isOpen={isSecretsDialogOpen}
-          onClose={() => setIsSecretsDialogOpen(false)}
-          missingSecrets={missingSecrets}
-          existingSecrets={existingSecrets}
           defaultValues={secretDefaultValues}
+          existingSecrets={existingSecrets}
+          isOpen={isSecretsDialogOpen}
+          missingSecrets={missingSecrets}
+          onClose={() => setIsSecretsDialogOpen(false)}
           onSecretsCreated={handleSecretsCreated}
         />
 
@@ -83,10 +83,10 @@ export const CreatePipelineSidebar = memo(
         />
 
         <AddConnectorDialog
-          isOpen={isAddConnectorOpen}
-          onCloseAddConnector={closeAddConnector}
-          onAddConnector={handleAddConnector}
           connectorType={selectedConnector}
+          isOpen={isAddConnectorOpen}
+          onAddConnector={handleAddConnector}
+          onCloseAddConnector={closeAddConnector}
         />
       </div>
     );

@@ -8,6 +8,7 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+/** biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
 
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
@@ -43,19 +44,20 @@ import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { parse, stringify } from 'yaml';
+
+import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 import { RESOURCE_TIERS } from '../remote-mcp-constants';
 import { type Template, templates } from '../templates/remote-mcp-templates';
-import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 
-interface LocalTool {
+type LocalTool = {
   id: string;
   name: string;
   componentType: MCPServer_Tool_ComponentType;
   config: string;
   selectedTemplate?: string;
-}
+};
 
-interface LocalMCPServer {
+type LocalMCPServer = {
   id: string;
   displayName: string;
   description: string;
@@ -67,7 +69,7 @@ interface LocalMCPServer {
   state: MCPServer_State;
   status: string;
   url: string;
-}
+};
 
 export const RemoteMCPConfigurationTab = () => {
   const { id } = useParams<{ id: string }>();
@@ -82,7 +84,9 @@ export const RemoteMCPConfigurationTab = () => {
   const [detectedSecrets, setDetectedSecrets] = useState<string[]>([]);
 
   const getResourceTierFromServer = useCallback((resources?: { cpuShares?: string; memoryShares?: string }) => {
-    if (!resources) return 'Small';
+    if (!resources) {
+      return 'Small';
+    }
 
     // Try to find exact string match with predefined tiers
     const matchingTier = RESOURCE_TIERS.find((tier) => {
@@ -124,7 +128,9 @@ export const RemoteMCPConfigurationTab = () => {
 
   const applyTemplate = (toolId: string, template: Template) => {
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     const updatedTools = currentData.tools.map((tool) => {
       if (tool.id === toolId) {
@@ -146,26 +152,30 @@ export const RemoteMCPConfigurationTab = () => {
   };
 
   const handleSave = async () => {
-    if (!mcpServerData?.mcpServer || !id) return;
+    if (!(mcpServerData?.mcpServer && id)) {
+      return;
+    }
 
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     try {
       const toolsMap: { [key: string]: { componentType: number; configYaml: string } } = {};
-      currentData.tools.forEach((tool) => {
+      for (const tool of currentData.tools) {
         toolsMap[tool.name] = {
           componentType: tool.componentType,
           configYaml: tool.config,
         };
-      });
+      }
 
       const tagsMap: { [key: string]: string } = {};
-      currentData.tags.forEach((tag) => {
+      for (const tag of currentData.tags) {
         if (tag.key.trim() && tag.value.trim()) {
           tagsMap[tag.key.trim()] = tag.value.trim();
         }
-      });
+      }
 
       await updateMCPServer(
         create(UpdateMCPServerRequestSchema, {
@@ -177,7 +187,7 @@ export const RemoteMCPConfigurationTab = () => {
             tags: tagsMap,
             resources: {
               memoryShares: convertToApiMemoryFormat(
-                getResourceTierByName(currentData.resources.tier)?.memory || '512M',
+                getResourceTierByName(currentData.resources.tier)?.memory || '512M'
               ),
               cpuShares: getResourceTierByName(currentData.resources.tier)?.cpu || '200m',
             },
@@ -190,18 +200,21 @@ export const RemoteMCPConfigurationTab = () => {
           onError: (error) => {
             toast.error(formatToastErrorMessageGRPC({ error, action: 'update', entity: 'MCP server' }));
           },
-        },
+        }
       );
       setIsEditing(false);
       setEditedServerData(null);
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('Failed to update MCP server:', error);
     }
   };
 
   const handleAddTool = () => {
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     const newToolId = `tool_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     const newTool = {
@@ -221,7 +234,9 @@ export const RemoteMCPConfigurationTab = () => {
 
   const handleRemoveTool = (toolId: string) => {
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     const updatedTools = currentData.tools.filter((tool) => tool.id !== toolId);
     setEditedServerData({
@@ -240,7 +255,9 @@ export const RemoteMCPConfigurationTab = () => {
 
   const handleUpdateTool = (toolId: string, updates: Partial<LocalTool>) => {
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     const updatedTools = [...currentData.tools];
     const toolIndex = updatedTools.findIndex((tool) => tool.id === toolId);
@@ -284,7 +301,9 @@ export const RemoteMCPConfigurationTab = () => {
 
   const handleAddTag = () => {
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     setEditedServerData({
       ...currentData,
@@ -294,7 +313,9 @@ export const RemoteMCPConfigurationTab = () => {
 
   const handleRemoveTag = (index: number) => {
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     const updatedTags = currentData.tags.filter((_, i) => i !== index);
     setEditedServerData({
@@ -305,7 +326,9 @@ export const RemoteMCPConfigurationTab = () => {
 
   const handleUpdateTag = (index: number, field: 'key' | 'value', value: string) => {
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     const updatedTags = [...currentData.tags];
     updatedTags[index] = { ...updatedTags[index], [field]: value };
@@ -326,9 +349,7 @@ export const RemoteMCPConfigurationTab = () => {
     return new Set(duplicates);
   };
 
-  const getResourceTierByName = (name: string) => {
-    return RESOURCE_TIERS.find((tier) => tier.name === name || tier.id === name);
-  };
+  const getResourceTierByName = (name: string) => RESOURCE_TIERS.find((tier) => tier.name === name || tier.id === name);
 
   const getResourceDisplayString = (resources: { cpuShares?: string; memoryShares?: string }): string => {
     const cpu = resources.cpuShares || '0';
@@ -360,7 +381,9 @@ export const RemoteMCPConfigurationTab = () => {
   const displayData = getCurrentData();
 
   const selectedTool = React.useMemo(() => {
-    if (!selectedToolId || !displayData?.tools) return null;
+    if (!(selectedToolId && displayData?.tools)) {
+      return null;
+    }
     return displayData.tools.find((tool) => tool.id === selectedToolId) || null;
   }, [selectedToolId, displayData?.tools?.length, displayData?.tools]);
 
@@ -374,7 +397,7 @@ export const RemoteMCPConfigurationTab = () => {
 
     const allSecretReferences: string[] = [];
 
-    currentData.tools.forEach((tool) => {
+    for (const tool of currentData.tools) {
       if (tool.config) {
         try {
           const secretRefs = extractSecretReferences(tool.config);
@@ -384,7 +407,7 @@ export const RemoteMCPConfigurationTab = () => {
           // Ignore YAML parsing errors
         }
       }
-    });
+    }
 
     // Get unique secret names
     const uniqueSecrets = Array.from(new Set(allSecretReferences)).sort();
@@ -399,13 +422,17 @@ export const RemoteMCPConfigurationTab = () => {
 
   // Get existing secret names
   const existingSecrets = React.useMemo(() => {
-    if (!secretsData?.secrets) return [];
+    if (!secretsData?.secrets) {
+      return [];
+    }
     return secretsData.secrets.map((secret) => secret?.id).filter(Boolean);
   }, [secretsData]);
 
   // Check if any detected secrets are missing
   const hasSecretWarnings = React.useMemo(() => {
-    if (detectedSecrets.length === 0) return false;
+    if (detectedSecrets.length === 0) {
+      return false;
+    }
     return detectedSecrets.some((secretName) => !existingSecrets.includes(secretName));
   }, [detectedSecrets, existingSecrets]);
 
@@ -416,11 +443,11 @@ export const RemoteMCPConfigurationTab = () => {
   return (
     <div>
       <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
           {/* Server Configuration Card - takes 3/4 width on large screens */}
           <div className="lg:col-span-3">
-            <Card size="full" className="px-0 py-0">
-              <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+            <Card className="px-0 py-0" size="full">
+              <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
                     <Settings className="h-4 w-4" />
@@ -429,22 +456,22 @@ export const RemoteMCPConfigurationTab = () => {
                   <div className="flex gap-2">
                     {isEditing ? (
                       <>
-                        <Button variant="secondary" onClick={handleSave} disabled={isUpdateMCPServerPending}>
+                        <Button disabled={isUpdateMCPServerPending} onClick={handleSave} variant="secondary">
                           <Save className="h-4 w-4" />
                           {isUpdateMCPServerPending ? 'Saving...' : 'Save Changes'}
                         </Button>
                         <Button
-                          variant="outline"
                           onClick={() => {
                             setIsEditing(false);
                             setEditedServerData(null);
                           }}
+                          variant="outline"
                         >
                           Cancel
                         </Button>
                       </>
                     ) : (
-                      <Button variant="secondary" onClick={() => setIsEditing(true)}>
+                      <Button onClick={() => setIsEditing(true)} variant="secondary">
                         <Edit className="h-4 w-4" />
                         Edit Configuration
                       </Button>
@@ -459,39 +486,49 @@ export const RemoteMCPConfigurationTab = () => {
                       <div className="space-y-2">
                         <Label htmlFor="id">Server ID</Label>
                         <div className="w-full">
-                          <DynamicCodeBlock lang="text" code={displayData.id} />
+                          <DynamicCodeBlock code={displayData.id} lang="text" />
                         </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="serverUrl">Server URL</Label>
                         <div className="w-full">
-                          <DynamicCodeBlock lang="text" code={displayData.url} />
+                          <DynamicCodeBlock code={displayData.url} lang="text" />
                         </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="displayName">Display Name</Label>
                         <Input
-                          id="displayName"
-                          value={displayData.displayName}
                           disabled={!isEditing}
+                          id="displayName"
                           onChange={(e) => {
                             const currentData = getCurrentData();
-                            if (!currentData) return;
-                            setEditedServerData({ ...currentData, displayName: e.target.value });
+                            if (!currentData) {
+                              return;
+                            }
+                            setEditedServerData({
+                              ...currentData,
+                              displayName: e.target.value,
+                            });
                           }}
+                          value={displayData.displayName}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="description">Description</Label>
                         <Textarea
-                          id="description"
-                          value={displayData.description}
                           disabled={!isEditing}
+                          id="description"
                           onChange={(e) => {
                             const currentData = getCurrentData();
-                            if (!currentData) return;
-                            setEditedServerData({ ...currentData, description: e.target.value });
+                            if (!currentData) {
+                              return;
+                            }
+                            setEditedServerData({
+                              ...currentData,
+                              description: e.target.value,
+                            });
                           }}
+                          value={displayData.description}
                         />
                       </div>
                     </div>
@@ -503,8 +540,8 @@ export const RemoteMCPConfigurationTab = () => {
 
           {/* Resources Card */}
           <div className="lg:col-span-1">
-            <Card size="full" className="px-0 py-0 h-full">
-              <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+            <Card className="h-full px-0 py-0" size="full">
+              <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
                   <Text className="font-semibold">Resources</Text>
@@ -517,12 +554,17 @@ export const RemoteMCPConfigurationTab = () => {
                       <Label htmlFor="resources">Resources</Label>
                       {isEditing ? (
                         <Select
-                          value={displayData.resources.tier}
                           onValueChange={(value) => {
                             const currentData = getCurrentData();
-                            if (!currentData) return;
-                            setEditedServerData({ ...currentData, resources: { tier: value } });
+                            if (!currentData) {
+                              return;
+                            }
+                            setEditedServerData({
+                              ...currentData,
+                              resources: { tier: value },
+                            });
                           }}
+                          value={displayData.resources.tier}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select resource tier" />
@@ -536,8 +578,8 @@ export const RemoteMCPConfigurationTab = () => {
                           </SelectContent>
                         </Select>
                       ) : (
-                        <div className="h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center">
-                          <code className="text-sm font-mono">
+                        <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                          <code className="font-mono text-sm">
                             {getResourceDisplayString(mcpServerData?.mcpServer?.resources || {})}
                           </code>
                         </div>
@@ -546,13 +588,13 @@ export const RemoteMCPConfigurationTab = () => {
                   </div>
 
                   {(displayData.tags.length > 0 || isEditing) && (
-                    <div className="space-y-4 flex flex-col gap-2">
-                      <Heading level={4} className="text-sm font-medium">
+                    <div className="flex flex-col gap-2 space-y-4">
+                      <Heading className="font-medium text-sm" level={4}>
                         Tags
                       </Heading>
                       <div className="space-y-2">
                         {isEditing && hasDuplicateKeys(displayData.tags) && (
-                          <Text variant="small" className="text-destructive">
+                          <Text className="text-destructive" variant="small">
                             Tags must have unique keys
                           </Text>
                         )}
@@ -560,27 +602,27 @@ export const RemoteMCPConfigurationTab = () => {
                           const duplicateKeys = isEditing ? getDuplicateKeys(displayData.tags) : new Set();
                           const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
                           return (
-                            <div key={`tag-${index}`} className="flex items-center gap-2">
+                            <div className="flex items-center gap-2" key={`tag-${index}`}>
                               <div className="flex-1">
                                 <Input
+                                  className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
+                                  disabled={!isEditing}
+                                  onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
                                   placeholder="Key"
                                   value={tag.key}
-                                  disabled={!isEditing}
-                                  className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
-                                  onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
                                 />
                               </div>
                               <div className="flex-1">
                                 <Input
-                                  placeholder="Value"
-                                  value={tag.value}
                                   disabled={!isEditing}
                                   onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
+                                  placeholder="Value"
+                                  value={tag.value}
                                 />
                               </div>
                               {isEditing && (
-                                <div className="flex items-end h-9">
-                                  <Button variant="outline" size="sm" onClick={() => handleRemoveTag(index)}>
+                                <div className="flex h-9 items-end">
+                                  <Button onClick={() => handleRemoveTag(index)} size="sm" variant="outline">
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
@@ -589,7 +631,7 @@ export const RemoteMCPConfigurationTab = () => {
                           );
                         })}
                         {isEditing && (
-                          <Button variant="dashed" className="w-full" onClick={handleAddTag}>
+                          <Button className="w-full" onClick={handleAddTag} variant="dashed">
                             <Plus className="h-4 w-4" />
                             Add Tag
                           </Button>
@@ -606,8 +648,8 @@ export const RemoteMCPConfigurationTab = () => {
         <div className={`grid grid-cols-1 gap-6 ${hasSecretWarnings && isEditing ? 'xl:grid-cols-3' : ''}`}>
           {/* Main tools configuration - takes 2 columns on xl screens when secrets panel is shown, full width otherwise */}
           <div className={hasSecretWarnings && isEditing ? 'xl:col-span-2' : ''}>
-            <Card size="full" className="px-0 py-0">
-              <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+            <Card className="px-0 py-0" size="full">
+              <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
                 <CardTitle className="flex items-center gap-2">
                   <Hammer className="h-4 w-4" />
                   <Text className="font-semibold">Tools Configuration</Text>
@@ -617,16 +659,16 @@ export const RemoteMCPConfigurationTab = () => {
                 <div className="space-y-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between" />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                       {displayData.tools.map((tool) => (
                         <RemoteMCPToolButton
-                          key={tool.id}
-                          id={tool.id}
-                          name={tool.name}
-                          description={getToolDescription(tool)}
                           componentType={tool.componentType}
-                          isSelected={selectedToolId === tool.id}
+                          description={getToolDescription(tool)}
+                          id={tool.id}
                           isEditing={isEditing}
+                          isSelected={selectedToolId === tool.id}
+                          key={tool.id}
+                          name={tool.name}
                           onClick={() => setSelectedToolId(tool.id)}
                           onRemove={() => handleRemoveTool(tool.id)}
                         />
@@ -637,15 +679,15 @@ export const RemoteMCPConfigurationTab = () => {
                   {selectedTool && (
                     <div className="space-y-4">
                       {isEditing && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+                        <div className="grid grid-cols-1 gap-4 rounded-lg bg-muted/30 p-4 md:grid-cols-3">
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">Component Type</Label>
+                            <Label className="font-medium text-sm">Component Type</Label>
                             <Select
-                              value={selectedTool.componentType.toString()}
                               onValueChange={(value) => {
-                                const componentType = Number.parseInt(value) as MCPServer_Tool_ComponentType;
+                                const componentType = Number.parseInt(value, 10) as MCPServer_Tool_ComponentType;
                                 handleUpdateTool(selectedTool.id, { componentType });
                               }}
+                              value={selectedTool.componentType.toString()}
                             >
                               <SelectTrigger>
                                 <SelectValue>
@@ -656,7 +698,7 @@ export const RemoteMCPConfigurationTab = () => {
                                 {Object.values(MCPServer_Tool_ComponentType)
                                   .filter(
                                     (value) =>
-                                      typeof value === 'number' && value !== MCPServer_Tool_ComponentType.UNSPECIFIED,
+                                      typeof value === 'number' && value !== MCPServer_Tool_ComponentType.UNSPECIFIED
                                   )
                                   .map((componentType) => (
                                     <SelectItem key={componentType} value={componentType.toString()}>
@@ -669,23 +711,27 @@ export const RemoteMCPConfigurationTab = () => {
                             </Select>
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">Tool Name</Label>
+                            <Label className="font-medium text-sm">Tool Name</Label>
                             <Input
-                              value={selectedTool.name}
+                              onChange={(e) =>
+                                handleUpdateTool(selectedTool.id, {
+                                  name: e.target.value,
+                                })
+                              }
                               placeholder="e.g., search-posts (must be filename-compatible)"
-                              onChange={(e) => handleUpdateTool(selectedTool.id, { name: e.target.value })}
+                              value={selectedTool.name}
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">Template</Label>
+                            <Label className="font-medium text-sm">Template</Label>
                             <Select
-                              value={selectedTool.selectedTemplate || ''}
                               onValueChange={(templateName) => {
                                 const template = templates.find((t) => t.name === templateName);
                                 if (template) {
                                   applyTemplate(selectedTool.id, template);
                                 }
                               }}
+                              value={selectedTool.selectedTemplate || ''}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Choose template (optional)">
@@ -708,10 +754,10 @@ export const RemoteMCPConfigurationTab = () => {
                                     <div className="flex items-center gap-2">
                                       <RedpandaConnectComponentTypeBadge componentType={template.componentType} />
                                       <div>
-                                        <Text variant="default" className="font-medium">
+                                        <Text className="font-medium" variant="default">
                                           {template.name}
                                         </Text>
-                                        <Text variant="muted" className="text-xs">
+                                        <Text className="text-xs" variant="muted">
                                           {template.description}
                                         </Text>
                                       </div>
@@ -724,23 +770,23 @@ export const RemoteMCPConfigurationTab = () => {
                         </div>
                       )}
                       <YamlEditorCard
-                        key={selectedTool.id}
-                        value={selectedTool.config}
-                        onChange={(value) => handleUpdateTool(selectedTool.id, { config: value })}
                         height="500px"
+                        key={selectedTool.id}
+                        onChange={(value) => handleUpdateTool(selectedTool.id, { config: value })}
                         options={{
                           readOnly: !isEditing,
                           theme: 'vs',
                         }}
+                        value={selectedTool.config}
                       />
                     </div>
                   )}
 
                   {!selectedTool && displayData.tools.length > 0 && (
-                    <div className="flex items-center justify-center py-12 text-center border-2 border-dashed border-muted rounded-lg">
+                    <div className="flex items-center justify-center rounded-lg border-2 border-muted border-dashed py-12 text-center">
                       <div className="space-y-2">
-                        <FileText className="h-8 w-8 mx-auto opacity-50" />
-                        <Text variant="small" className="text-muted-foreground">
+                        <FileText className="mx-auto h-8 w-8 opacity-50" />
+                        <Text className="text-muted-foreground" variant="small">
                           Select a tool to view and edit its configuration
                         </Text>
                       </div>
@@ -748,7 +794,7 @@ export const RemoteMCPConfigurationTab = () => {
                   )}
 
                   {isEditing && (
-                    <Button variant="dashed" className="w-full" onClick={handleAddTool}>
+                    <Button className="w-full" onClick={handleAddTool} variant="dashed">
                       <Plus className="h-4 w-4" />
                       Add Tool
                     </Button>
@@ -763,8 +809,8 @@ export const RemoteMCPConfigurationTab = () => {
             <div className="xl:col-span-1">
               <div className="sticky top-4">
                 <QuickAddSecrets
-                  requiredSecrets={detectedSecrets}
                   existingSecrets={existingSecrets.filter((id): id is string => Boolean(id))}
+                  requiredSecrets={detectedSecrets}
                   scopes={[Scope.MCP_SERVER]}
                 />
               </div>

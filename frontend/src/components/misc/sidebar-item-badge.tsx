@@ -1,8 +1,8 @@
 import { Badge } from '@redpanda-data/ui';
 
-export interface SidebarItemBadgeProps {
+export type SidebarItemBadgeProps = {
   children: React.ReactNode;
-}
+};
 
 /**
  * @description SidebarItemBadge should be used for sidebar items only.
@@ -12,7 +12,6 @@ export interface SidebarItemBadgeProps {
  */
 export const SidebarItemBadge = ({ children }: SidebarItemBadgeProps) => (
   <Badge
-    variant="inverted"
     style={{
       display: 'inline-block',
       whiteSpace: 'nowrap',
@@ -30,6 +29,7 @@ export const SidebarItemBadge = ({ children }: SidebarItemBadgeProps) => (
       borderColor: 'var(--chakra-colors-gray-200)',
       color: 'var(--chakra-colors-gray-100)',
     }}
+    variant="inverted"
   >
     {children}
   </Badge>

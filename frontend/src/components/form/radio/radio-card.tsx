@@ -34,7 +34,7 @@ export const RadioCard = ({ size = 'md', ...radioProps }: RadioCardProps) => {
         borderColor: 'white !important',
         outlineColor: 'white',
         boxShadow: '4px 4px 0px 0px var(--chakra-colors-whiteAlpha-300)',
-      },
+      }
     ),
   };
 
@@ -44,7 +44,7 @@ export const RadioCard = ({ size = 'md', ...radioProps }: RadioCardProps) => {
     },
     {
       borderColor: 'whiteAlpha.500',
-    },
+    }
   );
 
   const sizes = {
@@ -58,13 +58,11 @@ export const RadioCard = ({ size = 'md', ...radioProps }: RadioCardProps) => {
       <input {...input} />
       <Box
         {...radio}
-        cursor="pointer"
-        borderWidth="1px"
-        borderRadius="md"
-        transition="100ms all ease-in-out"
-        _invalid={invalidStyle}
         _checked={checkedStyle}
-        _hover={hoverStyle}
+        _disabled={{
+          cursor: 'not-allowed',
+          opacity: 0.5,
+        }}
         _focus={
           focusChecked
             ? {
@@ -72,13 +70,15 @@ export const RadioCard = ({ size = 'md', ...radioProps }: RadioCardProps) => {
               }
             : undefined
         }
-        _disabled={{
-          cursor: 'not-allowed',
-          opacity: 0.5,
-        }}
+        _hover={hoverStyle}
+        _invalid={invalidStyle}
+        borderRadius="md"
+        borderWidth="1px"
+        cursor="pointer"
+        fontSize={sizes.fontSize}
         px={sizes.px}
         py={sizes.py}
-        fontSize={sizes.fontSize}
+        transition="100ms all ease-in-out"
       >
         {radioProps.children}
       </Box>
