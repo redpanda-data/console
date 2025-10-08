@@ -1490,8 +1490,8 @@ test.describe('Multiples ACLs, different hosts but same role', () => {
       const hostSelectorDescription = page.getByTestId('host-selector-description');
       await expect(hostSelectorDescription).toBeVisible();
 
-      // Verify the title shows "Multiple Hosts Found"
-      await expect(page.getByText('Multiple Hosts Found')).toBeVisible();
+      // Verify the title shows "Multiple hosts found"
+      await expect(page.getByText('Multiple hosts found')).toBeVisible();
 
       // Verify both host options are shown
       const firstHostRow = page.getByTestId(`host-selector-row-${firstHost}`);

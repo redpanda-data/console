@@ -1205,8 +1205,8 @@ test.describe('Multiples ACLs to same principal', () => {
       const hostSelectorDescription = page.getByTestId('host-selector-description');
       await expect(hostSelectorDescription).toBeVisible();
 
-      // Verify the title shows "Multiple Hosts Found"
-      await expect(page.getByText('Multiple Hosts Found')).toBeVisible();
+      // Verify the title shows "Multiple hosts found"
+      await expect(page.getByText('Multiple hosts found')).toBeVisible();
 
       // Verify both host options are shown
       const firstHostRow = page.getByTestId(`host-selector-row-${firstHost}`);
@@ -1241,7 +1241,7 @@ test.describe('Multiples ACLs to same principal', () => {
       await page.goto(`/security/acls/${encodeURIComponent(principal)}/details`);
 
       // Verify HostSelector is shown again
-      await expect(page.getByText('Multiple Hosts Found')).toBeVisible();
+      await expect(page.getByText('Multiple hosts found')).toBeVisible();
 
       // Click on the second host row
       const secondHostRow = page.getByTestId(`host-selector-row-${secondHost}`);
