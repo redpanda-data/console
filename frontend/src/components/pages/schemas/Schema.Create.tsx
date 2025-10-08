@@ -37,7 +37,7 @@ import {
 import { useLegacyListTopicsQuery } from '../../../react-query/api/topic';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { SchemaType } from '../../../state/restInterfaces';
+import { SchemaType, type SchemaTypeType } from '../../../state/restInterfaces';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import type { ElementOf } from '../../../utils/utils';
 import KowlEditor from '../../misc/KowlEditor';
@@ -164,7 +164,7 @@ const SchemaPageButtons = (p: {
     const result = await validateSchema.mutateAsync({
       subjectName: editorState.computedSubjectName,
       version: 'latest',
-      schemaType: editorState.format as SchemaType,
+      schemaType: editorState.format as SchemaTypeType,
       schema: editorState.schemaText,
       references: editorState.references.filter((x) => x.name && x.subject),
     });
@@ -194,7 +194,7 @@ const SchemaPageButtons = (p: {
     const validationResponse = await validateSchema.mutateAsync({
       subjectName: editorState.computedSubjectName,
       version: 'latest',
-      schemaType: editorState.format as SchemaType,
+      schemaType: editorState.format as SchemaTypeType,
       schema: editorState.schemaText,
       references: editorState.references.filter((x) => x.name && x.subject),
     });
@@ -213,7 +213,7 @@ const SchemaPageButtons = (p: {
       const subjectName = editorState.computedSubjectName;
       await createSchema.mutateAsync({
         subjectName,
-        schemaType: editorState.format as SchemaType,
+        schemaType: editorState.format as SchemaTypeType,
         schema: editorState.schemaText,
         references: editorState.references.filter((x) => x.name && x.subject),
       });
@@ -582,7 +582,7 @@ function useSchemaEditorState() {
   };
 }
 
-const exampleSchema: Record<SchemaType, string> = {
+const exampleSchema: Record<SchemaTypeType, string> = {
   AVRO: `
 {
    "type": "record",

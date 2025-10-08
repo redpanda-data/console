@@ -187,7 +187,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
         </Button>
         <Button
           disabledReason={canDeleteSchemas === false ? "You don't have the 'canDeleteSchemas' permission" : undefined}
-          onClick={() => handleDeleteSubject(isSoftDeleted)}
+          onClick={() => handleDeleteSubject(isSoftDeleted ?? false)}
           variant="outline"
         >
           Delete subject
