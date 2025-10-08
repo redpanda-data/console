@@ -75,7 +75,7 @@ export const createMCPConfig = ({
   mcpServerId?: string;
   isServerless?: boolean;
 }) => {
-  const baseArgs = [];
+  const baseArgs: string[] = [];
   const cloudEnv = getRpkCloudEnvironment();
 
   if (cloudEnv !== 'production') {

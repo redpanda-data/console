@@ -11,7 +11,7 @@ import { ChevronDown } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CONNECT_WIZARD_TOPIC_KEY } from 'state/connect/state';
-import type { Topic } from 'state/restInterfaces';
+import type { Topic } from 'state/rest-interfaces';
 
 import { AdvancedTopicSettings } from './advanced-topic-settings';
 import {
@@ -24,7 +24,7 @@ import {
   useTopicConfigQuery,
   useUpdateTopicConfigMutation,
 } from '../../../../react-query/api/topic';
-import { convertRetentionSizeToBytes, convertRetentionTimeToMs } from '../../../../utils/topicUtils';
+import { convertRetentionSizeToBytes, convertRetentionTimeToMs } from '../../../../utils/topic-utils';
 import {
   type AddTopicFormData,
   addTopicFormSchema,
@@ -127,7 +127,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
 
           if (hasRetentionChanges) {
             // Build configuration updates for React Query mutation
-            const configs = [];
+            const configs: Array<{ key: string; op: 'SET'; value: string }> = [];
 
             // Convert retention time
             const retentionMs = convertRetentionTimeToMs(data.retentionTimeMs, data.retentionTimeUnit);

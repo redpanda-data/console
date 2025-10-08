@@ -30,7 +30,7 @@ import type {
   AclStrResourcePatternType,
   AclStrResourceType,
   GetAclOverviewResponse,
-} from 'state/restInterfaces';
+} from 'state/rest-interfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import {
@@ -41,7 +41,7 @@ import {
   getIdFromCreateACLRequest,
   type Rule,
   type SharedConfig,
-} from '../../components/pages/acls/new-acl/ACL.model';
+} from '../../components/pages/acls/new-acl/acl.model';
 
 /**
  * TODO: Remove once Console v3 is released.
@@ -402,7 +402,7 @@ export const useCreateACLMutation = () => {
 
 // New ACL implementation
 
-// this method is used from AclTab frontend/src/components/pages/acls/Acl.List.tsx, removed this when that page is migrated.
+// this method is used from AclTab frontend/src/components/pages/acls/acl-list.tsx, removed this when that page is migrated.
 type SimpleAcl = {
   host: string;
   principal: string;
@@ -410,7 +410,7 @@ type SimpleAcl = {
   principalName: string;
   hasAcl: boolean;
 };
-// this method is used from AclTab frontend/src/components/pages/acls/Acl.List.tsx, removed this when that page is migrated.
+// this method is used from AclTab frontend/src/components/pages/acls/acl-list.tsx, removed this when that page is migrated.
 export const useListACLAsPrincipalGroups = () =>
   useQuery(listACLs, {} as ListACLsRequest, {
     select: (response) => {

@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ApiData, TopicAssignments, TopicPartitions } from './reassignLogic';
-import type { Partition, PartitionReassignmentRequest, Topic } from '../../../../state/restInterfaces';
-import { clone } from '../../../../utils/jsonUtils';
-import type { PartitionSelection } from '../ReassignPartitions';
-import type { PartitionWithMoves, TopicWithMoves } from '../Step3.Review';
+import type { ApiData, TopicAssignments, TopicPartitions } from './reassign-logic';
+import type { Partition, PartitionReassignmentRequest, Topic } from '../../../../state/rest-interfaces';
+import { clone } from '../../../../utils/json-utils';
+import type { PartitionSelection } from '../reassign-partitions';
+import type { PartitionWithMoves, TopicWithMoves } from '../step3-review';
 
 export function partitionSelectionToTopicPartitions(
   partitionSelection: PartitionSelection,
@@ -56,7 +56,7 @@ export function computeMovedReplicas(
   apiTopics: Topic[],
   apiTopicPartitions: Map<string, Partition[] | null>
 ): TopicWithMoves[] {
-  const ar = [];
+  const ar: TopicWithMoves[] = [];
   // For each partition in each topic:
   // - get Partition objects
   // - compute number of moved replicas
@@ -128,14 +128,14 @@ export function computeMovedReplicas(
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity increased due to for-in guards, refactor later
 export function removeRedundantReassignments(topicAssignments: TopicAssignments, apiData: ApiData): TopicAssignments {
-  topicAssignments = clone(topicAssignments);
+  const result = clone(topicAssignments);
 
   // Remove partition reassignments that have no effect
   let _totalRemovedPartitions = 0;
   const emptyTopics: string[] = [];
-  for (const t in topicAssignments) {
-    if (Object.hasOwn(topicAssignments, t)) {
-      const topicAssignment = topicAssignments[t];
+  for (const t in result) {
+    if (Object.hasOwn(result, t)) {
+      const topicAssignment = result[t];
       const curTopicPartitions = apiData.topicPartitions.get(t);
       if (!curTopicPartitions) {
         continue;
@@ -189,17 +189,17 @@ export function removeRedundantReassignments(topicAssignments: TopicAssignments,
 
   // Remove topics that are completely redundant
   for (const t of emptyTopics) {
-    delete topicAssignments[t];
+    delete result[t];
   }
 
-  return topicAssignments;
+  return result;
 }
 
 export function topicAssignmentsToReassignmentRequest(
   topicAssignments: TopicAssignments
 ): PartitionReassignmentRequest {
   // Construct reassignment request from topicAssignments
-  const topics = [];
+  const topics: { topicName: string; partitions: { partitionId: number; replicas: number[] | null }[] }[] = [];
   for (const t in topicAssignments) {
     if (Object.hasOwn(topicAssignments, t)) {
       const topicAssignment = topicAssignments[t];

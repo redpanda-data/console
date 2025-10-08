@@ -1,5 +1,5 @@
 import { create } from '@bufbuild/protobuf';
-import PageContent from 'components/misc/PageContent';
+import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { cn } from 'components/redpanda-ui/lib/utils';

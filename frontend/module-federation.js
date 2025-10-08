@@ -5,8 +5,8 @@ module.exports = {
   name: 'rp_console',
 
   exposes: {
-    './EmbeddedApp': './src/EmbeddedApp.tsx',
-    './injectApp': './src/injectApp.tsx',
+    './EmbeddedApp': './src/embedded-app.tsx',
+    './injectApp': './src/inject-app.tsx',
     './connect-tiles': './src/components/pages/rp-connect/onboarding/connect-tiles.tsx',
     './config': './src/config.ts',
   },

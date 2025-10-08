@@ -23,9 +23,9 @@ import {
 import { observer } from 'mobx-react';
 import React, { Component, type FC, type ReactNode, useState } from 'react';
 
-import { api, createMessageSearch, type MessageSearch, type MessageSearchRequest } from '../../../../state/backendApi';
-import type { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
-import { Feature, isSupported } from '../../../../state/supportedFeatures';
+import { api, createMessageSearch, type MessageSearch, type MessageSearchRequest } from '../../../../state/backend-api';
+import type { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/rest-interfaces';
+import { Feature, isSupported } from '../../../../state/supported-features';
 import {
   type ColumnList,
   type DataColumnKey,
@@ -36,8 +36,8 @@ import {
   type PreviewTagV2,
   type TimestampDisplayFormat,
 } from '../../../../state/ui';
-import { uiState } from '../../../../state/uiState';
-import '../../../../utils/arrayExtensions';
+import { uiState } from '../../../../state/ui-state';
+import '../../../../utils/array-extensions';
 import { InfoIcon, WarningIcon } from '@chakra-ui/icons';
 import {
   Alert,
@@ -97,18 +97,18 @@ import {
 } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
-import JavascriptFilterModal from './JavascriptFilterModal';
-import { getPreviewTags, PreviewSettings } from './PreviewSettings';
+import JavascriptFilterModal from './javascript-filter-modal';
+import { getPreviewTags, PreviewSettings } from './preview-settings';
 import { isServerless } from '../../../../config';
-import usePaginationParams from '../../../../hooks/usePaginationParams';
+import usePaginationParams from '../../../../hooks/use-pagination-params';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { appGlobal } from '../../../../state/appGlobal';
+import { appGlobal } from '../../../../state/app-global';
 import { IsDev } from '../../../../utils/env';
-import { FilterableDataSource } from '../../../../utils/filterableDataSource';
-import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
-import { toJson } from '../../../../utils/jsonUtils';
+import { sanitizeString, wrapFilterFragment } from '../../../../utils/filter-helper';
+import { FilterableDataSource } from '../../../../utils/filterable-data-source';
+import { toJson } from '../../../../utils/json-utils';
 import { onPaginationChange } from '../../../../utils/pagination';
-import { editQuery } from '../../../../utils/queryHelper';
+import { editQuery } from '../../../../utils/query-helper';
 import {
   Ellipsis,
   Label,
@@ -117,7 +117,7 @@ import {
   StatusIndicator,
   TimestampDisplay,
   toSafeString,
-} from '../../../../utils/tsxUtils';
+} from '../../../../utils/tsx-utils';
 import {
   base64FromUInt8Array,
   cullText,
@@ -127,9 +127,9 @@ import {
   titleCase,
 } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
-import { KowlJsonView } from '../../../misc/KowlJsonView';
-import RemovableFilter from '../../../misc/RemovableFilter';
-import { SingleSelect } from '../../../misc/Select';
+import { KowlJsonView } from '../../../misc/kowl-json-view';
+import RemovableFilter from '../../../misc/removable-filter';
+import { SingleSelect } from '../../../misc/select';
 
 const payloadEncodingPairs = [
   { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
@@ -264,13 +264,13 @@ function getMessageAsString(value: string | TopicMessage): string {
   if (obj.key) {
     obj.key.normalizedPayload = undefined;
     if (obj.key.rawBytes) {
-      obj.key.rawBytes = Array.from(obj.key.rawBytes) as any;
+      obj.key.rawBytes = Array.from(obj.key.rawBytes) as Uint8Array & number[];
     }
   }
   if (obj.value) {
     obj.value.normalizedPayload = undefined;
     if (obj.value.rawBytes) {
-      obj.value.rawBytes = Array.from(obj.value.rawBytes) as any;
+      obj.value.rawBytes = Array.from(obj.value.rawBytes) as Uint8Array & number[];
     }
   }
 
@@ -294,16 +294,16 @@ function getPayloadAsString(value: string | Uint8Array | object): string {
 }
 
 const defaultSelectChakraStyles = {
-  control: (provided: any) => ({
+  control: (provided: Record<string, unknown>) => ({
     ...provided,
     minWidth: 'max-content',
   }),
-  option: (provided: any) => ({
+  option: (provided: Record<string, unknown>) => ({
     ...provided,
     wordBreak: 'keep-all',
     whiteSpace: 'nowrap',
   }),
-  menuList: (provided: any) => ({
+  menuList: (provided: Record<string, unknown>) => ({
     ...provided,
     minWidth: 'min-content',
   }),
@@ -311,13 +311,13 @@ const defaultSelectChakraStyles = {
 
 const inlineSelectChakraStyles = {
   ...defaultSelectChakraStyles,
-  control: (provided: any) => ({
+  control: (provided: Record<string, unknown>) => ({
     ...provided,
     _hover: {
       borderColor: 'transparent',
     },
   }),
-  container: (provided: any) => ({
+  container: (provided: Record<string, unknown>) => ({
     ...provided,
     borderColor: 'transparent',
   }),
@@ -332,7 +332,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
   @observable showPreviewFieldsModal = false;
   @observable showDeserializersModal = false;
 
-  @observable fetchError = null as any | null;
+  @observable fetchError = null as Error | null;
 
   messageSearch = createMessageSearch();
   messageSource = new FilterableDataSource<TopicMessage>(
@@ -896,7 +896,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     function onCopyValue(original: TopicMessage) {
       navigator.clipboard
-        .writeText(getPayloadAsString(original.value.payload ?? original.value.rawBytes))
+        .writeText(
+          getPayloadAsString((original.value.payload ?? original.value.rawBytes) as string | Uint8Array | object)
+        )
         .then(() => {
           toast({
             status: 'success',
@@ -908,7 +910,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     function onCopyKey(original: TopicMessage) {
       navigator.clipboard
-        .writeText(getPayloadAsString(original.key.payload ?? original.key.rawBytes))
+        .writeText(getPayloadAsString((original.key.payload ?? original.key.rawBytes) as string | Uint8Array | object))
         .then(() => {
           toast({
             status: 'success',
@@ -1251,10 +1253,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
           this.fetchError = err;
           return [];
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(`error in searchTopicMessages: ${(error as Error).message ?? String(error)}`);
-        this.fetchError = error;
+        this.fetchError = error as Error;
         return Promise.resolve([]);
       }
     });
@@ -1273,7 +1275,11 @@ class SaveMessagesDialog extends Component<{
 
   radioStyle = { display: 'block', lineHeight: '30px' };
 
-  constructor(p: any) {
+  constructor(p: {
+    messages: TopicMessage[] | null;
+    onClose: () => void;
+    onRequireRawPayload: () => Promise<TopicMessage[]>;
+  }) {
     super(p);
     makeObservable(this);
   }
@@ -1356,7 +1362,7 @@ class SaveMessagesDialog extends Component<{
       document.body.appendChild(link); // required in firefox
       link.click();
     } else if (this.format === 'csv') {
-      const csvContent = this.convertToCSV(cleanMessages);
+      const csvContent = this.convertToCSV(cleanMessages as TopicMessage[]);
       const link = document.createElement('a');
       const file = new Blob([csvContent], { type: 'text/csv' });
       link.href = URL.createObjectURL(file);
@@ -1369,7 +1375,7 @@ class SaveMessagesDialog extends Component<{
   }
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 40, refactor later
-  convertToCSV(messages: any[]): string {
+  convertToCSV(messages: TopicMessage[]): string {
     if (messages.length === 0) {
       return '';
     }
@@ -1384,14 +1390,14 @@ class SaveMessagesDialog extends Component<{
       headers.push('isTransactional');
     }
 
-    const csvRows = [];
+    const csvRows: string[] = [];
 
     // Add the headers
     csvRows.push(headers.join(','));
 
     // Add the data
     for (const message of messages) {
-      const values = [];
+      const values: (string | number | boolean)[] = [];
 
       // Add fields in the same order as headers
       for (const header of headers) {
@@ -1423,7 +1429,10 @@ class SaveMessagesDialog extends Component<{
           values.push(message.value?.size || '');
         } else {
           // For other simple fields like partitionID, offset, timestamp, compression, isTransactional
-          values.push(message[header] !== undefined ? message[header] : '');
+          const messageValue = (message as Record<string, unknown>)[header];
+          values.push(
+            messageValue !== undefined && messageValue !== null ? (messageValue as string | number | boolean) : ''
+          );
         }
       }
 
@@ -1433,23 +1442,26 @@ class SaveMessagesDialog extends Component<{
     return csvRows.join('\n');
   }
 
-  cleanMessages(messages: TopicMessage[]): any[] {
-    const ar: any[] = [];
+  cleanMessages(messages: TopicMessage[]): unknown[] {
+    const ar: unknown[] = [];
 
     // create a copy of each message, omitting properties that don't make
     // sense for the user, like 'size' or caching properties like 'keyJson'.
     const includeRaw = this.includeRawContent;
 
-    const cleanPayload = (p: Payload): Payload => {
+    const cleanPayload = (p: Payload): Payload | undefined => {
       if (!p) {
-        return undefined as any;
+        return undefined;
       }
 
       const cleanedPayload = {
         payload: p.payload,
         rawPayload: includeRaw && p.rawBytes ? base64FromUInt8Array(p.rawBytes) : undefined,
         encoding: p.encoding,
-      } as any as Payload;
+        isPayloadNull: p.isPayloadNull,
+        schemaId: 0,
+        size: p.size,
+      } as Payload;
 
       if (p.schemaId && p.schemaId !== 0) {
         cleanedPayload.schemaId = p.schemaId;
@@ -1469,7 +1481,7 @@ class SaveMessagesDialog extends Component<{
 
       msg.headers = src.headers.map((h) => ({
         key: h.key,
-        value: cleanPayload(h.value),
+        value: cleanPayload(h.value) as Payload,
       }));
 
       msg.key = cleanPayload(src.key);
@@ -1503,24 +1515,24 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage; previewFields: ()
       if (key.isPayloadNull) {
         return <EmptyBadge mode="null" />;
       }
-      if (key.payload == null || key.payload.length === 0) {
+      if (key.payload == null || (typeof key.payload === 'string' && key.payload.length === 0)) {
         return <EmptyBadge mode="empty" />;
       }
 
       let text: ReactNode = <></>;
 
       if (key.encoding === 'binary') {
-        text = cullText(msg.keyBinHexPreview, 44);
+        text = cullText(msg.keyBinHexPreview as string, 44);
       } else if (key.encoding === 'utf8WithControlChars') {
-        text = highlightControlChars(key.payload);
+        text = highlightControlChars(key.payload as string);
       } else if (isPrimitive) {
-        text = cullText(key.payload, 44);
+        text = cullText(key.payload as string, 44);
       } else {
         // Only thing left is 'object'
         // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
         const previewTags = this.props.previewFields().filter((t) => t.searchInMessageValue);
         if (previewTags.length > 0) {
-          const tags = getPreviewTags(key.payload, previewTags);
+          const tags = getPreviewTags(key.payload as Record<string, unknown>, previewTags);
           text = (
             <span className="cellDiv fade" style={{ fontSize: '95%' }}>
               <div className={`previewTags previewTags-${uiState.topicSettings.previewDisplayMode}`}>
@@ -1553,8 +1565,8 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage; previewFields: ()
 }
 
 @observer
-class StartOffsetDateTimePicker extends Component {
-  constructor(p: any) {
+class StartOffsetDateTimePicker extends Component<Record<string, never>> {
+  constructor(p: Record<string, never>) {
     super(p);
     const searchParams = uiState.topicSettings.searchParams;
     if (!searchParams.startTimestampWasSetByUser) {
@@ -1616,21 +1628,25 @@ export class MessagePreview extends Component<{
       if (value.isPayloadNull) {
         return <EmptyBadge mode="null" />;
       }
-      if (value.encoding === 'null' || value.payload == null || value.payload.length === 0) {
+      if (
+        value.encoding === 'null' ||
+        value.payload == null ||
+        (typeof value.payload === 'string' && value.payload.length === 0)
+      ) {
         return <EmptyBadge mode="empty" />;
       }
       if (msg.value.encoding === 'binary') {
         // If the original data was binary, display as hex dump
-        text = msg.valueBinHexPreview;
+        text = msg.valueBinHexPreview as React.ReactNode;
       } else if (isPrimitive) {
         // If we can show the value as a primitive, do so.
-        text = value.payload;
+        text = value.payload as React.ReactNode;
       } else {
         // Only thing left is 'object'
         // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
         const previewTags = this.props.previewFields().filter((t) => t.searchInMessageValue);
         if (previewTags.length > 0) {
-          const tags = getPreviewTags(value.payload, previewTags);
+          const tags = getPreviewTags(value.payload as Record<string, unknown>, previewTags);
           text = (
             <span className="cellDiv fade" style={{ fontSize: '95%' }}>
               <div className={`previewTags previewTags-${uiState.topicSettings.previewDisplayMode}`}>
@@ -1802,14 +1818,16 @@ const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () =
     if (payload.encoding === 'binary') {
       const mode = 'hex' as 'ascii' | 'raw' | 'hex';
       if (mode === 'raw') {
-        return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val}</code>;
+        return (
+          <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val as React.ReactNode}</code>
+        );
       }
       if (mode === 'hex') {
         const rawBytes = payload.rawBytes ?? payload.normalizedPayload;
 
-        if (rawBytes) {
+        if (rawBytes && (typeof rawBytes === 'string' || Array.isArray(rawBytes) || rawBytes instanceof Uint8Array)) {
           let result = '';
-          for (const rawByte of rawBytes) {
+          for (const rawByte of rawBytes as Uint8Array) {
             result += `${rawByte.toString(16).padStart(2, '0')} `;
           }
           return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
@@ -1830,7 +1848,7 @@ const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () =
     // Decode payload from base64 and render control characters as code highlighted text, such as
     // `NUL`, `ACK` etc.
     if (payload.encoding === 'utf8WithControlChars') {
-      const elements = highlightControlChars(val);
+      const elements = highlightControlChars(val as string);
 
       return (
         <div className="codeBox" data-testid="payload-content">
@@ -2026,7 +2044,7 @@ const TroubleshootReportViewer = observer((props: { payload: Payload }) => {
 
 const MessageMetaData = observer((props: { msg: TopicMessage }) => {
   const msg = props.msg;
-  const data: { [k: string]: any } = {
+  const data: { [k: string]: React.ReactNode } = {
     Partition: msg.partitionID,
     Offset: numberToThousandsString(msg.offset),
     Key: msg.key.isPayloadNull ? 'Null' : `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
@@ -2399,11 +2417,9 @@ const EmptyBadge: FC<{ mode: 'empty' | 'null' }> = ({ mode }) => (
 );
 
 function renderEmptyIcon(tooltipText?: string) {
-  if (!tooltipText) {
-    tooltipText = 'Empty';
-  }
+  const text = tooltipText || 'Empty';
   return (
-    <Tooltip hasArrow label={tooltipText} openDelay={1} placement="top">
+    <Tooltip hasArrow label={text} openDelay={1} placement="top">
       <span style={{ opacity: 0.66, marginLeft: '2px' }}>
         <SkipIcon />
       </span>

@@ -147,9 +147,9 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
                       <SelectValue defaultValue={field.value} />
                     </SelectTrigger>
                     <SelectContent>
-                      {units.map(({ value, label }) => (
+                      {units.map(({ value, label: unitLabel }) => (
                         <SelectItem key={value} value={value}>
-                          {label}
+                          {unitLabel}
                         </SelectItem>
                       ))}
                     </SelectContent>

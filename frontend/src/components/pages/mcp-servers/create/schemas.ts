@@ -46,7 +46,7 @@ export const ToolSchema = z
     try {
       const doc = parse(val.config);
       if (doc && typeof doc === 'object' && 'label' in doc) {
-        const label = (doc as any).label;
+        const label = (doc as { label?: unknown }).label;
         if (typeof label === 'string' && label !== val.name) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,

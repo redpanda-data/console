@@ -14,10 +14,10 @@ import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Modal
 import { observer } from 'mobx-react';
 import React, { type PropsWithChildren, useState } from 'react';
 
-import type { TopicLogDirSummary } from '../../state/restInterfaces';
-import { uiState } from '../../state/uiState';
+import type { TopicLogDirSummary } from '../../state/rest-interfaces';
+import { uiState } from '../../state/ui-state';
 import env, { IsDev } from '../../utils/env';
-import { ZeroSizeWrapper } from '../../utils/tsxUtils';
+import { ZeroSizeWrapper } from '../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../utils/utils';
 
 export const Section = (p: PropsWithChildren<{ title: string }>) => (
@@ -53,7 +53,7 @@ export const Spacer = constant(<span style={{ display: 'flex', flexGrow: 1 }} />
  * returns an array with the numbers from start, up to end (does not include end!)
  */
 export function range(start: number, end: number): number[] {
-  const ar = [];
+  const ar: number[] = [];
   for (let i = start; i < end; i++) {
     ar.push(i);
   }

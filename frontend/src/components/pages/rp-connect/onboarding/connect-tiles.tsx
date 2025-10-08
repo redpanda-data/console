@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type ComponentName, componentLogoMap } from 'assets/connectors/componentLogoMap';
+import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
 import {
   Card,
   CardContent,

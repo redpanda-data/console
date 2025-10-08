@@ -134,9 +134,10 @@ export const RemoteMCPConfigurationTab = () => {
 
     const updatedTools = currentData.tools.map((tool) => {
       if (tool.id === toolId) {
+        const yamlLabel = template.yaml.label as string | undefined;
         return {
           ...tool,
-          name: template.yaml.label || tool.name,
+          name: yamlLabel || tool.name,
           componentType: template.componentType,
           config: stringify(template.yaml),
           selectedTemplate: template.name,
@@ -809,7 +810,7 @@ export const RemoteMCPConfigurationTab = () => {
             <div className="xl:col-span-1">
               <div className="sticky top-4">
                 <QuickAddSecrets
-                  existingSecrets={existingSecrets.filter((id): id is string => Boolean(id))}
+                  existingSecrets={existingSecrets.filter((secretId): secretId is string => Boolean(secretId))}
                   requiredSecrets={detectedSecrets}
                   scopes={[Scope.MCP_SERVER]}
                 />

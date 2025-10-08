@@ -12,12 +12,12 @@
 import type { SortingState } from '@redpanda-data/ui';
 import { autorun, makeObservable, observable, transaction } from 'mobx';
 
-import { AclRequestDefault, type GetAclsRequest } from './restInterfaces';
+import { AclRequestDefault, type GetAclsRequest } from './rest-interfaces';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../components/constants';
-import type { ConnectTabKeys } from '../components/pages/connect/Overview';
-import type { TopicTabId } from '../components/pages/topics/Topic.Details';
+import type { ConnectTabKeys } from '../components/pages/connect/overview';
+import type { TopicTabId } from '../components/pages/topics/topic-details';
 import { CompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { clone } from '../utils/jsonUtils';
+import { clone } from '../utils/json-utils';
 import { assignDeep, randomId } from '../utils/utils';
 
 const settingsName = 'uiSettings-v3';
@@ -307,29 +307,29 @@ const defaultUiSettings = {
     selectedTab: 'clusters' as ConnectTabKeys,
 
     clusters: {
-      pageSize: undefined as any as number,
+      pageSize: undefined as unknown as number,
       quickSearch: '',
     },
     connectors: {
-      pageSize: undefined as any as number,
+      pageSize: undefined as unknown as number,
       quickSearch: '',
     },
     tasks: {
-      pageSize: undefined as any as number,
+      pageSize: undefined as unknown as number,
       quickSearch: '',
     },
 
     clusterDetails: {
-      pageSize: undefined as any as number,
+      pageSize: undefined as unknown as number,
       quickSearch: '',
     },
     clusterDetailsPlugins: {
-      pageSize: undefined as any as number,
+      pageSize: undefined as unknown as number,
       quickSearch: '',
     },
 
     connectorDetails: {
-      pageSize: undefined as any as number,
+      pageSize: undefined as unknown as number,
       quickSearch: '',
     },
   },
@@ -351,7 +351,7 @@ export function clearSettings() {
   transaction(() => {
     for (const k in uiSettings) {
       if (Object.hasOwn(uiSettings, k)) {
-        delete (uiSettings as any)[k];
+        delete (uiSettings as Record<string, unknown>)[k];
       }
     }
     assignDeep(uiSettings, clone(defaultUiSettings));

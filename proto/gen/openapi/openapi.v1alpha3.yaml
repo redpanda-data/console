@@ -3,8 +3,6 @@ components:
     AIAgent:
       description: Defines the AI Agent resource.
       properties:
-        authentication:
-          $ref: '#/components/schemas/Authentication'
         description:
           description: Optional AI agent description.
           type: string
@@ -32,6 +30,8 @@ components:
           $ref: '#/components/schemas/AIAgent.Provider'
         resources:
           $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/ServiceAccount'
         state:
           $ref: '#/components/schemas/AIAgent.State'
         system_prompt:
@@ -93,8 +93,6 @@ components:
     AIAgentCreate:
       description: AIAgentCreate contains the details for the AI agent creation request.
       properties:
-        authentication:
-          $ref: '#/components/schemas/Authentication'
         description:
           description: AI agent description.
           type: string
@@ -118,6 +116,8 @@ components:
           $ref: '#/components/schemas/AIAgent.Provider'
         resources:
           $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/ServiceAccount'
         system_prompt:
           description: System instructions that define how the AI agent should behave and respond.
           type: string
@@ -135,8 +135,6 @@ components:
       type: object
     AIAgentUpdate:
       properties:
-        authentication:
-          $ref: '#/components/schemas/Authentication'
         description:
           description: AI agent description.
           type: string
@@ -160,6 +158,8 @@ components:
           $ref: '#/components/schemas/AIAgent.Provider'
         resources:
           $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/ServiceAccount'
         system_prompt:
           description: System instructions that define how the AI agent should behave and respond.
           type: string
@@ -180,22 +180,6 @@ components:
       properties:
         '@type':
           type: string
-      type: object
-    Authentication:
-      properties:
-        audience:
-          type: string
-        client_id:
-          type: string
-        client_secret:
-          type: string
-        token_url:
-          type: string
-      required:
-        - client_id
-        - client_secret
-        - token_url
-        - audience
       type: object
     ComponentType:
       description: Component type for this tool.
@@ -887,6 +871,16 @@ components:
         - SASL_MECHANISM_SCRAM_SHA_256
         - SASL_MECHANISM_SCRAM_SHA_512
       type: string
+    ServiceAccount:
+      properties:
+        client_id:
+          type: string
+        client_secret:
+          type: string
+      required:
+        - client_id
+        - client_secret
+      type: object
     StartAIAgentResponse:
       properties:
         ai_agent:

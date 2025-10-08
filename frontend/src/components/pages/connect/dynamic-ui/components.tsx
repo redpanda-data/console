@@ -13,15 +13,15 @@ import { Box, RadioGroup, Skeleton, Switch } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 
-import { ConnectorStepComponent } from './ConnectorStep';
+import { ConnectorStepComponent } from './connector-step';
 import { isEmbedded } from '../../../../config';
-import { api } from '../../../../state/backendApi';
+import { api } from '../../../../state/backend-api';
 // import { IsDev } from '../../../../utils/env';
 // import { DebugEditor } from './DebugEditor';
 import type { ConnectorPropertiesStore, PropertyGroup } from '../../../../state/connect/state';
-import type { ConnectorStep } from '../../../../state/restInterfaces';
-import { clone } from '../../../../utils/jsonUtils';
-import KowlEditor from '../../../misc/KowlEditor';
+import type { ConnectorStep } from '../../../../state/rest-interfaces';
+import { clone } from '../../../../utils/json-utils';
+import KowlEditor from '../../../misc/kowl-editor';
 
 export type ConfigPageProps = {
   connectorStore: ConnectorPropertiesStore;
@@ -107,7 +107,7 @@ function ConnectorJsonEditor(p: { connectorStore: ConnectorPropertiesStore; cont
   // Initialize connector with existing data
   const [jsonText, setJsonText] = useState(() => {
     const configObj = connectorStore.getConfigObject();
-    const connectorName = (configObj as any)?.name;
+    const connectorName = (configObj as { name?: string })?.name;
 
     if (connectorName) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage

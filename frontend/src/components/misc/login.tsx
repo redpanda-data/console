@@ -41,7 +41,7 @@ import { observer, useLocalObservable } from 'mobx-react';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
-import { SingleSelect } from './Select';
+import { SingleSelect } from './select';
 import SvgLogo from '../../assets/logos/redpanda-text-color.svg';
 import { config as appConfig } from '../../config';
 import {
@@ -49,8 +49,8 @@ import {
   type LoginSaslScramRequest,
   SASLMechanism,
 } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
-import { appGlobal } from '../../state/appGlobal';
-import { uiState } from '../../state/uiState';
+import { appGlobal } from '../../state/app-global';
+import { uiState } from '../../state/ui-state';
 
 const authenticationApi = observable({
   methods: [] as AuthenticationMethod[],

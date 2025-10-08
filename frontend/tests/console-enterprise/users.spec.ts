@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+
 import { createUser, deleteUser } from '../users.utils';
 
 test.describe('Users', () => {
@@ -30,13 +31,13 @@ test.describe('Users', () => {
     await page.getByPlaceholder('Filter by name').fill(`user-${r}-regexp-[1,2]`);
 
     expect(
-      await page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName1}/details']`).count(),
+      await page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName1}/details']`).count()
     ).toEqual(1);
     expect(
-      await page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName2}/details']`).count(),
+      await page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName2}/details']`).count()
     ).toEqual(1);
     expect(
-      await page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName3}/details']`).count(),
+      await page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName3}/details']`).count()
     ).toEqual(0);
 
     await deleteUser(page, { username: userName1 });

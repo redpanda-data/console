@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { generatePassword } from 'components/pages/acls/UserCreate';
+import { generatePassword } from 'components/pages/acls/user-create';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';

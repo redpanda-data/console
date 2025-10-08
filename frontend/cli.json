@@ -1,4 +1,4 @@
 {
-	"baseDir": "./src/components/redpanda-ui",
-	"commands": {}
+  "baseDir": "./src/components/redpanda-ui",
+  "commands": {}
 }

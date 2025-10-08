@@ -16,7 +16,7 @@ import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
 import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { uiState } from 'state/uiState';
+import { uiState } from 'state/ui-state';
 
 import { RemoteMCPConfigurationTab } from './remote-mcp-configuration-tab';
 import { RemoteMCPConnectionTab } from './remote-mcp-connection-tab';
@@ -52,9 +52,9 @@ export const RemoteMCPDetailsPage = () => {
   }, [mcpServerData]);
 
   useEffect(() => {
-    const tabFromUrl = searchParams.get('tab');
-    if (tabFromUrl) {
-      setActiveTab(tabFromUrl);
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
     } else {
       setActiveTab('configuration');
     }

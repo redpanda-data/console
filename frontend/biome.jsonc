@@ -379,7 +379,7 @@
         // Replaces usages of forwardRef with passing ref as a prop. Required for now in React v18.x
         "noReactForwardRef": "off",
         // Disallow variable declarations from shadowing variables declared in the outer scope.
-        "noShadow": "off", // Enable later - 95 violations requiring extensive refactoring
+        "noShadow": "error",
         // Disallow expression statements that are neither a function call nor an assignment.
         "noUnusedExpressions": "error",
         // Disallow the use of useless undefined. (disabled due to conflict with useGetterReturn)
@@ -483,7 +483,7 @@
         // Disallow non-null assertions using the ! postfix operator.
         "noNonNullAssertion": "error",
         // Disallow reassigning function parameters.
-        "noParameterAssign": "off", // Enable later - Disallows reassigning function parameters. This is a common MobX pattern in Console, so we leave it for now.
+        "noParameterAssign": "error",
         // Disallow the use of parameter properties in class constructors.
         "noParameterProperties": "error",
         // This rule allows you to specify global variable names that you don't want to use in your application.
@@ -539,7 +539,7 @@
         // Enforce naming conventions for JavaScript and TypeScript filenames.
         // Supports TanStack Router convention: allows - prefixed files (e.g., -hooks.ts, $slug)
         "useFilenamingConvention": {
-          "level": "off",
+          "level": "error",
           "options": {
             "requireAscii": true,
             "filenameCases": ["kebab-case"],
@@ -676,13 +676,13 @@
         // A describe block should not contain duplicate hooks.
         "noDuplicateTestHooks": "error",
         // Disallow empty block statements and static blocks.
-        "noEmptyBlockStatements": "off", // Enable later - many violations
+        "noEmptyBlockStatements": "error",
         // Disallow the declaration of empty interfaces.
         "noEmptyInterface": "error",
         // Disallow variables from evolving into any type through reassignments.
-        "noEvolvingTypes": "off", // Enable later - many violations
+        "noEvolvingTypes": "error",
         // Disallow the any type usage.
-        "noExplicitAny": "off", // Enable later - many violations
+        "noExplicitAny": "error",
         // Disallow using export or module.exports in files containing tests.
         "noExportsInTest": "error",
         // Prevents the wrong usage of the non-null assertion operator (!) in TypeScript files.
