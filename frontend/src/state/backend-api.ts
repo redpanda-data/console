@@ -2346,7 +2346,7 @@ export const rolesApi = observable({
     }
   },
 
-  async updateRoleMembership(roleName: string, addUsers: string[], removeUsers: string[], create = false) {
+  async updateRoleMembership(roleName: string, addUsers: string[], removeUsers: string[], createRole = false) {
     const client = appConfig.securityClient;
     if (!client) {
       throw new Error('security client is not initialized');
@@ -2357,7 +2357,7 @@ export const rolesApi = observable({
         roleName,
         add: addUsers.map((u) => ({ principal: `User:${u}` })),
         remove: removeUsers.map((u) => ({ principal: `User:${u}` })),
-        create,
+        create: createRole,
       },
     });
   },

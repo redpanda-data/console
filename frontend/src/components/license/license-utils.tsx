@@ -336,10 +336,10 @@ export const licensesToSimplifiedPreview = (
 }> => {
   const groupedLicenses = licenses.groupBy((x) => x.type);
 
-  return [...groupedLicenses.values()].map((licenses) => {
-    const [firstLicenseToExpire] = licenses.orderBy((x) => Number(x.expiresAt));
+  return [...groupedLicenses.values()].map((licensesGroup) => {
+    const [firstLicenseToExpire] = licensesGroup.orderBy((x) => Number(x.expiresAt));
 
-    if (licenses.length === 1) {
+    if (licensesGroup.length === 1) {
       return {
         name: prettyLicenseType(firstLicenseToExpire, true),
         expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire) : '',

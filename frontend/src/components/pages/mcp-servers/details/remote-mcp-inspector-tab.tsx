@@ -522,7 +522,7 @@ export const RemoteMCPInspectorTab = () => {
                                       onCreateOption: async (
                                         newTopicName: string,
                                         path: string[],
-                                        handleFieldChange: (path: string[], value: JSONValue) => void
+                                        updateField: (fieldPath: string[], value: JSONValue) => void
                                       ) => {
                                         try {
                                           const request = create(CreateTopicRequestSchema, {
@@ -543,8 +543,8 @@ export const RemoteMCPInspectorTab = () => {
                                           toast.success(`Topic '${newTopicName}' created successfully`);
                                           await refetchTopics();
 
-                                          // Use the provided path and handleFieldChange to update the correct field
-                                          handleFieldChange(path, newTopicName);
+                                          // Use the provided path and updateField to update the correct field
+                                          updateField(path, newTopicName);
                                         } catch (error) {
                                           toast.error(`Failed to create topic: ${error}`);
                                         }

@@ -16,9 +16,9 @@ export default function AnnouncementBar() {
         urlPath: window.location.pathname,
       },
     })
-      .then((content) => {
-        if (content) {
-          setContent(content);
+      .then((fetchedContent) => {
+        if (fetchedContent) {
+          setContent(fetchedContent);
         }
       })
       .catch((error) => {

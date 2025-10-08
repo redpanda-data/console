@@ -471,7 +471,7 @@ export const ResourceACLsEditor = observer(
 
           <Label style={{ width: '100%' }} text="Operations">
             <Grid gap={6} templateColumns="repeat(auto-fill, minmax(125px, 1fr))" width="full">
-              <Operation onChange={(p) => (res.all = p)} operation={AclOperation.All} value={res.all} />
+              <Operation onChange={(perm) => (res.all = perm)} operation={AclOperation.All} value={res.all} />
 
               {Object.entries(res.permissions)
                 .sort(([op1], [op2]) => op1.localeCompare(op2))
@@ -480,7 +480,7 @@ export const ResourceACLsEditor = observer(
                     data-testid={`${resourceName}-${operation}`}
                     disabled={isAllSet}
                     key={operation}
-                    onChange={(p) => ((res.permissions as Record<string, unknown>)[operation] = p)}
+                    onChange={(perm) => ((res.permissions as Record<string, unknown>)[operation] = perm)}
                     operation={operation}
                     value={isAllSet ? res.all : permission}
                   />

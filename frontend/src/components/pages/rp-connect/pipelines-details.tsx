@@ -257,7 +257,7 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
 
   const createLogsTabState = () => {
     const search: MessageSearch = createMessageSearch();
-    const state = observable({
+    const tabState = observable({
       messages: search.messages,
       isComplete: false,
       error: null as string | null,
@@ -266,13 +266,13 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
 
     // Resume search immediately
     const searchPromise = executeMessageSearch(search, topicName, p.pipeline.id);
-    searchPromise.catch((x) => (state.error = String(x))).finally(() => (state.isComplete = true));
-    return state;
+    searchPromise.catch((x) => (tabState.error = String(x))).finally(() => (tabState.isComplete = true));
+    return tabState;
   };
 
   const [state, setState] = useState(createLogsTabState);
 
-  const loadLargeMessage = async (topicName: string, partitionID: number, offset: number) => {
+  const loadLargeMessage = async (msgTopicName: string, partitionID: number, offset: number) => {
     // Create a new search that looks for only this message specifically
     const search = createMessageSearch();
     const searchReq: MessageSearchRequest = {
@@ -281,7 +281,7 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
       partitionId: partitionID,
       startOffset: offset,
       startTimestamp: 0,
-      topicName,
+      topicName: msgTopicName,
       includeRawPayload: true,
       ignoreSizeLimit: true,
       keyDeserializer: PayloadEncoding.UNSPECIFIED,

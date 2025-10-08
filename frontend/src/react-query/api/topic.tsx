@@ -91,14 +91,14 @@ export const useListTopicsQuery = (
 
   const allRetrievedTopics = listTopicsResult?.data?.pages?.flatMap(({ topics }) => topics);
 
-  const topics = hideInternalTopics
+  const filteredTopics = hideInternalTopics
     ? allRetrievedTopics?.filter((topic) => !(topic.internal || topic.name.startsWith('_')))
     : allRetrievedTopics;
 
   return {
     ...listTopicsResult,
     data: {
-      topics,
+      topics: filteredTopics,
     },
   };
 };

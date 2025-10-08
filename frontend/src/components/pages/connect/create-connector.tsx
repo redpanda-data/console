@@ -76,16 +76,16 @@ const ConnectorType = observer(
 
       filteredPlugins =
         // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 33, refactor later
-        allPlugins?.filter((p) => {
-          if (state.tabFilter === 'export' && p.type === 'source') {
+        allPlugins?.filter((plugin) => {
+          if (state.tabFilter === 'export' && plugin.type === 'source') {
             return false; // not an "export" type
           }
 
-          if (state.tabFilter === 'import' && p.type === 'sink') {
+          if (state.tabFilter === 'import' && plugin.type === 'sink') {
             return false; // not an "import" type
           }
 
-          const meta = findConnectorMetadata(p.class);
+          const meta = findConnectorMetadata(plugin.class);
           if (!meta) {
             return true; // no metadata, show it always
           }
@@ -97,7 +97,7 @@ const ConnectorType = observer(
               matchesFilter = true;
             }
 
-            if (p.class && containsIgnoreCase(p.class, state.textFilter)) {
+            if (plugin.class && containsIgnoreCase(plugin.class, state.textFilter)) {
               matchesFilter = true;
             }
 

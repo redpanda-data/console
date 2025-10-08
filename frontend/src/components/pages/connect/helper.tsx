@@ -630,8 +630,8 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
     });
   });
 
-  const success = action((target: T) => {
-    const messageContent = props.successMessage(target);
+  const success = action((successTarget: T) => {
+    const messageContent = props.successMessage(successTarget);
     toast({
       status: 'success',
       description: messageContent,
@@ -647,8 +647,8 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
     try {
       await props.onOk(target);
       success(target);
-    } catch (err) {
-      $state.error = err as Error;
+    } catch (error) {
+      $state.error = error as Error;
     } finally {
       $state.isPending = false;
     }
@@ -769,7 +769,7 @@ export const TaskState = observer(
     const task = p.observable;
     const state = task.state;
 
-    const iconWrapper = (icon: JSX.Element) => <span style={{ fontSize: '18px' }}>{icon}</span>;
+    const iconWrapper = (iconElement: JSX.Element) => <span style={{ fontSize: '18px' }}>{iconElement}</span>;
 
     let icon: JSX.Element = <></>;
     if (state === ConnectorState.Running) {

@@ -439,7 +439,7 @@ export const principalGroupsView = observable(
       const serviceAccounts = api.serviceAccounts?.users;
       if (serviceAccounts) {
         for (const acc of serviceAccounts) {
-          if (!result.any((g) => g.principalName === acc)) {
+          if (!result.any((group) => group.principalName === acc)) {
             // Doesn't have a group yet, create one
             result.push({
               principalType: 'User',

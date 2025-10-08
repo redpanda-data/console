@@ -185,7 +185,7 @@ export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' 
     }, []);
 
     const licenses = api.licenses
-      .filter((license) => license.type === License_Type.TRIAL || license.type === License_Type.COMMUNITY)
+      .filter((lic) => lic.type === License_Type.TRIAL || lic.type === License_Type.COMMUNITY)
       .sort((a, b) => LICENSE_WEIGHT[a.type] - LICENSE_WEIGHT[b.type]); // Sort by priority
 
     // Choose the license with the latest expiration time
@@ -194,7 +194,7 @@ export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' 
     // Trial is either baked-in or extended. We need to check if any of the licenses are baked-in.
     // We say the trial is baked-in if and only if all the licenses are baked-in. There can be a situation where,
     // use has registered a license, it's updated in the brokers, but the console doesn't have the license re-loaded yet.
-    const bakedInTrial = licenses.every((license) => isBakedInTrial(license));
+    const bakedInTrial = licenses.every((lic) => isBakedInTrial(lic));
 
     const enterpriseFeaturesUsed = api.enterpriseFeaturesUsed;
     const alertContent = getLicenseAlertContentForFeature(

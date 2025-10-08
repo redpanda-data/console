@@ -164,7 +164,14 @@ export const config: Config = observable({
   featureFlags: FEATURE_FLAGS,
 });
 
-const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...args }: SetConfigArguments) => {
+const setConfig = ({
+  fetch,
+  urlOverride,
+  jwt,
+  isServerless: isServerlessMode,
+  featureFlags,
+  ...args
+}: SetConfigArguments) => {
   const assetsUrl =
     urlOverride?.assets === 'WEBPACK' ? String(__webpack_public_path__).removeSuffix('/') : urlOverride?.assets;
 
@@ -190,7 +197,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...arg
   const userGrpcClient = createClient(UserService, transport);
   Object.assign(config, {
     jwt,
-    isServerless,
+    isServerless: isServerlessMode,
     restBasePath: getRestBasePath(urlOverride?.rest),
     grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
     fetch: fetch ?? window.fetch.bind(window),
@@ -212,8 +219,8 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...arg
   return config;
 };
 
-export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
-  monaco.editor.defineTheme('kowl', {
+export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, monacoInstance: Monaco) => {
+  monacoInstance.editor.defineTheme('kowl', {
     base: 'vs',
     inherit: false,
     colors: {

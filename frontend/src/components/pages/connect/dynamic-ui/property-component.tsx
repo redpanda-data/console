@@ -51,7 +51,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
         const options =
           metadata.recommended_values && metadata.recommended_values?.length > 0
             ? metadata.recommended_values.map(({ value, display_name: label }) => ({ value, label }))
-            : recValues.map((v) => ({ value: v, label: String(v).toUpperCase() }));
+            : recValues.map((recValue) => ({ value: recValue, label: String(recValue).toUpperCase() }));
         inputComp = (
           <RadioGroup
             name={p.name}

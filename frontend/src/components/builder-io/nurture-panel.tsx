@@ -28,9 +28,9 @@ export default function NurturePanel() {
         platform,
       },
     })
-      .then((content) => {
-        if (content) {
-          setContent(content);
+      .then((fetchedContent) => {
+        if (fetchedContent) {
+          setContent(fetchedContent);
         }
         setHasError(false);
       })

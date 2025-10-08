@@ -67,9 +67,9 @@ export const UserPreferencesDialog: FC<{ isOpen: boolean; onClose: () => void }>
       <ModalHeader>User Preferences</ModalHeader>
       <ModalBody>
         <Tabs
-          items={Object.entries(settingsTabs).map(([key, { name, component: Component }]) => ({
+          items={Object.entries(settingsTabs).map(([key, { name, component: TabComponent }]) => ({
             name,
-            component: <Component />,
+            component: <TabComponent />,
             key,
           }))}
         />

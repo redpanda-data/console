@@ -651,7 +651,9 @@ class ReassignPartitions extends PageComponent {
       const followerReplicas: { partitionId: number; brokerId: number }[] = [];
       for (const p of t.partitions) {
         const partitionId = p.partitionId;
-        const brokersOld = api.topicPartitions?.get(t.topicName)?.first((p) => p.id === partitionId)?.replicas;
+        const brokersOld = api.topicPartitions
+          ?.get(t.topicName)
+          ?.first((partition) => partition.id === partitionId)?.replicas;
         const brokersNew = p.replicas;
 
         if (brokersOld == null || brokersNew == null) {

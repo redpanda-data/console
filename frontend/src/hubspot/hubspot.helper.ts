@@ -59,8 +59,8 @@ export const hubspotSubmit = ({
   if (!isAnalyticsEnabled()) {
     return;
   }
-  const prepareFields = (fields: Fields) =>
-    Object.entries(fields).map(([name, value]) => ({
+  const prepareFields = (formFields: Fields) =>
+    Object.entries(formFields).map(([name, value]) => ({
       name,
       value,
     }));

@@ -38,7 +38,7 @@ export const PropertyGroupComponent = observer(
     if (g.group.name === 'Transforms') {
       // Transforms + its sub groups
       const subGroups = props.allGroups
-        .filter((g) => g.group.name?.startsWith('Transforms: '))
+        .filter((subGroup) => subGroup.group.name?.startsWith('Transforms: '))
         .sort((a, b) => props.allGroups.indexOf(a) - props.allGroups.indexOf(b));
 
       return (

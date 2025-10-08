@@ -485,18 +485,18 @@ export function convertRulesToCreateACLRequests(rules: Rule[], principal: string
       acc.push(a);
     }
     if (r.mode === ModeCustom) {
-      const customResults = Object.entries(r.operations).reduce((acc, [op, value]) => {
-        if (value !== OperationTypeNotSet) {
-          acc.push({
+      const customResults = Object.entries(r.operations).reduce((operations, [op, opValue]) => {
+        if (opValue !== OperationTypeNotSet) {
+          operations.push({
             ...baseRule,
             host,
             principal,
             resourceType: getGRPCResourceType(r.resourceType),
             operation: getGRPCOperationType(op),
-            permissionType: getGRPCPermissionType(value),
+            permissionType: getGRPCPermissionType(opValue),
           });
         }
-        return acc;
+        return operations;
       }, [] as CreateACLRequest[]);
       acc.push(...customResults);
     }

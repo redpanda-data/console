@@ -271,15 +271,15 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
       req.headers.push(kafkaHeader);
     }
 
-    const encodeData = (data: string, encoding: PayloadEncoding): Uint8Array => {
+    const encodeData = (payloadData: string, encoding: PayloadEncoding): Uint8Array => {
       if (encoding === PayloadEncoding.BINARY) {
         // This will throw an exception if data is not base64.
         // We want to catch exceptions so that we can show an error.
-        window.atob(data);
-        return base64ToUInt8Array(data);
+        window.atob(payloadData);
+        return base64ToUInt8Array(payloadData);
       }
 
-      return new TextEncoder().encode(data);
+      return new TextEncoder().encode(payloadData);
     };
 
     // Key
@@ -426,12 +426,12 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                         onChange={(newVal) => {
                           onChange(newVal);
 
-                          const detail = availableValues.filter((value) => value.name === newVal).first();
+                          const detail = availableValues.filter((schema) => schema.name === newVal).first();
                           setValue('key.schemaVersion', detail?.latestActiveVersion);
                         }}
-                        options={availableValues.map((value) => ({
-                          key: value.name,
-                          value: value.name,
+                        options={availableValues.map((schema) => ({
+                          key: schema.name,
+                          value: schema.name,
                         }))}
                         value={value}
                       />
@@ -450,8 +450,8 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                       <SingleSelect<number | undefined>
                         onChange={onChange}
                         options={availableValues
-                          .filter((value) => value.name === keySchemaName)
-                          .flatMap((value) => value.versions)
+                          .filter((schema) => schema.name === keySchemaName)
+                          .flatMap((schema) => schema.versions)
                           .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
                           .map(({ version }) => ({
                             label: version,
@@ -538,12 +538,12 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                           onChange={(newVal) => {
                             onChange(newVal);
 
-                            const detail = availableValues.filter((value) => value.name === newVal).first();
+                            const detail = availableValues.filter((schema) => schema.name === newVal).first();
                             setValue('value.schemaVersion', detail?.latestActiveVersion);
                           }}
-                          options={availableValues.map((value) => ({
-                            key: value.name,
-                            value: value.name,
+                          options={availableValues.map((schema) => ({
+                            key: schema.name,
+                            value: schema.name,
                           }))}
                           value={value}
                         />
@@ -562,8 +562,8 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                         <SingleSelect<number | undefined>
                           onChange={onChange}
                           options={availableValues
-                            .filter((value) => value.name === valueSchemaName)
-                            .flatMap((value) => value.versions)
+                            .filter((schema) => schema.name === valueSchemaName)
+                            .flatMap((schema) => schema.versions)
                             .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
                             .map(({ version }) => ({
                               label: version,

@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+// biome-ignore-all lint/nursery/noShadow: Array prototype extensions intentionally use generic type parameters that shadow the interface definition
+
 export {};
 
 declare global {

@@ -300,7 +300,7 @@ export function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
 }
 
 const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
-  const toast = useToast();
+  const toastFn = useToast();
 
   const subject = p.subject;
 
@@ -330,7 +330,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
 
   // Show notification and update URL if requested version doesn't exist
   if (queryVersion !== undefined && queryVersion !== 'latest' && !requestedVersionExists) {
-    toast({
+    toastFn({
       status: 'warning',
       title: `Version ${queryVersion} not found`,
       description: `Showing version ${fallbackVersion} instead`,
@@ -394,7 +394,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                     api
                       .deleteSchemaSubjectVersion(subject.name, schema.version, true)
                       .then(async () => {
-                        toast({
+                        toastFn({
                           status: 'success',
                           duration: 4000,
                           isClosable: false,
@@ -412,7 +412,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                         }
                       })
                       .catch((err) => {
-                        toast({
+                        toastFn({
                           status: 'error',
                           duration: null,
                           isClosable: true,
@@ -441,7 +441,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                       schemaType: schema.type,
                     })
                     .then(async (r) => {
-                      toast({
+                      toastFn({
                         status: 'success',
                         duration: 4000,
                         isClosable: false,
@@ -459,7 +459,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                       }
                     })
                     .catch((err) => {
-                      toast({
+                      toastFn({
                         status: 'error',
                         duration: null,
                         isClosable: true,
@@ -486,7 +486,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                   api
                     .deleteSchemaSubjectVersion(subject.name, schema.version, false)
                     .then(() => {
-                      toast({
+                      toastFn({
                         status: 'success',
                         duration: 4000,
                         isClosable: false,
@@ -498,7 +498,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                       api.refreshSchemaSubjects(true);
                     })
                     .catch((err) => {
-                      toast({
+                      toastFn({
                         status: 'error',
                         duration: null,
                         isClosable: true,

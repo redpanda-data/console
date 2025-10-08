@@ -209,14 +209,14 @@ export const ThrottleDialog: FC<{ visible: boolean; lastKnownMinThrottle: number
       newThrottleValue: lastKnownMinThrottle ?? null,
     }));
 
-    const toast = useToast();
+    const toastFn = useToast();
     const toastRef = useRef<ToastId>();
 
     const throttleValue = $state.newThrottleValue ?? 0;
     const noChange = $state.newThrottleValue === lastKnownMinThrottle || $state.newThrottleValue == null;
 
     const applyBandwidthThrottle = async () => {
-      toastRef.current = toast({
+      toastRef.current = toastFn({
         status: 'loading',
         description: 'Setting throttle rate...',
       });

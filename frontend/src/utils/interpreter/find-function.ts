@@ -114,15 +114,15 @@ function findByPattern(
       };
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 38, refactor later
-  const isPatternMatch = (obj: object, pattern: object): boolean => {
-    if (typeof obj !== typeof pattern) {
-      log(`  type mismatch obj<>pattern: '${typeof obj}' != '${typeof pattern}'`);
+  const isPatternMatch = (currentObj: object, currentPattern: object): boolean => {
+    if (typeof currentObj !== typeof currentPattern) {
+      log(`  type mismatch obj<>pattern: '${typeof currentObj}' != '${typeof currentPattern}'`);
       return false;
     }
 
-    for (const k in pattern) {
-      if (Object.hasOwn(pattern, k)) {
-        const patternValue = (pattern as Record<string, unknown>)[k];
+    for (const k in currentPattern) {
+      if (Object.hasOwn(currentPattern, k)) {
+        const patternValue = (currentPattern as Record<string, unknown>)[k];
 
         // don't require objects to have the same functions
         // todo: later we might want to have special functions that can compare against the actual value!
@@ -131,35 +131,39 @@ function findByPattern(
           continue;
         }
 
-        const objValue = (obj as Record<string, unknown>)[k];
+        const currentObjValue = (currentObj as Record<string, unknown>)[k];
         log(`  [${k}]`);
 
-        if (typeof objValue !== typeof patternValue) {
-          log(`  property type mismatch: '${typeof objValue}' != '${typeof patternValue}'`);
+        if (typeof currentObjValue !== typeof patternValue) {
+          log(`  property type mismatch: '${typeof currentObjValue}' != '${typeof patternValue}'`);
           return false;
         }
 
-        if (typeof objValue === 'string') {
+        if (typeof currentObjValue === 'string') {
           // Compare string
           if (caseSensitive) {
-            if (objValue !== patternValue) {
-              log(`  strings don't match (case sensitive): "${objValue}" != "${patternValue}"`);
+            if (currentObjValue !== patternValue) {
+              log(`  strings don't match (case sensitive): "${currentObjValue}" != "${patternValue}"`);
               return false;
             }
-          } else if (String(objValue).toUpperCase() !== String(patternValue).toUpperCase()) {
-            log(`  strings don't match (ignore case): "${objValue}" != "${patternValue}"`);
+          } else if (String(currentObjValue).toUpperCase() !== String(patternValue).toUpperCase()) {
+            log(`  strings don't match (ignore case): "${currentObjValue}" != "${patternValue}"`);
             return false;
           }
-        } else if (typeof objValue === 'boolean' || typeof objValue === 'number' || typeof objValue === 'undefined') {
+        } else if (
+          typeof currentObjValue === 'boolean' ||
+          typeof currentObjValue === 'number' ||
+          typeof currentObjValue === 'undefined'
+        ) {
           // Compare primitive
-          if (objValue !== patternValue) {
-            log(`  primitives not equal: ${objValue} != ${patternValue}`);
+          if (currentObjValue !== patternValue) {
+            log(`  primitives not equal: ${currentObjValue} != ${patternValue}`);
             return false;
           }
         } else {
           // Compare object
           log(`  -> descending into [${k}]`);
-          if (!isPatternMatch(objValue, patternValue)) {
+          if (!isPatternMatch(currentObjValue, patternValue)) {
             return false;
           }
         }
@@ -200,8 +204,8 @@ type ObjectSearchContext = {
 function findElement(ctx: PropertySearchContext, obj: unknown): boolean {
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
-      const value = obj[key];
-      if (typeof value === 'function') {
+      const propValue = obj[key];
+      if (typeof propValue === 'function') {
         continue;
       }
 
@@ -215,7 +219,7 @@ function findElement(ctx: PropertySearchContext, obj: unknown): boolean {
 
       if (isMatch) {
         const clonedPath = Object.assign([], ctx.currentPath);
-        ctx.results.push({ propertyName: key, path: clonedPath, value });
+        ctx.results.push({ propertyName: key, path: clonedPath, value: propValue });
 
         if (ctx.returnFirstResult) {
           return true;
@@ -223,9 +227,9 @@ function findElement(ctx: PropertySearchContext, obj: unknown): boolean {
       }
 
       // Descend into object
-      if (typeof value === 'object') {
+      if (typeof propValue === 'object') {
         ctx.currentPath.push(key);
-        const stop = findElement(ctx, value);
+        const stop = findElement(ctx, propValue);
         ctx.currentPath.pop();
 
         if (stop && ctx.returnFirstResult) {
@@ -248,12 +252,12 @@ function findObject(ctx: ObjectSearchContext, obj: unknown): boolean {
 
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
-      const value = obj[key];
-      if (typeof value !== 'object') {
+      const propValue = obj[key];
+      if (typeof propValue !== 'object') {
         continue;
       }
 
-      const stop = findObject(ctx, value);
+      const stop = findObject(ctx, propValue);
       if (stop) {
         return true;
       }

@@ -94,8 +94,8 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
   }, [yaml]);
 
   const setMonacoOptions = useCallback((monaco: Monaco) => {
-    const yaml = configureMonacoYaml(monaco, monacoYamlOptions);
-    setYaml(yaml);
+    const yamlConfig = configureMonacoYaml(monaco, monacoYamlOptions);
+    setYaml(yamlConfig);
   }, []);
 
   return (

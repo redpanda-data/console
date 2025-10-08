@@ -31,12 +31,12 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
 
   const editorRef = useRef<undefined | IStandaloneCodeEditor>();
 
-  const handleOnMount: OnMount = async (editor, monaco) => {
-    editorRef.current = editor;
+  const handleOnMount: OnMount = async (editorInstance, monacoInstance) => {
+    editorRef.current = editorInstance;
     if (!isEditorReady) {
       const uri = editorRef.current?.getModel()?.uri;
       setEditorUri(uri);
-      const worker = await monaco?.languages.typescript.getTypeScriptWorker();
+      const worker = await monacoInstance?.languages.typescript.getTypeScriptWorker();
       const client = await worker();
       setTsWorkerClient(client);
     }

@@ -50,7 +50,7 @@ export const findBestRetentionTimeUnit = (ms: number): { value: number; unit: Re
       value: ms / factor,
       textLength: String(ms / factor).length,
     }))
-    .filter(({ value }) => value >= 1) // Only units that give us >= 1
+    .filter(({ value: v }) => v >= 1) // Only units that give us >= 1
     .sort((a, b) => a.textLength - b.textLength);
 
   const best = validUnits[0];
@@ -81,7 +81,7 @@ export const findBestRetentionSizeUnit = (bytes: number): { value: number; unit:
       value: bytes / factor,
       textLength: String(bytes / factor).length,
     }))
-    .filter(({ value }) => value >= 1) // Only units that give us >= 1
+    .filter(({ value: v }) => v >= 1) // Only units that give us >= 1
     .sort((a, b) => a.textLength - b.textLength);
 
   const best = validUnits[0];

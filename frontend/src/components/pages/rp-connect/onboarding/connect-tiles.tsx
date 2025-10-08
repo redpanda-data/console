@@ -253,11 +253,11 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                       maxDisplay={3}
                       onValueChange={setSelectedCategories}
                       options={categories.map((category) => {
-                        const { icon, text, variant } = getCategoryBadgeProps(category.id);
+                        const { icon, text, variant: badgeVariant } = getCategoryBadgeProps(category.id);
                         return {
                           value: category.id,
                           label: (
-                            <Badge icon={icon} variant={variant}>
+                            <Badge icon={icon} variant={badgeVariant}>
                               {text}
                             </Badge>
                           ),

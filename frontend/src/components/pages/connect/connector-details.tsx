@@ -585,8 +585,8 @@ const ConnectorDetails = observer(
         let i = 0;
         for (const s of store?.connectorStepDefinitions ?? []) {
           for (const g of s.groups) {
-            for (const p of g.config_keys) {
-              if (p === x.name) {
+            for (const configKey of g.config_keys) {
+              if (configKey === x.name) {
                 return i;
               }
               i++;
@@ -645,7 +645,7 @@ const LogsTab = observer(
 
     const createLogsTabState = () => {
       const search: MessageSearch = createMessageSearch();
-      const state = observable({
+      const tabState = observable({
         messages: search.messages,
         isComplete: false,
         error: null as string | null,
@@ -654,13 +654,13 @@ const LogsTab = observer(
 
       // Start search immediately
       const searchPromise = executeMessageSearch(search, topicName, connectorName);
-      searchPromise.catch((x) => (state.error = String(x))).finally(() => (state.isComplete = true));
-      return state;
+      searchPromise.catch((x) => (tabState.error = String(x))).finally(() => (tabState.isComplete = true));
+      return tabState;
     };
 
     const [state, setState] = useState(createLogsTabState);
 
-    const loadLargeMessage = async (topicName: string, partitionID: number, offset: number) => {
+    const loadLargeMessage = async (msgTopicName: string, partitionID: number, offset: number) => {
       // Create a new search that looks for only this message specifically
       const search = createMessageSearch();
       const searchReq: MessageSearchRequest = {
@@ -669,7 +669,7 @@ const LogsTab = observer(
         partitionId: partitionID,
         startOffset: offset,
         startTimestamp: 0,
-        topicName,
+        topicName: msgTopicName,
         includeRawPayload: true,
         ignoreSizeLimit: true,
         keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,

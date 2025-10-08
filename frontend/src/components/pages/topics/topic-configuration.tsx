@@ -93,13 +93,13 @@ const ConfigEditorForm: FC<{
     value: 'custom',
   });
 
-  const onSubmit: SubmitHandler<Inputs> = async ({ valueType, customValue }) => {
-    const operation = valueType === 'infinite' || valueType === 'custom' ? 'SET' : 'DELETE';
+  const onSubmit: SubmitHandler<Inputs> = async ({ valueType: submittedValueType, customValue }) => {
+    const operation = submittedValueType === 'infinite' || submittedValueType === 'custom' ? 'SET' : 'DELETE';
 
     let value: number | string | undefined | null;
-    if (valueType === 'infinite') {
+    if (submittedValueType === 'infinite') {
       value = getInfiniteValueForEntry(editedEntry);
-    } else if (valueType === 'custom') {
+    } else if (submittedValueType === 'custom') {
       value = customValue;
     }
 
@@ -447,9 +447,9 @@ export const ConfigEntryEditorController = <T extends string | number>(p: {
           className={p.className}
           onChange={onChange}
           options={
-            entry.enumValues?.map((value) => ({
-              value: value as T,
-              label: value,
+            entry.enumValues?.map((enumValue) => ({
+              value: enumValue as T,
+              label: enumValue,
             })) ?? []
           }
           value={value}

@@ -37,8 +37,8 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
   } else if (partitions === null) {
     messageSum = 'N/A'; // explicit null -> not allowed
   } else {
-    const sum = partitions.sum((p) => p.waterMarkHigh - p.waterMarkLow);
-    messageSum = numberToThousandsString(sum);
+    const totalMessages = partitions.sum((partition) => partition.waterMarkHigh - partition.waterMarkLow);
+    messageSum = numberToThousandsString(totalMessages);
   }
 
   // Config Entries / Separator

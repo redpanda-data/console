@@ -508,10 +508,10 @@ export const PipelineEditor = observer(
                         p.onChange?.(e);
                       }
                     }}
-                    onMount={async (editor, monacoInstance) => {
-                      setEditorInstance(editor);
-                      setMonaco(monacoInstance);
-                      await registerSecretsAutocomplete(monacoInstance, setSecretAutocomplete);
+                    onMount={async (editorRef, monacoInst) => {
+                      setEditorInstance(editorRef);
+                      setMonaco(monacoInst);
+                      await registerSecretsAutocomplete(monacoInst, setSecretAutocomplete);
                     }}
                     options={{
                       readOnly: p.isDisabled,

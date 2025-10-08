@@ -52,9 +52,9 @@ export const RemoteMCPDetailsPage = () => {
   }, [mcpServerData]);
 
   useEffect(() => {
-    const tabFromUrl = searchParams.get('tab');
-    if (tabFromUrl) {
-      setActiveTab(tabFromUrl);
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
     } else {
       setActiveTab('configuration');
     }

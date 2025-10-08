@@ -287,222 +287,223 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
   }
 }
 
-const GroupByTopics = observer(function GroupByTopics(props: {
-  group: GroupDescription;
-  onlyShowPartitionsWithLag: boolean;
-  quickSearch: string;
-  onEditOffsets: (offsets: GroupOffset[]) => void;
-  onDeleteOffsets: (offsets: GroupOffset[], mode: GroupDeletingMode) => void;
-}) {
-  const quickSearchRegExp = useMemo(() => getQuickSearchRegex(props.quickSearch), [props.quickSearch]);
+const GroupByTopics = observer(
+  (groupProps: {
+    group: GroupDescription;
+    onlyShowPartitionsWithLag: boolean;
+    quickSearch: string;
+    onEditOffsets: (offsets: GroupOffset[]) => void;
+    onDeleteOffsets: (offsets: GroupOffset[], mode: GroupDeletingMode) => void;
+  }) => {
+    const quickSearchRegExp = useMemo(() => getQuickSearchRegex(groupProps.quickSearch), [groupProps.quickSearch]);
 
-  const topicLags = props.group.topicOffsets;
-  const p = props;
-  const allAssignments = p.group.members.flatMap((m) =>
-    m.assignments.map((as) => ({ member: m, topicName: as.topicName, partitions: as.partitionIds }))
-  );
+    const topicLags = groupProps.group.topicOffsets;
+    const allAssignments = groupProps.group.members.flatMap((m) =>
+      m.assignments.map((as) => ({ member: m, topicName: as.topicName, partitions: as.partitionIds }))
+    );
 
-  const lagsFlat = topicLags.flatMap((topicLag) =>
-    topicLag.partitionOffsets.map((partLag) => {
-      const assignedMember = allAssignments.find(
-        (e) => e.topicName === topicLag.topic && e.partitions.includes(partLag.partitionId)
-      );
+    const lagsFlat = topicLags.flatMap((topicLag) =>
+      topicLag.partitionOffsets.map((partLag) => {
+        const assignedMember = allAssignments.find(
+          (e) => e.topicName === topicLag.topic && e.partitions.includes(partLag.partitionId)
+        );
+
+        return {
+          topicName: topicLag.topic,
+          partitionId: partLag.partitionId,
+          groupOffset: partLag.groupOffset,
+          highWaterMark: partLag.highWaterMark,
+          lag: partLag.lag,
+
+          assignedMember: assignedMember?.member,
+          id: assignedMember?.member.id,
+          clientId: assignedMember?.member.clientId,
+          host: assignedMember?.member.clientHost,
+        };
+      })
+    );
+
+    const lagGroupsByTopic = lagsFlat
+      .filter((x) => !x.assignedMember || x.assignedMember?.id.match(quickSearchRegExp))
+      .groupInto((e) => e.topicName)
+      .sort((a, b) => a.key.localeCompare(b.key))
+      .map((x) => ({ topicName: x.key, partitions: x.items }));
+
+    const topicEntries = lagGroupsByTopic.map((g) => {
+      const totalLagAll = g.partitions.sum((c) => c.lag ?? 0);
+      const partitionsAssigned = g.partitions.filter((c) => c.assignedMember).length;
+
+      if (groupProps.onlyShowPartitionsWithLag) {
+        g.partitions.removeAll((e) => e.lag === 0);
+      }
+
+      if (g.partitions.length === 0) {
+        return null;
+      }
 
       return {
-        topicName: topicLag.topic,
-        partitionId: partLag.partitionId,
-        groupOffset: partLag.groupOffset,
-        highWaterMark: partLag.highWaterMark,
-        lag: partLag.lag,
-
-        assignedMember: assignedMember?.member,
-        id: assignedMember?.member.id,
-        clientId: assignedMember?.member.clientId,
-        host: assignedMember?.member.clientHost,
-      };
-    })
-  );
-
-  const lagGroupsByTopic = lagsFlat
-    .filter((x) => !x.assignedMember || x.assignedMember?.id.match(quickSearchRegExp))
-    .groupInto((e) => e.topicName)
-    .sort((a, b) => a.key.localeCompare(b.key))
-    .map((x) => ({ topicName: x.key, partitions: x.items }));
-
-  const topicEntries = lagGroupsByTopic.map((g) => {
-    const totalLagAll = g.partitions.sum((c) => c.lag ?? 0);
-    const partitionsAssigned = g.partitions.filter((c) => c.assignedMember).length;
-
-    if (p.onlyShowPartitionsWithLag) {
-      g.partitions.removeAll((e) => e.lag === 0);
-    }
-
-    if (g.partitions.length === 0) {
-      return null;
-    }
-
-    return {
-      heading: (
-        <Flex flexDirection="column" gap={4}>
-          <Flex gap={2}>
-            {/* Title */}
-            <Text fontSize="lg" fontWeight={600}>
-              {g.topicName}
-            </Text>
-
+        heading: (
+          <Flex flexDirection="column" gap={4}>
             <Flex gap={2}>
-              <IconButton
-                disabledReason={cannotEditGroupReason(props.group)}
-                onClick={(e) => {
-                  p.onEditOffsets(g.partitions);
-                  e.stopPropagation();
-                }}
+              {/* Title */}
+              <Text fontSize="lg" fontWeight={600}>
+                {g.topicName}
+              </Text>
+
+              <Flex gap={2}>
+                <IconButton
+                  disabledReason={cannotEditGroupReason(groupProps.group)}
+                  onClick={(e) => {
+                    groupProps.onEditOffsets(g.partitions);
+                    e.stopPropagation();
+                  }}
+                >
+                  <PencilIcon />
+                </IconButton>
+                <IconButton
+                  disabledReason={cannotDeleteGroupOffsetsReason(groupProps.group)}
+                  onClick={(e) => {
+                    groupProps.onDeleteOffsets(g.partitions, 'topic');
+                    e.stopPropagation();
+                  }}
+                >
+                  <TrashIcon />
+                </IconButton>
+              </Flex>
+            </Flex>
+            <Flex alignItems="center" color="gray.600" fontSize="sm" fontWeight="normal" gap={4}>
+              <span>Lag: {numberToThousandsString(totalLagAll)}</span>
+              <span>Assigned partitions: {partitionsAssigned}</span>
+              <Button
+                onClick={() => appGlobal.historyPush(`/topics/${encodeURIComponent(g.topicName)}`)}
+                size="sm"
+                variant="link"
               >
-                <PencilIcon />
-              </IconButton>
-              <IconButton
-                disabledReason={cannotDeleteGroupOffsetsReason(props.group)}
-                onClick={(e) => {
-                  p.onDeleteOffsets(g.partitions, 'topic');
-                  e.stopPropagation();
-                }}
-              >
-                <TrashIcon />
-              </IconButton>
+                Go to topic
+              </Button>
             </Flex>
           </Flex>
-          <Flex alignItems="center" color="gray.600" fontSize="sm" fontWeight="normal" gap={4}>
-            <span>Lag: {numberToThousandsString(totalLagAll)}</span>
-            <span>Assigned partitions: {partitionsAssigned}</span>
-            <Button
-              onClick={() => appGlobal.historyPush(`/topics/${encodeURIComponent(g.topicName)}`)}
-              size="sm"
-              variant="link"
-            >
-              Go to topic
-            </Button>
-          </Flex>
-        </Flex>
-      ),
-      description: (
-        <DataTable<{
-          topicName: string;
-          partitionId: number;
-          groupOffset: number;
-          highWaterMark: number;
-          lag: number;
-          assignedMember: GroupMemberDescription | undefined;
-          id: string | undefined;
-          clientId: string | undefined;
-          host: string | undefined;
-        }>
-          columns={[
-            {
-              size: 100,
-              header: 'Partition',
-              accessorKey: 'partitionId',
-            },
-            {
-              size: Number.POSITIVE_INFINITY,
-              header: 'Assigned Member',
-              accessorKey: 'id',
-              cell: ({
-                row: {
-                  original: { assignedMember, id, clientId },
-                },
-              }) =>
-                assignedMember ? (
-                  renderMergedID(id, clientId)
-                ) : (
-                  <span style={{ margin: '0 3px' }}>
-                    <SkipIcon /> No assigned member
-                  </span>
+        ),
+        description: (
+          <DataTable<{
+            topicName: string;
+            partitionId: number;
+            groupOffset: number;
+            highWaterMark: number;
+            lag: number;
+            assignedMember: GroupMemberDescription | undefined;
+            id: string | undefined;
+            clientId: string | undefined;
+            host: string | undefined;
+          }>
+            columns={[
+              {
+                size: 100,
+                header: 'Partition',
+                accessorKey: 'partitionId',
+              },
+              {
+                size: Number.POSITIVE_INFINITY,
+                header: 'Assigned Member',
+                accessorKey: 'id',
+                cell: ({
+                  row: {
+                    original: { assignedMember, id, clientId },
+                  },
+                }) =>
+                  assignedMember ? (
+                    renderMergedID(id, clientId)
+                  ) : (
+                    <span style={{ margin: '0 3px' }}>
+                      <SkipIcon /> No assigned member
+                    </span>
+                  ),
+              },
+              {
+                header: 'Host',
+                accessorKey: 'host',
+                cell: ({
+                  row: {
+                    original: { host },
+                  },
+                }) =>
+                  host ?? (
+                    <span style={{ opacity: 0.66, margin: '0 3px' }}>
+                      <SkipIcon />
+                    </span>
+                  ),
+              },
+              {
+                size: 120,
+                header: 'Log End Offset',
+                accessorKey: 'highWaterMark',
+                cell: ({ row: { original } }) => numberToThousandsString(original.highWaterMark),
+              },
+              {
+                size: 120,
+                header: 'Group Offset',
+                accessorKey: 'groupOffset',
+                cell: ({ row: { original } }) => numberToThousandsString(original.groupOffset),
+              },
+              {
+                size: 80,
+                header: 'Lag',
+                accessorKey: 'lag',
+                cell: ({ row: { original } }) => ShortNum({ value: original.lag, tooltip: true }),
+              },
+              {
+                size: 1,
+                header: '',
+                id: 'action',
+                cell: ({ row: { original } }) => (
+                  <Flex gap={1} pr={2}>
+                    <IconButton
+                      disabledReason={cannotEditGroupReason(groupProps.group)}
+                      onClick={() => groupProps.onEditOffsets([original])}
+                    >
+                      <PencilIcon />
+                    </IconButton>
+                    <IconButton
+                      disabledReason={cannotDeleteGroupOffsetsReason(groupProps.group)}
+                      onClick={() => groupProps.onDeleteOffsets([original], 'partition')}
+                    >
+                      <TrashIcon />
+                    </IconButton>
+                  </Flex>
                 ),
-            },
-            {
-              header: 'Host',
-              accessorKey: 'host',
-              cell: ({
-                row: {
-                  original: { host },
-                },
-              }) =>
-                host ?? (
-                  <span style={{ opacity: 0.66, margin: '0 3px' }}>
-                    <SkipIcon />
-                  </span>
-                ),
-            },
-            {
-              size: 120,
-              header: 'Log End Offset',
-              accessorKey: 'highWaterMark',
-              cell: ({ row: { original } }) => numberToThousandsString(original.highWaterMark),
-            },
-            {
-              size: 120,
-              header: 'Group Offset',
-              accessorKey: 'groupOffset',
-              cell: ({ row: { original } }) => numberToThousandsString(original.groupOffset),
-            },
-            {
-              size: 80,
-              header: 'Lag',
-              accessorKey: 'lag',
-              cell: ({ row: { original } }) => ShortNum({ value: original.lag, tooltip: true }),
-            },
-            {
-              size: 1,
-              header: '',
-              id: 'action',
-              cell: ({ row: { original } }) => (
-                <Flex gap={1} pr={2}>
-                  <IconButton
-                    disabledReason={cannotEditGroupReason(props.group)}
-                    onClick={() => p.onEditOffsets([original])}
-                  >
-                    <PencilIcon />
-                  </IconButton>
-                  <IconButton
-                    disabledReason={cannotDeleteGroupOffsetsReason(props.group)}
-                    onClick={() => p.onDeleteOffsets([original], 'partition')}
-                  >
-                    <TrashIcon />
-                  </IconButton>
-                </Flex>
-              ),
-            },
-          ]}
-          data={g.partitions}
-          pagination
-          sorting
+              },
+            ]}
+            data={g.partitions}
+            pagination
+            sorting
+          />
+        ),
+      };
+    });
+
+    const defaultExpand: number | undefined =
+      lagGroupsByTopic.length === 1
+        ? 0 // only one -> expand
+        : undefined; // more than one -> collapse
+
+    const nullEntries = topicEntries.filter((e) => e == null).length;
+    if (topicEntries.length === 0 || topicEntries.length === nullEntries) {
+      return (
+        <Empty
+          description={
+            groupProps.onlyShowPartitionsWithLag ? (
+              <span>All {topicEntries.length} topics have been filtered (no lag on any partition).</span>
+            ) : (
+              'No data found'
+            )
+          }
         />
-      ),
-    };
-  });
+      );
+    }
 
-  const defaultExpand: number | undefined =
-    lagGroupsByTopic.length === 1
-      ? 0 // only one -> expand
-      : undefined; // more than one -> collapse
-
-  const nullEntries = topicEntries.filter((e) => e == null).length;
-  if (topicEntries.length === 0 || topicEntries.length === nullEntries) {
-    return (
-      <Empty
-        description={
-          p.onlyShowPartitionsWithLag ? (
-            <span>All {topicEntries.length} topics have been filtered (no lag on any partition).</span>
-          ) : (
-            'No data found'
-          )
-        }
-      />
-    );
+    return <Accordion allowToggle defaultIndex={defaultExpand} items={topicEntries.filterNull()} />;
   }
-
-  return <Accordion allowToggle defaultIndex={defaultExpand} items={topicEntries.filterNull()} />;
-});
+);
 
 const renderMergedID = (id?: string, clientId?: string) => {
   if (clientId && id?.startsWith(clientId)) {

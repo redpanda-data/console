@@ -51,14 +51,14 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
       value: s,
     })) ?? [];
 
-  const addSecret = async (id: string) => {
-    id = id.toUpperCase();
+  const addSecret = async (secretId: string) => {
+    const normalizedId = secretId.toUpperCase();
     if (isNewSecret) {
       setIsCreating(true);
       const result = await rpcnSecretManagerApi
         .create(
           create(CreateSecretRequestSchema, {
-            id,
+            id: normalizedId,
             secretData: base64ToUInt8Array(encodeBase64(secret)),
             scopes: [Scope.REDPANDA_CONNECT],
           })
@@ -105,14 +105,14 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
     onCloseAddSecret();
   };
 
-  const isNameValid = (id: string) => {
-    if (id === '') {
+  const isNameValid = (secretName: string) => {
+    if (secretName === '') {
       return '';
     }
-    if (!SECRET_NAME_REGEX.test(id)) {
+    if (!SECRET_NAME_REGEX.test(secretName)) {
       return 'The name you entered is invalid. It must start with an letter (A–Z) and can only contain alphanumeric and underscores (_).';
     }
-    if (id.length > 255) {
+    if (secretName.length > 255) {
       return 'The secret name must be fewer than 255 characters.';
     }
     return '';

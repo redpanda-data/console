@@ -99,9 +99,9 @@ const TopicList: FC = () => {
   }, [refetchTopics]);
 
   const topics = useMemo(() => {
-    let topics = data.topics ?? [];
+    let filteredTopics = data.topics ?? [];
     if (!showInternalTopics) {
-      topics = topics.filter((x) => !(x.isInternal || x.topicName.startsWith('_')));
+      filteredTopics = filteredTopics.filter((x) => !(x.isInternal || x.topicName.startsWith('_')));
     }
 
     const searchQuery = localSearchValue;
@@ -112,16 +112,16 @@ const TopicList: FC = () => {
           quickSearchRegExp = new RegExp(searchQuery, 'i');
           QUICK_SEARCH_REGEX_CACHE.set(searchQuery, quickSearchRegExp);
         }
-        topics = topics.filter((topic) => Boolean(topic.topicName.match(quickSearchRegExp)));
+        filteredTopics = filteredTopics.filter((topic) => Boolean(topic.topicName.match(quickSearchRegExp)));
       } catch (_e) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('Invalid expression');
         const searchLower = searchQuery.toLowerCase();
-        topics = topics.filter((topic) => topic.topicName.toLowerCase().includes(searchLower));
+        filteredTopics = filteredTopics.filter((topic) => topic.topicName.toLowerCase().includes(searchLower));
       }
     }
 
-    return topics;
+    return filteredTopics;
   }, [data.topics, showInternalTopics, localSearchValue]);
 
   const statistics = useMemo(() => {

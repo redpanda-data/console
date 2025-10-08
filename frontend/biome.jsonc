@@ -378,7 +378,7 @@
         // Replaces usages of forwardRef with passing ref as a prop. Required for now in React v18.x
         "noReactForwardRef": "off",
         // Disallow variable declarations from shadowing variables declared in the outer scope.
-        "noShadow": "off", // Enable later - 95 violations requiring extensive refactoring
+        "noShadow": "error",
         // Disallow expression statements that are neither a function call nor an assignment.
         "noUnusedExpressions": "error",
         // Disallow the use of useless undefined. (disabled due to conflict with useGetterReturn)

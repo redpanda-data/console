@@ -76,9 +76,9 @@ export function useQueryStateWithCallback<T, U = null>(
     }
   }, [searchParams, key, setValue, value, params.getDefaultValue]);
 
-  const setValueFinal = (value: T & {}) => {
-    params.onUpdate(value);
-    setValue(value as T & {});
+  const setValueFinal = (newValue: T & {}) => {
+    params.onUpdate(newValue);
+    setValue(newValue as T & {});
   };
 
   return [value, setValueFinal] as UseQueryStateReturn<T, U>;

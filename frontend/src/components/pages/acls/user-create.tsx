@@ -440,7 +440,7 @@ export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRol
           noOptionsMessage={() => 'No roles found'}
           onChange={(val) => {
             if (val && isMultiValue(val)) {
-              setRoles([...val.map((val) => val.value)]);
+              setRoles([...val.map((selectedRole) => selectedRole.value)]);
               setSearchValue('');
             }
           }}

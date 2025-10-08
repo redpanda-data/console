@@ -411,13 +411,13 @@ const NewDebugBundleForm: FC<{
               isMulti
               onChange={(x) => {
                 if (isMultiValue(x)) {
-                  formState.setBrokerIds(x.map((x) => x.value));
+                  formState.setBrokerIds(x.map((item) => item.value));
                 }
               }}
               options={
-                api.brokers?.map((x) => ({
-                  value: x.brokerId,
-                  label: `${x.brokerId}`,
+                api.brokers?.map((broker) => ({
+                  value: broker.brokerId,
+                  label: `${broker.brokerId}`,
                 })) ?? []
               }
             />
@@ -604,12 +604,12 @@ const NewDebugBundleForm: FC<{
               isMulti
               onChange={(x) => {
                 if (isMultiValue(x)) {
-                  formState.setPartitions(x.map((x) => x.value));
+                  formState.setPartitions(x.map((item) => item.value));
                 }
               }}
-              options={api.getTopicPartitionArray.map((x) => ({
-                value: x,
-                label: x,
+              options={api.getTopicPartitionArray.map((partition) => ({
+                value: partition,
+                label: partition,
               }))}
             />
           </FormField>

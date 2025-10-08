@@ -27,7 +27,7 @@ import { ExpandableText } from '../../../../misc/expandable-text';
 
 export const TopicInput = observer((p: { properties: Property[]; connectorType: 'sink' | 'source' }) => {
   const state = useLocalObservable(() => {
-    const props = new Map(p.properties.map((p) => [p.name, p]));
+    const props = new Map(p.properties.map((prop) => [prop.name, prop]));
     const topicsRegex = p.properties.find((x) => x.name === 'topics.regex');
     const initialSelection = topicsRegex?.value ? 'topics.regex' : 'topics';
 
