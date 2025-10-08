@@ -11,7 +11,7 @@
 
 export function wrapFilterFragment(filterFragment: string) {
   if (!filterFragment.includes('return ')) {
-    filterFragment = `return ${filterFragment}`;
+    return `return ${filterFragment}`;
   }
   return filterFragment;
 }

@@ -775,14 +775,14 @@ const LogsTab = observer(
 );
 
 function isFilterMatch(str: string, m: TopicMessage) {
-  str = str.toLowerCase();
-  if (m.offset.toString().toLowerCase().includes(str)) {
+  const lowerStr = str.toLowerCase();
+  if (m.offset.toString().toLowerCase().includes(lowerStr)) {
     return true;
   }
-  if (m.keyJson?.toLowerCase().includes(str)) {
+  if (m.keyJson?.toLowerCase().includes(lowerStr)) {
     return true;
   }
-  if (m.valueJson?.toLowerCase().includes(str)) {
+  if (m.valueJson?.toLowerCase().includes(lowerStr)) {
     return true;
   }
   return false;

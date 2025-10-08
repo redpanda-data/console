@@ -576,15 +576,16 @@ const populatePersistedData = (
   if (jsonSchema.type === 'object' && jsonSchema.properties) {
     const hasRelevant = hasRelevantNestedFields(jsonSchema, topicData, userData);
 
+    let effectiveDefaults = defaults;
     if (!defaults || typeof defaults !== 'object') {
       if (hasRelevant) {
-        defaults = {};
+        effectiveDefaults = {};
       } else {
         return defaults;
       }
     }
 
-    const result = { ...defaults };
+    const result = { ...effectiveDefaults };
     const requiredFields = jsonSchema.required || [];
 
     for (const [propName, propSchema] of Object.entries(jsonSchema.properties) as [string, JSONSchema][]) {

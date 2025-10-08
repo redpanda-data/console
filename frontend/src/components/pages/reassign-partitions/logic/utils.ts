@@ -128,14 +128,14 @@ export function computeMovedReplicas(
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity increased due to for-in guards, refactor later
 export function removeRedundantReassignments(topicAssignments: TopicAssignments, apiData: ApiData): TopicAssignments {
-  topicAssignments = clone(topicAssignments);
+  const result = clone(topicAssignments);
 
   // Remove partition reassignments that have no effect
   let _totalRemovedPartitions = 0;
   const emptyTopics: string[] = [];
-  for (const t in topicAssignments) {
-    if (Object.hasOwn(topicAssignments, t)) {
-      const topicAssignment = topicAssignments[t];
+  for (const t in result) {
+    if (Object.hasOwn(result, t)) {
+      const topicAssignment = result[t];
       const curTopicPartitions = apiData.topicPartitions.get(t);
       if (!curTopicPartitions) {
         continue;
@@ -189,10 +189,10 @@ export function removeRedundantReassignments(topicAssignments: TopicAssignments,
 
   // Remove topics that are completely redundant
   for (const t of emptyTopics) {
-    delete topicAssignments[t];
+    delete result[t];
   }
 
-  return topicAssignments;
+  return result;
 }
 
 export function topicAssignmentsToReassignmentRequest(

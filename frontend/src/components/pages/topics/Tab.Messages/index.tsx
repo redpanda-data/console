@@ -2417,11 +2417,9 @@ const EmptyBadge: FC<{ mode: 'empty' | 'null' }> = ({ mode }) => (
 );
 
 function renderEmptyIcon(tooltipText?: string) {
-  if (!tooltipText) {
-    tooltipText = 'Empty';
-  }
+  const text = tooltipText || 'Empty';
   return (
-    <Tooltip hasArrow label={tooltipText} openDelay={1} placement="top">
+    <Tooltip hasArrow label={text} openDelay={1} placement="top">
       <span style={{ opacity: 0.66, marginLeft: '2px' }}>
         <SkipIcon />
       </span>

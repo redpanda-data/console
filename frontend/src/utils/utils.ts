@@ -566,17 +566,17 @@ export const prettyBytes = (n: number | string | null | undefined, options?: Pre
         return 'N/A'; // empty -> N/A
       }
 
-      n = Number.parseFloat(String(n));
+      const parsed = Number.parseFloat(String(n));
 
-      if (!Number.isFinite(n)) {
-        return String(n); // "NaN" or "Infinity"
+      if (!Number.isFinite(parsed)) {
+        return String(parsed); // "NaN" or "Infinity"
       }
 
       // number parsed, fall through
-    } else {
-      // something else: object, function, ...
-      return 'NaN';
+      return prettyBytesOriginal(parsed, { binary: true });
     }
+    // something else: object, function, ...
+    return 'NaN';
   }
 
   // n is a finite number
@@ -602,18 +602,19 @@ export const prettyMilliseconds = (
         return 'N/A'; // empty -> N/A
       }
 
-      n = Number.parseFloat(String(n));
+      const parsed = Number.parseFloat(String(n));
 
-      if (!Number.isFinite(n)) {
-        return String(n); // "NaN" or "Infinity"
+      if (!Number.isFinite(parsed)) {
+        return String(parsed); // "NaN" or "Infinity"
       }
 
       // number parsed, fall through
-    } else {
-      // something else: object, function, ...
-      return 'NaN';
+      return prettyMillisecondsOriginal(parsed, options);
     }
-  } else if (!Number.isFinite(n)) {
+    // something else: object, function, ...
+    return 'NaN';
+  }
+  if (!Number.isFinite(n)) {
     return 'N/A';
   }
 

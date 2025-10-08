@@ -85,9 +85,9 @@ const addProp = (key: string, value: unknown) => {
   if (value === undefined || value === null || value === '') {
     return;
   }
-  key = key.removePrefix('REACT_APP_CONSOLE_').removePrefix('REACT_APP_');
-  envVarDebugObj[key] = String(value);
-  envVarDebugAr.push({ name: key, value: String(value) });
+  const cleanedKey = key.removePrefix('REACT_APP_CONSOLE_').removePrefix('REACT_APP_');
+  envVarDebugObj[cleanedKey] = String(value);
+  envVarDebugAr.push({ name: cleanedKey, value: String(value) });
 };
 // - add env vars
 for (const k in env) {

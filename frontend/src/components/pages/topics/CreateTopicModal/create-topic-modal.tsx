@@ -202,14 +202,15 @@ export function NumInput(p: {
     if (p.disabled) {
       return;
     }
-    if (x != null && p.min != null && x < p.min) {
-      x = p.min;
+    let clampedValue = x;
+    if (clampedValue != null && p.min != null && clampedValue < p.min) {
+      clampedValue = p.min;
     }
-    if (x != null && p.max != null && x > p.max) {
-      x = p.max;
+    if (clampedValue != null && p.max != null && clampedValue > p.max) {
+      clampedValue = p.max;
     }
-    setEditValue(x === undefined ? x : String(x));
-    p.onChange?.(x);
+    setEditValue(clampedValue === undefined ? clampedValue : String(clampedValue));
+    p.onChange?.(clampedValue);
   };
 
   const changeBy = (dx: number) => {

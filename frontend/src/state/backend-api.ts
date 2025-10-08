@@ -728,15 +728,12 @@ const apiStore = {
   },
 
   refreshPartitions(topics: 'all' | string[] = 'all', force?: boolean): Promise<void> {
-    if (Array.isArray(topics)) {
-      // sort in order to maximize cache hits (todo: track/cache each topic individually instead)
-      topics = topics.sort().map((t) => encodeURIComponent(t));
-    }
+    const processedTopics = Array.isArray(topics) ? topics.sort().map((t) => encodeURIComponent(t)) : topics;
 
     const url =
-      topics === 'all'
+      processedTopics === 'all'
         ? `${appConfig.restBasePath}/operations/topic-details`
-        : `${appConfig.restBasePath}/operations/topic-details?topicNames=${topics.joinStr(',')}`;
+        : `${appConfig.restBasePath}/operations/topic-details?topicNames=${processedTopics.joinStr(',')}`;
 
     return cachedApiRequest<GetAllPartitionsResponse | null>(url, force).then((response) => {
       if (!response?.topics) {
@@ -1526,7 +1523,7 @@ const apiStore = {
   },
 
   async setReplicationThrottleRate(brokerIds: number[], maxBytesPerSecond: number): Promise<PatchConfigsResponse> {
-    maxBytesPerSecond = Math.ceil(maxBytesPerSecond);
+    const ceiledRate = Math.ceil(maxBytesPerSecond);
 
     const configRequest: PatchConfigsRequest = { resources: [] };
 
@@ -1538,12 +1535,12 @@ const apiStore = {
           {
             name: 'leader.replication.throttled.rate',
             op: AlterConfigOperation.Set,
-            value: String(maxBytesPerSecond),
+            value: String(ceiledRate),
           },
           {
             name: 'follower.replication.throttled.rate',
             op: AlterConfigOperation.Set,
-            value: String(maxBytesPerSecond),
+            value: String(ceiledRate),
           },
         ],
       });
@@ -3222,14 +3219,15 @@ export type MessageSearchRequest = {
 
 async function parseOrUnwrap<T>(response: Response, text: string | null): Promise<T> {
   let obj: undefined | unknown;
-  if (text === null) {
+  let responseText = text;
+  if (responseText === null) {
     if (response.bodyUsed) {
       throw new Error('response content already consumed');
     }
-    text = await response.text();
+    responseText = await response.text();
   }
   try {
-    obj = JSON.parse(text);
+    obj = JSON.parse(responseText);
   } catch {
     // no op - response may not be JSON
   }
@@ -3241,8 +3239,8 @@ async function parseOrUnwrap<T>(response: Response, text: string | null): Promis
 
   // server/proxy error?
   if (!response.ok) {
-    text = text?.trim() ?? '';
-    throw new Error(`${response.status} (${text ?? response.statusText})`);
+    const trimmedText = responseText?.trim() ?? '';
+    throw new Error(`${response.status} (${trimmedText || response.statusText})`);
   }
 
   return obj as T;

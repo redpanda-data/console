@@ -118,19 +118,20 @@ export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonVal
     return value;
   }
 
+  let mutableObj = obj;
   if (obj === null || obj === undefined) {
-    obj = Number.isNaN(Number(path[0])) ? {} : [];
+    mutableObj = Number.isNaN(Number(path[0])) ? {} : [];
   }
 
-  if (Array.isArray(obj)) {
-    return updateArray(obj, path, value);
+  if (Array.isArray(mutableObj)) {
+    return updateArray(mutableObj, path, value);
   }
-  if (typeof obj === 'object' && obj !== null) {
-    return updateObject(obj as JsonObject, path, value);
+  if (typeof mutableObj === 'object' && mutableObj !== null) {
+    return updateObject(mutableObj as JsonObject, path, value);
   }
   // biome-ignore lint/suspicious/noConsole: intentional console usage
-  console.error(`Cannot update path ${path.join('.')} in non-object/array value:`, obj);
-  return obj;
+  console.error(`Cannot update path ${path.join('.')} in non-object/array value:`, mutableObj);
+  return mutableObj;
 }
 
 /**

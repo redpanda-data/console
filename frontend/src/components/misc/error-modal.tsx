@@ -103,8 +103,9 @@ export function showErrorModal(title: string, subTitle: React.ReactNode, content
   const key = nextErrorKey++;
 
   // keep formatting for strings
+  let formattedContent = content;
   if (typeof content === 'string') {
-    content = (
+    formattedContent = (
       <div
         style={{
           whiteSpace: 'pre-wrap',
@@ -124,7 +125,7 @@ export function showErrorModal(title: string, subTitle: React.ReactNode, content
 
     title: () => title,
     subTitle: () => subTitle,
-    content: () => content,
+    content: () => formattedContent,
 
     isVisible: true,
     onClose: () => onClose(key),
