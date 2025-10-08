@@ -31,11 +31,12 @@ import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component, type CSSProperties, type ReactNode, useState } from 'react';
 import { MdContentCopy, MdHelpOutline, MdOutlineDownload } from 'react-icons/md';
-import colors from '../colors';
-import type { TimestampDisplayFormat } from '../state/ui';
+
 import { animProps } from './animationProps';
 import { toJson } from './jsonUtils';
 import { DebugTimerStore, prettyMilliseconds, simpleUniqueId } from './utils';
+import colors from '../colors';
+import type { TimestampDisplayFormat } from '../state/ui';
 
 const defaultLocale = 'en';
 const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
@@ -44,7 +45,9 @@ const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
 const nbsp = '\xA0'; // non breaking space
 
 export function numberToThousandsString(n: number): JSX.Element {
-  if (typeof n !== 'number') return <>{n}</>;
+  if (typeof n !== 'number') {
+    return <>{n}</>;
+  }
 
   const parts = n.toLocaleString(defaultLocale).split(thousandsSeperator);
   const separator = nbsp;
@@ -57,12 +60,13 @@ export function numberToThousandsString(n: number): JSX.Element {
     result.push(<React.Fragment key={i}>{parts[i]}</React.Fragment>);
 
     // Add a dot
-    if (!last)
+    if (!last) {
       result.push(
-        <span key={`${i}.`} className="noSelect nbspSeparator">
+        <span className="noSelect nbspSeparator" key={`${i}.`}>
           {separator}
-        </span>,
+        </span>
       );
+    }
   }
 
   return <>{result}</>;
@@ -72,8 +76,10 @@ export function numberToThousandsString(n: number): JSX.Element {
 export class TimestampDisplay extends Component<{ unixEpochMillisecond: number; format: TimestampDisplayFormat }> {
   render() {
     const { unixEpochMillisecond: ts, format } = this.props;
-    // biome-ignore lint/correctness/useHookAtTopLevel: part of TimestampDisplay implementation
-    if (format === 'relative') DebugTimerStore.Instance.useSeconds();
+    if (format === 'relative') {
+      // biome-ignore lint/correctness/useHookAtTopLevel: part of TimestampDisplay implementation
+      DebugTimerStore.Instance.useSeconds();
+    }
 
     switch (format) {
       case 'unixTimestamp':
@@ -86,18 +92,18 @@ export class TimestampDisplay extends Component<{ unixEpochMillisecond: number; 
         return ts.toString();
       case 'relative':
         return `${prettyMilliseconds(Date.now() - ts, { compact: true })} ago`;
+      default:
+        // format 'default' -> locale datetime
+        return new Date(ts).toLocaleString();
     }
-
-    // format 'default' -> locale datetime
-    return new Date(ts).toLocaleString();
   }
 }
 
 export const copyIcon = (
-  <svg viewBox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true">
+  <svg aria-hidden="true" height="16" version="1.1" viewBox="0 0 14 16" width="14">
     <path
-      fillRule="evenodd"
       d="M2 13h4v1H2v-1zm5-6H2v1h5V7zm2 3V8l-3 3 3 3v-2h5v-2H9zM4.5 9H2v1h2.5V9zM2 12h2.5v-1H2v1zm9 1h1v2c-.02.28-.11.52-.3.7-.19.18-.42.28-.7.3H1c-.55 0-1-.45-1-1V4c0-.55.45-1 1-1h3c0-1.11.89-2 2-2 1.11 0 2 .89 2 2h3c.55 0 1 .45 1 1v5h-1V6H1v9h10v-2zM2 5h8c0-.55-.45-1-1-1H8c-.55 0-1-.45-1-1s-.45-1-1-1-1 .45-1 1-.45 1-1 1H3c-.55 0-1 .45-1 1z"
+      fillRule="evenodd"
     />
   </svg>
 );
@@ -115,15 +121,16 @@ const DefaultQuickTableOptions = {
 type QuickTableOptions = Partial<typeof DefaultQuickTableOptions>;
 
 // [ { key: 'a', value: 'b' } ]
-export function QuickTable(data: { key: any; value: any }[], options?: QuickTableOptions): JSX.Element;
 // { 'key1': 'value1', 'key2': 'value2' }
-export function QuickTable(data: { [key: string]: any }, options?: QuickTableOptions): JSX.Element;
 // [ ['a', 'b'] ]
-export function QuickTable(data: [any, any][], options?: QuickTableOptions): JSX.Element;
+export function QuickTable(
+  data: [any, any][] | { [key: string]: any } | { key: any; value: any }[],
+  options?: QuickTableOptions
+): JSX.Element;
 
 export function QuickTable(
   data: { key: any; value: any }[] | { [key: string]: any } | [any, any][],
-  options?: QuickTableOptions,
+  options?: QuickTableOptions
 ): JSX.Element {
   let entries: { key: any; value: any }[];
 
@@ -131,7 +138,9 @@ export function QuickTable(
   if (typeof data === 'object' && !Array.isArray(data)) {
     // Convert to array of key value objects
     entries = [];
-    for (const [k, v] of Object.entries(data)) entries.push({ key: k, value: v });
+    for (const [k, v] of Object.entries(data)) {
+      entries.push({ key: k, value: v });
+    }
   }
   // array of [any, any] ?
   else if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
@@ -155,11 +164,11 @@ export function QuickTable(
         {entries.map((obj, i) => (
           <React.Fragment key={i}>
             <tr>
-              <td style={{ textAlign: o.keyAlign, ...o.keyStyle }} className="keyCell">
+              <td className="keyCell" style={{ textAlign: o.keyAlign, ...o.keyStyle }}>
                 {React.isValidElement(obj.key) ? obj.key : toSafeString(obj.key)}
               </td>
               <td style={{ minWidth: '0px', width: o.gapWidth, padding: '0px' }} />
-              <td style={{ textAlign: o.valueAlign, ...o.valueStyle }} className="valueCell">
+              <td className="valueCell" style={{ textAlign: o.valueAlign, ...o.valueStyle }}>
                 {React.isValidElement(obj.value) ? obj.value : toSafeString(obj.value)}
               </td>
             </tr>
@@ -177,16 +186,24 @@ export function QuickTable(
 }
 
 export function toSafeString(x: any): string {
-  if (typeof x === 'undefined' || x === null) return '';
-  if (typeof x === 'string') return x;
-  if (typeof x === 'boolean' || typeof x === 'number') return String(x);
+  if (typeof x === 'undefined' || x === null) {
+    return '';
+  }
+  if (typeof x === 'string') {
+    return x;
+  }
+  if (typeof x === 'boolean' || typeof x === 'number') {
+    return String(x);
+  }
   return toJson(x);
 }
 
 export function ObjToKv(obj: any): { key: string; value: any }[] {
   const ar = [] as { key: string; value: any }[];
   for (const k in obj) {
-    ar.push({ key: k, value: obj[k] });
+    if (Object.hasOwn(obj, k)) {
+      ar.push({ key: k, value: obj[k] });
+    }
   }
   return ar;
 }
@@ -204,14 +221,17 @@ export const Label = (p: {
 
   const child: React.ReactNode = p.children ?? <React.Fragment />;
 
+  // biome-ignore lint/style/useObjectSpread: ReactNode cannot be spread safely
   const newChild = Object.assign({}, child) as any;
   newChild.props = {};
-  Object.assign(newChild.props, (child as any).props, { id: id });
+  Object.assign(newChild.props, (child as any).props, { id });
 
   const divStyle = p.style ? { ...p.style, ...style_flexColumn } : p.style;
 
   const labelClasses = ['labelText'];
-  if (p.required) labelClasses.push('required');
+  if (p.required) {
+    labelClasses.push('required');
+  }
 
   // <label className="label">
   //     <span className="title">{p.text}</span>
@@ -234,10 +254,16 @@ export function findPopupContainer(current: HTMLElement): HTMLElement {
   let container = current;
   while (true) {
     const p = container.parentElement;
-    if (!p) return container;
+    if (!p) {
+      return container;
+    }
 
-    if (p.className.includes('kowlCard')) return p;
-    if (p.clientWidth >= 300 && p.clientHeight >= 300) return p;
+    if (p.className.includes('kowlCard')) {
+      return p;
+    }
+    if (p.clientWidth >= 300 && p.clientHeight >= 300) {
+      return p;
+    }
 
     container = p;
   }
@@ -273,7 +299,7 @@ export const InfoText = (p: {
   const icon = (
     <span
       style={{
-        color: color,
+        color,
         display: 'inline-flex',
         boxSizing: 'content-box',
         width: size,
@@ -286,20 +312,21 @@ export const InfoText = (p: {
     </span>
   );
 
-  if (p.tooltipOverText === true)
+  if (p.tooltipOverText === true) {
     return (
-      <Tooltip label={overlay} placement={placement} hasArrow>
+      <Tooltip hasArrow label={overlay} placement={placement}>
         <span style={{ display: 'inline-flex', alignItems: 'center' }}>
           {p.children}
           {icon}
         </span>
       </Tooltip>
     );
+  }
 
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center' }}>
       {p.children}
-      <Tooltip label={overlay} placement={placement} hasArrow>
+      <Tooltip hasArrow label={overlay} placement={placement}>
         {icon}
       </Tooltip>
     </span>
@@ -321,7 +348,6 @@ export class OptionGroup<T extends string> extends Component<{
       <Label text={p.label}>
         <RadioGroup
           name={p.label}
-          value={p.value}
           onChange={(val) => {
             p.onChange(val);
           }}
@@ -329,6 +355,7 @@ export class OptionGroup<T extends string> extends Component<{
             value: kv.value,
             label: kv.key,
           }))}
+          value={p.value}
         />
       </Label>
     );
@@ -357,11 +384,9 @@ export class RadioOptionGroup<T extends string | null = string> extends Componen
         direction="column"
         // TODO - we need to make the API more TS safe and make name optional
         name=""
-        // @ts-ignore
-        value={p.value}
-        // @ts-ignore
+        // @ts-expect-error
         onChange={p.onChange}
-        // @ts-ignore
+        // @ts-expect-error
         options={p.options.map((kv) => ({
           value: kv.value,
           disabled: p.disabled,
@@ -377,19 +402,21 @@ export class RadioOptionGroup<T extends string | null = string> extends Componen
             </Box>
           ),
         }))}
+        // @ts-expect-error
+        value={p.value}
       />
     );
   }
 }
 
-interface StatusIndicatorProps {
+type StatusIndicatorProps = {
   identityKey: string;
   fillFactor: number;
   statusText: string;
   bytesConsumed?: string;
   messagesConsumed?: string;
   progressText: string;
-}
+};
 
 // TODO - once StatusIndicator is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -410,7 +437,7 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
 
   // used to fetch 'showWaitingText' (so mobx triggers a re-render).
   // we could just store the value in a local as well, but that might be opimized out.
-  mobxSink: any | undefined = undefined;
+  mobxSink: any | undefined;
 
   constructor(p: any) {
     super(p);
@@ -447,14 +474,18 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
     this.lastPropsJson = curJson;
 
     this.lastUpdateTimestamp = Date.now();
-    if (this.showWaitingText) this.showWaitingText = false;
+    if (this.showWaitingText) {
+      this.showWaitingText = false;
+    }
 
     this.customRender();
   }
 
   componentWillUnmount() {
     clearInterval(this.timerHandle);
-    this.toastRef && toast.close(this.toastRef);
+    if (this.toastRef) {
+      toast.close(this.toastRef);
+    }
     this.toastRef = null;
   }
 
@@ -463,9 +494,9 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
       <Box mb="0.2em">
         <Box minW={300}>
           <Progress
-            value={this.props.fillFactor * 100}
-            isIndeterminate={this.props.statusText === 'Connecting'}
             colorScheme="blue"
+            isIndeterminate={this.props.statusText === 'Connecting'}
+            value={this.props.fillFactor * 100}
           />
         </Box>
         <Flex fontSize="sm" fontWeight="bold">
@@ -532,7 +563,7 @@ export class ZeroSizeWrapper extends Component<{
     const p = this.props;
     let style = ZeroSizeWrapper.style;
     if (p.width || p.height || p.justifyContent || p.alignItems || p.transform || p.wrapperStyle) {
-      style = Object.assign({}, style, p, p.wrapperStyle);
+      style = { ...style, ...p, ...p.wrapperStyle };
     }
 
     return (
@@ -544,7 +575,7 @@ export class ZeroSizeWrapper extends Component<{
 }
 
 const defaultSkeletonStyle = { margin: '2rem' };
-const innerSkeleton = <Skeleton noOfLines={8} height={4} />;
+const innerSkeleton = <Skeleton height={4} noOfLines={8} />;
 export const DefaultSkeleton = (
   <motion.div {...animProps} key={'defaultSkeleton'} style={defaultSkeletonStyle}>
     {innerSkeleton}
@@ -552,7 +583,7 @@ export const DefaultSkeleton = (
 );
 
 export const InlineSkeleton = (p: { width: string | number }) => (
-  <Skeleton noOfLines={1} height={2} width={p.width} display="flex" alignItems="center" />
+  <Skeleton alignItems="center" display="flex" height={2} noOfLines={1} width={p.width} />
 );
 
 // Single line string, no wrapping, will not overflow and display ellipsis instead
@@ -572,13 +603,11 @@ const ellipsisSpanStyle: CSSProperties = {
   maxWidth: '100%',
   verticalAlign: 'text-bottom',
 };
-export const Ellipsis = (p: { children?: React.ReactNode; className?: string }) => {
-  return (
-    <span className={p.className} style={ellipsisSpanStyle}>
-      {p.children}
-    </span>
-  );
-};
+export const Ellipsis = (p: { children?: React.ReactNode; className?: string }) => (
+  <span className={p.className} style={ellipsisSpanStyle}>
+    {p.children}
+  </span>
+);
 
 export const Code = (p: { children?: React.ReactNode; nowrap?: boolean }) => {
   const className = p.nowrap ? 'codeBox nowrap' : 'codeBox';
@@ -594,14 +623,20 @@ export function LabelTooltip(p: {
 }) {
   const style: CSSProperties = {};
 
-  if (typeof p.width === 'number') style.width = `${p.width}px`;
-  if (p.nowrap === true) style.whiteSpace = 'nowrap';
-  if (p.left === true) style.textAlign = 'left';
+  if (typeof p.width === 'number') {
+    style.width = `${p.width}px`;
+  }
+  if (p.nowrap === true) {
+    style.whiteSpace = 'nowrap';
+  }
+  if (p.left === true) {
+    style.textAlign = 'left';
+  }
 
   const content = <div style={style}>{p.children}</div>;
 
   return (
-    <Tooltip label={content} placement="top" hasArrow maxW={p.maxW}>
+    <Tooltip hasArrow label={content} maxW={p.maxW} placement="top">
       <Box display="inline-block" transform="translateY(2px)">
         <MdHelpOutline size={13} />
       </Box>
@@ -611,15 +646,17 @@ export function LabelTooltip(p: {
 
 export type ButtonProps = Omit<RpButtonProps, 'disabled' | 'isDisabled'> & { disabledReason?: string };
 export function Button(p: ButtonProps) {
-  if (!p.disabledReason) return <RpButton {...p} />;
+  if (!p.disabledReason) {
+    return <RpButton {...p} />;
+  }
 
   const reason = p.disabledReason;
   const btnProps = { ...p };
   btnProps.disabledReason = undefined;
 
   return (
-    <Tooltip placement="top" label={reason} hasArrow>
-      <RpButton {...btnProps} isDisabled className={`${p.className ?? ''} disabled`} onClick={undefined} />
+    <Tooltip hasArrow label={reason} placement="top">
+      <RpButton {...btnProps} className={`${p.className ?? ''} disabled`} isDisabled onClick={undefined} />
     </Tooltip>
   );
 }
@@ -631,15 +668,14 @@ export function IconButton(p: {
 }) {
   if (!p.disabledReason) {
     return (
-      // biome-ignore lint/a11y/noStaticElementInteractions: part of IconButton implementation
-      <span className="iconButton" onClick={p.onClick}>
+      <button className="iconButton" onClick={p.onClick} type="button">
         {p.children}
-      </span>
+      </button>
     );
   }
 
   return (
-    <Tooltip placement="top" label={p.disabledReason} hasArrow>
+    <Tooltip hasArrow label={p.disabledReason} placement="top">
       <span className="iconButton disabled">{p.children}</span>
     </Tooltip>
   );
@@ -650,5 +686,6 @@ export const navigatorClipboardErrorHandler = (e: DOMException) => {
     status: 'error',
     description: 'Unable to copy settings to clipboard. See console for more information.',
   });
+  // biome-ignore lint/suspicious/noConsole: error logging for debugging clipboard failures
   console.error('unable to copy settings to clipboard', { error: e });
 };

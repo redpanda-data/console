@@ -1,12 +1,12 @@
 import { Button } from '@redpanda-data/ui';
 
-interface ChatClearButtonProps {
+type ChatClearButtonProps = {
   onClear: () => void;
-}
+};
 
 export const ChatClearButton = ({ onClear }: ChatClearButtonProps) => (
-  <div className="flex justify-end mb-2">
-    <Button size="xs" colorScheme="red" variant="ghost" onClick={onClear} aria-label="Clear chat history">
+  <div className="mb-2 flex justify-end">
+    <Button aria-label="Clear chat history" colorScheme="red" onClick={onClear} size="xs" variant="ghost">
       Clear History
     </Button>
   </div>

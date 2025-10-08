@@ -28,6 +28,7 @@ import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
 import { AiOutlineDelete } from 'react-icons/ai';
 import { Link } from 'react-router-dom';
+
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import type { KnowledgeBase } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import { DeleteKnowledgeBaseRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
@@ -47,7 +48,11 @@ const updatePageTitle = () => {
   runInAction(() => {
     uiState.pageTitle = 'Knowledge Bases';
     uiState.pageBreadcrumbs.pop();
-    uiState.pageBreadcrumbs.push({ title: 'Knowledge Bases', linkTo: '/knowledgebases', heading: 'Knowledge Bases' });
+    uiState.pageBreadcrumbs.push({
+      title: 'Knowledge Bases',
+      linkTo: '/knowledgebases',
+      heading: 'Knowledge Bases',
+    });
   });
 };
 
@@ -71,27 +76,23 @@ function openDeleteKnowledgeBaseModal(knowledgeBaseName: string, onConfirm: () =
   });
 }
 
-const CreateKnowledgeBaseButton = () => {
-  return (
-    <ButtonGroup>
-      <Button variant="outline" data-testid="create-knowledge-base-button">
-        <Link to={'/knowledgebases/create'} style={{ textDecoration: 'none', color: 'inherit' }}>
-          Create knowledge base
-        </Link>
-      </Button>
-    </ButtonGroup>
-  );
-};
+const CreateKnowledgeBaseButton = () => (
+  <ButtonGroup>
+    <Button data-testid="create-knowledge-base-button" variant="outline">
+      <Link style={{ textDecoration: 'none', color: 'inherit' }} to={'/knowledgebases/create'}>
+        Create knowledge base
+      </Link>
+    </Button>
+  </ButtonGroup>
+);
 
-const EmptyPlaceholder = () => {
-  return (
-    <Flex alignItems="center" justifyContent="center" flexDirection="column" gap="4" mb="4">
-      <Image src={EmptyConnectors} />
-      <Box>You have no knowledge bases.</Box>
-      <CreateKnowledgeBaseButton />
-    </Flex>
-  );
-};
+const EmptyPlaceholder = () => (
+  <Flex alignItems="center" flexDirection="column" gap="4" justifyContent="center" mb="4">
+    <Image src={EmptyConnectors} />
+    <Box>You have no knowledge bases.</Box>
+    <CreateKnowledgeBaseButton />
+  </Flex>
+);
 
 export const KnowledgeBaseList = () => {
   const [searchText, setSearchText] = useState('');
@@ -111,7 +112,7 @@ export const KnowledgeBaseList = () => {
     {},
     {
       enabled: Features.pipelinesApi,
-    },
+    }
   );
 
   const deleteMutation = useDeleteKnowledgeBaseMutation();
@@ -141,12 +142,20 @@ export const KnowledgeBaseList = () => {
 
   // Filter knowledge bases based on search text
   const filteredKnowledgeBases = knowledgeBases.filter((kb) => {
-    if (!searchText) return true;
+    if (!searchText) {
+      return true;
+    }
     try {
       const quickSearchRegExp = new RegExp(searchText, 'i');
-      if (kb.id.match(quickSearchRegExp)) return true;
-      if (kb.displayName.match(quickSearchRegExp)) return true;
-      if (kb.description.match(quickSearchRegExp)) return true;
+      if (kb.id.match(quickSearchRegExp)) {
+        return true;
+      }
+      if (kb.displayName.match(quickSearchRegExp)) {
+        return true;
+      }
+      if (kb.description.match(quickSearchRegExp)) {
+        return true;
+      }
       return false;
     } catch {
       return false;
@@ -195,10 +204,10 @@ export const KnowledgeBaseList = () => {
 
         {knowledgeBases.length !== 0 && (
           <SearchField
-            width="350px"
+            placeholderText="Filter knowledge bases..."
             searchText={searchText}
             setSearchText={setSearchText}
-            placeholderText="Filter knowledge bases..."
+            width="350px"
           />
         )}
 
@@ -206,10 +215,6 @@ export const KnowledgeBaseList = () => {
           <EmptyPlaceholder />
         ) : (
           <DataTable<KnowledgeBase>
-            data={filteredKnowledgeBases}
-            pagination
-            defaultPageSize={10}
-            sorting
             columns={[
               {
                 header: 'ID',
@@ -224,7 +229,7 @@ export const KnowledgeBaseList = () => {
                 header: 'Name',
                 cell: ({ row: { original } }) => (
                   <Link to={`/knowledgebases/${encodeURIComponentPercents(original.id)}`}>
-                    <Text wordBreak="break-word" whiteSpace="break-spaces">
+                    <Text whiteSpace="break-spaces" wordBreak="break-word">
                       {original.displayName}
                     </Text>
                   </Link>
@@ -235,7 +240,7 @@ export const KnowledgeBaseList = () => {
                 header: 'Description',
                 accessorKey: 'description',
                 cell: ({ row: { original } }) => (
-                  <Text minWidth="200px" wordBreak="break-word" whiteSpace="break-spaces">
+                  <Text minWidth="200px" whiteSpace="break-spaces" wordBreak="break-word">
                     {original.description}
                   </Text>
                 ),
@@ -246,9 +251,9 @@ export const KnowledgeBaseList = () => {
                 cell: ({ row: { original } }) => {
                   const tags = original.tags ? Object.entries(original.tags) : [];
                   return (
-                    <Flex gap={1} flexWrap="wrap">
+                    <Flex flexWrap="wrap" gap={1}>
                       {tags.map(([key, value]) => (
-                        <Text key={key} fontSize="sm" color="gray.600">
+                        <Text color="gray.600" fontSize="sm" key={key}>
                           {key}: {value}
                         </Text>
                       ))}
@@ -261,24 +266,28 @@ export const KnowledgeBaseList = () => {
                 header: '',
                 id: 'actions',
                 cell: ({ row: { original: r } }) => (
-                  <HStack spacing={4} justifyContent="flex-end" width="100%">
+                  <HStack justifyContent="flex-end" spacing={4} width="100%">
                     <Icon
-                      data-testid={`delete-knowledge-base-${r.id}`}
+                      aria-label="Delete knowledge base"
                       as={AiOutlineDelete}
+                      cursor="pointer"
+                      data-testid={`delete-knowledge-base-${r.id}`}
                       onClick={(e: React.MouseEvent<SVGElement, MouseEvent>) => {
                         e.stopPropagation();
                         e.preventDefault();
                         handleDeleteKnowledgeBase(r.id, r.displayName);
                       }}
-                      cursor="pointer"
-                      aria-label="Delete knowledge base"
                     />
                   </HStack>
                 ),
                 size: 1,
               },
             ]}
+            data={filteredKnowledgeBases}
+            defaultPageSize={10}
             emptyText=""
+            pagination
+            sorting
           />
         )}
       </Stack>

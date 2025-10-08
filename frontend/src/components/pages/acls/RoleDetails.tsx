@@ -13,15 +13,16 @@ import { Box, Button, Link as ChakraLink, DataTable, Flex, Heading, SearchField,
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
+import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
+import { principalGroupsView } from './Models';
+import { AclPrincipalGroupPermissionsTable } from './UserDetails';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, type RolePrincipal, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
-import { principalGroupsView } from './Models';
-import { AclPrincipalGroupPermissionsTable } from './UserDetails';
 
 @observer
 class RoleDetailsPage extends PageComponent<{ roleName: string }> {
@@ -42,12 +43,16 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
     p.addBreadcrumb('Roles', '/security/roles');
     p.addBreadcrumb(decodeURIComponent(this.props.roleName), `/security/roles/${this.props.roleName}`);
 
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
+    this.refreshData(true).catch(console.error);
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
+    appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
   async refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListAcls) return;
+    if (api.userData != null && !api.userData.canListAcls) {
+      return;
+    }
 
     await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts()]);
 
@@ -68,11 +73,15 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
   }
 
   render() {
-    if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
-    if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
+    if (api.ACLs?.aclResources === undefined) {
+      return DefaultSkeleton;
+    }
+    if (!api.serviceAccounts?.users) {
+      return DefaultSkeleton;
+    }
 
     const aclPrincipalGroup = principalGroupsView.principalGroups.find(
-      ({ principalType, principalName }) => principalType === 'RedpandaRole' && principalName === this.roleName,
+      ({ principalType, principalName }) => principalType === 'RedpandaRole' && principalName === this.roleName
     );
 
     let members = rolesApi.roleMembers.get(this.roleName) ?? [];
@@ -80,6 +89,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
       const quickSearchRegExp = new RegExp(this.principalSearch, 'i');
       members = members.filter(({ name }) => name.match(quickSearchRegExp));
     } catch (_e) {
+      // biome-ignore lint/suspicious/noConsole: warning for invalid user input
       console.warn('Invalid expression');
     }
 
@@ -89,17 +99,17 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
       <PageContent>
         <Flex gap="4">
           <Button
-            variant="outline"
             onClick={() => {
               appGlobal.historyPush(`/security/roles/${this.props.roleName}/edit`);
             }}
+            variant="outline"
           >
             Edit
           </Button>
           <DeleteRoleConfirmModal
+            buttonEl={<Button variant="outline-delete">Delete</Button>}
             numberOfPrincipals={numberOfPrincipals}
             onConfirm={this.deleteRole}
-            buttonEl={<Button variant="outline-delete">Delete</Button>}
             roleName={this.roleName}
           />
         </Flex>
@@ -123,17 +133,13 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
           </Text>
           <Box my={2}>
             <SearchField
-              width="300px"
+              placeholderText="Filter by name"
               searchText={this.principalSearch}
               setSearchText={(x) => (this.principalSearch = x)}
-              placeholderText="Filter by name"
+              width="300px"
             />
           </Box>
           <DataTable<RolePrincipal>
-            data={members ?? []}
-            pagination
-            sorting
-            emptyText="No users found"
             columns={[
               {
                 id: 'name',
@@ -142,13 +148,17 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
+                    <ChakraLink as={ReactRouterLink} textDecoration="none" to={`/security/users/${entry.name}/details`}>
                       {entry.name}
                     </ChakraLink>
                   );
                 },
               },
             ]}
+            data={members ?? []}
+            emptyText="No users found"
+            pagination
+            sorting
           />
         </Flex>
       </PageContent>

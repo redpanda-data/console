@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-export interface MCPServer {
+export type MCPServer = {
   id: string;
   displayName: string;
   url: string;
-}
+};
 
 export const getRpkCloudEnvironment = () => {
   if (window.location.hostname.includes('main')) {
@@ -89,7 +89,7 @@ export const createMCPConfig = ({
     isServerless ? '--serverless-cluster-id' : '--cluster-id',
     clusterId || '',
     '--mcp-server-id',
-    mcpServerId || '',
+    mcpServerId || ''
   );
 
   return {
@@ -97,4 +97,252 @@ export const createMCPConfig = ({
     command: 'rpk',
     args: baseArgs,
   };
+};
+
+/**
+ * Returns the cloud environment args for shell commands
+ * Used in: auggie, codex, gemini command strings
+ * @returns Empty string for production, otherwise: '"-X" "cloud_environment=<env>" '
+ */
+export const getCloudEnvArgsForShell = () => {
+  const cloudEnv = getRpkCloudEnvironment();
+  return cloudEnv !== 'production' ? `"-X" "cloud_environment=${cloudEnv}" ` : '';
+};
+
+/**
+ * Returns the cloud environment args for JSON config files with proper indentation
+ * Used in: claude-code, claude-desktop, cline, cursor, gemini, manus, vscode, warp, windsurf
+ * @param indent - The indentation level (number of spaces)
+ * @returns Empty string for production, otherwise: '"-X",\n<indent>"cloud_environment=<env>",\n<indent>'
+ */
+export const getCloudEnvArgsForJson = (indent = 8) => {
+  const cloudEnv = getRpkCloudEnvironment();
+  const spaces = ' '.repeat(indent);
+  return cloudEnv !== 'production' ? `"-X",\n${spaces}"cloud_environment=${cloudEnv}",\n${spaces}` : '';
+};
+
+/**
+ * Returns the cloud environment args for TOML config files
+ * Used in: codex TOML config
+ * @returns Empty string for production, otherwise: '"-X","cloud_environment=<env>", '
+ */
+export const getCloudEnvArgsForToml = () => {
+  const cloudEnv = getRpkCloudEnvironment();
+  return cloudEnv !== 'production' ? `"-X","cloud_environment=${cloudEnv}", ` : '';
+};
+
+/**
+ * Returns the cloud environment args for inline JSON (single line)
+ * Used in: claude-code command's inline JSON
+ * @returns Empty string for production, otherwise: '"-X","cloud_environment=<env>",'
+ */
+export const getCloudEnvArgsForInlineJson = () => {
+  const cloudEnv = getRpkCloudEnvironment();
+  return cloudEnv !== 'production' ? `"-X","cloud_environment=${cloudEnv}",` : '';
+};
+
+export const ClientType = {
+  CLAUDE_CODE: 'claude-code',
+  CLAUDE_DESKTOP: 'claude-desktop',
+  VSCODE: 'vscode',
+  CURSOR: 'cursor',
+  WINDSURF: 'windsurf',
+  GEMINI: 'gemini',
+  CODEX: 'codex',
+  WARP: 'warp',
+  AUGGIE: 'auggie',
+  CLINE: 'cline',
+  MANUS: 'manus',
+} as const;
+
+export type ClientType = (typeof ClientType)[keyof typeof ClientType];
+
+export const AVAILABLE_CLIENTS = [
+  ClientType.CLAUDE_CODE,
+  ClientType.CLAUDE_DESKTOP,
+  ClientType.VSCODE,
+  ClientType.CURSOR,
+  ClientType.WINDSURF,
+  ClientType.GEMINI,
+  ClientType.CODEX,
+  ClientType.WARP,
+  ClientType.AUGGIE,
+  ClientType.CLINE,
+  ClientType.MANUS,
+] as const;
+
+interface ClientCommandParams {
+  mcpServerName: string;
+  clusterId?: string;
+  mcpServerId?: string;
+  isServerless?: boolean;
+  selectedScope?: string; // For claude-code and gemini
+}
+
+/**
+ * Returns the CLI command to add an MCP server for a given client
+ * Only applicable for clients that support CLI commands
+ */
+export const getClientCommand = (clientType: ClientType, params: ClientCommandParams): string => {
+  const { mcpServerName, clusterId = '', mcpServerId = '', isServerless = false, selectedScope = 'local' } = params;
+  const clusterFlag = isServerless ? '--serverless-cluster-id' : '--cluster-id';
+
+  switch (clientType) {
+    case ClientType.AUGGIE:
+      return `auggie mcp add ${mcpServerName} \\
+--transport stdio \\
+--command rpk \\
+--args ${getCloudEnvArgsForShell()}\\
+"cloud" "mcp" "proxy" \\
+"${clusterFlag}" "${clusterId}" \\
+"--mcp-server-id" "${mcpServerId}"`;
+
+    case ClientType.CLAUDE_CODE:
+      return `claude mcp add-json ${mcpServerName} --scope ${selectedScope} \\
+'{"type":"stdio","command":"rpk","args":[
+${getCloudEnvArgsForInlineJson()}"cloud","mcp","proxy",
+"${clusterFlag}","${clusterId}",
+"--mcp-server-id","${mcpServerId}"]}'`;
+
+    case ClientType.CODEX:
+      return `codex mcp add ${mcpServerName} -- rpk \\
+${getCloudEnvArgsForShell()}\\
+"cloud" "mcp" "proxy" \\
+"${clusterFlag}" "${clusterId}" \\
+"--mcp-server-id" "${mcpServerId}"`;
+
+    case ClientType.GEMINI:
+      return `gemini mcp add ${mcpServerName} \\
+--scope ${selectedScope} \\
+--transport stdio rpk \\
+--args ${getCloudEnvArgsForShell()}\\
+"cloud" "mcp" "proxy" \\
+"${clusterFlag}" "${clusterId}" \\
+"--mcp-server-id" "${mcpServerId}"`;
+
+    case ClientType.CURSOR:
+      // Cursor uses a button/link approach, command is less common
+      return '';
+
+    case ClientType.VSCODE:
+      // VSCode uses a button/link approach, command is less common
+      return '';
+
+    default:
+      // Other clients don't have CLI commands
+      return '';
+  }
+};
+
+/**
+ * Returns the config file content for a given client
+ */
+export const getClientConfig = (clientType: ClientType, params: ClientCommandParams): string => {
+  const { mcpServerName, clusterId = '', mcpServerId = '', isServerless = false } = params;
+  const clusterFlag = isServerless ? '--serverless-cluster-id' : '--cluster-id';
+
+  switch (clientType) {
+    case ClientType.AUGGIE:
+      return `{
+  "mcpServers": {
+    "${mcpServerName}": {
+      "command": "rpk",
+      "args": [
+        ${getCloudEnvArgsForJson(8)}"cloud",
+        "mcp",
+        "proxy",
+        "${clusterFlag}",
+        "${clusterId}",
+        "--mcp-server-id",
+        "${mcpServerId}"
+      ]
+    }
+  }
+}`;
+
+    case ClientType.CLAUDE_CODE:
+    case ClientType.CLAUDE_DESKTOP:
+    case ClientType.VSCODE:
+      return `{
+  "mcp": {
+    "servers": {
+      "${mcpServerName}": {
+        "command": "rpk",
+        "args": [
+          ${getCloudEnvArgsForJson(10)}"cloud",
+          "mcp",
+          "proxy",
+          "${clusterFlag}",
+          "${clusterId}",
+          "--mcp-server-id",
+          "${mcpServerId}"
+        ]
+      }
+    }
+  }
+}`;
+
+    case ClientType.CLINE:
+    case ClientType.CURSOR:
+    case ClientType.GEMINI:
+    case ClientType.MANUS:
+      return `{
+  "mcpServers": {
+    "${mcpServerName}": {
+      "command": "rpk",
+      "args": [
+        ${getCloudEnvArgsForJson(8)}"cloud",
+        "mcp",
+        "proxy",
+        "${clusterFlag}",
+        "${clusterId}",
+        "--mcp-server-id",
+        "${mcpServerId}"
+      ]
+    }
+  }
+}`;
+
+    case ClientType.CODEX:
+      return `[mcp_servers.${mcpServerName}]
+command = "rpk"
+args = [${getCloudEnvArgsForToml()}"cloud", "mcp", "proxy", "${clusterFlag}", "${clusterId}", "--mcp-server-id", "${mcpServerId}"]`;
+
+    case ClientType.WARP:
+    case ClientType.WINDSURF:
+      return `{
+  "mcpServers": {
+    "${mcpServerName}": {
+      "command": "rpk",
+      "args": [
+        ${getCloudEnvArgsForJson(6)}"cloud",
+        "mcp",
+        "proxy",
+        "${clusterFlag}",
+        "${clusterId}",
+        "--mcp-server-id",
+        "${mcpServerId}"
+      ]
+    }
+  }
+}`;
+
+    default:
+      return `{
+  "mcpServers": {
+    "${mcpServerName}": {
+      "command": "rpk",
+      "args": [
+        ${getCloudEnvArgsForJson(8)}"cloud",
+        "mcp",
+        "proxy",
+        "${clusterFlag}",
+        "${clusterId}",
+        "--mcp-server-id",
+        "${mcpServerId}"
+      ]
+    }
+  }
+}`;
+  }
 };

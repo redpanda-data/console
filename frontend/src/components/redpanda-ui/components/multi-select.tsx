@@ -227,7 +227,7 @@ const MultiSelectValue = React.forwardRef<React.ComponentRef<'div'>, MultiSelect
               maxItemLength && typeof content === 'string' && content.length > maxItemLength
                 ? `${content.slice(0, maxItemLength)}...`
                 : content;
-            
+
             // Determine if we should show a tooltip - only for truncated strings
             const shouldShowTooltip = maxItemLength && typeof content === 'string' && content.length > maxItemLength;
 
@@ -286,12 +286,14 @@ const MultiSelectList = React.forwardRef<
 
 MultiSelectList.displayName = 'MultiSelectList';
 
-interface MultiSelectContentProps extends React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> {}
+interface MultiSelectContentProps extends React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> {
+  container?: Element;
+}
 
 const MultiSelectContent = React.forwardRef<
   React.ComponentRef<typeof PopoverPrimitive.Content>,
   MultiSelectContentProps
->(({ className, children, ...props }, ref) => {
+>(({ className, children, container, ...props }, ref) => {
   const context = useMultiSelect();
 
   const fragmentRef = React.useRef<DocumentFragment | null>(null);
@@ -303,7 +305,7 @@ const MultiSelectContent = React.forwardRef<
   }
 
   return (
-    <PopoverPrimitive.Portal forceMount>
+    <PopoverPrimitive.Portal forceMount container={container}>
       <PopoverPrimitive.Content
         ref={ref}
         align="start"
@@ -496,6 +498,7 @@ interface SimpleMultiSelectProps {
   maxDisplay?: number;
   searchable?: boolean;
   width?: 'sm' | 'md' | 'lg' | 'xl' | 'full' | 'auto';
+  container?: Element;
 }
 
 const widthClasses = {
@@ -519,6 +522,7 @@ function SimpleMultiSelect({
   maxDisplay,
   searchable = true,
   width = 'md',
+  container,
   ...props
 }: SimpleMultiSelectProps) {
   // Convert simple string array to option objects
@@ -536,7 +540,7 @@ function SimpleMultiSelect({
       <MultiSelectTrigger id={id} className={cn(widthClasses[width], className)}>
         <MultiSelectValue placeholder={placeholder} maxDisplay={maxDisplay} />
       </MultiSelectTrigger>
-      <MultiSelectContent>
+      <MultiSelectContent container={container}>
         {searchable && <MultiSelectSearch placeholder="Search..." />}
         <MultiSelectList>{renderMultiSelectOptions(normalizedOptions)}</MultiSelectList>
         <MultiSelectEmpty>No items found</MultiSelectEmpty>

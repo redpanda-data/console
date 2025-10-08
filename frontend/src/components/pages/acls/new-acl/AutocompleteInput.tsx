@@ -2,14 +2,14 @@ import { Command, CommandGroup, CommandItem, CommandList } from 'components/redp
 import { Input } from 'components/redpanda-ui/components/input';
 import { type ChangeEvent, useEffect, useState } from 'react';
 
-interface AutocompleteInputProps {
+type AutocompleteInputProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
   suggestions?: string[];
   'data-testid'?: string;
-}
+};
 
 export function AutocompleteInput({
   value,
@@ -50,34 +50,34 @@ export function AutocompleteInput({
   return (
     <div className="relative flex-1">
       <Input
-        testId={dataTestId}
-        type="text"
-        placeholder={placeholder}
-        value={inputValue}
-        onChange={handleInputChange}
+        className={className}
         onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+        onChange={handleInputChange}
         onFocus={() => {
           if (inputValue.length > 0 && suggestions.length > 0) {
             const filtered = suggestions.filter((suggestion) =>
-              suggestion.toLowerCase().includes(inputValue.toLowerCase()),
+              suggestion.toLowerCase().includes(inputValue.toLowerCase())
             );
             setFilteredSuggestions(filtered);
             setShowSuggestions(filtered.length > 0);
           }
         }}
-        className={className}
+        placeholder={placeholder}
+        testId={dataTestId}
+        type="text"
+        value={inputValue}
       />
 
       {showSuggestions && filteredSuggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1">
-          <Command className="rounded-lg border shadow-md bg-white">
+        <div className="absolute top-full right-0 left-0 z-50 mt-1">
+          <Command className="rounded-lg border bg-white shadow-md">
             <CommandList>
               <CommandGroup>
                 {filteredSuggestions.map((suggestion) => (
                   <CommandItem
+                    className="cursor-pointer"
                     key={suggestion}
                     onSelect={() => handleSelectSuggestion(suggestion)}
-                    className="cursor-pointer"
                   >
                     {suggestion}
                   </CommandItem>

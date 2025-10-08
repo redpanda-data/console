@@ -2,6 +2,7 @@ import { Box } from '@chakra-ui/react';
 import { CopyButton } from '@redpanda-data/ui';
 import { Prism as SyntaxHighlighter, type SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import prism from 'react-syntax-highlighter/dist/cjs/styles/prism/prism';
+
 import { nightOwlDarkThemeBackground, nightOwlTheme } from './night-owl-theme';
 
 export interface ChatCodeBlockProps extends Omit<SyntaxHighlighterProps, 'children'> {
@@ -44,11 +45,6 @@ export const ChatCodeBlock = ({
   return (
     <Box position="relative" zIndex="0">
       <Box
-        px={0}
-        rounded="md"
-        bg={backgroundColor}
-        color="white"
-        overflow="hidden"
         __css={{
           '&::-webkit-scrollbar': {
             overflow: 'visible',
@@ -67,23 +63,24 @@ export const ChatCodeBlock = ({
             background: backgroundColor,
           },
         }}
+        bg={backgroundColor}
+        color="white"
+        overflow="hidden"
+        px={0}
+        rounded="md"
       >
         <Box>
           <SyntaxHighlighter
             {...otherProps}
-            PreTag="div"
-            language={language}
-            style={theme === 'dark' ? nightOwlTheme : prism}
-            showLineNumbers={showLineNumbers}
-            wrapLines
+            codeTagProps={{
+              className: 'break-all',
+            }}
             customStyle={{
               margin: 0,
               padding: '10px',
               lineHeight: '1.3rem',
             }}
-            codeTagProps={{
-              className: 'break-all',
-            }}
+            language={language}
             lineNumberStyle={{
               opacity: '0.4',
               userSelect: 'none',
@@ -91,29 +88,34 @@ export const ChatCodeBlock = ({
             }}
             lineProps={(lineNumber: number) => {
               const highlight = shouldHighlightLine(lineNumber - 1);
+              const DIMMED_OPACITY = 0.5;
               return {
                 style: {
                   backgroundColor: highlight ? 'whiteAlpha.200' : 'initial',
-                  opacity: highlightLines ? (highlight ? 1 : 0.5) : 1,
+                  opacity: highlightLines ? (highlight ? 1 : DIMMED_OPACITY) : 1,
                 },
               };
             }}
+            PreTag="div"
+            showLineNumbers={showLineNumbers}
+            style={theme === 'dark' ? nightOwlTheme : prism}
+            wrapLines
           >
             {removeLineBreaksFromCopy ? codeString.replace(/[\n\r]/g, '') : codeString}
           </SyntaxHighlighter>
         </Box>
       </Box>
       {showCopyButton && (
-        <Box position="absolute" top={1} right={1}>
+        <Box position="absolute" right={1} top={1}>
           <CopyButton
-            content={removeLineBreaksFromCopy ? codeString.replace(/[\n\r]/g, '') : codeString}
-            background={backgroundColor}
-            color={theme === 'dark' ? 'whiteAlpha.900' : 'black.900'}
             _hover={{
               background: backgroundColor,
               color: 'brand.400',
             }}
+            background={backgroundColor}
             borderRadius="base"
+            color={theme === 'dark' ? 'whiteAlpha.900' : 'black.900'}
+            content={removeLineBreaksFromCopy ? codeString.replace(/[\n\r]/g, '') : codeString}
             padding="0.4rem"
           />
         </Box>

@@ -14,23 +14,33 @@ import { useEffect } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { parse, stringify } from 'yaml';
 
+// Regex for parsing tool field names (tools.{index}.{field})
+const TOOLS_FIELD_REGEX = /^tools\.(\d+)\.(name|config)$/;
+
 /**
  * Keep YAML label in sync with Tool Name field
  */
 export function useYamlLabelSync(form: UseFormReturn<FormValues>) {
   useEffect(() => {
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 40, refactor later
     const subscription = form.watch((_, info) => {
       const name = info.name ?? '';
-      if (!name.startsWith('tools')) return;
+      if (!name.startsWith('tools')) {
+        return;
+      }
 
       // tools.{index}.field
-      const match = name.match(/^tools\.(\d+)\.(name|config)$/);
-      if (!match) return;
+      const match = TOOLS_FIELD_REGEX.exec(name);
+      if (!match) {
+        return;
+      }
       const index = Number(match[1]);
       const field = match[2] as 'name' | 'config';
 
       const tool = form.getValues(`tools.${index}`);
-      if (!tool) return;
+      if (!tool) {
+        return;
+      }
 
       if (field === 'name') {
         // Update YAML label when the tool name changes
@@ -40,7 +50,10 @@ export function useYamlLabelSync(form: UseFormReturn<FormValues>) {
             (doc as any).label = tool.name ?? '';
             const updated = stringify(doc);
             if (updated !== tool.config) {
-              form.setValue(`tools.${index}.config`, updated, { shouldValidate: false, shouldDirty: true });
+              form.setValue(`tools.${index}.config`, updated, {
+                shouldValidate: false,
+                shouldDirty: true,
+              });
             }
           }
         } catch {

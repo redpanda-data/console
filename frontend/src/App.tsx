@@ -22,9 +22,9 @@ import './assets/fonts/inter.css';
 
 /* start tailwind styles */
 import './globals.css';
+
 /* end tailwind styles */
 
-import queryClient from 'queryClient';
 import { Content } from '@builder.io/sdk-react';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
@@ -42,6 +42,7 @@ import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
 import { BrowserRouter } from 'react-router-dom';
 import { getBasePath } from 'utils/env';
+
 import AppContent from './components/layout/Content';
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
 import HistorySetter from './components/misc/HistorySetter';
@@ -56,12 +57,13 @@ import {
   setup,
 } from './config';
 import { uiSettings } from './state/ui';
+import queryClient from 'queryClient';
 
 const AppSidebar = observer(() => {
   const sidebarItems = createVisibleSidebarItems(APP_ROUTES);
 
   return (
-    <Sidebar items={sidebarItems} isCollapsed={!uiSettings.sideBarOpen}>
+    <Sidebar isCollapsed={!uiSettings.sideBarOpen} items={sidebarItems}>
       <UserProfile />
     </Sidebar>
   );
@@ -84,10 +86,10 @@ const App = () => {
   // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp
   return (
     <CustomFeatureFlagProvider initialFlags={{}}>
-      <Content apiKey={BUILDER_API_KEY} customComponents={builderCustomComponents} content={null} model={''} />
+      <Content apiKey={BUILDER_API_KEY} content={null} customComponents={builderCustomComponents} model={''} />
       <BrowserRouter basename={getBasePath()}>
         <HistorySetter />
-        <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions} resetCSS={false}>
+        <ChakraProvider resetCSS={false} theme={redpandaTheme} toastOptions={redpandaToastOptions}>
           <TransportProvider transport={transport}>
             <QueryClientProvider client={queryClient}>
               <ErrorBoundary>
@@ -97,9 +99,9 @@ const App = () => {
                   ) : (
                     <>
                       <AnnouncementBar />
-                      <Grid templateColumns="auto 1fr" minH="100vh">
+                      <Grid minH="100vh" templateColumns="auto 1fr">
                         <AppSidebar />
-                        <Container width="full" maxWidth="1500px" as="main" pt="8" px="12">
+                        <Container as="main" maxWidth="1500px" pt="8" px="12" width="full">
                           <AppContent />
                         </Container>
                       </Grid>

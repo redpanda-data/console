@@ -19,7 +19,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useListKnowledgeBasesQuery = (
   input?: MessageInit<ListKnowledgeBasesRequest>,
-  options?: QueryOptions<GenMessage<ListKnowledgeBasesRequest>, ListKnowledgeBasesResponse>,
+  options?: QueryOptions<GenMessage<ListKnowledgeBasesRequest>, ListKnowledgeBasesResponse>
 ) => {
   const listKnowledgeBasesRequest = create(ListKnowledgeBasesRequestSchema, {
     ...input,
@@ -38,38 +38,32 @@ export const useGetKnowledgeBaseQuery = (input?: { id?: string }) => {
   });
 };
 
-export const useCreateKnowledgeBaseMutation = () => {
-  return useMutation(createKnowledgeBase, {
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+export const useCreateKnowledgeBaseMutation = () =>
+  useMutation(createKnowledgeBase, {
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'create',
         entity: 'knowledge base',
-      });
-    },
+      }),
   });
-};
 
-export const useUpdateKnowledgeBaseMutation = () => {
-  return useMutation(updateKnowledgeBase, {
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+export const useUpdateKnowledgeBaseMutation = () =>
+  useMutation(updateKnowledgeBase, {
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'update',
         entity: 'knowledge base',
-      });
-    },
+      }),
   });
-};
 
-export const useDeleteKnowledgeBaseMutation = () => {
-  return useMutation(deleteKnowledgeBase, {
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+export const useDeleteKnowledgeBaseMutation = () =>
+  useMutation(deleteKnowledgeBase, {
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'delete',
         entity: 'knowledge base',
-      });
-    },
+      }),
   });
-};

@@ -12,12 +12,13 @@
 import { Box, DataTable, Flex, Text, Tooltip } from '@redpanda-data/ui';
 import type { ColumnDef } from '@tanstack/react-table';
 import { MdInfoOutline, MdOutlineVisibilityOff } from 'react-icons/md';
+
+import styles from './ConfigList.module.scss';
 import colors from '../../colors';
 import type { ConfigEntry } from '../../state/restInterfaces';
 import type { ValueDisplay } from '../../state/ui';
 import { formatConfigValue } from '../../utils/formatters/ConfigValueFormatter';
 import { equalsIgnoreCase } from '../../utils/utils';
-import styles from './ConfigList.module.scss';
 
 export function ConfigList({
   configEntries,
@@ -36,10 +37,12 @@ export function ConfigList({
       accessorKey: 'name',
       cell: ({ row: { original: record } }) => {
         let name = <Flex className={styles.nameText}>{record.name}</Flex>;
-        if (renderTooltip) name = renderTooltip(record, name);
+        if (renderTooltip) {
+          name = renderTooltip(record, name);
+        }
 
         const sensitive = record.isSensitive && (
-          <Tooltip label="Value has been redacted because it's sensitive" placement="top" hasArrow>
+          <Tooltip hasArrow label="Value has been redacted because it's sensitive" placement="top">
             <Box>
               <MdOutlineVisibilityOff color={colors.brandOrange} />
             </Box>
@@ -59,7 +62,7 @@ export function ConfigList({
       accessorKey: 'value',
       size: Number.POSITIVE_INFINITY,
       cell: ({ row: { original: record } }) => (
-        <Text wordBreak="break-all" whiteSpace="break-spaces" className={styles.value}>
+        <Text className={styles.value} whiteSpace="break-spaces" wordBreak="break-all">
           {formatConfigValue(record.name, record.value, valueDisplay)}
         </Text>
       ),
@@ -85,6 +88,7 @@ export function ConfigList({
       <span className={styles.sourceHeader}>
         Source
         <Tooltip
+          hasArrow
           label={
             <>
               <p>
@@ -98,7 +102,6 @@ export function ConfigList({
             </>
           }
           placement="left"
-          hasArrow
         >
           <Box>
             <MdInfoOutline size={12} />
@@ -117,28 +120,28 @@ export function ConfigList({
 
   return (
     <DataTable<ConfigEntry>
+      columns={tableColumns}
       data={configEntries}
-      pagination={false}
-      sorting={false}
       getRowCanExpand={(row) =>
         (row.original.synonyms?.filter((x) => x.source !== row.original.source).length ?? 0) > 0
       }
+      pagination={false}
+      rowClassName={(row) => (row.original.isExplicitlySet ? styles.overidden : styles.default)}
+      sorting={false}
       subComponent={({ row }) => {
         if (!row.original.synonyms?.filter((x) => x.source !== row.original.source).length) {
           return null;
         }
         return (
-          <Box py={6} px={10}>
+          <Box px={10} py={6}>
             <DataTable<ConfigEntry>
-              // @ts-ignore TODO - we need to fix types here and find a shared interface
-              data={row.original.synonyms.filter((x) => x.source !== row.original.source)}
               columns={tableColumns}
+              // @ts-expect-error TODO - we need to fix types here and find a shared interface
+              data={row.original.synonyms.filter((x) => x.source !== row.original.source)}
             />
           </Box>
         );
       }}
-      rowClassName={(row) => (row.original.isExplicitlySet ? styles.overidden : styles.default)}
-      columns={tableColumns}
     />
   );
 }

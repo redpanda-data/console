@@ -49,12 +49,13 @@ import {
 import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { AiOutlineDelete, AiOutlinePlus } from 'react-icons/ai';
+
 import { config } from '../../../config';
+import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/topic_pb';
+import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import { SASLMechanism } from '../../../protogen/redpanda/api/dataplane/v1/user_pb';
-import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic_pb';
-import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic-TopicService_connectquery';
 import {
   type KnowledgeBase,
   KnowledgeBase_VectorDatabase_PostgresSchema,
@@ -87,6 +88,7 @@ import { SecretsQuickAdd } from '../rp-connect/secrets/Secrets.QuickAdd';
 const { ToastContainer, toast } = createStandaloneToast();
 
 const CREATE_NEW_OPTION_VALUE = 'CREATE_NEW_OPTION_VALUE';
+const REGEX_SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/;
 
 const UserDropdown = ({
   label,
@@ -114,20 +116,20 @@ const UserDropdown = ({
     })) || [];
 
   return (
-    <FormControl isRequired={isRequired} isInvalid={!!errorMessage}>
+    <FormControl isInvalid={!!errorMessage} isRequired={isRequired}>
       <FormLabel fontWeight="medium">{label}</FormLabel>
       {helperText && (
-        <Text fontSize="sm" color="gray.500" mb={2}>
+        <Text color="gray.500" fontSize="sm" mb={2}>
           {helperText}
         </Text>
       )}
       <SingleSelect
-        value={value}
+        isDisabled={isDisabled}
+        isLoading={isLoading}
         onChange={onChange}
         options={userOptions}
         placeholder={isLoading ? 'Loading users...' : 'Select a user...'}
-        isLoading={isLoading}
-        isDisabled={isDisabled}
+        value={value}
       />
       {errorMessage && <FormErrorMessage>{errorMessage}</FormErrorMessage>}
     </FormControl>
@@ -184,29 +186,29 @@ const SecretDropdownField = ({
   };
 
   return (
-    <FormControl isRequired={isRequired} isInvalid={!!errorMessage}>
+    <FormControl isInvalid={!!errorMessage} isRequired={isRequired}>
       <FormLabel fontWeight="medium">{label}</FormLabel>
       {helperText && (
-        <Text fontSize="sm" color="gray.500" mb={2}>
+        <Text color="gray.500" fontSize="sm" mb={2}>
           {helperText}
         </Text>
       )}
       <SingleSelect
-        value={value}
         onChange={handleChange}
         options={allOptions}
         placeholder={placeholder || 'Select a secret...'}
+        value={value}
       />
       {errorMessage && <FormErrorMessage>{errorMessage}</FormErrorMessage>}
     </FormControl>
   );
 };
 
-interface TopicSelectorProps {
+type TopicSelectorProps = {
   selectedTopics: string[];
   onTopicsChange: (topics: string[]) => void;
   isReadOnly?: boolean;
-}
+};
 
 const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: TopicSelectorProps) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -220,7 +222,7 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
       filter: {
         nameContains: '', // Get all topics for regex matching
       },
-    }),
+    })
   );
 
   const allTopics = (topicsData?.topics || [])
@@ -228,33 +230,36 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
     .map((topic) => topic.name)
     .filter(
       (name) =>
-        !name.startsWith('__redpanda') &&
-        !name.startsWith('_internal') &&
-        !name.startsWith('_redpanda') &&
-        name !== '_schemas',
+        !(name.startsWith('__redpanda') || name.startsWith('_internal') || name.startsWith('_redpanda')) &&
+        name !== '_schemas'
     );
 
   // Check if a string is a regex pattern (contains regex special characters)
-  const isRegexPattern = (str: string) => {
-    const regexChars = /[.*+?^${}()|[\]\\]/;
-    return regexChars.test(str);
-  };
+  const isRegexPattern = useCallback((str: string) => REGEX_SPECIAL_CHARS.test(str), []);
 
   // Test if a topic matches a regex pattern
-  const topicMatchesPattern = (topic: string, pattern: string) => {
-    try {
-      const regex = new RegExp(pattern);
-      return regex.test(topic);
-    } catch {
-      return false; // Invalid regex
-    }
-  };
+  const topicMatchesPattern = useMemo(
+    () => (topic: string, pattern: string) => {
+      try {
+        const regex = new RegExp(pattern);
+        return regex.test(topic);
+      } catch {
+        return false; // Invalid regex
+      }
+    },
+    []
+  );
 
   // Get topics that match a pattern
-  const getMatchingTopics = (pattern: string) => {
-    if (!isRegexPattern(pattern)) return [];
-    return allTopics.filter((topic) => topicMatchesPattern(topic, pattern));
-  };
+  const getMatchingTopics = useMemo(
+    () => (pattern: string) => {
+      if (!isRegexPattern(pattern)) {
+        return [];
+      }
+      return allTopics.filter((topic) => topicMatchesPattern(topic, pattern));
+    },
+    [allTopics, topicMatchesPattern, isRegexPattern]
+  );
 
   // Create options for the select
   const topicOptions = allTopics
@@ -302,21 +307,21 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
   if (isReadOnly) {
     return (
       <Box>
-        <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+        <Text color="gray.700" fontSize="sm" fontWeight="medium" mb={1}>
           Input Topics
         </Text>
-        <Text fontSize="sm" color="gray.500" mb={2}>
+        <Text color="gray.500" fontSize="sm" mb={2}>
           Select topics or enter regex patterns (e.g., my-topics-prefix-.*) to index for this knowledge base.
         </Text>
 
         <Select
+          isDisabled
           isMulti
           isSearchable={false}
-          placeholder="Topics configured"
+          onChange={() => {}}
           options={[]}
+          placeholder="Topics configured" // No-op for read-only
           value={selectedValues}
-          onChange={() => {}} // No-op for read-only
-          isDisabled
         />
 
         {/* Show preview of what each selected item matches */}
@@ -328,7 +333,7 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
 
             {/* Show exact topics first */}
             {selectedTopics.filter((topic) => !isRegexPattern(topic)).length > 0 && (
-              <Box mb={2} p={2} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200">
+              <Box bg="gray.50" border="1px solid" borderColor="gray.200" borderRadius="md" mb={2} p={2}>
                 <Text fontSize="sm" fontWeight="medium" mb={1}>
                   Exact topics ({selectedTopics.filter((topic) => !isRegexPattern(topic)).length}):
                 </Text>
@@ -336,7 +341,7 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
                   {selectedTopics
                     .filter((topic) => !isRegexPattern(topic))
                     .map((topic, idx) => (
-                      <Text key={idx} fontSize="xs" color="gray.700" pl={2}>
+                      <Text color="gray.700" fontSize="xs" key={idx} pl={2}>
                         • {topic}
                       </Text>
                     ))}
@@ -352,35 +357,35 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
 
                 return (
                   <Box
+                    bg="gray.50"
+                    border="1px solid"
+                    borderColor="gray.200"
+                    borderRadius="md"
                     key={index}
                     mb={2}
                     p={2}
-                    bg="gray.50"
-                    borderRadius="md"
-                    border="1px solid"
-                    borderColor="gray.200"
                   >
-                    <Text fontSize="sm" fontWeight="medium" color="blue.600">
+                    <Text color="blue.600" fontSize="sm" fontWeight="medium">
                       {topic}{' '}
-                      <Text as="span" fontSize="xs" color="gray.500">
+                      <Text as="span" color="gray.500" fontSize="xs">
                         (regex pattern)
                       </Text>
                     </Text>
                     {matchingTopics.length > 0 ? (
                       <Box mt={1}>
-                        <Text fontSize="xs" color="gray.600" mb={1}>
+                        <Text color="gray.600" fontSize="xs" mb={1}>
                           Matches {matchingTopics.length} topics:
                         </Text>
                         <Box maxH="100px" overflowY="auto">
                           {matchingTopics.map((matchedTopic, idx) => (
-                            <Text key={idx} fontSize="xs" color="gray.700" pl={2}>
+                            <Text color="gray.700" fontSize="xs" key={idx} pl={2}>
                               • {matchedTopic}
                             </Text>
                           ))}
                         </Box>
                       </Box>
                     ) : (
-                      <Text fontSize="xs" color="red.500" mt={1}>
+                      <Text color="red.500" fontSize="xs" mt={1}>
                         No topics match this pattern
                       </Text>
                     )}
@@ -395,20 +400,21 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
 
   return (
     <Box>
-      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+      <Text color="gray.700" fontSize="sm" fontWeight="medium" mb={1}>
         Input Topics
       </Text>
-      <Text fontSize="sm" color="gray.500" mb={2}>
+      <Text color="gray.500" fontSize="sm" mb={2}>
         Select topics or enter regex patterns (e.g., my-topics-prefix-.*) to index for this knowledge base.
       </Text>
 
       <Select
+        filterOption={() => true}
+        formatOptionLabel={formatOptionLabel}
+        inputValue={searchTerm}
+        isLoading={isLoading}
         isMulti
         isSearchable
-        isLoading={isLoading}
-        placeholder="Search topics or enter regex patterns..."
-        options={filteredOptions}
-        value={selectedValues}
+        noOptionsMessage={() => (searchTerm ? `Press Enter to add pattern: ${searchTerm}` : 'No topics found')}
         onChange={(selected) => {
           if (isMultiValue(selected)) {
             onTopicsChange(selected.map((item) => item.value));
@@ -420,10 +426,9 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
         }}
         onInputChange={handleInputChange}
         onKeyDown={handleKeyDown}
-        formatOptionLabel={formatOptionLabel}
-        inputValue={searchTerm}
-        filterOption={() => true}
-        noOptionsMessage={() => (searchTerm ? `Press Enter to add pattern: ${searchTerm}` : 'No topics found')}
+        options={filteredOptions}
+        placeholder="Search topics or enter regex patterns..."
+        value={selectedValues}
       />
 
       {/* Show preview of what each selected item matches */}
@@ -435,7 +440,7 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
 
           {/* Show exact topics first */}
           {selectedTopics.filter((topic) => !isRegexPattern(topic)).length > 0 && (
-            <Box mb={2} p={2} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200">
+            <Box bg="gray.50" border="1px solid" borderColor="gray.200" borderRadius="md" mb={2} p={2}>
               <Text fontSize="sm" fontWeight="medium" mb={1}>
                 Exact topics ({selectedTopics.filter((topic) => !isRegexPattern(topic)).length}):
               </Text>
@@ -443,7 +448,7 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
                 {selectedTopics
                   .filter((topic) => !isRegexPattern(topic))
                   .map((topic, idx) => (
-                    <Text key={idx} fontSize="xs" color="gray.700" pl={2}>
+                    <Text color="gray.700" fontSize="xs" key={idx} pl={2}>
                       • {topic}
                     </Text>
                   ))}
@@ -458,28 +463,28 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
               const matchingTopics = getMatchingTopics(topic);
 
               return (
-                <Box key={index} mb={2} p={2} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200">
-                  <Text fontSize="sm" fontWeight="medium" color="blue.600">
+                <Box bg="gray.50" border="1px solid" borderColor="gray.200" borderRadius="md" key={index} mb={2} p={2}>
+                  <Text color="blue.600" fontSize="sm" fontWeight="medium">
                     {topic}{' '}
-                    <Text as="span" fontSize="xs" color="gray.500">
+                    <Text as="span" color="gray.500" fontSize="xs">
                       (regex pattern)
                     </Text>
                   </Text>
                   {matchingTopics.length > 0 ? (
                     <Box mt={1}>
-                      <Text fontSize="xs" color="gray.600" mb={1}>
+                      <Text color="gray.600" fontSize="xs" mb={1}>
                         Matches {matchingTopics.length} topics:
                       </Text>
                       <Box maxH="100px" overflowY="auto">
                         {matchingTopics.map((matchedTopic, idx) => (
-                          <Text key={idx} fontSize="xs" color="gray.700" pl={2}>
+                          <Text color="gray.700" fontSize="xs" key={idx} pl={2}>
                             • {matchedTopic}
                           </Text>
                         ))}
                       </Box>
                     </Box>
                   ) : (
-                    <Text fontSize="xs" color="red.500" mt={1}>
+                    <Text color="red.500" fontSize="xs" mt={1}>
                       No topics match this pattern
                     </Text>
                   )}
@@ -492,13 +497,13 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
   );
 };
 
-interface KnowledgeBaseEditTabsProps {
+type KnowledgeBaseEditTabsProps = {
   knowledgeBase: KnowledgeBase;
   isEditMode?: boolean;
   onSave?: (updatedKnowledgeBase: KnowledgeBaseUpdate, updateMask?: string[]) => Promise<void>;
   onCancel?: () => void;
   onFormChange?: (hasChanges: boolean) => void;
-}
+};
 
 @observer
 export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabsProps> {
@@ -687,28 +692,29 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
       current = current[keys[i]];
     }
 
-    current[keys[keys.length - 1]] = value;
+    const lastKey = keys.at(-1);
+    if (lastKey !== undefined) {
+      current[lastKey] = value;
+    }
 
     // Special handling for reranker enabled - initialize provider structure
-    if (path === 'retriever.reranker.enabled' && value === true) {
-      if (!this.formData.retriever?.reranker?.provider) {
-        // Ensure the path exists before assignment
-        if (!this.formData.retriever) {
-          this.formData.retriever = create(KnowledgeBaseUpdate_RetrieverSchema, {});
-        }
-        if (!this.formData.retriever.reranker) {
-          this.formData.retriever.reranker = create(KnowledgeBaseUpdate_Retriever_RerankerSchema, {});
-        }
-        this.formData.retriever.reranker.provider = create(KnowledgeBaseUpdate_Retriever_Reranker_ProviderSchema, {
-          provider: {
-            case: 'cohere',
-            value: create(KnowledgeBaseUpdate_Retriever_Reranker_Provider_CohereSchema, {
-              model: 'rerank-v3.5',
-              apiKey: '',
-            }),
-          },
-        });
+    if (path === 'retriever.reranker.enabled' && value === true && !this.formData.retriever?.reranker?.provider) {
+      // Ensure the path exists before assignment
+      if (!this.formData.retriever) {
+        this.formData.retriever = create(KnowledgeBaseUpdate_RetrieverSchema, {});
       }
+      if (!this.formData.retriever.reranker) {
+        this.formData.retriever.reranker = create(KnowledgeBaseUpdate_Retriever_RerankerSchema, {});
+      }
+      this.formData.retriever.reranker.provider = create(KnowledgeBaseUpdate_Retriever_Reranker_ProviderSchema, {
+        provider: {
+          case: 'cohere',
+          value: create(KnowledgeBaseUpdate_Retriever_Reranker_Provider_CohereSchema, {
+            model: 'rerank-v3.5',
+            apiKey: '',
+          }),
+        },
+      });
     }
 
     this.hasChanges = true;
@@ -776,9 +782,8 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
   };
 
   // Convert snake_case to camelCase (protobuf field names to TypeScript property names)
-  protobufFieldToCamelCase = (fieldName: string): string => {
-    return fieldName.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-  };
+  protobufFieldToCamelCase = (fieldName: string): string =>
+    fieldName.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 
   validateForm = () => {
     const errors: { [key: string]: string } = {};
@@ -857,26 +862,26 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
     const { knowledgeBase, isEditMode } = this.props;
 
     return (
-      <VStack spacing={4} align="stretch">
+      <VStack align="stretch" spacing={4}>
         <Heading size="md">General</Heading>
         {/* ID field - always visible for layout stability */}
-        <ProtoDisplayField messageSchema={KnowledgeBaseSchema} fieldName="id" label="ID" value={knowledgeBase.id} />
+        <ProtoDisplayField fieldName="id" label="ID" messageSchema={KnowledgeBaseSchema} value={knowledgeBase.id} />
 
         {/* Display Name field */}
         {isEditMode ? (
           <ProtoInputField
-            messageSchema={KnowledgeBaseUpdateSchema}
+            error={this.validationErrors.displayName}
             fieldName="display_name"
             label="Display Name"
-            value={this.formData.displayName}
+            messageSchema={KnowledgeBaseUpdateSchema}
             onChange={(value) => this.updateFormData('displayName', value)}
-            error={this.validationErrors.displayName}
+            value={this.formData.displayName}
           />
         ) : (
           <ProtoDisplayField
-            messageSchema={KnowledgeBaseSchema}
             fieldName="display_name"
             label="Display Name"
+            messageSchema={KnowledgeBaseSchema}
             value={knowledgeBase.displayName}
           />
         )}
@@ -884,28 +889,28 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
         {/* Description field */}
         {isEditMode ? (
           <ProtoTextareaField
-            messageSchema={KnowledgeBaseUpdateSchema}
+            error={this.validationErrors.description}
             fieldName="description"
             label="Description"
-            value={this.formData.description}
+            messageSchema={KnowledgeBaseUpdateSchema}
             onChange={(value) => this.updateFormData('description', value)}
-            error={this.validationErrors.description}
             textareaProps={{ rows: 3 }}
+            value={this.formData.description}
           />
         ) : (
           <Box>
-            <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+            <Text color="gray.700" fontSize="sm" fontWeight="medium" mb={1}>
               Description
             </Text>
             <Box
-              p={3}
               bg="gray.50"
-              borderRadius="md"
               border="1px solid"
               borderColor="gray.200"
-              minH="78px" // Match textarea with 3 rows
+              borderRadius="md"
+              minH="78px"
+              p={3} // Match textarea with 3 rows
             >
-              <Text fontSize="sm" color="gray.900">
+              <Text color="gray.900" fontSize="sm">
                 {knowledgeBase.description || (
                   <Text as="span" color="gray.400" fontStyle="italic">
                     Not set
@@ -918,60 +923,60 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
 
         {/* Retrieval API URL - always visible for layout stability */}
         <ProtoDisplayField
-          messageSchema={KnowledgeBaseSchema}
+          description="This URL is automatically generated by the system for accessing the knowledge base."
           fieldName="retrieval_api_url"
           label="Retrieval API URL"
+          messageSchema={KnowledgeBaseSchema}
           value={knowledgeBase.retrievalApiUrl}
-          description="This URL is automatically generated by the system for accessing the knowledge base."
         />
 
         {/* Tags section */}
         <Box>
-          <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+          <Text color="gray.700" fontSize="sm" fontWeight="medium" mb={1}>
             Tags
           </Text>
-          <Text fontSize="sm" color="gray.500" mb={2}>
+          <Text color="gray.500" fontSize="sm" mb={2}>
             Labels can help you organize your knowledge bases.
           </Text>
           {isEditMode ? (
             <FormControl>
               {this.tagsArray.map((tag, index) => (
-                <Flex key={index} gap={2} mb={2}>
+                <Flex gap={2} key={index} mb={2}>
                   <Input
+                    flex={1}
+                    onChange={(e) => this.updateTag(index, 'key', e.target.value)}
                     placeholder="Key"
                     value={tag.key}
-                    onChange={(e) => this.updateTag(index, 'key', e.target.value)}
-                    flex={1}
                   />
                   <Input
+                    flex={1}
+                    onChange={(e) => this.updateTag(index, 'value', e.target.value)}
                     placeholder="Value"
                     value={tag.value}
-                    onChange={(e) => this.updateTag(index, 'value', e.target.value)}
-                    flex={1}
                   />
-                  <Button variant="outline" size="sm" onClick={() => this.removeTag(index)}>
+                  <Button onClick={() => this.removeTag(index)} size="sm" variant="outline">
                     <Icon as={AiOutlineDelete} />
                   </Button>
                 </Flex>
               ))}
               <ButtonGroup>
-                <Button variant="outline" size="sm" onClick={this.addTag} leftIcon={<span>+</span>} mt={2}>
+                <Button leftIcon={<span>+</span>} mt={2} onClick={this.addTag} size="sm" variant="outline">
                   Add Tag
                 </Button>
               </ButtonGroup>
             </FormControl>
           ) : (
-            <Box p={3} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200">
+            <Box bg="gray.50" border="1px solid" borderColor="gray.200" borderRadius="md" p={3}>
               {knowledgeBase.tags && Object.keys(knowledgeBase.tags).length > 0 ? (
-                <Flex gap={2} flexWrap="wrap">
+                <Flex flexWrap="wrap" gap={2}>
                   {Object.entries(knowledgeBase.tags).map(([key, value]) => (
-                    <Badge key={key} variant="outline" size="sm">
+                    <Badge key={key} size="sm" variant="outline">
                       {key}: {value}
                     </Badge>
                   ))}
                 </Flex>
               ) : (
-                <Text fontSize="sm" color="gray.400" fontStyle="italic">
+                <Text color="gray.400" fontSize="sm" fontStyle="italic">
                   No tags configured
                 </Text>
               )}
@@ -990,33 +995,33 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
         : null;
 
     return (
-      <VStack spacing={4} align="stretch">
+      <VStack align="stretch" spacing={4}>
         <Heading size="md">Vector Database</Heading>
 
         {isEditMode ? (
           <SecretDropdownField
+            helperText="All credentials are securely stored in your Secrets Store"
+            isRequired
             label="PostgreSQL DSN"
+            onChange={(value) => this.updateFormData('vectorDatabase.vectorDatabase.value.dsn', value)}
+            onCreateNew={() => this.openAddSecret('vectorDatabase.vectorDatabase.value.dsn')}
+            placeholder="postgresql://user:password@host:port/database"
             value={
               this.formData.vectorDatabase?.vectorDatabase.case === 'postgres'
                 ? this.formData.vectorDatabase.vectorDatabase.value.dsn
                 : ''
             }
-            onChange={(value) => this.updateFormData('vectorDatabase.vectorDatabase.value.dsn', value)}
-            placeholder="postgresql://user:password@host:port/database"
-            onCreateNew={() => this.openAddSecret('vectorDatabase.vectorDatabase.value.dsn')}
-            isRequired
-            helperText="All credentials are securely stored in your Secrets Store"
           />
         ) : (
           <Box>
-            <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+            <Text color="gray.700" fontSize="sm" fontWeight="medium" mb={1}>
               PostgreSQL DSN
             </Text>
-            <Text fontSize="sm" color="gray.500" mb={2}>
+            <Text color="gray.500" fontSize="sm" mb={2}>
               All credentials are securely stored in your Secrets Store
             </Text>
-            <Box p={3} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200">
-              <Text fontSize="sm" color="gray.900">
+            <Box bg="gray.50" border="1px solid" borderColor="gray.200" borderRadius="md" p={3}>
+              <Text color="gray.900" fontSize="sm">
                 {postgres?.dsn || 'Not configured'}
               </Text>
             </Box>
@@ -1025,11 +1030,11 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
 
         {postgres && (
           <ProtoDisplayField
-            messageSchema={KnowledgeBase_VectorDatabase_PostgresSchema}
+            description="Table name cannot be changed after creation."
             fieldName="table"
             label="Table Name"
+            messageSchema={KnowledgeBase_VectorDatabase_PostgresSchema}
             value={postgres.table}
-            description="Table name cannot be changed after creation."
           />
         )}
       </VStack>
@@ -1041,7 +1046,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
     const embeddingGen = knowledgeBase.embeddingGenerator;
 
     return (
-      <VStack spacing={4} align="stretch">
+      <VStack align="stretch" spacing={4}>
         <Heading size="md">Embedding Generator</Heading>
         {isEditMode ? (
           <>
@@ -1054,12 +1059,12 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             <ProtoDisplayField label="Model" value={embeddingGen?.model || ''} />
 
             {embeddingGen?.provider?.provider.case === 'openai' && (
-              <Text fontSize="sm" color="gray.500" mt={-2} mb={2}>
+              <Text color="gray.500" fontSize="sm" mb={2} mt={-2}>
                 See{' '}
                 <Link
+                  color="blue.500"
                   href="https://platform.openai.com/docs/guides/embeddings/embedding-models#embedding-models"
                   isExternal
-                  color="blue.500"
                 >
                   OpenAI embedding models
                 </Link>{' '}
@@ -1068,9 +1073,9 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             )}
 
             {embeddingGen?.provider?.provider.case === 'cohere' && (
-              <Text fontSize="sm" color="gray.500" mt={-2} mb={2}>
+              <Text color="gray.500" fontSize="sm" mb={2} mt={-2}>
                 See{' '}
-                <Link href="https://docs.cohere.com/docs/cohere-embed" isExternal color="blue.500">
+                <Link color="blue.500" href="https://docs.cohere.com/docs/cohere-embed" isExternal>
                   Cohere embedding models
                 </Link>{' '}
                 for available models and dimensions.
@@ -1081,14 +1086,9 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
 
             {/* API Key based on provider */}
             <SecretDropdownField
+              helperText="All credentials are securely stored in your Secrets Store"
+              isRequired
               label="API Key"
-              value={
-                embeddingGen?.provider?.provider.case === 'openai'
-                  ? embeddingGen.provider.provider.value.apiKey
-                  : embeddingGen?.provider?.provider.case === 'cohere'
-                    ? embeddingGen.provider.provider.value.apiKey
-                    : ''
-              }
               onChange={(value) => {
                 const path =
                   embeddingGen?.provider?.provider.case === 'openai'
@@ -1096,10 +1096,17 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
                     : 'embeddingGenerator.provider.provider.value.apiKey';
                 this.updateFormData(path, value);
               }}
-              placeholder={`Select ${embeddingGen?.provider?.provider.case === 'openai' ? 'OpenAI' : 'Cohere'} API key from secrets`}
               onCreateNew={() => this.openAddSecret('embeddingGenerator.provider.provider.value.apiKey')}
-              isRequired
-              helperText="All credentials are securely stored in your Secrets Store"
+              placeholder={`Select ${embeddingGen?.provider?.provider.case === 'openai' ? 'OpenAI' : 'Cohere'} API key from secrets`}
+              value={(() => {
+                if (embeddingGen?.provider?.provider.case === 'openai') {
+                  return embeddingGen.provider.provider.value.apiKey;
+                }
+                if (embeddingGen?.provider?.provider.case === 'cohere') {
+                  return embeddingGen.provider.provider.value.apiKey;
+                }
+                return '';
+              })()}
             />
           </>
         ) : (
@@ -1108,19 +1115,19 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
               {embeddingGen?.provider?.provider.case === 'openai' ? 'OpenAI' : 'Cohere'} Configuration
             </Heading>
             <ProtoDisplayField
-              messageSchema={KnowledgeBaseSchema}
               fieldName="embedding_generator"
               label="Model"
+              messageSchema={KnowledgeBaseSchema}
               value={embeddingGen?.model || 'Not configured'}
             />
 
             {embeddingGen?.provider?.provider.case === 'openai' && (
-              <Text fontSize="sm" color="gray.500" mt={-2} mb={2}>
+              <Text color="gray.500" fontSize="sm" mb={2} mt={-2}>
                 See{' '}
                 <Link
+                  color="blue.500"
                   href="https://platform.openai.com/docs/guides/embeddings/embedding-models#embedding-models"
                   isExternal
-                  color="blue.500"
                 >
                   OpenAI embedding models
                 </Link>{' '}
@@ -1129,9 +1136,9 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             )}
 
             {embeddingGen?.provider?.provider.case === 'cohere' && (
-              <Text fontSize="sm" color="gray.500" mt={-2} mb={2}>
+              <Text color="gray.500" fontSize="sm" mb={2} mt={-2}>
                 See{' '}
-                <Link href="https://docs.cohere.com/docs/cohere-embed" isExternal color="blue.500">
+                <Link color="blue.500" href="https://docs.cohere.com/docs/cohere-embed" isExternal>
                   Cohere embedding models
                 </Link>{' '}
                 for available models and dimensions.
@@ -1139,20 +1146,20 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             )}
 
             <ProtoDisplayField
-              messageSchema={KnowledgeBaseSchema}
               fieldName="embedding_generator"
               label="Dimensions"
+              messageSchema={KnowledgeBaseSchema}
               value={embeddingGen?.dimensions || 'Not configured'}
             />
             <Box>
-              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+              <Text color="gray.700" fontSize="sm" fontWeight="medium" mb={1}>
                 API Key
               </Text>
-              <Text fontSize="sm" color="gray.500" mb={2}>
+              <Text color="gray.500" fontSize="sm" mb={2}>
                 All credentials are securely stored in your Secrets Store
               </Text>
-              <Box p={3} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200">
-                <Text fontSize="sm" color="gray.900">
+              <Box bg="gray.50" border="1px solid" borderColor="gray.200" borderRadius="md" p={3}>
+                <Text color="gray.900" fontSize="sm">
                   {embeddingGen?.provider?.provider.value?.apiKey || 'Not configured'}
                 </Text>
               </Box>
@@ -1168,7 +1175,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
     const indexer = knowledgeBase.indexer;
 
     return (
-      <VStack spacing={4} align="stretch">
+      <VStack align="stretch" spacing={4}>
         <Heading size="md">Indexer</Heading>
         {isEditMode ? (
           <>
@@ -1176,53 +1183,53 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
               <FormControl>
                 <FormLabel>Chunk Size</FormLabel>
                 <Input
+                  onChange={(e) => this.updateFormData('indexer.chunkSize', Number(e.target.value))}
                   type="number"
                   value={this.formData.indexer?.chunkSize || 512}
-                  onChange={(e) => this.updateFormData('indexer.chunkSize', Number(e.target.value))}
                 />
               </FormControl>
               <FormControl>
                 <FormLabel>Chunk Overlap</FormLabel>
                 <Input
+                  onChange={(e) => this.updateFormData('indexer.chunkOverlap', Number(e.target.value))}
                   type="number"
                   value={this.formData.indexer?.chunkOverlap || 100}
-                  onChange={(e) => this.updateFormData('indexer.chunkOverlap', Number(e.target.value))}
                 />
               </FormControl>
             </Flex>
 
             <TopicSelector
-              selectedTopics={this.formData.indexer?.inputTopics || []}
               onTopicsChange={(topics) => this.updateFormData('indexer.inputTopics', topics)}
+              selectedTopics={this.formData.indexer?.inputTopics || []}
             />
 
             <Flex gap={4}>
               <UserDropdown
-                label="Redpanda Username"
-                value={this.formData.indexer?.redpandaUsername || ''}
-                onChange={(value) => this.updateFormData('indexer.redpandaUsername', value)}
-                isRequired
                 helperText="Select from existing Redpanda users"
+                isRequired
+                label="Redpanda Username"
+                onChange={(value) => this.updateFormData('indexer.redpandaUsername', value)}
+                value={this.formData.indexer?.redpandaUsername || ''}
               />
               <SecretDropdownField
-                label="Redpanda Password"
-                value={this.formData.indexer?.redpandaPassword || ''}
-                onChange={(value) => this.updateFormData('indexer.redpandaPassword', value)}
-                placeholder="Enter password or select from secrets"
-                onCreateNew={() => this.openAddSecret('indexer.redpandaPassword')}
                 helperText="All credentials are securely stored in your Secrets Store"
+                label="Redpanda Password"
+                onChange={(value) => this.updateFormData('indexer.redpandaPassword', value)}
+                onCreateNew={() => this.openAddSecret('indexer.redpandaPassword')}
+                placeholder="Enter password or select from secrets"
+                value={this.formData.indexer?.redpandaPassword || ''}
               />
             </Flex>
 
             <FormControl isRequired>
               <FormLabel>SASL Mechanism</FormLabel>
               <SingleSelect
-                value={this.formData.indexer?.redpandaSaslMechanism || SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256}
                 onChange={(value) => this.updateFormData('indexer.redpandaSaslMechanism', value)}
                 options={[
                   { value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256, label: 'SCRAM-SHA-256' },
                   { value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512, label: 'SCRAM-SHA-512' },
                 ]}
+                value={this.formData.indexer?.redpandaSaslMechanism || SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256}
               />
             </FormControl>
           </>
@@ -1231,40 +1238,40 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             <Flex gap={4}>
               <FormControl>
                 <FormLabel>Chunk Size</FormLabel>
-                <Input type="number" value={indexer?.chunkSize || 512} isDisabled />
+                <Input isDisabled type="number" value={indexer?.chunkSize || 512} />
               </FormControl>
               <FormControl>
                 <FormLabel>Chunk Overlap</FormLabel>
-                <Input type="number" value={indexer?.chunkOverlap || 100} isDisabled />
+                <Input isDisabled type="number" value={indexer?.chunkOverlap || 100} />
               </FormControl>
             </Flex>
 
             <TopicSelector
-              selectedTopics={indexer?.inputTopics || []}
-              onTopicsChange={() => {}} // No-op for read-only
               isReadOnly={true}
+              onTopicsChange={() => {}} // No-op for read-only
+              selectedTopics={indexer?.inputTopics || []}
             />
 
             <Flex gap={4}>
               <UserDropdown
-                label="Redpanda Username"
-                value={indexer?.redpandaUsername || ''}
-                onChange={() => {}} // No-op for read-only
-                isRequired
                 helperText="Select from existing Redpanda users"
                 isDisabled
+                isRequired // No-op for read-only
+                label="Redpanda Username"
+                onChange={() => {}}
+                value={indexer?.redpandaUsername || ''}
               />
               <FormControl isRequired>
                 <FormLabel fontWeight="medium">Redpanda Password</FormLabel>
-                <Text fontSize="sm" color="gray.500" mb={2}>
+                <Text color="gray.500" fontSize="sm" mb={2}>
                   All credentials are securely stored in your Secrets Store
                 </Text>
                 <SingleSelect
-                  value={indexer?.redpandaPassword || ''}
+                  isDisabled
                   onChange={() => {}} // No-op for read-only
                   options={[]}
                   placeholder="Password configured"
-                  isDisabled
+                  value={indexer?.redpandaPassword || ''}
                 />
               </FormControl>
             </Flex>
@@ -1272,13 +1279,13 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             <FormControl isRequired>
               <FormLabel>SASL Mechanism</FormLabel>
               <SingleSelect
-                value={indexer?.redpandaSaslMechanism || SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256}
+                isDisabled
                 onChange={() => {}} // No-op for read-only
                 options={[
                   { value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256, label: 'SCRAM-SHA-256' },
                   { value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512, label: 'SCRAM-SHA-512' },
                 ]}
-                isDisabled
+                value={indexer?.redpandaSaslMechanism || SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256}
               />
             </FormControl>
           </>
@@ -1293,7 +1300,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
     const reranker = retriever?.reranker;
 
     return (
-      <VStack spacing={4} align="stretch">
+      <VStack align="stretch" spacing={4}>
         <Heading size="md">Retriever</Heading>
 
         {isEditMode ? (
@@ -1301,14 +1308,14 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             <FormControl>
               <Flex alignItems="center" gap={2}>
                 <Checkbox
-                  isChecked={this.formData.retriever?.reranker?.enabled || false}
+                  isChecked={this.formData.retriever?.reranker?.enabled}
                   onChange={(e) => this.updateFormData('retriever.reranker.enabled', e.target.checked)}
                 />
                 <FormLabel fontWeight="medium" mb={0}>
                   Enable Reranker (Recommended)
                 </FormLabel>
               </Flex>
-              <Text fontSize="sm" color="gray.500" mt={1}>
+              <Text color="gray.500" fontSize="sm" mt={1}>
                 Reranker improves search quality by reordering retrieved documents based on relevance.
               </Text>
             </FormControl>
@@ -1318,30 +1325,30 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
                 <FormControl>
                   <FormLabel>Provider</FormLabel>
                   <SingleSelect
-                    value={this.formData.retriever?.reranker?.provider?.provider.case || 'cohere'}
                     onChange={(value) => this.updateFormData('retriever.reranker.provider.provider.case', value)}
                     options={[{ value: 'cohere', label: 'Cohere' }]}
+                    value={this.formData.retriever?.reranker?.provider?.provider.case || 'cohere'}
                   />
                 </FormControl>
 
                 <FormControl isRequired>
                   <FormLabel>Model</FormLabel>
                   <Input
-                    value={this.formData.retriever?.reranker?.provider?.provider.value?.model || 'rerank-v3.5'}
                     onChange={(e) =>
                       this.updateFormData('retriever.reranker.provider.provider.value.model', e.target.value)
                     }
+                    value={this.formData.retriever?.reranker?.provider?.provider.value?.model || 'rerank-v3.5'}
                   />
                 </FormControl>
 
                 <SecretDropdownField
-                  label="API Key"
-                  value={this.formData.retriever?.reranker?.provider?.provider.value?.apiKey || ''}
-                  onChange={(value) => this.updateFormData('retriever.reranker.provider.provider.value.apiKey', value)}
-                  placeholder="Select Cohere API key from secrets"
-                  onCreateNew={() => this.openAddSecret('retriever.reranker.provider.provider.value.apiKey')}
-                  isRequired
                   helperText="All credentials are securely stored in your Secrets Store"
+                  isRequired
+                  label="API Key"
+                  onChange={(value) => this.updateFormData('retriever.reranker.provider.provider.value.apiKey', value)}
+                  onCreateNew={() => this.openAddSecret('retriever.reranker.provider.provider.value.apiKey')}
+                  placeholder="Select Cohere API key from secrets"
+                  value={this.formData.retriever?.reranker?.provider?.provider.value?.apiKey || ''}
                 />
               </>
             )}
@@ -1350,12 +1357,12 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
           <>
             <FormControl>
               <Flex alignItems="center" gap={2}>
-                <Checkbox isChecked={reranker?.enabled || false} isDisabled={true} />
+                <Checkbox isChecked={reranker?.enabled} isDisabled={true} />
                 <FormLabel fontWeight="medium" mb={0}>
                   Enable Reranker (Recommended)
                 </FormLabel>
               </Flex>
-              <Text fontSize="sm" color="gray.500" mt={1}>
+              <Text color="gray.500" fontSize="sm" mt={1}>
                 Reranker improves search quality by reordering retrieved documents based on relevance.
               </Text>
             </FormControl>
@@ -1363,24 +1370,24 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             {reranker?.enabled && reranker.provider && (
               <>
                 <ProtoDisplayField
-                  messageSchema={KnowledgeBaseSchema}
                   fieldName="retriever"
                   label="Provider"
+                  messageSchema={KnowledgeBaseSchema}
                   value={reranker.provider.provider.case || 'Not configured'}
                 />
 
                 {reranker.provider.provider.case === 'cohere' && (
                   <>
                     <ProtoDisplayField
-                      messageSchema={KnowledgeBaseSchema}
                       fieldName="retriever"
                       label="Model"
+                      messageSchema={KnowledgeBaseSchema}
                       value={reranker.provider.provider.value.model}
                     />
                     <ProtoDisplayField
-                      messageSchema={KnowledgeBaseSchema}
                       fieldName="retriever"
                       label="API Key"
+                      messageSchema={KnowledgeBaseSchema}
                       value={reranker.provider.provider.value.apiKey || 'Not configured'}
                     />
                   </>
@@ -1459,6 +1466,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
         description: `Retrieved ${results.length} results`,
       });
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('Retrieval API error:', error);
       toast({
         status: 'error',
@@ -1547,6 +1555,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
         description: 'Received chat response',
       });
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('Chat API error:', error);
       toast({
         status: 'error',
@@ -1579,9 +1588,9 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
     const generation = knowledgeBase.generation;
 
     return (
-      <VStack spacing={4} align="stretch">
+      <VStack align="stretch" spacing={4}>
         <Heading size="md">Generation</Heading>
-        <Text fontSize="sm" color="gray.600">
+        <Text color="gray.600" fontSize="sm">
           The Generation provider is used to generate the final response in the chat endpoint.
         </Text>
 
@@ -1596,14 +1605,14 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
 
             {/* API Key */}
             <SecretDropdownField
+              helperText="OpenAI API key for authentication"
+              isRequired
               label="API Key"
-              value={generation?.provider?.provider.case === 'openai' ? generation.provider.provider.value.apiKey : ''}
               onChange={(value) => {
                 this.updateFormData('generation.provider.provider.value.apiKey', value);
               }}
               onCreateNew={() => this.openAddSecret('generation.provider.provider.value.apiKey')}
-              isRequired
-              helperText="OpenAI API key for authentication"
+              value={generation?.provider?.provider.case === 'openai' ? generation.provider.provider.value.apiKey : ''}
             />
           </>
         ) : (
@@ -1629,17 +1638,16 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
     const { knowledgeBase } = this.props;
 
     return (
-      <VStack spacing={4} align="stretch">
+      <VStack align="stretch" spacing={4}>
         <Heading size="md">Playground</Heading>
 
         {/* Mode Selection */}
         <FormControl>
           <FormLabel>Mode</FormLabel>
           <RadioGroup
-            name="playgroundMode"
             direction="row"
             isAttached={false}
-            value={this.playgroundMode}
+            name="playgroundMode"
             onChange={(value) => (this.playgroundMode = value as 'retrieve' | 'chat')}
             options={[
               {
@@ -1651,26 +1659,28 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
                 label: 'Chat',
               },
             ]}
+            value={this.playgroundMode}
           />
         </FormControl>
 
         {this.playgroundMode === 'retrieve' && (
-          <VStack spacing={4} align="stretch">
+          <VStack align="stretch" spacing={4}>
             {/* Query Input */}
             <FormControl>
               <FormLabel>Query</FormLabel>
               <Textarea
-                placeholder="Enter your query here... (e.g., 'which redpanda tiers exist? Show a table')"
-                value={this.query}
                 onChange={(e) => (this.query = e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && e.ctrlKey) {
                     e.preventDefault();
-                    this.callRetrievalAPI();
+                    // biome-ignore lint/suspicious/noConsole: intentional console usage
+                    this.callRetrievalAPI().catch(console.error);
                   }
                 }}
-                rows={3}
+                placeholder="Enter your query here... (e.g., 'which redpanda tiers exist? Show a table')"
                 resize="vertical"
+                rows={3}
+                value={this.query}
               />
             </FormControl>
 
@@ -1678,11 +1688,11 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             <FormControl>
               <FormLabel>Number of Results</FormLabel>
               <Input
-                type="number"
-                min={1}
                 max={100}
-                value={this.topN}
+                min={1}
                 onChange={(e) => (this.topN = Number(e.target.value))}
+                type="number"
+                value={this.topN}
                 width="120px"
               />
             </FormControl>
@@ -1690,10 +1700,10 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             {/* Submit Button */}
             <Button
               colorScheme="darkblue"
-              onClick={this.callRetrievalAPI}
+              disabled={!knowledgeBase.retrievalApiUrl}
               isLoading={this.isQueryLoading}
               loadingText="Retrieving..."
-              disabled={!knowledgeBase.retrievalApiUrl}
+              onClick={this.callRetrievalAPI}
               width="fit-content"
             >
               Submit Query
@@ -1701,7 +1711,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
 
             {/* API URL Info */}
             {knowledgeBase.retrievalApiUrl && (
-              <Text fontSize="sm" color="gray.600">
+              <Text color="gray.600" fontSize="sm">
                 Using retrieval API: {knowledgeBase.retrievalApiUrl}
               </Text>
             )}
@@ -1709,10 +1719,10 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             {/* Results Table */}
             {this.retrievalResults.length > 0 && (
               <Box>
-                <Heading size="sm" mb={3}>
+                <Heading mb={3} size="sm">
                   Results ({this.retrievalResults.length})
                 </Heading>
-                <Table variant="simple" size="sm">
+                <Table size="sm" variant="simple">
                   <Thead>
                     <Tr>
                       <Th>Score</Th>
@@ -1735,11 +1745,11 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
                         </Td>
                         <Td maxW="300px">
                           <Text
+                            _hover={{ color: 'blue.600', textDecoration: 'underline' }}
+                            color="blue.500"
+                            cursor="pointer"
                             fontSize="sm"
                             noOfLines={2}
-                            cursor="pointer"
-                            color="blue.500"
-                            _hover={{ color: 'blue.600', textDecoration: 'underline' }}
                             onClick={() =>
                               this.openTextModal(result.text, result.document_name, result.chunk_id, result.topic)
                             }
@@ -1758,22 +1768,23 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
         )}
 
         {this.playgroundMode === 'chat' && (
-          <VStack spacing={4} align="stretch">
+          <VStack align="stretch" spacing={4}>
             {/* Query Input */}
             <FormControl>
               <FormLabel>Chat Message</FormLabel>
               <Textarea
-                placeholder="Ask a question about your knowledge base... (e.g., 'What are the different redpanda tiers and their features?')"
-                value={this.query}
                 onChange={(e) => (this.query = e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && e.ctrlKey) {
                     e.preventDefault();
-                    this.callChatAPI();
+                    // biome-ignore lint/suspicious/noConsole: intentional console usage
+                    this.callChatAPI().catch(console.error);
                   }
                 }}
-                rows={3}
+                placeholder="Ask a question about your knowledge base... (e.g., 'What are the different redpanda tiers and their features?')"
                 resize="vertical"
+                rows={3}
+                value={this.query}
               />
             </FormControl>
 
@@ -1781,11 +1792,11 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             <FormControl>
               <FormLabel>Number of Context Documents</FormLabel>
               <Input
-                type="number"
-                min={1}
                 max={100}
-                value={this.topN}
+                min={1}
                 onChange={(e) => (this.topN = Number(e.target.value))}
+                type="number"
+                value={this.topN}
                 width="120px"
               />
             </FormControl>
@@ -1793,10 +1804,10 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             {/* Submit Button */}
             <Button
               colorScheme="darkblue"
-              onClick={this.callChatAPI}
+              disabled={!knowledgeBase.retrievalApiUrl}
               isLoading={this.isQueryLoading}
               loadingText={this.chatLoadingPhase === 'retrieving' ? 'Retrieving documents...' : 'Thinking...'}
-              disabled={!knowledgeBase.retrievalApiUrl}
+              onClick={this.callChatAPI}
               width="fit-content"
             >
               Send Message
@@ -1804,7 +1815,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
 
             {/* API URL Info */}
             {knowledgeBase.retrievalApiUrl && (
-              <Text fontSize="sm" color="gray.600">
+              <Text color="gray.600" fontSize="sm">
                 Using chat API: {knowledgeBase.retrievalApiUrl}
               </Text>
             )}
@@ -1812,10 +1823,10 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             {/* Chat Response */}
             {this.chatResponse && (
               <Box>
-                <Heading size="sm" mb={3}>
+                <Heading mb={3} size="sm">
                   Response
                 </Heading>
-                <Box p={4} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200">
+                <Box bg="gray.50" border="1px solid" borderColor="gray.200" borderRadius="md" p={4}>
                   <ChatMarkdown
                     message={{
                       content: this.chatResponse,
@@ -1882,8 +1893,8 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
 
         <SecretsQuickAdd
           isOpen={this.isAddSecretOpen}
-          onCloseAddSecret={this.closeAddSecret}
           onAdd={this.onAddSecret}
+          onCloseAddSecret={this.closeAddSecret}
         />
 
         <Modal isOpen={this.isTextModalOpen} onClose={this.closeTextModal} size="4xl">
@@ -1895,7 +1906,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
                   Chunk Text Preview
                 </Text>
                 {this.selectedChunkInfo && (
-                  <Flex gap={4} fontSize="sm" color="gray.600">
+                  <Flex color="gray.600" fontSize="sm" gap={4}>
                     <Text>
                       <strong>Document:</strong> {this.selectedChunkInfo.document}
                     </Text>
@@ -1911,15 +1922,15 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             </ModalHeader>
             <ModalBody pb={6}>
               <Box
-                p={4}
                 bg="gray.50"
-                borderRadius="md"
                 border="1px solid"
                 borderColor="gray.200"
+                borderRadius="md"
                 maxH="400px"
                 overflowY="auto"
+                p={4}
               >
-                <Text fontSize="sm" whiteSpace="pre-wrap" lineHeight="tall">
+                <Text fontSize="sm" lineHeight="tall" whiteSpace="pre-wrap">
                   {this.selectedChunkText}
                 </Text>
               </Box>

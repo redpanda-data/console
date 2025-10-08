@@ -31,7 +31,7 @@ function DialogOverlay({ className, ...props }: React.ComponentProps<typeof Dial
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/80',
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/40 backdrop-blur-xs',
         className,
       )}
       {...props}
@@ -100,7 +100,7 @@ function DialogContent({
   );
 }
 
-const dialogHeaderVariants = cva('flex flex-col', {
+const dialogHeaderVariants = cva('flex flex-col gap-2', {
   variants: {
     align: {
       left: 'text-left',

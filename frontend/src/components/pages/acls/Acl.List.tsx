@@ -51,19 +51,7 @@ import {
 import { type FC, useRef, useState } from 'react';
 import { BsThreeDots } from 'react-icons/bs';
 import { Link as ReactRouterLink, useNavigate } from 'react-router-dom';
-import ErrorResult from '../../../components/misc/ErrorResult';
-import { useDeleteAclMutation, useListACLAsPrincipalGroups } from '../../../react-query/api/acl';
-import { appGlobal } from '../../../state/appGlobal';
-import { api, rolesApi } from '../../../state/backendApi';
-import { AclRequestDefault } from '../../../state/restInterfaces';
-import { Features } from '../../../state/supportedFeatures';
-import { uiSettings } from '../../../state/ui';
-import { Code as CodeEl, DefaultSkeleton } from '../../../utils/tsxUtils';
-import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
-import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
-import PageContent from '../../misc/PageContent';
-import Section from '../../misc/Section';
-import { PageComponent, type PageInitHelper } from '../Page';
+
 import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 import type { AclPrincipalGroup } from './Models';
@@ -77,6 +65,19 @@ import {
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
 import { UserRoleTags } from './UserPermissionAssignments';
+import ErrorResult from '../../../components/misc/ErrorResult';
+import { useDeleteAclMutation, useListACLAsPrincipalGroups } from '../../../react-query/api/acl';
+import { appGlobal } from '../../../state/appGlobal';
+import { api, rolesApi } from '../../../state/backendApi';
+import { AclRequestDefault } from '../../../state/restInterfaces';
+import { Features } from '../../../state/supportedFeatures';
+import { uiSettings } from '../../../state/ui';
+import { Code as CodeEl, DefaultSkeleton } from '../../../utils/tsxUtils';
+import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
+import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
+import PageContent from '../../misc/PageContent';
+import Section from '../../misc/Section';
+import { PageComponent, type PageInitHelper } from '../Page';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -101,7 +102,7 @@ const getCreateUserButtonProps = () => ({
 });
 
 @observer
-class AclList extends PageComponent<{ tab: AclListTab }> {
+class AclList extends PageComponent<{ tab?: AclListTab }> {
   @observable edittingPrincipalGroup?: AclPrincipalGroup;
 
   constructor(p: any) {
@@ -113,7 +114,9 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
     p.title = 'Access Control';
     p.addBreadcrumb('Access control', '/security');
 
-    void this.refreshData();
+    this.refreshData().catch(() => {
+      // Error handling managed by API layer
+    });
     appGlobal.onRefresh = () => this.refreshData();
   }
 
@@ -211,25 +214,34 @@ export default AclList;
 
 type UsersEntry = { name: string; type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
 const PermissionsListTab = observer(() => {
-  const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({ name: u, type: 'SERVICE_ACCOUNT' }));
+  const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({
+    name: u,
+    type: 'SERVICE_ACCOUNT',
+  }));
 
   // In addition, find all principals that are referenced by roles, or acls, that are not service accounts
-  for (const g of principalGroupsView.principalGroups)
-    if (g.principalType === 'User' && !g.principalName.includes('*'))
-      if (!users.any((u) => u.name === g.principalName))
-        // is it a user that is being referenced?
-        // is the user already listed as a service account?
-        users.push({ name: g.principalName, type: 'PRINCIPAL' });
+  for (const g of principalGroupsView.principalGroups) {
+    if (g.principalType === 'User' && !g.principalName.includes('*') && !users.any((u) => u.name === g.principalName)) {
+      // is it a user that is being referenced?
+      // is the user already listed as a service account?
+      users.push({ name: g.principalName, type: 'PRINCIPAL' });
+    }
+  }
 
-  for (const [_, roleMembers] of rolesApi.roleMembers)
-    for (const roleMember of roleMembers)
-      if (!users.any((u) => u.name === roleMember.name))
+  for (const [_, roleMembers] of rolesApi.roleMembers) {
+    for (const roleMember of roleMembers) {
+      if (!users.any((u) => u.name === roleMember.name)) {
         // make sure that user isn't already in the list
         users.push({ name: roleMember.name, type: 'PRINCIPAL' });
+      }
+    }
+  }
 
   const usersFiltered = users.filter((u) => {
     const filter = uiSettings.aclList.permissionsTab.quickSearch;
-    if (!filter) return true;
+    if (!filter) {
+      return true;
+    }
 
     try {
       const quickSearchRegExp = new RegExp(filter, 'i');
@@ -249,28 +261,15 @@ const PermissionsListTab = observer(() => {
       </Box>
 
       <SearchField
-        width="300px"
+        placeholderText="Filter by name"
         searchText={uiSettings.aclList.permissionsTab.quickSearch}
         setSearchText={(x) => (uiSettings.aclList.permissionsTab.quickSearch = x)}
-        placeholderText="Filter by name"
+        width="300px"
       />
 
       <Section>
         <Box my={4}>
           <DataTable<UsersEntry>
-            data={usersFiltered}
-            pagination
-            sorting
-            emptyText="No principals yet"
-            emptyAction={
-              <Button
-                variant="outline"
-                {...getCreateUserButtonProps()}
-                onClick={() => appGlobal.historyPush('/security/users/create')}
-              >
-                Create user
-              </Button>
-            }
             columns={[
               {
                 id: 'name',
@@ -279,7 +278,7 @@ const PermissionsListTab = observer(() => {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
+                    <ChakraLink as={ReactRouterLink} textDecoration="none" to={`/security/users/${entry.name}/details`}>
                       {entry.name}
                     </ChakraLink>
                   );
@@ -290,10 +289,23 @@ const PermissionsListTab = observer(() => {
                 header: 'Permissions',
                 cell: (ctx) => {
                   const entry = ctx.row.original;
-                  return <UserRoleTags userName={entry.name} showMaxItems={2} />;
+                  return <UserRoleTags showMaxItems={2} userName={entry.name} />;
                 },
               },
             ]}
+            data={usersFiltered}
+            emptyAction={
+              <Button
+                variant="outline"
+                {...getCreateUserButtonProps()}
+                onClick={() => appGlobal.historyPush('/security/users/create')}
+              >
+                Create user
+              </Button>
+            }
+            emptyText="No principals yet"
+            pagination
+            sorting
           />
         </Box>
       </Section>
@@ -302,11 +314,16 @@ const PermissionsListTab = observer(() => {
 });
 
 const UsersTab = observer(() => {
-  const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({ name: u, type: 'SERVICE_ACCOUNT' }));
+  const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({
+    name: u,
+    type: 'SERVICE_ACCOUNT',
+  }));
 
   const usersFiltered = users.filter((u) => {
     const filter = uiSettings.aclList.usersTab.quickSearch;
-    if (!filter) return true;
+    if (!filter) {
+      return true;
+    }
 
     try {
       const quickSearchRegExp = new RegExp(filter, 'i');
@@ -327,22 +344,22 @@ const UsersTab = observer(() => {
       </Box>
 
       <SearchField
-        width="300px"
+        placeholderText="Filter by name"
         searchText={uiSettings.aclList.usersTab.quickSearch}
         setSearchText={(x) => (uiSettings.aclList.usersTab.quickSearch = x)}
-        placeholderText="Filter by name"
+        width="300px"
       />
 
       <Section>
         <Tooltip
+          hasArrow
           isDisabled={Features.createUser}
           label="The cluster does not support this feature"
           placement="top"
-          hasArrow
         >
           <Button
-            variant="outline"
             data-testid="create-user-button"
+            variant="outline"
             {...getCreateUserButtonProps()}
             onClick={() => appGlobal.historyPush('/security/users/create')}
           >
@@ -352,19 +369,6 @@ const UsersTab = observer(() => {
 
         <Box my={4}>
           <DataTable<UsersEntry>
-            data={usersFiltered}
-            pagination
-            sorting
-            emptyText="No users yet"
-            emptyAction={
-              <Button
-                variant="outline"
-                {...getCreateUserButtonProps()}
-                onClick={() => appGlobal.historyPush('/security/users/create')}
-              >
-                Create user
-              </Button>
-            }
             columns={[
               {
                 id: 'name',
@@ -373,7 +377,7 @@ const UsersTab = observer(() => {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
+                    <ChakraLink as={ReactRouterLink} textDecoration="none" to={`/security/users/${entry.name}/details`}>
                       {entry.name}
                     </ChakraLink>
                   );
@@ -384,7 +388,7 @@ const UsersTab = observer(() => {
                 header: 'Permissions',
                 cell: (ctx) => {
                   const entry = ctx.row.original;
-                  return <UserRoleTags userName={entry.name} showMaxItems={2} />;
+                  return <UserRoleTags showMaxItems={2} userName={entry.name} />;
                 },
               },
               {
@@ -397,6 +401,19 @@ const UsersTab = observer(() => {
                 },
               },
             ]}
+            data={usersFiltered}
+            emptyAction={
+              <Button
+                variant="outline"
+                {...getCreateUserButtonProps()}
+                onClick={() => appGlobal.historyPush('/security/users/create')}
+              >
+                Create user
+              </Button>
+            }
+            emptyText="No users yet"
+            pagination
+            sorting
           />
         </Box>
       </Section>
@@ -430,17 +447,17 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
     <>
       {api.isAdminApiConfigured && (
         <ChangePasswordModal
-          userName={user.name}
           isOpen={isChangePasswordModalOpen}
           setIsOpen={setIsChangePasswordModalOpen}
+          userName={user.name}
         />
       )}
       {Features.rolesApi && (
-        <ChangeRolesModal userName={user.name} isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} />
+        <ChangeRolesModal isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} userName={user.name} />
       )}
 
       <Menu>
-        <MenuButton as={Button} variant="ghost" className="deleteButton" style={{ height: 'auto' }}>
+        <MenuButton as={Button} className="deleteButton" style={{ height: 'auto' }} variant="ghost">
           <Icon as={BsThreeDots} />
         </MenuButton>
         <MenuList>
@@ -465,8 +482,8 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
             </MenuItem>
           )}
           <DeleteUserConfirmModal
-            onConfirm={onConfirmDelete}
             buttonEl={<MenuItem type="button">Delete</MenuItem>}
+            onConfirm={onConfirmDelete}
             userName={user.name}
           />
         </MenuList>
@@ -478,7 +495,9 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
 const RolesTab = observer(() => {
   const roles = (rolesApi.roles ?? []).filter((u) => {
     const filter = uiSettings.aclList.rolesTab.quickSearch;
-    if (!filter) return true;
+    if (!filter) {
+      return true;
+    }
     try {
       const quickSearchRegExp = new RegExp(filter, 'i');
       return u.match(quickSearchRegExp);
@@ -486,7 +505,7 @@ const RolesTab = observer(() => {
       return false;
     }
   });
-  // @ts-ignore perhaps required for MobX?
+  // @ts-expect-error perhaps required for MobX?
   const _isLoading = rolesApi.roles == null;
 
   const rolesWithMembers = roles.map((r) => {
@@ -507,18 +526,17 @@ const RolesTab = observer(() => {
       </NullFallbackBoundary>
 
       <SearchField
-        width="300px"
+        placeholderText="Filter by name"
         searchText={uiSettings.aclList.rolesTab.quickSearch}
         setSearchText={(x) => (uiSettings.aclList.rolesTab.quickSearch = x)}
-        placeholderText="Filter by name"
+        width="300px"
       />
 
       <Section>
         <Button
           data-testid="create-role-button"
-          variant="outline"
-          onClick={() => appGlobal.historyPush('/security/roles/create')}
           isDisabled={api.userData?.canCreateRoles === false || !Features.rolesApi}
+          onClick={() => appGlobal.historyPush('/security/roles/create')}
           tooltip={[
             api.userData?.canCreateRoles === false &&
               'You need KafkaAclOperation.KAFKA_ACL_OPERATION_ALTER and RedpandaCapability.MANAGE_RBAC permissions.',
@@ -526,15 +544,13 @@ const RolesTab = observer(() => {
           ]
             .filter(Boolean)
             .join(' ')}
+          variant="outline"
         >
           Create role
         </Button>
 
         <Box my={4}>
           <DataTable
-            data={rolesWithMembers}
-            pagination
-            sorting
             columns={[
               {
                 id: 'name',
@@ -545,9 +561,9 @@ const RolesTab = observer(() => {
                   return (
                     <ChakraLink
                       as={ReactRouterLink}
-                      to={`/security/roles/${encodeURIComponent(entry.name)}/details`}
-                      textDecoration="none"
                       data-testid={`role-list-item-${entry.name}`}
+                      textDecoration="none"
+                      to={`/security/roles/${encodeURIComponent(entry.name)}/details`}
                     >
                       {entry.name}
                     </ChakraLink>
@@ -557,9 +573,7 @@ const RolesTab = observer(() => {
               {
                 id: 'assignedPrincipals',
                 header: 'Assigned principals',
-                cell: (ctx) => {
-                  return <>{ctx.row.original.members.length}</>;
-                },
+                cell: (ctx) => <>{ctx.row.original.members.length}</>,
               },
               {
                 size: 60,
@@ -570,25 +584,25 @@ const RolesTab = observer(() => {
                   return (
                     <Flex flexDirection="row" gap={4}>
                       <button
-                        type="button"
                         onClick={() => {
                           appGlobal.historyPush(`/security/roles/${entry.name}/edit`);
                         }}
+                        type="button"
                       >
                         <Icon as={PencilIcon} />
                       </button>
                       <DeleteRoleConfirmModal
+                        buttonEl={
+                          <button type="button">
+                            <Icon as={TrashIcon} />
+                          </button>
+                        }
                         numberOfPrincipals={entry.members.length}
                         onConfirm={async () => {
                           await rolesApi.deleteRole(entry.name, true);
                           await rolesApi.refreshRoles();
                           await rolesApi.refreshRoleMembers();
                         }}
-                        buttonEl={
-                          <button type="button">
-                            <Icon as={TrashIcon} />
-                          </button>
-                        }
                         roleName={entry.name}
                       />
                     </Flex>
@@ -596,6 +610,9 @@ const RolesTab = observer(() => {
                 },
               },
             ]}
+            data={rolesWithMembers}
+            pagination
+            sorting
           />
         </Box>
       </Section>
@@ -616,10 +633,10 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
   const deleteACLsForPrincipal = async (principal: string, host: string) => {
     const deleteRequest: DeleteACLsRequest = create(DeleteACLsRequestSchema, {
       filter: {
-        principal: principal,
+        principal,
         resourceType: ACL_ResourceType.ANY,
         resourceName: undefined,
-        host: host,
+        host,
         operation: ACL_Operation.ANY,
         permissionType: ACL_PermissionType.ANY,
         resourcePatternType: ACL_ResourcePatternType.ANY,
@@ -642,10 +659,13 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
     const quickSearchRegExp = new RegExp(uiSettings.aclList.configTable.quickSearch, 'i');
     groups = groups?.filter((aclGroup) => aclGroup.principalName.match(quickSearchRegExp));
   } catch (_e) {
+    // biome-ignore lint/suspicious/noConsole: user feedback for invalid regex
     console.warn('Invalid expression');
   }
 
-  if (isLoading || !principalGroups) return DefaultSkeleton;
+  if (isLoading || !principalGroups) {
+    return DefaultSkeleton;
+  }
 
   return (
     <Flex flexDirection="column" gap="4">
@@ -664,22 +684,21 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
         </Alert>
       )}
       <SearchField
-        width="300px"
+        placeholderText="Filter by name"
         searchText={uiSettings.aclList.configTable.quickSearch}
         setSearchText={(x) => (uiSettings.aclList.configTable.quickSearch = x)}
-        placeholderText="Filter by name"
+        width="300px"
       />
       <Section>
         {edittingPrincipalGroup && (
           <AclPrincipalGroupEditor
-            // @ts-ignore
-            principalGroup={edittingPrincipalGroup}
-            type={editorType}
             onClose={() => {
               setEdittingPrincipalGroup(null);
               api.refreshAcls(AclRequestDefault, true);
               api.refreshServiceAccounts();
             }}
+            principalGroup={edittingPrincipalGroup}
+            type={editorType}
           />
         )}
 
@@ -687,7 +706,6 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
 
         <Button
           data-testid="create-acls"
-          variant="outline"
           onClick={() => {
             navigate('create');
             setEditorType('create');
@@ -701,18 +719,21 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                 transactionalIdAcls: [createEmptyTransactionalIdAcl()],
                 clusterAcls: createEmptyClusterAcl(),
                 sourceEntries: [],
-              }) as AclPrincipalGroup,
+              }) as AclPrincipalGroup
             );
           }}
+          variant="outline"
         >
           Create ACLs
         </Button>
 
         <Box py={4}>
-          <DataTable<{ principal: string; host: string; principalType: string; principalName: string }>
-            data={groups || []}
-            pagination
-            sorting
+          <DataTable<{
+            principal: string;
+            host: string;
+            principalType: string;
+            principalName: string;
+          }>
             columns={[
               {
                 size: Number.POSITIVE_INFINITY,
@@ -724,19 +745,19 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                   //     :record.principalType;
                   return (
                     <button
-                      type="button"
                       className="hoverLink"
                       onClick={() => {
                         navigate(`/security/acls/${record.principalName}/details`);
                       }}
+                      type="button"
                     >
                       <Flex>
                         {/* <Badge variant="subtle" mr="2">{principalType}</Badge> */}
                         <Text
                           as="span"
-                          wordBreak="break-word"
-                          whiteSpace="break-spaces"
                           data-testid={`acl-list-item-${record.principalName}-${record.host}`}
+                          whiteSpace="break-spaces"
+                          wordBreak="break-word"
                         >
                           {record.principalName}
                         </Text>
@@ -766,6 +787,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                       try {
                         await deleteACLsForPrincipal(record.principal, record.host);
                       } catch (err: unknown) {
+                        // biome-ignore lint/suspicious/noConsole: error logging
                         console.error('failed to delete acls', { error: err });
                         setAclFailed({ err });
                       }
@@ -783,6 +805,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                           ),
                         });
                       } catch (err: unknown) {
+                        // biome-ignore lint/suspicious/noConsole: error logging
                         console.error('failed to delete acls', { error: err });
                         setAclFailed({ err });
                       }
@@ -793,23 +816,27 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
 
                   return (
                     <Menu>
-                      <MenuButton as={Button} variant="ghost" className="deleteButton" style={{ height: 'auto' }}>
+                      <MenuButton as={Button} className="deleteButton" style={{ height: 'auto' }} variant="ghost">
                         <Icon as={TrashIcon} />
                       </MenuButton>
                       <MenuList>
                         <MenuItem
-                          isDisabled={!userExists || !Features.deleteUser}
+                          isDisabled={!(userExists && Features.deleteUser)}
                           onClick={(e) => {
-                            void onDelete(true, true);
+                            onDelete(true, true).catch(() => {
+                              // Error handling managed by API layer
+                            });
                             e.stopPropagation();
                           }}
                         >
                           Delete (User and ACLs)
                         </MenuItem>
                         <MenuItem
-                          isDisabled={!userExists || !Features.deleteUser}
+                          isDisabled={!(userExists && Features.deleteUser)}
                           onClick={(e) => {
-                            void onDelete(true, false);
+                            onDelete(true, false).catch(() => {
+                              // Error handling managed by API layer
+                            });
                             e.stopPropagation();
                           }}
                         >
@@ -817,7 +844,9 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                         </MenuItem>
                         <MenuItem
                           onClick={(e) => {
-                            void onDelete(false, true);
+                            onDelete(false, true).catch(() => {
+                              // Error handling managed by API layer
+                            });
                             e.stopPropagation();
                           }}
                         >
@@ -829,6 +858,9 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                 },
               },
             ]}
+            data={groups || []}
+            pagination
+            sorting
           />
         </Box>
       </Section>
@@ -836,25 +868,34 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
   );
 });
 
-const AlertDeleteFailed: FC<{ aclFailed: { err: unknown } | null; onClose: () => void }> = ({ aclFailed, onClose }) => {
+const AlertDeleteFailed: FC<{
+  aclFailed: { err: unknown } | null;
+  onClose: () => void;
+}> = ({ aclFailed, onClose }) => {
   const ref = useRef(null);
 
-  if (!aclFailed) return null;
+  if (!aclFailed) {
+    return null;
+  }
 
   return (
-    <Alert status="error" mb={4} ref={ref}>
+    <Alert mb={4} ref={ref} status="error">
       <AlertIcon />
       <AlertTitle>Failed to delete</AlertTitle>
       <AlertDescription>
         <Text>
-          {aclFailed.err instanceof Error
-            ? aclFailed.err.message
-            : typeof aclFailed.err === 'string'
-              ? aclFailed.err
-              : 'Unknown error'}
+          {(() => {
+            if (aclFailed.err instanceof Error) {
+              return aclFailed.err.message;
+            }
+            if (typeof aclFailed.err === 'string') {
+              return aclFailed.err;
+            }
+            return 'Unknown error';
+          })()}
         </Text>
       </AlertDescription>
-      <CloseButton position="absolute" right="8px" top="8px" onClick={onClose} />
+      <CloseButton onClick={onClose} position="absolute" right="8px" top="8px" />
     </Alert>
   );
 };

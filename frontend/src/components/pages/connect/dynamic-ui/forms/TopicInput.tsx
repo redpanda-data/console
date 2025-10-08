@@ -20,6 +20,7 @@ import {
   Select,
 } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';
+
 import { api } from '../../../../../state/backendApi';
 import type { Property } from '../../../../../state/connect/state';
 import { ExpandableText } from '../../../../misc/ExpandableText';
@@ -49,7 +50,9 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
 
       get matchingTopics() {
         const allTopics = api.topics?.map((x) => x.topicName);
-        if (!allTopics) return [];
+        if (!allTopics) {
+          return [];
+        }
 
         if (this.isRegex) {
           const regex = new RegExp(String(this.property.value));
@@ -61,7 +64,9 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
     };
   });
 
-  if (!state.property) return null;
+  if (!state.property) {
+    return null;
+  }
 
   const showErrors = state.property.errors.length > 0;
   const errors = showErrors ? state.property.errors : state.property.lastErrors;
@@ -69,7 +74,7 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
   const cycleError = showErrors ? () => state.property.currentErrorIndex++ : undefined;
 
   return (
-    <Grid templateColumns="1fr" gap="10">
+    <Grid gap="10" templateColumns="1fr">
       <FormControl position="relative">
         {state.properties.has('topics.regex') && (
           <Checkbox
@@ -87,14 +92,19 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
         {/* A 'source' connector imports data into the cluster. So we let the user choose the name of the topic directly  */}
         {state.isRegex || p.connectorType === 'source' ? (
           <Input
-            value={String(state.property.value)}
+            autoComplete="off"
             onChange={(e) => (state.property.value = e.target.value)}
             spellCheck={false}
-            autoComplete="off"
+            value={String(state.property.value)}
           />
         ) : (
           <Select
             isMulti
+            onChange={(v) => {
+              if (isMultiValue(v)) {
+                state.property.value = v.map(({ value }) => value)?.join(',') ?? [];
+              }
+            }}
             options={api.topics?.map((x) => ({ value: x.topicName, label: x.topicName })) ?? []}
             value={
               state.property.value
@@ -107,11 +117,6 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
                     }))
                 : []
             }
-            onChange={(v) => {
-              if (isMultiValue(v)) {
-                state.property.value = v.map(({ value }) => value)?.join(',') ?? [];
-              }
-            }}
           />
         )}
 

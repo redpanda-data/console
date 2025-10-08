@@ -63,9 +63,9 @@ export const InstallRpkListItem = () => {
     <ListItem>
       <div className="flex flex-col gap-2">
         <div>Install rpk:</div>
-        <Label className="text-sm font-medium">Installation Method</Label>
+        <Label className="font-medium text-sm">Installation Method</Label>
         <div>
-          <Select value={selectedMethod} onValueChange={setSelectedMethod}>
+          <Select onValueChange={setSelectedMethod} value={selectedMethod}>
             <SelectTrigger className="w-full max-w-md">
               <SelectValue />
             </SelectTrigger>
@@ -81,7 +81,7 @@ export const InstallRpkListItem = () => {
             </SelectContent>
           </Select>
         </div>
-        {selectedInstallMethod?.command && <DynamicCodeBlock lang="bash" code={selectedInstallMethod?.command} />}
+        {selectedInstallMethod?.command && <DynamicCodeBlock code={selectedInstallMethod?.command} lang="bash" />}
       </div>
     </ListItem>
   );

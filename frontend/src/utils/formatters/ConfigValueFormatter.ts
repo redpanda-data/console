@@ -13,24 +13,24 @@ import type { ConfigEntry, ConfigEntryExtended } from '../../state/restInterface
 import { prettyBytesOrNA, prettyMilliseconds } from '../utils';
 
 export const CONFIG_INFINITE_VALUES: Record<string, number> = {
-  'flush.ms': 9223372036854,
+  'flush.ms': 9_223_372_036_854,
 };
 
 export const entryHasInfiniteValue = (entry: ConfigEntry) =>
   Number(entry.value) === CONFIG_INFINITE_VALUES[entry.name] || entry.value === '-1';
 
-export const getInfiniteValueForEntry = (entry: ConfigEntryExtended) => {
-  return CONFIG_INFINITE_VALUES[entry.name] ?? -1;
-};
+export const getInfiniteValueForEntry = (entry: ConfigEntryExtended) => CONFIG_INFINITE_VALUES[entry.name] ?? -1;
 
 export function formatConfigValue(
   name: string,
   value: string | null | undefined,
-  formatType: 'friendly' | 'raw' | 'both',
+  formatType: 'friendly' | 'raw' | 'both'
 ): string {
   let suffix: string;
 
-  if (value == null) return '';
+  if (value == null) {
+    return '';
+  }
 
   switch (formatType) {
     case 'friendly':
@@ -55,13 +55,19 @@ export function formatConfigValue(
   // Numeric
   //
   const num = Number(value);
-  if (value == null || value === '' || value === '0' || Number.isNaN(num)) return value;
+  if (value == null || value === '' || value === '0' || Number.isNaN(num)) {
+    return value;
+  }
 
   // Special cases
-  if (name === 'flush.messages' && num > 2 ** 60) return `Never${suffix}`; // messages between each fsync
+  if (name === 'flush.messages' && num > 2 ** 60) {
+    return `Never${suffix}`; // messages between each fsync
+  }
 
   if (name.endsWith('.bytes.per.second')) {
-    if (num >= Number.MAX_SAFE_INTEGER) return `Infinite${suffix}`;
+    if (num >= Number.MAX_SAFE_INTEGER) {
+      return `Infinite${suffix}`;
+    }
     return `${prettyBytesOrNA(num)}/s${suffix}`;
   }
 
@@ -86,8 +92,12 @@ export function formatConfigValue(
     ['days', 24 * 60 * 60 * 1000],
   ];
   for (const [ext, msFactor] of timeExtensions) {
-    if (!name.endsWith(ext)) continue;
-    if (num > Number.MAX_SAFE_INTEGER || num === -1) return `Infinite${suffix}`;
+    if (!name.endsWith(ext)) {
+      continue;
+    }
+    if (num > Number.MAX_SAFE_INTEGER || num === -1) {
+      return `Infinite${suffix}`;
+    }
 
     const ms = num * msFactor;
     return prettyMilliseconds(ms, { verbose: true, unitCount: 2 }) + suffix;
@@ -102,8 +112,10 @@ export function formatConfigValue(
     name.endsWith('.reassignment.throttled.rate')
   ) {
     const uint64Max = '18446744073709551615'; // can't be represented in js, would be rounded up to 18446744073709552000
-    const uint64Exp = 1.844674407370955e19; // barely below the point where the number would be rounded up
-    if (value === uint64Max || num >= uint64Exp || num === -1) return `Infinite${suffix}`;
+    const uint64Exp = 1.844_674_407_370_955e19; // barely below the point where the number would be rounded up
+    if (value === uint64Max || num >= uint64Exp || num === -1) {
+      return `Infinite${suffix}`;
+    }
 
     return prettyBytesOrNA(num) + suffix;
   }

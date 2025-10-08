@@ -60,11 +60,13 @@ export const McpServerStateBadge = () => {
   const { id } = useParams<{ id: string }>();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
 
-  if (!mcpServerData?.mcpServer) return null;
+  if (!mcpServerData?.mcpServer) {
+    return null;
+  }
 
   const config = getMCPServerStatus(mcpServerData?.mcpServer?.state);
   return (
-    <Badge variant={config.variant} icon={config.icon}>
+    <Badge icon={config.icon} variant={config.variant}>
       {config.text}
     </Badge>
   );

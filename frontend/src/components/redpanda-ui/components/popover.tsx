@@ -73,6 +73,7 @@ type PopoverContentProps = React.ComponentProps<typeof PopoverPrimitive.Content>
   HTMLMotionProps<'div'> & {
     transition?: Transition;
     testId?: string;
+    container?: Element;
   };
 
 function PopoverContent({
@@ -83,6 +84,7 @@ function PopoverContent({
   transition = { type: 'spring', stiffness: 300, damping: 25 },
   children,
   testId,
+  container,
   ...props
 }: PopoverContentProps) {
   const { isOpen } = usePopover();
@@ -91,7 +93,7 @@ function PopoverContent({
   return (
     <AnimatePresence>
       {isOpen && (
-        <PopoverPrimitive.Portal forceMount data-slot="popover-portal">
+        <PopoverPrimitive.Portal forceMount data-slot="popover-portal" container={container}>
           <PopoverPrimitive.Content forceMount align={align} sideOffset={sideOffset} className="z-50" {...props}>
             <motion.div
               key="popover-content"

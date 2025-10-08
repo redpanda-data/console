@@ -8,10 +8,11 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+// biome-ignore lint/style/noNamespace: Required for TypeScript ambient declaration to extend NodeJS global type
 declare namespace NodeJS {
-  interface Global {
+  type Global = {
     value: any;
-  }
+  };
 }
 
 global.value = {};

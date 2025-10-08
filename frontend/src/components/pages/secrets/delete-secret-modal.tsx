@@ -18,14 +18,15 @@ import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { useGetPipelinesForSecretQuery } from 'react-query/api/pipeline';
 import { useDeleteSecretMutation } from 'react-query/api/secret';
-import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
-import { deleteSecretSchema } from './form/delete-secret-schema';
 
-export interface DeleteSecretModalProps {
+import { deleteSecretSchema } from './form/delete-secret-schema';
+import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
+
+export type DeleteSecretModalProps = {
   secretId: string;
   isOpen: boolean;
   onClose: () => void;
-}
+};
 
 export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretModalProps) => {
   const { data: pipelinesForSecret } = useGetPipelinesForSecretQuery({ secretId });
@@ -60,7 +61,7 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
   const form = useAppForm({ ...formOpts });
 
   return (
-    <Modal size="lg" isOpen={isOpen} onClose={handleClose} onEsc={handleClose} isCentered>
+    <Modal isCentered isOpen={isOpen} onClose={handleClose} onEsc={handleClose} size="lg">
       <ModalOverlay />
       <ModalContent>
         <form>
@@ -69,7 +70,7 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
             <ModalBody mb={4}>
               <Stack spacing={4}>
                 {deleteSecretError && (
-                  <Alert status="error" variant="subtle" data-testid="delete-secret-error">
+                  <Alert data-testid="delete-secret-error" status="error" variant="subtle">
                     <AlertIcon />
                     {deleteSecretError.message}
                   </Alert>
@@ -78,14 +79,14 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
                   This action will cause data loss. To confirm, type <Code>{secretId}</Code> into the confirmation box
                   below.
                 </Text>
-                <ResourceInUseAlert resource="secret" usedBy="pipelines" pipelines={matchingPipelines} />
+                <ResourceInUseAlert pipelines={matchingPipelines} resource="secret" usedBy="pipelines" />
 
                 <form.AppField name="confirmationText">
                   {(field) => (
                     <field.TextField
+                      data-testid="txt-confirmation-delete"
                       placeholder={`Type "${secretId}" to confirm`}
                       transform={(value) => value.toUpperCase()}
-                      data-testid="txt-confirmation-delete"
                     />
                   )}
                 </form.AppField>
@@ -95,13 +96,13 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
               <Box alignSelf="end">
                 <ButtonGroup isDisabled={isDeleteSecretPending}>
                   <form.SubscribeButton
-                    label="Delete"
-                    variant="delete"
                     data-testid="delete-secret-button"
                     id="delete-modal-btn"
+                    label="Delete"
                     loadingText="Deleting"
+                    variant="delete"
                   />
-                  <Button variant="ghost" data-testid="cancel-button" onClick={handleClose}>
+                  <Button data-testid="cancel-button" onClick={handleClose} variant="ghost">
                     Cancel
                   </Button>
                 </ButtonGroup>

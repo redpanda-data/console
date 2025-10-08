@@ -12,6 +12,7 @@
 import { Spinner } from '@redpanda-data/ui';
 import { Component } from 'react';
 import { useParams } from 'react-router-dom';
+
 import { appGlobal } from '../../state/appGlobal';
 import { api } from '../../state/backendApi';
 import type { ApiError, UserData } from '../../state/restInterfaces';
@@ -22,7 +23,8 @@ import { queryToObj } from '../../utils/queryHelper';
 
 class LoginCompletePage extends Component<{ provider: string }> {
   componentDidMount() {
-    this.completeLogin(this.props.provider, window.location);
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
+    this.completeLogin(this.props.provider, window.location).catch(console.error);
   }
 
   async completeLogin(provider: string, location: Location) {
@@ -31,8 +33,12 @@ class LoginCompletePage extends Component<{ provider: string }> {
     const queryObj = queryToObj(query);
     if (queryObj.error || queryObj.error_description) {
       let errorString = '';
-      if (queryObj.error) errorString += `Error: ${queryObj.error}\n`;
-      if (queryObj.error_description) errorString += `Description: ${queryObj.error_description}\n`;
+      if (queryObj.error) {
+        errorString += `Error: ${queryObj.error}\n`;
+      }
+      if (queryObj.error_description) {
+        errorString += `Description: ${queryObj.error_description}\n`;
+      }
       uiState.loginError = errorString.trim();
       appGlobal.historyReplace(`${getBasePath()}/login`);
       return;
@@ -41,7 +47,11 @@ class LoginCompletePage extends Component<{ provider: string }> {
     const url = `./auth/callbacks/${provider}${query}`;
 
     try {
-      const response = await fetchWithTimeout(url, 10 * 1000, { method: 'GET', cache: 'no-cache', mode: 'no-cors' });
+      const response = await fetchWithTimeout(url, 10 * 1000, {
+        method: 'GET',
+        cache: 'no-cache',
+        mode: 'no-cors',
+      });
       const text = await response.text();
       const obj = JSON.parse(text);
       // console.log('complete login response: ' + text);

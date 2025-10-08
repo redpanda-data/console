@@ -13,22 +13,23 @@ import {
 } from '@redpanda-data/ui';
 import type { ReactNode } from 'react';
 import { AiOutlineDelete } from 'react-icons/ai';
+
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
-interface KeyValuePair {
+type KeyValuePair = {
   key: string;
   value: string;
-}
+};
 
-interface KeyValueFieldProps extends InputProps {
+export interface KeyValueFieldProps extends InputProps {
   label: ReactNode;
   helperText?: ReactNode;
   showAddButton?: boolean;
 }
 
 export const KeyValueField = ({ label, helperText, showAddButton = true, ...rest }: KeyValueFieldProps) => {
-  const field = useFieldContext<Array<KeyValuePair>>();
+  const field = useFieldContext<KeyValuePair[]>();
 
   // Add a new label
   const addLabel = () => {
@@ -44,24 +45,24 @@ export const KeyValueField = ({ label, helperText, showAddButton = true, ...rest
           </FormLabel>
         )}
         {helperText && (
-          <FormHelperText mt={0} mb={1}>
+          <FormHelperText mb={1} mt={0}>
             {helperText}
           </FormHelperText>
         )}
       </Stack>
       {field?.state?.value?.map((_, index) => (
-        <KeyValuePairField key={index} index={index} {...rest} />
+        <KeyValuePairField index={index} key={index} {...rest} />
       ))}
 
       {showAddButton && (
         <ButtonGroup>
           <Button
-            mt={2}
-            size="sm"
-            variant="outline"
-            onClick={addLabel}
             data-testid="add-label-button"
             leftIcon={<span>+</span>}
+            mt={2}
+            onClick={addLabel}
+            size="sm"
+            variant="outline"
           >
             Add label
           </Button>
@@ -77,7 +78,7 @@ interface KeyValuePairFieldProps extends InputProps {
 }
 
 const KeyValuePairField = ({ index, ...rest }: KeyValuePairFieldProps) => {
-  const parentField = useFieldContext<Array<KeyValuePair>>();
+  const parentField = useFieldContext<KeyValuePair[]>();
   const currentLabel = parentField.state.value[index];
 
   const handleKeyChange = (value: string) => {
@@ -93,7 +94,7 @@ const KeyValuePairField = ({ index, ...rest }: KeyValuePairFieldProps) => {
     const updatedLabels = [...parentField.state.value];
     updatedLabels[index] = {
       ...updatedLabels[index],
-      value: value,
+      value,
     };
     parentField.handleChange(updatedLabels);
   };
@@ -109,34 +110,34 @@ const KeyValuePairField = ({ index, ...rest }: KeyValuePairFieldProps) => {
 
   return (
     <Flex gap={2} mb={2}>
-      <Box display="flex" width="100%" alignItems="flex-start">
-        <FormControl isInvalid={!!isKeyError} flexBasis="50%">
+      <Box alignItems="flex-start" display="flex" width="100%">
+        <FormControl flexBasis="50%" isInvalid={!!isKeyError}>
           <Input
+            onChange={(e) => handleKeyChange(e.target.value)}
             placeholder="Key"
             value={currentLabel.key}
-            onChange={(e) => handleKeyChange(e.target.value)}
             {...rest}
             data-testid={rest['data-testid'] ? `${rest['data-testid']}-key-${index}` : undefined}
           />
           <ErrorInfoField field={parentField} />
         </FormControl>
-        <FormControl isInvalid={!!isValueError} flexBasis="50%" ml={2}>
+        <FormControl flexBasis="50%" isInvalid={!!isValueError} ml={2}>
           <Input
+            onChange={(e) => handleValueChange(e.target.value)}
             placeholder="Value"
             value={currentLabel.value}
-            onChange={(e) => handleValueChange(e.target.value)}
             {...rest}
             data-testid={rest['data-testid'] ? `${rest['data-testid']}-value-${index}` : undefined}
           />
           <ErrorInfoField field={parentField} />
         </FormControl>
-        <Flex alignItems="center" ml={2} height="40px">
+        <Flex alignItems="center" height="40px" ml={2}>
           <Icon
-            as={AiOutlineDelete}
-            onClick={handleDelete}
-            cursor="pointer"
             aria-label="Delete key-value pair"
+            as={AiOutlineDelete}
+            cursor="pointer"
             data-testid={rest['data-testid'] ? `${rest['data-testid']}-delete-${index}` : undefined}
+            onClick={handleDelete}
           />
         </Flex>
       </Box>

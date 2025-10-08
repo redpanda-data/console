@@ -1213,16 +1213,14 @@ test.describe('Allow all operations', () => {
       ResourceTypeTransactionalId,
       ResourceTypeSubject,
       ResourceTypeSchemaRegistry,
-    ].map((type, i) => {
-      return {
+    ].map((type, i) => ({
         id: i,
         mode: ModeAllowAll,
         selectorType: ResourcePatternTypeAny,
         selectorValue: '',
         operations: {},
         resourceType: type,
-      } as Rule;
-    });
+      } as Rule));
 
     aclPages.map(({ createPage, type }) => {
       test(`${testName} - ${type}`, async ({ page }) => {

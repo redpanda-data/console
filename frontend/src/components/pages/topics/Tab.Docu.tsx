@@ -10,6 +10,7 @@
  */
 
 import { Component } from 'react';
+
 import type { Topic } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
 import { Button, Empty, VStack } from '@redpanda-data/ui';
@@ -20,9 +21,16 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkEmoji from 'remark-emoji';
 import remarkGfm from 'remark-gfm';
+
 import { api } from '../../../state/backendApi';
 import { animProps } from '../../../utils/animationProps';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
+
+// Regex for extracting language from code blocks
+const CODE_LANGUAGE_REGEX = /language-(\w+)/;
+
+// Regex for removing trailing newlines
+const TRAILING_NEWLINE_REGEX = /\n$/;
 
 // Test for link sanitizer
 /*
@@ -35,15 +43,19 @@ const allowedProtocols = ['http://', 'https://', 'mailto://'];
 
 function sanitizeUrl(uri: string): string {
   const baseTransformed = baseUriTransformer(uri);
+  // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.log('baseTransformed', baseTransformed);
-  if (baseTransformed !== uri) return baseTransformed;
+  if (baseTransformed !== uri) {
+    return baseTransformed;
+  }
 
   const cleanedUri = uri.trim().toLocaleLowerCase();
 
-  for (const p of allowedProtocols)
+  for (const p of allowedProtocols) {
     if (cleanedUri.startsWith(p)) {
       return uri;
     }
+  }
 
   return ''; // didn't match any allowed protocol, remove the link
 }
@@ -52,21 +64,21 @@ function sanitizeUrl(uri: string): string {
 export class TopicDocumentation extends Component<{ topic: Topic }> {
   private components = {
     code({ inline, className, children, ...props }: any) {
-      const match = /language-(\w+)/.exec(className || '');
+      const match = CODE_LANGUAGE_REGEX.exec(className || '');
       return !inline && match ? (
         <SyntaxHighlighter
-          style={vs}
           customStyle={{
             backgroundColor: null,
             border: null,
             margin: null,
             padding: null,
           }}
-          PreTag="div"
           language={match[1]}
+          PreTag="div"
+          style={vs}
           {...props}
         >
-          {String(children).replace(/\n$/, '')}
+          {String(children).replace(TRAILING_NEWLINE_REGEX, '')}
         </SyntaxHighlighter>
       ) : (
         <code className={className} {...props}>
@@ -78,13 +90,21 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
 
   render() {
     const docu = api.topicDocumentation.get(this.props.topic.topicName);
-    if (docu === undefined) return DefaultSkeleton; // not yet loaded
-    if (!docu.isEnabled) return errorNotConfigured;
+    if (docu === undefined) {
+      return DefaultSkeleton; // not yet loaded
+    }
+    if (!docu.isEnabled) {
+      return errorNotConfigured;
+    }
 
     const markdown = docu?.text;
-    if (markdown === null || markdown === undefined) return errorNotFound;
+    if (markdown === null || markdown === undefined) {
+      return errorNotFound;
+    }
 
-    if (markdown === '') return errorEmpty;
+    if (markdown === '') {
+      return errorEmpty;
+    }
 
     return (
       <div className="topicDocumentation">
@@ -109,7 +129,7 @@ const errorNotConfigured = renderDocuError(
       Provide the connection credentials in the Redpanda Console config, to fetch and display docmentation for the
       topics.
     </p>
-  </>,
+  </>
 );
 const errorNotFound = renderDocuError(
   'Not Found',
@@ -122,7 +142,7 @@ const errorNotFound = renderDocuError(
       </li>
       <li>Ensure that a markdown file (named just like the topic) exists in the repository.</li>
     </ul>
-  </>,
+  </>
 );
 const errorEmpty = renderDocuError(
   'Empty',
@@ -133,7 +153,7 @@ const errorEmpty = renderDocuError(
       <br />
       periodically check the documentation repo for changes (every minute by default).
     </p>
-  </>,
+  </>
 );
 
 // todo: use common renderError function everywhere
@@ -144,7 +164,7 @@ function renderDocuError(title: string, body: JSX.Element) {
       <VStack gap={4}>
         <Empty description={title} />
         {body}
-        <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
+        <a href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
           <Button variant="solid">Redpanda Console Documentation</Button>
         </a>
       </VStack>

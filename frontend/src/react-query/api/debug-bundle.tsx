@@ -24,7 +24,7 @@ import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useGetClusterHealthQuery = (
-  options?: QueryOptions<GenMessage<GetClusterHealthRequest>, GetClusterHealthResponse>,
+  options?: QueryOptions<GenMessage<GetClusterHealthRequest>, GetClusterHealthResponse>
 ) => {
   const getClusterHealthRequest = create(GetClusterHealthRequestSchema, {});
 
@@ -46,19 +46,18 @@ export const useCreateDebugBundleMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'create',
         entity: 'debug bundle',
-      });
-    },
+      }),
   });
 };
 
 export const useGetDebugBundleStatusQuery = (
   input?: MessageInit<GetDebugBundleStatusRequest>,
-  options?: QueryOptions<GenMessage<GetDebugBundleStatusRequest>, GetDebugBundleStatusResponse>,
+  options?: QueryOptions<GenMessage<GetDebugBundleStatusRequest>, GetDebugBundleStatusResponse>
 ) => {
   const getDebugBundleStatusRequest = create(GetDebugBundleStatusRequestSchema, {
     brokerIds: input?.brokerIds ?? [],
@@ -82,13 +81,12 @@ export const useCancelDebugBundleProcessMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'cancel',
         entity: 'debug bundle process',
-      });
-    },
+      }),
   });
 };
 
@@ -105,12 +103,11 @@ export const useDeleteDebugBundleFileMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'delete',
         entity: 'debug bundle file',
-      });
-    },
+      }),
   });
 };

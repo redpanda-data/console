@@ -1,4 +1,4 @@
-import { expect, Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { ACLPage } from './ACLPage';
 
 /**
@@ -33,6 +33,7 @@ export class RolePage extends ACLPage {
     await this.gotoList();
 
     // Validate that the ACL list item is visible with correct host and principal
+    await this.page.getByTestId('search-field-input').fill(principal);
     const listItem = this.page.getByTestId(`role-list-item-${principal}`);
     await expect(listItem).toBeVisible({ timeout: 1000 });
   }

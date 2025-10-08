@@ -13,10 +13,11 @@ import {
 } from '@redpanda-data/ui';
 import type { ReactNode } from 'react';
 import { IoMdEye, IoMdEyeOff } from 'react-icons/io';
+
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
-interface PasswordFieldProps extends InputProps {
+export interface PasswordFieldProps extends InputProps {
   label?: ReactNode;
   helperText?: ReactNode;
 }
@@ -34,21 +35,21 @@ export const PasswordField = ({ label, helperText, ...rest }: PasswordFieldProps
           </FormLabel>
         )}
         {helperText && (
-          <FormHelperText mt={0} mb={1}>
+          <FormHelperText mb={1} mt={0}>
             {helperText}
           </FormHelperText>
         )}
       </Stack>
       <InputGroup>
         <Input
+          onBlur={field.handleBlur}
+          onChange={(e) => field.handleChange(e.target.value)}
           type={showValue ? 'text' : 'password'}
           value={field.state.value}
-          onChange={(e) => field.handleChange(e.target.value)}
-          onBlur={field.handleBlur}
           {...rest}
         />
         <InputRightElement>
-          <Button variant="ghost" onClick={setShowValue.toggle}>
+          <Button onClick={setShowValue.toggle} variant="ghost">
             {showValue ? <Icon as={IoMdEyeOff} /> : <Icon as={IoMdEye} />}
           </Button>
         </InputRightElement>

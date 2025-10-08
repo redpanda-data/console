@@ -9,7 +9,7 @@ export const SECRET_ACCESS_KEY = 'secretaccesskey';
 // biome-ignore lint/suspicious/noExportsInTest: ignore for this test
 export const S3_BUCKET_NAME = 's3bucketname';
 
-test.describe('Connector', async () => {
+test.describe('Connector', () => {
   test.skip('should create and delete S3 connector', async ({ page }) => {
     const clusterName = 'local-connect-cluster';
     const connectorName = `connector-test-${randomUUID()}`;

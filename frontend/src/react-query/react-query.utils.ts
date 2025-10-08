@@ -19,9 +19,9 @@ export type MessageInit<T extends Message> =
 type FieldInit<F> = F extends Date | Uint8Array | bigint | boolean | string | number
   ? F
   : F extends Array<infer U>
-    ? Array<FieldInit<U>>
+    ? FieldInit<U>[]
     : F extends ReadonlyArray<infer U>
-      ? ReadonlyArray<FieldInit<U>>
+      ? readonly FieldInit<U>[]
       : F extends Message
         ? MessageInit<F>
         : F extends OneofSelectedMessage<infer C, infer V>
@@ -63,7 +63,7 @@ export interface QueryOptions<O extends DescMessage, SelectOutData = MessageShap
     | number
     | false
     | ((
-        query: Query<MessageShape<O>, ConnectError, MessageShape<O>, ConnectQueryKey<O>>,
+        query: Query<MessageShape<O>, ConnectError, MessageShape<O>, ConnectQueryKey<O>>
       ) => number | false | undefined);
   refetchIntervalInBackground?: boolean;
 }

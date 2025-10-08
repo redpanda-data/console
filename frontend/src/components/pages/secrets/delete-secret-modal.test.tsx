@@ -12,6 +12,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { DeleteSecretRequestSchema as DeleteSecretRequestSchemaDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { fireEvent, render, screen, waitFor, within } from 'test-utils';
+
 import { DeleteSecretModal } from './delete-secret-modal';
 
 describe('DeleteSecretModal', () => {
@@ -35,7 +36,7 @@ describe('DeleteSecretModal', () => {
       rpc(deleteSecret, deleteSecretMock);
     });
 
-    render(<DeleteSecretModal secretId={secretId} isOpen onClose={() => {}} />, { transport });
+    render(<DeleteSecretModal isOpen onClose={() => {}} secretId={secretId} />, { transport });
 
     await waitFor(() => {
       expect(screen.getByTestId('delete-secret-button')).toBeVisible();
@@ -67,7 +68,7 @@ describe('DeleteSecretModal', () => {
             id: secretId,
           }),
         }),
-        expect.anything(),
+        expect.anything()
       );
     });
   });
@@ -97,7 +98,7 @@ describe('DeleteSecretModal', () => {
       rpc(deleteSecret, deleteSecretMock);
     });
 
-    render(<DeleteSecretModal secretId={secretId} isOpen onClose={() => {}} />, { transport });
+    render(<DeleteSecretModal isOpen onClose={() => {}} secretId={secretId} />, { transport });
 
     await waitFor(() => {
       expect(screen.getByTestId('resource-in-use-alert')).toBeVisible();

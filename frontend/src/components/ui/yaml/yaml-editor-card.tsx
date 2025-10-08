@@ -11,9 +11,10 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { Code, Maximize2, PencilRuler } from 'lucide-react';
 import type { editor } from 'monaco-editor';
+
 import { YamlEditor } from './yaml-editor';
 
-interface YamlEditorCardProps {
+type YamlEditorCardProps = {
   value: string;
   onChange: (value: string) => void;
   height?: string;
@@ -23,7 +24,7 @@ interface YamlEditorCardProps {
   onExpand?: () => void;
   isLinting?: boolean;
   options?: editor.IStandaloneEditorConstructionOptions;
-}
+};
 
 export const YamlEditorCard: React.FC<YamlEditorCardProps> = ({
   value,
@@ -35,41 +36,39 @@ export const YamlEditorCard: React.FC<YamlEditorCardProps> = ({
   onExpand,
   isLinting = false,
   options,
-}) => {
-  return (
-    <div className="space-y-2">
-      <div className="relative border rounded-lg">
-        <div className="flex items-center justify-between px-3 py-2 border-b bg-gray-50 rounded-t-lg">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Code className="h-4 w-4" />
-            YAML Configuration
-          </div>
-          <div className="flex gap-1">
-            {showLint && onLint && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onLint}
-                disabled={isLinting}
-                className="h-7 px-2 text-xs gap-1"
-              >
-                <PencilRuler className="h-3 w-3" />
-                {isLinting ? 'Linting...' : 'Lint'}
-              </Button>
-            )}
-            {showExpand && onExpand && (
-              <Button type="button" variant="outline" size="sm" className="h-7 px-2 text-xs gap-1" onClick={onExpand}>
-                <Maximize2 className="h-3 w-3" />
-                Expand
-              </Button>
-            )}
-          </div>
+}) => (
+  <div className="space-y-2">
+    <div className="relative rounded-lg border">
+      <div className="flex items-center justify-between rounded-t-lg border-b bg-gray-50 px-3 py-2">
+        <div className="flex items-center gap-2 text-gray-600 text-sm">
+          <Code className="h-4 w-4" />
+          YAML Configuration
         </div>
-        <div className="border-0 rounded-t-none overflow-hidden" style={{ height }}>
-          <YamlEditor value={value} onChange={(val) => onChange(val || '')} options={options} />
+        <div className="flex gap-1">
+          {showLint && onLint && (
+            <Button
+              className="h-7 gap-1 px-2 text-xs"
+              disabled={isLinting}
+              onClick={onLint}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <PencilRuler className="h-3 w-3" />
+              {isLinting ? 'Linting...' : 'Lint'}
+            </Button>
+          )}
+          {showExpand && onExpand && (
+            <Button className="h-7 gap-1 px-2 text-xs" onClick={onExpand} size="sm" type="button" variant="outline">
+              <Maximize2 className="h-3 w-3" />
+              Expand
+            </Button>
+          )}
         </div>
       </div>
+      <div className="overflow-hidden rounded-t-none border-0" style={{ height }}>
+        <YamlEditor onChange={(val) => onChange(val || '')} options={options} value={value} />
+      </div>
     </div>
-  );
-};
+  </div>
+);

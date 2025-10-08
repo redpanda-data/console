@@ -13,6 +13,7 @@ import { Base64, fromUint8Array } from 'js-base64';
 import { makeObservable, observable } from 'mobx';
 import prettyBytesOriginal from 'pretty-bytes';
 import prettyMillisecondsOriginal from 'pretty-ms';
+
 import type { TopicMessage } from '../state/restInterfaces';
 
 // Note: Making a <Memo> component is not possible, the container JSX will always render children first so they can be passed as props
@@ -56,7 +57,9 @@ export class Cooldown {
   /** Time (in ms) until the cooldown is ready (or 0 if it is) */
   get timeLeft(): number {
     const t = this.duration - this.timeSinceLastTrigger();
-    if (t < 0) return 0;
+    if (t < 0) {
+      return 0;
+    }
     return t;
   }
 
@@ -101,7 +104,9 @@ export class Timer {
   /** Time (in ms) until done (or 0) */
   get timeLeft() {
     const t = this.target - Date.now();
-    if (t < 0) return 0;
+    if (t < 0) {
+      return 0;
+    }
     return t;
   }
 
@@ -127,7 +132,9 @@ export class Timer {
 export class DebugTimerStore {
   private static instance: DebugTimerStore;
   static get Instance() {
-    if (!DebugTimerStore.instance) DebugTimerStore.instance = new DebugTimerStore();
+    if (!DebugTimerStore.instance) {
+      DebugTimerStore.instance = new DebugTimerStore();
+    }
     return DebugTimerStore.instance;
   }
 
@@ -135,8 +142,9 @@ export class DebugTimerStore {
   @observable private frame = 0;
 
   private constructor() {
+    const ONE_SECOND_MS = 1000;
     this.increaseSec = this.increaseSec.bind(this);
-    setInterval(this.increaseSec, 1000);
+    setInterval(this.increaseSec, ONE_SECOND_MS);
 
     this.increaseFrame = this.increaseFrame.bind(this);
     //setInterval(this.increaseFrame, 30);
@@ -150,10 +158,10 @@ export class DebugTimerStore {
     this.frame++;
   }
 
-  public useSeconds() {
+  useSeconds() {
     this.mobxTrigger = this.secondCounter;
   }
-  public useFrame() {
+  useFrame() {
     this.mobxTrigger = this.frame;
   }
 
@@ -161,12 +169,17 @@ export class DebugTimerStore {
 }
 
 let refreshCounter = 0; // used to always create a different value, forcing some components to always re-render
-export const alwaysChanging = () => (refreshCounter = (refreshCounter + 1) % 1000);
+const REFRESH_COUNTER_MAX = 1000;
+export const alwaysChanging = () => (refreshCounter = (refreshCounter + 1) % REFRESH_COUNTER_MAX);
 
 export function assignDeep(target: any, source: any) {
   for (const key in source) {
-    if (!Object.hasOwn(source, key)) continue;
-    if (key === '__proto__' || key === 'constructor') continue;
+    if (!Object.hasOwn(source, key)) {
+      continue;
+    }
+    if (key === '__proto__' || key === 'constructor') {
+      continue;
+    }
 
     const value = source[key];
     const existing = key in target ? target[key] : undefined;
@@ -182,13 +195,18 @@ export function assignDeep(target: any, source: any) {
     }
 
     if (typeof value === 'object') {
-      if (!existing || typeof existing !== 'object') target[key] = value;
-      else assignDeep(target[key], value);
+      if (!existing || typeof existing !== 'object') {
+        target[key] = value;
+      } else {
+        assignDeep(target[key], value);
+      }
 
       continue;
     }
 
-    if (existing === value) continue;
+    if (existing === value) {
+      continue;
+    }
 
     // console.log(`Key ["${key}"]:  ${JSON.stringify(existing)} ->  ${JSON.stringify(value)}`);
 
@@ -221,10 +239,10 @@ type PropertySearchExContext = {
 export function collectElements(
   obj: any,
   isMatch: (propertyName: string, path: string[], value: any) => boolean,
-  returnFirstMatch: boolean,
+  returnFirstMatch: boolean
 ): FoundProperty[] {
   const ctx: PropertySearchExContext = {
-    isMatch: isMatch,
+    isMatch,
     currentPath: [],
     results: [],
     returnFirstResult: returnFirstMatch,
@@ -235,25 +253,31 @@ export function collectElements(
 
 function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): PropertySearchResult {
   for (const key in obj) {
-    const value = obj[key];
+    if (Object.hasOwn(obj, key)) {
+      const value = obj[key];
 
-    // property match?
-    const isMatch = ctx.isMatch(key, ctx.currentPath, value);
+      // property match?
+      const isMatch = ctx.isMatch(key, ctx.currentPath, value);
 
-    if (isMatch) {
-      const clonedPath = Object.assign([], ctx.currentPath);
-      ctx.results.push({ propertyName: key, path: clonedPath, value: value });
+      if (isMatch) {
+        const clonedPath = Object.assign([], ctx.currentPath);
+        ctx.results.push({ propertyName: key, path: clonedPath, value });
 
-      if (ctx.returnFirstResult) return 'abort';
-    }
+        if (ctx.returnFirstResult) {
+          return 'abort';
+        }
+      }
 
-    // descend into object
-    if (typeof value === 'object') {
-      ctx.currentPath.push(key);
-      const childResult = collectElementsRecursive(ctx, value);
-      ctx.currentPath.pop();
+      // descend into object
+      if (typeof value === 'object') {
+        ctx.currentPath.push(key);
+        const childResult = collectElementsRecursive(ctx, value);
+        ctx.currentPath.pop();
 
-      if (childResult === 'abort') return 'abort';
+        if (childResult === 'abort') {
+          return 'abort';
+        }
+      }
     }
   }
 
@@ -263,6 +287,7 @@ function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): Prope
 type IsMatchFunc = (pathElement: string, propertyName: string, value: any) => boolean;
 export type CollectedProperty = { path: string[]; value: any };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 37, refactor later
 export function collectElements2(
   targetObject: any,
 
@@ -270,7 +295,7 @@ export function collectElements2(
   // "*" collects all current properties
   // anything else is passed to "isMatch"
   path: string[],
-  isMatch: IsMatchFunc,
+  isMatch: IsMatchFunc
 ): CollectedProperty[] {
   // Explore set
   let currentExplore: CollectedProperty[] = [{ path: [], value: targetObject }];
@@ -288,13 +313,7 @@ export function collectElements2(
       switch (segment) {
         case '**': {
           // And all their nested objects are a result
-          const allNested = collectElements(
-            currentObj,
-            (_key, _path, value) => {
-              return typeof value === 'object';
-            },
-            false,
-          );
+          const allNested = collectElements(currentObj, (_key, _path, value) => typeof value === 'object', false);
 
           for (const n of allNested) {
             targetList.push({
@@ -315,28 +334,36 @@ export function collectElements2(
         case '*':
           // Explore all properties
           for (const key in currentObj) {
-            const value = currentObj[key];
-            if (value == null || typeof value === 'function') continue;
+            if (Object.hasOwn(currentObj, key)) {
+              const value = currentObj[key];
+              if (value == null || typeof value === 'function') {
+                continue;
+              }
 
-            targetList.push({
-              path: [...foundProp.path, key],
-              value: value,
-            });
+              targetList.push({
+                path: [...foundProp.path, key],
+                value,
+              });
+            }
           }
           break;
 
         default:
           // Some user defined string
           for (const key in currentObj) {
-            const value = currentObj[key];
-            if (value == null || typeof value === 'function') continue;
+            if (Object.hasOwn(currentObj, key)) {
+              const value = currentObj[key];
+              if (value == null || typeof value === 'function') {
+                continue;
+              }
 
-            const match = isMatch(segment, key, value);
-            if (match) {
-              targetList.push({
-                path: [...foundProp.path, key],
-                value: value,
-              });
+              const match = isMatch(segment, key, value);
+              if (match) {
+                targetList.push({
+                  path: [...foundProp.path, key],
+                  value,
+                });
+              }
             }
           }
           break;
@@ -373,14 +400,14 @@ export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
   return ctx.results;
 }
 
-interface Property {
+type Property = {
   /** property name */
   propertyName: string;
   /** path to the property (excluding 'prop' itself) */
   path: string[];
   /** path + prop */
   fullPath: string;
-}
+};
 type GetAllKeysContext = {
   currentPath: string[]; // complete, real path
   currentFullPath: string; // string path, with array indices replaced by a start
@@ -395,39 +422,45 @@ function getAllKeysRecursive(ctx: GetAllKeysContext, obj: any): PropertySearchRe
   const pathToHere = ctx.currentFullPath;
 
   for (const key in obj) {
-    const value = obj[key];
+    if (Object.hasOwn(obj, key)) {
+      const value = obj[key];
 
-    ctx.currentPath.push(key);
-    const currentFullPath = isArray ? `${pathToHere}[*]` : `${pathToHere}.${key}`;
-    ctx.currentFullPath = currentFullPath;
+      ctx.currentPath.push(key);
+      const currentFullPath = isArray ? `${pathToHere}[*]` : `${pathToHere}.${key}`;
+      ctx.currentFullPath = currentFullPath;
 
-    if (!isArray) {
-      // add result, but only for object properties
-      const isNewPath = !ctx.existingPaths.has(currentFullPath);
-      if (isNewPath) {
-        // and only if its a new path
-        ctx.existingPaths.add(currentFullPath);
+      if (!isArray) {
+        // add result, but only for object properties
+        const isNewPath = !ctx.existingPaths.has(currentFullPath);
+        if (isNewPath) {
+          // and only if its a new path
+          ctx.existingPaths.add(currentFullPath);
 
-        const clonedPath = Object.assign([], ctx.currentPath);
-        ctx.results.push({
-          propertyName: key,
-          path: clonedPath, // all the keys
-          fullPath: currentFullPath,
-        });
+          const clonedPath = Object.assign([], ctx.currentPath);
+          ctx.results.push({
+            propertyName: key,
+            path: clonedPath, // all the keys
+            fullPath: currentFullPath,
+          });
+        }
+      }
+
+      // descend into object
+      if (typeof value === 'object' && value != null) {
+        const childResult = getAllKeysRecursive(ctx, value);
+
+        if (childResult === 'abort') {
+          result = 'abort';
+        }
+      }
+
+      ctx.currentPath.pop();
+      ctx.currentFullPath = currentFullPath;
+
+      if (result === 'abort') {
+        break;
       }
     }
-
-    // descend into object
-    if (typeof value === 'object' && value != null) {
-      const childResult = getAllKeysRecursive(ctx, value);
-
-      if (childResult === 'abort') result = 'abort';
-    }
-
-    ctx.currentPath.pop();
-    ctx.currentFullPath = currentFullPath;
-
-    if (result === 'abort') break;
   }
 
   ctx.currentFullPath = pathToHere;
@@ -444,17 +477,19 @@ export function hoursToMilliseconds(hours: number) {
   return hours * hoursToMs;
 }
 
-export const cullText = (str: string, length: number) =>
-  str.length > length ? `${str.substring(0, length - 3)}...` : str;
+export const cullText = (str: string, length: number) => {
+  const ELLIPSIS_LENGTH = 3;
+  return str.length > length ? `${str.substring(0, length - ELLIPSIS_LENGTH)}...` : str;
+};
 
 export function groupConsecutive(ar: number[]): number[][] {
   const groups: number[][] = [];
 
   for (const cur of ar) {
-    const group = groups.length > 0 ? groups[groups.length - 1] : undefined;
+    const group = groups.length > 0 ? groups.at(-1) : undefined;
 
     if (group) {
-      const last = group[group.length - 1];
+      const last = group.at(-1);
       if (last === cur - 1) {
         // We can extend the group
         group.push(cur);
@@ -469,7 +504,9 @@ export function groupConsecutive(ar: number[]): number[][] {
 }
 
 export const prettyBytesOrNA = (n: number) => {
-  if (!Number.isFinite(n) || n < 0) return 'N/A';
+  if (!Number.isFinite(n) || n < 0) {
+    return 'N/A';
+  }
   return prettyBytes(n);
 };
 
@@ -504,24 +541,36 @@ export type PrettyValueOptions = {
 };
 export const UInt64Max = '18446744073709551615'; // can't be represented in js, would be rounded up to 18446744073709552000
 function isUInt64Maximum(str: string) {
-  if (str === UInt64Max) return true;
-  if (str === String(Number(UInt64Max))) return true;
+  if (str === UInt64Max) {
+    return true;
+  }
+  if (str === String(Number(UInt64Max))) {
+    return true;
+  }
   return false;
 }
 
 export const prettyBytes = (n: number | string | null | undefined, options?: PrettyValueOptions) => {
-  if (typeof n === 'undefined' || n === null) return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
+  if (typeof n === 'undefined' || n === null) {
+    return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
+  }
 
-  if (options?.showLargeAsInfinite && isUInt64Maximum(String(n))) return 'Infinite';
+  if (options?.showLargeAsInfinite && isUInt64Maximum(String(n))) {
+    return 'Infinite';
+  }
 
   if (typeof n !== 'number') {
     if (typeof n === 'string') {
       // string
-      if (n === '') return 'N/A'; // empty -> N/A
+      if (n === '') {
+        return 'N/A'; // empty -> N/A
+      }
 
       n = Number.parseFloat(String(n));
 
-      if (!Number.isFinite(n)) return String(n); // "NaN" or "Infinity"
+      if (!Number.isFinite(n)) {
+        return String(n); // "NaN" or "Infinity"
+      }
 
       // number parsed, fall through
     } else {
@@ -536,53 +585,73 @@ export const prettyBytes = (n: number | string | null | undefined, options?: Pre
 
 export const prettyMilliseconds = (
   n: number | string,
-  options?: prettyMillisecondsOriginal.Options & PrettyValueOptions,
+  options?: prettyMillisecondsOriginal.Options & PrettyValueOptions
 ) => {
-  if (typeof n === 'undefined' || n === null) return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
+  if (typeof n === 'undefined' || n === null) {
+    return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
+  }
 
-  if (options?.showLargeAsInfinite && isUInt64Maximum(String(n))) return 'Infinite';
+  if (options?.showLargeAsInfinite && isUInt64Maximum(String(n))) {
+    return 'Infinite';
+  }
 
   if (typeof n !== 'number') {
     if (typeof n === 'string') {
       // string
-      if (n === '') return 'N/A'; // empty -> N/A
+      if (n === '') {
+        return 'N/A'; // empty -> N/A
+      }
 
       n = Number.parseFloat(String(n));
 
-      if (!Number.isFinite(n)) return String(n); // "NaN" or "Infinity"
+      if (!Number.isFinite(n)) {
+        return String(n); // "NaN" or "Infinity"
+      }
 
       // number parsed, fall through
     } else {
       // something else: object, function, ...
       return 'NaN';
     }
-  } else {
-    if (!Number.isFinite(n)) return 'N/A';
+  } else if (!Number.isFinite(n)) {
+    return 'N/A';
   }
 
   // n is a finite number
   return prettyMillisecondsOriginal(n, options);
 };
 
+const ONE_THOUSAND = 1000;
+const ONE_MILLION = 1_000_000;
+const ONE_BILLION = 1_000_000_000;
+
 const between = (min: number, max: number) => (num: number) => num >= min && num < max;
-const isK = between(1000, 1000000);
-const isM = between(1000000, 1000000000);
+const isK = between(ONE_THOUSAND, ONE_MILLION);
+const isM = between(ONE_MILLION, ONE_BILLION);
 
 const isInfinite = (num: number) => !Number.isFinite(num);
-const toK = (num: number) => `${(num / 1000).toFixed(1)}k`;
-const toM = (num: number) => `${(num / 1000000).toFixed(1)}m`;
-const toG = (num: number) => `${(num / 1000000000).toFixed(1)}g`;
+const toK = (num: number) => `${(num / ONE_THOUSAND).toFixed(1)}k`;
+const toM = (num: number) => `${(num / ONE_MILLION).toFixed(1)}m`;
+const toG = (num: number) => `${(num / ONE_BILLION).toFixed(1)}g`;
 
 export function prettyNumber(num: number) {
-  if (Number.isNaN(num) || isInfinite(num) || num < 1000) return String(num);
-  if (isK(num)) return toK(num);
-  if (isM(num)) return toM(num);
+  if (Number.isNaN(num) || isInfinite(num) || num < ONE_THOUSAND) {
+    return String(num);
+  }
+  if (isK(num)) {
+    return toK(num);
+  }
+  if (isM(num)) {
+    return toM(num);
+  }
   return toG(num);
 }
 
 export function fromDecimalSeparated(str: string): number {
-  if (!str || str === '') return 0;
-  return Number.parseInt(str.replace(',', ''));
+  if (!str || str === '') {
+    return 0;
+  }
+  return Number.parseInt(str.replace(',', ''), 10);
 }
 
 export function toDecimalSeparated(num: number): string {
@@ -611,12 +680,16 @@ export function uniqueId4(): string {
 }
 
 export function titleCase(str: string): string {
-  if (!str) return str;
+  if (!str) {
+    return str;
+  }
   return str[0].toUpperCase() + str.slice(1).toLowerCase();
 }
 
 export function capitalizeFirst(str: string): string {
-  if (!str) return str; // Handle empty or falsy strings
+  if (!str) {
+    return str; // Handle empty or falsy strings
+  }
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
@@ -625,7 +698,9 @@ export function capitalizeFirst(str: string): string {
  */
 export function scrollToTop(): void {
   const mainLayout = document.getElementById('mainLayout');
-  if (!mainLayout) return;
+  if (!mainLayout) {
+    return;
+  }
 
   mainLayout.scrollTo({ behavior: 'smooth', left: 0, top: 0 });
 }
@@ -635,12 +710,16 @@ export function scrollToTop(): void {
  */
 export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 'center', offset?: number): void {
   const mainLayout = document.getElementById('mainLayout');
-  if (!mainLayout) return;
+  if (!mainLayout) {
+    return;
+  }
   const target = document.getElementById(targetId);
-  if (!target) return;
+  if (!target) {
+    return;
+  }
 
   const rect = target.getBoundingClientRect();
-  // @ts-ignore perhaps it affects the target for some reason?
+  // @ts-expect-error perhaps it affects the target for some reason?
   let _top = 0;
   switch (anchor) {
     case 'start':
@@ -652,6 +731,9 @@ export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 
     case 'end':
       _top = rect.bottom;
       break;
+    default:
+      _top = rect.top;
+      break;
   }
 
   mainLayout.scrollTo({
@@ -662,7 +744,9 @@ export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 
 
 // See: https://stackoverflow.com/questions/30106476/using-javascripts-atob-to-decode-base64-doesnt-properly-decode-utf-8-strings
 export function decodeBase64(base64: string) {
-  if (!base64) return base64;
+  if (!base64) {
+    return base64;
+  }
 
   return Base64.decode(base64);
 }
@@ -700,6 +784,7 @@ export function base64ToUInt8Array(base64: string) {
 }
 
 export function base64ToHexString(base64: string): string {
+  const HEX_RADIX = 16;
   try {
     const binary = Base64.atob(base64);
     const bytes = new Uint8Array(binary.length);
@@ -708,10 +793,12 @@ export function base64ToHexString(base64: string): string {
     }
     let hex = '';
     for (let i = 0; i < bytes.length; i++) {
-      const b = bytes[i].toString(16);
+      const b = bytes[i].toString(HEX_RADIX);
       hex += b.length === 1 ? `0${b}` : b;
 
-      if (i < bytes.length - 1) hex += ' ';
+      if (i < bytes.length - 1) {
+        hex += ' ';
+      }
     }
 
     return hex;
@@ -721,13 +808,16 @@ export function base64ToHexString(base64: string): string {
 }
 
 export function uint8ArrayToHexString(ar: Uint8Array): string {
+  const HEX_RADIX = 16;
   try {
     let hex = '';
     for (let i = 0; i < ar.length; i++) {
-      const b = ar[i].toString(16);
+      const b = ar[i].toString(HEX_RADIX);
       hex += b.length === 1 ? `0${b}` : b;
 
-      if (i < ar.length - 1) hex += ' ';
+      if (i < ar.length - 1) {
+        hex += ' ';
+      }
     }
 
     return hex;
@@ -758,10 +848,10 @@ export function setHeader(init: RequestInit, name: string, value: string) {
 // very simple retrier utility for allowing some retries, if we ended up using it more often we should consider making it more elaborate
 export function retrier<T>(
   operation: () => Promise<T>,
-  { attempts = Number.POSITIVE_INFINITY, delayTime = 100 },
+  { attempts = Number.POSITIVE_INFINITY, delayTime = 100 }
 ): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    return operation()
+    operation()
       .then(resolve)
       .catch((reason: unknown) => {
         if (attempts > 0) {

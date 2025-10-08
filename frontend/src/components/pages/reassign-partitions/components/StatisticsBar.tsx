@@ -12,6 +12,7 @@
 import { computed, makeObservable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
+
 import { api } from '../../../../state/backendApi';
 import type { Broker, Partition } from '../../../../state/restInterfaces';
 import { prettyBytesOrNA } from '../../../../utils/utils';
@@ -54,7 +55,10 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
       { title: 'Involved Topics', value: this.selectedPartitions.length },
       { title: 'Involved Brokers', value: brokers?.length ?? '...' },
       { title: 'Involved Racks', value: brokers?.map((b) => b.rack).distinct().length ?? '...' },
-      { title: 'Size', value: prettyBytesOrNA(allSelectedPartitions.sum((p) => p.replicas.length * p.replicaSize)) },
+      {
+        title: 'Size',
+        value: prettyBytesOrNA(allSelectedPartitions.sum((p) => p.replicas.length * p.replicaSize)),
+      },
     ];
 
     return (
@@ -84,23 +88,31 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
   @computed get selectedPartitions(): { topic: string; partitions: Partition[] }[] {
     const ar = [];
     for (const [topic, partitions] of api.topicPartitions) {
-      if (partitions == null) continue;
-      if (this.props.partitionSelection[topic] == null) continue;
+      if (partitions == null) {
+        continue;
+      }
+      if (this.props.partitionSelection[topic] == null) {
+        continue;
+      }
       const relevantPartitions = partitions.filter((p) => this.props.partitionSelection[topic].includes(p.id));
-      ar.push({ topic: topic, partitions: relevantPartitions });
+      ar.push({ topic, partitions: relevantPartitions });
     }
     return ar;
   }
 
   @computed get involvedBrokers(): Broker[] | null {
-    if (api.clusterInfo == null) return null;
+    if (api.clusterInfo == null) {
+      return null;
+    }
     const brokerIds = new Set<number>();
 
     // Find IDs of all involved brokers
     for (const t of this.selectedPartitions) {
       for (const p of t.partitions) {
         brokerIds.add(p.leader);
-        for (const id of p.replicas) brokerIds.add(id);
+        for (const id of p.replicas) {
+          brokerIds.add(id);
+        }
       }
     }
 

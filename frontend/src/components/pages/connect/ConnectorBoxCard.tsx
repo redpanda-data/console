@@ -10,9 +10,10 @@
  */
 
 import { Box, Flex, Link, Tag, TagLabel, Text } from '@redpanda-data/ui';
+
+import { findConnectorMetadata, removeNamespace } from './helper';
 import BoxCard, { type BoxCardProps } from '../../misc/BoxCard';
 import type { HiddenRadioOption } from '../../misc/HiddenRadioList';
-import { findConnectorMetadata, removeNamespace } from './helper';
 
 interface ConnectorBoxCardProps
   extends Omit<BoxCardProps, 'children'>,
@@ -26,9 +27,9 @@ export function ConnectorBoxCard(props: ConnectorBoxCardProps) {
   return (
     <BoxCard
       active={checked || active}
-      hoverable={hoverable}
       borderStyle={borderStyle}
       borderWidth={borderWidth}
+      hoverable={hoverable}
       id={id}
     >
       <ConnectorRadioCardContent connectorPlugin={connectorPlugin} />
@@ -45,19 +46,19 @@ function ConnectorRadioCardContent({ connectorPlugin }: { connectorPlugin: Conne
 
   return (
     <Flex direction="column">
-      <Box width="32px" height="32px" mb="2">
+      <Box height="32px" mb="2" width="32px">
         {logo}
       </Box>
 
-      <Box fontWeight="600" fontSize=".85em">
+      <Box fontSize=".85em" fontWeight="600">
         {type === 'source' ? 'Import from' : 'Export to'}
       </Box>
 
-      <Box fontWeight="600" fontSize="1.1em" mb="2">
+      <Box fontSize="1.1em" fontWeight="600" mb="2">
         {displayName}
       </Box>
 
-      <Text fontSize=".85em" color="gray.500" noOfLines={3}>
+      <Text color="gray.500" fontSize=".85em" noOfLines={3}>
         {description}
       </Text>
       {learnMoreLink && (
@@ -74,7 +75,9 @@ function ConnectorRadioCardContent({ connectorPlugin }: { connectorPlugin: Conne
 }
 
 export function getConnectorFriendlyName(className?: string) {
-  if (!className) return '';
+  if (!className) {
+    return '';
+  }
 
   const { friendlyName } = findConnectorMetadata(className) ?? {};
   const displayName = friendlyName ?? removeNamespace(className);

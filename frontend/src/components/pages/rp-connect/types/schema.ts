@@ -76,7 +76,8 @@ export const CONNECT_COMPONENT_TYPE = [
   'scanner',
 ] as const;
 
-export type ConnectComponentType = (typeof CONNECT_COMPONENT_TYPE)[number] | (string & {}); // FieldType represents the data type of a configuration field.
+// Strict type for known component types (used in forms and strict type checking)
+export type ConnectComponentType = (typeof CONNECT_COMPONENT_TYPE)[number];
 
 export const CONNECT_FIELD_TYPE = [
   'string', // A textual string value. Example: "hello world"
@@ -187,7 +188,7 @@ export interface ConnectFieldSpec<T = unknown> {
   // For string fields that accept a predefined set of values (enum-like), this provides
   // a list of those options, each with a corresponding summary/description.
   // Example: `[["option_a", "Enables feature A"], ["option_b", "Enables feature B"]]`.
-  annotated_options?: Array<[string, string]>;
+  annotated_options?: [string, string][];
 
   // For string fields that accept a predefined set of values (enum-like), this provides
   // a list of those possible string values when detailed summaries are not needed.
@@ -211,6 +212,10 @@ export interface ConnectFieldSpec<T = unknown> {
   // from this field's value when it's displayed (e.g., in logs, API responses, or UI).
   // It should transform the value to a redacted form (e.g., "!!!SECRET_SCRUBBED!!!") if it's sensitive.
   scrubber?: string;
+
+  // Raw JSON Schema reference for on-demand YAML generation
+  // This allows us to avoid complex upfront transformation and generate YAML directly from JSON Schema
+  _jsonSchema?: any;
 } // Describes a Bloblang function, which is a named operation that can be called within a Bloblang mapping.
 // Example functions: `batch_index()`, `env("VAR_NAME")`, `uuid_v4()`.
 
@@ -520,37 +525,26 @@ export interface ConnectComponentSpec {
 
   // Version is the Benthos version this component was introduced.
   version?: string;
-} // Extended ComponentSpec for external connections (Phase 2)
+
+  // A URL to the component's logo.
+  logoUrl?: string;
+}
 
 export interface ExtendedConnectComponentSpec extends ConnectComponentSpec {
-  // External documentation
+  // External documentation URLs and metadata for components from external sources
   externalDocs?: {
     primaryUrl?: string;
     secondaryUrl?: string;
     format?: 'markdown' | 'asciidoc';
     logoUrl?: string;
   };
-} // Internal component spec with isExternal flag
-
-export interface InternalConnectComponentSpec extends ConnectComponentSpec {
-  isExternal?: boolean;
 }
 
+/**
+ * Represents a semantic category for grouping components in the UI
+ * Used for the category filter dropdown in connect-tiles.tsx
+ */
 export interface ConnectNodeCategory {
   id: string;
   name: string;
-  components: ConnectComponentSpec[];
-}
-
-export interface ConnectSchemaNodeConfig {
-  id: string;
-  name: string;
-  type: string;
-  category: ConnectComponentType;
-  status: ConnectComponentStatus;
-  summary?: string;
-  description?: string;
-  config: ConnectComponentSpec['config'];
-  categories?: string[] | null;
-  version?: string;
 }

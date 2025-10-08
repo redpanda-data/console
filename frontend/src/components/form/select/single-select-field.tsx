@@ -2,11 +2,12 @@ import { FormControl, FormHelperText, FormLabel, HStack, Icon, Stack, Text } fro
 import type { SelectOption } from '@redpanda-data/ui/dist/components/Inputs/Select/Select';
 import type { ReactNode } from 'react';
 import { AiOutlinePlus } from 'react-icons/ai';
+
 import { SingleSelect } from '../../misc/Select';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
-interface SingleSelectFieldProps {
+export interface SingleSelectFieldProps {
   label?: ReactNode;
   helperText?: ReactNode;
   placeholder?: string;
@@ -60,16 +61,16 @@ export const SingleSelectField = ({
           </FormLabel>
         )}
         {helperText && (
-          <FormHelperText mt={0} mb={1}>
+          <FormHelperText mb={1} mt={0}>
             {helperText}
           </FormHelperText>
         )}
       </Stack>
       <SingleSelect
-        options={selectOptions}
-        onChange={handleChange}
-        placeholder={placeholder}
         isDisabled={isDisabled}
+        onChange={handleChange}
+        options={selectOptions}
+        placeholder={placeholder}
         value={field.state.value}
       />
 

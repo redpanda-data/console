@@ -2,7 +2,7 @@
 
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Slot as SlotPrimitive } from 'radix-ui';
-import React, { ElementType } from 'react';
+import React, { type ElementType } from 'react';
 
 import { useGroup } from './group';
 import { cn } from '../lib/utils';

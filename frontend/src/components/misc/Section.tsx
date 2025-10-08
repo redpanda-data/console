@@ -16,11 +16,11 @@ import type { ReactNode } from 'react';
 function Section(props: { children: ReactNode; id?: string } & ChakraProps) {
   return (
     <ChakraSection
-      px={6}
-      py={6}
-      boxShadow="4px 4px 0px 0px rgb(0 0 0 / 10%)"
       border="1px solid #C5CBD2"
       borderRadius="8px"
+      boxShadow="4px 4px 0px 0px rgb(0 0 0 / 10%)"
+      px={6}
+      py={6}
       {...props}
     />
   );

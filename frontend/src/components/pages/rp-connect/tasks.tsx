@@ -5,11 +5,11 @@ const milliValueRegex = /^(\d+(\.\d+)?)(m?)$/;
 
 export function cpuToTasks(cpu: string | undefined): number | undefined {
   if (!cpu) {
-    return undefined;
+    return;
   }
   const match = cpu.match(milliValueRegex);
   if (!match) {
-    return undefined;
+    return;
   }
 
   const value = Number.parseFloat(match[1]);
@@ -20,7 +20,7 @@ export function cpuToTasks(cpu: string | undefined): number | undefined {
 
 export function tasksToCPU(tasks: number | undefined): string | undefined {
   if (!tasks) {
-    return undefined;
+    return;
   }
   return `${tasks * 100}m`;
 }

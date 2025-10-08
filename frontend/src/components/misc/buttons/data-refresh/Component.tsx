@@ -12,6 +12,7 @@ import { observer } from 'mobx-react';
  * by the Apache License, Version 2.0
  */
 import { MdOutlineCached, MdPause, MdPlayCircleOutline } from 'react-icons/md';
+
 import { appGlobal } from '../../../../state/appGlobal';
 import { api, REST_CACHE_DURATION_SEC } from '../../../../state/backendApi';
 import { uiSettings } from '../../../../state/ui';
@@ -68,7 +69,7 @@ const autoRefresh = observable(
     },
   },
   undefined,
-  { autoBind: true },
+  { autoBind: true }
 );
 
 autorun(() => {
@@ -93,33 +94,31 @@ export const DataRefreshButton = observer(() => {
     <>
       <Box>
         <Popover
-          isInPortal
-          title="Auto Refresh"
           content={
             <div>
               Enable or disable automatic refresh every{' '}
               <span className="codeBox">{uiSettings.autoRefreshIntervalSecs}s</span>.
             </div>
           }
-          placement="bottom"
           hideCloseButton={true}
+          isInPortal
+          placement="bottom"
+          title="Auto Refresh"
         >
           <IconButton
-            p={0}
-            variant="ghost"
-            onClick={autoRefresh.toggleAutorefresh}
             aria-label="Auth Refresh"
             icon={autoRefresh.active ? <MdPause size={18} /> : <MdPlayCircleOutline size={18} />}
+            onClick={autoRefresh.toggleAutorefresh}
+            p={0}
+            variant="ghost"
           />
         </Popover>
       </Box>
-      <Flex flexDirection="column" alignItems="center">
+      <Flex alignItems="center" flexDirection="column">
         {autoRefresh.active || api.activeRequests.length > 0 ? (
-          <Spinner color="red.500" size="sm" speed="0.3s" ml={2} />
+          <Spinner color="red.500" ml={2} size="sm" speed="0.3s" />
         ) : (
           <Popover
-            isInPortal
-            title="Force Refresh"
             content={
               <div>
                 Click to force a refresh of the data shown in the current page. When switching pages, any data older
@@ -127,20 +126,22 @@ export const DataRefreshButton = observer(() => {
                 refreshed automatically.
               </div>
             }
-            placement="bottom"
             hideCloseButton={true}
+            isInPortal
+            placement="bottom"
+            title="Force Refresh"
           >
             <IconButton
-              p={0}
-              variant="ghost"
-              onClick={() => appGlobal.onRefresh()}
               aria-label="Force Refresh"
               icon={<MdOutlineCached size={18} />}
+              onClick={() => appGlobal.onRefresh()}
+              p={0}
+              variant="ghost"
             />
           </Popover>
         )}
       </Flex>
-      <Text userSelect="none" fontSize="sm" ml={4}>
+      <Text fontSize="sm" ml={4} userSelect="none">
         {autoRefresh.active && api.activeRequests.length === 0 && (
           <>Refreshing in {autoRefresh.remainingSeconds} secs</>
         )}

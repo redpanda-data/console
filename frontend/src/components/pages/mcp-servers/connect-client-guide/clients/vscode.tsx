@@ -13,16 +13,17 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
+
 import VSCodeLogo from '../../../../../assets/vscode.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { createMCPConfig, getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
+import { ClientType, createMCPConfig, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
-interface ClientVscodeProps {
+type ClientVscodeProps = {
   mcpServer: MCPServer;
   enableMcpDiscovery?: boolean;
-}
+};
 
 export const ClientVscode = ({ mcpServer, enableMcpDiscovery = true }: ClientVscodeProps) => {
   const clusterId = config?.clusterId;
@@ -44,9 +45,6 @@ export const ClientVscode = ({ mcpServer, enableMcpDiscovery = true }: ClientVsc
     window.open(vscodeLink, '_blank');
   };
 
-  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
-  const showCloudEnvironmentFlag = getRpkCloudEnvironment() !== 'production';
-
   const mcpDiscoveryConfig = enableMcpDiscovery
     ? `"chat.mcp.discovery.enabled": {
     "windsurf": true,
@@ -56,62 +54,28 @@ export const ClientVscode = ({ mcpServer, enableMcpDiscovery = true }: ClientVsc
 }`
     : '';
 
-  const vscodeConfigJson = showCloudEnvironmentFlag
-    ? `{
-  "mcp": {
-    "servers": {
-      "${mcpServerName}": {
-        "command": "rpk",
-        "args": [
-          "-X", 
-          "cloud_environment=${getRpkCloudEnvironment()}",
-          "cloud",
-          "mcp",
-          "proxy",
-          "${clusterFlag}",
-          "${clusterId}",
-          "--mcp-server-id",
-          "${mcpServerId}"
-        ]
-      }
-    }
-  }
-}`
-    : `{
-  "mcp": {
-    "servers": {
-      "${mcpServerName}": {
-        "command": "rpk",
-        "args": [
-          "-X", 
-          "cloud",
-          "mcp",
-          "proxy",
-          "${clusterFlag}",
-          "${clusterId}",
-          "--mcp-server-id",
-          "${mcpServerId}"
-        ]
-      }
-    }
-  }
-}`;
+  const vscodeConfigJson = getClientConfig(ClientType.VSCODE, {
+    mcpServerName,
+    clusterId,
+    mcpServerId,
+    isServerless: config.isServerless,
+  });
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Click the button below to add MCP server to</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                <img src={VSCodeLogo} alt="VSCode" className="h-4 w-4" /> VSCode
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+                <img alt="VSCode" className="h-4 w-4" src={VSCodeLogo} /> VSCode
               </Text>
             </div>
-            <Button variant="outline" onClick={handleAddToVSCode} className="mt-2">
-              <img src={VSCodeLogo} alt="VSCode" className="w-4 h-4" />
+            <Button className="mt-2" onClick={handleAddToVSCode} variant="outline">
+              <img alt="VSCode" className="h-4 w-4" src={VSCodeLogo} />
               Add to VSCode
             </Button>
           </ListItem>
@@ -121,13 +85,13 @@ export const ClientVscode = ({ mcpServer, enableMcpDiscovery = true }: ClientVsc
                 You can also set up autodiscovery for the MCP server from other IDEs by updating your VSCode settings:
               </span>
             </div>
-            <DynamicCodeBlock lang="json" code={mcpDiscoveryConfig} />
+            <DynamicCodeBlock code={mcpDiscoveryConfig} lang="json" />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Alternatively, run the following command:</span>
             </div>
-            <DynamicCodeBlock lang="bash" code={vscodeCommand} />
+            <DynamicCodeBlock code={vscodeCommand} lang="bash" />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
@@ -135,14 +99,14 @@ export const ClientVscode = ({ mcpServer, enableMcpDiscovery = true }: ClientVsc
               <InlineCode className="whitespace-nowrap">~/.vscode/mcp.json</InlineCode>
               <span>with:</span>
             </div>
-            <DynamicCodeBlock lang="json" code={vscodeConfigJson} />
+            <DynamicCodeBlock code={vscodeConfigJson} lang="json" />
           </ListItem>
           <ListItem>Restart VSCode and the MCP server should be available in the MCP panel.</ListItem>
         </List>
       </div>
       <RemoteMCPConnectDocsAlert
-        documentationUrl="https://code.visualstudio.com/docs/copilot/customization/mcp-servers"
         clientName="VSCode"
+        documentationUrl="https://code.visualstudio.com/docs/copilot/customization/mcp-servers"
       />
     </div>
   );

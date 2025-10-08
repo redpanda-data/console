@@ -42,6 +42,8 @@ import { HiOutlineTrash } from 'react-icons/hi';
 import { MdError, MdOutlineWarning } from 'react-icons/md';
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { Link } from 'react-router-dom';
+
+import { CreateTopicModalContent, type CreateTopicModalState } from './CreateTopicModal/CreateTopicModal';
 import colors from '../../../colors';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { api } from '../../../state/backendApi';
@@ -51,17 +53,15 @@ import { uiState } from '../../../state/uiState';
 import createAutoModal from '../../../utils/createAutoModal';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/queryHelper';
+import type { RetentionSizeUnit, RetentionTimeUnit } from '../../../utils/topicUtils';
 import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 import { renderLogDirSummary } from '../../misc/common';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
-import {
-  CreateTopicModalContent,
-  type CreateTopicModalState,
-  type RetentionSizeUnit,
-  type RetentionTimeUnit,
-} from './CreateTopicModal/CreateTopicModal';
+
+// Regex for quick search filtering
+const QUICK_SEARCH_REGEX_CACHE = new Map<string, RegExp>();
 
 const TopicList: FC = () => {
   useEffect(() => {
@@ -75,12 +75,10 @@ const TopicList: FC = () => {
       onUpdate: (val) => {
         uiSettings.topicList.hideInternalTopics = val;
       },
-      getDefaultValue: () => {
-        return uiSettings.topicList.hideInternalTopics;
-      },
+      getDefaultValue: () => uiSettings.topicList.hideInternalTopics,
     },
     'showInternal',
-    parseAsBoolean,
+    parseAsBoolean
   );
 
   const { data, isLoading, isError, refetch: refetchTopics } = useLegacyListTopicsQuery();
@@ -88,12 +86,14 @@ const TopicList: FC = () => {
   const { mutateAsync: createTopic } = useCreateTopicMutation();
   const { Component: CreateTopicModal, show: showCreateTopicModal } = useMemo(
     () => makeCreateTopicModal(createTopic),
-    [createTopic],
+    [createTopic]
   );
 
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(() => {
     api.refreshClusterOverview();
-    void api.refreshClusterHealth();
+    api.refreshClusterHealth().catch(() => {
+      // Error handling managed by API layer
+    });
 
     refetchTopics();
   }, [refetchTopics]);
@@ -101,15 +101,20 @@ const TopicList: FC = () => {
   const topics = useMemo(() => {
     let topics = data.topics ?? [];
     if (!showInternalTopics) {
-      topics = topics.filter((x) => !x.isInternal && !x.topicName.startsWith('_'));
+      topics = topics.filter((x) => !(x.isInternal || x.topicName.startsWith('_')));
     }
 
     const searchQuery = localSearchValue;
     if (searchQuery) {
       try {
-        const quickSearchRegExp = new RegExp(searchQuery, 'i');
+        let quickSearchRegExp = QUICK_SEARCH_REGEX_CACHE.get(searchQuery);
+        if (!quickSearchRegExp) {
+          quickSearchRegExp = new RegExp(searchQuery, 'i');
+          QUICK_SEARCH_REGEX_CACHE.set(searchQuery, quickSearchRegExp);
+        }
         topics = topics.filter((topic) => Boolean(topic.topicName.match(quickSearchRegExp)));
       } catch (_e) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('Invalid expression');
         const searchLower = searchQuery.toLowerCase();
         topics = topics.filter((topic) => topic.topicName.toLowerCase().includes(searchLower));
@@ -130,9 +135,13 @@ const TopicList: FC = () => {
     };
   }, [topics]);
 
-  if (isLoading) return DefaultSkeleton;
+  if (isLoading) {
+    return DefaultSkeleton;
+  }
 
-  if (isError) return <div>Error</div>;
+  if (isError) {
+    return <div>Error</div>;
+  }
 
   return (
     <PageContent>
@@ -147,22 +156,22 @@ const TopicList: FC = () => {
       <Box pt={6}>
         <Flex gap={2}>
           <SearchField
-            width="350px"
             placeholderText="Enter search term/regex"
             searchText={localSearchValue}
             setSearchText={setLocalSearchValue}
+            width="350px"
           />
           <AnimatePresence>
             {localSearchValue && (
               <motion.div
-                initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.12 }}
+                initial={{ opacity: 0 }}
                 style={{ display: 'flex', alignItems: 'center' }}
+                transition={{ duration: 0.12 }}
               >
-                <Text ml={4} alignSelf="center" lineHeight="1" whiteSpace="nowrap">
-                  <Text fontWeight="bold" display="inline">
+                <Text alignSelf="center" lineHeight="1" ml={4} whiteSpace="nowrap">
+                  <Text display="inline" fontWeight="bold">
                     {topics.length}
                   </Text>{' '}
                   {topics.length === 1 ? 'result' : 'results'}
@@ -175,11 +184,11 @@ const TopicList: FC = () => {
       <Section>
         <div className="flex items-center justify-between gap-4">
           <Button
-            variant="solid"
-            colorScheme="brand"
-            onClick={() => showCreateTopicModal()}
             className="min-w-[160px]"
+            colorScheme="brand"
             data-testid="create-topic-button"
+            onClick={() => showCreateTopicModal()}
+            variant="solid"
           >
             Create topic
           </Button>
@@ -198,21 +207,21 @@ const TopicList: FC = () => {
         </div>
         <Box my={4}>
           <TopicsTable
-            topics={topics}
             onDelete={(record) => {
               setTopicToDelete(record);
             }}
+            topics={topics}
           />
         </Box>
       </Section>
 
       <ConfirmDeletionModal
-        topicToDelete={topicToDelete}
         onCancel={() => setTopicToDelete(null)}
         onFinish={async () => {
           setTopicToDelete(null);
           await refreshData();
         }}
+        topicToDelete={topicToDelete}
       />
     </PageContent>
   );
@@ -223,50 +232,40 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
 
   return (
     <DataTable<Topic>
-      data={topics}
-      sorting={true}
-      pagination={paginationParams}
-      onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
-        uiSettings.topicList.pageSize = pageSize;
-        editQuery((query) => {
-          query.page = String(pageIndex);
-          query.pageSize = String(pageSize);
-        });
-      })}
       columns={[
         {
           header: 'Name',
           accessorKey: 'topicName',
           cell: ({ row: { original: topic } }) => {
             const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? []).find(
-              ({ topicName }) => topicName === topic.topicName,
+              ({ topicName }) => topicName === topic.topicName
             )?.partitionIds;
             const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? []).find(
-              ({ topicName }) => topicName === topic.topicName,
+              ({ topicName }) => topicName === topic.topicName
             )?.partitionIds;
 
             return (
-              <Flex wordBreak="break-word" whiteSpace="break-spaces" gap={2} alignItems="center">
+              <Flex alignItems="center" gap={2} whiteSpace="break-spaces" wordBreak="break-word">
                 <Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link>
                 {!!leaderLessPartitions && (
                   <Tooltip
-                    placement="top"
                     hasArrow
                     label={`This topic has ${leaderLessPartitions.length} ${leaderLessPartitions.length === 1 ? 'a leaderless partition' : 'leaderless partitions'}`}
+                    placement="top"
                   >
                     <Box>
-                      <MdError size={18} color={colors.brandError} />
+                      <MdError color={colors.brandError} size={18} />
                     </Box>
                   </Tooltip>
                 )}
                 {!!underReplicatedPartitions && (
                   <Tooltip
-                    placement="top"
                     hasArrow
                     label={`This topic has ${underReplicatedPartitions.length} ${underReplicatedPartitions.length === 1 ? 'an under-replicated partition' : 'under-replicated partitions'}`}
+                    placement="top"
                   >
                     <Box>
-                      <MdOutlineWarning size={18} color={colors.brandWarning} />
+                      <MdOutlineWarning color={colors.brandWarning} size={18} />
                     </Box>
                   </Tooltip>
                 )}
@@ -301,12 +300,12 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
             <Flex gap={1}>
               <DeleteDisabledTooltip topic={record}>
                 <button
-                  type="button"
                   data-testid={`delete-topic-button-${record.topicName}`}
                   onClick={(event) => {
                     event.stopPropagation();
                     onDelete(record);
                   }}
+                  type="button"
                 >
                   <Icon as={HiOutlineTrash} />
                 </button>
@@ -315,6 +314,16 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
           ),
         },
       ]}
+      data={topics}
+      onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
+        uiSettings.topicList.pageSize = pageSize;
+        editQuery((query) => {
+          query.page = String(pageIndex);
+          query.pageSize = String(pageSize);
+        });
+      })}
+      pagination={paginationParams}
+      sorting={true}
     />
   );
 };
@@ -338,12 +347,20 @@ const iconClosedEye = (
 const renderName = (topic: Topic) => {
   const actions = topic.allowedActions;
 
-  if (!actions || actions[0] === 'all') return topic.topicName; // happens in non-business version
+  if (!actions || actions[0] === 'all') {
+    return topic.topicName; // happens in non-business version
+  }
 
   let missing = 0;
-  for (const a of TopicActions) if (!actions.includes(a)) missing++;
+  for (const a of TopicActions) {
+    if (!actions.includes(a)) {
+      missing++;
+    }
+  }
 
-  if (missing === 0) return topic.topicName; // everything is allowed
+  if (missing === 0) {
+    return topic.topicName; // everything is allowed
+  }
 
   // There's at least one action the user can't do
   // Show a table of what they can't do
@@ -365,14 +382,14 @@ const renderName = (topic: Topic) => {
           keyAlign: 'right',
           keyStyle: { fontSize: '86%', fontWeight: 700, textTransform: 'capitalize' },
           tableStyle: { margin: 'auto' },
-        },
+        }
       )}
     </div>
   );
 
   return (
-    <Box wordBreak="break-word" whiteSpace="break-spaces">
-      <Popover content={popoverContent} placement="right" closeDelay={10} size="stretch" hideCloseButton>
+    <Box whiteSpace="break-spaces" wordBreak="break-word">
+      <Popover closeDelay={10} content={popoverContent} hideCloseButton placement="right" size="stretch">
         <span>
           {topic.topicName}
           {iconClosedEye}
@@ -429,13 +446,13 @@ function ConfirmDeletionModal({
 
           <AlertDialogBody>
             {error && (
-              <Alert status="error" mb={2}>
+              <Alert mb={2} status="error">
                 <AlertIcon />
                 {`An error occurred: ${typeof error === 'string' ? error : error.message}`}
               </Alert>
             )}
             {topicToDelete?.isInternal && (
-              <Alert status="error" mb={2}>
+              <Alert mb={2} status="error">
                 <AlertIcon />
                 This is an internal topic, deleting it might have unintended side-effects!
               </Alert>
@@ -447,13 +464,14 @@ function ConfirmDeletionModal({
           </AlertDialogBody>
 
           <AlertDialogFooter>
-            <Button ref={cancelRef} onClick={cancel} variant="ghost">
+            <Button onClick={cancel} ref={cancelRef} variant="ghost">
               Cancel
             </Button>
             <Button
+              colorScheme="brand"
               data-testid="delete-topic-confirm-button"
               isLoading={deletionPending}
-              colorScheme="brand"
+              ml={3}
               onClick={() => {
                 if (topicToDelete?.topicName) {
                   setDeletionPending(true);
@@ -472,7 +490,6 @@ function ConfirmDeletionModal({
                     });
                 }
               }}
-              ml={3}
             >
               Delete
             </Button>
@@ -487,7 +504,7 @@ function DeleteDisabledTooltip(props: { topic: Topic; children: JSX.Element }): 
   const deleteButton = props.children;
 
   const wrap = (button: JSX.Element, message: string) => (
-    <Tooltip placement="left" label={message} hasArrow>
+    <Tooltip hasArrow label={message} placement="left">
       {React.cloneElement(button, {
         disabled: true,
         className: `${button.props.className ?? ''} disabled`,
@@ -510,44 +527,77 @@ function hasDeletePrivilege() {
   return true;
 }
 
+// Regex for validating topic names
+const TOPIC_NAME_REGEX = /^\S+$/;
+
 function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutation>['mutateAsync']) {
   api.refreshCluster(); // get brokers (includes configs) to display default values
-  const tryGetBrokerConfig = (configName: string): string | undefined => {
-    return (
-      api.clusterInfo?.brokers?.find((_) => true)?.config.configs?.find((x) => x.name === configName)?.value ??
-      undefined
-    );
-  };
+  const tryGetBrokerConfig = (configName: string): string | undefined =>
+    api.clusterInfo?.brokers?.find((_) => true)?.config.configs?.find((x) => x.name === configName)?.value ?? undefined;
 
   const getRetentionTimeFinalValue = (value: number | undefined, unit: RetentionTimeUnit) => {
-    if (unit === 'default') return undefined;
+    if (unit === 'default') {
+      return;
+    }
 
-    if (value === undefined)
+    if (value === undefined) {
       throw new Error(`unexpected: value for retention time is 'undefined' but unit is set to ${unit}`);
+    }
 
-    if (unit === 'ms') return value;
-    if (unit === 'seconds') return value * 1000;
-    if (unit === 'minutes') return value * 1000 * 60;
-    if (unit === 'hours') return value * 1000 * 60 * 60;
-    if (unit === 'days') return value * 1000 * 60 * 60 * 24;
-    if (unit === 'months') return value * 1000 * 60 * 60 * 24 * (365 / 12);
-    if (unit === 'years') return value * 1000 * 60 * 60 * 24 * 365;
+    if (unit === 'ms') {
+      return value;
+    }
+    if (unit === 'seconds') {
+      return value * 1000;
+    }
+    if (unit === 'minutes') {
+      return value * 1000 * 60;
+    }
+    if (unit === 'hours') {
+      return value * 1000 * 60 * 60;
+    }
+    if (unit === 'days') {
+      return value * 1000 * 60 * 60 * 24;
+    }
+    if (unit === 'months') {
+      return value * 1000 * 60 * 60 * 24 * (365 / 12);
+    }
+    if (unit === 'years') {
+      return value * 1000 * 60 * 60 * 24 * 365;
+    }
 
-    if (unit === 'infinite') return -1;
+    if (unit === 'infinite') {
+      return -1;
+    }
   };
   const getRetentionSizeFinalValue = (value: number | undefined, unit: RetentionSizeUnit) => {
-    if (unit === 'default') return undefined;
+    if (unit === 'default') {
+      return;
+    }
 
-    if (value === undefined)
+    if (value === undefined) {
       throw new Error(`unexpected: value for retention size is 'undefined' but unit is set to ${unit}`);
+    }
 
-    if (unit === 'Bit') return value;
-    if (unit === 'KiB') return value * 1024;
-    if (unit === 'MiB') return value * 1024 * 1024;
-    if (unit === 'GiB') return value * 1024 * 1024 * 1024;
-    if (unit === 'TiB') return value * 1024 * 1024 * 1024 * 1024;
+    if (unit === 'Bit') {
+      return value;
+    }
+    if (unit === 'KiB') {
+      return value * 1024;
+    }
+    if (unit === 'MiB') {
+      return value * 1024 * 1024;
+    }
+    if (unit === 'GiB') {
+      return value * 1024 * 1024 * 1024;
+    }
+    if (unit === 'TiB') {
+      return value * 1024 * 1024 * 1024 * 1024;
+    }
 
-    if (unit === 'infinite') return -1;
+    if (unit === 'infinite') {
+      return -1;
+    }
   };
 
   return createAutoModal<void, CreateTopicModalState>({
@@ -610,25 +660,37 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
         },
         hasErrors: false,
       }),
-    isOkEnabled: (state) => /^\S+$/.test(state.topicName) && !state.hasErrors,
+    isOkEnabled: (state) => TOPIC_NAME_REGEX.test(state.topicName) && !state.hasErrors,
     onOk: async (state) => {
-      if (!state.topicName) throw new Error('"Topic Name" must be set');
-      if (!state.cleanupPolicy) throw new Error('"Cleanup Policy" must be set');
+      if (!state.topicName) {
+        throw new Error('"Topic Name" must be set');
+      }
+      if (!state.cleanupPolicy) {
+        throw new Error('"Cleanup Policy" must be set');
+      }
 
       const config: TopicConfigEntry[] = [];
       const setVal = (name: string, value: string | number | undefined) => {
-        if (value === undefined) return;
+        if (value === undefined) {
+          return;
+        }
         config.removeAll((x) => x.name === name);
         config.push({ name, value: String(value) });
       };
 
-      for (const x of state.additionalConfig) setVal(x.name, x.value);
+      for (const x of state.additionalConfig) {
+        setVal(x.name, x.value);
+      }
 
-      if (state.retentionTimeUnit !== 'default')
+      if (state.retentionTimeUnit !== 'default') {
         setVal('retention.ms', getRetentionTimeFinalValue(state.retentionTimeMs, state.retentionTimeUnit));
-      if (state.retentionSizeUnit !== 'default')
+      }
+      if (state.retentionSizeUnit !== 'default') {
         setVal('retention.bytes', getRetentionSizeFinalValue(state.retentionSize, state.retentionSizeUnit));
-      if (state.minInSyncReplicas !== undefined) setVal('min.insync.replicas', state.minInSyncReplicas);
+      }
+      if (state.minInSyncReplicas !== undefined) {
+        setVal('min.insync.replicas', state.minInSyncReplicas);
+      }
 
       setVal('cleanup.policy', state.cleanupPolicy);
 
@@ -644,17 +706,17 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
 
       return (
         <Grid
-          templateColumns="auto auto"
-          justifyContent="center"
           alignItems="center"
-          justifyItems="flex-end"
           columnGap={2}
-          rowGap={1}
+          justifyContent="center"
+          justifyItems="flex-end"
           py={2}
+          rowGap={1}
+          templateColumns="auto auto"
         >
           <Text>Name:</Text>
-          <Flex justifySelf="start" gap={2} alignItems="center">
-            <Text wordBreak="break-word" whiteSpace="break-spaces" noOfLines={1}>
+          <Flex alignItems="center" gap={2} justifySelf="start">
+            <Text noOfLines={1} whiteSpace="break-spaces" wordBreak="break-word">
               {result.topicName}
             </Text>
             <CopyButton content={result.topicName} variant="ghost" />
@@ -668,7 +730,9 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
     },
     onSuccess: (_state, _result) => {
       api.refreshClusterOverview();
-      void api.refreshClusterHealth();
+      api.refreshClusterHealth().catch(() => {
+        // Error handling managed by API layer
+      });
     },
     content: (state) => <CreateTopicModalContent state={state} />,
   });

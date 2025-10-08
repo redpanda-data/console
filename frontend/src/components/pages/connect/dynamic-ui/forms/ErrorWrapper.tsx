@@ -1,6 +1,7 @@
 import { FormField } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import type { PropsWithoutRef } from 'react';
+
 import type { Property } from '../../../../../state/connect/state';
 import { ExpandableText } from '../../../../misc/ExpandableText';
 
@@ -21,11 +22,11 @@ export const ErrorWrapper = observer((props: PropsWithoutRef<{ property: Propert
   return (
     <div>
       <FormField
+        description={<ExpandableText maxChars={60}>{property.entry.definition.documentation}</ExpandableText>}
+        errorText={isEmpty(property) && isRequired ? errorToShow || isRequiredError(property.name) : errorToShow}
         isInvalid={!!errorToShow || (isEmpty(property) && isRequired)}
         isRequired={isRequired}
         label={property.entry.definition.display_name}
-        errorText={isEmpty(property) && isRequired ? errorToShow || isRequiredError(property.name) : errorToShow}
-        description={<ExpandableText maxChars={60}>{property.entry.definition.documentation}</ExpandableText>}
         onClick={cycleError}
       >
         {input}

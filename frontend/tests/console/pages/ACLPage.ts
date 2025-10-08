@@ -447,6 +447,7 @@ export class ACLPage {
   async validateListItem(host: string, principal: string) {
     await this.gotoList();
     // Validate that the ACL list item is visible with correct host and principal
+    await this.page.getByTestId('search-field-input').fill(principal);
     const listItem = this.page.getByTestId(`acl-list-item-${principal}-${host}`);
     await expect(listItem).toBeVisible({ timeout: 1000 });
   }
@@ -454,7 +455,7 @@ export class ACLPage {
   /**
    * Validation methods for checking rule existence
    */
-  async validateRuleExists(rule: Rule, principal: string, host: string = '*'): Promise<boolean> {
+  async validateRuleExists(rule: Rule, principal: string, host = '*'): Promise<boolean> {
     // Check if a specific rule exists on the detail page
     try {
       // Check if at least one operation from the rule is visible
@@ -471,7 +472,7 @@ export class ACLPage {
     }
   }
 
-  async validateRuleNotExists(rule: Rule, principal: string, host: string = '*') {
+  async validateRuleNotExists(rule: Rule, principal: string, host = '*') {
     // Verify that a specific rule does not exist on the detail page
     for (const [operationName, permission] of Object.entries(rule.operations)) {
       const testId = `detail-item-op-${getIdFromRule(rule, operationName, permission)}`;
@@ -495,7 +496,7 @@ export class ACLPage {
     return this.page.locator(`.card-content-rule-${ruleIndex}`);
   }
 
-  async waitForStability(timeout: number = 1000) {
+  async waitForStability(timeout = 1000) {
     await this.page.waitForTimeout(timeout);
   }
 }

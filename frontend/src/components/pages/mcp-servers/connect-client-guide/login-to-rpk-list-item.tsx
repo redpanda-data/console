@@ -12,11 +12,9 @@
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { ListItem } from 'components/redpanda-ui/components/typography';
 
-export const LoginToRpkListItem = () => {
-  return (
-    <ListItem>
-      Login to Redpanda Cloud:
-      <DynamicCodeBlock lang="bash" code="rpk cloud login" />
-    </ListItem>
-  );
-};
+export const LoginToRpkListItem = () => (
+  <ListItem>
+    Login to Redpanda Cloud:
+    <DynamicCodeBlock code="rpk cloud login" lang="bash" />
+  </ListItem>
+);

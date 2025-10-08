@@ -38,7 +38,7 @@ const MCP_SERVER_MAX_PAGE_SIZE = 50;
 
 export const useListMCPServersQuery = (
   input?: MessageInit<ListMCPServersRequest>,
-  options?: QueryOptions<GenMessage<ListMCPServersRequest>, ListMCPServersResponse>,
+  options?: QueryOptions<GenMessage<ListMCPServersRequest>, ListMCPServersResponse>
 ) => {
   const listMCPServersRequest = create(ListMCPServersRequestSchema, {
     pageToken: '',
@@ -62,9 +62,7 @@ export const useGetMCPServerQuery = (input?: MessageInit<GetMCPServerRequest>, o
 
   return useQuery(getMCPServer, getMCPServerRequest, {
     enabled: options?.enabled,
-    refetchInterval: (query) => {
-      return query?.state?.data?.mcpServer?.state === MCPServer_State.STARTING ? 2 * 1_000 : false;
-    },
+    refetchInterval: (query) => (query?.state?.data?.mcpServer?.state === MCPServer_State.STARTING ? 2 * 1000 : false),
     refetchIntervalInBackground: false,
   });
 };
@@ -73,10 +71,12 @@ export const useCheckMCPServerNameUniqueness = () => {
   const { data: servers, isLoading } = useListMCPServersQuery();
 
   const checkNameUniqueness = (displayName: string, excludeId?: string): boolean => {
-    if (!servers?.mcpServers || isLoading) return true;
+    if (!servers?.mcpServers || isLoading) {
+      return true;
+    }
 
     return !servers.mcpServers.some(
-      (server) => server.displayName.toLowerCase() === displayName.toLowerCase() && server.id !== excludeId,
+      (server) => server.displayName.toLowerCase() === displayName.toLowerCase() && server.id !== excludeId
     );
   };
 
@@ -103,13 +103,12 @@ export const useCreateMCPServerMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'create',
         entity: 'MCP server',
-      });
-    },
+      }),
   });
 };
 
@@ -133,13 +132,12 @@ export const useUpdateMCPServerMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'update',
         entity: 'MCP server',
-      });
-    },
+      }),
   });
 };
 
@@ -193,13 +191,12 @@ export const useStopMCPServerMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'stop',
         entity: 'MCP server',
-      });
-    },
+      }),
   });
 };
 
@@ -223,36 +220,31 @@ export const useStartMCPServerMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'start',
         entity: 'MCP server',
-      });
-    },
+      }),
   });
 };
 
-export const useGetMCPServerServiceConfigSchemaQuery = () => {
-  return useQuery(getMCPServerServiceConfigSchema, {});
-};
+export const useGetMCPServerServiceConfigSchemaQuery = () => useQuery(getMCPServerServiceConfigSchema, {});
 
-export const useLintMCPConfigMutation = () => {
-  return useMutation(lintMCPConfig, {
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+export const useLintMCPConfigMutation = () =>
+  useMutation(lintMCPConfig, {
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'lint',
         entity: 'MCP config',
-      });
-    },
+      }),
   });
-};
 
 // Shared function to create MCP client with session management
 export const createMCPClientWithSession = async (
   serverUrl: string,
-  clientName: string,
+  clientName: string
 ): Promise<{
   client: InstanceType<typeof import('@modelcontextprotocol/sdk/client/index.js').Client>;
   transport: InstanceType<
@@ -272,7 +264,7 @@ export const createMCPClientWithSession = async (
       capabilities: {
         tools: {},
       },
-    },
+    }
   );
 
   // Create StreamableHTTP transport for HTTP endpoints
@@ -303,15 +295,15 @@ export const listMCPServerTools = async (serverUrl: string) => {
   return client.listTools();
 };
 
-export interface CallMCPToolParams {
+export type CallMCPToolParams = {
   serverUrl: string;
   toolName: string;
   parameters: Record<string, unknown>;
   signal?: AbortSignal;
-}
+};
 
-export const useCallMCPServerToolMutation = () => {
-  return useTanstackMutation({
+export const useCallMCPServerToolMutation = () =>
+  useTanstackMutation({
     mutationFn: async ({ serverUrl, toolName, parameters, signal }: CallMCPToolParams) => {
       const { client } = await createMCPClientWithSession(serverUrl, 'redpanda-console');
 
@@ -321,7 +313,7 @@ export const useCallMCPServerToolMutation = () => {
           arguments: parameters,
         },
         undefined,
-        { signal },
+        { signal }
       );
     },
     onError: (error) => {
@@ -338,14 +330,13 @@ export const useCallMCPServerToolMutation = () => {
       });
     },
   });
-};
 
 export const GITHUB_CODE_SNIPPETS_API_BASE_URL =
   'https://raw.githubusercontent.com/redpanda-data/how-to-connect-code-snippets';
 
-interface CodeSnippetRequest {
+type CodeSnippetRequest = {
   language?: string;
-}
+};
 
 const fetchMCPCodeSnippet = async (language?: string): Promise<string> => {
   if (!language) {
@@ -362,17 +353,16 @@ const fetchMCPCodeSnippet = async (language?: string): Promise<string> => {
   return content;
 };
 
-export const useGetMCPCodeSnippetQuery = (input: CodeSnippetRequest) => {
-  return useTanstackQuery({
+export const useGetMCPCodeSnippetQuery = (input: CodeSnippetRequest) =>
+  useTanstackQuery({
     queryKey: ['mcp-code-snippet', input.language],
     queryFn: () => fetchMCPCodeSnippet(input.language),
     enabled: input.language !== '',
   });
-};
 
-export interface UseListMCPServerToolsParams {
+export type UseListMCPServerToolsParams = {
   mcpServer?: MCPServer;
-}
+};
 
 export const useListMCPServerTools = ({ mcpServer }: UseListMCPServerToolsParams) => {
   const queryClient = useQueryClient();

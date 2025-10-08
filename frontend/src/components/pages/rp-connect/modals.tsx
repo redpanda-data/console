@@ -12,6 +12,7 @@ import {
 } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
+
 import { openModal } from '../../../utils/ModalContainer';
 
 export const ExplicitConfirmModal = observer(
@@ -34,7 +35,7 @@ export const ExplicitConfirmModal = observer(
     const isConfirmEnabled = confirmBoxText === requiredText;
 
     return (
-      <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
+      <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader mr="4">{p.title}</ModalHeader>
@@ -44,27 +45,27 @@ export const ExplicitConfirmModal = observer(
 
             <Box mt="4">
               To confirm, enter "{requiredText}":
-              <Input onChange={(e) => setConfirmBoxText(e.target.value)} autoFocus />
+              <Input autoFocus onChange={(e) => setConfirmBoxText(e.target.value)} />
             </Box>
           </ModalBody>
 
           <ModalFooter>
             <Button
-              mr={3}
-              isDisabled={!isConfirmEnabled}
-              onClick={() => p.onPrimaryButton(p.closeModal)}
               colorScheme="red"
+              isDisabled={!isConfirmEnabled}
+              mr={3}
+              onClick={() => p.onPrimaryButton(p.closeModal)}
             >
               {p.primaryButtonContent}
             </Button>
-            <Button variant="outline" onClick={() => p.onSecondaryButton(p.closeModal)}>
+            <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="outline">
               {p.secondaryButtonContent}
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
     );
-  },
+  }
 );
 
 export function openDeleteModal(pipelineId: string, onConfirm: () => void) {

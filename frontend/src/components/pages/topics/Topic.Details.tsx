@@ -12,6 +12,7 @@
 import { computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React from 'react';
+
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import type { ConfigEntry, Topic, TopicAction } from '../../../state/restInterfaces';
@@ -21,14 +22,7 @@ import '../../../utils/arrayExtensions';
 import { LockIcon } from '@primer/octicons-react';
 import { Box, Button, Code, Flex, Popover, Result, Tooltip } from '@redpanda-data/ui';
 import { MdError, MdOutlineWarning, MdOutlineWarningAmber } from 'react-icons/md';
-import colors from '../../../colors';
-import { isServerless } from '../../../config';
-import { AppFeatures } from '../../../utils/env';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import PageContent from '../../misc/PageContent';
-import Section from '../../misc/Section';
-import Tabs from '../../misc/tabs/Tabs';
-import { PageComponent, type PageInitHelper } from '../Page';
+
 import DeleteRecordsModal from './DeleteRecordsModal/DeleteRecordsModal';
 import { TopicQuickInfoStatistic } from './QuickInfo';
 import AclList from './Tab.Acl/AclList';
@@ -37,32 +31,61 @@ import { TopicConsumers } from './Tab.Consumers';
 import { TopicDocumentation } from './Tab.Docu';
 import { DeleteRecordsMenuItem, TopicMessageView } from './Tab.Messages';
 import { TopicPartitions } from './Tab.Partitions';
+import colors from '../../../colors';
+import { isServerless } from '../../../config';
+import { AppFeatures } from '../../../utils/env';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import PageContent from '../../misc/PageContent';
+import Section from '../../misc/Section';
+import Tabs from '../../misc/tabs/Tabs';
+import { PageComponent, type PageInitHelper } from '../Page';
 
 const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration', 'documentation', 'topicacl'] as const;
 export type TopicTabId = (typeof TopicTabIds)[number];
 
 // A tab (specifying title+content) that disable/lock itself if the user doesn't have some required permissions.
 class TopicTab {
+  readonly topicGetter: () => Topic | undefined | null;
+  id: TopicTabId;
+  private requiredPermission: TopicAction;
+  titleText: React.ReactNode;
+  private contentFunc: (topic: Topic) => React.ReactNode;
+  private disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[];
+
+  // biome-ignore lint/nursery/useMaxParams: Legacy class with many constructor parameters
   constructor(
-    public readonly topicGetter: () => Topic | undefined | null,
-    public id: TopicTabId,
-    private requiredPermission: TopicAction,
-    public titleText: React.ReactNode,
-    private contentFunc: (topic: Topic) => React.ReactNode,
-    private disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[],
-  ) {}
+    topicGetter: () => Topic | undefined | null,
+    id: TopicTabId,
+    requiredPermission: TopicAction,
+    titleText: React.ReactNode,
+    contentFunc: (topic: Topic) => React.ReactNode,
+    disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[]
+  ) {
+    this.topicGetter = topicGetter;
+    this.id = id;
+    this.requiredPermission = requiredPermission;
+    this.titleText = titleText;
+    this.contentFunc = contentFunc;
+    this.disableHooks = disableHooks;
+  }
 
   @computed get isEnabled(): boolean {
     const topic = this.topicGetter();
 
     if (topic && this.disableHooks) {
       for (const h of this.disableHooks) {
-        if (h(topic)) return false;
+        if (h(topic)) {
+          return false;
+        }
       }
     }
 
-    if (!topic) return true; // no data yet
-    if (!topic.allowedActions || topic.allowedActions[0] === 'all') return true; // Redpanda Console free version
+    if (!topic) {
+      return true; // no data yet
+    }
+    if (!topic.allowedActions || topic.allowedActions[0] === 'all') {
+      return true; // Redpanda Console free version
+    }
 
     return topic.allowedActions.includes(this.requiredPermission);
   }
@@ -72,39 +95,43 @@ class TopicTab {
   }
 
   @computed get title(): React.ReactNode {
-    if (this.isEnabled) return this.titleText;
+    if (this.isEnabled) {
+      return this.titleText;
+    }
 
     const topic = this.topicGetter();
     if (topic && this.disableHooks) {
       for (const h of this.disableHooks) {
         const replacementTitle = h(topic);
-        if (replacementTitle) return replacementTitle;
+        if (replacementTitle) {
+          return replacementTitle;
+        }
       }
     }
 
     return (
-      1 && (
-        <Popover
-          content={`You're missing the required permission '${this.requiredPermission}' to view this tab`}
-          hideCloseButton={true}
-        >
-          <div>
-            <LockIcon size={16} /> {this.titleText}
-          </div>
-        </Popover>
-      )
+      <Popover
+        content={`You're missing the required permission '${this.requiredPermission}' to view this tab`}
+        hideCloseButton={true}
+      >
+        <div>
+          <LockIcon size={16} /> {this.titleText}
+        </div>
+      </Popover>
     );
   }
 
   @computed get content(): React.ReactNode {
     const topic = this.topicGetter();
-    if (topic) return this.contentFunc(topic);
+    if (topic) {
+      return this.contentFunc(topic);
+    }
     return null;
   }
 }
 
 const mkDocuTip = (text: string, icon?: JSX.Element) => (
-  <Tooltip label={text} placement="left" hasArrow>
+  <Tooltip hasArrow label={text} placement="left">
     <span>{icon ?? null}Documentation</span>
   </Tooltip>
 );
@@ -123,7 +150,9 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   constructor(props: any) {
     super(props);
 
-    if (isServerless()) this.topicTabs.removeAll((x) => x.id === 'documentation');
+    if (isServerless()) {
+      this.topicTabs.removeAll((x) => x.id === 'documentation');
+    }
 
     makeObservable(this);
   }
@@ -151,7 +180,9 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     api.refreshTopics(force);
 
     // consumers are lazy loaded because they're (relatively) expensive
-    if (uiSettings.topicDetailsActiveTabKey === 'consumers') api.refreshTopicConsumers(this.props.topicName, force);
+    if (uiSettings.topicDetailsActiveTabKey === 'consumers') {
+      api.refreshTopicConsumers(this.props.topicName, force);
+    }
 
     // partitions are always required to display message count in the statistics bar
     api.refreshPartitionsForTopic(this.props.topicName, force);
@@ -159,27 +190,40 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     // configuration is always required for the statistics bar
     api.refreshTopicConfig(this.props.topicName, force);
 
-    void api.refreshClusterHealth();
+    api.refreshClusterHealth().catch(() => {
+      // Error handling managed by API layer
+    });
 
     // documentation can be lazy loaded
-    if (uiSettings.topicDetailsActiveTabKey === 'documentation')
+    if (uiSettings.topicDetailsActiveTabKey === 'documentation') {
       api.refreshTopicDocumentation(this.props.topicName, force);
+    }
 
     // ACL can be lazy loaded
-    if (uiSettings.topicDetailsActiveTabKey === 'topicacl') api.refreshTopicAcls(this.props.topicName, force);
+    if (uiSettings.topicDetailsActiveTabKey === 'topicacl') {
+      api.refreshTopicAcls(this.props.topicName, force);
+    }
   }
 
   @computed get topic(): undefined | Topic | null {
     // undefined = not yet known, null = known to be null
-    if (!api.topics) return undefined;
+    if (!api.topics) {
+      return undefined;
+    }
     const topic = api.topics.find((e) => e.topicName === this.props.topicName);
-    if (!topic) return null;
+    if (!topic) {
+      return null;
+    }
     return topic;
   }
   @computed get topicConfig(): undefined | ConfigEntry[] | null {
     const config = api.topicConfig.get(this.props.topicName);
-    if (config === undefined) return undefined;
-    if (config === null || config.error != null) return null;
+    if (config === undefined) {
+      return undefined;
+    }
+    if (config === null || config.error != null) {
+      return null;
+    }
     return config.configEntries;
   }
 
@@ -187,12 +231,16 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     function computeTabId() {
       // use url anchor if possible
       let key = appGlobal.location.hash.replace('#', '');
-      if (TopicTabIds.includes(key as any)) return key as TopicTabId;
+      if (TopicTabIds.includes(key as any)) {
+        return key as TopicTabId;
+      }
 
       // use settings (last visited tab)
       // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
       key = uiSettings.topicDetailsActiveTabKey!;
-      if (TopicTabIds.includes(key as any)) return key as TopicTabId;
+      if (TopicTabIds.includes(key as any)) {
+        return key as TopicTabId;
+      }
 
       // default to partitions
       return 'messages';
@@ -202,24 +250,30 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     // 2. if that tab is enabled, return it, otherwise return the first one that is not
     //    (todo: should probably show some message if all tabs are disabled...)
     const id = computeTabId();
-    if (this.topicTabs.first((t) => t.id === id)?.isEnabled) return id;
+    if (this.topicTabs.first((t) => t.id === id)?.isEnabled) {
+      return id;
+    }
     return this.topicTabs.first((t) => t?.isEnabled)?.id ?? 'messages';
   }
 
   render() {
     const topic = this.topic;
-    if (topic === undefined) return DefaultSkeleton;
-    if (topic === null) return this.topicNotFound();
+    if (topic === undefined) {
+      return DefaultSkeleton;
+    }
+    if (topic === null) {
+      return this.topicNotFound();
+    }
 
     const topicConfig = this.topicConfig;
 
     setTimeout(() => topicConfig && this.addBaseFavs(topicConfig));
 
     const leaderLessPartitionIds = (api.clusterHealth?.leaderlessPartitions ?? []).find(
-      ({ topicName }) => topicName === this.props.topicName,
+      ({ topicName }) => topicName === this.props.topicName
     )?.partitionIds;
     const underReplicatedPartitionIds = (api.clusterHealth?.underReplicatedPartitions ?? []).find(
-      ({ topicName }) => topicName === this.props.topicName,
+      ({ topicName }) => topicName === this.props.topicName
     )?.partitionIds;
 
     this.topicTabs = [
@@ -228,14 +282,14 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         'messages',
         'viewMessages',
         'Messages',
-        (t) => <TopicMessageView topic={t} refreshTopicData={(force: boolean) => this.refreshData(force)} />,
+        (t) => <TopicMessageView refreshTopicData={(force: boolean) => this.refreshData(force)} topic={t} />
       ),
       new TopicTab(
         () => topic,
         'consumers',
         'viewConsumers',
         'Consumers',
-        (t) => <TopicConsumers topic={t} />,
+        (t) => <TopicConsumers topic={t} />
       ),
       new TopicTab(
         () => topic,
@@ -245,62 +299,57 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
           Partitions
           {!!leaderLessPartitionIds && (
             <Tooltip
-              placement="top"
               hasArrow
               label={`This topic has ${leaderLessPartitionIds.length} ${leaderLessPartitionIds.length === 1 ? 'a leaderless partition' : 'leaderless partitions'}`}
+              placement="top"
             >
               <Box>
-                <MdError size={18} color={colors.brandError} />
+                <MdError color={colors.brandError} size={18} />
               </Box>
             </Tooltip>
           )}
           {!!underReplicatedPartitionIds && (
             <Tooltip
-              placement="top"
               hasArrow
               label={`This topic has ${underReplicatedPartitionIds.length} ${underReplicatedPartitionIds.length === 1 ? 'an under-replicated partition' : 'under-replicated partitions'}`}
+              placement="top"
             >
               <Box>
-                <MdOutlineWarning size={18} color={colors.brandWarning} />
+                <MdOutlineWarning color={colors.brandWarning} size={18} />
               </Box>
             </Tooltip>
           )}
         </Flex>,
-        (t) => <TopicPartitions topic={t} />,
+        (t) => <TopicPartitions topic={t} />
       ),
       new TopicTab(
         () => topic,
         'configuration',
         'viewConfig',
         'Configuration',
-        (t) => <TopicConfiguration topic={t} />,
+        (t) => <TopicConfiguration topic={t} />
       ),
       new TopicTab(
         () => topic,
         'topicacl',
         'seeTopic',
         'ACL',
-        (t) => {
-          return <AclList acl={api.topicAcls.get(t.topicName)} />;
-        },
+        (t) => <AclList acl={api.topicAcls.get(t.topicName)} />,
         [
           () => {
-            if (AppFeatures.SINGLE_SIGN_ON)
-              if (api.userData != null && !api.userData.canListAcls)
-                return (
-                  <Popover
-                    content={"You need the cluster-permission 'viewAcl' to view this tab"}
-                    hideCloseButton={true}
-                  >
-                    <div>
-                      {' '}
-                      <LockIcon size={16} /> ACL
-                    </div>
-                  </Popover>
-                );
-            return undefined;
+            if (AppFeatures.SINGLE_SIGN_ON && api.userData != null && !api.userData.canListAcls) {
+              return (
+                <Popover content={"You need the cluster-permission 'viewAcl' to view this tab"} hideCloseButton={true}>
+                  <div>
+                    {' '}
+                    <LockIcon size={16} /> ACL
+                  </div>
+                </Popover>
+              );
+            }
+            return;
           },
-        ],
+        ]
       ),
       new TopicTab(
         () => topic,
@@ -314,7 +363,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             t.documentation === 'NOT_EXISTENT'
               ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon)
               : null,
-        ],
+        ]
       ),
     ];
 
@@ -323,46 +372,48 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         <PageContent key={'b'}>
           {uiSettings.topicDetailsShowStatisticsBar && <TopicQuickInfoStatistic topic={topic} />}
 
-          <Flex mb={4} gap={2}>
+          <Flex gap={2} mb={4}>
             <Button
-              variant="outline"
               onClick={() => {
                 appGlobal.historyPush(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
               }}
+              variant="outline"
             >
               Produce Record
             </Button>
-            {DeleteRecordsMenuItem(topic.cleanupPolicy === 'compact', topic.allowedActions, () => {
-              return (this.deleteRecordsModalAlive = true);
-            })}
+            {DeleteRecordsMenuItem(
+              topic.cleanupPolicy === 'compact',
+              topic.allowedActions,
+              () => (this.deleteRecordsModalAlive = true)
+            )}
           </Flex>
 
           {/* Tabs:  Messages, Configuration */}
           <Section>
             <Tabs
               isFitted
+              onChange={this.setTabPage}
+              selectedTabKey={this.selectedTabId}
               tabs={this.topicTabs.map(({ id, title, content, isDisabled }) => ({
                 key: id,
                 disabled: isDisabled,
                 title,
                 content,
               }))}
-              onChange={this.setTabPage}
-              selectedTabKey={this.selectedTabId}
             />
           </Section>
         </PageContent>
         {this.deleteRecordsModalAlive && (
           <DeleteRecordsModal
-            topic={topic}
-            visible
+            afterClose={() => (this.deleteRecordsModalAlive = false)}
             onCancel={() => (this.deleteRecordsModalAlive = false)}
             onFinish={() => {
               this.deleteRecordsModalAlive = false;
               this.refreshData(true);
               appGlobal.searchMessagesFunc?.('manual');
             }}
-            afterClose={() => (this.deleteRecordsModalAlive = false)}
+            topic={topic}
+            visible
           />
         )}
       </>
@@ -384,6 +435,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
       case 'compact,delete':
         favs.pushDistinct('retention.ms', 'retention.bytes', 'min.cleanable.dirty.ratio', 'delete.retention.ms');
         break;
+      default:
+        break;
     }
   }
 
@@ -401,17 +454,17 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     const name = this.props.topicName;
     return (
       <Result
+        extra={
+          <Button onClick={() => appGlobal.historyPush('/topics')} variant="solid">
+            Go Back
+          </Button>
+        }
         status={404}
         title="404"
         userMessage={
           <div>
             The topic <Code>{name}</Code> does not exist.
           </div>
-        }
-        extra={
-          <Button variant="solid" onClick={() => appGlobal.historyPush('/topics')}>
-            Go Back
-          </Button>
         }
       />
     );

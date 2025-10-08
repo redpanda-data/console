@@ -22,15 +22,16 @@ import { useAppForm } from 'components/form/form';
 import { useGetPipelinesForSecretQuery } from 'react-query/api/pipeline';
 import { useListSecretsQuery, useUpdateSecretMutation } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
+
+import { secretSchema } from './form/secret-schema';
 import { Scope, UpdateSecretRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
-import { secretSchema } from './form/secret-schema';
 
-interface UpdateSecretModalProps {
+type UpdateSecretModalProps = {
   isOpen: boolean;
   onClose: () => void;
   secretId: string;
-}
+};
 
 export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretModalProps) => {
   // Secret update mutation
@@ -42,7 +43,9 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
   const matchingSecret = secretList?.secrets?.find((secret) => secret?.id === secretId);
 
   // Get pipelines using this secret
-  const { data: pipelinesForSecret } = useGetPipelinesForSecretQuery({ secretId });
+  const { data: pipelinesForSecret } = useGetPipelinesForSecretQuery({
+    secretId,
+  });
   const matchingPipelines = pipelinesForSecret?.response?.pipelinesForSecret?.pipelines ?? [];
 
   const handleClose = () => {
@@ -77,7 +80,6 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
 
       const request = create(UpdateSecretRequestSchema, {
         id: value.id,
-        // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         secretData: base64ToUInt8Array(encodeBase64(value.value)),
         scopes: value.scopes || [],
         labels: labelsMap,
@@ -107,30 +109,30 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
             <ModalCloseButton />
             <ModalBody>
               <Stack spacing={4}>
-                <ResourceInUseAlert resource="secret" usedBy="pipelines" pipelines={matchingPipelines} />
+                <ResourceInUseAlert pipelines={matchingPipelines} resource="secret" usedBy="pipelines" />
 
                 <form.AppField name="id">
-                  {(field) => <field.TextField label="ID" isDisabled data-testid="secret-id-field" />}
+                  {(field) => <field.TextField data-testid="secret-id-field" isDisabled label="ID" />}
                 </form.AppField>
 
                 <form.AppField name="value">
-                  {(field) => <field.PasswordField label="Value" data-testid="secret-value-field" />}
+                  {(field) => <field.PasswordField data-testid="secret-value-field" label="Value" />}
                 </form.AppField>
 
                 <form.AppField name="scopes">
                   {({ state, handleChange, handleBlur }) => (
-                    <FormField label="Scopes" errorText=" " isInvalid={state.meta.errors?.length > 0}>
+                    <FormField errorText=" " isInvalid={state.meta.errors?.length > 0} label="Scopes">
                       <Select
-                        placeholder="Select scopes"
+                        defaultValue={scopeOptions.filter((so) => matchingSecret?.scopes?.some((s) => so.value === s))}
+                        isMulti
+                        onBlur={handleBlur}
                         onChange={(nextValue) => {
                           if (isMultiValue(nextValue) && nextValue) {
                             handleChange(nextValue.map(({ value }) => value));
                           }
                         }}
                         options={scopeOptions}
-                        defaultValue={scopeOptions.filter((so) => matchingSecret?.scopes?.some((s) => so.value === s))}
-                        isMulti
-                        onBlur={handleBlur}
+                        placeholder="Select scopes"
                       />
                       {
                         // Display error messages like tanstack/react-form fields.
@@ -150,12 +152,12 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
                   )}
                 </form.AppField>
 
-                <form.AppField name="labels" mode="array">
+                <form.AppField mode="array" name="labels">
                   {(field) => (
                     <field.KeyValueField
-                      label="Labels"
-                      helperText="Labels can help you to organize your secrets."
                       data-testid="secret-labels-field"
+                      helperText="Labels can help you to organize your secrets."
+                      label="Labels"
                     />
                   )}
                 </form.AppField>
@@ -164,12 +166,12 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
             <ModalFooter>
               <ButtonGroup isDisabled={isUpdateSecretPending}>
                 <form.SubscribeButton
-                  label="Update"
-                  variant="brand"
                   data-testid="update-secret-button"
+                  label="Update"
                   loadingText="Updating"
+                  variant="brand"
                 />
-                <Button variant="ghost" data-testid="cancel-button" onClick={onClose}>
+                <Button data-testid="cancel-button" onClick={onClose} variant="ghost">
                   Cancel
                 </Button>
               </ButtonGroup>

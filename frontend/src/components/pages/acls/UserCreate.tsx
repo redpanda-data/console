@@ -40,11 +40,20 @@ import { observer } from 'mobx-react';
 import { useEffect, useMemo, useState } from 'react';
 import { MdRefresh } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
 import { useListRolesQuery } from '../../../react-query/api/security';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault, type CreateUserRequest } from '../../../state/restInterfaces';
 import { Features } from '../../../state/supportedFeatures';
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  SASL_MECHANISMS,
+  type SaslMechanism,
+  validatePassword,
+  validateUsername,
+} from '../../../utils/user';
 import PageContent from '../../misc/PageContent';
 import { SingleSelect } from '../../misc/Select';
 import { PageComponent, type PageInitHelper } from '../Page';
@@ -68,10 +77,10 @@ export type CreateUserModalState = CreateUserRequest & {
 };
 
 @observer
-class UserCreatePage extends PageComponent<{}> {
+class UserCreatePage extends PageComponent {
   @observable username = '';
   @observable password: string = generatePassword(30, false);
-  @observable mechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512' = 'SCRAM-SHA-256';
+  @observable mechanism: SaslMechanism = 'SCRAM-SHA-256';
 
   @observable isValidUsername = false;
   @observable isValidPassword = false;
@@ -93,12 +102,16 @@ class UserCreatePage extends PageComponent<{}> {
     p.addBreadcrumb('Access control', '/security');
     p.addBreadcrumb('Create user', '/security/users/create');
 
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+    // biome-ignore lint/suspicious/noConsole: error logging
+    this.refreshData(true).catch(console.error);
+    // biome-ignore lint/suspicious/noConsole: error logging
+    appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
   async refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListAcls) return;
+    if (api.userData != null && !api.userData.canListAcls) {
+      return;
+    }
 
     await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts()]);
   }
@@ -108,8 +121,8 @@ class UserCreatePage extends PageComponent<{}> {
     // if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
     // if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
 
-    this.isValidUsername = /^[a-zA-Z0-9._@-]+$/.test(this.username);
-    this.isValidPassword = Boolean(this.password) && this.password.length >= 4 && this.password.length <= 64;
+    this.isValidUsername = validateUsername(this.username);
+    this.isValidPassword = validatePassword(this.password);
 
     const onCancel = () => appGlobal.historyPush('/security/users');
 
@@ -120,9 +133,9 @@ class UserCreatePage extends PageComponent<{}> {
         <PageContent>
           <Box>
             {this.step === 'CREATE_USER' ? (
-              <CreateUserModal state={this} onCancel={onCancel} onCreateUser={this.onCreateUser} />
+              <CreateUserModal onCancel={onCancel} onCreateUser={this.onCreateUser} state={this} />
             ) : (
-              <CreateUserConfirmationModal state={this} closeModal={onCancel} />
+              <CreateUserConfirmationModal closeModal={onCancel} state={this} />
             )}
           </Box>
         </PageContent>
@@ -140,7 +153,9 @@ class UserCreatePage extends PageComponent<{}> {
       });
 
       // Refresh user list
-      if (api.userData != null && !api.userData.canListAcls) return false;
+      if (api.userData != null && !api.userData.canListAcls) {
+        return false;
+      }
       await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), api.refreshServiceAccounts()]);
 
       // Add the user to the selected roles
@@ -172,10 +187,10 @@ const CreateUserModal = observer(
   (p: { state: CreateUserModalState; onCreateUser: () => Promise<boolean>; onCancel: () => void }) => {
     const state = p.state;
 
-    const isValidUsername = /^[a-zA-Z0-9._@-]+$/.test(state.username);
+    const isValidUsername = validateUsername(state.username);
     const users = api.serviceAccounts?.users ?? [];
     const userAlreadyExists = users.includes(state.username);
-    const isValidPassword = state.password && state.password.length >= 4 && state.password.length <= 64;
+    const isValidPassword = validatePassword(state.password);
 
     const errorText = useMemo(() => {
       if (!isValidUsername) {
@@ -189,51 +204,51 @@ const CreateUserModal = observer(
 
     return (
       <Box maxWidth="460px">
-        <Flex gap="2em" direction="column">
+        <Flex direction="column" gap="2em">
           <FormField
             description="Must not contain any whitespace. Dots, hyphens and underscores may be used."
+            errorText={errorText}
+            isInvalid={(!isValidUsername || userAlreadyExists) && state.username.length > 0}
             label="Username"
             showRequiredIndicator
-            isInvalid={(!isValidUsername || userAlreadyExists) && state.username.length > 0}
-            errorText={errorText}
           >
             <Input
-              data-testid="create-user-name"
-              value={state.username}
-              onChange={(v) => (state.username = v.target.value)}
-              width="100%"
-              autoFocus
-              spellCheck={false}
-              placeholder="Username"
               autoComplete="off"
+              autoFocus
+              data-testid="create-user-name"
+              onChange={(v) => (state.username = v.target.value)}
+              placeholder="Username"
+              spellCheck={false}
+              value={state.username}
+              width="100%"
             />
           </FormField>
 
           <FormField
-            description="Must be at least 4 characters and should not exceed 64 characters."
-            showRequiredIndicator={true}
-            label="Password"
             data-testid="create-user-password"
+            description={`Must be at least ${PASSWORD_MIN_LENGTH} characters and should not exceed ${PASSWORD_MAX_LENGTH} characters.`}
+            label="Password"
+            showRequiredIndicator={true}
           >
             <Flex direction="column" gap="2">
               <Flex alignItems="center" gap="2">
                 <PasswordInput
-                  name="test"
-                  value={state.password}
-                  onChange={(e) => (state.password = e.target.value)}
                   isInvalid={!isValidPassword}
+                  name="test"
+                  onChange={(e) => (state.password = e.target.value)}
+                  value={state.password}
                 />
 
-                <Tooltip label={'Generate new random password'} placement="top" hasArrow>
+                <Tooltip hasArrow label={'Generate new random password'} placement="top">
                   <IconButton
+                    aria-label="Refresh"
+                    display="inline-flex"
+                    icon={<MdRefresh size={16} />}
                     onClick={() => (state.password = generatePassword(30, state.generateWithSpecialChars))}
                     variant="ghost"
-                    aria-label="Refresh"
-                    icon={<MdRefresh size={16} />}
-                    display="inline-flex"
                   />
                 </Tooltip>
-                <Tooltip label={'Copy password'} placement="top" hasArrow>
+                <Tooltip hasArrow label={'Copy password'} placement="top">
                   <CopyButton content={state.password} variant="ghost" />
                 </Tooltip>
               </Flex>
@@ -250,29 +265,23 @@ const CreateUserModal = observer(
           </FormField>
 
           <FormField label="SASL Mechanism" showRequiredIndicator>
-            <SingleSelect<'SCRAM-SHA-256' | 'SCRAM-SHA-512'>
-              options={[
-                {
-                  value: 'SCRAM-SHA-256',
-                  label: 'SCRAM-SHA-256',
-                },
-                {
-                  value: 'SCRAM-SHA-512',
-                  label: 'SCRAM-SHA-512',
-                },
-              ]}
-              value={state.mechanism}
+            <SingleSelect<SaslMechanism>
               onChange={(e) => {
                 state.mechanism = e;
               }}
+              options={SASL_MECHANISMS.map((mechanism) => ({
+                value: mechanism,
+                label: mechanism,
+              }))}
+              value={state.mechanism}
             />
           </FormField>
 
           {Features.rolesApi && (
             <FormField
+              description="Assign roles to this user. This is optional and can be changed later."
               isDisabled={!Features.rolesApi}
               label="Assign roles"
-              description="Assign roles to this user. This is optional and can be changed later."
             >
               <RoleSelector state={state.selectedRoles} />
             </FormField>
@@ -282,71 +291,71 @@ const CreateUserModal = observer(
         <Flex gap={4} mt={8}>
           <Button
             colorScheme="brand"
-            onClick={p.onCreateUser}
             isDisabled={state.isCreating || !state.isValidUsername || !state.isValidPassword || userAlreadyExists}
             isLoading={state.isCreating}
             loadingText="Creating..."
+            onClick={p.onCreateUser}
           >
             Create
           </Button>
-          <Button variant="link" isDisabled={state.isCreating} onClick={p.onCancel}>
+          <Button isDisabled={state.isCreating} onClick={p.onCancel} variant="link">
             Cancel
           </Button>
         </Flex>
       </Box>
     );
-  },
+  }
 );
 
 const CreateUserConfirmationModal = observer((p: { state: CreateUserModalState; closeModal: () => void }) => {
   return (
     <>
-      <Heading as="h1" mt={4} mb={8}>
+      <Heading as="h1" mb={8} mt={4}>
         <Flex alignItems="center">
           {/* <CheckCircleIcon color="green.500" mr={2} transform="translateY(-1px)" /> */}
           User created successfully
         </Flex>
       </Heading>
 
-      <Alert status="info" mt={4} mb={4}>
+      <Alert mb={4} mt={4} status="info">
         <AlertIcon />
         You will not be able to view this password again. Make sure that it is copied and saved.
       </Alert>
 
-      <Grid templateColumns="max-content 1fr" gridRowGap={2} gridColumnGap={6} alignItems="center" maxWidth="460px">
-        <Box fontWeight="bold" data-testid="username">
+      <Grid alignItems="center" gridColumnGap={6} gridRowGap={2} maxWidth="460px" templateColumns="max-content 1fr">
+        <Box data-testid="username" fontWeight="bold">
           Username
         </Box>
         <Box>
           <Flex alignItems="center" gap={2}>
-            <Text wordBreak="break-all" overflow="hidden">
+            <Text overflow="hidden" wordBreak="break-all">
               {p.state.username}
             </Text>
 
-            <Tooltip label={'Copy username'} placement="top" hasArrow>
+            <Tooltip hasArrow label={'Copy username'} placement="top">
               <CopyButton content={p.state.username} variant="ghost" />
             </Tooltip>
           </Flex>
         </Box>
 
-        <Box fontWeight="bold" data-testid="password">
+        <Box data-testid="password" fontWeight="bold">
           Password
         </Box>
         <Box>
           <Flex alignItems="center" gap={2}>
-            <PasswordInput name="test" value={p.state.password} isDisabled={true} isReadOnly={true} />
+            <PasswordInput isDisabled={true} isReadOnly={true} name="test" value={p.state.password} />
 
-            <Tooltip label={'Copy password'} placement="top" hasArrow>
+            <Tooltip hasArrow label={'Copy password'} placement="top">
               <CopyButton content={p.state.password} variant="ghost" />
             </Tooltip>
           </Flex>
         </Box>
 
-        <Box fontWeight="bold" data-testid="mechanism">
+        <Box data-testid="mechanism" fontWeight="bold">
           Mechanism
         </Box>
         <Box>
-          <Text textOverflow="ellipsis" whiteSpace="nowrap" overflow="hidden" isTruncated={true}>
+          <Text isTruncated={true} overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
             {p.state.mechanism}
           </Text>
         </Box>
@@ -354,7 +363,7 @@ const CreateUserConfirmationModal = observer((p: { state: CreateUserModalState; 
 
       <Flex gap={4} mt={8}>
         <Button onClick={p.closeModal}>Done</Button>
-        <Button variant="link" as={ReactRouterLink} to="/security/acls">
+        <Button as={ReactRouterLink} to="/security/acls" variant="link">
           Create ACLs
         </Button>
       </Flex>
@@ -378,32 +387,33 @@ export const RoleSelector = observer((p: { state: string[] }) => {
     <Flex direction="column" gap={4}>
       <Box w="280px">
         <Select<string>
-          isMulti={false}
-          options={availableRoles}
           inputValue={searchValue}
-          onInputChange={setSearchValue}
-          placeholder="Select roles..."
+          isMulti={false}
           noOptionsMessage={() => 'No roles found'}
-          // TODO: Selecting an entry triggers onChange properly.
-          //       But there is no way to prevent the component from showing no value as intended
-          //       Seems to be a bug with the component.
-          //       On 'undefined' it should handle selection on its own (this works properly)
-          //       On 'null' the component should NOT show any selection after a selection has been made (does not work!)
-          //       The override doesn't work either (isOptionSelected={()=>false})
-          value={undefined}
           onChange={(val, meta) => {
+            // biome-ignore lint/suspicious/noConsole: debug logging
             console.log('onChange', { metaAction: meta.action, val });
             if (val && isSingleValue(val) && val.value) {
               state.push(val.value);
               setSearchValue('');
             }
           }}
+          onInputChange={setSearchValue}
+          options={availableRoles}
+          // TODO: Selecting an entry triggers onChange properly.
+          //       But there is no way to prevent the component from showing no value as intended
+          //       Seems to be a bug with the component.
+          //       On 'undefined' it should handle selection on its own (this works properly)
+          //       On 'null' the component should NOT show any selection after a selection has been made (does not work!)
+          //       The override doesn't work either (isOptionSelected={()=>false})
+          placeholder="Select roles..."
+          value={undefined}
         />
       </Box>
 
       <Flex gap={2}>
         {state.map((role) => (
-          <Tag key={role} cursor="pointer">
+          <Tag cursor="pointer" key={role}>
             <TagLabel>{role}</TagLabel>
             <TagCloseButton onClick={() => state.remove(role)} />
           </Tag>
@@ -425,25 +435,25 @@ export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRol
     <Flex direction="column" gap={4}>
       <Box w="280px">
         <Select<string>
-          isMulti={true}
-          options={availableRoles}
           inputValue={searchValue}
-          onInputChange={setSearchValue}
-          placeholder="Select roles..."
+          isMulti={true}
           noOptionsMessage={() => 'No roles found'}
-          // TODO: Selecting an entry triggers onChange properly.
-          //       But there is no way to prevent the component from showing no value as intended
-          //       Seems to be a bug with the component.
-          //       On 'undefined' it should handle selection on its own (this works properly)
-          //       On 'null' the component should NOT show any selection after a selection has been made (does not work!)
-          //       The override doesn't work either (isOptionSelected={()=>false})
-          value={roles.map((r) => ({ value: r }))}
           onChange={(val) => {
             if (val && isMultiValue(val)) {
               setRoles([...val.map((val) => val.value)]);
               setSearchValue('');
             }
           }}
+          onInputChange={setSearchValue}
+          options={availableRoles}
+          // TODO: Selecting an entry triggers onChange properly.
+          //       But there is no way to prevent the component from showing no value as intended
+          //       Seems to be a bug with the component.
+          //       On 'undefined' it should handle selection on its own (this works properly)
+          //       On 'null' the component should NOT show any selection after a selection has been made (does not work!)
+          //       The override doesn't work either (isOptionSelected={()=>false})
+          placeholder="Select roles..."
+          value={roles.map((r) => ({ value: r }))}
         />
       </Box>
     </Flex>
@@ -451,7 +461,9 @@ export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRol
 };
 
 export function generatePassword(length: number, allowSpecialChars: boolean): string {
-  if (length <= 0) return '';
+  if (length <= 0) {
+    return '';
+  }
 
   const lowercase = 'abcdefghijklmnopqrstuvwxyz';
   const uppercase = lowercase.toUpperCase();

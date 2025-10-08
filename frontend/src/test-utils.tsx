@@ -44,17 +44,15 @@ interface RenderWithRouterOptions extends ExtendedRenderOptions {
   route?: string;
 }
 
-const renderWithRouter = (ui: ReactElement, renderOptions: RenderWithRouterOptions = {}) => {
-  return {
-    ...customRender(<MemoryRouter>{ui}</MemoryRouter>, renderOptions),
-  };
-};
+const renderWithRouter = (ui: ReactElement, renderOptions: RenderWithRouterOptions = {}) => ({
+  ...customRender(<MemoryRouter>{ui}</MemoryRouter>, renderOptions),
+});
 
 const connectQueryWrapper = (
   config?: QueryClientConfig,
   transport = createConnectTransport({
     baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
-  }),
+  })
 ): {
   wrapper: JSXElementConstructor<PropsWithChildren>;
   queryClient: QueryClient;
@@ -78,6 +76,7 @@ const connectQueryWrapper = (
 };
 
 // re-export everything
+// biome-ignore lint/performance/noBarrelFile: Test utilities intentionally re-export for convenience
 export * from '@testing-library/react';
 
 // override render method

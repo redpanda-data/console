@@ -38,6 +38,7 @@ import {
   type DropResult,
   type ResponderProvided,
 } from 'react-beautiful-dnd';
+
 import globExampleImg from '../../../../assets/globExample.png';
 import type { MessageSearch } from '../../../../state/backendApi';
 import type { PreviewTagV2 } from '../../../../state/ui';
@@ -53,18 +54,18 @@ const PatternHelpDrawer = () => {
   return (
     <>
       <button
-        type="button"
         onClick={onOpen}
         style={{
           margin: '0 2px',
           color: 'hsl(205deg, 100%, 50%)',
           textDecoration: 'underline dotted',
         }}
+        type="button"
       >
         <InfoIcon size={15} />
         &nbsp;glob patterns
       </button>
-      <Drawer isOpen={isOpen} placement="right" size="xl" onClose={onClose}>
+      <Drawer isOpen={isOpen} onClose={onClose} placement="right" size="xl">
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton />
@@ -73,7 +74,7 @@ const PatternHelpDrawer = () => {
           <DrawerBody>{globHelp}</DrawerBody>
 
           <DrawerFooter>
-            <Button variant="outline" mr={3} onClick={onClose}>
+            <Button mr={3} onClick={onClose} variant="outline">
               Close
             </Button>
           </DrawerFooter>
@@ -104,7 +105,7 @@ const globHelp = (
           <div className="rowSeparator" />
 
           {/* Example */}
-          <div className="c1 ">
+          <div className="c1">
             <Code>*.id</Code>
           </div>
           <div className="c2">
@@ -154,7 +155,7 @@ const globHelp = (
       </Flex>
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
         <div style={{ opacity: 0.5, fontSize: 'smaller', textAlign: 'center' }}>Example Data</div>
-        <img src={globExampleImg} alt="Examples for glob patterns" />
+        <img alt="Examples for glob patterns" src={globExampleImg} />
       </div>
     </Flex>
 
@@ -189,7 +190,7 @@ export class PreviewSettings extends Component<{
   messageSearch: MessageSearch;
 }> {
   @computed.struct get allCurrentKeys() {
-    // @ts-ignore perhaps we still need this due to MobX behavior?
+    // @ts-expect-error perhaps we still need this due to MobX behavior?
     const _unused = this.props.messageSearch.messages.length;
     return getAllMessageKeys(this.props.messageSearch.messages)
       .map((p) => p.propertyName)
@@ -209,7 +210,9 @@ export class PreviewSettings extends Component<{
     // add ids to elements that don't have any
     const getFreeId = (): string => {
       let i = 1;
-      while (tags.any((t) => t.id === String(i))) i++;
+      while (tags.any((t) => t.id === String(i))) {
+        i++;
+      }
       return String(i);
     };
     const filteredTags = tags.filter((t) => t.id);
@@ -218,7 +221,9 @@ export class PreviewSettings extends Component<{
     }
 
     const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
-      if (!result.destination) return;
+      if (!result.destination) {
+        return;
+      }
       arrayMoveMutable(tags, result.source.index, result.destination.index);
     };
 
@@ -227,7 +232,7 @@ export class PreviewSettings extends Component<{
         <div>
           <span>
             When viewing large messages we're often only interested in a few specific fields. Add <PatternHelpDrawer />
-            <Popover trigger={'click'} placement="bottom" content={globHelp} size="auto" hideCloseButton /> to this list
+            <Popover content={globHelp} hideCloseButton placement="bottom" size="auto" trigger={'click'} /> to this list
             to show found values as previews.
           </span>
         </div>
@@ -238,15 +243,15 @@ export class PreviewSettings extends Component<{
               {(droppableProvided, _droppableSnapshot) => (
                 <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
                   {tags.map((tag, index) => (
-                    <Draggable key={tag.id} draggableId={tag.id} index={index}>
+                    <Draggable draggableId={tag.id} index={index} key={tag.id}>
                       {(draggableProvided, _draggableSnapshot) => (
                         <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
                           <PreviewTagSettings
-                            tag={tag}
-                            index={index}
-                            draggableProvided={draggableProvided}
-                            onRemove={() => tags.removeAll((t) => t.id === tag.id)}
                             allCurrentKeys={currentKeys}
+                            draggableProvided={draggableProvided}
+                            index={index}
+                            onRemove={() => tags.removeAll((t) => t.id === tag.id)}
+                            tag={tag}
                           />
                         </div>
                       )}
@@ -254,7 +259,6 @@ export class PreviewSettings extends Component<{
                   ))}
                   {droppableProvided.placeholder}
                   <Button
-                    variant="outline"
                     onClick={() => {
                       const newTag: PreviewTagV2 = {
                         id: getFreeId(),
@@ -266,6 +270,7 @@ export class PreviewSettings extends Component<{
                       };
                       tags.push(newTag);
                     }}
+                    variant="outline"
                   >
                     Add entry...
                   </Button>
@@ -282,22 +287,22 @@ export class PreviewSettings extends Component<{
           <div className="previewTagsSettings">
             <OptionGroup<'caseSensitive' | 'ignoreCase'>
               label="Matching"
+              onChange={(e) => (uiState.topicSettings.previewTagsCaseSensitive = e)}
               options={{ 'Ignore Case': 'ignoreCase', 'Case Sensitive': 'caseSensitive' }}
               value={uiState.topicSettings.previewTagsCaseSensitive}
-              onChange={(e) => (uiState.topicSettings.previewTagsCaseSensitive = e)}
             />
             <OptionGroup
               label="Multiple Results"
+              onChange={(e) => (uiState.topicSettings.previewMultiResultMode = e)}
               options={{ 'First result': 'showOnlyFirst', 'Show All': 'showAll' }}
               value={uiState.topicSettings.previewMultiResultMode}
-              onChange={(e) => (uiState.topicSettings.previewMultiResultMode = e)}
             />
 
             <OptionGroup
               label="Wrapping"
+              onChange={(e) => (uiState.topicSettings.previewDisplayMode = e)}
               options={{ 'Single Line': 'single', Wrap: 'wrap', Rows: 'rows' }}
               value={uiState.topicSettings.previewDisplayMode}
-              onChange={(e) => (uiState.topicSettings.previewDisplayMode = e)}
             />
           </div>
         </div>
@@ -326,7 +331,7 @@ class PreviewTagSettings extends Component<{
     const { tag, onRemove, allCurrentKeys, draggableProvided } = this.props;
 
     return (
-      <Flex placeItems="center" gap={1} p={1} borderRadius={1} mb={1.5}>
+      <Flex borderRadius={1} gap={1} mb={1.5} p={1} placeItems="center">
         {/* Move Handle */}
         <span className="moveHandle" {...draggableProvided.dragHandleProps}>
           <ThreeBarsIcon />
@@ -337,22 +342,18 @@ class PreviewTagSettings extends Component<{
 
         {/* Settings */}
         <Popover
-          trigger={'click'}
-          placement="bottom-start"
-          size="auto"
-          hideCloseButton
           content={
             <div style={{ display: 'flex', flexDirection: 'column', gap: '.3em' }}>
-              <Label text="Display Name" style={{ marginBottom: '.5em' }}>
+              <Label style={{ marginBottom: '.5em' }} text="Display Name">
                 <Input
-                  size="sm"
-                  flexGrow={1}
-                  flexBasis={50}
-                  value={tag.customName}
-                  onChange={(e) => (tag.customName = e.target.value)}
                   autoComplete={randomId()}
-                  spellCheck={false}
+                  flexBasis={50}
+                  flexGrow={1}
+                  onChange={(e) => (tag.customName = e.target.value)}
                   placeholder="Enter a display name..."
+                  size="sm"
+                  spellCheck={false}
+                  value={tag.customName}
                 />
               </Label>
 
@@ -374,6 +375,10 @@ class PreviewTagSettings extends Component<{
               </span>
             </div>
           }
+          hideCloseButton
+          placement="bottom-start"
+          size="auto"
+          trigger={'click'}
         >
           <span className="inlineButton">
             <GearIcon />
@@ -383,20 +388,19 @@ class PreviewTagSettings extends Component<{
         <Box w="full">
           <SingleSelect<string>
             creatable
-            placeholder="Pattern..."
-            value={tag.pattern}
             onChange={(value) => {
               tag.pattern = value;
             }}
             options={allCurrentKeys.map((t) => ({ label: t, value: t }))}
+            placeholder="Pattern..."
+            value={tag.pattern}
           />
         </Box>
 
         {/* Remove */}
-        {/** biome-ignore lint/a11y/noStaticElementInteractions: part of PreviewTagSettings implementation */}
-        <span className="inlineButton" onClick={onRemove}>
+        <button className="inlineButton" onClick={onRemove} type="button">
           <XIcon />
-        </span>
+        </button>
       </Flex>
     );
   }
@@ -416,12 +420,18 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
   const caseSensitive = uiState.topicSettings.previewTagsCaseSensitive === 'caseSensitive';
 
   for (const t of tags) {
-    if (t.pattern.length === 0) continue;
+    if (t.pattern.length === 0) {
+      continue;
+    }
 
     const trimmed = t.pattern.trim();
     const searchPath = parseJsonPath(trimmed);
-    if (searchPath == null) continue;
-    if (typeof searchPath === 'string') continue; // todo: show error to user
+    if (searchPath == null) {
+      continue;
+    }
+    if (typeof searchPath === 'string') {
+      continue; // todo: show error to user
+    }
 
     const foundProperties = collectElements2(targetObject, searchPath, (pathElement, propertyName) => {
       // We'll never get called for '*' or '**' patterns
@@ -430,12 +440,13 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
       return segmentRegex.test(propertyName);
     });
 
-    for (const p of foundProperties)
+    for (const p of foundProperties) {
       results.push({
         tag: t,
         prop: p,
         fullPath: p.path.join('.'),
       });
+    }
   }
 
   // order results by the tag they were created from, and then their path
@@ -448,7 +459,9 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
 
     // first sort by path length
     const pathLengthDiff = a.prop.path.length - b.prop.path.length;
-    if (pathLengthDiff !== 0) return pathLengthDiff;
+    if (pathLengthDiff !== 0) {
+      return pathLengthDiff;
+    }
 
     // then alphabetically
     const pathA = a.fullPath;
@@ -460,7 +473,7 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
         numeric: true,
         ignorePunctuation: false,
         sensitivity: 'base',
-      },
+      }
     );
   });
 
@@ -474,7 +487,7 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
       <span className="previewTag">
         <span className="path">{displayName}</span>
         <span>{toSafeString(r.prop.value)}</span>
-      </span>,
+      </span>
     );
   }
 
@@ -488,6 +501,7 @@ const splitChars = ["'", '"', '.'];
 // Returns:
 // - String array when the path was parsed correctly
 // - Single string as error reason why the path couldn't be parsed
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 34, refactor later
 function parseJsonPath(str: string): string[] | string {
   // Collect symbols until we find a dot, single-quote, or double-quote
   const result: string[] = [];
@@ -507,10 +521,14 @@ function parseJsonPath(str: string): string[] | string {
         start = pos + 1; // start just after the quote
         end = str.indexOf(c, start); // and collect until the closing quote
 
-        if (end === -1) return `missing closing quote, quote was opened at index ${start - 1}`;
+        if (end === -1) {
+          return `missing closing quote, quote was opened at index ${start - 1}`;
+        }
         match = str.slice(start, end);
 
-        if (match.length > 0) result.push(match);
+        if (match.length > 0) {
+          result.push(match);
+        }
 
         pos = end === -1 ? str.length : end + 1; // continue after the end of our string and the closing quote
         break;
@@ -518,11 +536,17 @@ function parseJsonPath(str: string): string[] | string {
       case '.':
         // A dot, skip over it
 
-        if (pos === 0) return 'pattern cannot start with a dot';
+        if (pos === 0) {
+          return 'pattern cannot start with a dot';
+        }
         pos++;
-        if (pos >= str.length) return 'pattern can not end with a dot';
+        if (pos >= str.length) {
+          return 'pattern can not end with a dot';
+        }
         c = str[pos];
-        if (c === '.') return 'pattern cannot contain more than one dot in a row';
+        if (c === '.') {
+          return 'pattern cannot contain more than one dot in a row';
+        }
         break;
 
       default:
@@ -532,7 +556,9 @@ function parseJsonPath(str: string): string[] | string {
 
         match = end >= 0 ? str.slice(start, end) : str.slice(start, str.length);
 
-        if (match.length > 0) result.push(match);
+        if (match.length > 0) {
+          result.push(match);
+        }
 
         pos = end === -1 ? str.length : end; // continue after the end
         break;
@@ -555,8 +581,9 @@ function parseJsonPath(str: string): string[] | string {
   //
 
   for (const segment of result) {
-    if (segment !== '**' && segment.includes('**'))
+    if (segment !== '**' && segment.includes('**')) {
       return "path segment '**' must not have anything before or after it (except for dots of course)";
+    }
   }
 
   return result;
@@ -565,13 +592,17 @@ function parseJsonPath(str: string): string[] | string {
 function indexOfMany(str: string, matches: string[], position: number): number {
   const indices: number[] = matches.map((_) => -1);
   // for every string we want to find, record the index of its first occurance
-  for (let i = 0; i < matches.length; i++) indices[i] = str.indexOf(matches[i], position);
+  for (let i = 0; i < matches.length; i++) {
+    indices[i] = str.indexOf(matches[i], position);
+  }
 
   // find the first match (smallest value in our results)
   // but skip over -1, because that means the string didn't contain that match
   let smallest = -1;
   for (const i of indices) {
-    if (smallest === -1 || i < smallest) smallest = i;
+    if (smallest === -1 || i < smallest) {
+      smallest = i;
+    }
   }
 
   return smallest;
@@ -621,24 +652,39 @@ if (IsDev) {
     const expected = test.output;
     let result = parseJsonPath(test.input);
 
-    if (typeof result === 'string') result = null as unknown as string[]; // string means error message
-
-    if (result === null && expected === null) continue;
-
-    let hasError = false;
-    if (result === null && expected !== null) hasError = true; // didn't match when it should have
-    if (result !== null && expected === null) hasError = true; // matched something we don't want
-
-    if (!hasError && result && expected) {
-      if (result.length !== expected.length) hasError = true; // wrong length
-
-      for (let i = 0; i < result.length && !hasError; i++) if (result[i] !== expected[i]) hasError = true; // wrong array entry
+    if (typeof result === 'string') {
+      result = null as unknown as string[]; // string means error message
     }
 
-    if (hasError)
+    if (result === null && expected === null) {
+      continue;
+    }
+
+    let hasError = false;
+    if (result === null && expected !== null) {
+      hasError = true; // didn't match when it should have
+    }
+    if (result !== null && expected === null) {
+      hasError = true; // matched something we don't want
+    }
+
+    if (!hasError && result && expected) {
+      if (result.length !== expected.length) {
+        hasError = true; // wrong length
+      }
+
+      for (let i = 0; i < result.length && !hasError; i++) {
+        if (result[i] !== expected[i]) {
+          hasError = true; // wrong array entry
+        }
+      }
+    }
+
+    if (hasError) {
       throw new Error(
-        `Error in parseJsonPath test:\nTest: ${JSON.stringify(test)}\nActual Result: ${JSON.stringify(result)}`,
+        `Error in parseJsonPath test:\nTest: ${JSON.stringify(test)}\nActual Result: ${JSON.stringify(result)}`
       );
+    }
   }
 }
 

@@ -25,6 +25,7 @@ import {
 import CreateACL from 'components/pages/acls/new-acl/CreateACL';
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+
 import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../../react-query/api/acl';
 import { uiState } from '../../../../state/uiState';
 import PageContent from '../../../misc/PageContent';
@@ -59,7 +60,7 @@ const AclUpdatePage = () => {
   if (isLoading || !data) {
     return (
       <PageContent>
-        <div className="flex items-center justify-center h-96">
+        <div className="flex h-96 items-center justify-center">
           <div className="text-gray-500">Loading ACL configuration...</div>
         </div>
       </PageContent>
@@ -78,11 +79,11 @@ const AclUpdatePage = () => {
       mergedOperations = Object.fromEntries(Object.keys(allOperations).map((op) => [op, OperationTypeDeny]));
     } else {
       // For custom mode, override with the actual values from the fetched rule
-      Object.entries(rule.operations).forEach(([op, value]) => {
+      for (const [op, value] of Object.entries(rule.operations)) {
         if (op in mergedOperations) {
           mergedOperations[op] = value;
         }
-      });
+      }
     }
 
     return {
@@ -94,12 +95,12 @@ const AclUpdatePage = () => {
   return (
     <PageContent>
       <CreateACL
-        onSubmit={updateAclMutation(data.rules, data.sharedConfig)}
+        edit={true}
         onCancel={() => navigate(`/security/acls/${aclName}/details`)}
+        onSubmit={updateAclMutation(data.rules, data.sharedConfig)}
+        principalType={PrincipalTypeUser}
         rules={rulesWithAllOperations}
         sharedConfig={data.sharedConfig}
-        edit={true}
-        principalType={PrincipalTypeUser}
       />
     </PageContent>
   );

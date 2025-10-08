@@ -26,6 +26,7 @@ import { useEffect, useState } from 'react';
 import { AiOutlineDelete, AiOutlineEdit } from 'react-icons/ai';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { uiState } from 'state/uiState';
+
 import { CreateSecretModal } from './create-secret-modal';
 import { DeleteSecretModal } from './delete-secret-modal';
 import { UpdateSecretModal } from './update-secret-modal';
@@ -42,11 +43,11 @@ export const updatePageTitle = () => {
 /**
  * Interface for secret form data
  */
-export interface SecretFormData {
+export type SecretFormData = {
   id: string;
   value: string;
   labels: { key: string; value: string }[];
-}
+};
 
 export const getScopeDisplayValue = (scope: Scope) => {
   switch (scope) {
@@ -100,7 +101,7 @@ export const SecretsStorePage = () => {
       filter: create(ListSecretsFilterSchema, {
         nameContains,
       }),
-    }),
+    })
   );
 
   // Handle opening edit modal for a specific secret
@@ -120,7 +121,7 @@ export const SecretsStorePage = () => {
   }, []);
 
   if (isSecretListError) {
-    return <ErrorResult error={secretListError} title="Error loading secrets" message="Please try again later." />;
+    return <ErrorResult error={secretListError} message="Please try again later." title="Error loading secrets" />;
   }
 
   return (
@@ -132,98 +133,104 @@ export const SecretsStorePage = () => {
             page and reference them when creating a new resource such as Redpanda Connect pipelines.
           </Text>
           <ButtonGroup>
-            <Button variant="outline" onClick={onCreateSecretModalOpen} data-testid="create-secret-button">
+            <Button data-testid="create-secret-button" onClick={onCreateSecretModalOpen} variant="outline">
               Create secret
             </Button>
           </ButtonGroup>
         </Stack>
 
         <SearchField
-          width="350px"
+          placeholderText="Filter secrets..."
           searchText={nameContains}
           setSearchText={setNameContains}
-          placeholderText="Filter secrets..."
+          width="350px"
         />
 
-        {isSecretListLoading ? (
-          <Flex justifyContent="center" padding={8}>
-            <Spinner size="lg" />
-          </Flex>
-        ) : secretList?.secrets?.length === 0 ? (
-          <Empty />
-        ) : (
-          <DataTable
-            data={secretList?.secrets ?? []}
-            pagination
-            defaultPageSize={10}
-            sorting
-            columns={[
-              {
-                header: 'ID',
-                cell: ({ row: { original } }) => (
-                  <Text data-testid={`secret-text-${original?.id}`}>{original?.id}</Text>
-                ),
-                size: 200,
-              },
-              {
-                header: 'Labels',
-                id: 'labels',
-                cell: ({ row: { original } }) => {
-                  const labels = original?.labels;
-                  if (
-                    !labels ||
-                    Object.keys(labels).filter((key) => !(key === 'owner' && labels[key] === 'console')).length === 0
-                  ) {
-                    return <Text>No labels</Text>;
-                  }
-                  return (
-                    <Flex wrap="wrap" gap={2}>
-                      {Object.entries(labels)
-                        .filter(([key, value]) => !(key === 'owner' && value === 'console'))
-                        .map(([key, value]) => (
-                          <Badge variant="inverted" key={`${original?.id}-${key}`} borderRadius="full">
-                            <Text>
-                              {key}: {value}
-                            </Text>
-                          </Badge>
-                        ))}
-                    </Flex>
-                  );
+        {(() => {
+          if (isSecretListLoading) {
+            return (
+              <Flex justifyContent="center" padding={8}>
+                <Spinner size="lg" />
+              </Flex>
+            );
+          }
+          if (secretList?.secrets?.length === 0) {
+            return <Empty />;
+          }
+          return (
+            <DataTable
+              columns={[
+                {
+                  header: 'ID',
+                  cell: ({ row: { original } }) => (
+                    <Text data-testid={`secret-text-${original?.id}`}>{original?.id}</Text>
+                  ),
+                  size: 200,
                 },
-                size: 250,
-              },
-              {
-                header: 'Scope',
-                id: 'scope',
-                cell: ({ row: { original } }) =>
-                  original?.scopes.map((scope) => getScopeDisplayValue(scope)).join(', ') ?? 'No scopes',
-                size: 50,
-              },
-              {
-                header: '',
-                id: 'actions',
-                cell: ({ row: { original } }) => (
-                  <HStack spacing={4} justifyContent="flex-end" width="100%">
-                    <Icon
-                      data-testid={`edit-secret-${original?.id}`}
-                      as={AiOutlineEdit}
-                      onClick={() => handleUpdateSecretModal(original?.id ?? '')}
-                      cursor="pointer"
-                      aria-label="Edit secret"
-                    />
-                    <Icon
-                      data-testid={`delete-secret-${original?.id}`}
-                      as={AiOutlineDelete}
-                      onClick={() => handleDeleteSecretModal(original?.id ?? '')}
-                      cursor="pointer"
-                      aria-label="Delete secret"
-                    />
-                  </HStack>
-                ),
-              },
-            ]}
-          />
-        )}
+                {
+                  header: 'Labels',
+                  id: 'labels',
+                  cell: ({ row: { original } }) => {
+                    const labels = original?.labels;
+                    if (
+                      !labels ||
+                      Object.keys(labels).filter((key) => !(key === 'owner' && labels[key] === 'console')).length === 0
+                    ) {
+                      return <Text>No labels</Text>;
+                    }
+                    return (
+                      <Flex gap={2} wrap="wrap">
+                        {Object.entries(labels)
+                          .filter(([key, value]) => !(key === 'owner' && value === 'console'))
+                          .map(([key, value]) => (
+                            <Badge borderRadius="full" key={`${original?.id}-${key}`} variant="inverted">
+                              <Text>
+                                {key}: {value}
+                              </Text>
+                            </Badge>
+                          ))}
+                      </Flex>
+                    );
+                  },
+                  size: 250,
+                },
+                {
+                  header: 'Scope',
+                  id: 'scope',
+                  cell: ({ row: { original } }) =>
+                    original?.scopes.map((scope) => getScopeDisplayValue(scope)).join(', ') ?? 'No scopes',
+                  size: 50,
+                },
+                {
+                  header: '',
+                  id: 'actions',
+                  cell: ({ row: { original } }) => (
+                    <HStack justifyContent="flex-end" spacing={4} width="100%">
+                      <Icon
+                        aria-label="Edit secret"
+                        as={AiOutlineEdit}
+                        cursor="pointer"
+                        data-testid={`edit-secret-${original?.id}`}
+                        onClick={() => handleUpdateSecretModal(original?.id ?? '')}
+                      />
+                      <Icon
+                        aria-label="Delete secret"
+                        as={AiOutlineDelete}
+                        cursor="pointer"
+                        data-testid={`delete-secret-${original?.id}`}
+                        onClick={() => handleDeleteSecretModal(original?.id ?? '')}
+                      />
+                    </HStack>
+                  ),
+                },
+              ]}
+              data={secretList?.secrets ?? []}
+              defaultPageSize={10}
+              pagination
+              sorting
+            />
+          );
+        })()}
       </Stack>
 
       <CreateSecretModal isOpen={isCreateSecretModalOpen} onClose={onCreateSecretModalClose} />

@@ -12,33 +12,40 @@
 import { create } from '@bufbuild/protobuf';
 import type { Monaco } from '@monaco-editor/react';
 import {
-  Alert,
-  AlertIcon,
-  Box,
   Button,
-  Link as ChLink,
   type CreateToastFnReturn,
   Flex,
   FormField,
   Input,
   NumberInput,
-  Text,
   useDisclosure,
   useToast,
 } from '@redpanda-data/ui';
-import { Badge } from 'components/redpanda-ui/components/badge';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
+import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
+import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { isFeatureFlagEnabled } from 'config';
 import { useSessionStorage } from 'hooks/use-session-storage';
-import { PlusIcon } from 'lucide-react';
+import { AlertCircle, PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
+import { useListSecretsQuery } from 'react-query/api/secret';
 import { Link } from 'react-router-dom';
-import { CONNECT_TILE_STORAGE_KEY } from 'state/connect/state';
+import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
+
+import { extractLintHintsFromError, formatPipelineError } from './errors';
+import { CreatePipelineSidebar } from './onboarding/create-pipeline-sidebar';
+import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
+import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+import type { ConnectComponentType } from './types/schema';
+import type { AddUserFormData, WizardFormData } from './types/wizard';
+import { getConnectTemplate } from './utils/yaml';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -46,19 +53,12 @@ import PageContent from '../../misc/PageContent';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { formatPipelineError } from './errors';
-import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
-import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
-import { AddConnectorDialog } from './tiles/add-connector-dialog';
-import type { ConnectComponentType } from './types/rpcn-schema';
-import type { ConnectTilesFormData } from './types/wizard';
-import { getComponentTypeBadgeProps } from './utils/badges';
-import { getConnectTemplate } from './utils/yaml';
 
 const exampleContent = `
 `;
 
 @observer
+// biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
 class RpConnectPipelinesCreate extends PageComponent<{}> {
   @observable fileName = '';
   @observable description = '';
@@ -66,6 +66,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   @observable editorContent = exampleContent;
   @observable isCreating = false;
   @observable secrets: string[] = [];
+  @observable lintResults: Record<string, any> = {};
   // TODO: Actually show this within the pipeline create page
   @observable tags = {} as Record<string, string>;
 
@@ -89,8 +90,16 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     pipelinesApi.refreshPipelines(_force);
   }
 
+  handleWizardClick = () => {
+    sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
+    sessionStorage.removeItem(CONNECT_WIZARD_TOPIC_KEY);
+    sessionStorage.removeItem(CONNECT_WIZARD_USER_KEY);
+  };
+
   render() {
-    if (!pipelinesApi.pipelines) return DefaultSkeleton;
+    if (!pipelinesApi.pipelines) {
+      return DefaultSkeleton;
+    }
     if (rpcnSecretManagerApi.secrets) {
       // inject secrets to editor
       this.secrets.updateWith(rpcnSecretManagerApi.secrets.map((value) => value.id));
@@ -100,14 +109,15 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
     const CreateButton = () => {
       const toast = useToast();
+      const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
       return (
         <Button
-          variant="solid"
           isDisabled={alreadyExists || isNameEmpty || this.isCreating}
-          loadingText="Creating..."
           isLoading={this.isCreating}
-          onClick={action(() => this.createPipeline(toast))}
+          loadingText="Creating..."
+          onClick={action(() => this.createPipeline(enableRpcnTiles ? undefined : toast))}
+          variant="solid"
         >
           Create
         </Button>
@@ -116,32 +126,45 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
     return (
       <PageContent>
-        <Box my="2">
-          For help creating your pipeline, see our{' '}
-          <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" isExternal>
-            quickstart documentation
-          </ChLink>
-          , our{' '}
-          <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" isExternal>
-            library of examples
-          </ChLink>
-          , or our{' '}
-          <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" isExternal>
-            connector catalog
-          </ChLink>
-          .
-        </Box>
+        <div className="my-2">
+          <UIText>
+            For help creating your pipeline,
+            {isFeatureFlagEnabled('enableRpcnTiles') && (
+              <>
+                {' '}
+                try the{' '}
+                <UILink as={Link} onClick={this.handleWizardClick} to="/rp-connect/wizard">
+                  wizard
+                </UILink>
+                ,{' '}
+              </>
+            )}
+            see our{' '}
+            <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" target="_blank">
+              quickstart documentation
+            </UILink>
+            , our{' '}
+            <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" target="_blank">
+              library of examples
+            </UILink>
+            , or our{' '}
+            <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" target="_blank">
+              connector catalog
+            </UILink>
+            .
+          </UIText>
+        </div>
 
         <Flex flexDirection="column" gap={3}>
-          <FormField label="Pipeline name" isInvalid={alreadyExists} errorText="Pipeline name is already in use">
+          <FormField errorText="Pipeline name is already in use" isInvalid={alreadyExists} label="Pipeline name">
             <Flex alignItems="center" gap="2">
               <Input
-                placeholder="Enter a config name..."
                 data-testid="pipelineName"
-                pattern="[a-zA-Z0-9_\-]+"
                 isRequired
-                value={this.fileName}
                 onChange={(x) => (this.fileName = x.target.value)}
+                pattern="[a-zA-Z0-9_\-]+"
+                placeholder="Enter a config name..."
+                value={this.fileName}
                 width={500}
               />
             </Flex>
@@ -149,29 +172,35 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           <FormField label="Description">
             <Input
               data-testid="pipelineDescription"
-              value={this.description}
               onChange={(x) => (this.description = x.target.value)}
+              value={this.description}
               width={500}
             />
           </FormField>
           <FormField
-            label="Compute Units"
             description="One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines."
+            label="Compute Units"
             w={500}
           >
             <NumberInput
-              value={this.tasks}
-              onChange={(e) => (this.tasks = Number(e ?? MIN_TASKS))}
-              min={MIN_TASKS}
               max={MAX_TASKS}
               maxWidth={150}
+              min={MIN_TASKS}
+              onChange={(e) => (this.tasks = Number(e ?? MIN_TASKS))}
+              value={this.tasks}
             />
           </FormField>
         </Flex>
 
-        <Box mt="4">
-          <PipelineEditor yaml={this.editorContent} onChange={(x) => (this.editorContent = x)} secrets={this.secrets} />
-        </Box>
+        <div className="mt-4">
+          <PipelineEditor onChange={(x) => (this.editorContent = x)} secrets={this.secrets} yaml={this.editorContent} />
+        </div>
+
+        {isFeatureFlagEnabled('enableRpcnTiles') && this.lintResults && Object.keys(this.lintResults).length > 0 && (
+          <div className="mt-4">
+            <LintHintList lintHints={this.lintResults} />
+          </div>
+        )}
 
         <Flex alignItems="center" gap="4">
           <CreateButton />
@@ -183,7 +212,8 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     );
   }
 
-  async createPipeline(toast: CreateToastFnReturn) {
+  // biome-ignore lint/suspicious/useAwait: async needed for error handling in MobX action
+  async createPipeline(toast?: CreateToastFnReturn) {
     this.isCreating = true;
 
     pipelinesApi
@@ -200,36 +230,52 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
             ...this.tags,
             __redpanda_cloud_pipeline_type: 'pipeline',
           },
-        }),
+        })
       )
-      .then(async (r) => {
-        toast({
-          status: 'success',
-          duration: 4000,
-          isClosable: false,
-          title: 'Pipeline created',
-        });
-        const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
-        if (retUnits && this.tasks !== retUnits) {
-          toast({
-            status: 'warning',
-            duration: 6000,
-            isClosable: false,
-            title: `Pipeline has been resized to use ${retUnits} compute units`,
-          });
-        }
-        await pipelinesApi.refreshPipelines(true);
-        appGlobal.historyPush('/connect-clusters');
-      })
-      .catch((err) => {
-        toast({
-          status: 'error',
-          duration: null,
-          isClosable: true,
-          title: 'Failed to create pipeline',
-          description: formatPipelineError(err),
-        });
-      })
+      .then(
+        action(async (r) => {
+          if (toast) {
+            toast({
+              status: 'success',
+              duration: 4000,
+              isClosable: false,
+              title: 'Pipeline created',
+            });
+            const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
+            if (retUnits && this.tasks !== retUnits) {
+              toast({
+                status: 'warning',
+                duration: 6000,
+                isClosable: false,
+                title: `Pipeline has been resized to use ${retUnits} compute units`,
+              });
+            }
+          } else {
+            this.lintResults = {};
+            sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
+            sessionStorage.removeItem(CONNECT_WIZARD_TOPIC_KEY);
+            sessionStorage.removeItem(CONNECT_WIZARD_USER_KEY);
+          }
+
+          await pipelinesApi.refreshPipelines(true);
+          appGlobal.historyPush('/connect-clusters');
+        })
+      )
+      .catch(
+        action((err) => {
+          if (toast) {
+            toast({
+              status: 'error',
+              duration: null,
+              isClosable: true,
+              title: 'Failed to create pipeline',
+              description: formatPipelineError(err),
+            });
+          } else {
+            this.lintResults = extractLintHintsFromError(err);
+          }
+        })
+      )
       .finally(() => {
         this.isCreating = false;
       });
@@ -241,31 +287,20 @@ export default RpConnectPipelinesCreate;
 interface QuickActionsProps {
   editorInstance: editor.IStandaloneCodeEditor | null;
   resetAutocompleteSecrets: VoidFunction;
-  onAddProcessor: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
 }
 
-const processorTypes: ConnectComponentType[] = [
-  'buffer',
-  'cache',
-  'processor',
-  'rate_limit',
-  'metrics',
-  'tracer',
-  'scanner',
-];
-
-const QuickActions = ({ editorInstance, resetAutocompleteSecrets, onAddProcessor }: QuickActionsProps) => {
+const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActionsProps) => {
   const { isOpen: isAddSecretOpen, onOpen: openAddSecret, onClose: closeAddSecret } = useDisclosure();
-  const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
-  const { isOpen: isAddProcessorOpen, onOpen: openAddProcessor, onClose: closeAddProcessor } = useDisclosure();
-  const [selectedProcessor, setSelectedProcessor] = useState<ConnectComponentType | undefined>(undefined);
+
   if (editorInstance === null) {
-    return <Box minW={300} />;
+    return <div className="min-w-[300px]" />;
   }
 
   const onAddSecret = (secretNotation: string) => {
     const selection = editorInstance.getSelection();
-    if (selection === null) return;
+    if (selection === null) {
+      return;
+    }
     const id = { major: 1, minor: 1 };
     const op = { identifier: id, range: selection, text: secretNotation, forceMoveMarkers: true };
     editorInstance.executeEdits('my-source', [op]);
@@ -273,70 +308,28 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets, onAddProcessor
     closeAddSecret();
   };
 
-  const handleProcessorTypeChange = (processorType: ConnectComponentType) => {
-    setSelectedProcessor(processorType);
-    openAddProcessor();
-  };
-
-  const handleAddProcessor = (connectionName: string, connectionType: ConnectComponentType) => {
-    onAddProcessor?.(connectionName, connectionType);
-    closeAddProcessor();
-  };
-
   return (
-    <div className="flex gap-3 flex-col">
+    <div className="flex flex-col gap-3">
       <Card>
         <CardHeader>
           <CardTitle>Variables</CardTitle>
           <CardDescription>Add a reference to a new or existing secret value, such as a key.</CardDescription>
         </CardHeader>
         <CardContent>
-          <NewButton variant="secondary" onClick={openAddSecret}>
+          <NewButton onClick={openAddSecret} variant="secondary">
             <PlusIcon className="size-4" color="white" />
             Add Secrets
           </NewButton>
         </CardContent>
       </Card>
-      <SecretsQuickAdd isOpen={isAddSecretOpen} onCloseAddSecret={closeAddSecret} onAdd={onAddSecret} />
-      {enableRpcnTiles && (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle>Connectors</CardTitle>
-              <CardDescription>Add connectors to your pipeline.</CardDescription>
-            </CardHeader>
-            <CardContent className="gap-2 flex flex-wrap space-y-0">
-              {processorTypes.map((processorType) => {
-                const { text, variant, className } = getComponentTypeBadgeProps(processorType);
-                return (
-                  <Badge
-                    key={processorType}
-                    icon={<PlusIcon size={16} className={className} />}
-                    variant={variant}
-                    className="cursor-pointer py-2 px-3 max-w-fit"
-                    onClick={() => handleProcessorTypeChange(processorType)}
-                  >
-                    {text}
-                  </Badge>
-                );
-              })}
-            </CardContent>
-          </Card>
-          <AddConnectorDialog
-            isOpen={isAddProcessorOpen}
-            onCloseAddConnector={closeAddProcessor}
-            onAddConnector={handleAddProcessor}
-            connectorType={selectedProcessor}
-          />
-        </>
-      )}
+      <SecretsQuickAdd isOpen={isAddSecretOpen} onAdd={onAddSecret} onCloseAddSecret={closeAddSecret} />
     </div>
   );
 };
 
 const registerSecretsAutocomplete = async (
   monaco: Monaco,
-  setSecretAutocomplete: Dispatch<SetStateAction<IDisposable | undefined>>,
+  setSecretAutocomplete: Dispatch<SetStateAction<IDisposable | undefined>>
 ) => {
   await rpcnSecretManagerApi.refreshSecrets(true);
   const secrets = rpcnSecretManagerApi.secrets || [];
@@ -354,7 +347,7 @@ const registerSecretsAutocomplete = async (
         label: `{secrets.${secret.id}}`,
         kind: monaco.languages.CompletionItemKind.Variable,
         insertText: `{secrets.${secret.id}}`,
-        range: range,
+        range,
       }));
       return {
         suggestions: completeItems,
@@ -375,33 +368,76 @@ export const PipelineEditor = observer(
     const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
-    const [persistedFormData, _] = useSessionStorage<Partial<ConnectTilesFormData>>(CONNECT_TILE_STORAGE_KEY, {});
+    const [persistedFormData, _] = useSessionStorage<Partial<WizardFormData>>(CONNECT_WIZARD_CONNECTOR_KEY, {});
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
+    // Track actual editor content to keep sidebar in sync with editor's real state
+    const [actualEditorContent, setActualEditorContent] = useState<string>('');
+
     const persistedConnectComponentTemplate = useMemo(() => {
-      if (!persistedFormData?.connectionName || !persistedFormData?.connectionType) {
+      const persistedInput = persistedFormData?.input;
+      const persistedOutput = persistedFormData?.output;
+      if (!(persistedInput?.connectionName && persistedInput?.connectionType)) {
         return undefined;
       }
-      const template = getConnectTemplate({
-        connectionName: persistedFormData?.connectionName,
-        connectionType: persistedFormData?.connectionType,
+      const inputTemplate = getConnectTemplate({
+        connectionName: persistedInput.connectionName,
+        connectionType: persistedInput.connectionType,
         showOptionalFields: false,
       });
-      return template;
-    }, [persistedFormData.connectionName, persistedFormData.connectionType]);
-
-    const yaml = useMemo(() => {
-      return enableRpcnTiles && persistedConnectComponentTemplate ? persistedConnectComponentTemplate : p.yaml;
-    }, [enableRpcnTiles, persistedConnectComponentTemplate, p.yaml]);
-
-    const resetEditor = async () => {
-      if (monaco) {
-        await registerSecretsAutocomplete(monaco, setSecretAutocomplete);
+      if (persistedOutput?.connectionName && persistedOutput?.connectionType) {
+        const outputTemplate = getConnectTemplate({
+          connectionName: persistedOutput.connectionName,
+          connectionType: persistedOutput.connectionType,
+          showOptionalFields: false,
+        });
+        return `${inputTemplate}\n${outputTemplate}`;
       }
-    };
+      return inputTemplate;
+    }, [persistedFormData]);
 
-    const handleAddProcessor = (connectionName: string, connectionType: ConnectComponentType) => {
-      if (!editorInstance) return;
+    const yaml = useMemo(
+      () => (enableRpcnTiles && persistedConnectComponentTemplate ? persistedConnectComponentTemplate : p.yaml),
+      [enableRpcnTiles, persistedConnectComponentTemplate, p.yaml]
+    );
+
+    const { data: secretsData, refetch: refetchSecrets } = useListSecretsQuery();
+    const existingSecrets = useMemo(() => {
+      if (!secretsData?.secrets) {
+        return [];
+      }
+      return secretsData.secrets.map((secret) => secret?.id).filter(Boolean) as string[];
+    }, [secretsData]);
+
+    const detectedSecrets = useMemo(() => {
+      try {
+        const secretRefs = extractSecretReferences(yaml);
+        return getUniqueSecretNames(secretRefs);
+      } catch {
+        return [];
+      }
+    }, [yaml]);
+
+    const [wizardUserData] = useSessionStorage<AddUserFormData>(CONNECT_WIZARD_USER_KEY);
+
+    const secretDefaultValues = useMemo(() => {
+      if (!wizardUserData) {
+        return {};
+      }
+      const values: Record<string, string> = {};
+      if (wizardUserData.username) {
+        values.REDPANDA_USERNAME = wizardUserData.username;
+      }
+      if (wizardUserData.password) {
+        values.REDPANDA_PASSWORD = wizardUserData.password;
+      }
+      return values;
+    }, [wizardUserData]);
+
+    const handleAddConnector = (connectionName: string, connectionType: ConnectComponentType) => {
+      if (!editorInstance) {
+        return;
+      }
 
       const currentValue = editorInstance.getValue();
       const mergedYaml = getConnectTemplate({
@@ -411,7 +447,9 @@ export const PipelineEditor = observer(
         existingYaml: currentValue,
       });
 
-      if (!mergedYaml) return;
+      if (!mergedYaml) {
+        return;
+      }
 
       editorInstance.setValue(mergedYaml);
     };
@@ -425,6 +463,31 @@ export const PipelineEditor = observer(
       };
     }, [secretAutocomplete]);
 
+    // Sync actual editor content with editor instance
+    // This ensures sidebar always sees what's actually in the editor
+    useEffect(() => {
+      if (!editorInstance) {
+        return;
+      }
+
+      // Read actual content from editor after mount
+      const currentValue = editorInstance.getValue();
+      setActualEditorContent(currentValue);
+
+      // Also sync to parent if different
+      if (currentValue !== p.yaml) {
+        p.onChange?.(currentValue);
+      }
+
+      // Listen for content changes
+      const disposable = editorInstance.onDidChangeModelContent(() => {
+        const newValue = editorInstance.getValue();
+        setActualEditorContent(newValue);
+      });
+
+      return () => disposable.dispose();
+    }, [editorInstance, p.onChange, p.yaml]);
+
     return (
       <Tabs
         tabs={[
@@ -432,51 +495,71 @@ export const PipelineEditor = observer(
             key: 'config',
             title: 'Configuration',
             content: () => (
-              <Box>
+              <div>
                 {/* yaml editor */}
-                <Flex height="400px" gap={7}>
+                <div className="flex min-h-[400px] gap-7">
                   <PipelinesYamlEditor
                     defaultPath="config.yaml"
-                    path="config.yaml"
-                    value={yaml}
-                    onChange={(e) => {
-                      if (e) p.onChange?.(e);
-                    }}
+                    defaultValue={yaml}
                     language="yaml"
+                    onChange={(e) => {
+                      if (e) {
+                        p.onChange?.(e);
+                      }
+                    }}
+                    onMount={async (editor, monacoInstance) => {
+                      setEditorInstance(editor);
+                      setMonaco(monacoInstance);
+                      await registerSecretsAutocomplete(monacoInstance, setSecretAutocomplete);
+                    }}
                     options={{
                       readOnly: p.isDisabled,
                     }}
-                    onMount={async (editor, monaco) => {
-                      setMonaco(monaco);
-                      setEditorInstance(editor);
-                      await registerSecretsAutocomplete(monaco, setSecretAutocomplete);
-                    }}
+                    path="config.yaml"
                   />
 
-                  {!p.isDisabled && (
-                    <QuickActions
-                      editorInstance={editorInstance}
-                      resetAutocompleteSecrets={resetEditor}
-                      onAddProcessor={handleAddProcessor}
-                    />
-                  )}
-                </Flex>
+                  {!p.isDisabled &&
+                    (enableRpcnTiles ? (
+                      <CreatePipelineSidebar
+                        detectedSecrets={detectedSecrets}
+                        editorContent={actualEditorContent}
+                        editorInstance={editorInstance}
+                        existingSecrets={existingSecrets}
+                        onAddConnector={handleAddConnector}
+                        onSecretsCreated={refetchSecrets}
+                        secretDefaultValues={secretDefaultValues}
+                      />
+                    ) : (
+                      <QuickActions
+                        editorInstance={editorInstance}
+                        resetAutocompleteSecrets={() => {
+                          if (secretAutocomplete && monaco) {
+                            secretAutocomplete.dispose();
+                            void registerSecretsAutocomplete(monaco, setSecretAutocomplete);
+                          }
+                        }}
+                      />
+                    ))}
+                </div>
+
                 {isKafkaConnectPipeline(p.yaml) && (
-                  <Alert status="error" my={2}>
-                    <AlertIcon />
-                    <Text>
-                      This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations,{' '}
-                      <ChLink
-                        target="_blank"
-                        href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
-                      >
-                        see our quickstart documentation
-                      </ChLink>
-                      .
-                    </Text>
+                  <Alert variant="destructive">
+                    <AlertCircle size={16} />
+                    <AlertDescription>
+                      <UIText>
+                        This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations,{' '}
+                        <UILink
+                          href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
+                          target="_blank"
+                        >
+                          see our quickstart documentation
+                        </UILink>
+                        .
+                      </UIText>
+                    </AlertDescription>
                   </Alert>
                 )}
-              </Box>
+              </div>
             ),
           },
           {
@@ -488,7 +571,7 @@ export const PipelineEditor = observer(
         ]}
       />
     );
-  },
+  }
 );
 
 /**

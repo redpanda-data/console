@@ -11,9 +11,10 @@
 
 import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
+
 import Tabs, { type Tab } from './Tabs';
 
-const testTabs: Array<Tab> = [
+const testTabs: Tab[] = [
   {
     key: 'test1',
     title: 'test title 1',
@@ -41,7 +42,7 @@ describe('Tabs', () => {
   });
 
   test('renders an initial tab other than the first', () => {
-    render(<Tabs tabs={testTabs.slice(0, 2)} selectedTabKey="test2" />);
+    render(<Tabs selectedTabKey="test2" tabs={testTabs.slice(0, 2)} />);
 
     expect(screen.getByText('test title 2')).toBeInTheDocument();
     expect(screen.getByText('test content 2')).toBeInTheDocument();
@@ -76,7 +77,7 @@ describe('Tabs', () => {
   test('executes onChange callback when active tab changes', () => {
     const onChange = vi.fn();
 
-    render(<Tabs tabs={testTabs.slice(0, 2)} onChange={onChange} />);
+    render(<Tabs onChange={onChange} tabs={testTabs.slice(0, 2)} />);
 
     fireEvent.click(screen.getByText('test title 2'));
 

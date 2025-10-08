@@ -19,6 +19,7 @@ export const useLicenseSignupMutation = () => {
     },
     onError: (error) => {
       // Don't show toast for registration errors as they're handled in the modal
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('License signup failed:', error);
       return error;
     },

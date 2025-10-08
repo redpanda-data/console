@@ -11,6 +11,7 @@
 import type { FormValues } from 'components/pages/mcp-servers/create/schemas';
 import { useEffect, useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
+
 import { extractSecretReferences, getUniqueSecretNames } from './secret-detection';
 
 export function useSecretDetection(form: UseFormReturn<FormValues>, existingSecrets: string[]) {
@@ -22,7 +23,7 @@ export function useSecretDetection(form: UseFormReturn<FormValues>, existingSecr
       const tools = form.getValues('tools');
       const allSecretReferences: string[] = [];
 
-      tools.forEach((tool) => {
+      for (const tool of tools) {
         if (tool.config) {
           try {
             const secretRefs = extractSecretReferences(tool.config);
@@ -32,7 +33,7 @@ export function useSecretDetection(form: UseFormReturn<FormValues>, existingSecr
             // Ignore YAML parsing errors
           }
         }
-      });
+      }
 
       // Get unique secret names
       const uniqueSecrets = Array.from(new Set(allSecretReferences)).sort();
@@ -44,7 +45,9 @@ export function useSecretDetection(form: UseFormReturn<FormValues>, existingSecr
 
   // Check if any detected secrets are missing
   const hasSecretWarnings = useMemo(() => {
-    if (detectedSecrets.length === 0) return false;
+    if (detectedSecrets.length === 0) {
+      return false;
+    }
     return detectedSecrets.some((secretName) => !existingSecrets.includes(secretName));
   }, [detectedSecrets, existingSecrets]);
 

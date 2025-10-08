@@ -23,6 +23,7 @@ import { type FC, useEffect, useState } from 'react';
 import { Controller, type SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
 import { setMonacoTheme } from '../../../config';
 import {
   CompressionType,
@@ -50,9 +51,21 @@ type EncodingOption = {
   tooltip: string; // React.ReactNode | (() => React.ReactNode),
 };
 const encodingOptions: EncodingOption[] = [
-  { value: PayloadEncoding.NULL, label: 'Null', tooltip: 'Message value will be null' },
-  { value: PayloadEncoding.TEXT, label: 'Text', tooltip: 'Text in the editor will be encoded to UTF-8 bytes' },
-  { value: PayloadEncoding.JSON, label: 'JSON', tooltip: 'Syntax higlighting for JSON, otherwise the same as text' },
+  {
+    value: PayloadEncoding.NULL,
+    label: 'Null',
+    tooltip: 'Message value will be null',
+  },
+  {
+    value: PayloadEncoding.TEXT,
+    label: 'Text',
+    tooltip: 'Text in the editor will be encoded to UTF-8 bytes',
+  },
+  {
+    value: PayloadEncoding.JSON,
+    label: 'JSON',
+    tooltip: 'Syntax higlighting for JSON, otherwise the same as text',
+  },
 
   {
     value: PayloadEncoding.AVRO,
@@ -73,18 +86,26 @@ const encodingOptions: EncodingOption[] = [
 const protoBufInfoElement = (
   <Text>
     Protobuf schemas can define multiple types. Specify which type you want to use for this message.{' '}
-    <Link target="_blank" rel="noopener noreferrer" href="https://protobuf.dev/reference/protobuf/google.protobuf/">
+    <Link href="https://protobuf.dev/reference/protobuf/google.protobuf/" rel="noopener noreferrer" target="_blank">
       Learn more here.
     </Link>
   </Text>
 );
 
 function encodingToLanguage(encoding: PayloadEncoding) {
-  if (encoding === PayloadEncoding.AVRO) return 'json';
-  if (encoding === PayloadEncoding.JSON) return 'json';
-  if (encoding === PayloadEncoding.PROTOBUF) return 'protobuf';
-  if (encoding === PayloadEncoding.BINARY) return 'plaintext';
-  return undefined;
+  if (encoding === PayloadEncoding.AVRO) {
+    return 'json';
+  }
+  if (encoding === PayloadEncoding.JSON) {
+    return 'json';
+  }
+  if (encoding === PayloadEncoding.PROTOBUF) {
+    return 'protobuf';
+  }
+  if (encoding === PayloadEncoding.BINARY) {
+    return 'plaintext';
+  }
+  return;
 }
 
 type PayloadOptions = {
@@ -181,7 +202,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
   const compressionTypes = CompressionTypeSchema.values
     .filter((value) => value.number !== CompressionType.UNSPECIFIED)
-    .map((value) => ({ label: value.localName, value: value.number as CompressionType }));
+    .map((value) => ({
+      label: value.localName,
+      value: value.number as CompressionType,
+    }));
 
   const availablePartitions = computed(() => {
     const partitions: { label: string; value: number }[] = [{ label: 'Auto (Murmur2)', value: -1 }];
@@ -208,15 +232,17 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     return autorun(() => {
       const filteredSoftDeletedSchemaSubjects =
         api.schemaSubjects?.filter(
-          (x) => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted),
+          (x) => uiSettings.schemaList.showSoftDeleted || !(uiSettings.schemaList.showSoftDeleted || x.isSoftDeleted)
         ) ?? [];
 
       const formattedSchemaSubjects = filteredSoftDeletedSchemaSubjects?.filter((x) =>
-        x.name.toLowerCase().includes(uiSettings.schemaList.quickSearch.toLowerCase()),
+        x.name.toLowerCase().includes(uiSettings.schemaList.quickSearch.toLowerCase())
       );
 
       for (const schemaSubject of formattedSchemaSubjects) {
-        void api.refreshSchemaDetails(schemaSubject.name);
+        api.refreshSchemaDetails(schemaSubject.name).catch(() => {
+          // Error handling managed by API layer
+        });
       }
     });
   }, []);
@@ -236,12 +262,11 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
     // Headers
     for (const h of data.headers) {
-      if (!h.value && !h.value) {
+      if (!(h.value || h.value)) {
         continue;
       }
       const kafkaHeader = create(KafkaRecordHeaderSchema);
       kafkaHeader.key = h.key;
-      // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
       kafkaHeader.value = new TextEncoder().encode(h.value);
       req.headers.push(kafkaHeader);
     }
@@ -261,14 +286,13 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     if (data.key.encoding !== PayloadEncoding.NULL) {
       req.key = create(PublishMessagePayloadOptionsSchema);
       try {
-        // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         req.key.data = encodeData(data.key.data, data.key.encoding);
       } catch (err) {
         // TODO: Handle error
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(err);
         return;
       }
-      // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
       req.key.data = encodeData(data.key.data, data.key.encoding);
       req.key.encoding = data.key.encoding;
       req.key.schemaId = data.key.schemaId;
@@ -279,10 +303,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     if (data.value.encoding !== PayloadEncoding.NULL) {
       req.value = create(PublishMessagePayloadOptionsSchema);
       try {
-        // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         req.value.data = encodeData(data.value.data, data.value.encoding);
       } catch (err) {
         // TODO: Handle error
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(err);
         return;
       }
@@ -316,15 +340,15 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <Grid width={['100%', '100%', 600]} gap={6} flexDirection="column">
-        <Flex gap={4} flexDirection="row">
+      <Grid flexDirection="column" gap={6} width={['100%', '100%', 600]}>
+        <Flex flexDirection="row" gap={4}>
           <Box flexGrow={1}>
             <Label text="Partition">
               <Controller
                 control={control}
                 name="partition"
                 render={({ field: { onChange, value } }) => (
-                  <SingleSelect<number> options={availablePartitions.get()} value={value} onChange={onChange} />
+                  <SingleSelect<number> onChange={onChange} options={availablePartitions.get()} value={value} />
                 )}
               />
             </Label>
@@ -335,7 +359,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                 control={control}
                 name="compressionType"
                 render={({ field: { onChange, value } }) => (
-                  <SingleSelect<CompressionType> options={compressionTypes} value={value} onChange={onChange} />
+                  <SingleSelect<CompressionType> onChange={onChange} options={compressionTypes} value={value} />
                 )}
               />
             </Label>
@@ -344,7 +368,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
         <Divider />
 
-        <Flex gap={4} flexDirection="column">
+        <Flex flexDirection="column" gap={4}>
           <SectionHeading>Headers</SectionHeading>
 
           {fields.map((field, index) => (
@@ -356,16 +380,16 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                 <Input {...register(`headers.${index}.value`)} placeholder="Value" />
               </FormControl>
               <IconButton
-                icon={<HiOutlineTrash />}
                 aria-label="Remove item"
-                variant="outline"
+                icon={<HiOutlineTrash />}
                 onClick={() => remove(index)}
+                variant="outline"
               />
             </HStack>
           ))}
 
           <Box>
-            <Button type="button" variant="outline" onClick={() => append({ key: '', value: '' })} size="sm">
+            <Button onClick={() => append({ key: '', value: '' })} size="sm" type="button" variant="outline">
               Add row
             </Button>
           </Box>
@@ -373,9 +397,9 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
         <Divider />
 
-        <Flex gap={4} flexDirection="column">
+        <Flex flexDirection="column" gap={4}>
           <SectionHeading>Key</SectionHeading>
-          <Grid templateColumns="repeat(5, 1fr)" gap={2}>
+          <Grid gap={2} templateColumns="repeat(5, 1fr)">
             <GridItem colSpan={2}>
               <Label text="Type">
                 <Controller
@@ -383,9 +407,9 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                   name="key.encoding"
                   render={({ field: { onChange, value } }) => (
                     <SingleSelect<PayloadEncoding | 'base64'>
+                      onChange={onChange}
                       options={filteredEncodingOptions}
                       value={value}
-                      onChange={onChange}
                     />
                   )}
                 />
@@ -399,14 +423,17 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     name="key.schemaName"
                     render={({ field: { onChange, value } }) => (
                       <SingleSelect<string | undefined>
-                        options={availableValues.map((value) => ({ key: value.name, value: value.name }))}
-                        value={value}
                         onChange={(newVal) => {
                           onChange(newVal);
 
                           const detail = availableValues.filter((value) => value.name === newVal).first();
                           setValue('key.schemaVersion', detail?.latestActiveVersion);
                         }}
+                        options={availableValues.map((value) => ({
+                          key: value.name,
+                          value: value.name,
+                        }))}
+                        value={value}
                       />
                     )}
                   />
@@ -421,13 +448,16 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     name="key.schemaVersion"
                     render={({ field: { onChange, value } }) => (
                       <SingleSelect<number | undefined>
+                        onChange={onChange}
                         options={availableValues
                           .filter((value) => value.name === keySchemaName)
                           .flatMap((value) => value.versions)
                           .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
-                          .map(({ version }) => ({ label: version, value: version }))}
+                          .map(({ version }) => ({
+                            label: version,
+                            value: version,
+                          }))}
                         value={value}
-                        onChange={onChange}
                       />
                     )}
                   />
@@ -452,11 +482,11 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     name="key.data"
                     render={({ field: { onChange, value } }) => (
                       <KowlEditor
-                        onMount={setMonacoTheme}
                         height={300}
-                        value={value}
-                        onChange={onChange}
                         language={encodingToLanguage(keyPayloadOptions?.encoding)}
+                        onChange={onChange}
+                        onMount={setMonacoTheme}
+                        value={value}
                       />
                     )}
                   />
@@ -464,10 +494,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                   <Controller
                     control={control}
                     name="key.data"
-                    render={({ field: { onChange, value } }) => <Input value={value} onChange={onChange} />}
+                    render={({ field: { onChange, value } }) => <Input onChange={onChange} value={value} />}
                   />
                 )}
-                <Button size="sm" variant="link" onClick={() => setKeyExpanded(!isKeyExpanded)} px={0} mt={1}>
+                <Button mt={1} onClick={() => setKeyExpanded(!isKeyExpanded)} px={0} size="sm" variant="link">
                   {isKeyExpanded ? 'Collapse' : 'Expand'}
                 </Button>
               </Box>
@@ -478,10 +508,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
         <Divider />
 
-        <Flex gap={4} flexDirection="column">
+        <Flex flexDirection="column" gap={4}>
           <SectionHeading>Value</SectionHeading>
-          <Flex gap={2} flexDirection="column">
-            <Grid templateColumns="repeat(5, 1fr)" gap={2}>
+          <Flex flexDirection="column" gap={2}>
+            <Grid gap={2} templateColumns="repeat(5, 1fr)">
               <GridItem colSpan={2}>
                 <Label text="Type">
                   <Controller
@@ -489,9 +519,9 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     name="value.encoding"
                     render={({ field: { onChange, value } }) => (
                       <SingleSelect<PayloadEncoding | 'base64'>
+                        onChange={onChange}
                         options={filteredEncodingOptions}
                         value={value}
-                        onChange={onChange}
                       />
                     )}
                   />
@@ -505,14 +535,17 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                       name="value.schemaName"
                       render={({ field: { onChange, value } }) => (
                         <SingleSelect<string | undefined>
-                          options={availableValues.map((value) => ({ key: value.name, value: value.name }))}
-                          value={value}
                           onChange={(newVal) => {
                             onChange(newVal);
 
                             const detail = availableValues.filter((value) => value.name === newVal).first();
                             setValue('value.schemaVersion', detail?.latestActiveVersion);
                           }}
+                          options={availableValues.map((value) => ({
+                            key: value.name,
+                            value: value.name,
+                          }))}
+                          value={value}
                         />
                       )}
                     />
@@ -527,13 +560,16 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                       name="value.schemaVersion"
                       render={({ field: { onChange, value } }) => (
                         <SingleSelect<number | undefined>
+                          onChange={onChange}
                           options={availableValues
                             .filter((value) => value.name === valueSchemaName)
                             .flatMap((value) => value.versions)
                             .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
-                            .map(({ version }) => ({ label: version, value: version }))}
+                            .map(({ version }) => ({
+                              label: version,
+                              value: version,
+                            }))}
                           value={value}
-                          onChange={onChange}
                         />
                       )}
                     />
@@ -558,11 +594,11 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     render={({ field: { onChange, value } }) => (
                       <KowlEditor
                         data-testid="produce-message-value"
-                        onMount={setMonacoTheme}
                         height={300}
-                        value={value}
-                        onChange={onChange}
                         language={encodingToLanguage(valuePayloadOptions?.encoding)}
+                        onChange={onChange}
+                        onMount={setMonacoTheme}
+                        value={value}
                       />
                     )}
                   />
@@ -576,11 +612,11 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
         {!!errors?.root?.serverError && <Alert status="error">{errors.root.serverError.message}</Alert>}
 
-        <Flex gap={4} alignItems="center">
-          <Button type="submit" colorScheme="brand" isLoading={isSubmitting} data-testid="produce-button">
+        <Flex alignItems="center" gap={4}>
+          <Button colorScheme="brand" data-testid="produce-button" isLoading={isSubmitting} type="submit">
             Produce
           </Button>
-          <Link to={`/topics/${encodeURIComponent(topicName)}`} as={ReactRouterLink}>
+          <Link as={ReactRouterLink} to={`/topics/${encodeURIComponent(topicName)}`}>
             Go Back
           </Link>
         </Flex>

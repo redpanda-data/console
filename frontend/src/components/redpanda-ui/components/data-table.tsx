@@ -386,7 +386,7 @@ export function DataTablePagination<TData>({ table, testId }: DataTablePaginatio
   return (
     <div className="flex items-center justify-end px-2" data-testid={testId}>
       <div className="flex items-center space-x-6 lg:space-x-8">
-      {table.getPageCount() > 0 && (
+        {table.getPageCount() > 0 && (
           <div className="flex w-[100px] items-center justify-center text-sm font-medium">
             Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
           </div>

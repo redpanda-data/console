@@ -63,10 +63,9 @@
   },
   {
     "name": "redpanda.iceberg.partition.spec",
-    "type": "INT",
+    "type": "STRING",
     "documentation": "The partitioning specification for the Iceberg table.",
-    "category": "Iceberg",
-    "frontendFormat": "DURATION"
+    "category": "Iceberg"
   },
   {
     "name": "redpanda.iceberg.target.lag.ms",

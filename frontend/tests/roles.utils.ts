@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 export const createRole = async(page: Page, { roleName }: {roleName: string}) => {
     await page.goto('/security/roles');

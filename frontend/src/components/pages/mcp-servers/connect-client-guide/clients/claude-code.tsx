@@ -23,15 +23,16 @@ import {
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { useState } from 'react';
+
 import ClaudeCodeLogo from '../../../../../assets/claude-code.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
+import { ClientType, getClientCommand, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
-interface ClientClaudeCodeProps {
+type ClientClaudeCodeProps = {
   mcpServer: MCPServer;
-}
+};
 
 export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
   const [selectedScope, setSelectedScope] = useState<string>('local');
@@ -39,77 +40,41 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
   const clusterId = config?.clusterId;
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
-  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
 
-  const showCloudEnvironmentFlag = getRpkCloudEnvironment() !== 'production';
-  const cloudEnvArg = showCloudEnvironmentFlag ? `"cloud_environment=${getRpkCloudEnvironment()}",` : '';
+  const claudeCodeCommand = getClientCommand(ClientType.CLAUDE_CODE, {
+    mcpServerName,
+    clusterId,
+    mcpServerId,
+    isServerless: config.isServerless,
+    selectedScope,
+  });
 
-  const claudeCodeCommand = `claude mcp add-json ${mcpServerName} --scope ${selectedScope} \\
-'{"type":"stdio","command":"rpk","args":[
-"-X",${cloudEnvArg}"cloud","mcp","proxy",
-"${clusterFlag}","${clusterId}",
-"--mcp-server-id","${mcpServerId}"]}'`;
-
-  const claudeCodeConfigJson = showCloudEnvironmentFlag
-    ? `{
-  "mcp": {
-    "servers": {
-      "${mcpServerName}": {
-        "command": "rpk",
-        "args": [
-          "-X",
-          "cloud_environment=${getRpkCloudEnvironment()}",
-          "cloud",
-          "mcp",
-          "proxy",
-          "${clusterFlag}",
-          "${clusterId}",
-          "--mcp-server-id",
-          "${mcpServerId}"
-        ]
-      }
-    }
-  }
-}`
-    : `{
-  "mcp": {
-    "servers": {
-      "${mcpServerName}": {
-        "command": "rpk",
-        "args": [
-          "-X",
-          "cloud",
-          "mcp",
-          "proxy",
-          "${clusterFlag}",
-          "${clusterId}",
-          "--mcp-server-id",
-          "${mcpServerId}"
-        ]
-      }
-    }
-  }
-}`;
+  const claudeCodeConfigJson = getClientConfig(ClientType.CLAUDE_CODE, {
+    mcpServerName,
+    clusterId,
+    mcpServerId,
+    isServerless: config.isServerless,
+  });
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
             <div className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-1">
                 <span>In</span>
-                <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                  <img src={ClaudeCodeLogo} alt="Claude Code" className="h-4 w-4" />
+                <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+                  <img alt="Claude Code" className="h-4 w-4" src={ClaudeCodeLogo} />
                   Claude Code
                 </Text>
                 <span>, select the configuration scope for the MCP server:</span>
               </div>
-              <Label className="text-sm font-medium">Scope</Label>
+              <Label className="font-medium text-sm">Scope</Label>
               <div>
-                <Select value={selectedScope} onValueChange={setSelectedScope}>
+                <Select onValueChange={setSelectedScope} value={selectedScope}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select scope" />
                   </SelectTrigger>
@@ -123,7 +88,7 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
                   </SelectContent>
                 </Select>
               </div>
-              <Text variant="small" className="text-muted-foreground">
+              <Text className="text-muted-foreground" variant="small">
                 {selectedScope === 'local' && 'Configuration stored locally for this project only'}
                 {selectedScope === 'project' && (
                   <Text as="span">
@@ -142,7 +107,7 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
             <div className="flex flex-wrap items-center gap-1">
               <span>Run the following command to add the MCP server:</span>
             </div>
-            <DynamicCodeBlock lang="bash" code={claudeCodeCommand} />
+            <DynamicCodeBlock code={claudeCodeCommand} lang="bash" />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
@@ -152,19 +117,19 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
               {selectedScope === 'project' && <InlineCode className="whitespace-nowrap">.mcp.json</InlineCode>}
               <span>with:</span>
             </div>
-            <DynamicCodeBlock lang="json" code={claudeCodeConfigJson} />
+            <DynamicCodeBlock code={claudeCodeConfigJson} lang="json" />
           </ListItem>
           <ListItem>
             Restart Claude Code and verify the MCP server is available:
-            <DynamicCodeBlock lang="bash" code="claude mcp list" />
+            <DynamicCodeBlock code="claude mcp list" lang="bash" />
             Or alternatively use:
-            <DynamicCodeBlock lang="bash" code="/mcp" />
+            <DynamicCodeBlock code="/mcp" lang="bash" />
           </ListItem>
         </List>
       </div>
       <RemoteMCPConnectDocsAlert
-        documentationUrl="https://docs.anthropic.com/en/docs/claude-code/mcp"
         clientName="Claude Code"
+        documentationUrl="https://docs.anthropic.com/en/docs/claude-code/mcp"
       />
     </div>
   );

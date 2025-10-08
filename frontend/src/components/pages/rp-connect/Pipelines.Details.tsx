@@ -15,6 +15,10 @@ import { makeObservable, observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+
+import { openDeleteModal } from './modals';
+import { PipelineStatus } from './Pipelines.List';
+import { cpuToTasks } from './tasks';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
@@ -42,9 +46,6 @@ import Section from '../../misc/Section';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
-import { openDeleteModal } from './modals';
-import { PipelineStatus } from './Pipelines.List';
-import { cpuToTasks } from './tasks';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -73,11 +74,15 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
   }
 
   render() {
-    if (!pipelinesApi.pipelines) return DefaultSkeleton;
+    if (!pipelinesApi.pipelines) {
+      return DefaultSkeleton;
+    }
     const pipelineId = decodeURIComponentPercents(this.props.pipelineId);
     const pipeline = pipelinesApi.pipelines.first((x) => x.id === pipelineId);
 
-    if (!pipeline) return DefaultSkeleton;
+    if (!pipeline) {
+      return DefaultSkeleton;
+    }
     const isStopped = pipeline.state === Pipeline_State.STOPPED;
     const isTransitioningState =
       pipeline.state === Pipeline_State.STARTING || pipeline.state === Pipeline_State.STOPPING;
@@ -98,17 +103,16 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
               { key: 'Resources', value: <PipelineResources resources={pipeline.resources} /> },
               pipeline.url && { key: 'URL', value: pipeline.url },
             ],
-            { gapHeight: '.5rem', keyStyle: { fontWeight: 600 } },
+            { gapHeight: '.5rem', keyStyle: { fontWeight: 600 } }
           )}
         </Box>
 
-        <Flex mb="4" gap="4">
+        <Flex gap="4" mb="4">
           <Link to={`/rp-connect/${pipelineId}/edit`}>
             <Button variant="solid">Edit</Button>
           </Link>
 
           <Button
-            variant="outline"
             isDisabled={this.isChangingPauseState || isTransitioningState}
             isLoading={this.isChangingPauseState}
             onClick={() => {
@@ -125,10 +129,14 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                   await pipelinesApi.refreshPipelines(true);
                   // if we can't find the pipeline we're checking anymore it got deleted
                   const p = pipelinesApi.pipelines?.first((x) => x.id === pipeline.id);
-                  if (!p) return;
+                  if (!p) {
+                    return;
+                  }
 
                   // if its no longer in a transition state, we're done
-                  if (p.state !== Pipeline_State.STARTING && p.state !== Pipeline_State.STOPPING) return;
+                  if (p.state !== Pipeline_State.STARTING && p.state !== Pipeline_State.STOPPING) {
+                    return;
+                  }
                 }
               };
 
@@ -145,7 +153,8 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                     title: `Successfully ${isStopped ? 'started' : 'stopped'} pipeline`,
                   });
 
-                  watchPipelineUpdates();
+                  // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
+                  watchPipelineUpdates().catch(console.error);
                 })
                 .catch((err) => {
                   toast({
@@ -158,16 +167,16 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                 })
                 .finally(() => (this.isChangingPauseState = false));
             }}
+            variant="outline"
           >
             {isStopped ? 'Start' : 'Stop'}
           </Button>
           <Button
-            variant="outline-delete"
             onClick={() => {
               openDeleteModal(pipeline.displayName, () => {
                 pipelinesApi
                   .deletePipeline(pipeline.id)
-                  .then(async () => {
+                  .then(() => {
                     toast({
                       status: 'success',
                       duration: 4000,
@@ -188,6 +197,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                   });
               });
             }}
+            variant="outline-delete"
           >
             Delete
           </Button>
@@ -229,12 +239,12 @@ const PipelineEditor = observer((p: { pipeline: Pipeline }) => {
       <Flex height="400px" mt="4">
         <PipelinesYamlEditor
           defaultPath="config.yaml"
-          path="config.yaml"
-          value={pipeline.configYaml}
+          language="yaml"
           options={{
             readOnly: true,
           }}
-          language="yaml"
+          path="config.yaml"
+          value={pipeline.configYaml}
         />
       </Flex>
     </Box>
@@ -271,7 +281,7 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
       partitionId: partitionID,
       startOffset: offset,
       startTimestamp: 0,
-      topicName: topicName,
+      topicName,
       includeRawPayload: true,
       ignoreSizeLimit: true,
       keyDeserializer: PayloadEncoding.UNSPECIFIED,
@@ -286,16 +296,11 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
       if (indexOfOldMessage > -1) {
         state.messages[indexOfOldMessage] = messages[0];
       } else {
-        console.error('LoadLargeMessage: cannot find old message to replace', {
-          searchReq,
-          messages,
-        });
         throw new Error(
-          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)',
+          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
         );
       }
     } else {
-      console.error('LoadLargeMessage: messages response is empty', { messages });
       throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
     }
   };
@@ -309,7 +314,7 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
         row: {
           original: { timestamp },
         },
-      }) => <TimestampDisplay unixEpochMillisecond={timestamp} format="default" />,
+      }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
       size: 30,
     },
     {
@@ -317,9 +322,9 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
       accessorKey: 'value',
       cell: ({ row: { original } }) => (
         <MessagePreview
+          isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
           msg={original}
           previewFields={() => []}
-          isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
         />
       ),
       size: Number.MAX_SAFE_INTEGER,
@@ -327,7 +332,9 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
   ];
 
   const filteredMessages = state.messages.filter((x) => {
-    if (!uiSettings.pipelinesDetails.logsQuickSearch) return true;
+    if (!uiSettings.pipelinesDetails.logsQuickSearch) {
+      return true;
+    }
     return isFilterMatch(uiSettings.pipelinesDetails.logsQuickSearch, x);
   });
 
@@ -338,33 +345,33 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
       <Section minWidth="800px">
         <Flex mb="6">
           <SearchField
-            width="230px"
             searchText={uiSettings.pipelinesDetails.logsQuickSearch}
             setSearchText={(x) => (uiSettings.pipelinesDetails.logsQuickSearch = x)}
+            width="230px"
           />
-          <Button variant="outline" ml="auto" onClick={() => setState(createLogsTabState())}>
+          <Button ml="auto" onClick={() => setState(createLogsTabState())} variant="outline">
             Refresh logs
           </Button>
         </Flex>
 
         <DataTable<TopicMessage>
+          columns={messageTableColumns}
           data={filteredMessages}
           emptyText="No messages"
-          columns={messageTableColumns}
-          sorting={uiSettings.pipelinesDetails.sorting ?? []}
           onSortingChange={(sorting) => {
             uiSettings.pipelinesDetails.sorting =
               typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
           }}
           pagination={paginationParams}
+          sorting={uiSettings.pipelinesDetails.sorting ?? []}
           // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
           //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
           subComponent={({ row: { original } }) => (
             <ExpandedMessage
-              msg={original}
               loadLargeMessage={() =>
                 loadLargeMessage(state.search.searchRequest?.topicName ?? '', original.partitionID, original.offset)
               }
+              msg={original}
             />
           )}
         />
@@ -375,13 +382,19 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
 
 function isFilterMatch(str: string, m: TopicMessage) {
   str = str.toLowerCase();
-  if (m.offset.toString().toLowerCase().includes(str)) return true;
-  if (m.keyJson?.toLowerCase().includes(str)) return true;
-  if (m.valueJson?.toLowerCase().includes(str)) return true;
+  if (m.offset.toString().toLowerCase().includes(str)) {
+    return true;
+  }
+  if (m.keyJson?.toLowerCase().includes(str)) {
+    return true;
+  }
+  if (m.valueJson?.toLowerCase().includes(str)) {
+    return true;
+  }
   return false;
 }
 
-async function executeMessageSearch(search: MessageSearch, topicName: string, pipelineId: string) {
+function executeMessageSearch(search: MessageSearch, topicName: string, pipelineId: string) {
   const filterCode: string = `return key == "${pipelineId}";`;
 
   const lastXHours = 5;
@@ -389,7 +402,7 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, pi
   startTime.setHours(startTime.getHours() - lastXHours);
 
   const request = {
-    topicName: topicName,
+    topicName,
     partitionId: -1,
 
     startOffset: PartitionOffsetOrigin.Timestamp,
@@ -404,16 +417,11 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, pi
 
   // All of this should be part of "backendApi.ts", starting a message search should return an observable object,
   // so any changes in phase, messages, error, etc can be used immediately in the ui
-  return runInAction(async () => {
+  return runInAction(() => {
     try {
-      search.startSearch(request).catch((err) => {
-        const msg = (err as Error).message ?? String(err);
-        console.error(`error in pipelineLogsMessageSearch: ${msg}`);
-        return [];
-      });
-    } catch (error: any) {
-      console.error(`error in pipelineLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
-      return [];
+      return search.startSearch(request);
+    } catch (_error: any) {
+      return Promise.resolve([]);
     }
   });
 }
@@ -421,7 +429,9 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, pi
 export const PipelineResources = observer((p: { resources?: Pipeline_Resources }) => {
   const r = p.resources;
 
-  if (!r) return 'Not set';
+  if (!r) {
+    return 'Not set';
+  }
   const tasks = cpuToTasks(r.cpuShares);
   return (
     <Flex gap="4">

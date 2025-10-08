@@ -22,7 +22,12 @@ import { FaRegStopCircle } from 'react-icons/fa';
 import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
-import { CONNECT_TILE_STORAGE_KEY } from 'state/connect/state';
+import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
+
+import { openDeleteModal } from './modals';
+import { ConnectTiles } from './onboarding/connect-tiles';
+import type { ConnectComponentType } from './types/schema';
+import type { AddTopicFormData, AddUserFormData, ConnectTilesFormData, WizardFormData } from './types/wizard';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
@@ -33,34 +38,38 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { openDeleteModal } from './modals';
-import { ConnectTiles } from './tiles/connect-tiles';
-import type { ConnectComponentType } from './types/rpcn-schema';
-import type { ConnectTilesFormData } from './types/wizard';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
-const CreatePipelineButton = () => {
-  return (
-    <div>
-      <NewButton as={Link} to="/rp-connect/create">
-        Create pipeline
-      </NewButton>
-    </div>
-  );
-};
+/**
+ * Navigates to /rp-connect/create (legacy flow)
+ */
+const LegacyCreatePipelineButton = () => (
+  <div>
+    <NewButton as={Link} to="/rp-connect/create">
+      Create pipeline
+    </NewButton>
+  </div>
+);
 
-const NewCreatePipelineButton = () => {
+/**
+ * Navigates to wizard and clears session storage
+ */
+const WizardCreatePipelineButton = () => {
   const [_, setPersistedConnectionName] = useSessionStorage<Partial<ConnectTilesFormData>>(
-    CONNECT_TILE_STORAGE_KEY,
-    {},
+    CONNECT_WIZARD_CONNECTOR_KEY,
+    {}
   );
+  const [, setPersistedTopic] = useSessionStorage<Partial<AddTopicFormData>>(CONNECT_WIZARD_TOPIC_KEY, {});
+  const [, setPersistedUser] = useSessionStorage<Partial<AddUserFormData>>(CONNECT_WIZARD_USER_KEY, {});
   const navigate = useNavigate();
 
   const handleClick = useCallback(() => {
     setPersistedConnectionName({});
+    setPersistedTopic({});
+    setPersistedUser({});
     navigate('/rp-connect/wizard');
-  }, [setPersistedConnectionName, navigate]);
+  }, [setPersistedConnectionName, setPersistedTopic, setPersistedUser, navigate]);
 
   return (
     <div>
@@ -69,16 +78,40 @@ const NewCreatePipelineButton = () => {
   );
 };
 
-const EmptyPlaceholder = () => {
-  const [, setPersistedConnectionName] = useSessionStorage<Partial<ConnectTilesFormData>>(CONNECT_TILE_STORAGE_KEY, {});
+/**
+ * Shows image, text, and create button
+ */
+const LegacyEmptyState = () => (
+  <Flex alignItems="center" flexDirection="column" gap="4" justifyContent="center" mb="4">
+    <Image src={EmptyConnectors} />
+    <Box>You have no Redpanda Connect pipelines.</Box>
+    <LegacyCreatePipelineButton />
+  </Flex>
+);
+
+/**
+ * Shows ConnectTiles and navigates to wizard with connector pre-selected
+ */
+const WizardEmptyState = () => {
+  const [persistedConnectionName, setPersistedConnectionName] = useSessionStorage<Partial<WizardFormData>>(
+    CONNECT_WIZARD_CONNECTOR_KEY,
+    {}
+  );
+  const [, setPersistedTopic] = useSessionStorage<Partial<AddTopicFormData>>(CONNECT_WIZARD_TOPIC_KEY, {});
+  const [, setPersistedUser] = useSessionStorage<Partial<AddUserFormData>>(CONNECT_WIZARD_USER_KEY, {});
   const navigate = useNavigate();
-  const enableConnectTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
   const handleConnectionChange = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
       try {
-        setPersistedConnectionName({ connectionName, connectionType });
-        navigate('/rp-connect/create');
+        const existingOutput = persistedConnectionName.output;
+        const newConfig = existingOutput
+          ? { input: { connectionName, connectionType }, output: existingOutput }
+          : { input: { connectionName, connectionType } };
+        setPersistedConnectionName(newConfig);
+        setPersistedTopic({});
+        setPersistedUser({});
+        navigate('/rp-connect/wizard?step=add-output');
       } catch (error) {
         toast({
           status: 'error',
@@ -89,22 +122,24 @@ const EmptyPlaceholder = () => {
         });
       }
     },
-    [setPersistedConnectionName, navigate],
+    [setPersistedConnectionName, setPersistedTopic, setPersistedUser, navigate, persistedConnectionName]
   );
 
-  const oldUI = (
-    <Flex alignItems="center" justifyContent="center" flexDirection="column" gap="4" mb="4">
-      <Image src={EmptyConnectors} />
-      <Box>You have no Redpanda Connect pipelines.</Box>
-      <CreatePipelineButton />
-    </Flex>
+  return (
+    <ConnectTiles
+      className="mt-4"
+      componentTypeFilter={['input']}
+      defaultConnectionName={persistedConnectionName.input?.connectionName}
+      defaultConnectionType={persistedConnectionName.input?.connectionType}
+      onChange={handleConnectionChange}
+      title="Send data to your pipeline"
+    />
   );
+};
 
-  return enableConnectTiles ? (
-    <ConnectTiles onChange={handleConnectionChange} componentTypeFilter={['input', 'output']} hideHeader />
-  ) : (
-    oldUI
-  );
+const EmptyPlaceholder = () => {
+  const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
+  return enableRpcnTiles ? <WizardEmptyState /> : <LegacyEmptyState />;
 };
 
 export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
@@ -112,49 +147,49 @@ export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
     case Pipeline_State.UNSPECIFIED:
       return (
         <Flex alignItems="center" gap="2">
-          <HiX fontSize="17px" width="auto" color="orange" /> Unspecified
+          <HiX color="orange" fontSize="17px" width="auto" /> Unspecified
         </Flex>
       );
     case Pipeline_State.STARTING:
       return (
         <Flex alignItems="center" gap="2">
-          <MdRefresh fontSize="17px" width="auto" color="#444" /> Starting
+          <MdRefresh color="#444" fontSize="17px" width="auto" /> Starting
         </Flex>
       );
     case Pipeline_State.RUNNING:
       return (
         <Flex alignItems="center" gap="2">
-          <CheckIcon fontSize="17px" width="auto" color="green" /> Running
+          <CheckIcon color="green" fontSize="17px" width="auto" /> Running
         </Flex>
       );
     case Pipeline_State.COMPLETED:
       return (
         <Flex alignItems="center" gap="2">
-          <CheckIcon fontSize="17px" width="auto" color="green" /> Completed
+          <CheckIcon color="green" fontSize="17px" width="auto" /> Completed
         </Flex>
       );
     case Pipeline_State.STOPPING:
       return (
         <Flex alignItems="center" gap="2">
-          <MdRefresh fontSize="17px" width="auto" color="#444" /> Stopping
+          <MdRefresh color="#444" fontSize="17px" width="auto" /> Stopping
         </Flex>
       );
     case Pipeline_State.STOPPED:
       return (
         <Flex alignItems="center" gap="2">
-          <FaRegStopCircle fontSize="17px" width="auto" color="#444" /> Stopped
+          <FaRegStopCircle color="#444" fontSize="17px" width="auto" /> Stopped
         </Flex>
       );
     case Pipeline_State.ERROR:
       return (
         <Flex alignItems="center" gap="2">
-          <HiX fontSize="17px" width="auto" color="red" /> Error
+          <HiX color="red" fontSize="17px" width="auto" /> Error
         </Flex>
       );
     default:
       return (
         <Flex alignItems="center" gap="2">
-          <MdOutlineQuestionMark fontSize="17px" width="auto" color="red" /> Unknown
+          <MdOutlineQuestionMark color="red" fontSize="17px" width="auto" /> Unknown
         </Flex>
       );
   }
@@ -162,7 +197,9 @@ export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
 
 export const PipelineThroughput = observer((p: { pipeline: Pipeline }) => {
   const { resources } = p.pipeline;
-  if (!resources) return null;
+  if (!resources) {
+    return null;
+  }
 
   return (
     <>
@@ -172,6 +209,7 @@ export const PipelineThroughput = observer((p: { pipeline: Pipeline }) => {
 });
 
 @observer
+// biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
 class RpConnectPipelinesList extends PageComponent<{}> {
   @observable placeholder = 5;
 
@@ -188,7 +226,9 @@ class RpConnectPipelinesList extends PageComponent<{}> {
   }
 
   refreshData(force: boolean) {
-    if (!Features.pipelinesApi) return;
+    if (!Features.pipelinesApi) {
+      return;
+    }
 
     pipelinesApi.refreshPipelines(force).catch((err) => {
       if (String(err).includes('404')) {
@@ -211,17 +251,25 @@ class RpConnectPipelinesList extends PageComponent<{}> {
   }
 
   render() {
-    if (!pipelinesApi.pipelines) return DefaultSkeleton;
+    if (!pipelinesApi.pipelines) {
+      return DefaultSkeleton;
+    }
 
     const filteredPipelines = (pipelinesApi.pipelines ?? [])
       ?.filter((pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_type !== 'agent') // Ensure we do not show the agents
       .filter((u) => {
         const filter = uiSettings.pipelinesList.quickSearch;
-        if (!filter) return true;
+        if (!filter) {
+          return true;
+        }
         try {
           const quickSearchRegExp = new RegExp(filter, 'i');
-          if (u.id.match(quickSearchRegExp)) return true;
-          if (u.displayName.match(quickSearchRegExp)) return true;
+          if (u.id.match(quickSearchRegExp)) {
+            return true;
+          }
+          if (u.displayName.match(quickSearchRegExp)) {
+            return true;
+          }
           return false;
         } catch {
           return false;
@@ -233,30 +281,27 @@ class RpConnectPipelinesList extends PageComponent<{}> {
         <ToastContainer />
         {/* Pipeline List */}
 
-        {pipelinesApi.pipelines.length !== 0 && isFeatureFlagEnabled('enableRpcnTiles') ? (
-          <div className="my-5">
-            <NewCreatePipelineButton />
-          </div>
-        ) : pipelinesApi.pipelines.length !== 0 ? (
-          <div className="flex flex-col gap-2 my-5">
-            <CreatePipelineButton />
-            <SearchField
-              width="350px"
-              searchText={uiSettings.pipelinesList.quickSearch}
-              setSearchText={(x) => (uiSettings.pipelinesList.quickSearch = x)}
-              placeholderText="Enter search term / regex..."
-            />
-          </div>
-        ) : null}
+        {pipelinesApi.pipelines.length !== 0 &&
+          (isFeatureFlagEnabled('enableRpcnTiles') ? (
+            <div className="my-5">
+              <WizardCreatePipelineButton />
+            </div>
+          ) : (
+            <div className="my-5 flex flex-col gap-2">
+              <LegacyCreatePipelineButton />
+              <SearchField
+                placeholderText="Enter search term / regex..."
+                searchText={uiSettings.pipelinesList.quickSearch}
+                setSearchText={(x) => (uiSettings.pipelinesList.quickSearch = x)}
+                width="350px"
+              />
+            </div>
+          ))}
 
         {(pipelinesApi.pipelines ?? []).length === 0 ? (
           <EmptyPlaceholder />
         ) : (
           <DataTable<Pipeline>
-            data={filteredPipelines}
-            pagination
-            defaultPageSize={10}
-            sorting
             columns={[
               {
                 header: 'ID',
@@ -271,7 +316,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                 header: 'Pipeline Name',
                 cell: ({ row: { original } }) => (
                   <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
-                    <Text wordBreak="break-word" whiteSpace="break-spaces">
+                    <Text whiteSpace="break-spaces" wordBreak="break-word">
                       {original.displayName}
                     </Text>
                   </Link>
@@ -282,7 +327,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                 header: 'Description',
                 accessorKey: 'description',
                 cell: ({ row: { original } }) => (
-                  <Text minWidth="200px" wordBreak="break-word" whiteSpace="break-spaces">
+                  <Text minWidth="200px" whiteSpace="break-spaces" wordBreak="break-word">
                     {original.description}
                   </Text>
                 ),
@@ -290,9 +335,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
               },
               {
                 header: 'State',
-                cell: ({ row: { original } }) => {
-                  return <PipelineStatus status={original.state} />;
-                },
+                cell: ({ row: { original } }) => <PipelineStatus status={original.state} />,
               },
               // {
               //     header: 'Throughput',
@@ -308,10 +351,8 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                 id: 'actions',
                 cell: ({ row: { original: r } }) => (
                   <Button
-                    variant="icon"
-                    height="16px"
                     color="gray.500"
-                    // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
+                    height="16px"
                     onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                       e.stopPropagation();
                       e.preventDefault();
@@ -326,7 +367,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                               isClosable: false,
                               title: 'Pipeline deleted',
                             });
-                            pipelinesApi.refreshPipelines(true);
+                            await pipelinesApi.refreshPipelines(true);
                           })
                           .catch((err) => {
                             toast({
@@ -339,6 +380,8 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                           });
                       });
                     }}
+                    // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
+                    variant="icon"
                   >
                     <TrashIcon />
                   </Button>
@@ -346,7 +389,11 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                 size: 1,
               },
             ]}
+            data={filteredPipelines}
+            defaultPageSize={10}
             emptyText=""
+            pagination
+            sorting
           />
         )}
       </PageContent>

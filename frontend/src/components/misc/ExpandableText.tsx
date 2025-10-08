@@ -29,13 +29,13 @@ export function ExpandableText(p: { children: string; maxChars: number }) {
 
       {showExpander && (
         <Box
-          display="inline"
-          onClick={() => setExpanded(!expanded)}
-          fontWeight="semibold"
           cursor="pointer"
+          display="inline"
+          fontWeight="semibold"
+          mt="1px"
+          onClick={() => setExpanded(!expanded)}
           px="2"
           userSelect="none"
-          mt="1px"
         >
           {expanded ? (
             <span style={{ whiteSpace: 'nowrap' }}>

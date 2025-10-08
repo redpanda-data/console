@@ -11,27 +11,28 @@
 
 import type { SortingState } from '@redpanda-data/ui';
 import { autorun, makeObservable, observable, transaction } from 'mobx';
+
+import { AclRequestDefault, type GetAclsRequest } from './restInterfaces';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../components/constants';
 import type { ConnectTabKeys } from '../components/pages/connect/Overview';
 import type { TopicTabId } from '../components/pages/topics/Topic.Details';
 import { CompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { clone } from '../utils/jsonUtils';
 import { assignDeep, randomId } from '../utils/utils';
-import { AclRequestDefault, type GetAclsRequest } from './restInterfaces';
 
 const settingsName = 'uiSettings-v3';
 
 export type ValueDisplay = 'friendly' | 'both' | 'raw';
 
-export interface PreviewTag {
+export type PreviewTag = {
   id: string;
 
   isActive: boolean;
   text: string;
   customName?: string;
-}
+};
 
-export interface PreviewTagV2 {
+export type PreviewTagV2 = {
   id: string;
 
   isActive: boolean;
@@ -42,14 +43,14 @@ export interface PreviewTagV2 {
   searchInMessageHeaders: boolean;
   searchInMessageKey: boolean;
   searchInMessageValue: boolean;
-}
+};
 
 export type DataColumnKey = 'offset' | 'partitionID' | 'timestamp' | 'key' | 'value' | 'keySize' | 'valueSize';
 
-export interface ColumnList {
+export type ColumnList = {
   title: string;
   dataIndex: DataColumnKey;
-}
+};
 
 export type FilterType = 'code';
 export class FilterEntry {
@@ -80,20 +81,27 @@ export function IsLocalTimestampFormat(timestampType: TimestampDisplayFormat) {
       return true;
     case 'relative':
       return true;
+    case 'unixTimestamp':
+      return false;
+    case 'unixMillis':
+      return false;
+    default:
+      return true;
   }
-  return false;
 }
 
-export enum PartitionOffsetOrigin {
-  EndMinusResults = -1,
-  Start = -2,
-  End = -3,
-  Timestamp = -4,
-  Custom = 0,
-}
+export const PartitionOffsetOrigin = {
+  EndMinusResults: -1,
+  Start: -2,
+  End: -3,
+  Timestamp: -4,
+  Custom: 0,
+} as const;
+
+export type PartitionOffsetOriginType = (typeof PartitionOffsetOrigin)[keyof typeof PartitionOffsetOrigin];
 
 export const DEFAULT_SEARCH_PARAMS = {
-  offsetOrigin: -1 as PartitionOffsetOrigin, // start, end, custom
+  offsetOrigin: -1 as PartitionOffsetOriginType, // start, end, custom
   startOffset: -1, // used when offsetOrigin is custom
   startTimestamp: -1, // used when offsetOrigin is timestamp
   startTimestampWasSetByUser: false, // only used in frontend, to track whether we should update the timestamp to 'now' when the page loads
@@ -121,9 +129,9 @@ export class TopicDetailsSettings {
 
   topicName: string;
 
-  @observable searchParams = Object.assign({}, DEFAULT_SEARCH_PARAMS);
+  @observable searchParams = { ...DEFAULT_SEARCH_PARAMS };
 
-  @observable dynamicFilters: Array<'partition'> = [];
+  @observable dynamicFilters: 'partition'[] = [];
 
   @observable messagesPageSize = 20;
   @observable favConfigEntries: string[] = ['cleanup.policy', 'segment.bytes', 'segment.ms'];
@@ -341,7 +349,11 @@ export { uiSettings };
 
 export function clearSettings() {
   transaction(() => {
-    for (const k in uiSettings) delete (uiSettings as any)[k];
+    for (const k in uiSettings) {
+      if (Object.hasOwn(uiSettings, k)) {
+        delete (uiSettings as any)[k];
+      }
+    }
     assignDeep(uiSettings, clone(defaultUiSettings));
   });
 }
@@ -399,14 +411,15 @@ autorun(
   () => {
     const json = JSON.stringify(uiSettings);
     localStorage.setItem(settingsName, json);
-    //console.log('settings: ' + json);
   },
-  { delay: 2000 },
+  { delay: 2000 }
 );
 
 // Auto save (on exit)
 window.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') return; // only save on close, minimize, tab-switch
+  if (document.visibilityState === 'visible') {
+    return; // only save on close, minimize, tab-switch
+  }
 
   const json = JSON.stringify(uiSettings);
   localStorage.setItem(settingsName, json);
@@ -415,16 +428,21 @@ window.addEventListener('visibilitychange', () => {
 // When there are multiple tabs open, they are unaware of each other and overwriting each others changes.
 // So we must listen to changes made by other tabs, and when a change is saved we load the updated settings.
 window.addEventListener('storage', (e) => {
-  if (e.newValue == null) return;
+  if (e.newValue == null) {
+    return;
+  }
   try {
     const newSettings = JSON.parse(e.newValue);
-    if (!newSettings) return;
+    if (!newSettings) {
+      return;
+    }
     transaction(() => {
       // Applying changes here will of course trigger the auto-save, but that's fine.
       // The settings will be serialized to the exact same json again, so no storage events will be triggered by `.setItem()`
       assignDeep(uiSettings, newSettings);
     });
   } catch (err) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error('error applying settings update from another tab', { storageEvent: e, error: err });
   }
 });

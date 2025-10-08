@@ -13,8 +13,9 @@ import { Checkbox } from '@redpanda-data/ui';
 import { motion } from 'framer-motion';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { AnimatePresence, animProps, MotionDiv } from '../../utils/animationProps';
+
 import { PageComponent, type PageInitHelper } from './Page';
+import { AnimatePresence, animProps, MotionDiv } from '../../utils/animationProps';
 
 @observer
 export class UrlTestPage extends PageComponent {
@@ -30,7 +31,7 @@ export class UrlTestPage extends PageComponent {
   }
 
   render() {
-    const p = this.props;
+    const p = this.props as any;
     return (
       <MotionDiv>
         <div>

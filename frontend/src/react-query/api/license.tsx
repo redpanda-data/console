@@ -40,18 +40,17 @@ export const useSetLicenseMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'set',
         entity: 'license',
-      });
-    },
+      }),
   });
 };
 
 export const useListEnterpriseFeaturesQuery = (
-  options?: QueryOptions<GenMessage<ListEnterpriseFeaturesRequest>, ListEnterpriseFeaturesResponse>,
+  options?: QueryOptions<GenMessage<ListEnterpriseFeaturesRequest>, ListEnterpriseFeaturesResponse>
 ) => {
   const listEnterpriseFeaturesRequest = create(ListEnterpriseFeaturesRequestSchema);
 

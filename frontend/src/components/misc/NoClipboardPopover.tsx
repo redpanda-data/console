@@ -11,6 +11,7 @@
 
 import { Popover } from '@redpanda-data/ui';
 import type { FunctionComponent, ReactElement } from 'react';
+
 import { isClipboardAvailable } from '../../utils/featureDetection';
 
 const popoverContent = (
@@ -27,7 +28,7 @@ export const NoClipboardPopover: FunctionComponent<{
   isClipboardAvailable ? (
     children
   ) : (
-    <Popover title="Clipboard unavailable" content={popoverContent} placement={placement} trigger="hover">
+    <Popover content={popoverContent} placement={placement} title="Clipboard unavailable" trigger="hover">
       {children}
     </Popover>
   );
