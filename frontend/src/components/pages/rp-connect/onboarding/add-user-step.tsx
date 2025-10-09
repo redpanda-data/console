@@ -92,16 +92,14 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
   const watchedSpecialCharacters = form.watch('specialCharactersEnabled');
   const watchedPasswordLength = form.watch('passwordLength');
 
-  const matchingUserNameForFormValue = useMemo(
-    () => usersList?.find((user) => user.name === watchedUsername)?.name,
-    [usersList, watchedUsername]
-  );
-  const persistedUsername = useMemo(() => persistedUserData?.username, [persistedUserData]);
-
   const existingUserBeingEdited = useMemo(() => {
-    const getUserName = matchingUserNameForFormValue ?? persistedUsername ?? undefined;
-    return usersList?.find((user) => user.name === getUserName);
-  }, [persistedUsername, matchingUserNameForFormValue, usersList]);
+    // Only check if the CURRENT form username matches an existing user
+    // Don't use persisted username to avoid showing existing user state when creating a new one
+    if (!watchedUsername) {
+      return undefined;
+    }
+    return usersList?.find((user) => user.name === watchedUsername);
+  }, [watchedUsername, usersList]);
 
   const generateNewPassword = useCallback(() => {
     const newPassword = generatePassword(watchedPasswordLength, watchedSpecialCharacters);
@@ -120,14 +118,6 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
     },
     [generateNewPassword]
   );
-
-  useEffect(() => {
-    if (existingUserBeingEdited) {
-      form.setValue('username', existingUserBeingEdited.name || '', {
-        shouldDirty: false,
-      });
-    }
-  }, [existingUserBeingEdited, form]);
 
   useEffect(() => {
     setUserOptions(initialUserOptions);
