@@ -340,7 +340,7 @@ const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions
 export const embeddedAvailableRoutesObservable = observable({
   get routes() {
     return APP_ROUTES.map((route) => {
-      if (route.path === '/knowledgebases' || route.path === '/mcp-servers') {
+      if (route.path === '/knowledgebases' || route.path === '/mcp-servers' || route.path === '/agents') {
         return {
           ...route,
           // Needed because we cannot use JSX in this file
