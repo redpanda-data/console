@@ -79,6 +79,8 @@ describe('UpdateSecretModal', () => {
 
     fireEvent.click(screen.getByText('Redpanda Cluster'));
     fireEvent.click(screen.getByText('MCP Server'));
+    fireEvent.click(screen.getByText('AI Agent'));
+    fireEvent.click(screen.getByText('Redpanda Connect'));
 
     fireEvent.click(screen.getByTestId('add-label-button'));
 
@@ -93,9 +95,8 @@ describe('UpdateSecretModal', () => {
         create(UpdateSecretRequestSchema, {
           request: create(UpdateSecretRequestSchemaDataPlane, {
             id: existingSecretId,
-            // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
-            secretData: [],
-            scopes: [Scope.REDPANDA_CLUSTER, Scope.MCP_SERVER],
+            secretData: new Uint8Array([]),
+            scopes: [Scope.REDPANDA_CLUSTER, Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT],
             labels: {
               key: 'value',
               environment: 'production',
@@ -189,7 +190,6 @@ describe('UpdateSecretModal', () => {
         create(UpdateSecretRequestSchema, {
           request: create(UpdateSecretRequestSchemaDataPlane, {
             id: existingSecretId,
-            // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
             secretData: base64ToUInt8Array(encodeBase64(updatedSecretValue)),
             scopes: [Scope.REDPANDA_CONNECT],
             labels: {
