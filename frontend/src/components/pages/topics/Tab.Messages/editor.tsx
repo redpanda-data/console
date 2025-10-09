@@ -92,9 +92,8 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
         if (result?.outputFiles?.[0]?.text) {
           transpiledCode = result.outputFiles[0].text;
         }
-      } catch (error) {
-        // Transpilation failed, use original code
-        console.warn('TypeScript transpilation failed, using original code:', error);
+      } catch (_error) {
+        // Intentionally ignore transpilation errors and fall back to original code
       }
     }
 
