@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui
 import { useNavigate } from 'react-router-dom';
 
 import { getRuleDataTestId, parsePrincipal, type Rule, type SharedConfig } from './acl.model';
-import { OperationsBadges } from './operations-badges';
+import { OperationsBadge } from './operations-badge';
 
 type ACLDetailsProps = {
   sharedConfig: {
@@ -103,7 +103,7 @@ export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDet
                         data-testid={`summary-card-${getRuleDataTestId(rule)}`}
                         key={rule.id}
                       >
-                        <OperationsBadges rule={rule} />
+                        <OperationsBadge rule={rule} />
                       </div>
                     ))
                   )}

@@ -1163,10 +1163,9 @@ test.describe('Multiples ACLs to same principal', () => {
 
         await aclPage.waitForDetailPage();
 
-        // Verify URL does not have host query param (or has host=*)
-        const url = page.url();
-        expect(url).toContain(
-          `/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(firstHost)}`,
+        // Verify URL contains host query parameter
+        await page.waitForURL(
+          `**/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(firstHost)}`,
         );
 
         // Validate all rules from first ACL are present
@@ -1191,8 +1190,6 @@ test.describe('Multiples ACLs to same principal', () => {
         await page.waitForURL(
           `**/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(secondHost)}`,
         );
-        const url = page.url();
-        expect(url).toContain(`host=${encodeURIComponent(secondHost)}`);
 
         // Validate all rules from second ACL are present
         await aclPage.validateAllDetailRules(secondACLRules, principal, secondHost);
@@ -1229,10 +1226,6 @@ test.describe('Multiples ACLs to same principal', () => {
         `**/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(firstHost)}`,
       );
 
-      // Verify URL contains the host parameter
-      const url = page.url();
-      expect(url).toContain(`host=${encodeURIComponent(firstHost)}`);
-
       // Verify ACL details are shown (not the host selector anymore)
       await aclPage.validateAllDetailRules(firstACLRules, principal, firstHost);
     });
@@ -1253,10 +1246,6 @@ test.describe('Multiples ACLs to same principal', () => {
       await page.waitForURL(
         `**/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(secondHost)}`,
       );
-
-      // Verify URL contains the second host parameter
-      const url = page.url();
-      expect(url).toContain(`host=${encodeURIComponent(secondHost)}`);
 
       // Verify ACL details for second host are shown
       await aclPage.validateAllDetailRules(secondACLRules, principal, secondHost);
@@ -1296,8 +1285,7 @@ test.describe('Multiples ACLs to same principal', () => {
       await aclPage.waitForDetailPage();
 
       // Verify URL contains the correct host parameter
-      let url = page.url();
-      expect(url).toContain(`host=${encodeURIComponent(firstHost)}`);
+      await page.waitForURL((url) => url.href.includes(`host=${encodeURIComponent(firstHost)}`));
 
       // Validate the updated rules
       await aclPage.validateAllDetailRules(modifiedFirstACLRules, principal, firstHost);
@@ -1307,8 +1295,7 @@ test.describe('Multiples ACLs to same principal', () => {
       await aclPage.waitForDetailPage();
 
       // Verify URL contains the second host parameter
-      url = page.url();
-      expect(url).toContain(`host=${encodeURIComponent(secondHost)}`);
+      await page.waitForURL((url) => url.href.includes(`host=${encodeURIComponent(secondHost)}`));
 
       // Verify second ACL's rules remain unchanged
       await aclPage.validateAllDetailRules(secondACLRules, principal, secondHost);

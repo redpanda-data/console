@@ -1410,6 +1410,8 @@ test.describe('Multiples ACLs, different hosts but same role', () => {
       const rolePage = new RolePage(page);
       await rolePage.gotoList();
 
+      await page.getByTestId('search-field-input').fill(roleName);
+
       // Verify role appears in the list (only one item for the role, regardless of multiple hosts)
       const roleListItem = page.getByTestId(`role-list-item-${roleName}`);
       await expect(roleListItem).toBeVisible({ timeout: 1000 });

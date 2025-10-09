@@ -398,7 +398,7 @@ export class ACLPage {
     await expect(detailRuleCard).toBeVisible();
 
     // Add a small wait to ensure the page is loaded
-    await this.page.waitForTimeout(1000);
+    await this.page.waitForTimeout(500);
 
     // Check if all operations have the same value (which would display as Allow all or Deny all)
     const operations = Object.values(rule.operations);

@@ -17,7 +17,7 @@ import { Button } from '../../redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { type AclDetail, getRuleDataTestId, handleUrlWithHost, parsePrincipal } from '../acls/new-acl/acl.model';
-import { OperationsBadges } from '../acls/new-acl/operations-badges';
+import { OperationsBadge } from '../acls/new-acl/operations-badge';
 
 interface UserAclsCardProps {
   acls?: AclDetail[];
@@ -72,7 +72,7 @@ const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
                 data-testid={`rule-${getRuleDataTestId(rule)}`}
                 key={rule.id}
               >
-                <OperationsBadges rule={rule} />
+                <OperationsBadge rule={rule} />
               </div>
             ))}
           </div>

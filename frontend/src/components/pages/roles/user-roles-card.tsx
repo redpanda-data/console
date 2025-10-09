@@ -19,7 +19,7 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../redp
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { getRuleDataTestId, handleUrlWithHost } from '../acls/new-acl/acl.model';
-import { OperationsBadges } from '../acls/new-acl/operations-badges';
+import { OperationsBadge } from '../acls/new-acl/operations-badge';
 
 interface Role {
   principalType: string;
@@ -92,7 +92,7 @@ const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
                     data-testid={`rule-${getRuleDataTestId(rule)}`}
                     key={rule.id}
                   >
-                    <OperationsBadges rule={rule} />
+                    <OperationsBadge rule={rule} />
                   </div>
                 ))}
               </div>

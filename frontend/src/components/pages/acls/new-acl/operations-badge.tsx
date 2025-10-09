@@ -24,7 +24,26 @@ type OperationsBadgesProps = {
   showResourceDescription?: boolean;
 };
 
-export const OperationsBadges = ({ rule, showResourceDescription = true }: OperationsBadgesProps) => {
+type PermissionBadgeProps = {
+  isAllow: boolean;
+  children: React.ReactNode;
+  testId?: string;
+};
+
+const PermissionBadge = ({ isAllow, children, testId }: PermissionBadgeProps) => {
+  const colorClasses = isAllow ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-xs ${colorClasses}`}
+      data-testid={testId}
+    >
+      {children}
+    </span>
+  );
+};
+
+export const OperationsBadge = ({ rule, showResourceDescription = true }: OperationsBadgesProps) => {
   const enabledOperations = Object.entries(rule.operations).map(([op, value]: [string, OperationType]) => ({
     name: formatLabel(op),
     originName: op,
@@ -66,24 +85,16 @@ export const OperationsBadges = ({ rule, showResourceDescription = true }: Opera
         ) : (
           <div className="flex flex-wrap gap-2">
             {showSummary ? (
-              <span
-                className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-xs ${
-                  allAllow ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}
-              >
-                {allAllow ? 'Allow all' : 'Deny all'}
-              </span>
+              <PermissionBadge isAllow={allAllow}>{allAllow ? 'Allow all' : 'Deny all'}</PermissionBadge>
             ) : (
               enabledOperations.map((op) => (
-                <span
-                  className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-xs ${
-                    op.value === 'allow' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}
-                  data-testid={`detail-item-op-${getIdFromRule(rule, op.originName, op.value)}`}
+                <PermissionBadge
+                  isAllow={op.value === 'allow'}
                   key={op.name}
+                  testId={`detail-item-op-${getIdFromRule(rule, op.originName, op.value)}`}
                 >
                   {op.name}: {op.value}
-                </span>
+                </PermissionBadge>
               ))
             )}
           </div>
