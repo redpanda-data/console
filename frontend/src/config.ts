@@ -58,6 +58,22 @@ const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BAS
 
 export const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
 
+const getControlplanePath = () => {
+  // TODO: Make this part of config from Cloud UI
+  if (window.location.hostname.includes('main')) {
+    return 'https://api.ign.cloud.redpanda.com';
+  }
+  if (window.location.hostname.includes('preprod')) {
+    return 'https://api.ppd.cloud.redpanda.com';
+  }
+  if (window.location.hostname.includes('cloud.redpanda.com')) {
+    return 'https://api.cloud.redpanda.com';
+  }
+  return 'https://api.ign.cloud.redpanda.com';
+};
+
+export const getControlplaneBasePath = (overrideUrl?: string) => overrideUrl ?? getControlplanePath();
+
 export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
   if (config.jwt) {
     request.header.set('Authorization', `Bearer ${config.jwt}`);
