@@ -29,6 +29,7 @@ export const WizardStep = {
   ADD_OUTPUT: 'add-output-step',
   ADD_TOPIC: 'add-topic-step',
   ADD_USER: 'add-user-step',
+  CREATE_CONFIG: 'create-config-step',
 } as const;
 
 export type WizardStepType = (typeof WizardStep)[keyof typeof WizardStep];

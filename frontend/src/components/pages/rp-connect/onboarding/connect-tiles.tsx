@@ -37,6 +37,23 @@ const getLogoForComponent = (component: ConnectComponentSpec) => {
   return <Waypoints className="size-6 text-muted-foreground" />;
 };
 
+const PRIORITY_COMPONENTS = [
+  'aws_s3',
+  'gcp_cloud_storage',
+  'azure_blob_storage',
+  'gcp_spanner_cdc',
+  'postgres_cdc',
+  'mysql_cdc',
+  'mongodb_cdc',
+  'snowflake_streaming',
+  'redpanda_migrator',
+  'kafka_franz',
+  'gcp_pubsub',
+  'slack',
+  'sftp',
+  'nats',
+];
+
 const searchComponents = (
   allComponents: ConnectComponentSpec[],
   query: string,
@@ -46,7 +63,28 @@ const searchComponents = (
   }
 ): ConnectComponentSpec[] =>
   allComponents
-    .sort((a, b) => a.name.localeCompare(b.name))
+    .sort((a, b) => {
+      const aIndex = PRIORITY_COMPONENTS.indexOf(a.name);
+      const bIndex = PRIORITY_COMPONENTS.indexOf(b.name);
+
+      // If both are priority components, sort by their priority order
+      if (aIndex !== -1 && bIndex !== -1) {
+        return aIndex - bIndex;
+      }
+
+      // If only a is priority, it comes first
+      if (aIndex !== -1) {
+        return -1;
+      }
+
+      // If only b is priority, it comes first
+      if (bIndex !== -1) {
+        return 1;
+      }
+
+      // If neither are priority, sort alphabetically
+      return a.name.localeCompare(b.name);
+    })
     .filter((component) => {
       if (filters?.types?.length && !filters.types.includes(component.type)) {
         return false;
@@ -190,9 +228,10 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
             </CardTitle>
             <CardDescription className="mt-4">
               <Text>
-                Redpanda Connect is an alternative to Kafka Connect. It allows you to connect to a variety of data
-                sources and sinks, and to create pipelines to transform data.{' '}
-                <Link href="https://docs.redpanda.com/redpanda-cloud/develop/connect/about/" target="_blank">
+                Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that
+                drive real-time analytics and actionable business insights. Integrate data across systems with hundreds
+                of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable pipelines.{' '}
+                <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
                   Learn more.
                 </Link>
               </Text>
@@ -278,7 +317,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                           </div>
                         ) : (
                           <Choicebox>
-                            <div className={cn('grid gap-2', `grid-cols-${gridCols}`)}>
+                            <div className={cn('grid-auto-rows-fr grid gap-2', `grid-cols-${gridCols}`)}>
                               {filteredComponents.map((component) => {
                                 const uniqueKey = `${component.type}-${component.name}`;
 
@@ -288,7 +327,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                                       field.value === component.name &&
                                       form.getValues('connectionType') === component.type
                                     }
-                                    className="relative"
+                                    className="relative h-full"
                                     key={uniqueKey}
                                     onClick={() => {
                                       field.onChange(component.name);

@@ -42,6 +42,7 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(...steps: Steps): 
   return {
     ...rest,
     useStepper,
+    Steps: {} as Stepperize.Stepper<Steps>,
     Stepper: {
       Provider: ({
         variant = 'horizontal',
@@ -432,6 +433,7 @@ namespace Stepper {
   };
 
   export type DefineProps<Steps extends Stepperize.Step[]> = Omit<Stepperize.StepperReturn<Steps>, 'Scoped'> & {
+    Steps: Stepperize.Stepper<Steps>;
     Stepper: {
       Provider: (
         props: Omit<Stepperize.ScopedProps<Steps>, 'children'> &

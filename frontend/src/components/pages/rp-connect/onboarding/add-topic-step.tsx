@@ -86,16 +86,14 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
   });
 
   const watchedTopicName = form.watch('topicName');
-  const matchingTopicNameForFormValue = useMemo(
-    () => topicList?.find((topic) => topic.topicName === watchedTopicName)?.topicName,
-    [topicList, watchedTopicName]
-  );
 
-  // prioritize form value topic, then persisted topic
-  const existingTopicBeingEdited = useMemo(
-    () => topicList?.find((topic) => topic.topicName === matchingTopicNameForFormValue),
-    [matchingTopicNameForFormValue, topicList]
-  );
+  const existingTopicBeingEdited = useMemo(() => {
+    // Only check if the CURRENT form topic name matches an existing topic
+    if (!watchedTopicName) {
+      return undefined;
+    }
+    return topicList?.find((topic) => topic.topicName === watchedTopicName);
+  }, [watchedTopicName, topicList]);
 
   const { data: topicConfig } = useTopicConfigQuery(
     existingTopicBeingEdited?.topicName || '',
