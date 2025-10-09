@@ -112,7 +112,7 @@ class AclList extends PageComponent<{ tab?: AclListTab }> {
 
   initPage(p: PageInitHelper): void {
     p.title = 'Access Control';
-    p.addBreadcrumb('Access control', '/security');
+    p.addBreadcrumb('Access Control', '/security');
 
     this.refreshData().catch(() => {
       // Error handling managed by API layer
@@ -174,7 +174,7 @@ class AclList extends PageComponent<{ tab?: AclListTab }> {
       },
       {
         key: 'permissions-list' as AclListTab,
-        name: 'Permissions list',
+        name: 'Permissions List',
         component: <PermissionsListTab data-testid="permissions-list-tab" />,
         isDisabled: api.userData?.canViewPermissionsList
           ? false
@@ -340,7 +340,7 @@ const UsersTab = observer(() => {
     <Flex flexDirection="column" gap="4">
       <Box>
         These users are SASL-SCRAM users managed by your cluster. View permissions for other authentication identities
-        (OIDC, Kerberos, mTLS) on the Permissions list page.
+        (for example, OIDC, mTLS) on the Permissions List page.
       </Box>
 
       <SearchField
@@ -519,19 +519,20 @@ const RolesTab = observer(() => {
 
   return (
     <Flex flexDirection="column" gap="4">
-      <Box>Roles are groups of ACLs abstracted under a single name. Roles can be assigned to principals.</Box>
-
+      <Box>
+        This tab displays all roles. Roles are groups of access control lists (ACLs) that can be assigned to principals.
+        A principal represents any entity that can be authenticated, such as a user, service, or system (for example, a
+        SASL-SCRAM user, OIDC identity, or mTLS client).
+      </Box>
       <NullFallbackBoundary>
         <FeatureLicenseNotification featureName="rbac" />
       </NullFallbackBoundary>
-
       <SearchField
         placeholderText="Filter by name"
         searchText={uiSettings.aclList.rolesTab.quickSearch}
         setSearchText={(x) => (uiSettings.aclList.rolesTab.quickSearch = x)}
         width="300px"
       />
-
       <Section>
         <Button
           data-testid="create-role-button"
@@ -670,11 +671,10 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
   return (
     <Flex flexDirection="column" gap="4">
       <Box>
-        This tab displays all Kafka Access Control Lists (ACLs), grouped by each principal. A principal represents any
-        entity that can be authenticated, such as a user, service, or system (e.g., a SASL-SCRAM user, OIDC identity,
-        Kerberos principal, or mTLS client). The ACLs tab shows only the permissions directly granted to each principal,
-        without considering any permissions that may be derived from assigned roles. For a complete view of all
-        effective permissions, including those granted through roles, refer to the Permissions List tab.
+        This tab displays all access control lists (ACLs), grouped by principal and host. A principal represents any
+        entity that can be authenticated, such as a user, service, or system (for example, a SASL-SCRAM user, OIDC
+        identity, or mTLS client). The ACLs tab shows only the permissions directly granted to each principal. For a
+        complete view of all permissions, including permissions granted through roles, see the Permissions List tab.
       </Box>
       {Features.rolesApi && (
         <Alert status="info">
@@ -747,7 +747,9 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                     <button
                       className="hoverLink"
                       onClick={() => {
-                        navigate(`/security/acls/${record.principalName}/details`);
+                        navigate(
+                          `/security/acls/${record.principalName}/details?host=${encodeURIComponent(record.host)}`
+                        );
                       }}
                       type="button"
                     >

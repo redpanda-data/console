@@ -13,18 +13,19 @@ import { useToast } from '@redpanda-data/ui';
 import {
   getOperationsForResourceType,
   handleResponses,
+  handleUrlWithHost,
   ModeAllowAll,
   ModeDenyAll,
   OperationTypeAllow,
   OperationTypeDeny,
   PrincipalTypeUser,
-  parsePrincipal,
   type Rule,
   type SharedConfig,
 } from 'components/pages/acls/new-acl/acl.model';
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
+import { HostSelector } from 'components/pages/acls/new-acl/host-selector';
 import { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../../react-query/api/acl';
 import { uiState } from '../../../../state/ui-state';
@@ -34,6 +35,8 @@ const AclUpdatePage = () => {
   const toast = useToast();
   const navigate = useNavigate();
   const { aclName = '' } = useParams<{ aclName: string }>();
+  const [searchParams] = useSearchParams();
+  const host = searchParams.get('host') ?? undefined;
 
   useEffect(() => {
     uiState.pageBreadcrumbs = [
@@ -45,19 +48,22 @@ const AclUpdatePage = () => {
   }, [aclName]);
 
   // Fetch existing ACL data
-  const { data, isLoading } = useGetAclsByPrincipal(`User:${aclName}`);
+  const { data, isLoading } = useGetAclsByPrincipal(`User:${aclName}`, host);
 
   const { applyUpdates } = useUpdateAclMutation();
+
+  const [acls, ...hosts] = data || [];
 
   const updateAclMutation =
     (actualRules: Rule[], sharedConfig: SharedConfig) => async (_: string, _2: string, rules: Rule[]) => {
       const applyResult = await applyUpdates(actualRules, sharedConfig, rules);
       handleResponses(toast, applyResult.errors, applyResult.created);
 
-      navigate(`/security/acls/${parsePrincipal(sharedConfig.principal).name}/details`);
+      const detailsPath = `/security/acls/${aclName}/details`;
+      navigate(handleUrlWithHost(detailsPath, host));
     };
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <PageContent>
         <div className="flex h-96 items-center justify-center">
@@ -67,8 +73,20 @@ const AclUpdatePage = () => {
     );
   }
 
+  if (!(acls && data)) {
+    return <div>No ACL data found</div>;
+  }
+
+  if (hosts.length > 1) {
+    return (
+      <PageContent>
+        <HostSelector baseUrl={`/security/acls/${aclName}/update`} hosts={data} principalName={aclName} />
+      </PageContent>
+    );
+  }
+
   // Ensure all operations are present for each rule
-  const rulesWithAllOperations = data.rules.map((rule) => {
+  const rulesWithAllOperations = acls.rules.map((rule) => {
     const allOperations = getOperationsForResourceType(rule.resourceType);
     let mergedOperations = { ...allOperations };
 
@@ -96,11 +114,11 @@ const AclUpdatePage = () => {
     <PageContent>
       <CreateACL
         edit={true}
-        onCancel={() => navigate(`/security/acls/${aclName}/details`)}
-        onSubmit={updateAclMutation(data.rules, data.sharedConfig)}
+        onCancel={() => navigate(handleUrlWithHost(`/security/acls/${aclName}/details`, host))}
+        onSubmit={updateAclMutation(acls.rules, acls.sharedConfig)}
         principalType={PrincipalTypeUser}
         rules={rulesWithAllOperations}
-        sharedConfig={data.sharedConfig}
+        sharedConfig={acls.sharedConfig}
       />
     </PageContent>
   );

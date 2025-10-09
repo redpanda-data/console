@@ -99,7 +99,7 @@ class UserCreatePage extends PageComponent {
 
   initPage(p: PageInitHelper): void {
     p.title = 'Create user';
-    p.addBreadcrumb('Access control', '/security');
+    p.addBreadcrumb('Access Control', '/security');
     p.addBreadcrumb('Create user', '/security/users/create');
 
     // biome-ignore lint/suspicious/noConsole: error logging
@@ -264,7 +264,7 @@ const CreateUserModal = observer(
             </Flex>
           </FormField>
 
-          <FormField label="SASL Mechanism" showRequiredIndicator>
+          <FormField label="SASL mechanism" showRequiredIndicator>
             <SingleSelect<SaslMechanism>
               onChange={(e) => {
                 state.mechanism = e;

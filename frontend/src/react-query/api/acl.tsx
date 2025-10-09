@@ -524,19 +524,25 @@ export const useUpdateAclMutation = () => {
   return { applyUpdates };
 };
 
-export const useGetAclsByPrincipal = <T = AclDetail>(
+export const useGetAclsByPrincipal = <T = AclDetail[]>(
   principal: string,
-  transformFn?: (aclList: ListACLsResponse) => T
+  host?: string,
+  transformFn?: (aclList: ListACLsResponse) => T,
+  options?: {
+    enabled?: boolean;
+  }
 ) =>
   useQuery(
     listACLs,
     {
       filter: {
         principal,
+        host,
       },
-    } as ListACLsRequest,
+    },
     {
       select: transformFn ?? (getAclFromAclListResponse as (aclList: ListACLsResponse) => T),
+      ...options,
     }
   );
 

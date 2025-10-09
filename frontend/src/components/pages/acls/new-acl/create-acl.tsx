@@ -321,7 +321,7 @@ const AclRules = ({
           <div>
             <CardTitle className="font-medium text-gray-900 text-lg">ACL rules</CardTitle>
             <CardDescription className="text-gray-600">
-              Configure permissions for different resource types
+              Configure permissions for different resource types.
             </CardDescription>
           </div>
           <Button data-testid="add-allow-all-operations-button" onClick={addAllowAllOperations} variant="outline">
@@ -1046,7 +1046,7 @@ export default function CreateACL({
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             {/* Left Column - Main Form */}
             <div className="space-y-6 lg:col-span-2">
-              <p className="h-12 text-gray-600 text-sm">Configure access control rules for your Kafka resources</p>
+              <p className="h-12 text-gray-600 text-sm">Configure access control rules for your Kafka resources.</p>
 
               <SharedConfiguration
                 edit={edit}
