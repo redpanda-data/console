@@ -95,13 +95,6 @@ export const useCreateMCPServerMutation = () => {
         }),
         exact: false,
       });
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: MCPServerService.method.getMCPServer,
-          cardinality: 'finite',
-        }),
-        exact: false,
-      });
     },
     onError: (error) =>
       formatToastErrorMessageGRPC({
@@ -152,13 +145,6 @@ export const useDeleteMCPServerMutation = (options?: {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: MCPServerService.method.listMCPServers,
-          cardinality: 'finite',
-        }),
-        exact: false,
-      });
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: MCPServerService.method.getMCPServer,
           cardinality: 'finite',
         }),
         exact: false,
