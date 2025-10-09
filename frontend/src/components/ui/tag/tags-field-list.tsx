@@ -13,18 +13,44 @@ import { FormControl, FormField, FormItem, FormMessage } from 'components/redpan
 import { Input } from 'components/redpanda-ui/components/input';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Plus, Trash2 } from 'lucide-react';
-import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
+import type { FieldValues, Path, UseFormReturn } from 'react-hook-form';
 
-import type { FormValues } from './schemas';
-
-type TagsFieldListProps = {
-  form: UseFormReturn<FormValues>;
-  tagFields: UseFieldArrayReturn<FormValues, 'tags', 'id'>['fields'];
-  appendTag: UseFieldArrayReturn<FormValues, 'tags', 'id'>['append'];
-  removeTag: UseFieldArrayReturn<FormValues, 'tags', 'id'>['remove'];
+type TagsFieldListProps<TFieldValues extends FieldValues> = {
+  form: UseFormReturn<TFieldValues>;
+  // biome-ignore lint/suspicious/noExplicitAny: Generic component needs flexibility for different tag field structures
+  tagFields: Array<{ id: string; [key: string]: any }>;
+  // biome-ignore lint/suspicious/noExplicitAny: Accepts different tag types from different forms (value can be optional or required)
+  appendTag: (value: any) => void;
+  removeTag: (index: number) => void;
+  fieldName: string;
 };
 
-export const TagsFieldList: React.FC<TagsFieldListProps> = ({ form, tagFields, appendTag, removeTag }) => {
+/**
+ * Reusable tags field list component for managing key-value tags
+ * Can be used in AI Agents, MCP Servers, and any other resource that needs tags
+ *
+ * @example
+ * // In your form component:
+ * const { fields, append, remove } = useFieldArray({
+ *   control: form.control,
+ *   name: 'tags',
+ * });
+ *
+ * <TagsFieldList
+ *   form={form}
+ *   tagFields={fields}
+ *   appendTag={append}
+ *   removeTag={remove}
+ *   fieldName="tags"
+ * />
+ */
+export const TagsFieldList = <TFieldValues extends FieldValues>({
+  form,
+  tagFields,
+  appendTag,
+  removeTag,
+  fieldName,
+}: TagsFieldListProps<TFieldValues>) => {
   return (
     <div className="flex flex-col gap-2">
       <Text variant="label">Tags</Text>
@@ -33,7 +59,7 @@ export const TagsFieldList: React.FC<TagsFieldListProps> = ({ form, tagFields, a
         <div className="flex items-center gap-2" key={f.id}>
           <FormField
             control={form.control}
-            name={`tags.${idx}.key` as const}
+            name={`${fieldName}.${idx}.key` as Path<TFieldValues>}
             render={({ field }) => (
               <FormItem className="flex-1">
                 <FormControl>
@@ -45,7 +71,7 @@ export const TagsFieldList: React.FC<TagsFieldListProps> = ({ form, tagFields, a
           />
           <FormField
             control={form.control}
-            name={`tags.${idx}.value` as const}
+            name={`${fieldName}.${idx}.value` as Path<TFieldValues>}
             render={({ field }) => (
               <FormItem className="flex-1">
                 <FormControl>
@@ -66,7 +92,7 @@ export const TagsFieldList: React.FC<TagsFieldListProps> = ({ form, tagFields, a
       {/* Array-level message for duplicate keys */}
       <FormField
         control={form.control}
-        name="tags"
+        name={fieldName as Path<TFieldValues>}
         render={() => (
           <FormItem>
             <FormMessage />

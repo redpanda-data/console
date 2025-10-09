@@ -27,10 +27,10 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
 
 import type { FormValues } from './schemas';
-import { TagsFieldList } from './tags-field-list';
 import { RESOURCE_TIERS } from '../remote-mcp-constants';
 
 type MetadataStepProps = {
@@ -80,7 +80,13 @@ export const MetadataStep: React.FC<MetadataStepProps> = ({ form, tagFields, app
               )}
             />
 
-            <TagsFieldList appendTag={appendTag} form={form} removeTag={removeTag} tagFields={tagFields} />
+            <TagsFieldList
+              appendTag={appendTag}
+              fieldName="tags"
+              form={form}
+              removeTag={removeTag}
+              tagFields={tagFields}
+            />
 
             <FormField
               control={form.control}
