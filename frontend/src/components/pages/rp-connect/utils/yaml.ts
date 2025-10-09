@@ -1,19 +1,15 @@
-import type { Document } from 'yaml';
+import { type Document, parseDocument, stringify as yamlStringify } from 'yaml';
 
-import type { ConnectComponentSpec, ConnectConfigObject, ConnectFieldSpec } from '../types/schema';
+import { getBuiltInComponents, schemaToConfig } from './schema';
+import type { ConnectConfigObject } from '../types/schema';
 
-export const mergeProcessor = (
-  doc: Document.Parsed,
-  newDoc: Document.Parsed | undefined,
-  newConfigObject: ConnectConfigObject
-): void => {
+const mergeProcessor = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
   const processorsNode = doc.getIn(['pipeline', 'processors']) as { toJSON?: () => unknown } | undefined;
   const processors = (processorsNode?.toJSON?.() as unknown[]) || [];
 
-  const newProcessorNode = newDoc?.getIn(['pipeline', 'processors', 0]);
   const configObj = newConfigObject as Record<string, { processors?: unknown[] }>;
   const processorsArray = configObj?.pipeline?.processors;
-  const newProcessor = newProcessorNode || (Array.isArray(processorsArray) ? processorsArray[0] : undefined);
+  const newProcessor = Array.isArray(processorsArray) ? processorsArray[0] : undefined;
 
   if (newProcessor) {
     if (Array.isArray(processors)) {
@@ -24,22 +20,13 @@ export const mergeProcessor = (
   }
 };
 
-export const mergeCacheResource = (
-  doc: Document.Parsed,
-  newDoc: Document.Parsed | undefined,
-  newConfigObject: ConnectConfigObject
-): void => {
+const mergeCacheResource = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
   const cacheResourcesNode = doc.getIn(['cache_resources']) as { toJSON?: () => unknown } | undefined;
   const cacheResources = (cacheResourcesNode?.toJSON?.() as unknown[]) || [];
 
-  const newResourceNode = newDoc?.getIn(['cache_resources', 0]) as
-    | { toJSON?: () => unknown; set?: (key: string, value: unknown) => void }
-    | undefined;
   const cacheConfigObj = newConfigObject as Record<string, unknown[]>;
   // biome-ignore lint/style/useConst: newResource.label is mutated below
-  let newResource =
-    (newResourceNode?.toJSON?.() as Record<string, unknown>) ||
-    (cacheConfigObj?.cache_resources?.[0] as Record<string, unknown>);
+  let newResource = cacheConfigObj?.cache_resources?.[0] as Record<string, unknown> | undefined;
 
   if (newResource) {
     const existingLabels = Array.isArray(cacheResources)
@@ -54,32 +41,19 @@ export const mergeCacheResource = (
         uniqueLabel = `${newResource.label}_${counter}`;
       }
       newResource.label = uniqueLabel;
-
-      if (newResourceNode?.set) {
-        newResourceNode.set('label', uniqueLabel);
-      }
     }
 
-    doc.setIn(['cache_resources'], [...(cacheResources as unknown[]), newResourceNode || newResource]);
+    doc.setIn(['cache_resources'], [...(cacheResources as unknown[]), newResource]);
   }
 };
 
-export const mergeRateLimitResource = (
-  doc: Document.Parsed,
-  newDoc: Document.Parsed | undefined,
-  newConfigObject: ConnectConfigObject
-): void => {
+const mergeRateLimitResource = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
   const rateLimitResourcesNode = doc.getIn(['rate_limit_resources']) as { toJSON?: () => unknown } | undefined;
   const rateLimitResources = (rateLimitResourcesNode?.toJSON?.() as unknown[]) || [];
 
-  const newResourceNode = newDoc?.getIn(['rate_limit_resources', 0]) as
-    | { toJSON?: () => unknown; set?: (key: string, value: unknown) => void }
-    | undefined;
   const rateLimitConfigObj = newConfigObject as Record<string, unknown[]>;
   // biome-ignore lint/style/useConst: newResource.label is mutated below
-  let newResource =
-    (newResourceNode?.toJSON?.() as Record<string, unknown>) ||
-    (rateLimitConfigObj?.rate_limit_resources?.[0] as Record<string, unknown>);
+  let newResource = rateLimitConfigObj?.rate_limit_resources?.[0] as Record<string, unknown> | undefined;
 
   if (newResource) {
     const existingLabels = Array.isArray(rateLimitResources)
@@ -94,34 +68,21 @@ export const mergeRateLimitResource = (
         uniqueLabel = `${newResource.label}_${counter}`;
       }
       newResource.label = uniqueLabel;
-
-      if (newResourceNode?.set) {
-        newResourceNode.set('label', uniqueLabel);
-      }
     }
 
-    doc.setIn(['rate_limit_resources'], [...(rateLimitResources as unknown[]), newResourceNode || newResource]);
+    doc.setIn(['rate_limit_resources'], [...(rateLimitResources as unknown[]), newResource]);
   }
 };
 
-export const mergeRootComponent = (
-  doc: Document.Parsed,
-  newDoc: Document.Parsed | undefined,
-  newConfigObject: ConnectConfigObject
-): void => {
+const mergeRootComponent = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
   if (newConfigObject) {
     for (const [key, value] of Object.entries(newConfigObject)) {
-      const newNode = newDoc?.get(key);
-      doc.set(key, newNode || value);
+      doc.set(key, value);
     }
   }
 };
 
-export const mergeScanner = (
-  doc: Document.Parsed,
-  newDoc: Document.Parsed | undefined,
-  newConfigObject: ConnectConfigObject
-): Document.Parsed => {
+const mergeScanner = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): Document.Parsed => {
   const inputNode = doc.get('input') as { toJSON?: () => unknown } | undefined;
   if (!inputNode) {
     return doc;
@@ -136,93 +97,59 @@ export const mergeScanner = (
   const scannerName = Object.keys(newConfigObject as Record<string, unknown>)[0];
   const scannerConfig = (newConfigObject as Record<string, unknown>)[scannerName];
 
-  const newScannerNode = newDoc?.get(scannerName);
-
-  doc.setIn(['input', inputType, 'scanner'], newScannerNode || scannerConfig);
+  doc.setIn(['input', inputType, 'scanner'], scannerConfig);
   return doc;
 };
 
-const buildFieldMap = (fields: ConnectFieldSpec[] | undefined): Map<string, ConnectFieldSpec> => {
-  const map = new Map<string, ConnectFieldSpec>();
+type DetectedComponentType = 'processor' | 'cache' | 'rate_limit' | 'root' | 'scanner' | 'unknown';
 
-  if (!fields) {
-    return map;
+const detectComponentType = (
+  newConfigObject: Partial<ConnectConfigObject>,
+  doc?: Document.Parsed
+): DetectedComponentType => {
+  if (newConfigObject.pipeline) {
+    return 'processor';
   }
 
-  const traverse = (fieldList: ConnectFieldSpec[]) => {
-    for (const field of fieldList) {
-      map.set(field.name, field);
-
-      if (field.children && field.children.length > 0) {
-        traverse(field.children);
-      }
-    }
-  };
-
-  traverse(fields);
-  return map;
-};
-
-const keyValueRegex = /^(\s*)([^:#\n]+):\s*(.*)$/;
-
-/**
- * Comments indicate:
- * - "# Required" for required fields without defaults
- * - "# Default: <value>" for fields with default values
- */
-export const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSpec): string => {
-  const fieldMap = buildFieldMap(componentSpec.config.children);
-
-  if (fieldMap.size === 0) {
-    return yamlString;
+  if (newConfigObject.cache_resources) {
+    return 'cache';
   }
 
-  const lines = yamlString.split('\n');
-  const processedLines: string[] = [];
-
-  for (const line of lines) {
-    if (!line.trim() || line.trim().startsWith('#') || line.includes('#')) {
-      processedLines.push(line);
-      continue;
-    }
-
-    const keyValueMatch = keyValueRegex.exec(line);
-    if (!keyValueMatch) {
-      processedLines.push(line);
-      continue;
-    }
-
-    const [, indent, key, value] = keyValueMatch;
-    const cleanKey = key.trim();
-
-    const fieldSpec = fieldMap.get(cleanKey);
-    if (!fieldSpec) {
-      processedLines.push(line);
-      continue;
-    }
-
-    let comment = '';
-
-    const trimmedValue = value.trim();
-    const hasValue = trimmedValue.length > 0 && trimmedValue !== '{}' && trimmedValue !== '[]';
-
-    if (hasValue) {
-      if (fieldSpec.default !== undefined) {
-        comment = ` # Default: ${JSON.stringify(fieldSpec.default)}`;
-      } else if (!fieldSpec.is_optional) {
-        comment = ' # Required';
-      }
-    }
-
-    processedLines.push(`${indent}${cleanKey}: ${value}${comment}`);
+  if (newConfigObject.rate_limit_resources) {
+    return 'rate_limit';
   }
 
-  return processedLines.join('\n');
+  if (
+    newConfigObject.input ||
+    newConfigObject.output ||
+    newConfigObject.buffer ||
+    newConfigObject.metrics ||
+    newConfigObject.tracer
+  ) {
+    return 'root';
+  }
+
+  // Check if this might be a scanner
+  const keys = Object.keys(newConfigObject);
+  if (
+    keys.length === 1 &&
+    doc?.has('input') &&
+    keys[0] &&
+    keys[0] !== 'input' &&
+    keys[0] !== 'output' &&
+    keys[0] !== 'buffer' &&
+    keys[0] !== 'metrics' &&
+    keys[0] !== 'tracer'
+  ) {
+    return 'scanner';
+  }
+
+  return 'unknown';
 };
 
 const keyMatchRegex = /^([^:#\n]+):/;
 
-export const addRootSpacing = (yamlString: string): string => {
+const addRootSpacing = (yamlString: string): string => {
   const lines = yamlString.split('\n');
   const processedLines: string[] = [];
   let previousRootKey: string | null = null;
@@ -252,4 +179,114 @@ export const addRootSpacing = (yamlString: string): string => {
     processedLines.push(line);
   }
   return processedLines.join('\n');
+};
+
+export const mergeConnectConfigs = (
+  existingYaml: string,
+  newConfigObject: Partial<ConnectConfigObject>
+): Document.Parsed | Partial<ConnectConfigObject> | undefined => {
+  if (!existingYaml.trim()) {
+    return newConfigObject;
+  }
+
+  let doc: Document.Parsed;
+  try {
+    doc = parseDocument(existingYaml);
+  } catch (_error) {
+    return newConfigObject;
+  }
+
+  const componentType = detectComponentType(newConfigObject, doc);
+
+  switch (componentType) {
+    case 'processor':
+      mergeProcessor(doc, newConfigObject);
+      break;
+    case 'cache':
+      mergeCacheResource(doc, newConfigObject);
+      break;
+    case 'rate_limit':
+      mergeRateLimitResource(doc, newConfigObject);
+      break;
+    case 'root':
+      mergeRootComponent(doc, newConfigObject);
+      break;
+    case 'scanner':
+      mergeScanner(doc, newConfigObject);
+      break;
+    case 'unknown':
+      mergeRootComponent(doc, newConfigObject);
+      break;
+    default:
+      mergeRootComponent(doc, newConfigObject);
+      break;
+  }
+
+  return doc;
+};
+
+export const configToYaml = (configObject: Document.Parsed | Partial<ConnectConfigObject> | undefined): string => {
+  try {
+    let yamlString: string;
+
+    // Check if this is a YAML Document (from mergeConnectConfigs with existing YAML)
+    // Type guard: Document.Parsed has getIn method
+    if (configObject && typeof (configObject as Document.Parsed).getIn === 'function') {
+      // It's a Document - convert to string (preserves comments!)
+      yamlString = (configObject as Document.Parsed).toString();
+      // Apply root spacing for readability (adds newlines between root-level keys)
+      yamlString = addRootSpacing(yamlString);
+    } else {
+      // It's a plain object - stringify to YAML
+      yamlString = yamlStringify(configObject, {
+        indent: 2,
+        lineWidth: 120,
+        minContentWidth: 20,
+        doubleQuotedAsJSON: false,
+      });
+
+      yamlString = addRootSpacing(yamlString);
+    }
+
+    return yamlString;
+  } catch (_error) {
+    return JSON.stringify(configObject, null, 2);
+  }
+};
+
+export const getConnectTemplate = ({
+  connectionName,
+  connectionType,
+  showOptionalFields,
+  existingYaml,
+}: {
+  connectionName: string;
+  connectionType: string;
+  showOptionalFields?: boolean;
+  existingYaml?: string;
+}) => {
+  // Phase 0: Find the component spec for the selected connectionName and connectionType
+  const builtInComponents = getBuiltInComponents();
+  const componentSpec =
+    connectionName && connectionType
+      ? builtInComponents.find((comp) => comp.type === connectionType && comp.name === connectionName)
+      : undefined;
+
+  if (!componentSpec) {
+    return;
+  }
+
+  // Phase 1: Generate config object for new component
+  const newConfigObject = schemaToConfig(componentSpec, showOptionalFields);
+  if (!newConfigObject) {
+    return;
+  }
+
+  // Phase 2 & 3: Merge with existing (if any) and convert to YAML
+  if (existingYaml) {
+    const mergedConfig = mergeConnectConfigs(existingYaml, newConfigObject);
+    return configToYaml(mergedConfig);
+  }
+
+  return configToYaml(newConfigObject);
 };

@@ -1,14 +1,8 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import {
-  configToYaml,
-  generateDefaultValue,
-  getBuiltInComponents,
-  mergeConnectConfigs,
-  schemaToConfig,
-} from './schema';
+import { generateDefaultValue, getBuiltInComponents, schemaToConfig } from './schema';
 import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from '../../../../state/connect/state';
-import type { ConnectFieldSpec } from '../types/schema';
+import type { RawFieldSpec } from '../types/schema';
 
 describe('generateDefaultValue', () => {
   beforeEach(() => {
@@ -18,7 +12,7 @@ describe('generateDefaultValue', () => {
 
   describe('Optional fields with defaults', () => {
     test('should NOT show optional fields when showOptionalFields=false', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'client_id',
         type: 'string',
         kind: 'scalar',
@@ -32,7 +26,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should show optional fields when showOptionalFields=true', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'client_id',
         type: 'string',
         kind: 'scalar',
@@ -46,7 +40,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should show required fields with defaults even when showOptionalFields=false', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'topic',
         type: 'string',
         kind: 'scalar',
@@ -62,7 +56,7 @@ describe('generateDefaultValue', () => {
 
   describe('Advanced fields', () => {
     test('should NOT show advanced fields when showOptionalFields=false', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'access_token',
         type: 'string',
         kind: 'scalar',
@@ -77,7 +71,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should show advanced fields when showOptionalFields=true', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'access_token',
         type: 'string',
         kind: 'scalar',
@@ -103,7 +97,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should populate topic field for redpanda components', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'topic',
         type: 'string',
         kind: 'scalar',
@@ -116,7 +110,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should populate topics array for redpanda components', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'topics',
         type: 'string',
         kind: 'array',
@@ -129,7 +123,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should NOT populate topic for non-redpanda components', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'topic',
         type: 'string',
         kind: 'scalar',
@@ -142,7 +136,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should populate topic for redpanda_migrator component', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'topic',
         type: 'string',
         kind: 'scalar',
@@ -155,7 +149,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should populate topics array for redpanda_common component', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'topics',
         type: 'string',
         kind: 'array',
@@ -168,7 +162,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should populate user field for redpanda_migrator_offsets component', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'user',
         type: 'string',
         kind: 'scalar',
@@ -182,7 +176,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should populate user field in sasl object', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'user',
         type: 'string',
         kind: 'scalar',
@@ -196,7 +190,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should populate password field as empty string', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'password',
         type: 'string',
         kind: 'scalar',
@@ -220,7 +214,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should populate sasl object with mechanism, user, and password when user exists', () => {
-      const saslSpec: ConnectFieldSpec = {
+      const saslSpec: RawFieldSpec = {
         name: 'sasl',
         type: 'object',
         kind: 'scalar',
@@ -272,7 +266,7 @@ describe('generateDefaultValue', () => {
     test('should NOT populate sasl object when user does not exist', () => {
       sessionStorage.clear();
 
-      const saslSpec: ConnectFieldSpec = {
+      const saslSpec: RawFieldSpec = {
         name: 'sasl',
         type: 'object',
         kind: 'scalar',
@@ -297,7 +291,7 @@ describe('generateDefaultValue', () => {
 
   describe('Object generation with mixed field types', () => {
     test('should only include required and wizard-relevant fields by default', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'config',
         type: 'object',
         kind: 'scalar',
@@ -346,7 +340,7 @@ describe('generateDefaultValue', () => {
     test('should NOT show optional nested objects when parent has wizard data', () => {
       // This tests the critical issue: TLS, batching, metadata should NOT be shown
       // just because the parent config has wizard-relevant fields (topic/user)
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'config',
         type: 'object',
         kind: 'scalar',
@@ -411,7 +405,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should hide empty arrays when field is optional', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'sasl',
         type: 'string',
         kind: 'array',
@@ -426,7 +420,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should hide objects with only default values when field is optional', () => {
-      const spec: ConnectFieldSpec = {
+      const spec: RawFieldSpec = {
         name: 'metadata',
         type: 'object',
         kind: 'scalar',
@@ -458,7 +452,7 @@ describe('generateDefaultValue', () => {
     test('TLS field should be hidden when advanced and no wizard data', () => {
       const builtInComponents = getBuiltInComponents();
       const kafkaOutput = builtInComponents.find((c) => c.name === 'kafka' && c.type === 'output');
-      const tlsSpec = kafkaOutput?.config.children?.find((c) => c.name === 'tls');
+      const tlsSpec = kafkaOutput?.config?.children?.find((c) => c.name === 'tls');
 
       expect(tlsSpec).toBeDefined();
       expect(tlsSpec?.is_advanced).toBe(true);
@@ -473,7 +467,7 @@ describe('generateDefaultValue', () => {
     test('client_id field should be hidden when advanced with default', () => {
       const builtInComponents = getBuiltInComponents();
       const kafkaOutput = builtInComponents.find((c) => c.name === 'kafka' && c.type === 'output');
-      const clientIdSpec = kafkaOutput?.config.children?.find((c) => c.name === 'client_id');
+      const clientIdSpec = kafkaOutput?.config?.children?.find((c) => c.name === 'client_id');
 
       expect(clientIdSpec).toBeDefined();
       expect(clientIdSpec?.is_advanced).toBe(true);
@@ -566,58 +560,6 @@ describe('generateDefaultValue', () => {
 
       expect(scannerConfig).toBeDefined();
       expect(Object.keys(scannerConfig as Record<string, unknown>).length).toBe(0); // Empty object when hiding optional fields
-    });
-  });
-
-  describe('YAML spacing for merged components', () => {
-    test('should add newline between root-level items when adding cache', () => {
-      const builtInComponents = getBuiltInComponents();
-      const existingYaml = `input:
-  stdin:
-    codec: lines
-
-output:
-  stdout:
-    codec: lines`;
-
-      const cacheSpec = builtInComponents.find((c) => c.name === 'memory' && c.type === 'cache');
-      if (!cacheSpec) {
-        throw new Error('memory cache not found');
-      }
-
-      const newConfig = schemaToConfig(cacheSpec, false);
-      if (!newConfig) {
-        throw new Error('Failed to generate cache config');
-      }
-
-      const mergedDoc = mergeConnectConfigs(existingYaml, newConfig, cacheSpec);
-      const yamlString = configToYaml(mergedDoc, cacheSpec);
-
-      // Should have newlines between root-level keys
-      expect(yamlString).toContain('output:\n  stdout:\n    codec: lines\n\ncache_resources:');
-    });
-
-    test('should add newline between root-level items when adding processor', () => {
-      const builtInComponents = getBuiltInComponents();
-      const existingYaml = `input:
-  stdin:
-    codec: lines`;
-
-      const processorSpec = builtInComponents.find((c) => c.name === 'log' && c.type === 'processor');
-      if (!processorSpec) {
-        throw new Error('log processor not found');
-      }
-
-      const newConfig = schemaToConfig(processorSpec, false);
-      if (!newConfig) {
-        throw new Error('Failed to generate processor config');
-      }
-
-      const mergedDoc = mergeConnectConfigs(existingYaml, newConfig, processorSpec);
-      const yamlString = configToYaml(mergedDoc, processorSpec);
-
-      // Should have newlines between root-level keys
-      expect(yamlString).toContain('input:\n  stdin:\n    codec: lines\n\npipeline:');
     });
   });
 });

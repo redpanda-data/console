@@ -2,7 +2,7 @@ import { toast } from 'sonner';
 import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
 
 import { REDPANDA_SECRET_COMPONENTS } from '../types/constants';
-import type { ConnectFieldSpec } from '../types/schema';
+import type { RawFieldSpec } from '../types/schema';
 import type { AddTopicFormData, AddUserFormData, StepSubmissionResult } from '../types/wizard';
 
 /**
@@ -74,23 +74,23 @@ export const isUserField = (fieldName: string): boolean => {
 export const isPasswordField = (fieldName: string): boolean => fieldName.toLowerCase() === 'password';
 
 /**
- * Checks if a ConnectFieldSpec or its children have wizard-relevant fields
+ * Checks if a RawFieldSpec or its children have wizard-relevant fields
  * Used to determine if advanced/optional fields should be shown
  */
-export const hasWizardRelevantFields = (spec: ConnectFieldSpec, componentName?: string): boolean => {
+export const hasWizardRelevantFields = (spec: RawFieldSpec, componentName?: string): boolean => {
   if (!(componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName))) {
     return false;
   }
 
   const { topicData, userData } = getPersistedWizardData();
 
-  if (isTopicField(spec.name) && topicData?.topicName) {
+  if (spec.name && isTopicField(spec.name) && topicData?.topicName) {
     return true;
   }
-  if (isUserField(spec.name) && userData?.username) {
+  if (spec.name && isUserField(spec.name) && userData?.username) {
     return true;
   }
-  if (isPasswordField(spec.name) && userData?.username) {
+  if (spec.name && isPasswordField(spec.name) && userData?.username) {
     return true;
   }
 
