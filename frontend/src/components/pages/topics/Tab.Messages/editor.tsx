@@ -83,12 +83,23 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
   const handleValueChange: OnChange = async () => {
     const editorValue = (await getEditorValue()) ?? '';
     const formattedEditorUri = editorUri?.toString();
-    if (formattedEditorUri) {
-      const result = await tsWorkerClient?.getEmitOutput(formattedEditorUri);
-      if (result) {
-        setTimeout(() => onValueChange(editorValue, result?.outputFiles[0]?.text));
+
+    let transpiledCode = editorValue; // Fallback to original code if transpilation fails
+
+    if (formattedEditorUri && tsWorkerClient) {
+      try {
+        const result = await tsWorkerClient.getEmitOutput(formattedEditorUri);
+        if (result?.outputFiles?.[0]?.text) {
+          transpiledCode = result.outputFiles[0].text;
+        }
+      } catch (error) {
+        // Transpilation failed, use original code
+        console.warn('TypeScript transpilation failed, using original code:', error);
       }
     }
+
+    // Always call onValueChange, even if transpilation failed
+    onValueChange(editorValue, transpiledCode);
   };
 
   return (
