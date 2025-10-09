@@ -22,15 +22,15 @@ import { useAppForm } from 'components/form/form';
 import { useGetPipelinesForSecretQuery } from 'react-query/api/pipeline';
 import { useListSecretsQuery, useUpdateSecretMutation } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
+import z from 'zod';
 
 import { secretSchema } from './form/secret-schema';
 import { Scope, UpdateSecretRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
-import z from 'zod';
 
 type UpdateSecretModalProps = {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   secretId: string;
 };
 
@@ -51,14 +51,14 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
 
   const handleClose = () => {
     form.reset();
-    onClose();
+    onClose?.();
   };
 
   // Get existing labels from the secret
   const existingLabels = matchingSecret?.labels
     ? Object.entries(matchingSecret.labels)
-      .filter(([key, value]) => !(key === 'owner' && value === 'console'))
-      .map(([key, value]) => ({ key, value }))
+        .filter(([key, value]) => !(key === 'owner' && value === 'console'))
+        .map(([key, value]) => ({ key, value }))
     : [{ key: '', value: '' }];
 
   const formOpts = formOptions({

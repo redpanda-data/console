@@ -57,7 +57,7 @@ describe('UpdateSecretModal', () => {
             ],
           }),
         }),
-      }),
+      })
     );
 
     const transport = createRouterTransport(({ rpc }) => {
@@ -66,7 +66,7 @@ describe('UpdateSecretModal', () => {
       rpc(getPipelinesForSecret, getPipelinesForSecretMock);
     });
 
-    render(<UpdateSecretModal isOpen onClose={() => {}} secretId={existingSecretId} />, { transport });
+    render(<UpdateSecretModal isOpen secretId={existingSecretId} />, { transport });
 
     await waitFor(() => {
       expect(screen.getByTestId('update-secret-button')).toBeVisible();
@@ -93,7 +93,7 @@ describe('UpdateSecretModal', () => {
         create(UpdateSecretRequestSchema, {
           request: create(UpdateSecretRequestSchemaDataPlane, {
             id: existingSecretId,
-            // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
+            // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
             secretData: [],
             scopes: [Scope.REDPANDA_CLUSTER, Scope.MCP_SERVER],
             labels: {
@@ -102,7 +102,7 @@ describe('UpdateSecretModal', () => {
             },
           }),
         }),
-        expect.anything(),
+        expect.anything()
       );
     });
   });
