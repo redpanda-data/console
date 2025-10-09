@@ -243,8 +243,9 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[160px]">
               <DropdownMenuItem onClick={handleCopy}>
-                <Copy className="h-4 w-4" />
-                Copy URL
+                <div className="flex items-center gap-4">
+                  <Copy className="h-4 w-4" /> Copy URL
+                </div>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {canStart && (
