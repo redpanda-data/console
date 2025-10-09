@@ -17,6 +17,7 @@ import { SimpleMultiSelect } from 'components/redpanda-ui/components/multi-selec
 import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { SearchIcon, Waypoints } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -32,7 +33,15 @@ const getLogoForComponent = (component: ConnectComponentSpec) => {
     return <img alt={component.name} className="size-6" src={component.logoUrl} />;
   }
   if (componentLogoMap[component.name as ComponentName]) {
-    return <ConnectorLogo className="size-6" name={component.name as ComponentName} />;
+    return (
+      <ConnectorLogo
+        name={component.name as ComponentName}
+        style={{
+          width: '24px',
+          height: '24px',
+        }}
+      />
+    );
   }
   return <Waypoints className="size-6 text-muted-foreground" />;
 };
@@ -99,7 +108,7 @@ const searchComponents = (
       }
 
       if (filters?.categories?.length) {
-        const hasMatchingCategory = component.categories?.some((cat) => filters.categories?.includes(cat));
+        const hasMatchingCategory = component.categories?.some((cat: string) => filters.categories?.includes(cat));
         if (!hasMatchingCategory) {
           return false;
         }
@@ -147,6 +156,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [showScrollGradient, setShowScrollGradient] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [showDescription, setShowDescription] = useState<string | undefined>(undefined);
 
     const checkScrollable = useCallback(() => {
       const container = scrollContainerRef.current;
@@ -320,34 +330,51 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                             <div className={cn('grid-auto-rows-fr grid gap-2', `grid-cols-${gridCols}`)}>
                               {filteredComponents.map((component) => {
                                 const uniqueKey = `${component.type}-${component.name}`;
+                                const isChecked =
+                                  field.value === component.name && form.getValues('connectionType') === component.type;
+                                const shouldShowDescription = showDescription === component.name && component.summary;
 
                                 return (
                                   <ChoiceboxItem
-                                    checked={
-                                      field.value === component.name &&
-                                      form.getValues('connectionType') === component.type
-                                    }
-                                    className="relative h-full"
+                                    checked={isChecked}
+                                    className={cn('relative h-full', shouldShowDescription && 'hover:shadow-none')}
                                     key={uniqueKey}
                                     onClick={() => {
                                       field.onChange(component.name);
                                       form.setValue('connectionType', component.type as ConnectComponentType);
                                       onChange?.(component.name, component.type as ConnectComponentType);
                                     }}
+                                    onPointerEnter={() => {
+                                      setShowDescription(component.name);
+                                    }}
+                                    onPointerLeave={() => {
+                                      setShowDescription(undefined);
+                                    }}
                                     value={component.name}
                                   >
                                     <div className="flex w-full items-center justify-between gap-4">
                                       <div className="flex min-w-0 flex-col gap-1">
                                         <Text className="truncate font-medium">{component.name}</Text>
-                                        <Text className="line-clamp-2 text-muted-foreground text-sm">
-                                          {component.summary}
-                                        </Text>
+                                        <AnimatePresence>
+                                          {shouldShowDescription && (
+                                            <motion.div
+                                              animate={{ opacity: 1 }}
+                                              className={cn(
+                                                '-inset-x-0.5 -top-0.5 absolute z-10 flex min-h-[58px] items-center rounded-md border-2 border-border border-solid bg-white p-4 shadow-elevated',
+                                                isChecked && '!border-selected'
+                                              )}
+                                              exit={{ opacity: 0 }}
+                                              initial={{ opacity: 0 }}
+                                              key={`component-description-${component.name}`}
+                                              transition={{ duration: 0.15, ease: 'easeInOut' }}
+                                            >
+                                              <Text className="text-muted-foreground text-sm">{component.summary}</Text>
+                                            </motion.div>
+                                          )}
+                                        </AnimatePresence>
                                       </div>
                                       <div>{getLogoForComponent(component)}</div>
-                                      {field.value === component.name &&
-                                        form.getValues('connectionType') === component.type && (
-                                          <ChoiceboxItemIndicator className="absolute top-2 right-2" />
-                                        )}
+                                      {isChecked && <ChoiceboxItemIndicator className="absolute top-2 right-2 z-20" />}
                                     </div>
                                   </ChoiceboxItem>
                                 );
@@ -363,7 +390,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
               </div>
               {/* Gradient overlay to indicate scrollability - only show when not at bottom */}
               {showScrollGradient && (
-                <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-gradient-to-t from-background to-transparent" />
+                <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-gradient-to-t from-background via-background/80 to-transparent" />
               )}
             </div>
           </Form>

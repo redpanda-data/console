@@ -129,18 +129,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
       <PageContent>
         <div className="my-2">
           <UIText>
-            For help creating your pipeline,
-            {isFeatureFlagEnabled('enableRpcnTiles') && (
-              <>
-                {' '}
-                try the{' '}
-                <UILink as={Link} onClick={this.handleWizardClick} to="/rp-connect/wizard">
-                  wizard
-                </UILink>
-                ,{' '}
-              </>
-            )}
-            see our{' '}
+            For help creating your pipeline, see our{' '}
             <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" target="_blank">
               quickstart documentation
             </UILink>

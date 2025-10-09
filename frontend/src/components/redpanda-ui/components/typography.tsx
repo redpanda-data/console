@@ -28,7 +28,7 @@ const headingVariants = cva('font-semibold !leading-none', {
 const textVariants = cva('leading-[1.5]', {
   variants: {
     variant: {
-      default: '',
+      default: 'text-[1rem]',
       lead: 'text-muted-foreground text-[1.28rem]',
       large: 'text-[1.14rem]',
       small: 'text-[0.875rem]',
