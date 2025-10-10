@@ -1,13 +1,9 @@
-import { beforeEach, describe, expect, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 import { getBuiltInComponents, schemaToConfig } from './schema';
 import { configToYaml, mergeConnectConfigs } from './yaml';
 
 describe('yaml utils for creating connect configs', () => {
-  beforeEach(() => {
-    // Clear session storage before each test
-    sessionStorage.clear();
-  });
   describe('YAML spacing for merged components', () => {
     test('should add newline between root-level items when adding cache', () => {
       const builtInComponents = getBuiltInComponents();
