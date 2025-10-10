@@ -73,7 +73,7 @@ const App = () => {
   const developerView = useDeveloperView();
   setup({});
 
-  const transport = createConnectTransport({
+  const dataplaneTransport = createConnectTransport({
     baseUrl: getGrpcBasePath(''), // Embedded mode handles the path separately.
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
     jsonOptions: {
@@ -90,7 +90,7 @@ const App = () => {
       <BrowserRouter basename={getBasePath()}>
         <HistorySetter />
         <ChakraProvider resetCSS={false} theme={redpandaTheme} toastOptions={redpandaToastOptions}>
-          <TransportProvider transport={transport}>
+          <TransportProvider transport={dataplaneTransport}>
             <QueryClientProvider client={queryClient}>
               <ErrorBoundary>
                 <RequireAuth>

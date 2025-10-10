@@ -435,25 +435,92 @@
   resolved "https://registry.npmjs.org/@biomejs/cli-win32-x64/-/cli-win32-x64-2.2.5.tgz"
   integrity sha512-F/jhuXCssPFAuciMhHKk00xnCAxJRS/pUzVfXYmOMUp//XW7mO6QeCjsjvnm8L4AO/dG2VOB0O+fJPiJ2uXtIw==
 
-"@bufbuild/protobuf@2.5.2", "@bufbuild/protobuf@2.x", "@bufbuild/protobuf@^2.5.0", "@bufbuild/protobuf@^2.5.2", "@bufbuild/protobuf@^2.7.0":
+"@buf/bufbuild_protovalidate.bufbuild_es@2.7.0-20250912141014-52f32327d4b0.1":
+  version "2.7.0-20250912141014-52f32327d4b0.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/bufbuild_protovalidate.bufbuild_es/-/bufbuild_protovalidate.bufbuild_es-2.7.0-20250912141014-52f32327d4b0.1.tgz"
+
+"@buf/bufbuild_protovalidate.connectrpc_query-es@2.2.0-20250912141014-52f32327d4b0.1":
+  version "2.2.0-20250912141014-52f32327d4b0.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/bufbuild_protovalidate.connectrpc_query-es/-/bufbuild_protovalidate.connectrpc_query-es-2.2.0-20250912141014-52f32327d4b0.1.tgz"
+  dependencies:
+    "@buf/bufbuild_protovalidate.bufbuild_es" "2.7.0-20250912141014-52f32327d4b0.1"
+
+"@buf/googleapis_googleapis.bufbuild_es@2.7.0-20250411203938-61b203b9a916.1":
+  version "2.7.0-20250411203938-61b203b9a916.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.7.0-20250411203938-61b203b9a916.1.tgz"
+
+"@buf/googleapis_googleapis.connectrpc_query-es@2.2.0-20250411203938-61b203b9a916.1":
+  version "2.2.0-20250411203938-61b203b9a916.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.connectrpc_query-es/-/googleapis_googleapis.connectrpc_query-es-2.2.0-20250411203938-61b203b9a916.1.tgz"
+  dependencies:
+    "@buf/googleapis_googleapis.bufbuild_es" "2.7.0-20250411203938-61b203b9a916.1"
+
+"@buf/grpc-ecosystem_grpc-gateway.bufbuild_es@2.7.0-20221127060915-a1ecdc58eccd.1":
+  version "2.7.0-20221127060915-a1ecdc58eccd.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/grpc-ecosystem_grpc-gateway.bufbuild_es/-/grpc-ecosystem_grpc-gateway.bufbuild_es-2.7.0-20221127060915-a1ecdc58eccd.1.tgz"
+
+"@buf/grpc-ecosystem_grpc-gateway.connectrpc_query-es@2.2.0-20221127060915-a1ecdc58eccd.1":
+  version "2.2.0-20221127060915-a1ecdc58eccd.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/grpc-ecosystem_grpc-gateway.connectrpc_query-es/-/grpc-ecosystem_grpc-gateway.connectrpc_query-es-2.2.0-20221127060915-a1ecdc58eccd.1.tgz"
+  dependencies:
+    "@buf/grpc-ecosystem_grpc-gateway.bufbuild_es" "2.7.0-20221127060915-a1ecdc58eccd.1"
+
+"@buf/redpandadata_cloud.bufbuild_es@2.7.0-20251003155837-1268bf48ede8.1":
+  version "2.7.0-20251003155837-1268bf48ede8.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_cloud.bufbuild_es/-/redpandadata_cloud.bufbuild_es-2.7.0-20251003155837-1268bf48ede8.1.tgz"
+  dependencies:
+    "@buf/bufbuild_protovalidate.bufbuild_es" "2.7.0-20250912141014-52f32327d4b0.1"
+    "@buf/googleapis_googleapis.bufbuild_es" "2.7.0-20250411203938-61b203b9a916.1"
+    "@buf/grpc-ecosystem_grpc-gateway.bufbuild_es" "2.7.0-20221127060915-a1ecdc58eccd.1"
+    "@buf/redpandadata_common.bufbuild_es" "2.7.0-20250904135917-9feeb2588236.1"
+
+"@buf/redpandadata_cloud.connectrpc_query-es@^2.2.0-20251003155837-1268bf48ede8.1":
+  version "2.2.0-20251003155837-1268bf48ede8.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_cloud.connectrpc_query-es/-/redpandadata_cloud.connectrpc_query-es-2.2.0-20251003155837-1268bf48ede8.1.tgz"
+  dependencies:
+    "@buf/bufbuild_protovalidate.connectrpc_query-es" "2.2.0-20250912141014-52f32327d4b0.1"
+    "@buf/googleapis_googleapis.connectrpc_query-es" "2.2.0-20250411203938-61b203b9a916.1"
+    "@buf/grpc-ecosystem_grpc-gateway.connectrpc_query-es" "2.2.0-20221127060915-a1ecdc58eccd.1"
+    "@buf/redpandadata_cloud.bufbuild_es" "2.7.0-20251003155837-1268bf48ede8.1"
+    "@buf/redpandadata_common.connectrpc_query-es" "2.2.0-20250904135917-9feeb2588236.1"
+
+"@buf/redpandadata_common.bufbuild_es@2.7.0-20250904135917-9feeb2588236.1":
+  version "2.7.0-20250904135917-9feeb2588236.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_common.bufbuild_es/-/redpandadata_common.bufbuild_es-2.7.0-20250904135917-9feeb2588236.1.tgz"
+  dependencies:
+    "@buf/googleapis_googleapis.bufbuild_es" "2.7.0-20250411203938-61b203b9a916.1"
+
+"@buf/redpandadata_common.connectrpc_query-es@2.2.0-20250904135917-9feeb2588236.1":
+  version "2.2.0-20250904135917-9feeb2588236.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_common.connectrpc_query-es/-/redpandadata_common.connectrpc_query-es-2.2.0-20250904135917-9feeb2588236.1.tgz"
+  dependencies:
+    "@buf/googleapis_googleapis.connectrpc_query-es" "2.2.0-20250411203938-61b203b9a916.1"
+    "@buf/redpandadata_common.bufbuild_es" "2.7.0-20250904135917-9feeb2588236.1"
+
+"@bufbuild/protobuf@^2.5.0":
   version "2.5.2"
   resolved "https://registry.npmjs.org/@bufbuild/protobuf/-/protobuf-2.5.2.tgz"
   integrity sha512-foZ7qr0IsUBjzWIq+SuBLfdQCpJ1j8cTuNNT4owngTHoN5KsJb8L9t65fzz7SCeSWzescoOil/0ldqiL041ABg==
 
-"@bufbuild/protoc-gen-es@^2.5.2":
-  version "2.5.2"
-  resolved "https://registry.npmjs.org/@bufbuild/protoc-gen-es/-/protoc-gen-es-2.5.2.tgz"
-  integrity sha512-G9rvJ3CH1MXxUTppBJLdhc+wS2m6LR1Tvi0sGoDDChmiqJVkOhIeYrqtGMqqLqiE44I7uJGDaYcn1PG3aIGJUg==
-  dependencies:
-    "@bufbuild/protobuf" "^2.5.2"
-    "@bufbuild/protoplugin" "2.5.2"
+"@bufbuild/protobuf@2.9.0", "@bufbuild/protobuf@2.x", "@bufbuild/protobuf@^2.7.0", "@bufbuild/protobuf@^2.9.0":
+  version "2.9.0"
+  resolved "https://registry.npmjs.org/@bufbuild/protobuf/-/protobuf-2.9.0.tgz"
+  integrity sha512-rnJenoStJ8nvmt9Gzye8nkYd6V22xUAnu4086ER7h1zJ508vStko4pMvDeQ446ilDTFpV5wnoc5YS7XvMwwMqA==
 
-"@bufbuild/protoplugin@2.5.2":
-  version "2.5.2"
-  resolved "https://registry.npmjs.org/@bufbuild/protoplugin/-/protoplugin-2.5.2.tgz"
-  integrity sha512-7d/NUae/ugs/qgHEYOwkVWGDE3Bf/xjuGviVFs38+MLRdwiHNTiuvzPVwuIPo/1wuZCZn3Nax1cg1owLuY72xw==
+"@bufbuild/protoc-gen-es@^2.9.0":
+  version "2.9.0"
+  resolved "https://registry.npmjs.org/@bufbuild/protoc-gen-es/-/protoc-gen-es-2.9.0.tgz"
+  integrity sha512-g54rrHLKc7fnxN25ikynstRxR19M5G5l/hyqut2JoypJ9iU9QgUE63zEm8PNvVfBd4r5PEzWPfbWy5MNOeuMKQ==
   dependencies:
-    "@bufbuild/protobuf" "2.5.2"
+    "@bufbuild/protobuf" "2.9.0"
+    "@bufbuild/protoplugin" "2.9.0"
+
+"@bufbuild/protoplugin@2.9.0":
+  version "2.9.0"
+  resolved "https://registry.npmjs.org/@bufbuild/protoplugin/-/protoplugin-2.9.0.tgz"
+  integrity sha512-uoiwNVYoTq+AyqaV1L6pBazGx5fXOO89L0NSR9/7hEfo0Y8n9T1jsKGu4mkitLmP3z+8gJREaule1mMuKBPyYw==
+  dependencies:
+    "@bufbuild/protobuf" "2.9.0"
     "@typescript/vfs" "^1.5.2"
     typescript "5.4.5"
 
