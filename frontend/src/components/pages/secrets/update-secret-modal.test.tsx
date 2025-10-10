@@ -22,6 +22,92 @@ import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { UpdateSecretModal } from './update-secret-modal';
 
 describe('UpdateSecretModal', () => {
+  test('should allow the user to change scopes without setting a new value', async () => {
+    const existingSecretId = 'SECRET_ID';
+    const existingLabels = {
+      key: 'value',
+      owner: 'console', // Won't be shown in the UI
+    };
+
+    const secret = create(SecretSchema, {
+      id: existingSecretId,
+      labels: existingLabels,
+      scopes: [],
+    });
+
+    const listSecretsResponse = create(ListSecretsResponseSchema, {
+      response: create(ListSecretsResponseSchemaDataPlane, {
+        secrets: [secret],
+        nextPageToken: '',
+      }),
+    });
+
+    const listSecretsMock = vi.fn().mockReturnValue(listSecretsResponse);
+    const updateSecretMock = vi.fn().mockReturnValue({});
+    const getPipelinesForSecretMock = vi.fn().mockReturnValue(
+      create(GetPipelinesForSecretResponseSchema, {
+        response: create(GetPipelinesForSecretResponseSchemaDataPlane, {
+          pipelinesForSecret: create(PipelinesForSecretSchema, {
+            secretId: existingSecretId,
+            pipelines: [
+              create(PipelineSchema, {
+                id: 'pipeline-id',
+                state: Pipeline_State.RUNNING,
+              }),
+            ],
+          }),
+        }),
+      })
+    );
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listSecrets, listSecretsMock);
+      rpc(updateSecret, updateSecretMock);
+      rpc(getPipelinesForSecret, getPipelinesForSecretMock);
+    });
+
+    render(<UpdateSecretModal isOpen secretId={existingSecretId} />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('update-secret-button')).toBeVisible();
+      expect(listSecretsMock).toHaveBeenCalledTimes(1);
+      expect(getPipelinesForSecretMock).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.click(screen.getByRole('combobox'));
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
+
+    fireEvent.click(screen.getByText('Redpanda Cluster'));
+    fireEvent.click(screen.getByText('MCP Server'));
+    fireEvent.click(screen.getByText('AI Agent'));
+    fireEvent.click(screen.getByText('Redpanda Connect'));
+
+    fireEvent.click(screen.getByTestId('add-label-button'));
+
+    fireEvent.change(screen.getByTestId('secret-labels-field-key-1'), { target: { value: 'environment' } });
+    fireEvent.change(screen.getByTestId('secret-labels-field-value-1'), { target: { value: 'production' } });
+
+    fireEvent.click(screen.getByTestId('update-secret-button'));
+
+    await waitFor(() => {
+      expect(updateSecretMock).toHaveBeenCalledTimes(1);
+      expect(updateSecretMock).toHaveBeenCalledWith(
+        create(UpdateSecretRequestSchema, {
+          request: create(UpdateSecretRequestSchemaDataPlane, {
+            id: existingSecretId,
+            secretData: new Uint8Array([]),
+            scopes: [Scope.REDPANDA_CLUSTER, Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT],
+            labels: {
+              key: 'value',
+              environment: 'production',
+            },
+          }),
+        }),
+        expect.anything()
+      );
+    });
+  });
+
   test('should let the user update an existing secret with new value and labels', async () => {
     const existingSecretId = 'SECRET_ID';
     const existingLabels = {
@@ -104,7 +190,6 @@ describe('UpdateSecretModal', () => {
         create(UpdateSecretRequestSchema, {
           request: create(UpdateSecretRequestSchemaDataPlane, {
             id: existingSecretId,
-            // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
             secretData: base64ToUInt8Array(encodeBase64(updatedSecretValue)),
             scopes: [Scope.REDPANDA_CONNECT],
             labels: {
