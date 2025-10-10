@@ -22,7 +22,7 @@ import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { useResetWizardSessionStorage } from './hooks/useResetWizardSessionStorage';
+import { useResetWizardSessionStorage } from './hooks/use-reset-wizard-session-storage';
 import { openDeleteModal } from './modals';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';

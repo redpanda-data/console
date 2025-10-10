@@ -22,7 +22,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 import { useForm } from 'react-hook-form';
 
 import { ConnectorLogo } from './connector-logo';
-import { useResetWizardSessionStorage } from '../hooks/useResetWizardSessionStorage';
+import { useResetWizardSessionStorage } from '../hooks/use-reset-wizard-session-storage';
 import { CUSTOM_COMPONENT_NAME, customComponentConfig } from '../types/constants';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 import type { BaseStepRef } from '../types/wizard';
