@@ -18,20 +18,13 @@ import {
   FormMessage,
 } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from 'components/redpanda-ui/components/select';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
 
 import type { FormValues } from './schemas';
-import { RESOURCE_TIERS } from '../remote-mcp-constants';
 
 type MetadataStepProps = {
   form: UseFormReturn<FormValues>;
@@ -94,20 +87,9 @@ export const MetadataStep: React.FC<MetadataStepProps> = ({ form, tagFields, app
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Resources</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select resource tier" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {RESOURCE_TIERS.map((tier) => (
-                        <SelectItem key={tier.id} value={tier.id}>
-                          {tier.displayName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <ResourceTierSelect onValueChange={field.onChange} value={field.value} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

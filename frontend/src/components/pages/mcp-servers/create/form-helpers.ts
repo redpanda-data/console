@@ -8,11 +8,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { RESOURCE_TIERS } from 'components/ui/connect/resource-tier-select';
 import type { UseFormReturn } from 'react-hook-form';
 import { stringify } from 'yaml';
 
 import type { FormValues } from './schemas';
-import { RESOURCE_TIERS } from '../remote-mcp-constants';
 import type { Template } from '../templates/remote-mcp-templates';
 
 export function getTierById(id: string | undefined) {
