@@ -45,7 +45,7 @@ import { SecretsQuickAdd } from './secrets/secrets-quick-add';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import type { ConnectComponentType } from './types/schema';
 import type { AddUserFormData, WizardFormData } from './types/wizard';
-import { getConnectTemplate } from './utils/schema';
+import { getConnectTemplate } from './utils/yaml';
 import type { LintHint } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
 import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
