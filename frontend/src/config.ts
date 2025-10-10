@@ -144,7 +144,6 @@ export type Breadcrumb = {
 type Config = {
   controlplaneUrl: string;
   dataplaneTransport?: Transport;
-  controlplaneTransport?: Transport;
   restBasePath: string;
   grpcBasePath: string;
   authenticationClient?: Client<typeof AuthenticationService>;
@@ -237,11 +236,11 @@ const setConfig = ({
 
   Object.assign(config, {
     jwt,
+    dataplaneTransport,
     isServerless: isServerlessMode,
     restBasePath: getRestBasePath(urlOverride?.rest),
     grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
-    controlplaneTransport,
-    dataplaneTransport,
+    controlplaneUrl: config.controlplaneUrl,
     fetch: fetch ?? window.fetch.bind(window),
     assetsPath: assetsUrl ?? getBasePath(),
     authenticationClient: authenticationGrpcClient,
