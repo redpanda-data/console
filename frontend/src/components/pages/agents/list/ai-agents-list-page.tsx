@@ -47,66 +47,70 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { AlertCircle, Check, Copy, Loader2, MoreHorizontal, Pause, Play, Plus, X } from 'lucide-react';
 import { runInAction } from 'mobx';
-import type { MCPServer as APIMCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { MCPServer_State } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import type { AIAgent as APIAIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
+import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import React, { useEffect } from 'react';
 import {
-  useDeleteMCPServerMutation,
-  useListMCPServersQuery,
-  useStartMCPServerMutation,
-  useStopMCPServerMutation,
-} from 'react-query/api/remote-mcp';
+  useDeleteAIAgentMutation,
+  useListAIAgentsQuery,
+  useStartAIAgentMutation,
+  useStopAIAgentMutation,
+} from 'react-query/api/ai-agent';
+import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
+import { AIAgentModel } from '../ai-agent-model';
+
 const statusOptions = [
-  { value: String(MCPServer_State.RUNNING), label: 'Running', icon: Check },
-  { value: String(MCPServer_State.STARTING), label: 'Starting', icon: Loader2 },
-  { value: String(MCPServer_State.STOPPING), label: 'Stopping', icon: Loader2 },
-  { value: String(MCPServer_State.STOPPED), label: 'Stopped', icon: Pause },
-  { value: String(MCPServer_State.ERROR), label: 'Error', icon: AlertCircle },
+  { value: String(AIAgent_State.RUNNING), label: 'Running', icon: Check },
+  { value: String(AIAgent_State.STARTING), label: 'Starting', icon: Loader2 },
+  { value: String(AIAgent_State.STOPPING), label: 'Stopping', icon: Loader2 },
+  { value: String(AIAgent_State.STOPPED), label: 'Stopped', icon: Pause },
+  { value: String(AIAgent_State.ERROR), label: 'Error', icon: AlertCircle },
 ];
 
-export type MCPServer = {
+export type AIAgent = {
   id: string;
   name: string;
-  url: string;
-  state: MCPServer_State;
-  tools: string[];
-  lastConnected?: string;
+  description: string;
+  state: AIAgent_State;
+  model: string;
+  url?: string;
+  mcpServers: Record<string, { id: string }>;
 };
 
-const StatusIcon = ({ state }: { state: MCPServer_State }) => {
+const StatusIcon = ({ state }: { state: AIAgent_State }) => {
   const statusProps = {
-    [MCPServer_State.RUNNING]: {
+    [AIAgent_State.RUNNING]: {
       text: 'Running',
       icon: Check,
       iconColor: 'text-green-600',
     },
-    [MCPServer_State.STARTING]: {
+    [AIAgent_State.STARTING]: {
       text: 'Starting',
       icon: Loader2,
       iconColor: 'text-blue-600',
       animate: true,
     },
-    [MCPServer_State.STOPPING]: {
+    [AIAgent_State.STOPPING]: {
       text: 'Stopping',
       icon: Loader2,
       iconColor: 'text-orange-600',
       animate: true,
     },
-    [MCPServer_State.STOPPED]: {
+    [AIAgent_State.STOPPED]: {
       text: 'Stopped',
       icon: Pause,
       iconColor: 'text-gray-600',
     },
-    [MCPServer_State.ERROR]: {
+    [AIAgent_State.ERROR]: {
       text: 'Error',
       icon: AlertCircle,
       iconColor: 'text-red-600',
     },
-    [MCPServer_State.UNSPECIFIED]: {
+    [AIAgent_State.UNSPECIFIED]: {
       text: 'Unknown',
       icon: AlertCircle,
       iconColor: 'text-gray-500',
@@ -127,22 +131,21 @@ const StatusIcon = ({ state }: { state: MCPServer_State }) => {
   );
 };
 
-// Transform API MCP server to component format
-// No longer necessary once we have the proto layer reporting more details about the tools
-const transformAPIMCPServer = (apiServer: APIMCPServer): MCPServer => {
-  // Extract tool names from the actual API tools data
-  const toolNames = Object.keys(apiServer.tools || {});
+// Transform API AI agent to component format
+const transformAPIAIAgent = (apiAgent: APIAIAgent): AIAgent => ({
+  id: apiAgent.id,
+  name: apiAgent.displayName,
+  description: apiAgent.description,
+  state: apiAgent.state,
+  model: apiAgent.model,
+  url: apiAgent.url,
+  mcpServers: apiAgent.mcpServers,
+});
 
-  return {
-    id: apiServer.id,
-    name: apiServer.displayName,
-    url: apiServer.url,
-    state: apiServer.state,
-    tools: toolNames,
-  };
-};
-
-export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): ColumnDef<MCPServer>[] => [
+export const createColumns = (
+  setIsDeleteDialogOpen: (open: boolean) => void,
+  mcpServersMap: Map<string, { name: string; tools: string[] }>
+): ColumnDef<AIAgent>[] => [
   {
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
@@ -153,20 +156,54 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
     ),
   },
   {
-    accessorKey: 'tools',
+    id: 'tools',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Tools" />,
     cell: ({ row }) => {
-      const tools = row.getValue('tools') as string[];
+      const agent = row.original;
+      const mcpServerIds = Object.values(agent.mcpServers || {}).map((server) => server.id);
+
+      if (mcpServerIds.length === 0) {
+        return null;
+      }
+
+      // Collect all tools from all connected MCP servers
+      const allTools: string[] = [];
+      for (const serverId of mcpServerIds) {
+        const mcpServer = mcpServersMap.get(serverId);
+        if (mcpServer?.tools) {
+          allTools.push(...mcpServer.tools);
+        }
+      }
+
+      if (allTools.length === 0) {
+        return null;
+      }
+
       return (
         <div className="flex flex-wrap gap-1">
-          {tools.map((tool) => (
-            <span
-              className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 font-medium text-gray-700 text-xs"
-              key={tool}
-            >
-              {tool}
+          {allTools.slice(0, 3).map((toolName) => (
+            <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs" key={toolName}>
+              {toolName}
             </span>
           ))}
+          {allTools.length > 3 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex cursor-help items-center rounded-md bg-muted px-2 py-0.5 font-medium text-xs">
+                  +{allTools.length - 3} more
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="space-y-1">
+                  {allTools.slice(3).map((toolName) => (
+                    <Text key={toolName} variant="small">
+                      • {toolName}
+                    </Text>
+                  ))}
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
       );
     },
@@ -178,59 +215,47 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
     filterFn: (row, id, value) => value.includes(String(row.getValue(id))),
   },
   {
-    accessorKey: 'url',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Server URL" />,
-    cell: ({ row }) => {
-      const url = row.getValue('url') as string;
-      const truncatedUrl = url.length > 40 ? `${url.slice(0, 37)}...` : url;
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Text className="cursor-help font-mono text-muted-foreground" variant="small">
-              {truncatedUrl}
-            </Text>
-          </TooltipTrigger>
-          <TooltipContent>
-            <Text>{url}</Text>
-          </TooltipContent>
-        </Tooltip>
-      );
-    },
+    accessorKey: 'model',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Model" />,
+    cell: ({ row }) => <AIAgentModel model={row.getValue('model')} size="sm" />,
   },
   {
     id: 'actions',
     enableHiding: false,
     cell: ({ row }) => {
-      const { mutate: deleteMCPServer, isPending: isDeleting } = useDeleteMCPServerMutation({
+      const { mutate: deleteAIAgent, isPending: isDeleting } = useDeleteAIAgentMutation({
         onSuccess: () => {
-          toast.success(`MCP server ${row?.original?.name} deleted`);
+          toast.success(`AI agent ${row?.original?.name} deleted`);
         },
       });
-      const { mutate: startMCPServer, isPending: isStarting } = useStartMCPServerMutation();
-      const { mutate: stopMCPServer, isPending: isStopping } = useStopMCPServerMutation();
+      const { mutate: startAIAgent, isPending: isStarting } = useStartAIAgentMutation();
+      const { mutate: stopAIAgent, isPending: isStopping } = useStopAIAgentMutation();
 
-      const server = row.original;
+      const agent = row.original;
 
       const handleDelete = (id: string) => {
-        deleteMCPServer({ id });
+        deleteAIAgent({ id });
       };
 
       const handleCopy = () => {
-        navigator.clipboard.writeText(server.url);
+        if (agent.url) {
+          navigator.clipboard.writeText(agent.url);
+          toast.success('URL copied to clipboard');
+        }
       };
 
       const handleStart = (event: React.MouseEvent<HTMLDivElement>) => {
         event.preventDefault();
-        startMCPServer({ id: server.id });
+        startAIAgent({ id: agent.id });
       };
 
       const handleStop = (event: React.MouseEvent<HTMLDivElement>) => {
         event.preventDefault();
-        stopMCPServer({ id: server.id });
+        stopAIAgent({ id: agent.id });
       };
 
-      const canStart = server.state === MCPServer_State.STOPPED || server.state === MCPServer_State.ERROR;
-      const canStop = server.state === MCPServer_State.RUNNING;
+      const canStart = agent.state === AIAgent_State.STOPPED || agent.state === AIAgent_State.ERROR;
+      const canStop = agent.state === AIAgent_State.RUNNING;
 
       return (
         <div data-actions-column>
@@ -242,12 +267,16 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[160px]">
-              <DropdownMenuItem onClick={handleCopy}>
-                <div className="flex items-center gap-4">
-                  <Copy className="h-4 w-4" /> Copy URL
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              {agent.url && (
+                <>
+                  <DropdownMenuItem onClick={handleCopy}>
+                    <div className="flex items-center gap-4">
+                      <Copy className="h-4 w-4" /> Copy URL
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               {canStart && (
                 <DropdownMenuItem onClick={handleStart}>
                   {isStarting ? (
@@ -257,7 +286,7 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
                   ) : (
                     <div className="flex items-center gap-4">
                       <Play className="h-4 w-4" />
-                      Start Server
+                      Start Agent
                     </div>
                   )}
                 </DropdownMenuItem>
@@ -270,7 +299,7 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
                     </div>
                   ) : (
                     <div className="flex items-center gap-4">
-                      <Pause className="h-4 w-4" /> Stop Server
+                      <Pause className="h-4 w-4" /> Stop Agent
                     </div>
                   )}
                 </DropdownMenuItem>
@@ -280,9 +309,9 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
                 isDeleting={isDeleting}
                 onDelete={handleDelete}
                 onOpenChange={setIsDeleteDialogOpen}
-                resourceId={server.id}
-                resourceName={server.name}
-                resourceType="Remote MCP Server"
+                resourceId={agent.id}
+                resourceName={agent.name}
+                resourceType="AI Agent"
               />
             </DropdownMenuContent>
           </DropdownMenu>
@@ -292,8 +321,8 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
   },
 ];
 
-// Custom toolbar for MCP servers
-function MCPDataTableToolbar({ table }: { table: TanstackTable<MCPServer> }) {
+// Custom toolbar for AI agents
+function AIAgentDataTableToolbar({ table }: { table: TanstackTable<AIAgent> }) {
   const isFiltered = table.getState().columnFilters.length > 0;
 
   return (
@@ -304,7 +333,7 @@ function MCPDataTableToolbar({ table }: { table: TanstackTable<MCPServer> }) {
           onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
             table.getColumn('name')?.setFilterValue(event.target.value)
           }
-          placeholder="Filter servers..."
+          placeholder="Filter agents..."
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
         />
         {table.getColumn('state') && (
@@ -324,13 +353,13 @@ function MCPDataTableToolbar({ table }: { table: TanstackTable<MCPServer> }) {
 // Hack for MobX to ensure we don't need to use observables
 export const updatePageTitle = () => {
   runInAction(() => {
-    uiState.pageTitle = 'Remote MCP';
+    uiState.pageTitle = 'AI Agents';
     uiState.pageBreadcrumbs.pop(); // Remove last breadcrumb to ensure the title is used without previous page breadcrumb being shown
-    uiState.pageBreadcrumbs.push({ title: 'Remote MCP', linkTo: '/mcp-servers', heading: 'Remote MCP' });
+    uiState.pageBreadcrumbs.push({ title: 'AI Agents', linkTo: '/agents', heading: 'AI Agents' });
   });
 };
 
-export const RemoteMCPListPage = () => {
+export const AIAgentsListPage = () => {
   const navigate = useNavigate();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -339,19 +368,31 @@ export const RemoteMCPListPage = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
   // React Query hooks
-  const { data: mcpServersData, isLoading, error } = useListMCPServersQuery({});
+  const { data: aiAgentsData, isLoading, error } = useListAIAgentsQuery({});
+  const { data: mcpServersData } = useListMCPServersQuery();
 
   // Transform API data to component format
-  const mcpServers = React.useMemo(
-    () => mcpServersData?.mcpServers?.map(transformAPIMCPServer) || [],
-    [mcpServersData]
-  );
+  const aiAgents = React.useMemo(() => aiAgentsData?.aiAgents?.map(transformAPIAIAgent) || [], [aiAgentsData]);
+
+  // Build a map of MCP server ID -> { name, tools }
+  const mcpServersMap = React.useMemo(() => {
+    const map = new Map<string, { name: string; tools: string[] }>();
+    if (mcpServersData?.mcpServers) {
+      for (const server of mcpServersData.mcpServers) {
+        map.set(server.id, {
+          name: server.displayName,
+          tools: Object.keys(server.tools || {}),
+        });
+      }
+    }
+    return map;
+  }, [mcpServersData]);
 
   useEffect(() => {
     updatePageTitle();
   }, []);
 
-  const handleRowClick = (serverId: string, event: React.MouseEvent) => {
+  const handleRowClick = (agentId: string, event: React.MouseEvent) => {
     // Don't navigate if delete dialog is open
     if (isDeleteDialogOpen) {
       return;
@@ -361,13 +402,13 @@ export const RemoteMCPListPage = () => {
     if (target.closest('[data-actions-column]') || target.closest('[role="menuitem"]') || target.closest('button')) {
       return;
     }
-    navigate(`/mcp-servers/${serverId}`);
+    navigate(`/agents/${agentId}`);
   };
 
-  const columns = React.useMemo(() => createColumns(setIsDeleteDialogOpen), []);
+  const columns = React.useMemo(() => createColumns(setIsDeleteDialogOpen, mcpServersMap), [mcpServersMap]);
 
   const table = useReactTable({
-    data: mcpServers,
+    data: aiAgents,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -396,14 +437,14 @@ export const RemoteMCPListPage = () => {
     <TooltipProvider>
       <div className="flex flex-col gap-4">
         <div>
-          <Text variant="muted">Manage your Model Context Protocol (MCP) servers.</Text>
+          <Text variant="muted">Manage your AI agents with custom configurations and LLM providers.</Text>
         </div>
-        <MCPDataTableToolbar table={table} />
+        <AIAgentDataTableToolbar table={table} />
         <div className="flex items-center justify-between">
           <DataTableViewOptions table={table} />
-          <Button onClick={() => navigate('/mcp-servers/create')} size="sm" variant="secondary">
+          <Button onClick={() => navigate('/agents/create')} size="sm" variant="secondary">
             <Plus className="h-4 w-4" />
-            Create MCP Server
+            Create AI Agent
           </Button>
         </div>
         <Table>
@@ -426,7 +467,7 @@ export const RemoteMCPListPage = () => {
                     <TableCell className="h-24 text-center" colSpan={columns.length}>
                       <div className="flex items-center justify-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Loading MCP servers...
+                        Loading AI agents...
                       </div>
                     </TableCell>
                   </TableRow>
@@ -438,7 +479,7 @@ export const RemoteMCPListPage = () => {
                     <TableCell className="h-24 text-center" colSpan={columns.length}>
                       <div className="flex items-center justify-center gap-2 text-red-600">
                         <AlertCircle className="h-4 w-4" />
-                        Error loading MCP servers: {error.message}
+                        Error loading AI agents: {error.message}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -461,7 +502,7 @@ export const RemoteMCPListPage = () => {
               return (
                 <TableRow>
                   <TableCell className="h-24 text-center" colSpan={columns.length}>
-                    No MCP servers found.
+                    No AI agents found.
                   </TableCell>
                 </TableRow>
               );

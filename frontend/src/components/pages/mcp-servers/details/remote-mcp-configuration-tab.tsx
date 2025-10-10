@@ -26,7 +26,8 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { RedpandaConnectComponentTypeBadge } from 'components/ui/redpanda-connect-component-type-badge';
+import { RedpandaConnectComponentTypeBadge } from 'components/ui/connect/redpanda-connect-component-type-badge';
+import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
 import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
@@ -46,7 +47,6 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { parse, stringify } from 'yaml';
 
 import { RemoteMCPToolButton } from './remote-mcp-tool-button';
-import { RESOURCE_TIERS } from '../remote-mcp-constants';
 import { type Template, templates } from '../templates/remote-mcp-templates';
 
 type LocalTool = {
@@ -554,7 +554,7 @@ export const RemoteMCPConfigurationTab = () => {
                     <div className="space-y-2">
                       <Label htmlFor="resources">Resources</Label>
                       {isEditing ? (
-                        <Select
+                        <ResourceTierSelect
                           onValueChange={(value) => {
                             const currentData = getCurrentData();
                             if (!currentData) {
@@ -566,18 +566,7 @@ export const RemoteMCPConfigurationTab = () => {
                             });
                           }}
                           value={displayData.resources.tier}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select resource tier" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {RESOURCE_TIERS.map((tier) => (
-                              <SelectItem key={tier.id} value={tier.id}>
-                                {tier.displayName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        />
                       ) : (
                         <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
                           <code className="font-mono text-sm">

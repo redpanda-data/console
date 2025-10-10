@@ -58,6 +58,22 @@ const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BAS
 
 export const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
 
+const getControlplanePath = () => {
+  // TODO: Make this part of config from Cloud UI
+  if (window.location.hostname.includes('main')) {
+    return 'https://api.ign.cloud.redpanda.com';
+  }
+  if (window.location.hostname.includes('preprod')) {
+    return 'https://api.ppd.cloud.redpanda.com';
+  }
+  if (window.location.hostname.includes('cloud.redpanda.com')) {
+    return 'https://api.cloud.redpanda.com';
+  }
+  return 'https://api.ign.cloud.redpanda.com';
+};
+
+export const getControlplaneBasePath = (overrideUrl?: string) => overrideUrl ?? getControlplanePath();
+
 export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
   if (config.jwt) {
     request.header.set('Authorization', `Bearer ${config.jwt}`);
@@ -128,7 +144,6 @@ export type Breadcrumb = {
 type Config = {
   controlplaneUrl: string;
   dataplaneTransport?: Transport;
-  controlplaneTransport?: Transport;
   restBasePath: string;
   grpcBasePath: string;
   authenticationClient?: Client<typeof AuthenticationService>;
@@ -221,11 +236,11 @@ const setConfig = ({
 
   Object.assign(config, {
     jwt,
+    dataplaneTransport,
     isServerless: isServerlessMode,
     restBasePath: getRestBasePath(urlOverride?.rest),
     grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
-    controlplaneTransport,
-    dataplaneTransport,
+    controlplaneUrl: config.controlplaneUrl,
     fetch: fetch ?? window.fetch.bind(window),
     assetsPath: assetsUrl ?? getBasePath(),
     authenticationClient: authenticationGrpcClient,
@@ -324,7 +339,7 @@ const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions
 export const embeddedAvailableRoutesObservable = observable({
   get routes() {
     return APP_ROUTES.map((route) => {
-      if (route.path === '/knowledgebases' || route.path === '/mcp-servers') {
+      if (route.path === '/knowledgebases' || route.path === '/mcp-servers' || route.path === '/agents') {
         return {
           ...route,
           // Needed because we cannot use JSX in this file

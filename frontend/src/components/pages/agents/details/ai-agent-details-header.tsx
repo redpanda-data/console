@@ -8,34 +8,35 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { McpServerStateBadge } from 'components/ui/mcp/mcp-server-state-badge';
-import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
+import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
 import { useParams } from 'react-router-dom';
 
-import { RemoteMCPToggleButton } from './remote-mcp-toggle-button';
-import { RemoteMCPBackButton } from '../remote-mcp-back-button';
+import { AIAgentStateBadge } from './ai-agent-state-badge';
+import { AIAgentToggleButton } from './ai-agent-toggle-button';
+import { AIAgentBackButton } from '../ai-agent-back-button';
 
-export const RemoteMCPDetailsHeader = () => {
+export const AIAgentDetailsHeader = () => {
   const { id } = useParams<{ id: string }>();
-  const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
+  const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
 
-  if (!mcpServerData?.mcpServer) {
+  if (!aiAgentData?.aiAgent) {
     return null;
   }
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-4">
-        <RemoteMCPBackButton />
+        <AIAgentBackButton />
       </div>
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-4">
-          <Heading level={1}>{mcpServerData.mcpServer.displayName}</Heading>
-          <McpServerStateBadge />
-          <RemoteMCPToggleButton />
+          <Heading level={1}>{aiAgentData.aiAgent.displayName}</Heading>
+          <AIAgentStateBadge />
+          <AIAgentToggleButton />
         </div>
-        <Text variant="lead">{mcpServerData.mcpServer.description}</Text>
+        {aiAgentData.aiAgent.description && <Text variant="lead">{aiAgentData.aiAgent.description}</Text>}
       </div>
     </div>
   );

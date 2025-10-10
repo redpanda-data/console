@@ -11,7 +11,7 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { RedpandaConnectComponentTypeBadge } from 'components/ui/redpanda-connect-component-type-badge';
+import { RedpandaConnectComponentTypeBadge } from 'components/ui/connect/redpanda-connect-component-type-badge';
 import { Trash2 } from 'lucide-react';
 import type { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 

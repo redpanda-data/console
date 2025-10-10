@@ -21,6 +21,7 @@ import {
   LinkIcon,
   ScaleIcon,
   ShieldCheckIcon,
+  UserCircleIcon,
 } from '@heroicons/react/outline';
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v6';
@@ -40,6 +41,9 @@ import { AdminDebugBundle } from './pages/admin/admin-debug-bundle';
 import AdminPageDebugBundleProgress from './pages/admin/admin-debug-bundle-progress';
 import LicenseExpiredPage from './pages/admin/license-expired-page';
 import UploadLicensePage from './pages/admin/upload-license-page';
+import { AIAgentCreatePage } from './pages/agents/create/ai-agent-create-page';
+import { AIAgentDetailsPage } from './pages/agents/details/ai-agent-details-page';
+import { AIAgentsListPage } from './pages/agents/list/ai-agents-list-page';
 import KafkaClusterDetails from './pages/connect/cluster-details';
 import KafkaConnectorDetails from './pages/connect/connector-details';
 import CreateConnector from './pages/connect/create-connector';
@@ -129,9 +133,9 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
       }
       const isDisabled = !isEnabled;
 
-      // Handle AI Agents and Knowledge Base routes with beta badge
+      // Handle Knowledge Base, MCP server and AI Agent routes with beta badge
       const title =
-        entry.path === '/agents' || entry.path === '/knowledgebases' || entry.path === '/mcp-servers'
+        entry.path === '/knowledgebases' || entry.path === '/mcp-servers' || entry.path === '/agents'
           ? getSidebarItemTitleWithBetaBadge({ route: entry })
           : entry.title;
 
@@ -554,4 +558,20 @@ export const APP_ROUTES: IRouteEntry[] = [
   ),
   MakeRoute<{}>('/mcp-servers/create', RemoteMCPCreatePage, 'Create Remote MCP Server'),
   MakeRoute<{ id: string }>('/mcp-servers/:id', RemoteMCPDetailsPage, 'Remote MCP Details'),
+
+  MakeRoute<{}>(
+    '/agents',
+    AIAgentsListPage,
+    'AI Agents',
+    UserCircleIcon,
+    true,
+    routeVisibility(
+      () =>
+        isEmbedded() &&
+        (!isServerless() || isFeatureFlagEnabled('enableAiAgentsInConsoleServerless')) && // we can override the isServerless check with a feature flag
+        isFeatureFlagEnabled('enableAiAgentsInConsole')
+    ) // show only in embedded mode with feature flag
+  ),
+  MakeRoute<{}>('/agents/create', AIAgentCreatePage, 'Create AI Agent'),
+  MakeRoute<{ id: string }>('/agents/:id', AIAgentDetailsPage, 'AI Agent Details'),
 ].filterNull();
