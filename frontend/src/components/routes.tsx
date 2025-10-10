@@ -565,7 +565,12 @@ export const APP_ROUTES: IRouteEntry[] = [
     'AI Agents',
     UserCircleIcon,
     true,
-    routeVisibility(() => isEmbedded() && !isServerless() && isFeatureFlagEnabled('enableAiAgentsInConsole')) // show only in embedded mode with feature flag
+    routeVisibility(
+      () =>
+        isEmbedded() &&
+        (!isServerless() || isFeatureFlagEnabled('enableAiAgentsInConsoleServerless')) && // we can override the isServerless check with a feature flag
+        isFeatureFlagEnabled('enableAiAgentsInConsole')
+    ) // show only in embedded mode with feature flag
   ),
   MakeRoute<{}>('/agents/create', AIAgentCreatePage, 'Create AI Agent'),
   MakeRoute<{ id: string }>('/agents/:id', AIAgentDetailsPage, 'AI Agent Details'),

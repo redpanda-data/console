@@ -13,4 +13,5 @@ export const FEATURE_FLAGS = {
   enableRpcnTiles: false,
   enableAiAgentsInConsole: false,
   enableAiAgentsInspectorInConsole: false,
+  enableAiAgentsInConsoleServerless: false,
 };
