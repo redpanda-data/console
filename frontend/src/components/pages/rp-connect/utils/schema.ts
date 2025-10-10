@@ -63,7 +63,7 @@ const createComponentConfigSpec = (component: RawComponentSpec): RawFieldSpec =>
   return configSpec;
 };
 
-const typeToSchemaKey: Record<ConnectComponentType, keyof BenthosSchemaFull> = {
+const typeToSchemaKey: Record<Exclude<ConnectComponentType, 'custom'>, keyof BenthosSchemaFull> = {
   input: 'inputs',
   output: 'outputs',
   processor: 'processors',
@@ -75,7 +75,7 @@ const typeToSchemaKey: Record<ConnectComponentType, keyof BenthosSchemaFull> = {
   tracer: 'tracers',
 };
 
-const typeToYamlConfigKey: Record<ConnectComponentType, ConnectConfigKey> = {
+const typeToYamlConfigKey: Record<Exclude<ConnectComponentType, 'custom'>, ConnectConfigKey> = {
   input: 'input',
   output: 'output',
   processor: 'pipeline',
@@ -97,6 +97,9 @@ const parseSchema = () => {
 
   // Parse each component type from flat arrays
   for (const componentType of CONNECT_COMPONENT_TYPE) {
+    if (componentType === 'custom') {
+      continue;
+    }
     const schemaKey = typeToSchemaKey[componentType];
     const componentsArray = schemaData[schemaKey] as RawComponentSpec[] | undefined;
 
@@ -107,7 +110,7 @@ const parseSchema = () => {
     for (const comp of componentsArray) {
       const componentSpec: ConnectComponentSpec = {
         name: comp.name,
-        type: comp.type as ConnectComponentType,
+        type: comp.type as Exclude<ConnectComponentType, 'custom'>,
         status: comp.status || 'stable',
         plugin: comp.plugin,
         summary: comp.summary,

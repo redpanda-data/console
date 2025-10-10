@@ -18,13 +18,12 @@ export type ChoiceboxItemProps = RadioGroupPrimitive.RadioGroupItemProps & { tes
   >;
 
 export const ChoiceboxItem = ({ className, children, testId, size, ...props }: ChoiceboxItemProps) => (
-  <RadioGroupPrimitive.Item {...props}>
+  <RadioGroupPrimitive.Item {...props} className="group">
     <Card
       size={size}
       className={cn(
-        'flex cursor-pointer flex-row items-start justify-between rounded-md p-4 shadow-none transition-all border-2 border-solid !border-border text-left',
-        '[&[data-state="checked"]]:border-selected',
-        '[&[data-state="checked"]]:bg-selected/5',
+        'flex cursor-pointer flex-row items-start justify-between rounded-md p-4 shadow-none transition-all border-2 border-solid text-left',
+        'group-data-[state=checked]:!border-selected',
         'hover:shadow-elevated',
         className,
       )}

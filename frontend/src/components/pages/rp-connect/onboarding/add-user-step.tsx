@@ -196,13 +196,13 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
         <CardTitle>
           <Heading level={2}>Select a user</Heading>
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="mt-4">
           A Kafka user represents an application, service, or human identity that interacts with a cluster, either to
           produce data, consume data, or perform administrative tasks. Kafka uses Access Control Lists (ACLs) to manage
           what each user is allowed to do, providing fine-grained security and preventing unauthorized access.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="max-h-[50vh] min-h-[400px] overflow-y-auto">
         <Form {...form}>
           <div className="max-w-2xl space-y-8">
             <FormField

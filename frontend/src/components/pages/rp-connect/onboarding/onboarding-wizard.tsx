@@ -1,15 +1,16 @@
 import { create } from '@bufbuild/protobuf';
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
-import { defineStepper } from 'components/redpanda-ui/components/stepper';
-import { cn } from 'components/redpanda-ui/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Heading } from 'components/redpanda-ui/components/typography';
 import { useSessionStorage } from 'hooks/use-session-storage';
+import { ChevronLeftIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CONNECT_WIZARD_CONNECTOR_KEY } from 'state/connect/state';
 import { uiState } from 'state/ui-state';
 
@@ -17,30 +18,43 @@ import { AddTopicStep } from './add-topic-step';
 import { AddUserStep } from './add-user-step';
 import { ConnectTiles } from './connect-tiles';
 import RpConnectPipelinesCreate from '../pipelines-create';
-import { WizardStep, type WizardStepType } from '../types/constants';
-import type { ConnectComponentType } from '../types/schema';
+import {
+  WizardStep,
+  WizardStepper,
+  type WizardStepperSteps,
+  type WizardStepType,
+  wizardStepDefinitions,
+} from '../types/constants';
+import type { ExtendedConnectComponentSpec } from '../types/schema';
 import type { BaseStepRef, WizardFormData } from '../types/wizard';
 import { handleStepResult } from '../utils/wizard';
 
-const stepDefinitions = [
-  {
-    id: WizardStep.ADD_INPUT,
-    title: 'Send data',
-  },
-  { id: WizardStep.ADD_OUTPUT, title: 'Receive data' },
-  { id: WizardStep.ADD_TOPIC, title: 'Add a topic' },
-  { id: WizardStep.ADD_USER, title: 'Add a user' },
-  { id: WizardStep.CREATE_CONFIG, title: 'Create pipeline' },
-];
+export type ConnectOnboardingWizardProps = {
+  className?: string;
+  additionalComponents?: ExtendedConnectComponentSpec[];
+  onChange?: (connectorName: string, connectorType: string) => void;
+  onCancel?: () => void;
+};
 
-const { Stepper, Steps } = defineStepper(...stepDefinitions);
-
-type Steps = typeof Steps;
-
-export const ConnectOnboardingWizard = () => {
+export const ConnectOnboardingWizard = ({
+  className,
+  additionalComponents,
+  onChange,
+  onCancel: onCancelProp,
+}: ConnectOnboardingWizardProps = {}) => {
   const [persistedConnector, setPersistedConnector] = useSessionStorage<Partial<WizardFormData>>(
     CONNECT_WIZARD_CONNECTOR_KEY,
     {}
+  );
+  const navigate = useNavigate();
+
+  const persistedInputConnectionName = useMemo(
+    () => persistedConnector.input?.connectionName,
+    [persistedConnector.input?.connectionName]
+  );
+  const persistedInputConnectionType = useMemo(
+    () => persistedConnector.input?.connectionType,
+    [persistedConnector.input?.connectionType]
   );
 
   const [searchParams] = useSearchParams();
@@ -83,46 +97,42 @@ export const ConnectOnboardingWizard = () => {
     });
   }, []);
 
-  const handleInputChange = useCallback(
-    (connectionName: string, connectionType: ConnectComponentType) => {
-      setPersistedConnector({
-        input: { connectionName, connectionType },
-        ...(persistedConnector.output && { output: persistedConnector.output }),
-      });
-    },
-    [setPersistedConnector, persistedConnector]
-  );
-
-  const handleOutputChange = useCallback(
-    (connectionName: string, connectionType: ConnectComponentType) => {
-      setPersistedConnector({
-        output: { connectionName, connectionType },
-        ...(persistedConnector.input && { input: persistedConnector.input }),
-      });
-    },
-    [setPersistedConnector, persistedConnector]
-  );
-
-  const handleNext = async (methods: Steps) => {
+  const handleNext = async (methods: WizardStepperSteps) => {
     switch (methods.current.id) {
       case WizardStep.ADD_INPUT: {
-        // Only validate if user has selected something
-        if (persistedConnector.input?.connectionName || persistedConnector.input?.connectionType) {
-          const result = await addInputStepRef.current?.triggerSubmit();
-          handleStepResult(result, methods.next);
-        } else {
-          // Skip if no selection made
+        const result = await addInputStepRef.current?.triggerSubmit();
+        if (result?.success) {
+          // Save to session storage only after validation passes
+          if (result.data?.connectionName && result.data?.connectionType) {
+            setPersistedConnector({
+              input: {
+                connectionName: result.data.connectionName,
+                connectionType: result.data.connectionType,
+              },
+              ...(persistedConnector.output && { output: persistedConnector.output }),
+            });
+            // Notify parent of connector selection
+            onChange?.(result.data.connectionName, result.data.connectionType as string);
+          }
           methods.next();
         }
         break;
       }
       case WizardStep.ADD_OUTPUT: {
-        // Only validate if user has selected something
-        if (persistedConnector.output?.connectionName || persistedConnector.output?.connectionType) {
-          const result = await addOutputStepRef.current?.triggerSubmit();
-          handleStepResult(result, methods.next);
-        } else {
-          // Skip if no selection made
+        const result = await addOutputStepRef.current?.triggerSubmit();
+        if (result?.success) {
+          // Save to session storage only after validation passes
+          if (result.data?.connectionName && result.data?.connectionType) {
+            setPersistedConnector({
+              output: {
+                connectionName: result.data.connectionName,
+                connectionType: result.data.connectionType,
+              },
+              ...(persistedConnector.input && { input: persistedConnector.input }),
+            });
+            // Notify parent of connector selection
+            onChange?.(result.data.connectionName, result.data.connectionType as string);
+          }
           methods.next();
         }
         break;
@@ -142,22 +152,16 @@ export const ConnectOnboardingWizard = () => {
     }
   };
 
-  const handleSkip = (methods: Steps) => {
+  const handleSkip = (methods: WizardStepperSteps) => {
     methods.goTo(WizardStep.CREATE_CONFIG);
   };
 
   const getCurrentStepLoading = (currentStepId: WizardStepType): boolean => {
     switch (currentStepId) {
       case WizardStep.ADD_INPUT:
-        // Only check loading if user has made a selection
-        return persistedConnector.input?.connectionName || persistedConnector.input?.connectionType
-          ? (addInputStepRef.current?.isLoading ?? false)
-          : false;
+        return addInputStepRef.current?.isLoading ?? false;
       case WizardStep.ADD_OUTPUT:
-        // Only check loading if user has made a selection
-        return persistedConnector.output?.connectionName || persistedConnector.output?.connectionType
-          ? (addOutputStepRef.current?.isLoading ?? false)
-          : false;
+        return addOutputStepRef.current?.isLoading ?? false;
       case WizardStep.ADD_TOPIC:
         return addTopicStepRef.current?.isLoading ?? false;
       case WizardStep.ADD_USER:
@@ -167,9 +171,17 @@ export const ConnectOnboardingWizard = () => {
     }
   };
 
+  const handleCancel = useCallback(() => {
+    if (onCancelProp) {
+      onCancelProp();
+    } else {
+      navigate('/connect-clusters');
+    }
+  }, [onCancelProp, navigate]);
+
   return (
-    <PageContent>
-      <Stepper.Provider className="space-y-2" initialStep={initialStep}>
+    <PageContent className={className}>
+      <WizardStepper.Provider className="space-y-2" initialStep={initialStep}>
         {({ methods }) => {
           const isCurrentStepLoading = getCurrentStepLoading(methods.current.id);
 
@@ -177,22 +189,23 @@ export const ConnectOnboardingWizard = () => {
             <div className="relative flex flex-col gap-6">
               <div className="flex h-full flex-col gap-6 pt-4">
                 <div className="flex flex-col space-y-2 text-center">
-                  <Stepper.Navigation>
-                    {stepDefinitions.map((step) => (
-                      <Stepper.Step key={step.id} of={step.id} onClick={() => methods.goTo(step.id)}>
-                        <Stepper.Title>{step.title}</Stepper.Title>
-                      </Stepper.Step>
+                  <WizardStepper.Navigation>
+                    {wizardStepDefinitions.map((step) => (
+                      <WizardStepper.Step key={step.id} of={step.id} onClick={() => methods.goTo(step.id)}>
+                        <WizardStepper.Title>{step.title}</WizardStepper.Title>
+                      </WizardStepper.Step>
                     ))}
-                  </Stepper.Navigation>
+                  </WizardStepper.Navigation>
                 </div>
                 {methods.switch({
                   [WizardStep.ADD_INPUT]: () => (
                     <ConnectTiles
+                      additionalComponents={additionalComponents}
                       componentTypeFilter={['input']}
-                      defaultConnectionName={persistedConnector.input?.connectionName}
-                      defaultConnectionType={persistedConnector.input?.connectionType}
+                      defaultConnectionName={persistedInputConnectionName}
+                      defaultConnectionType={persistedInputConnectionType}
+                      handleSkip={() => handleSkip(methods)}
                       key="input-connector-tiles"
-                      onChange={handleInputChange}
                       ref={addInputStepRef}
                       tileWrapperClassName="min-h-[300px] max-h-[40vh]"
                       title="Send data to your pipeline"
@@ -200,11 +213,12 @@ export const ConnectOnboardingWizard = () => {
                   ),
                   [WizardStep.ADD_OUTPUT]: () => (
                     <ConnectTiles
+                      additionalComponents={additionalComponents}
                       componentTypeFilter={['output']}
                       defaultConnectionName={persistedConnector.output?.connectionName}
                       defaultConnectionType={persistedConnector.output?.connectionType}
+                      handleSkip={() => handleSkip(methods)}
                       key="output-connector-tiles"
-                      onChange={handleOutputChange}
                       ref={addOutputStepRef}
                       tileWrapperClassName="min-h-[300px] max-h-[40vh]"
                       title="Read data from your pipeline"
@@ -213,18 +227,35 @@ export const ConnectOnboardingWizard = () => {
                   // TODO add persisted data to both steps
                   [WizardStep.ADD_TOPIC]: () => <AddTopicStep ref={addTopicStepRef} topicList={topicList.topics} />,
                   [WizardStep.ADD_USER]: () => <AddUserStep ref={addUserStepRef} usersList={usersList?.users} />,
-                  [WizardStep.CREATE_CONFIG]: () => <RpConnectPipelinesCreate matchedPath="/rp-connect/wizard" />,
+                  [WizardStep.CREATE_CONFIG]: () => (
+                    <Card size="full">
+                      <CardHeader>
+                        <CardTitle>
+                          <Heading level={2}>Create pipeline</Heading>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <RpConnectPipelinesCreate matchedPath="/rp-connect/wizard" />
+                      </CardContent>
+                    </Card>
+                  ),
                 })}
               </div>
-              <Stepper.Controls className={cn(!methods.isFirst && 'justify-between')}>
-                {!(methods.isFirst || methods.isLast) && (
-                  <Button onClick={methods.prev} type="button" variant="secondary">
-                    Previous
+              <WizardStepper.Controls className="justify-between">
+                <div className="flex gap-2">
+                  {!(methods.isFirst || methods.isLast) && (
+                    <Button onClick={methods.prev} type="button" variant="secondary">
+                      <ChevronLeftIcon />
+                      Previous
+                    </Button>
+                  )}
+                  <Button onClick={handleCancel} type="button" variant="outline">
+                    Cancel
                   </Button>
-                )}
+                </div>
                 <div className="flex gap-2">
                   {!methods.isLast && (
-                    <Button onClick={() => handleSkip(methods)} type="button" variant="outline">
+                    <Button onClick={() => handleNext(methods)} type="button" variant="outline">
                       Skip
                     </Button>
                   )}
@@ -234,11 +265,11 @@ export const ConnectOnboardingWizard = () => {
                     </Button>
                   )}
                 </div>
-              </Stepper.Controls>
+              </WizardStepper.Controls>
             </div>
           );
         }}
-      </Stepper.Provider>
+      </WizardStepper.Provider>
     </PageContent>
   );
 };

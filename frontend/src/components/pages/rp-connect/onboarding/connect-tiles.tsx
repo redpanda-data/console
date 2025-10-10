@@ -16,28 +16,54 @@ import { Label } from 'components/redpanda-ui/components/label';
 import { SimpleMultiSelect } from 'components/redpanda-ui/components/multi-select';
 import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { SearchIcon, Waypoints } from 'lucide-react';
+import { SearchIcon, Settings, Waypoints } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { ConnectorLogo } from './connector-logo';
+import { useResetWizardSessionStorage } from '../hooks/useResetWizardSessionStorage';
+import { CUSTOM_COMPONENT_NAME, customComponentConfig } from '../types/constants';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 import type { BaseStepRef } from '../types/wizard';
 import { type ConnectTilesFormData, connectTilesFormSchema } from '../types/wizard';
 import { getAllCategories } from '../utils/categories';
 import { getBuiltInComponents } from '../utils/schema';
 
+const getComponentSummary = (component: ConnectComponentSpec, componentTypeFilter?: ConnectComponentType[]) => {
+  if (component.name === 'redpanda' && componentTypeFilter?.includes('input')) {
+    return 'Add data to a topic on this cluster';
+  }
+  if (component.name === 'redpanda' && componentTypeFilter?.includes('output')) {
+    return 'Read data from a topic on this cluster';
+  }
+  return component.summary;
+};
+
 const getLogoForComponent = (component: ConnectComponentSpec) => {
+  if (component.name === CUSTOM_COMPONENT_NAME) {
+    return <Settings className="size-6 text-muted-foreground" />;
+  }
   if (component?.logoUrl) {
     return <img alt={component.name} className="size-6" src={component.logoUrl} />;
   }
   if (componentLogoMap[component.name as ComponentName]) {
-    return <ConnectorLogo className="size-6" name={component.name as ComponentName} />;
+    return (
+      <ConnectorLogo
+        name={component.name as ComponentName}
+        style={{
+          width: '24px',
+          height: '24px',
+        }}
+      />
+    );
   }
   return <Waypoints className="size-6 text-muted-foreground" />;
 };
 
 const PRIORITY_COMPONENTS = [
+  CUSTOM_COMPONENT_NAME,
+  'redpanda',
   'aws_s3',
   'gcp_cloud_storage',
   'azure_blob_storage',
@@ -62,7 +88,11 @@ const searchComponents = (
     categories?: string[];
   }
 ): ConnectComponentSpec[] =>
-  allComponents
+  [
+    ...allComponents,
+    ...(filters?.types?.includes('input') || filters?.types?.includes('output') ? [customComponentConfig] : []),
+  ]
+    .flat()
     .sort((a, b) => {
       const aIndex = PRIORITY_COMPONENTS.indexOf(a.name);
       const bIndex = PRIORITY_COMPONENTS.indexOf(b.name);
@@ -86,6 +116,14 @@ const searchComponents = (
       return a.name.localeCompare(b.name);
     })
     .filter((component) => {
+      // Always show custom component regardless of type filter
+      if (
+        component.name === CUSTOM_COMPONENT_NAME &&
+        (filters?.types?.includes('input') || filters?.types?.includes('output'))
+      ) {
+        return true;
+      }
+
       if (filters?.types?.length && !filters.types.includes(component.type)) {
         return false;
       }
@@ -99,7 +137,7 @@ const searchComponents = (
       }
 
       if (filters?.categories?.length) {
-        const hasMatchingCategory = component.categories?.some((cat) => filters.categories?.includes(cat));
+        const hasMatchingCategory = component.categories?.some((cat: string) => filters.categories?.includes(cat));
         if (!hasMatchingCategory) {
           return false;
         }
@@ -122,6 +160,7 @@ export type ConnectTilesProps = {
   className?: string;
   tileWrapperClassName?: string;
   title?: string;
+  handleSkip?: () => void;
 };
 
 export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
@@ -140,6 +179,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
       className,
       tileWrapperClassName,
       title,
+      handleSkip: handleSkipProp,
     },
     ref
   ) => {
@@ -147,6 +187,8 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [showScrollGradient, setShowScrollGradient] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [showDescription, setShowDescription] = useState<string | undefined>(undefined);
+    const resetWizardSessionStorage = useResetWizardSessionStorage();
 
     const checkScrollable = useCallback(() => {
       const container = scrollContainerRef.current;
@@ -164,26 +206,25 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
 
     const form = useForm<ConnectTilesFormData>({
       resolver: zodResolver(connectTilesFormSchema),
-      mode: 'onChange',
+      mode: 'onSubmit',
       defaultValues: {
-        connectionName: defaultConnectionName || '',
+        connectionName: defaultConnectionName,
         connectionType: defaultConnectionType,
       },
     });
 
     useEffect(() => {
-      if (defaultConnectionName && defaultConnectionType) {
-        form.reset({
-          connectionName: defaultConnectionName,
-          connectionType: defaultConnectionType,
-        });
-      }
+      form.reset({
+        connectionName: defaultConnectionName,
+        connectionType: defaultConnectionType,
+      });
     }, [defaultConnectionName, defaultConnectionType, form]);
 
     const allComponents = useMemo(
       () => [...getBuiltInComponents(), ...(additionalComponents || [])],
       [additionalComponents]
     );
+
     const categories = useMemo(() => getAllCategories(allComponents), [allComponents]);
 
     const filteredComponents = useMemo(
@@ -195,6 +236,17 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
       [componentTypeFilter, filter, selectedCategories, allComponents]
     );
 
+    const handleSkip = useCallback(() => {
+      // Reset form state before clearing storage
+      form.reset({
+        connectionName: undefined,
+        connectionType: undefined,
+      });
+      // Notify parent to reset its state
+      resetWizardSessionStorage();
+      handleSkipProp?.();
+    }, [form, handleSkipProp, resetWizardSessionStorage]);
+
     useEffect(() => {
       requestAnimationFrame(() => {
         checkScrollable();
@@ -205,9 +257,11 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
       triggerSubmit: async () => {
         const isValid = await form.trigger();
         if (isValid) {
+          const values = form.getValues();
           return {
             success: true,
             message: 'Connector selected successfully',
+            data: values,
           };
         }
         return {
@@ -320,34 +374,59 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                             <div className={cn('grid-auto-rows-fr grid gap-2', `grid-cols-${gridCols}`)}>
                               {filteredComponents.map((component) => {
                                 const uniqueKey = `${component.type}-${component.name}`;
+                                const isChecked =
+                                  field.value === component.name && form.getValues('connectionType') === component.type;
+                                const shouldShowDescription = showDescription === component.name && component.summary;
 
                                 return (
                                   <ChoiceboxItem
-                                    checked={
-                                      field.value === component.name &&
-                                      form.getValues('connectionType') === component.type
-                                    }
-                                    className="relative h-full"
+                                    checked={isChecked}
+                                    className={cn('relative h-full', shouldShowDescription && 'hover:shadow-none')}
                                     key={uniqueKey}
                                     onClick={() => {
+                                      if (component.name === CUSTOM_COMPONENT_NAME) {
+                                        handleSkip();
+                                        return;
+                                      }
                                       field.onChange(component.name);
                                       form.setValue('connectionType', component.type as ConnectComponentType);
+                                      // Only call onChange for non-wizard use cases (e.g., dialog)
+                                      // Wizard saves to session storage only after "Next" is clicked
                                       onChange?.(component.name, component.type as ConnectComponentType);
+                                    }}
+                                    onPointerEnter={() => {
+                                      setShowDescription(component.name);
+                                    }}
+                                    onPointerLeave={() => {
+                                      setShowDescription(undefined);
                                     }}
                                     value={component.name}
                                   >
                                     <div className="flex w-full items-center justify-between gap-4">
                                       <div className="flex min-w-0 flex-col gap-1">
                                         <Text className="truncate font-medium">{component.name}</Text>
-                                        <Text className="line-clamp-2 text-muted-foreground text-sm">
-                                          {component.summary}
-                                        </Text>
+                                        <AnimatePresence>
+                                          {shouldShowDescription && (
+                                            <motion.div
+                                              animate={{ opacity: 1 }}
+                                              className={cn(
+                                                '-inset-x-0.5 -top-0.5 absolute z-10 flex min-h-[58px] items-center rounded-md border-2 border-border border-solid bg-white p-4 shadow-elevated',
+                                                isChecked && '!border-selected'
+                                              )}
+                                              exit={{ opacity: 0 }}
+                                              initial={{ opacity: 0 }}
+                                              key={`component-description-${component.name}`}
+                                              transition={{ duration: 0.15, ease: 'easeInOut' }}
+                                            >
+                                              <Text className="text-muted-foreground text-sm">
+                                                {getComponentSummary(component, componentTypeFilter)}
+                                              </Text>
+                                            </motion.div>
+                                          )}
+                                        </AnimatePresence>
                                       </div>
                                       <div>{getLogoForComponent(component)}</div>
-                                      {field.value === component.name &&
-                                        form.getValues('connectionType') === component.type && (
-                                          <ChoiceboxItemIndicator className="absolute top-2 right-2" />
-                                        )}
+                                      {isChecked && <ChoiceboxItemIndicator className="absolute top-2 right-2 z-20" />}
                                     </div>
                                   </ChoiceboxItem>
                                 );
@@ -363,7 +442,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
               </div>
               {/* Gradient overlay to indicate scrollability - only show when not at bottom */}
               {showScrollGradient && (
-                <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-gradient-to-t from-background to-transparent" />
+                <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-gradient-to-t from-background via-background/80 to-transparent" />
               )}
             </div>
           </Form>

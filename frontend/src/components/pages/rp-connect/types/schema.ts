@@ -112,6 +112,8 @@ export const CONNECT_COMPONENT_TYPE = [
   // Example: `lines`, `csv`, `tar`.
   'scanner',
   'tracer',
+  // used exclusively for skipping the wizard
+  'custom',
 ] as const satisfies readonly RawComponentSpec['type'][];
 
 export type ConnectComponentType = (typeof CONNECT_COMPONENT_TYPE)[number];
