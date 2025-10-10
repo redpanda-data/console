@@ -51,15 +51,11 @@ message AIAgent {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
-  int32 dimensions = 6 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.field_behavior) = IMMUTABLE,
-    (buf.validate.field).required = true
-  ];
   string model = 7 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.field_behavior) = IMMUTABLE,
-    (buf.validate.field).required = true
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 128
   ];
 
   // Map of MCP servers that this AI agent can use.
@@ -83,9 +79,15 @@ message AIAgent {
   // URL to connect to the AI agent endpoint.
   string url = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  int32 max_iterations = 13;
+  int32 max_iterations = 13 [(buf.validate.field).int32 = {
+    gte: 1
+    lte: 100
+  }];
 
-  ServiceAccount service_account = 14;
+  ServiceAccount service_account = 14 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
 
   message Provider {
     message OpenAI {
@@ -374,15 +376,11 @@ message AIAgentCreate {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
-  int32 dimensions = 5 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.field_behavior) = IMMUTABLE,
-    (buf.validate.field).required = true
-  ];
   string model = 6 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.field_behavior) = IMMUTABLE,
-    (buf.validate.field).required = true
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 128
   ];
 
   // Map of MCP servers that this AI agent can use.
@@ -399,9 +397,15 @@ message AIAgentCreate {
   // The number of resources that are guaranteed to be assigned to the AI agent.
   redpanda.api.dataplane.v1.Pipeline.Resources resources = 9;
 
-  int32 max_iterations = 10;
+  int32 max_iterations = 10 [(buf.validate.field).int32 = {
+    gte: 1
+    lte: 100
+  }];
 
-  AIAgent.ServiceAccount service_account = 11;
+  AIAgent.ServiceAccount service_account = 11 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
 }
 
 // CreateAIAgentRequest is the request of CreateAIAgent.
@@ -483,7 +487,6 @@ message AIAgentUpdate {
 
   // User-friendly AI agent name.
   string display_name = 1 [
-    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
     (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
     (buf.validate.field).string.min_len = 3,
     (buf.validate.field).string.max_len = 128
@@ -494,27 +497,15 @@ message AIAgentUpdate {
 
   // System Prompt for the AI agent behavior.
   string system_prompt = 3 [
-    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
     (buf.validate.field).string.min_len = 10,
     (buf.validate.field).string.max_len = 16384,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "System instructions that define how the AI agent should behave and respond."}
   ];
 
   // LLM configuration settings for the AI agent.
-  AIAgent.Provider provider = 4 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true
-  ];
-  int32 dimensions = 5 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.field_behavior) = IMMUTABLE,
-    (buf.validate.field).required = true
-  ];
-  string model = 6 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.field_behavior) = IMMUTABLE,
-    (buf.validate.field).required = true
-  ];
+  AIAgent.Provider provider = 4;
+
+  string model = 6 [(buf.validate.field).string.max_len = 128];
 
   // Map of MCP servers that this AI agent can use.
   map<string, AIAgent.MCPServer> mcp_servers = 7;
@@ -531,7 +522,10 @@ message AIAgentUpdate {
   // The number of resources that are guaranteed to be assigned to the AI agent.
   redpanda.api.dataplane.v1.Pipeline.Resources resources = 9;
 
-  int32 max_iterations = 10;
+  int32 max_iterations = 10 [(buf.validate.field).int32 = {
+    gte: 1
+    lte: 100
+  }];
 
   AIAgent.ServiceAccount service_account = 11;
 }
