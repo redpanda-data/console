@@ -8,7 +8,6 @@ module.exports = {
     './EmbeddedApp': './src/embedded-app.tsx',
     './injectApp': './src/inject-app.tsx',
     './connect-tiles': './src/components/pages/rp-connect/onboarding/connect-tiles.tsx',
-    './onboarding-wizard': './src/components/pages/rp-connect/onboarding/onboarding-wizard.tsx',
     './config': './src/config.ts',
   },
 
@@ -48,25 +47,13 @@ module.exports = {
       singleton: false,
       requiredVersion: deps['tailwind-merge'],
     },
-    mobx: {
-      singleton: true,
-      requiredVersion: deps.mobx,
-    },
-    '@tanstack/react-query': {
-      singleton: true,
-      requiredVersion: deps['@tanstack/react-query'],
-    },
-    'react-router-dom': {
-      singleton: true,
-      requiredVersion: deps['react-router-dom'],
-    },
-    'framer-motion': {
+    motion: {
       singleton: false,
-      requiredVersion: deps['framer-motion'],
+      requiredVersion: deps.motion,
     },
-    '@bufbuild/protobuf': {
-      singleton: true,
-      requiredVersion: deps['@bufbuild/protobuf'],
+    clsx: {
+      singleton: false,
+      requiredVersion: deps.clsx,
     },
   },
 };
