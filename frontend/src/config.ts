@@ -8,12 +8,16 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+
+import { RoleBindingService } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/iam/v1/role_binding_pb';
+import { ServiceAccountService } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/iam/v1/service_account_pb';
 import {
   type Client,
   Code,
   ConnectError,
   type Interceptor as ConnectRpcInterceptor,
   createClient,
+  type Transport,
 } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { loader, type Monaco } from '@monaco-editor/react';
@@ -122,6 +126,9 @@ export type Breadcrumb = {
 };
 
 type Config = {
+  controlplaneUrl: string;
+  dataplaneTransport?: Transport;
+  controlplaneTransport?: Transport;
   restBasePath: string;
   grpcBasePath: string;
   authenticationClient?: Client<typeof AuthenticationService>;
@@ -135,6 +142,8 @@ type Config = {
   clusterStatusClient?: Client<typeof ClusterStatusService>;
   knowledgebaseClient?: Client<typeof KnowledgeBaseService>;
   userClient?: Client<typeof UserService>;
+  serviceAccountClient?: Client<typeof ServiceAccountService>;
+  roleBindingClient?: Client<typeof RoleBindingService>;
   fetch: WindowOrWorkerGlobalScope['fetch'];
   assetsPath: string;
   jwt?: string;
@@ -151,6 +160,7 @@ type Config = {
 export const config: Config = observable({
   restBasePath: getRestBasePath(),
   grpcBasePath: getGrpcBasePath(),
+  controlplaneUrl: '',
   fetch: window.fetch,
   assetsPath: getBasePath(),
   clusterId: 'default',
@@ -176,7 +186,7 @@ const setConfig = ({
     urlOverride?.assets === 'WEBPACK' ? String(__webpack_public_path__).removeSuffix('/') : urlOverride?.assets;
 
   // instantiate the client once, if we need to add more clients you can add them in here, ideally only one transport is necessary
-  const transport = createConnectTransport({
+  const dataplaneTransport = createConnectTransport({
     baseUrl: getGrpcBasePath(urlOverride?.grpc),
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
     jsonOptions: {
@@ -184,22 +194,38 @@ const setConfig = ({
     },
   });
 
-  const licenseGrpcClient = createClient(LicenseService, transport);
-  const consoleGrpcClient = createClient(ConsoleService, transport);
-  const debugBundleGrpcClient = createClient(DebugBundleService, transport);
-  const securityGrpcClient = createClient(SecurityService, transport);
-  const pipelinesGrpcClient = createClient(PipelineService, transport);
-  const secretGrpcClient = createClient(SecretService, transport);
-  const authenticationGrpcClient = createClient(AuthenticationService, transport);
-  const transformClient = createClient(TransformService, transport);
-  const clusterStatusGrpcClient = createClient(ClusterStatusService, transport);
-  const knowledgebaseGrpcClient = createClient(KnowledgeBaseService, transport);
-  const userGrpcClient = createClient(UserService, transport);
+  const controlplaneTransport = createConnectTransport({
+    baseUrl: config.controlplaneUrl,
+    interceptors: [addBearerTokenInterceptor],
+    jsonOptions: {
+      registry: protobufRegistry,
+    },
+  });
+
+  /* DATAPLANE CLIENTS */
+  const licenseGrpcClient = createClient(LicenseService, dataplaneTransport);
+  const consoleGrpcClient = createClient(ConsoleService, dataplaneTransport);
+  const debugBundleGrpcClient = createClient(DebugBundleService, dataplaneTransport);
+  const securityGrpcClient = createClient(SecurityService, dataplaneTransport);
+  const pipelinesGrpcClient = createClient(PipelineService, dataplaneTransport);
+  const secretGrpcClient = createClient(SecretService, dataplaneTransport);
+  const authenticationGrpcClient = createClient(AuthenticationService, dataplaneTransport);
+  const transformClient = createClient(TransformService, dataplaneTransport);
+  const clusterStatusGrpcClient = createClient(ClusterStatusService, dataplaneTransport);
+  const knowledgebaseGrpcClient = createClient(KnowledgeBaseService, dataplaneTransport);
+  const userGrpcClient = createClient(UserService, dataplaneTransport);
+
+  /* CONTROLPLANE CLIENTS */
+  const serviceAccountClient = createClient(ServiceAccountService, controlplaneTransport);
+  const roleBindingClient = createClient(RoleBindingService, controlplaneTransport);
+
   Object.assign(config, {
     jwt,
     isServerless: isServerlessMode,
     restBasePath: getRestBasePath(urlOverride?.rest),
     grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
+    controlplaneTransport,
+    dataplaneTransport,
     fetch: fetch ?? window.fetch.bind(window),
     assetsPath: assetsUrl ?? getBasePath(),
     authenticationClient: authenticationGrpcClient,
@@ -213,6 +239,8 @@ const setConfig = ({
     clusterStatusClient: clusterStatusGrpcClient,
     knowledgebaseClient: knowledgebaseGrpcClient,
     userClient: userGrpcClient,
+    serviceAccountClient,
+    roleBindingClient,
     featureFlags, // Needed for legacy UI purposes where we don't use functional components.
     ...args,
   });
