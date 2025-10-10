@@ -239,14 +239,14 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
         <CardTitle>
           <Heading level={2}>Select a topic to send data to</Heading>
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="mt-4">
           A topic is where data is sent and received in a Kafka-based system. Think of it as a streaming inbox for your
           data. Producers write data to a topic, and consumers read from it. You need to create a topic to organize and
           manage your real-time data streams, whether it's logs, events, or messages. Without a topic, there's nowhere
           for your data to go or be retrieved from.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="max-h-[50vh] min-h-[400px] overflow-y-auto">
         <Form {...form}>
           <div className="max-w-2xl space-y-6">
             <FormField

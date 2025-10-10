@@ -1,3 +1,7 @@
+import { defineStepper } from 'components/redpanda-ui/components/stepper';
+
+import type { ConnectComponentSpec } from './schema';
+
 /**
  * Components that support Redpanda secret population from wizard
  * Includes Kafka-compatible components and Redpanda migrator tools
@@ -33,3 +37,26 @@ export const WizardStep = {
 } as const;
 
 export type WizardStepType = (typeof WizardStep)[keyof typeof WizardStep];
+
+export const CUSTOM_COMPONENT_NAME = 'Custom';
+
+export const customComponentConfig: ConnectComponentSpec = {
+  name: CUSTOM_COMPONENT_NAME,
+  type: 'custom',
+  plugin: false,
+};
+
+export const wizardStepDefinitions = [
+  {
+    id: WizardStep.ADD_INPUT,
+    title: 'Send data',
+  },
+  { id: WizardStep.ADD_OUTPUT, title: 'Receive data' },
+  { id: WizardStep.ADD_TOPIC, title: 'Add a topic' },
+  { id: WizardStep.ADD_USER, title: 'Add a user' },
+  { id: WizardStep.CREATE_CONFIG, title: 'Create pipeline' },
+];
+
+const Stepper = defineStepper(...wizardStepDefinitions);
+export const WizardStepper = Stepper.Stepper;
+export type WizardStepperSteps = typeof Stepper.Steps;

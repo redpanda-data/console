@@ -29,6 +29,7 @@ export type StepSubmissionResult = {
   success: boolean;
   message?: string;
   error?: string;
+  data?: ConnectTilesFormData;
 };
 
 export type BaseStepRef = {

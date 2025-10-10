@@ -129,18 +129,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
       <PageContent>
         <div className="my-2">
           <UIText>
-            For help creating your pipeline,
-            {isFeatureFlagEnabled('enableRpcnTiles') && (
-              <>
-                {' '}
-                try the{' '}
-                <UILink as={Link} onClick={this.handleWizardClick} to="/rp-connect/wizard">
-                  wizard
-                </UILink>
-                ,{' '}
-              </>
-            )}
-            see our{' '}
+            For help creating your pipeline, see our{' '}
             <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" target="_blank">
               quickstart documentation
             </UILink>
@@ -369,7 +358,7 @@ export const PipelineEditor = observer(
     const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
-    const [persistedFormData, _] = useSessionStorage<Partial<WizardFormData>>(CONNECT_WIZARD_CONNECTOR_KEY, {});
+    const [persistedFormData] = useSessionStorage<Partial<WizardFormData>>(CONNECT_WIZARD_CONNECTOR_KEY, {});
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
     // Track actual editor content to keep sidebar in sync with editor's real state
