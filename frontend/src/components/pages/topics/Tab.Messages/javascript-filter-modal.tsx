@@ -17,8 +17,8 @@ import {
   Text,
   UnorderedList,
 } from '@redpanda-data/ui';
-import { observer, useLocalObservable } from 'mobx-react';
 import type { FC } from 'react';
+import { useState } from 'react';
 
 import FilterEditor from './editor';
 import type { FilterEntry } from '../../../../state/ui';
@@ -27,12 +27,8 @@ const JavascriptFilterModal: FC<{
   currentFilter: FilterEntry;
   onClose: () => void;
   onSave: (filter: FilterEntry) => void;
-}> = observer(({ currentFilter, onClose, onSave }) => {
-  const state = useLocalObservable<{
-    currentFilter: FilterEntry;
-  }>(() => ({
-    currentFilter: { ...currentFilter },
-  }));
+}> = ({ currentFilter, onClose, onSave }) => {
+  const [filter, setFilter] = useState<FilterEntry>({ ...currentFilter });
 
   return (
     <Modal isOpen onClose={onClose}>
@@ -47,10 +43,10 @@ const JavascriptFilterModal: FC<{
                 <Input
                   data-testid="add-javascript-filter-name"
                   onChange={(e) => {
-                    state.currentFilter.name = e.target.value;
+                    setFilter({ ...filter, name: e.target.value });
                   }}
                   placeholder="This name will appear in the filter bar"
-                  value={state.currentFilter.name}
+                  value={filter.name}
                 />
               </FormField>
             </GridItem>
@@ -61,10 +57,9 @@ const JavascriptFilterModal: FC<{
                   <FilterEditor
                     data-testid="add-javascript-filter-code"
                     onValueChange={(code, transpiled) => {
-                      state.currentFilter.code = code;
-                      state.currentFilter.transpiledCode = transpiled;
+                      setFilter({ ...filter, code, transpiledCode: transpiled });
                     }}
-                    value={state.currentFilter.code}
+                    value={filter.code}
                   />
                 </Box>
               </FormField>
@@ -102,7 +97,7 @@ const JavascriptFilterModal: FC<{
             <Button
               data-testid="add-javascript-filter-save"
               onClick={() => {
-                onSave(state.currentFilter);
+                onSave(filter);
                 onClose();
               }}
             >
@@ -113,6 +108,6 @@ const JavascriptFilterModal: FC<{
       </ModalContent>
     </Modal>
   );
-});
+};
 
 export default JavascriptFilterModal;

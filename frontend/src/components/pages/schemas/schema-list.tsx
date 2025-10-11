@@ -10,8 +10,6 @@
  */
 
 import { observer } from 'mobx-react';
-import type { RefObject } from 'react';
-import React from 'react';
 
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
@@ -53,7 +51,6 @@ import { openDeleteModal, openPermanentDeleteModal } from './modals';
 import type { SchemaRegistrySubject } from '../../../state/rest-interfaces';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
-import type SearchBar from '../../misc/search-bar';
 import Section from '../../misc/section';
 import { SmallStat } from '../../misc/small-stat';
 
@@ -103,7 +100,6 @@ function renderNotConfigured() {
 
 @observer
 class SchemaList extends PageComponent {
-  @observable searchBar: RefObject<SearchBar<{ name: string }>> = React.createRef();
   @observable filteredSchemaSubjects: { name: string }[];
   @observable isLoadingSchemaVersionMatches = false;
   @observable isHelpSidebarOpen = false;
