@@ -53,21 +53,32 @@ export type ColumnList = {
 };
 
 export type FilterType = 'code';
-export class FilterEntry {
-  constructor() {
-    makeObservable(this);
-  }
 
-  @observable isNew = false;
-  id = randomId() + randomId(); // used as react key
-  @observable filterType: FilterType = 'code';
-
-  @observable isActive = true;
-
+export type FilterEntry = {
+  isNew: boolean;
+  id: string; // used as react key
+  filterType: FilterType;
+  isActive: boolean;
   // Code
-  @observable name = ''; // name of the filter, shown instead of the code when set
-  @observable transpiledCode = 'return true;\n';
-  @observable code = 'return true\n//allow all messages'; // js code the user entered
+  name: string; // name of the filter, shown instead of the code when set
+  transpiledCode: string;
+  code: string; // js code the user entered
+};
+
+/**
+ * Factory function to create a new FilterEntry
+ */
+export function createFilterEntry(overrides?: Partial<FilterEntry>): FilterEntry {
+  return {
+    isNew: false,
+    id: randomId() + randomId(),
+    filterType: 'code',
+    isActive: true,
+    name: '',
+    transpiledCode: 'return true;\n',
+    code: 'return true\n//allow all messages',
+    ...overrides,
+  };
 }
 
 export type TimestampDisplayFormat = 'default' | 'unixTimestamp' | 'onlyDate' | 'onlyTime' | 'unixMillis' | 'relative';

@@ -28,9 +28,10 @@ import type { Payload, Topic, TopicAction, TopicMessage } from '../../../../stat
 import { Feature, isSupported } from '../../../../state/supported-features';
 import {
   type ColumnList,
+  createFilterEntry,
   type DataColumnKey,
   DEFAULT_SEARCH_PARAMS,
-  FilterEntry,
+  type FilterEntry,
   PartitionOffsetOrigin,
   type PartitionOffsetOriginType,
   type PreviewTagV2,
@@ -100,12 +101,12 @@ import { Link as ReactRouterLink } from 'react-router-dom';
 import JavascriptFilterModal from './javascript-filter-modal';
 import { getPreviewTags, PreviewSettings } from './preview-settings';
 import { isServerless } from '../../../../config';
+import { useFilterableData } from '../../../../hooks/use-filterable-data';
 import usePaginationParams from '../../../../hooks/use-pagination-params';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { appGlobal } from '../../../../state/app-global';
 import { IsDev } from '../../../../utils/env';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filter-helper';
-import { FilterableDataSource } from '../../../../utils/filterable-data-source';
 import { toJson } from '../../../../utils/json-utils';
 import { onPaginationChange } from '../../../../utils/pagination';
 import { editQuery } from '../../../../utils/query-helper';
@@ -335,11 +336,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
   @observable fetchError = null as Error | null;
 
   messageSearch = createMessageSearch();
-  messageSource = new FilterableDataSource<TopicMessage>(
-    () => this.messageSearch.messages,
-    (filterText, m) => this.isFilterMatch(filterText, m),
-    100 // Increased debounce time to match default
-  );
 
   autoSearchReaction: IReactionDisposer | null = null;
   quickSearchReaction: IReactionDisposer | null = null;
@@ -397,7 +393,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
   }
 
   componentWillUnmount() {
-    this.messageSource.dispose();
     if (this.autoSearchReaction) {
       this.autoSearchReaction();
     }
@@ -615,8 +610,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     // we need support for disabledReason in @redpanda-data/ui
                     isDisabled={!canUseFilters}
                     onClick={() => {
-                      const filter = new FilterEntry();
-                      filter.isNew = true;
+                      const filter = createFilterEntry({ isNew: true });
                       setCurrentJSFilter(filter);
                     }}
                   >
@@ -750,8 +744,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             onClose={() => setCurrentJSFilter(null)}
             onSave={(filter) => {
               if (filter.isNew) {
-                uiState.topicSettings.searchParams.filters.push(filter);
-                filter.isNew = false;
+                // Create a new object with isNew: false before pushing to the array
+                // This ensures the object in the array has the correct state
+                const savedFilter = { ...filter, isNew: false };
+                uiState.topicSettings.searchParams.filters.push(savedFilter);
               } else {
                 const idx = uiState.topicSettings.searchParams.filters.findIndex((x) => x.id === filter.id);
                 if (idx !== -1) {
@@ -768,7 +764,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
   searchFunc = (source: 'auto' | 'manual') => {
     // need to do this first, so we trigger mobx
-    const searchParams = `${this.currentParams.startOffset} ${this.currentParams.maxResults} ${this.currentParams.partitionID} ${uiState.topicSettings.searchParams.startTimestamp} ${uiState.topicSettings.searchParams.keyDeserializer} ${uiState.topicSettings.searchParams.valueDeserializer}`;
+    // Include filters in the dependency tracking so MobX knows to re-run when filters change
+    const filtersHash = uiState.topicSettings.searchParams.filters
+      .map((f) => `${f.id}:${f.isActive}:${f.code}`)
+      .join('|');
+    const searchParams = `${this.currentParams.startOffset} ${this.currentParams.maxResults} ${this.currentParams.partitionID} ${uiState.topicSettings.searchParams.startTimestamp} ${uiState.topicSettings.searchParams.keyDeserializer} ${uiState.topicSettings.searchParams.valueDeserializer} ${filtersHash}`;
 
     untracked(() => {
       const phase = this.messageSearch.searchPhase;
@@ -886,10 +886,16 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
   MessageTable = observer(() => {
     const toast = useToast();
     const breakpoint = useBreakpoint({ ssr: false });
-    const paginationParams = usePaginationParams(
-      this.messageSource.data.length,
-      uiState.topicSettings.searchParams.pageSize
+
+    // Use the useFilterableData hook to filter messages
+    const { data: filteredMessages } = useFilterableData(
+      this.messageSearch.messages,
+      (filterText, m) => this.isFilterMatch(filterText, m),
+      this.currentParams.quickSearch,
+      100
     );
+
+    const paginationParams = usePaginationParams(filteredMessages.length, uiState.topicSettings.searchParams.pageSize);
 
     const tsFormat = uiState.topicSettings.previewTimestamps;
     const hasKeyTags = uiState.topicSettings.previewTags.count((x) => x.isActive && x.searchInMessageKey) > 0;
@@ -1119,7 +1125,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       <>
         <DataTable<TopicMessage>
           columns={columns}
-          data={this.messageSource.data}
+          data={filteredMessages}
           emptyText="No messages"
           isLoading={this.messageSearch.searchPhase !== null}
           onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {

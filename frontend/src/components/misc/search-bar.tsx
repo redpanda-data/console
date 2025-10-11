@@ -10,137 +10,58 @@
  */
 
 import { SearchField } from '@redpanda-data/ui';
-import { type IReactionDisposer, reaction } from 'mobx';
-import { observer } from 'mobx-react';
-import React, { Component } from 'react';
+import { useEffect, useMemo } from 'react';
 
+import { useFilterableData } from '../../hooks/use-filterable-data';
 import { AnimatePresence, animProps_span_searchResult, MotionSpan } from '../../utils/animation-props';
-import { FilterableDataSource } from '../../utils/filterable-data-source';
 
-// todo: extract out where the filterText is retreived from / saved.
-//       this component was originally extracted out of another component, but we probably want to re-use it elsewhere in the future
-@observer
-class SearchBar<TItem> extends Component<{
+type SearchBarProps<TItem> = {
   dataSource: () => TItem[];
   isFilterMatch: (filter: string, item: TItem) => boolean;
   filterText: string;
   onQueryChanged: (value: string) => void;
   onFilteredDataChanged: (data: TItem[]) => void;
   placeholderText?: string;
-}> {
-  private filteredSource = {} as FilterableDataSource<TItem>;
-  reactionDisposer: IReactionDisposer | undefined;
+};
 
-  /*
-        todo: autocomplete:
-        - save as suggestion on focus lost, enter, or clear
-        - only show entries with matching start
-    */
-  // todo: allow setting custom "rows" to search, and case sensitive or not (pass those along to isFilterMatch)
+/*
+    todo: autocomplete:
+    - save as suggestion on focus lost, enter, or clear
+    - only show entries with matching start
+*/
+// todo: allow setting custom "rows" to search, and case sensitive or not (pass those along to isFilterMatch)
 
-  constructor(p: {
-    dataSource: () => TItem[];
-    isFilterMatch: (filter: string, item: TItem) => boolean;
-    filterText: string;
-    onQueryChanged: (value: string) => void;
-    onFilteredDataChanged: (data: TItem[]) => void;
-    placeholderText?: string;
-  }) {
-    super(p);
-    this.filteredSource = new FilterableDataSource<TItem>(this.props.dataSource, this.props.isFilterMatch);
-    this.filteredSource.filterText = this.props.filterText;
-    this.onChange = this.onChange.bind(this);
-  }
+function SearchBar<TItem>({
+  dataSource,
+  isFilterMatch,
+  filterText,
+  onQueryChanged,
+  onFilteredDataChanged,
+  placeholderText,
+}: SearchBarProps<TItem>) {
+  const sourceData = dataSource();
+  const { data: filteredData, lastFilterText } = useFilterableData(sourceData, isFilterMatch, filterText);
 
-  componentDidMount() {
-    this.reactionDisposer = reaction(
-      // Track the filtered data
-      () => this.filteredSource.data,
-      (filteredData) => {
-        this.props.onFilteredDataChanged(filteredData);
-      }
-    );
-  }
+  // Notify parent when filtered data changes
+  useEffect(() => {
+    onFilteredDataChanged(filteredData);
+  }, [filteredData, onFilteredDataChanged]);
 
-  onChange(text: string) {
-    this.filteredSource.filterText = text;
-    this.props.onQueryChanged(text);
-  }
+  const onChange = (text: string) => {
+    onQueryChanged(text);
+  };
 
-  componentWillUnmount() {
-    this.filteredSource.dispose();
-    if (this.reactionDisposer) {
-      this.reactionDisposer();
-    }
-  }
-
-  render() {
-    return (
-      <div
-        style={{
-          marginBottom: '.5rem',
-          padding: '0',
-          whiteSpace: 'nowrap',
-          display: 'flex',
-          alignItems: 'center',
-        }}
-      >
-        {/* <AutoComplete placeholder='Quick Search' size='large'
-                style={{ width: 'auto', padding: '0' }}
-                onChange={v => this.filteredSource.filterText = String(v)}
-                dataSource={['battle-logs', 'customer', 'asdfg', 'kafka', 'some word']}
-            > */}
-        <SearchField
-          placeholderText={this.props.placeholderText}
-          searchText={this.props.filterText}
-          setSearchText={this.onChange}
-          width="350px"
-          // addonAfter={
-          //     <Popover trigger='click' placement='right' title='Search Settings' content={<this.Settings />}>
-          //         <Icon type='setting' style={{ color: '#0006' }} />
-          //     </Popover>
-          // }
-        />
-
-        <this.FilterSummary />
-      </div>
-    );
-  }
-
-  FilterSummary = observer(
-    (() => {
-      const searchSummary = this.computeFilterSummary();
-
-      return (
-        <AnimatePresence>
-          {searchSummary && (
-            <MotionSpan
-              identityKey={searchSummary?.identity ?? 'null'} // identityKey={searchSummary?.identity ?? 'null'}
-              overrideAnimProps={animProps_span_searchResult}
-            >
-              <span style={{ opacity: 0.8, paddingLeft: '1em' }}>{searchSummary?.node}</span>
-            </MotionSpan>
-          )}
-        </AnimatePresence>
-      );
-    }).bind(this)
-  );
-
-  computeFilterSummary(): { identity: string; node: React.ReactNode } | null {
-    const source = this.props.dataSource();
-    if (!source || source.length === 0) {
-      // console.log('filter summary:');
-      // console.dir(source);
-      // console.dir(this.filteredSource.filterText);
+  const searchSummary = useMemo(() => {
+    if (!sourceData || sourceData.length === 0) {
       return null;
     }
 
-    if (!this.filteredSource.lastFilterText) {
+    if (!lastFilterText) {
       return null;
     }
 
-    const sourceLength = source.length;
-    const resultLength = this.filteredSource.data.length;
+    const sourceLength = sourceData.length;
+    const resultLength = filteredData.length;
 
     if (sourceLength === resultLength) {
       return { identity: 'all', node: <span>Filter matched everything</span> };
@@ -150,11 +71,48 @@ class SearchBar<TItem> extends Component<{
       identity: 'r',
       node: (
         <span>
-          <span style={{ fontWeight: 600 }}>{this.filteredSource.data.length}</span> results
+          <span style={{ fontWeight: 600 }}>{filteredData.length}</span> results
         </span>
       ),
     };
-  }
+  }, [sourceData, lastFilterText, filteredData]);
+
+  return (
+    <div
+      style={{
+        marginBottom: '.5rem',
+        padding: '0',
+        whiteSpace: 'nowrap',
+        display: 'flex',
+        alignItems: 'center',
+      }}
+    >
+      {/* <AutoComplete placeholder='Quick Search' size='large'
+                style={{ width: 'auto', padding: '0' }}
+                onChange={v => this.filteredSource.filterText = String(v)}
+                dataSource={['battle-logs', 'customer', 'asdfg', 'kafka', 'some word']}
+            > */}
+      <SearchField
+        placeholderText={placeholderText}
+        searchText={filterText}
+        setSearchText={onChange}
+        width="350px"
+        // addonAfter={
+        //     <Popover trigger='click' placement='right' title='Search Settings' content={<this.Settings />}>
+        //         <Icon type='setting' style={{ color: '#0006' }} />
+        //     </Popover>
+        // }
+      />
+
+      <AnimatePresence>
+        {searchSummary && (
+          <MotionSpan identityKey={searchSummary?.identity ?? 'null'} overrideAnimProps={animProps_span_searchResult}>
+            <span style={{ opacity: 0.8, paddingLeft: '1em' }}>{searchSummary?.node}</span>
+          </MotionSpan>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }
 
 export default SearchBar;
