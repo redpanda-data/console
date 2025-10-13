@@ -214,7 +214,9 @@ export const useDeletePipelineMutation = () => {
 };
 
 export const useGetPipelinesForSecretQuery = ({ secretId }: { secretId: Secret['id'] }) => {
-  const getPipelinesForSecretRequestDataPlane = create(GetPipelinesForSecretRequestSchemaDataPlane);
+  const getPipelinesForSecretRequestDataPlane = create(GetPipelinesForSecretRequestSchemaDataPlane, {
+    secretId,
+  });
 
   const getPipelinesForSecretRequest = create(GetPipelinesForSecretRequestSchema, {
     request: getPipelinesForSecretRequestDataPlane,
