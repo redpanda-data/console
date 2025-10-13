@@ -58,6 +58,8 @@ import { RemoteMCPDetailsPage } from './pages/mcp-servers/details/remote-mcp-det
 import { RemoteMCPListPage } from './pages/mcp-servers/list/remote-mcp-list-page';
 import { APIConnectWizard } from './pages/overview/api-connect-wizard';
 import { BrokerDetails } from './pages/overview/broker-details';
+import { ShadowLinkCreatePage } from './pages/shadowlinks/create/shadowlink-create-page';
+import { ShadowLinkListPage } from './pages/shadowlinks/list/shadowlink-list-page';
 import Overview from './pages/overview/overview';
 import type { PageComponentType, PageProps } from './pages/page';
 import QuotasList from './pages/quotas/quotas-list';
@@ -584,6 +586,17 @@ export const APP_ROUTES: IRouteEntry[] = [
   ),
   MakeRoute<{}>('/mcp-servers/create', RemoteMCPCreatePage, 'Create Remote MCP Server'),
   MakeRoute<{ id: string }>('/mcp-servers/:id', RemoteMCPDetailsPage, 'Remote MCP Details'),
+
+  MakeRoute<{}>(
+    '/shadowlinks',
+    ShadowLinkListPage,
+    'Shadow Links',
+    LinkIcon,
+    true,
+    routeVisibility(true)
+  ),
+  MakeRoute<{}>('/shadowlinks/create', ShadowLinkCreatePage, 'Create Shadow Link'),
+  MakeRoute<{ name: string }>('/shadowlinks/:name', ShadowLinkListPage, 'Shadow Link Details'),
 
   MakeRoute<{}>(
     '/agents',
