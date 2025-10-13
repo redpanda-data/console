@@ -241,7 +241,6 @@ export const AIAgentCreatePage = () => {
           description: values.description?.trim() ?? '',
           systemPrompt: values.systemPrompt.trim(),
           model: values.model.trim(),
-          dimensions: 1536, // Default embedding dimensions
           provider: create(AIAgent_ProviderSchema, {
             provider: {
               case: 'openai',
