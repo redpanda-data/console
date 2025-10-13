@@ -94,7 +94,7 @@ message AIAgent {
       string api_key = 1 [
         (google.api.field_behavior) = REQUIRED,
         (buf.validate.field).required = true,
-        (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z0-9_]+\\}$"
+        (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"
       ];
     }
 
@@ -112,7 +112,7 @@ message AIAgent {
     string client_secret = 2 [
       (google.api.field_behavior) = REQUIRED,
       (buf.validate.field).required = true,
-      (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z0-9_]+\\}$"
+      (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"
     ];
   }
 
