@@ -72,6 +72,10 @@ export class Feature {
     endpoint: 'redpanda.api.dataplane.v1.ACLService',
     method: 'POST',
   };
+  static readonly ShadowLinkService: FeatureEntry = {
+    endpoint: 'redpanda.api.console.v1alpha1.ShadowLinkService',
+    method: 'POST',
+  };
 }
 
 export function isSupported(f: FeatureEntry): boolean {
@@ -156,6 +160,9 @@ class SupportedFeatures {
   }
   @computed get schemaRegistryACLApi(): boolean {
     return isSupported(Feature.SchemaRegistryACLApi);
+  }
+  @computed get shadowLinkService(): boolean {
+    return isSupported(Feature.ShadowLinkService);
   }
 }
 
