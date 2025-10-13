@@ -6,9 +6,6 @@ components:
         description:
           description: Optional AI agent description.
           type: string
-        dimensions:
-          format: int32
-          type: integer
         display_name:
           description: User-friendly AI agent name.
           type: string
@@ -52,8 +49,8 @@ components:
         - display_name
         - system_prompt
         - provider
-        - dimensions
         - model
+        - service_account
       type: object
     AIAgent.MCPServer:
       description: MCP server configuration.
@@ -96,9 +93,6 @@ components:
         description:
           description: AI agent description.
           type: string
-        dimensions:
-          format: int32
-          type: integer
         display_name:
           description: User-friendly AI agent name.
           type: string
@@ -130,17 +124,14 @@ components:
         - display_name
         - system_prompt
         - provider
-        - dimensions
         - model
+        - service_account
       type: object
     AIAgentUpdate:
       properties:
         description:
           description: AI agent description.
           type: string
-        dimensions:
-          format: int32
-          type: integer
         display_name:
           description: User-friendly AI agent name.
           type: string
@@ -170,10 +161,6 @@ components:
             A map of tags to add, update or delete.
             If a tag's value is empty, the server interprets that as a deletion.
           type: object
-      required:
-        - provider
-        - dimensions
-        - model
       type: object
     Any:
       additionalProperties: {}
