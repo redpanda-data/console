@@ -3098,23 +3098,6 @@
   resolved "https://registry.npmjs.org/@socket.io/component-emitter/-/component-emitter-3.1.2.tgz"
   integrity sha512-9BCxFwvbGg/RsZK9tjXd8s4UcwR0MWeFQ1XEKIQVVvAGJyINdrqKMcTRyLoK8Rse1GjzLV9cwjWV1olXRWEXVA==
 
-"@stagewise-plugins/react@^0.4.7":
-  version "0.4.7"
-  resolved "https://registry.npmjs.org/@stagewise-plugins/react/-/react-0.4.7.tgz"
-  integrity sha512-o3pa/2Tc/Lo+e7OEEDx45vx2NczPgDyGYQHfCZzN0IHLVDm/mj5uSmi5Ldo2NjJdThK4hSQNA5MLc4zBhkUlNg==
-
-"@stagewise/toolbar@0.4.7":
-  version "0.4.7"
-  resolved "https://registry.npmjs.org/@stagewise/toolbar/-/toolbar-0.4.7.tgz"
-  integrity sha512-xU+lDPiGEhFs6Vx5Xwy1y43VQJIul9muN5u0eXnMoFKJYL+ku931at3gTRVP/+4BEgAC4G8P5g3pACyYa0ikOA==
-
-"@stagewise/toolbar-react@^0.4.7":
-  version "0.4.7"
-  resolved "https://registry.npmjs.org/@stagewise/toolbar-react/-/toolbar-react-0.4.7.tgz"
-  integrity sha512-of7J8uJiqq38VVxKMxO4dkshb6wOc32xx4epi+ODovMLOrN8Xv2KbYMUxEtoPEKGkZagIwEZWiXKhI8ra29NVw==
-  dependencies:
-    "@stagewise/toolbar" "0.4.7"
-
 "@standard-schema/spec@1.0.0":
   version "1.0.0"
   resolved "https://registry.npmjs.org/@standard-schema/spec/-/spec-1.0.0.tgz"
