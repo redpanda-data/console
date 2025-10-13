@@ -58,7 +58,7 @@ test.describe('Shadowlinks', () => {
 
     // Verify navigation to create page
     await expect(page).toHaveURL('/shadowlinks/create');
-    await expect(page.getByTestId('create-shadowlink-form-title')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Create Shadow Link' })).toBeVisible();
   });
 
   test('should navigate to create page when clicking create button in toolbar', async ({ page }) => {
@@ -105,8 +105,8 @@ test.describe('Shadowlinks', () => {
     // Navigate to create page
     await page.goto('/shadowlinks/create');
 
-    // Click back button
-    await page.getByTestId('back-to-list-button').click();
+    // Click cancel button
+    await page.getByRole('button', { name: 'Cancel' }).click();
 
     // Verify navigation back to list
     await expect(page).toHaveURL('/shadowlinks');

@@ -256,8 +256,8 @@ export const ShadowLinkListPage = () => {
   // Empty state when no shadowlinks exist
   if (!isLoading && !error && shadowLinks.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Card className="max-w-md">
+      <div className="flex flex-col gap-4">
+        <Card size="full">
           <CardHeader>
             <CardTitle>Create Shadowlink</CardTitle>
             <CardDescription>
