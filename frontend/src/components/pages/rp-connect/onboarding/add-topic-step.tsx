@@ -38,7 +38,7 @@ interface AddTopicStepProps {
   topicList: Topic[] | undefined;
 }
 
-export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicList }, ref) => {
+export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps>(({ topicList }, ref) => {
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
   const initialTopicOptions = useMemo(
@@ -63,7 +63,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
   }, [initialTopicOptions]);
 
   // previous form values for topic within this wizard session
-  const [persistedTopicData, setTopicFormData] = useSessionStorage<AddTopicFormData>(CONNECT_WIZARD_TOPIC_KEY);
+  const [persistedTopicData] = useSessionStorage<AddTopicFormData>(CONNECT_WIZARD_TOPIC_KEY);
 
   const defaultValues = useMemo(
     () => ({
@@ -114,11 +114,8 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
   }, [existingTopicBeingEdited, topicConfig, form]);
 
   const handleSubmit = useCallback(
-    async (data: AddTopicFormData): Promise<StepSubmissionResult> => {
+    async (data: AddTopicFormData): Promise<StepSubmissionResult<AddTopicFormData>> => {
       try {
-        // Always persist form data for wizard navigation
-        setTopicFormData(data);
-
         if (existingTopicBeingEdited) {
           // Topic already exists - check if advanced settings were modified
           const hasRetentionChanges = !isUsingDefaultRetentionSettings(data);
@@ -210,7 +207,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
         };
       }
     },
-    [existingTopicBeingEdited, setTopicFormData, updateTopicConfigMutation, createTopicMutation]
+    [existingTopicBeingEdited, updateTopicConfigMutation, createTopicMutation]
   );
 
   const handleCreateTopicOption = useCallback((value: string) => {

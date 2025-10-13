@@ -28,6 +28,14 @@ export const CRITICAL_CONNECTION_FIELDS = new Set(['addresses', 'seed_brokers', 
  */
 export const NON_CRITICAL_CONFIG_OBJECTS = new Set(['tls', 'metadata', 'batching', 'backoff', 'retry']);
 
+export const CUSTOM_COMPONENT_NAME = 'Custom';
+
+export const customComponentConfig: ConnectComponentSpec = {
+  name: CUSTOM_COMPONENT_NAME,
+  type: 'custom',
+  plugin: false,
+};
+
 export const WizardStep = {
   ADD_INPUT: 'add-input-step',
   ADD_OUTPUT: 'add-output-step',
@@ -37,14 +45,6 @@ export const WizardStep = {
 } as const;
 
 export type WizardStepType = (typeof WizardStep)[keyof typeof WizardStep];
-
-export const CUSTOM_COMPONENT_NAME = 'Custom';
-
-export const customComponentConfig: ConnectComponentSpec = {
-  name: CUSTOM_COMPONENT_NAME,
-  type: 'custom',
-  plugin: false,
-};
 
 export const wizardStepDefinitions = [
   {

@@ -5,27 +5,14 @@ import { REDPANDA_SECRET_COMPONENTS } from '../types/constants';
 import type { RawFieldSpec } from '../types/schema';
 import type { AddTopicFormData, AddUserFormData, StepSubmissionResult } from '../types/wizard';
 
-/**
- * Handles step submission results with success feedback only
- * @param result - The step submission result
- * @param onSuccess - Callback to execute on successful submission (typically methods.next())
- * @returns boolean indicating if the step should proceed
- */
-export const handleStepResult = (result: StepSubmissionResult | undefined, onSuccess: () => void): boolean => {
+export const handleStepResult = <T>(result: StepSubmissionResult<T> | undefined, onSuccess: () => void): boolean => {
   if (result?.success) {
-    // Show success toast if message provided
     if (result.message) {
       toast.success(result.message);
     }
-    // Execute success callback (navigation)
     onSuccess();
     return true;
   }
-
-  // For errors: Forms handle their own errors exclusively
-  // - Field-level errors: React Hook Form handles automatically
-  // - Form-level errors: Each form component displays its own contextual errors
-  // - No global error handling - errors stay within their respective forms
   return false;
 };
 

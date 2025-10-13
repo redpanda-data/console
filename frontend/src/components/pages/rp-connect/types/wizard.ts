@@ -16,24 +16,17 @@ export const connectTilesFormSchema = z.object({
   connectionType: z.optional(z.enum(CONNECT_COMPONENT_TYPE)),
 });
 
-const wizardFormSchema = z.object({
-  input: connectTilesFormSchema,
-  output: connectTilesFormSchema,
-});
-
-export type WizardFormData = z.infer<typeof wizardFormSchema>;
-
 export type ConnectTilesFormData = z.infer<typeof connectTilesFormSchema>;
 
-export type StepSubmissionResult = {
+export type StepSubmissionResult<T> = {
   success: boolean;
   message?: string;
   error?: string;
-  data?: ConnectTilesFormData;
+  data?: T;
 };
 
-export type BaseStepRef = {
-  triggerSubmit: () => Promise<StepSubmissionResult>;
+export type BaseStepRef<T> = {
+  triggerSubmit: () => Promise<StepSubmissionResult<T>>;
   isLoading: boolean;
 };
 
@@ -77,3 +70,12 @@ export const addUserFormSchema = z.object({
 });
 
 export type AddUserFormData = z.infer<typeof addUserFormSchema>;
+
+const wizardFormSchema = z.object({
+  input: connectTilesFormSchema,
+  output: connectTilesFormSchema,
+  topicName: z.optional(addTopicFormSchema.shape.topicName),
+  username: z.optional(addUserFormSchema.shape.username),
+});
+
+export type WizardFormData = z.infer<typeof wizardFormSchema>;

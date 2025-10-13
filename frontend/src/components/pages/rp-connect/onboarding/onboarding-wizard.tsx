@@ -26,7 +26,13 @@ import {
   wizardStepDefinitions,
 } from '../types/constants';
 import type { ExtendedConnectComponentSpec } from '../types/schema';
-import type { BaseStepRef, WizardFormData } from '../types/wizard';
+import type {
+  AddTopicFormData,
+  AddUserFormData,
+  BaseStepRef,
+  ConnectTilesFormData,
+  WizardFormData,
+} from '../types/wizard';
 import { handleStepResult } from '../utils/wizard';
 
 export type ConnectOnboardingWizardProps = {
@@ -42,19 +48,19 @@ export const ConnectOnboardingWizard = ({
   onChange,
   onCancel: onCancelProp,
 }: ConnectOnboardingWizardProps = {}) => {
-  const [persistedConnector, setPersistedConnector] = useSessionStorage<Partial<WizardFormData>>(
+  const [persistedWizardData, setPersistedWizardData] = useSessionStorage<Partial<WizardFormData>>(
     CONNECT_WIZARD_CONNECTOR_KEY,
     {}
   );
   const navigate = useNavigate();
 
   const persistedInputConnectionName = useMemo(
-    () => persistedConnector.input?.connectionName,
-    [persistedConnector.input?.connectionName]
+    () => persistedWizardData.input?.connectionName,
+    [persistedWizardData.input?.connectionName]
   );
   const persistedInputConnectionType = useMemo(
-    () => persistedConnector.input?.connectionType,
-    [persistedConnector.input?.connectionType]
+    () => persistedWizardData.input?.connectionType,
+    [persistedWizardData.input?.connectionType]
   );
 
   const [searchParams] = useSearchParams();
@@ -77,10 +83,10 @@ export const ConnectOnboardingWizard = ({
     }
   }, [searchParams]);
 
-  const addInputStepRef = useRef<BaseStepRef>(null);
-  const addOutputStepRef = useRef<BaseStepRef>(null);
-  const addTopicStepRef = useRef<BaseStepRef>(null);
-  const addUserStepRef = useRef<BaseStepRef>(null);
+  const addInputStepRef = useRef<BaseStepRef<ConnectTilesFormData>>(null);
+  const addOutputStepRef = useRef<BaseStepRef<ConnectTilesFormData>>(null);
+  const addTopicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
+  const addUserStepRef = useRef<BaseStepRef<AddUserFormData>>(null);
 
   const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
     hideInternalTopics: true,
@@ -104,12 +110,12 @@ export const ConnectOnboardingWizard = ({
         if (result?.success) {
           // Save to session storage only after validation passes
           if (result.data?.connectionName && result.data?.connectionType) {
-            setPersistedConnector({
+            setPersistedWizardData({
               input: {
                 connectionName: result.data.connectionName,
                 connectionType: result.data.connectionType,
               },
-              ...(persistedConnector.output && { output: persistedConnector.output }),
+              ...(persistedWizardData.output && { output: persistedWizardData.output }),
             });
             // Notify parent of connector selection
             onChange?.(result.data.connectionName, result.data.connectionType as string);
@@ -123,12 +129,12 @@ export const ConnectOnboardingWizard = ({
         if (result?.success) {
           // Save to session storage only after validation passes
           if (result.data?.connectionName && result.data?.connectionType) {
-            setPersistedConnector({
+            setPersistedWizardData({
               output: {
                 connectionName: result.data.connectionName,
                 connectionType: result.data.connectionType,
               },
-              ...(persistedConnector.input && { input: persistedConnector.input }),
+              ...(persistedWizardData.input && { input: persistedWizardData.input }),
             });
             // Notify parent of connector selection
             onChange?.(result.data.connectionName, result.data.connectionType as string);
@@ -139,11 +145,21 @@ export const ConnectOnboardingWizard = ({
       }
       case WizardStep.ADD_TOPIC: {
         const result = await addTopicStepRef.current?.triggerSubmit();
+        if (result?.success) {
+          setPersistedWizardData({
+            topicName: result.data?.topicName,
+          });
+        }
         handleStepResult(result, methods.next);
         break;
       }
       case WizardStep.ADD_USER: {
         const result = await addUserStepRef.current?.triggerSubmit();
+        if (result?.success) {
+          setPersistedWizardData({
+            username: result.data?.username,
+          });
+        }
         handleStepResult(result, methods.next);
         break;
       }
@@ -215,8 +231,8 @@ export const ConnectOnboardingWizard = ({
                     <ConnectTiles
                       additionalComponents={additionalComponents}
                       componentTypeFilter={['output']}
-                      defaultConnectionName={persistedConnector.output?.connectionName}
-                      defaultConnectionType={persistedConnector.output?.connectionType}
+                      defaultConnectionName={persistedWizardData.output?.connectionName}
+                      defaultConnectionType={persistedWizardData.output?.connectionType}
                       handleSkip={() => handleSkip(methods)}
                       key="output-connector-tiles"
                       ref={addOutputStepRef}
@@ -224,7 +240,6 @@ export const ConnectOnboardingWizard = ({
                       title="Read data from your pipeline"
                     />
                   ),
-                  // TODO add persisted data to both steps
                   [WizardStep.ADD_TOPIC]: () => <AddTopicStep ref={addTopicStepRef} topicList={topicList.topics} />,
                   [WizardStep.ADD_USER]: () => <AddUserStep ref={addUserStepRef} usersList={usersList?.users} />,
                   [WizardStep.CREATE_CONFIG]: () => (

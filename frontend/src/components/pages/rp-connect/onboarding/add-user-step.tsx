@@ -41,7 +41,7 @@ interface AddUserStepProps {
   usersList: ListUsersResponse_User[];
 }
 
-export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersList }, ref) => {
+export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepProps>(({ usersList }, ref) => {
   const [persistedUserData, setUserFormData] =
     useSessionStorage<Omit<AddUserFormData, 'password'>>(CONNECT_WIZARD_USER_KEY);
   const [topicData] = useSessionStorage<AddTopicFormData>(CONNECT_WIZARD_TOPIC_KEY);
@@ -124,7 +124,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
   }, [initialUserOptions]);
 
   const handleSubmit = useCallback(
-    async (userData: AddUserFormData): Promise<StepSubmissionResult> => {
+    async (userData: AddUserFormData): Promise<StepSubmissionResult<AddUserFormData>> => {
       try {
         // Persist user data WITHOUT password (passwords are write-only in the API)
         const { password: _password, ...userDataWithoutPassword } = userData;
