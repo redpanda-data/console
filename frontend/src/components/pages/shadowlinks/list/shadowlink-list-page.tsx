@@ -33,21 +33,31 @@ import {
   DataTablePagination,
   DataTableViewOptions,
 } from 'components/redpanda-ui/components/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { AlertCircle, Check, Loader2, MoreHorizontal, Pause, Plus, X } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from 'components/redpanda-ui/components/alert-dialog';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
+import { AlertCircle, Check, Loader2, Pause, Plus, Trash2, X } from 'lucide-react';
 import { runInAction } from 'mobx';
-import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { ShadowLinkState, ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import type { ShadowLink } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import React, { useEffect } from 'react';
-import { useDeleteShadowLinkMutation, useListShadowLinksQuery } from 'react-query/api/shadowlink';
+import React, { useEffect, useState } from 'react';
+import {
+  useDeleteShadowLinkMutation,
+  useFailoverShadowLinkMutation,
+  useListShadowLinksQuery,
+} from 'react-query/api/shadowlink';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
@@ -118,42 +128,132 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
     id: 'actions',
     enableHiding: false,
     cell: ({ row }) => {
+      const shadowLink = row.original;
+
+      // Check if any shadow topics are active
+      const hasActiveTopics =
+        shadowLink.status?.shadowTopicStatuses?.some((topic) => topic.state === ShadowTopicState.ACTIVE) ?? false;
+
+      const [showFailoverDialog, setShowFailoverDialog] = useState(false);
+      const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+      const [confirmationText, setConfirmationText] = useState('');
+
+      const isDeleteConfirmed = confirmationText.toLowerCase() === 'delete';
+
       const { mutate: deleteShadowLink, isPending: isDeleting } = useDeleteShadowLinkMutation({
         onSuccess: () => {
-          toast.success(`Shadowlink ${row?.original?.name} deleted`);
+          toast.success(`Shadowlink ${shadowLink.name} deleted`);
+          setShowDeleteDialog(false);
+          setConfirmationText('');
         },
         onError: (error) => {
           toast.error(`Failed to delete shadowlink: ${error.message}`);
         },
       });
 
-      const shadowLink = row.original;
+      const { mutate: failoverShadowLink, isPending: isFailingOver } = useFailoverShadowLinkMutation({
+        onSuccess: () => {
+          toast.success(`Shadowlink ${shadowLink.name} failed over successfully`);
+          setShowFailoverDialog(false);
+        },
+        onError: (error) => {
+          toast.error(`Failed to failover: ${error.message}`);
+          setShowFailoverDialog(false);
+        },
+      });
 
-      const handleDelete = (name: string) => {
-        // The mutation accepts a plain object with name and force properties
-        deleteShadowLink({ name, force: false } as Parameters<typeof deleteShadowLink>[0]);
+      const handleDelete = () => {
+        if (isDeleteConfirmed) {
+          deleteShadowLink({ name: shadowLink.name, force: false } as Parameters<typeof deleteShadowLink>[0]);
+        }
+      };
+
+      const handleFailover = () => {
+        failoverShadowLink({ name: shadowLink.name, shadowTopicName: '' } as Parameters<typeof failoverShadowLink>[0]);
       };
 
       return (
-        <div data-actions-column>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="h-8 w-8 data-[state=open]:bg-muted" size="icon" variant="ghost">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[160px]">
-              <DeleteResourceAlertDialog
-                isDeleting={isDeleting}
-                onDelete={handleDelete}
-                onOpenChange={setIsDeleteDialogOpen}
-                resourceId={shadowLink.name}
-                resourceName={shadowLink.name}
-                resourceType="Shadowlink"
-              />
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex items-center gap-2" data-actions-column>
+          {/* Failover button - only when topics are active */}
+          {hasActiveTopics && (
+            <Button onClick={() => setShowFailoverDialog(true)} size="sm" variant="outline">
+              Failover
+            </Button>
+          )}
+
+          {/* Delete button - only when topics are NOT active */}
+          {!hasActiveTopics && (
+            <Button disabled={isDeleting} onClick={() => setShowDeleteDialog(true)} size="sm" variant="destructive">
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </>
+              )}
+            </Button>
+          )}
+
+          {/* Delete confirmation dialog */}
+          <AlertDialog onOpenChange={setShowDeleteDialog} open={showDeleteDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader className="text-left">
+                <AlertDialogTitle>Delete Shadowlink</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-4">
+                  <Text>
+                    You are about to delete <InlineCode>{shadowLink.name}</InlineCode>
+                  </Text>
+                  <Text>This action will cause data loss. To confirm, type "delete" into the confirmation box below.</Text>
+                  <Input
+                    className="mt-4"
+                    onChange={(e) => setConfirmationText(e.target.value)}
+                    placeholder='Type "delete" to confirm'
+                    value={confirmationText}
+                  />
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel
+                  onClick={() => {
+                    setConfirmationText('');
+                    setShowDeleteDialog(false);
+                  }}
+                >
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                  disabled={!isDeleteConfirmed || isDeleting}
+                  onClick={handleDelete}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Failover confirmation dialog */}
+          <AlertDialog onOpenChange={setShowFailoverDialog} open={showFailoverDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Failover Shadowlink?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to failover "{shadowLink.name}"? This will promote shadow topics to become
+                  primary topics.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction disabled={isFailingOver} onClick={handleFailover}>
+                  {isFailingOver ? 'Failing over...' : 'Failover'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       );
     },
@@ -207,6 +307,9 @@ export const ShadowLinkListPage = () => {
 
   // Get shadowlinks array from response
   const shadowLinks = React.useMemo(() => shadowLinksData?.shadowLinks || [], [shadowLinksData]);
+
+  // Check if a shadowlink already exists (only one allowed)
+  const hasShadowLink = shadowLinks.length > 0;
 
   useEffect(() => {
     updatePageTitle();
@@ -284,10 +387,21 @@ export const ShadowLinkListPage = () => {
       <ShadowLinkDataTableToolbar table={table} />
       <div className="flex items-center justify-between">
         <DataTableViewOptions table={table} />
-        <Button onClick={() => navigate('/shadowlinks/create')} size="sm" variant="secondary">
-          <Plus className="h-4 w-4" />
-          Create Shadowlink
-        </Button>
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <span className="inline-block">
+              <Button disabled={hasShadowLink} onClick={() => navigate('/shadowlinks/create')} size="sm" variant="secondary">
+                <Plus className="h-4 w-4" />
+                Create Shadowlink
+              </Button>
+            </span>
+          </TooltipTrigger>
+          {hasShadowLink && (
+            <TooltipContent>
+              <p>Only one shadowlink can be created at this time</p>
+            </TooltipContent>
+          )}
+        </Tooltip>
       </div>
       <Table>
         <TableHeader>
@@ -301,7 +415,7 @@ export const ShadowLinkListPage = () => {
             </TableRow>
           ))}
         </TableHeader>
-        <TableBody>
+        <TableBody className="[&_tr:hover]:bg-transparent">
           {(() => {
             if (isLoading) {
               return (
@@ -330,7 +444,7 @@ export const ShadowLinkListPage = () => {
             if (table.getRowModel().rows?.length) {
               return table.getRowModel().rows.map((row) => (
                 <TableRow
-                  className="cursor-pointer hover:bg-muted/50"
+                  className="cursor-pointer"
                   data-state={row.getIsSelected() && 'selected'}
                   data-testid={`shadowlink-row-${row.original.name}`}
                   key={row.id}

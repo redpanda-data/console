@@ -18,7 +18,8 @@ import {
   deleteShadowLink,
   listShadowLinks,
 } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
-import { ListShadowLinksRequestSchema, ShadowLinkService } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { failOver } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink-ShadowLinkService_connectquery';
+import { ListShadowLinksRequestSchema } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 /**
@@ -40,7 +41,7 @@ export const useCreateShadowLinkMutation = (options?: { onSuccess?: () => void }
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
-          schema: ShadowLinkService.method.listShadowLinks,
+          schema: listShadowLinks,
           cardinality: 'finite',
         }),
         exact: false,
@@ -69,7 +70,33 @@ export const useDeleteShadowLinkMutation = (options?: {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
-          schema: ShadowLinkService.method.listShadowLinks,
+          schema: listShadowLinks,
+          cardinality: 'finite',
+        }),
+        exact: false,
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error) => {
+      options?.onError?.(error);
+    },
+  });
+};
+
+/**
+ * Hook to failover a shadow link
+ */
+export const useFailoverShadowLinkMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: ConnectError) => void;
+}) => {
+  const queryClient = useQueryClient();
+
+  return useMutation(failOver, {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: listShadowLinks,
           cardinality: 'finite',
         }),
         exact: false,
