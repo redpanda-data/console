@@ -7,10 +7,12 @@ package dataplanev1connect
 import (
 	context "context"
 	fmt "fmt"
+
 	runtime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	v1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
 	connect_gateway "go.vallahaye.net/connect-gateway"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
+
+	v1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
 )
 
 // KafkaConnectServiceGatewayServer implements the gRPC server API for the KafkaConnectService
