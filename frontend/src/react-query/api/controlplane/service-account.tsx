@@ -15,6 +15,7 @@ import {
 import { listRoleBindings } from '@buf/redpandadata_cloud.connectrpc_query-es/redpanda/api/iam/v1/role_binding-RoleBindingService_connectquery';
 import {
   createServiceAccount,
+  deleteServiceAccount,
   getServiceAccount,
   getServiceAccountCredentials,
   listServiceAccounts,
@@ -183,6 +184,35 @@ export const useRotateServiceAccountSecretMutation = () => {
         error,
         action: 'rotate',
         entity: 'service account secret',
+      });
+    },
+  });
+};
+
+export const useDeleteServiceAccountMutation = (options?: { skipInvalidation?: boolean }) => {
+  const queryClient = useQueryClient();
+
+  return useMutation(deleteServiceAccount, {
+    onSuccess: async () => {
+      if (!options?.skipInvalidation) {
+        await queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({
+            schema: ServiceAccountService.method.listServiceAccounts,
+            cardinality: 'finite',
+          }),
+          exact: false,
+        });
+      }
+    },
+    onError: (error) => {
+      if (error.code === Code.PermissionDenied) {
+        return;
+      }
+
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'delete',
+        entity: 'service account',
       });
     },
   });
