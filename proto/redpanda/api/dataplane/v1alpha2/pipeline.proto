@@ -48,6 +48,8 @@ message Pipeline {
 
   Status status = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  ServiceAccount service_account = 10 [(google.api.field_behavior) = OPTIONAL];
+
   message Resources {
     // `memory_shares` is a string specifying the amount of memory to allocate for
     // the pipeline.
@@ -97,6 +99,11 @@ message Pipeline {
   // Pipeline status may contain an error message.
   message Status {
     string error = 2;
+  }
+
+  message ServiceAccount {
+    string client_id = 1;
+    string client_secret = 2 [(buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"];
   }
 }
 
@@ -411,6 +418,8 @@ message PipelineCreate {
 
   // The number of resources that are guaranteed to be assigned to the pipeline.
   Pipeline.Resources resources = 6;
+
+  Pipeline.ServiceAccount service_account = 7 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // CreatePipelineRequest is the request of CreatePipeline.
@@ -496,6 +505,8 @@ message PipelineUpdate {
 
   // The number of resources that are guaranteed to be assigned to the pipeline.
   Pipeline.Resources resources = 6;
+
+  Pipeline.ServiceAccount service_account = 7 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message UpdatePipelineRequest {
