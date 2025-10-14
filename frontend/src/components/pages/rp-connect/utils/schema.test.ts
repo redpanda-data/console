@@ -20,7 +20,7 @@ describe('generateDefaultValue', () => {
         is_optional: true,
       };
 
-      const result = generateDefaultValue(spec, false);
+      const result = generateDefaultValue(spec, { showOptionalFields: false });
 
       expect(result).toBeUndefined();
     });
@@ -34,7 +34,7 @@ describe('generateDefaultValue', () => {
         is_optional: true,
       };
 
-      const result = generateDefaultValue(spec, true);
+      const result = generateDefaultValue(spec, { showOptionalFields: true });
 
       expect(result).toBe('benthos');
     });
@@ -48,7 +48,7 @@ describe('generateDefaultValue', () => {
         is_optional: false,
       };
 
-      const result = generateDefaultValue(spec, false);
+      const result = generateDefaultValue(spec, { showOptionalFields: false });
 
       expect(result).toBe('');
     });
@@ -65,7 +65,7 @@ describe('generateDefaultValue', () => {
         is_optional: true,
       };
 
-      const result = generateDefaultValue(spec, false);
+      const result = generateDefaultValue(spec, { showOptionalFields: false });
 
       expect(result).toBeUndefined();
     });
@@ -80,7 +80,7 @@ describe('generateDefaultValue', () => {
         is_optional: true,
       };
 
-      const result = generateDefaultValue(spec, true);
+      const result = generateDefaultValue(spec, { showOptionalFields: true });
 
       expect(result).toBe('');
     });
@@ -104,7 +104,7 @@ describe('generateDefaultValue', () => {
         default: '',
       };
 
-      const result = generateDefaultValue(spec, false, 'redpanda');
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'redpanda' });
 
       expect(result).toBe('example');
     });
@@ -117,7 +117,7 @@ describe('generateDefaultValue', () => {
         default: [],
       };
 
-      const result = generateDefaultValue(spec, false, 'redpanda');
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'redpanda' });
 
       expect(result).toEqual(['example']);
     });
@@ -130,7 +130,7 @@ describe('generateDefaultValue', () => {
         default: '',
       };
 
-      const result = generateDefaultValue(spec, false, 'http');
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'http' });
 
       expect(result).toBe('');
     });
@@ -143,7 +143,7 @@ describe('generateDefaultValue', () => {
         default: '',
       };
 
-      const result = generateDefaultValue(spec, false, 'redpanda_migrator');
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'redpanda_migrator' });
 
       expect(result).toBe('example');
     });
@@ -156,7 +156,7 @@ describe('generateDefaultValue', () => {
         default: [],
       };
 
-      const result = generateDefaultValue(spec, false, 'redpanda_common');
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'redpanda_common' });
 
       expect(result).toEqual(['example']);
     });
@@ -170,7 +170,10 @@ describe('generateDefaultValue', () => {
         is_advanced: true,
       };
 
-      const result = generateDefaultValue(spec, false, 'redpanda_migrator_offsets');
+      const result = generateDefaultValue(spec, {
+        showOptionalFields: false,
+        componentName: 'redpanda_migrator_offsets',
+      });
 
       expect(result).toBe('admin');
     });
@@ -184,7 +187,7 @@ describe('generateDefaultValue', () => {
         is_advanced: true,
       };
 
-      const result = generateDefaultValue(spec, false, 'kafka');
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' });
 
       expect(result).toBe('admin');
     });
@@ -199,9 +202,286 @@ describe('generateDefaultValue', () => {
         is_secret: true,
       };
 
-      const result = generateDefaultValue(spec, false, 'kafka');
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' });
 
       expect(result).toBe('');
+    });
+  });
+
+  describe('Contextual variables population', () => {
+    beforeEach(() => {
+      // Clear wizard data to test contextual variable defaults
+      sessionStorage.clear();
+    });
+
+    test('should populate seed_brokers with REDPANDA_BROKERS for redpanda components', () => {
+      const spec: RawFieldSpec = {
+        name: 'seed_brokers',
+        type: 'string',
+        kind: 'array',
+        default: [],
+      };
+
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'redpanda' });
+
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(result).toEqual(['${REDPANDA_BROKERS}']);
+    });
+
+    test('should populate addresses with REDPANDA_BROKERS for kafka components', () => {
+      const spec: RawFieldSpec = {
+        name: 'addresses',
+        type: 'string',
+        kind: 'array',
+        default: [],
+      };
+
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' });
+
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(result).toEqual(['${REDPANDA_BROKERS}']);
+    });
+
+    test('should populate brokers string field with REDPANDA_BROKERS', () => {
+      const spec: RawFieldSpec = {
+        name: 'brokers',
+        type: 'string',
+        kind: 'scalar',
+        default: '',
+      };
+
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' });
+
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(result).toBe('${REDPANDA_BROKERS}');
+    });
+
+    test('should populate schema_registry.url with REDPANDA_SCHEMA_REGISTRY_URL', () => {
+      const spec: RawFieldSpec = {
+        name: 'url',
+        type: 'string',
+        kind: 'scalar',
+        default: '',
+      };
+
+      const result = generateDefaultValue(spec, {
+        showOptionalFields: false,
+        componentName: 'kafka',
+        parentName: 'schema_registry',
+      });
+
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(result).toBe('${REDPANDA_SCHEMA_REGISTRY_URL}');
+    });
+
+    test('should NOT populate url when parent is not schema_registry', () => {
+      const spec: RawFieldSpec = {
+        name: 'url',
+        type: 'string',
+        kind: 'scalar',
+        default: 'http://example.com',
+        is_optional: false, // Make it required so it's not hidden
+      };
+
+      const result = generateDefaultValue(spec, {
+        showOptionalFields: false,
+        componentName: 'kafka',
+        parentName: 'http',
+      });
+
+      // Should not populate contextual variable, just return default
+      expect(result).toBe('http://example.com');
+    });
+
+    test('should NOT populate contextual variables for non-REDPANDA_SECRET_COMPONENTS', () => {
+      const spec: RawFieldSpec = {
+        name: 'seed_brokers',
+        type: 'string',
+        kind: 'array',
+        default: [],
+      };
+
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'http' });
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('Connection defaults for Redpanda Cloud', () => {
+    beforeEach(() => {
+      // Clear wizard data to test connection defaults
+      sessionStorage.clear();
+    });
+
+    test('should set TLS enabled to true for REDPANDA_SECRET_COMPONENTS', () => {
+      const spec: RawFieldSpec = {
+        name: 'enabled',
+        type: 'bool',
+        kind: 'scalar',
+        default: false,
+      };
+
+      const result = generateDefaultValue(spec, {
+        showOptionalFields: false,
+        componentName: 'kafka',
+        parentName: 'tls',
+      });
+
+      expect(result).toBe(true);
+    });
+
+    test('should NOT set TLS enabled for non-REDPANDA_SECRET_COMPONENTS', () => {
+      const spec: RawFieldSpec = {
+        name: 'enabled',
+        type: 'bool',
+        kind: 'scalar',
+        default: false,
+      };
+
+      const result = generateDefaultValue(spec, {
+        showOptionalFields: false,
+        componentName: 'http',
+        parentName: 'tls',
+      });
+
+      expect(result).toBe(false);
+    });
+
+    test('should default SASL mechanism to SCRAM-SHA-256 for REDPANDA_SECRET_COMPONENTS', () => {
+      const spec: RawFieldSpec = {
+        name: 'mechanism',
+        type: 'string',
+        kind: 'scalar',
+        default: 'none',
+      };
+
+      const result = generateDefaultValue(spec, {
+        showOptionalFields: false,
+        componentName: 'kafka',
+        parentName: 'sasl',
+      });
+
+      expect(result).toBe('SCRAM-SHA-256');
+    });
+
+    test('should use wizard SASL mechanism when available', () => {
+      sessionStorage.setItem(
+        CONNECT_WIZARD_USER_KEY,
+        JSON.stringify({ username: 'admin', saslMechanism: 'SCRAM-SHA-512' })
+      );
+
+      const spec: RawFieldSpec = {
+        name: 'mechanism',
+        type: 'string',
+        kind: 'scalar',
+        default: 'none',
+      };
+
+      const result = generateDefaultValue(spec, {
+        showOptionalFields: false,
+        componentName: 'kafka',
+        parentName: 'sasl',
+      });
+
+      expect(result).toBe('SCRAM-SHA-512');
+    });
+
+    test('should NOT set mechanism for non-REDPANDA_SECRET_COMPONENTS', () => {
+      const spec: RawFieldSpec = {
+        name: 'mechanism',
+        type: 'string',
+        kind: 'scalar',
+        default: 'none',
+      };
+
+      const result = generateDefaultValue(spec, {
+        showOptionalFields: false,
+        componentName: 'http',
+        parentName: 'sasl',
+      });
+
+      expect(result).toBe('none');
+    });
+  });
+
+  describe('Secrets syntax when no wizard data', () => {
+    beforeEach(() => {
+      // Clear wizard data to test secrets syntax defaults
+      sessionStorage.clear();
+    });
+
+    test('should use secrets syntax for user field when no wizard data', () => {
+      const spec: RawFieldSpec = {
+        name: 'user',
+        type: 'string',
+        kind: 'scalar',
+        default: '',
+      };
+
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' });
+
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(result).toBe('${secrets.REDPANDA_USERNAME}');
+    });
+
+    test('should use secrets syntax for password field when no wizard data', () => {
+      const spec: RawFieldSpec = {
+        name: 'password',
+        type: 'string',
+        kind: 'scalar',
+        default: '',
+        is_secret: true,
+      };
+
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' });
+
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(result).toBe('${secrets.REDPANDA_PASSWORD}');
+    });
+
+    test('should use secrets syntax for username field when no wizard data', () => {
+      const spec: RawFieldSpec = {
+        name: 'username',
+        type: 'string',
+        kind: 'scalar',
+        default: '',
+      };
+
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'redpanda' });
+
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(result).toBe('${secrets.REDPANDA_USERNAME}');
+    });
+
+    test('should NOT use secrets syntax for non-REDPANDA_SECRET_COMPONENTS', () => {
+      const spec: RawFieldSpec = {
+        name: 'user',
+        type: 'string',
+        kind: 'scalar',
+        default: '',
+      };
+
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'http' });
+
+      expect(result).toBe('');
+    });
+
+    test('wizard data should take precedence over secrets syntax', () => {
+      sessionStorage.setItem(
+        CONNECT_WIZARD_USER_KEY,
+        JSON.stringify({ username: 'wizard-user', saslMechanism: 'SCRAM-SHA-256' })
+      );
+
+      const spec: RawFieldSpec = {
+        name: 'user',
+        type: 'string',
+        kind: 'scalar',
+        default: '',
+      };
+
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' });
+
+      expect(result).toBe('wizard-user');
     });
   });
 
@@ -254,10 +534,13 @@ describe('generateDefaultValue', () => {
         ],
       };
 
-      const result = generateDefaultValue(saslSpec, false, 'kafka') as Record<string, unknown>;
+      const result = generateDefaultValue(saslSpec, { showOptionalFields: false, componentName: 'kafka' }) as Record<
+        string,
+        unknown
+      >;
 
       expect(result).toBeDefined();
-      expect(result.mechanism).toBe('none');
+      expect(result.mechanism).toBe('SCRAM-SHA-256'); // Now uses wizard saslMechanism
       expect(result.user).toBe('admin');
       expect(result.password).toBe('');
       expect(result.access_token).toBeUndefined(); // Optional advanced field should be hidden
@@ -283,7 +566,7 @@ describe('generateDefaultValue', () => {
         ],
       };
 
-      const result = generateDefaultValue(saslSpec, false, 'kafka');
+      const result = generateDefaultValue(saslSpec, { showOptionalFields: false, componentName: 'kafka' });
 
       expect(result).toBeUndefined();
     });
@@ -329,9 +612,13 @@ describe('generateDefaultValue', () => {
 
       sessionStorage.setItem(CONNECT_WIZARD_TOPIC_KEY, JSON.stringify({ topicName: 'example' }));
 
-      const result = generateDefaultValue(spec, false, 'kafka') as Record<string, unknown>;
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' }) as Record<
+        string,
+        unknown
+      >;
 
-      expect(result.addresses).toEqual([]);
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(result.addresses).toEqual(['${REDPANDA_BROKERS}']); // Now populated with contextual variable
       expect(result.topic).toBe('example'); // Populated from wizard
       expect(result.client_id).toBeUndefined(); // Optional - hidden
       expect(result.timeout).toBeUndefined(); // Optional - hidden
@@ -397,7 +684,10 @@ describe('generateDefaultValue', () => {
 
       sessionStorage.setItem(CONNECT_WIZARD_TOPIC_KEY, JSON.stringify({ topicName: 'example' }));
 
-      const result = generateDefaultValue(spec, false, 'kafka') as Record<string, unknown>;
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' }) as Record<
+        string,
+        unknown
+      >;
 
       expect(result.topic).toBe('example');
       expect(result.tls).toBeUndefined(); // Should NOT be shown
@@ -413,7 +703,7 @@ describe('generateDefaultValue', () => {
         default: [],
       };
 
-      const result = generateDefaultValue(spec, false, 'redpanda');
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'redpanda' });
 
       // Empty array for optional field should be undefined
       expect(result).toBeUndefined();
@@ -436,7 +726,7 @@ describe('generateDefaultValue', () => {
         ],
       };
 
-      const result = generateDefaultValue(spec, false, 'kafka');
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' });
 
       // Optional object with only optional children should be undefined
       expect(result).toBeUndefined();
@@ -459,7 +749,11 @@ describe('generateDefaultValue', () => {
       expect(tlsSpec?.is_optional).toBeUndefined();
 
       if (tlsSpec) {
-        const result = generateDefaultValue(tlsSpec, false, 'kafka', false);
+        const result = generateDefaultValue(tlsSpec, {
+          showOptionalFields: false,
+          componentName: 'kafka',
+          insideWizardContext: false,
+        });
         expect(result).toBeUndefined();
       }
     });
@@ -474,7 +768,11 @@ describe('generateDefaultValue', () => {
       expect(clientIdSpec?.default).toBe('benthos');
 
       if (clientIdSpec) {
-        const result = generateDefaultValue(clientIdSpec, false, 'kafka', false);
+        const result = generateDefaultValue(clientIdSpec, {
+          showOptionalFields: false,
+          componentName: 'kafka',
+          insideWizardContext: false,
+        });
         expect(result).toBeUndefined();
       }
     });
@@ -488,7 +786,8 @@ describe('generateDefaultValue', () => {
 
       expect(outputConfig).toBeDefined();
       expect(outputConfig.topic).toBe('example');
-      expect(outputConfig.addresses).toEqual([]);
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(outputConfig.addresses).toEqual(['${REDPANDA_BROKERS}']); // Now populated with contextual variable
 
       // Should have sasl with user
       expect(outputConfig.sasl).toBeDefined();
@@ -521,7 +820,8 @@ describe('generateDefaultValue', () => {
 
       expect(inputConfig).toBeDefined();
       expect(inputConfig.topics).toEqual(['example']);
-      expect(inputConfig.seed_brokers).toEqual([]);
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(inputConfig.seed_brokers).toEqual(['${REDPANDA_BROKERS}']); // Now populated with contextual variable
 
       // Should have sasl array with username populated (redpanda uses array-based SASL)
       expect(inputConfig.sasl).toBeDefined();
