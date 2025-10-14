@@ -245,7 +245,10 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
                 key={rule.id}
               >
                 {/* Combined Resource and Selector */}
-                <p className="capitalize-first text-gray-600 text-xs" data-testid={`${getRuleDataTestId(rule)}-title`}>
+                <p
+                  className="text-gray-600 text-xs first-letter:uppercase"
+                  data-testid={`${getRuleDataTestId(rule)}-title`}
+                >
                   {(() => {
                     let text: string;
                     if (rule.resourceType === ResourceTypeCluster || rule.resourceType === ResourceTypeSchemaRegistry) {

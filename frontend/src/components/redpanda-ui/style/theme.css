@@ -178,12 +178,3 @@
     }
   }
 }
-
-@layer utilities {
-  .capitalize-first {
-    text-transform: lowercase;
-  }
-  .capitalize-first::first-letter {
-    text-transform: uppercase;
-  }
-}
