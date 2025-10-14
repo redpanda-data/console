@@ -14,39 +14,36 @@
 import { create } from '@bufbuild/protobuf';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from 'components/redpanda-ui/components/form';
-import { Input } from 'components/redpanda-ui/components/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from 'components/redpanda-ui/components/select';
-import { Switch } from 'components/redpanda-ui/components/switch';
-import { Textarea } from 'components/redpanda-ui/components/textarea';
+import { Form } from 'components/redpanda-ui/components/form';
+import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { Loader2, Plus, X } from 'lucide-react';
+import { ArrowLeft, Link2, Loader2, Settings, Shield, Users } from 'lucide-react';
 import { runInAction } from 'mobx';
 import {
+  ACLOperation,
+  ACLPattern,
+  ACLPermissionType,
+  ACLResource,
+} from 'protogen/redpanda/core/common/acl_pb';
+import {
+  ACLAccessFilterSchema,
+  ACLFilterSchema,
+  ACLResourceFilterSchema,
   AuthenticationConfigurationSchema,
+  ConsumerOffsetSyncOptionsSchema,
   CreateShadowLinkRequestSchema,
+  FilterType,
+  NameFilterSchema,
+  PatternType,
   ScramConfigSchema,
   ScramMechanism,
+  SecuritySettingsSyncOptionsSchema,
   ShadowLinkClientOptionsSchema,
   ShadowLinkConfigurationsSchema,
   ShadowLinkSchema,
   TLSFileSettingsSchema,
   TLSPEMSettingsSchema,
+  TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import React, { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -55,7 +52,39 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
+import { AclsStep } from './acls-step';
+import { ConnectionStep } from './connection-step';
+import { ConsumerOffsetStep } from './consumer-offset-step';
 import { FormSchema, type FormValues, initialValues, TLS_MODE } from './schemas';
+import { TopicsStep } from './topics-step';
+
+// Stepper definition
+const { Stepper } = defineStepper(
+  {
+    id: 'connection',
+    title: 'Connection',
+    description: 'Configure source cluster',
+    icon: <Link2 className="h-4 w-4" />,
+  },
+  {
+    id: 'topics',
+    title: 'Topics',
+    description: 'Select topics to mirror',
+    icon: <Settings className="h-4 w-4" />,
+  },
+  {
+    id: 'acls',
+    title: 'ACLs',
+    description: 'Select ACLs to mirror',
+    icon: <Shield className="h-4 w-4" />,
+  },
+  {
+    id: 'consumer-offsets',
+    title: 'Consumer Groups',
+    description: 'Sync consumer groups',
+    icon: <Users className="h-4 w-4" />,
+  }
+);
 
 // Update page title using uiState pattern
 export const updatePageTitle = () => {
@@ -95,9 +124,71 @@ export const ShadowLinkCreatePage = () => {
     name: 'bootstrapServers',
   });
 
+  const {
+    fields: topicPropertiesFields,
+    append: appendTopicProperty,
+    remove: removeTopicProperty,
+  } = useFieldArray({
+    control: form.control,
+    name: 'topicProperties',
+  });
+
+  const {
+    fields: aclFiltersFields,
+    append: appendAclFilter,
+    remove: removeAclFilter,
+  } = useFieldArray({
+    control: form.control,
+    name: 'aclFilters',
+  });
+
   useEffect(() => {
     updatePageTitle();
   }, []);
+
+  const handleNext = async (currentStep: string, goNext: () => void) => {
+    if (currentStep === 'connection') {
+      // Validate connection step fields
+      const valid = await form.trigger([
+        'name',
+        'bootstrapServers',
+        'useScram',
+        'scramUsername',
+        'scramPassword',
+        'scramMechanism',
+        'useTls',
+        'tlsMode',
+        'tlsCaPath',
+        'tlsKeyPath',
+        'tlsCertPath',
+        'tlsCaPem',
+        'tlsKeyPem',
+        'tlsCertPem',
+      ]);
+      if (!valid) {
+        return;
+      }
+      goNext();
+    } else if (currentStep === 'topics') {
+      // Validate topics step fields
+      const valid = await form.trigger([
+        'includeAllTopics',
+        'listSpecificTopics',
+        'specificTopicNames',
+        'includeTopicPrefix',
+        'includePrefix',
+        'excludeTopicPrefix',
+        'excludePrefix',
+      ]);
+      if (!valid) {
+        return;
+      }
+      goNext();
+    } else if (currentStep === 'acls') {
+      // ACLs are optional, always allow next
+      goNext();
+    }
+  };
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -143,11 +234,140 @@ export const ShadowLinkCreatePage = () => {
         }
       }
 
+      // Build topic filters from form selections
+      const topicFilters = [];
+      if (values.includeAllTopics) {
+        topicFilters.push(
+          create(NameFilterSchema, {
+            patternType: PatternType.LITERAL,
+            filterType: FilterType.INCLUDE,
+            name: '*',
+          })
+        );
+      }
+      if (values.listSpecificTopics && values.specificTopicNames) {
+        const topics = values.specificTopicNames.split(',').map((t) => t.trim()).filter(Boolean);
+        for (const topic of topics) {
+          topicFilters.push(
+            create(NameFilterSchema, {
+              patternType: PatternType.LITERAL,
+              filterType: FilterType.INCLUDE,
+              name: topic,
+            })
+          );
+        }
+      }
+      if (values.includeTopicPrefix && values.includePrefix) {
+        topicFilters.push(
+          create(NameFilterSchema, {
+            patternType: PatternType.PREFIX,
+            filterType: FilterType.INCLUDE,
+            name: values.includePrefix,
+          })
+        );
+      }
+      if (values.excludeTopicPrefix && values.excludePrefix) {
+        topicFilters.push(
+          create(NameFilterSchema, {
+            patternType: PatternType.PREFIX,
+            filterType: FilterType.EXCLUDE,
+            name: values.excludePrefix,
+          })
+        );
+      }
+
+      // Build topic metadata sync options
+      const topicMetadataSyncOptions = create(TopicMetadataSyncOptionsSchema, {
+        autoCreateShadowTopicFilters: topicFilters,
+        shadowedTopicProperties: values.topicProperties?.filter((p) => p.trim()) || [],
+        interval: { seconds: '30' },
+      });
+
+      // Build ACL filters from form
+      const aclFilters = (values.aclFilters || []).map((filter) =>
+        create(ACLFilterSchema, {
+          resourceFilter: create(ACLResourceFilterSchema, {
+            resourceType: filter.resourceType ?? ACLResource.ACL_RESOURCE_ANY,
+            patternType: filter.resourcePattern ?? ACLPattern.ACL_PATTERN_ANY,
+            name: filter.resourceName || '*',
+          }),
+          accessFilter: create(ACLAccessFilterSchema, {
+            principal: filter.principal || '',
+            operation: filter.operation ?? ACLOperation.ACL_OPERATION_ANY,
+            permissionType: filter.permissionType ?? ACLPermissionType.ACL_PERMISSION_TYPE_ALLOW,
+            host: filter.host || '*',
+          }),
+        })
+      );
+
+      // Build security sync options
+      const securitySyncOptions = create(SecuritySettingsSyncOptionsSchema, {
+        aclFilters,
+        roleFilters: [],
+        scramCredFilters: [],
+        enabled: aclFilters.length > 0,
+        interval: { seconds: '30' },
+      });
+
+      // Build consumer group filters from form selections
+      const groupFilters = [];
+      if (values.enableConsumerOffsetSync) {
+        if (values.includeAllGroups) {
+          groupFilters.push(
+            create(NameFilterSchema, {
+              patternType: PatternType.LITERAL,
+              filterType: FilterType.INCLUDE,
+              name: '*',
+            })
+          );
+        }
+        if (values.listSpecificGroups && values.specificGroupNames) {
+          const groups = values.specificGroupNames.split(',').map((g) => g.trim()).filter(Boolean);
+          for (const group of groups) {
+            groupFilters.push(
+              create(NameFilterSchema, {
+                patternType: PatternType.LITERAL,
+                filterType: FilterType.INCLUDE,
+                name: group,
+              })
+            );
+          }
+        }
+        if (values.includeGroupPrefix && values.includeGroupPrefixValue) {
+          groupFilters.push(
+            create(NameFilterSchema, {
+              patternType: PatternType.PREFIX,
+              filterType: FilterType.INCLUDE,
+              name: values.includeGroupPrefixValue,
+            })
+          );
+        }
+        if (values.excludeGroupPrefix && values.excludeGroupPrefixValue) {
+          groupFilters.push(
+            create(NameFilterSchema, {
+              patternType: PatternType.PREFIX,
+              filterType: FilterType.EXCLUDE,
+              name: values.excludeGroupPrefixValue,
+            })
+          );
+        }
+      }
+
+      // Build consumer offset sync options
+      const consumerOffsetSyncOptions = create(ConsumerOffsetSyncOptionsSchema, {
+        groupFilters,
+        enabled: values.enableConsumerOffsetSync,
+        interval: { seconds: String(values.consumerOffsetSyncInterval || 30) },
+      });
+
       const configurations = create(ShadowLinkConfigurationsSchema, {
         clientOptions,
         authenticationConfiguration,
         tlsFileSettings,
         tlsPemSettings,
+        topicMetadataSyncOptions,
+        securitySyncOptions,
+        consumerOffsetSyncOptions,
       });
 
       const shadowLink = create(ShadowLinkSchema, {
@@ -166,9 +386,35 @@ export const ShadowLinkCreatePage = () => {
     }
   };
 
-  const useTls = form.watch('useTls');
-  const tlsMode = form.watch('tlsMode');
-  const useScram = form.watch('useScram');
+  // Check if connection step has errors
+  const hasConnectionErrors =
+    !!form.formState.errors.name ||
+    !!form.formState.errors.bootstrapServers ||
+    !!form.formState.errors.useScram ||
+    !!form.formState.errors.scramUsername ||
+    !!form.formState.errors.scramPassword ||
+    !!form.formState.errors.scramMechanism ||
+    !!form.formState.errors.useTls ||
+    !!form.formState.errors.tlsCaPath ||
+    !!form.formState.errors.tlsCaPem;
+
+  // Check if topics step has errors
+  const hasTopicErrors =
+    !!form.formState.errors.topicSelection ||
+    !!form.formState.errors.specificTopicNames ||
+    !!form.formState.errors.includePrefix ||
+    !!form.formState.errors.excludePrefix;
+
+  // Check if ACLs step has errors
+  const hasAclErrors = !!form.formState.errors.aclFilters;
+
+  // Check if consumer offset step has errors
+  const hasConsumerOffsetErrors =
+    !!form.formState.errors.groupSelection ||
+    !!form.formState.errors.specificGroupNames ||
+    !!form.formState.errors.includeGroupPrefixValue ||
+    !!form.formState.errors.excludeGroupPrefixValue ||
+    !!form.formState.errors.consumerOffsetSyncInterval;
 
   return (
     <div className="flex flex-col gap-4">
@@ -180,368 +426,124 @@ export const ShadowLinkCreatePage = () => {
         </Text>
       </div>
 
-      <Form {...form}>
-        <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
-          {/* Basic Information */}
-          <Card size="full">
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel required>Shadow Link Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="my-shadow-link" {...field} />
-                    </FormControl>
-                    <FormDescription>A unique name for this shadow link</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
+      <Stepper.Provider className="space-y-4" variant="horizontal">
+        {({ methods }) => (
+          <>
+            <Stepper.Navigation>
+              <Stepper.Step of="connection">
+                <Stepper.Title>Connection</Stepper.Title>
+                <Stepper.Description>Configure source cluster</Stepper.Description>
+              </Stepper.Step>
+              <Stepper.Step disabled of="topics">
+                <Stepper.Title>Topics</Stepper.Title>
+                <Stepper.Description>Select topics to mirror</Stepper.Description>
+              </Stepper.Step>
+              <Stepper.Step disabled of="acls">
+                <Stepper.Title>ACLs</Stepper.Title>
+                <Stepper.Description>Select ACLs to mirror</Stepper.Description>
+              </Stepper.Step>
+              <Stepper.Step disabled of="consumer-offsets">
+                <Stepper.Title>Consumer Groups</Stepper.Title>
+                <Stepper.Description>Sync consumer groups</Stepper.Description>
+              </Stepper.Step>
+            </Stepper.Navigation>
 
-          {/* Source Cluster Connection */}
-          <Card size="full">
-            <CardHeader>
-              <CardTitle>Source Cluster Connection</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <FormLabel required>Bootstrap Servers</FormLabel>
-                  <FormDescription>
-                    Kafka bootstrap server addresses for the source cluster (e.g., broker1:9092)
-                  </FormDescription>
-                  {bootstrapServerFields.map((field, index) => (
-                    <div className="flex items-center gap-2" key={field.id}>
-                      <FormField
-                        control={form.control}
-                        name={`bootstrapServers.${index}`}
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormControl>
-                              <Input placeholder="broker1:9092" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      {bootstrapServerFields.length > 1 && (
-                        <Button
-                          onClick={() => removeBootstrapServer(index)}
-                          size="icon"
-                          type="button"
-                          variant="outline"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button
-                    className="mt-2"
-                    onClick={() => appendBootstrapServer('')}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Server
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* SCRAM Credentials */}
-          <Card size="full">
-            <CardHeader>
-              <CardTitle>SCRAM Credentials</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="useScram"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between">
-                      <div>
-                        <FormLabel>Enable SCRAM Authentication</FormLabel>
-                        <FormDescription>Use SCRAM-SHA credentials to authenticate</FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                {useScram && (
-                  <div className="space-y-4 pt-4 border-t">
-                    <FormField
-                      control={form.control}
-                      name="scramUsername"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel required>Username</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter SCRAM username" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="scramPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel required>Password</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter SCRAM password" type="password" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="scramMechanism"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel required>SCRAM Mechanism</FormLabel>
-                          <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select mechanism" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value={String(ScramMechanism.SCRAM_SHA_256)}>SCRAM-SHA-256</SelectItem>
-                              <SelectItem value={String(ScramMechanism.SCRAM_SHA_512)}>SCRAM-SHA-512</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+            <Form {...form}>
+              {/* CONNECTION STEP */}
+              {methods.current.id === 'connection' && (
+                <Stepper.Panel>
+                  <div className="space-y-4">
+                    <ConnectionStep
+                      appendBootstrapServer={appendBootstrapServer}
+                      bootstrapServerFields={bootstrapServerFields}
+                      form={form}
+                      removeBootstrapServer={removeBootstrapServer}
+                      setShowPemPaste={setShowPemPaste}
+                      showPemPaste={showPemPaste}
                     />
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* TLS Configuration */}
-          <Card size="full">
-            <CardHeader>
-              <CardTitle>TLS Configuration</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="useTls"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between">
-                      <div>
-                        <FormLabel>Enable TLS</FormLabel>
-                        <FormDescription>Use TLS/SSL to secure the connection</FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                {useTls && (
-                  <div className="space-y-4 pt-4 border-t">
-                    <FormField
-                      control={form.control}
-                      name="tlsMode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>TLS Mode</FormLabel>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => field.onChange(TLS_MODE.FILE_PATH)}
-                              size="sm"
-                              type="button"
-                              variant={field.value === TLS_MODE.FILE_PATH ? 'default' : 'outline'}
-                            >
-                              File Path on Node
-                            </Button>
-                            <Button
-                              onClick={() => field.onChange(TLS_MODE.PEM)}
-                              size="sm"
-                              type="button"
-                              variant={field.value === TLS_MODE.PEM ? 'default' : 'outline'}
-                            >
-                              Upload/Paste Certificate
-                            </Button>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-
-                    {tlsMode === TLS_MODE.FILE_PATH && (
-                      <div className="space-y-4">
-                        <FormField
-                          control={form.control}
-                          name="tlsCaPath"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel required>CA Certificate Path</FormLabel>
-                              <FormControl>
-                                <Input placeholder="/path/to/ca.crt" {...field} />
-                              </FormControl>
-                              <FormDescription>Path to CA certificate on the node</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="tlsKeyPath"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Client Key Path</FormLabel>
-                              <FormControl>
-                                <Input placeholder="/path/to/client.key" {...field} />
-                              </FormControl>
-                              <FormDescription>Optional: Path to client key on the node</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="tlsCertPath"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Client Certificate Path</FormLabel>
-                              <FormControl>
-                                <Input placeholder="/path/to/client.crt" {...field} />
-                              </FormControl>
-                              <FormDescription>Optional: Path to client certificate on the node</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    )}
-
-                    {tlsMode === TLS_MODE.PEM && (
-                      <div className="space-y-4">
-                        {showPemPaste ? (
-                          <>
-                            <FormField
-                              control={form.control}
-                              name="tlsCaPem"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel required>CA Certificate</FormLabel>
-                                  <FormControl>
-                                    <Textarea placeholder="-----BEGIN CERTIFICATE-----..." rows={6} {...field} />
-                                  </FormControl>
-                                  <FormDescription>Paste the CA certificate in PEM format</FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            <FormField
-                              control={form.control}
-                              name="tlsKeyPem"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Client Key</FormLabel>
-                                  <FormControl>
-                                    <Textarea placeholder="-----BEGIN PRIVATE KEY-----..." rows={6} {...field} />
-                                  </FormControl>
-                                  <FormDescription>Optional: Paste the client key in PEM format</FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            <FormField
-                              control={form.control}
-                              name="tlsCertPem"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Client Certificate</FormLabel>
-                                  <FormControl>
-                                    <Textarea placeholder="-----BEGIN CERTIFICATE-----..." rows={6} {...field} />
-                                  </FormControl>
-                                  <FormDescription>Optional: Paste the client certificate in PEM format</FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            <div className="text-sm">
-                              or{' '}
-                              <Button onClick={() => setShowPemPaste(false)} type="button" variant="link">
-                                upload file
-                              </Button>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                            <Text className="mb-4" variant="muted">
-                              File upload functionality coming soon
-                            </Text>
-                            <Button onClick={() => setShowPemPaste(true)} size="sm" type="button" variant="outline">
-                              Paste certificate text
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Advanced Settings - TODO */}
-          <Card size="full">
-            <CardHeader>
-              <CardTitle>Advanced Settings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Text variant="muted">Advanced configuration options will be available here in a future update.</Text>
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-2">
-            <Button onClick={() => navigate('/shadowlinks')} type="button" variant="outline">
-              Cancel
-            </Button>
-            <Button disabled={isCreating} type="submit">
-              {isCreating ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <Text as="span">Creating...</Text>
-                </div>
-              ) : (
-                'Create Shadow Link'
+                </Stepper.Panel>
               )}
-            </Button>
-          </div>
-        </form>
-      </Form>
+
+              {/* TOPICS STEP */}
+              {methods.current.id === 'topics' && (
+                <Stepper.Panel>
+                  <TopicsStep
+                    appendTopicProperty={appendTopicProperty}
+                    form={form}
+                    removeTopicProperty={removeTopicProperty}
+                    topicPropertiesFields={topicPropertiesFields}
+                  />
+                </Stepper.Panel>
+              )}
+
+              {/* ACLS STEP */}
+              {methods.current.id === 'acls' && (
+                <Stepper.Panel>
+                  <AclsStep
+                    aclFiltersFields={aclFiltersFields}
+                    appendAclFilter={appendAclFilter}
+                    form={form}
+                    removeAclFilter={removeAclFilter}
+                  />
+                </Stepper.Panel>
+              )}
+
+              {/* CONSUMER OFFSETS STEP */}
+              {methods.current.id === 'consumer-offsets' && (
+                <Stepper.Panel>
+                  <ConsumerOffsetStep form={form} />
+                </Stepper.Panel>
+              )}
+
+              <Stepper.Controls className="flex justify-between">
+                {methods.isFirst ? (
+                  <Button onClick={() => navigate('/shadowlinks')} type="button" variant="outline">
+                    Cancel
+                  </Button>
+                ) : (
+                  <Button disabled={isCreating} onClick={methods.prev} type="button" variant="outline">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back
+                  </Button>
+                )}
+                {methods.isLast ? (
+                  <Button
+                    disabled={isCreating || hasConsumerOffsetErrors}
+                    onClick={form.handleSubmit(onSubmit)}
+                    type="button"
+                  >
+                    {isCreating ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Text as="span">Creating...</Text>
+                      </div>
+                    ) : (
+                      'Create Shadow Link'
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    disabled={
+                      methods.current.id === 'connection'
+                        ? hasConnectionErrors
+                        : methods.current.id === 'topics'
+                          ? hasTopicErrors
+                          : methods.current.id === 'acls'
+                            ? hasAclErrors
+                            : false
+                    }
+                    onClick={() => handleNext(methods.current.id, methods.next)}
+                    type="button"
+                  >
+                    Next
+                  </Button>
+                )}
+              </Stepper.Controls>
+            </Form>
+          </>
+        )}
+      </Stepper.Provider>
     </div>
   );
 };
