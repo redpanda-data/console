@@ -22,6 +22,20 @@ const queryClient = new QueryClient({
         return false;
       },
     },
+    mutations: {
+      retry: (failureCount, error) => {
+        if (failureCount > 3) {
+          return false;
+        }
+
+        if (isConnectError(error)) {
+          // Retry PermissionDenied errors to ensure we have some wiggle room for role propagation/RBAC
+          return error.code === Code.PermissionDenied;
+        }
+
+        return false;
+      },
+    },
   },
 });
 

@@ -8,6 +8,7 @@ import {
   AIAgentService,
   type GetAIAgentRequest,
   GetAIAgentRequestSchema,
+  type GetAIAgentResponse,
   type ListAIAgentsRequest,
   ListAIAgentsRequest_FilterSchema,
   ListAIAgentsRequestSchema,
@@ -48,13 +49,23 @@ export const useListAIAgentsQuery = (
   });
 };
 
-export const useGetAIAgentQuery = (input?: MessageInit<GetAIAgentRequest>, options?: { enabled?: boolean }) => {
+export const useGetAIAgentQuery = (
+  input?: MessageInit<GetAIAgentRequest>,
+  options?: QueryOptions<GenMessage<GetAIAgentResponse>>
+) => {
   const getAIAgentRequest = create(GetAIAgentRequestSchema, { id: input?.id });
 
   return useQuery(getAIAgent, getAIAgentRequest, {
     enabled: options?.enabled,
-    refetchInterval: (query) => (query?.state?.data?.aiAgent?.state === AIAgent_State.STARTING ? 2 * 1000 : false),
-    refetchIntervalInBackground: false,
+    refetchInterval:
+      options?.refetchInterval ??
+      ((query) => {
+        const state = query?.state?.data?.aiAgent?.state;
+        // Poll every 2 seconds when agent is starting or in unspecified state
+        const shouldPoll = state === AIAgent_State.STARTING || state === AIAgent_State.UNSPECIFIED;
+        return shouldPoll ? 2 * 1000 : false;
+      }),
+    refetchIntervalInBackground: options?.refetchIntervalInBackground ?? false,
   });
 };
 

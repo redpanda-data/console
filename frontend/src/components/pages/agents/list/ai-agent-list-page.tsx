@@ -33,34 +33,24 @@ import {
   DataTablePagination,
   DataTableViewOptions,
 } from 'components/redpanda-ui/components/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { AlertCircle, Check, Copy, Loader2, MoreHorizontal, Pause, Play, Plus, X } from 'lucide-react';
+import { AlertCircle, Check, Loader2, Pause, Plus, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import type { AIAgent as APIAIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
-import React, { useEffect } from 'react';
-import {
-  useDeleteAIAgentMutation,
-  useListAIAgentsQuery,
-  useStartAIAgentMutation,
-  useStopAIAgentMutation,
-} from 'react-query/api/ai-agent';
+import React, { useCallback, useEffect } from 'react';
+import { useDeleteAIAgentMutation, useListAIAgentsQuery } from 'react-query/api/ai-agent';
 import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
+import { useDeleteSecretMutation } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
+import { AIAgentActions } from './ai-agent-actions';
+import { AIAgentDeleteHandler, type AIAgentDeleteHandlerRef } from './ai-agent-delete-handler';
 import { AIAgentModel } from '../ai-agent-model';
 
 const statusOptions = [
@@ -79,6 +69,7 @@ export type AIAgent = {
   model: string;
   url?: string;
   mcpServers: Record<string, { id: string }>;
+  tags: Record<string, string>;
 };
 
 const StatusIcon = ({ state }: { state: AIAgent_State }) => {
@@ -140,186 +131,112 @@ const transformAPIAIAgent = (apiAgent: APIAIAgent): AIAgent => ({
   model: apiAgent.model,
   url: apiAgent.url,
   mcpServers: apiAgent.mcpServers,
+  tags: apiAgent.tags,
 });
 
-export const createColumns = (
-  setIsDeleteDialogOpen: (open: boolean) => void,
-  mcpServersMap: Map<string, { name: string; tools: string[] }>
-): ColumnDef<AIAgent>[] => [
-  {
-    accessorKey: 'name',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-    cell: ({ row }) => (
-      <Text className="font-medium" variant="default">
-        {row.getValue('name')}
-      </Text>
-    ),
-  },
-  {
-    id: 'tools',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Tools" />,
-    cell: ({ row }) => {
-      const agent = row.original;
-      const mcpServerIds = Object.values(agent.mcpServers || {}).map((server) => server.id);
+type CreateColumnsOptions = {
+  setIsDeleteDialogOpen: (open: boolean) => void;
+  mcpServersMap: Map<string, { name: string; tools: string[] }>;
+  handleDeleteWithServiceAccount: (
+    agentId: string,
+    deleteServiceAccount: boolean,
+    secretName: string | null,
+    serviceAccountId: string | null
+  ) => Promise<void>;
+  isDeletingAgent: boolean;
+};
 
-      if (mcpServerIds.length === 0) {
-        return null;
-      }
+export const createColumns = (options: CreateColumnsOptions): ColumnDef<AIAgent>[] => {
+  const { setIsDeleteDialogOpen, mcpServersMap, handleDeleteWithServiceAccount, isDeletingAgent } = options;
 
-      // Collect all tools from all connected MCP servers
-      const allTools: string[] = [];
-      for (const serverId of mcpServerIds) {
-        const mcpServer = mcpServersMap.get(serverId);
-        if (mcpServer?.tools) {
-          allTools.push(...mcpServer.tools);
-        }
-      }
-
-      if (allTools.length === 0) {
-        return null;
-      }
-
-      return (
-        <div className="flex flex-wrap gap-1">
-          {allTools.slice(0, 3).map((toolName) => (
-            <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs" key={toolName}>
-              {toolName}
-            </span>
-          ))}
-          {allTools.length > 3 && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex cursor-help items-center rounded-md bg-muted px-2 py-0.5 font-medium text-xs">
-                  +{allTools.length - 3} more
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="space-y-1">
-                  {allTools.slice(3).map((toolName) => (
-                    <Text key={toolName} variant="small">
-                      • {toolName}
-                    </Text>
-                  ))}
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          )}
-        </div>
-      );
+  return [
+    {
+      accessorKey: 'name',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+      cell: ({ row }) => (
+        <Text className="font-medium" variant="default">
+          {row.getValue('name')}
+        </Text>
+      ),
     },
-  },
-  {
-    accessorKey: 'state',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-    cell: ({ row }) => <StatusIcon state={row.getValue('state')} />,
-    filterFn: (row, id, value) => value.includes(String(row.getValue(id))),
-  },
-  {
-    accessorKey: 'model',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Model" />,
-    cell: ({ row }) => <AIAgentModel model={row.getValue('model')} size="sm" />,
-  },
-  {
-    id: 'actions',
-    enableHiding: false,
-    cell: ({ row }) => {
-      const { mutate: deleteAIAgent, isPending: isDeleting } = useDeleteAIAgentMutation({
-        onSuccess: () => {
-          toast.success(`AI agent ${row?.original?.name} deleted`);
-        },
-      });
-      const { mutate: startAIAgent, isPending: isStarting } = useStartAIAgentMutation();
-      const { mutate: stopAIAgent, isPending: isStopping } = useStopAIAgentMutation();
+    {
+      id: 'tools',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Tools" />,
+      cell: ({ row }) => {
+        const agent = row.original;
+        const mcpServerIds = Object.values(agent.mcpServers || {}).map((server) => server.id);
 
-      const agent = row.original;
-
-      const handleDelete = (id: string) => {
-        deleteAIAgent({ id });
-      };
-
-      const handleCopy = () => {
-        if (agent.url) {
-          navigator.clipboard.writeText(agent.url);
-          toast.success('URL copied to clipboard');
+        if (mcpServerIds.length === 0) {
+          return null;
         }
-      };
 
-      const handleStart = (event: React.MouseEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        startAIAgent({ id: agent.id });
-      };
+        // Collect all tools from all connected MCP servers
+        const allTools: string[] = [];
+        for (const serverId of mcpServerIds) {
+          const mcpServer = mcpServersMap.get(serverId);
+          if (mcpServer?.tools) {
+            allTools.push(...mcpServer.tools);
+          }
+        }
 
-      const handleStop = (event: React.MouseEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        stopAIAgent({ id: agent.id });
-      };
+        if (allTools.length === 0) {
+          return null;
+        }
 
-      const canStart = agent.state === AIAgent_State.STOPPED || agent.state === AIAgent_State.ERROR;
-      const canStop = agent.state === AIAgent_State.RUNNING;
-
-      return (
-        <div data-actions-column>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="h-8 w-8 data-[state=open]:bg-muted" size="icon" variant="ghost">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[160px]">
-              {agent.url && (
-                <>
-                  <DropdownMenuItem onClick={handleCopy}>
-                    <div className="flex items-center gap-4">
-                      <Copy className="h-4 w-4" /> Copy URL
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              {canStart && (
-                <DropdownMenuItem onClick={handleStart}>
-                  {isStarting ? (
-                    <div className="flex items-center gap-4">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Starting
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-4">
-                      <Play className="h-4 w-4" />
-                      Start Agent
-                    </div>
-                  )}
-                </DropdownMenuItem>
-              )}
-              {canStop && (
-                <DropdownMenuItem onClick={handleStop}>
-                  {isStopping ? (
-                    <div className="flex items-center gap-4">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Stopping
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-4">
-                      <Pause className="h-4 w-4" /> Stop Agent
-                    </div>
-                  )}
-                </DropdownMenuItem>
-              )}
-              {(canStart || canStop) && <DropdownMenuSeparator />}
-              <DeleteResourceAlertDialog
-                isDeleting={isDeleting}
-                onDelete={handleDelete}
-                onOpenChange={setIsDeleteDialogOpen}
-                resourceId={agent.id}
-                resourceName={agent.name}
-                resourceType="AI Agent"
-              />
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      );
+        return (
+          <div className="flex flex-wrap gap-1">
+            {allTools.slice(0, 3).map((toolName) => (
+              <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs" key={toolName}>
+                {toolName}
+              </span>
+            ))}
+            {allTools.length > 3 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex cursor-help items-center rounded-md bg-muted px-2 py-0.5 font-medium text-xs">
+                    +{allTools.length - 3} more
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="space-y-1">
+                    {allTools.slice(3).map((toolName) => (
+                      <Text key={toolName} variant="small">
+                        • {toolName}
+                      </Text>
+                    ))}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
     },
-  },
-];
+    {
+      accessorKey: 'state',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => <StatusIcon state={row.getValue('state')} />,
+      filterFn: (row, id, value) => value.includes(String(row.getValue(id))),
+    },
+    {
+      accessorKey: 'model',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Model" />,
+      cell: ({ row }) => <AIAgentModel model={row.getValue('model')} size="sm" />,
+    },
+    {
+      id: 'actions',
+      enableHiding: false,
+      cell: ({ row }) => (
+        <AIAgentActions
+          agent={row.original}
+          isDeletingAgent={isDeletingAgent}
+          onDeleteWithServiceAccount={handleDeleteWithServiceAccount}
+          setIsDeleteDialogOpen={setIsDeleteDialogOpen}
+        />
+      ),
+    },
+  ];
+};
 
 // Custom toolbar for AI agents
 function AIAgentDataTableToolbar({ table }: { table: TanstackTable<AIAgent> }) {
@@ -359,7 +276,11 @@ export const updatePageTitle = () => {
   });
 };
 
-export const AIAgentsListPage = () => {
+const AIAgentsListPageContent = ({
+  deleteHandlerRef,
+}: {
+  deleteHandlerRef: React.RefObject<AIAgentDeleteHandlerRef>;
+}) => {
   const navigate = useNavigate();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -370,6 +291,38 @@ export const AIAgentsListPage = () => {
   // React Query hooks
   const { data: aiAgentsData, isLoading, error } = useListAIAgentsQuery({});
   const { data: mcpServersData } = useListMCPServersQuery();
+  const { mutateAsync: deleteAIAgent, isPending: isDeletingAgent } = useDeleteAIAgentMutation();
+  const { mutateAsync: deleteSecret } = useDeleteSecretMutation({ skipInvalidation: true });
+
+  // Handler for deleting agent with optional service account deletion
+  const handleDeleteWithServiceAccount = useCallback(
+    async (
+      agentId: string,
+      deleteServiceAccountFlag: boolean,
+      secretName: string | null,
+      serviceAccountId: string | null
+    ) => {
+      try {
+        // Delete AI agent (dataplane)
+        await deleteAIAgent({ id: agentId });
+
+        // If requested and we have the info, delete service account and secret
+        if (deleteServiceAccountFlag && serviceAccountId && secretName) {
+          // Delete service account (controlplane - via ref)
+          await deleteHandlerRef.current?.deleteServiceAccount(serviceAccountId);
+
+          // Delete secret (dataplane)
+          await deleteSecret({ request: { id: secretName } });
+        }
+
+        // Show single success toast regardless of what was deleted
+        toast.success('AI agent deleted successfully');
+      } catch (_error) {
+        toast.error('Failed to delete AI agent');
+      }
+    },
+    [deleteAIAgent, deleteSecret, deleteHandlerRef]
+  );
 
   // Transform API data to component format
   const aiAgents = React.useMemo(() => aiAgentsData?.aiAgents?.map(transformAPIAIAgent) || [], [aiAgentsData]);
@@ -405,7 +358,16 @@ export const AIAgentsListPage = () => {
     navigate(`/agents/${agentId}`);
   };
 
-  const columns = React.useMemo(() => createColumns(setIsDeleteDialogOpen, mcpServersMap), [mcpServersMap]);
+  const columns = React.useMemo(
+    () =>
+      createColumns({
+        setIsDeleteDialogOpen,
+        mcpServersMap,
+        handleDeleteWithServiceAccount,
+        isDeletingAgent,
+      }),
+    [mcpServersMap, handleDeleteWithServiceAccount, isDeletingAgent]
+  );
 
   const table = useReactTable({
     data: aiAgents,
@@ -512,5 +474,15 @@ export const AIAgentsListPage = () => {
         <DataTablePagination table={table} />
       </div>
     </TooltipProvider>
+  );
+};
+
+export const AIAgentsListPage = () => {
+  const deleteHandlerRef = React.useRef<AIAgentDeleteHandlerRef>(null);
+
+  return (
+    <AIAgentDeleteHandler ref={deleteHandlerRef}>
+      <AIAgentsListPageContent deleteHandlerRef={deleteHandlerRef} />
+    </AIAgentDeleteHandler>
   );
 };

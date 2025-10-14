@@ -43,10 +43,15 @@ import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resour
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
-import { ServiceAccountSelector } from 'components/ui/service-account/service-account-selector';
+import {
+  ServiceAccountSelector,
+  type ServiceAccountSelectorRef,
+} from 'components/ui/service-account/service-account-selector';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
+import { config } from 'config';
+import { useSessionStorage } from 'hooks/use-session-storage';
 import { ExternalLink, Loader2 } from 'lucide-react';
-import { Scope, type Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
   AIAgent_MCPServerSchema,
   AIAgent_Provider_OpenAISchema,
@@ -55,8 +60,7 @@ import {
   AIAgentCreateSchema,
   CreateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
-import { MCPServer_State } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useCreateAIAgentMutation } from 'react-query/api/ai-agent';
 import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
@@ -87,14 +91,48 @@ export const AIAgentCreatePage = () => {
   const { mutateAsync: createAgent, isPending: isCreateAgentPending } = useCreateAIAgentMutation();
   const { data: secretsData } = useListSecretsQuery();
   const { data: mcpServersData } = useListMCPServersQuery();
-  const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation();
+  const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation({
+    skipInvalidation: true,
+  });
 
-  // Form setup
+  // Session storage for form persistence
+  const [storedFormValues, setStoredFormValues] = useSessionStorage<FormValues>('ai-agent-create-form', initialValues);
+
+  // Ref to ServiceAccountSelector to call createServiceAccount
+  const serviceAccountSelectorRef = useRef<ServiceAccountSelectorRef>(null);
+
+  // Track the created service account info and pending state
+  const [serviceAccountInfo, setServiceAccountInfo] = useState<{
+    secretName: string;
+    serviceAccountId: string;
+  } | null>(null);
+  const [isCreateServiceAccountPending, setIsCreateServiceAccountPending] = useState(false);
+
+  // Form setup - initialize with stored values
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
-    defaultValues: initialValues,
+    defaultValues: storedFormValues,
     mode: 'onChange',
   });
+
+  // Track the display name to auto-generate service account name
+  const displayName = form.watch('displayName');
+  const serviceAccountName = form.watch('serviceAccountName');
+
+  // Auto-generate service account name when agent name changes
+  useEffect(() => {
+    if (displayName) {
+      const clusterType = config.isServerless ? 'serverless' : 'cluster';
+      const sanitizedAgentName = displayName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+      const generatedName = `${clusterType}-${config.clusterId}-agent-${sanitizedAgentName}-sa`;
+
+      // Only update if the field is empty or matches the previous auto-generated pattern
+      const currentValue = form.getValues('serviceAccountName');
+      if (!currentValue || currentValue.startsWith(`${clusterType}-${config.clusterId}-agent-`)) {
+        form.setValue('serviceAccountName', generatedName, { shouldValidate: false });
+      }
+    }
+  }, [displayName, form]);
 
   const {
     fields: tagFields,
@@ -134,12 +172,20 @@ export const AIAgentCreatePage = () => {
     }
   }, [availableSecrets, form]);
 
-  // Get available MCP servers (only running servers)
+  // Persist form values to session storage on change
+  useEffect(() => {
+    const subscription = form.watch((formValues) => {
+      setStoredFormValues(formValues as FormValues);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, setStoredFormValues]);
+
+  // Get available MCP servers (all servers, regardless of state)
   const availableMcpServers = useMemo(() => {
     if (!mcpServersData?.mcpServers) {
       return [];
     }
-    return mcpServersData.mcpServers.filter((server) => server.state === MCPServer_State.RUNNING);
+    return mcpServersData.mcpServers;
   }, [mcpServersData]);
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 36, refactor later
@@ -198,6 +244,30 @@ export const AIAgentCreatePage = () => {
     toast.error(formatToastErrorMessageGRPC({ error, action: 'create', entity: 'AI agent' }));
   };
 
+  const createServiceAccountIfNeeded = async (
+    agentName: string
+  ): Promise<{ secretName: string; serviceAccountId: string } | null> => {
+    // If we already created one in this session, use it
+    if (serviceAccountInfo) {
+      return serviceAccountInfo;
+    }
+
+    // Call the ServiceAccountSelector to create the service account
+    if (!serviceAccountSelectorRef.current) {
+      toast.error('Service account selector not initialized');
+      return null;
+    }
+
+    // The pending state is automatically tracked via onPendingChange callback
+    const result = await serviceAccountSelectorRef.current.createServiceAccount(agentName);
+
+    if (result) {
+      setServiceAccountInfo(result);
+    }
+
+    return result;
+  };
+
   const onSubmit = async (values: FormValues) => {
     // Build tags map from labels
     const tagsMap: Record<string, string> = {};
@@ -217,21 +287,21 @@ export const AIAgentCreatePage = () => {
     // Get selected resource tier
     const selectedTier = RESOURCE_TIERS.find((tier) => tier.id === values.resourcesTier);
 
-    // Check if service account secrets exist (required)
-    const hasServiceAccountSecrets =
-      secretsData?.secrets?.some((s) => s?.id === 'SERVICE_ACCOUNT_CLIENT_ID') &&
-      secretsData?.secrets?.some((s) => s?.id === 'SERVICE_ACCOUNT_CLIENT_SECRET');
-
-    if (!hasServiceAccountSecrets) {
-      toast.error('Service account is required. Please create a service account first.');
-      return;
+    // Create service account if needed
+    const serviceAccountResult = await createServiceAccountIfNeeded(values.displayName);
+    if (!serviceAccountResult) {
+      return; // Error already shown by createServiceAccountIfNeeded
     }
 
+    const { secretName, serviceAccountId } = serviceAccountResult;
+
+    // Add service_account_id and secret_id to tags for easy deletion
+    tagsMap.service_account_id = serviceAccountId;
+    tagsMap.secret_id = secretName;
+
     const serviceAccountConfig = create(AIAgent_ServiceAccountSchema, {
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: Secret reference syntax for API
-      clientId: '${secrets.SERVICE_ACCOUNT_CLIENT_ID}',
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: Secret reference syntax for API
-      clientSecret: '${secrets.SERVICE_ACCOUNT_CLIENT_SECRET}',
+      clientId: `\${secrets.${secretName}.client_id}`,
+      clientSecret: `\${secrets.${secretName}.client_secret}`,
     });
 
     await createAgent(
@@ -263,6 +333,8 @@ export const AIAgentCreatePage = () => {
         onError: handleValidationError,
         onSuccess: (data) => {
           if (data?.aiAgent?.id) {
+            // Clear session storage on successful creation
+            setStoredFormValues(initialValues);
             toast.success('AI agent created successfully');
             navigate(`/agents/${data.aiAgent.id}`);
           }
@@ -541,23 +613,48 @@ export const AIAgentCreatePage = () => {
                 <Text variant="muted">Create a service account for agent authentication</Text>
               </CardHeader>
               <CardContent>
-                <ServiceAccountSelector
-                  createSecret={createSecret}
-                  existingSecrets={(secretsData?.secrets ?? []) as Secret[]}
-                  isCreateSecretPending={isCreateSecretPending}
-                  placeholder="Select service account or create new"
-                  value=""
-                />
+                <div className="space-y-2">
+                  <label className="font-medium text-sm" htmlFor="serviceAccountName">
+                    Service Account Name
+                  </label>
+                  <Input
+                    id="serviceAccountName"
+                    onChange={(e) => form.setValue('serviceAccountName', e.target.value, { shouldValidate: true })}
+                    placeholder="e.g., cluster-abc123-agent-my-agent-sa"
+                    value={serviceAccountName}
+                  />
+                  <Text className="text-sm" variant="muted">
+                    This service account will be created automatically when you create the AI agent.
+                  </Text>
+                </div>
               </CardContent>
             </Card>
+            <ServiceAccountSelector
+              createSecret={createSecret}
+              onPendingChange={setIsCreateServiceAccountPending}
+              ref={serviceAccountSelectorRef}
+              resourceType="AI agent"
+              serviceAccountName={serviceAccountName}
+            />
 
             {/* Actions */}
             <div className="flex justify-end gap-2">
-              <Button onClick={() => navigate('/agents')} type="button" variant="outline">
+              <Button
+                onClick={() => {
+                  // Clear session storage when canceling
+                  setStoredFormValues(initialValues);
+                  navigate('/agents');
+                }}
+                type="button"
+                variant="outline"
+              >
                 Cancel
               </Button>
-              <Button disabled={isCreateAgentPending} type="submit">
-                {isCreateAgentPending ? (
+              <Button
+                disabled={isCreateAgentPending || isCreateServiceAccountPending || isCreateSecretPending}
+                type="submit"
+              >
+                {isCreateAgentPending || isCreateServiceAccountPending || isCreateSecretPending ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     <Text as="span">Creating...</Text>
