@@ -32,16 +32,16 @@ import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Plus, X } from 'lucide-react';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
+import type { UseFormReturn } from 'react-hook-form';
 
 import type { FormValues } from './schemas';
 import { TLS_MODE } from './schemas';
 
 interface ConnectionStepProps {
   form: UseFormReturn<FormValues>;
-  bootstrapServerFields: UseFieldArrayReturn<FormValues, 'bootstrapServers', 'id'>['fields'];
-  appendBootstrapServer: UseFieldArrayReturn<FormValues, 'bootstrapServers', 'id'>['append'];
-  removeBootstrapServer: UseFieldArrayReturn<FormValues, 'bootstrapServers', 'id'>['remove'];
+  bootstrapServerFields: any[];
+  appendBootstrapServer: (value: any) => void;
+  removeBootstrapServer: (index: number) => void;
   showPemPaste: boolean;
   setShowPemPaste: (show: boolean) => void;
 }
