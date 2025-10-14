@@ -59,7 +59,6 @@ import {
   AIAgentCreateSchema,
   CreateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
-import { MCPServer_State } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useCreateAIAgentMutation } from 'react-query/api/ai-agent';
@@ -169,12 +168,12 @@ export const AIAgentCreatePage = () => {
     }
   }, [availableSecrets, form]);
 
-  // Get available MCP servers (only running servers)
+  // Get available MCP servers (all servers, regardless of state)
   const availableMcpServers = useMemo(() => {
     if (!mcpServersData?.mcpServers) {
       return [];
     }
-    return mcpServersData.mcpServers.filter((server) => server.state === MCPServer_State.RUNNING);
+    return mcpServersData.mcpServers;
   }, [mcpServersData]);
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 36, refactor later
