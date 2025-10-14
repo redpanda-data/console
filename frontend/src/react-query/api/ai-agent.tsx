@@ -53,7 +53,12 @@ export const useGetAIAgentQuery = (input?: MessageInit<GetAIAgentRequest>, optio
 
   return useQuery(getAIAgent, getAIAgentRequest, {
     enabled: options?.enabled,
-    refetchInterval: (query) => (query?.state?.data?.aiAgent?.state === AIAgent_State.STARTING ? 2 * 1000 : false),
+    refetchInterval: (query) => {
+      const state = query?.state?.data?.aiAgent?.state;
+      // Poll every 2 seconds when agent is starting or in unspecified state
+      const shouldPoll = state === AIAgent_State.STARTING || state === AIAgent_State.UNSPECIFIED;
+      return shouldPoll ? 2 * 1000 : false;
+    },
     refetchIntervalInBackground: false,
   });
 };
