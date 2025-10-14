@@ -42,8 +42,10 @@ import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
 import ClusterHealthOverview from './cluster-health-overview';
+import { ShadowLinkOverviewCard } from './shadow-link-overview-card';
 import colors from '../../../colors';
 import { type ComponentStatus, StatusType } from '../../../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
+import { useListShadowLinksQuery } from '../../../react-query/api/shadowlink';
 import NurturePanel from '../../builder-io/nurture-panel';
 import {
   getEnterpriseCTALink,
@@ -150,6 +152,9 @@ class Overview extends PageComponent {
               <Statistic title="Replicas" value={overview.kafka?.replicasCount} />
             </Flex>
           </Section>
+
+          {/* Shadow Link Overview Section */}
+          <ShadowLinkSection />
 
           <Grid gap={6} gridTemplateColumns={{ base: '1fr', lg: 'fit-content(60%) 1fr' }}>
             <GridItem display="flex" flexDirection="column" gap={6}>
@@ -258,6 +263,25 @@ class Overview extends PageComponent {
 }
 
 export default Overview;
+
+// Functional component to fetch and display shadow link data
+const ShadowLinkSection: FC = () => {
+  const { data: shadowLinksData, isLoading } = useListShadowLinksQuery();
+
+  // Don't render if no shadow link exists
+  const shadowLinks = shadowLinksData?.shadowLinks || [];
+  if (isLoading || shadowLinks.length === 0) {
+    return null;
+  }
+
+  const shadowLink = shadowLinks[0]; // Only one shadow link is allowed
+
+  return (
+    <Section my={4}>
+      <ShadowLinkOverviewCard shadowLink={shadowLink} />
+    </Section>
+  );
+};
 
 type DetailsBlockProps = { title: string; children?: React.ReactNode };
 

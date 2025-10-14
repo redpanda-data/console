@@ -20,12 +20,6 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { ArrowLeft, Link2, Loader2, Settings, Shield, Users } from 'lucide-react';
 import { runInAction } from 'mobx';
 import {
-  ACLOperation,
-  ACLPattern,
-  ACLPermissionType,
-  ACLResource,
-} from 'protogen/redpanda/core/common/acl_pb';
-import {
   ACLAccessFilterSchema,
   ACLFilterSchema,
   ACLResourceFilterSchema,
@@ -45,6 +39,7 @@ import {
   TLSPEMSettingsSchema,
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/acl_pb';
 import React, { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useCreateShadowLinkMutation } from 'react-query/api/shadowlink';
@@ -246,7 +241,10 @@ export const ShadowLinkCreatePage = () => {
         );
       }
       if (values.listSpecificTopics && values.specificTopicNames) {
-        const topics = values.specificTopicNames.split(',').map((t) => t.trim()).filter(Boolean);
+        const topics = values.specificTopicNames
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean);
         for (const topic of topics) {
           topicFilters.push(
             create(NameFilterSchema, {
@@ -322,7 +320,10 @@ export const ShadowLinkCreatePage = () => {
           );
         }
         if (values.listSpecificGroups && values.specificGroupNames) {
-          const groups = values.specificGroupNames.split(',').map((g) => g.trim()).filter(Boolean);
+          const groups = values.specificGroupNames
+            .split(',')
+            .map((g) => g.trim())
+            .filter(Boolean);
           for (const group of groups) {
             groupFilters.push(
               create(NameFilterSchema, {
@@ -380,10 +381,7 @@ export const ShadowLinkCreatePage = () => {
           shadowLink,
         })
       );
-    } catch (error) {
-      // Error handling is done by the mutation's onError
-      console.error('Failed to create shadow link:', error);
-    }
+    } catch (_error) {}
   };
 
   // Check if connection step has errors
@@ -503,7 +501,7 @@ export const ShadowLinkCreatePage = () => {
                   </Button>
                 ) : (
                   <Button disabled={isCreating} onClick={methods.prev} type="button" variant="outline">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
                 )}

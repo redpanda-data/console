@@ -110,12 +110,7 @@ export const ConnectionStep = ({
                     )}
                   />
                   {bootstrapServerFields.length > 1 && (
-                    <Button
-                      onClick={() => removeBootstrapServer(index)}
-                      size="icon"
-                      type="button"
-                      variant="outline"
-                    >
+                    <Button onClick={() => removeBootstrapServer(index)} size="icon" type="button" variant="outline">
                       <X className="h-4 w-4" />
                     </Button>
                   )}
@@ -128,7 +123,7 @@ export const ConnectionStep = ({
                 type="button"
                 variant="outline"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 Add Server
               </Button>
             </div>
@@ -160,7 +155,7 @@ export const ConnectionStep = ({
             />
 
             {useScram && (
-              <div className="space-y-4 pt-4 border-t">
+              <div className="space-y-4 border-t pt-4">
                 <FormField
                   control={form.control}
                   name="scramUsername"
@@ -240,7 +235,7 @@ export const ConnectionStep = ({
             />
 
             {useTls && (
-              <div className="space-y-4 pt-4 border-t">
+              <div className="space-y-4 border-t pt-4">
                 <FormField
                   control={form.control}
                   name="tlsMode"
@@ -361,9 +356,7 @@ export const ConnectionStep = ({
                               <FormControl>
                                 <Textarea placeholder="-----BEGIN CERTIFICATE-----..." rows={6} {...field} />
                               </FormControl>
-                              <FormDescription>
-                                Optional: Paste the client certificate in PEM format
-                              </FormDescription>
+                              <FormDescription>Optional: Paste the client certificate in PEM format</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -377,7 +370,7 @@ export const ConnectionStep = ({
                         </div>
                       </>
                     ) : (
-                      <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                      <div className="rounded-lg border-2 border-dashed p-6 text-center">
                         <Text className="mb-4" variant="muted">
                           File upload functionality coming soon
                         </Text>
