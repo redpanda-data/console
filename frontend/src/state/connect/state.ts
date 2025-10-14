@@ -922,6 +922,6 @@ export type Property = {
   isDisabled: boolean | undefined;
 };
 
-export const CONNECT_WIZARD_CONNECTOR_KEY = 'selected-connect-tile';
+export const CONNECT_WIZARD_CONNECTOR_KEY = 'connect-wizard-connections';
 export const CONNECT_WIZARD_TOPIC_KEY = 'connect-wizard-topic';
 export const CONNECT_WIZARD_USER_KEY = 'connect-wizard-user';

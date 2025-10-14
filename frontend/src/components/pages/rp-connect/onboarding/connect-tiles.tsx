@@ -22,7 +22,6 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 import { useForm } from 'react-hook-form';
 
 import { ConnectorLogo } from './connector-logo';
-import { useResetWizardSessionStorage } from '../hooks/use-reset-wizard-session-storage';
 import { CUSTOM_COMPONENT_NAME, customComponentConfig } from '../types/constants';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 import type { BaseStepRef } from '../types/wizard';
@@ -169,7 +168,6 @@ export type ConnectTilesProps = {
   tileWrapperClassName?: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
-  handleSkip?: () => void;
 };
 
 export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, ConnectTilesProps>(
@@ -189,7 +187,6 @@ export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, Connec
       tileWrapperClassName,
       title,
       description,
-      handleSkip: handleSkipProp,
     },
     ref
   ) => {
@@ -198,7 +195,6 @@ export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, Connec
     const [showScrollGradient, setShowScrollGradient] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [showDescription, setShowDescription] = useState<string | undefined>(undefined);
-    const resetWizardSessionStorage = useResetWizardSessionStorage();
 
     const checkScrollable = useCallback(() => {
       const container = scrollContainerRef.current;
@@ -253,17 +249,6 @@ export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, Connec
         ),
       [componentTypeFilter, filter, selectedCategories, allComponents, additionalComponents]
     );
-
-    const handleSkip = useCallback(() => {
-      // Reset form state before clearing storage
-      form.reset({
-        connectionName: undefined,
-        connectionType: undefined,
-      });
-      // Notify parent to reset its state
-      resetWizardSessionStorage();
-      handleSkipProp?.();
-    }, [form, handleSkipProp, resetWizardSessionStorage]);
 
     useEffect(() => {
       requestAnimationFrame(() => {
@@ -407,10 +392,6 @@ export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, Connec
                                     className={cn('relative h-full', shouldShowDescription && 'hover:shadow-none')}
                                     key={uniqueKey}
                                     onClick={() => {
-                                      if (component.name === CUSTOM_COMPONENT_NAME) {
-                                        handleSkip();
-                                        return;
-                                      }
                                       field.onChange(component.name);
                                       form.setValue('connectionType', component.type as ConnectComponentType);
                                       // Only call onChange for non-wizard use cases (e.g., dialog)

@@ -79,3 +79,12 @@ const wizardFormSchema = z.object({
 });
 
 export type WizardFormData = z.infer<typeof wizardFormSchema>;
+
+export type MinimalTopicData = {
+  topicName: string;
+};
+
+export type MinimalUserData = {
+  username: string;
+  saslMechanism: (typeof SASL_MECHANISMS)[number];
+};

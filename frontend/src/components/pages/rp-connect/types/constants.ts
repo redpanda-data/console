@@ -28,7 +28,7 @@ export const CRITICAL_CONNECTION_FIELDS = new Set(['addresses', 'seed_brokers', 
  */
 export const NON_CRITICAL_CONFIG_OBJECTS = new Set(['tls', 'metadata', 'batching', 'backoff', 'retry']);
 
-export const CUSTOM_COMPONENT_NAME = 'Custom';
+export const CUSTOM_COMPONENT_NAME = 'custom';
 
 export const customComponentConfig: ConnectComponentSpec = {
   name: CUSTOM_COMPONENT_NAME,

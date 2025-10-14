@@ -25,7 +25,7 @@ const headingVariants = cva('font-semibold !leading-none', {
   },
 });
 
-const textVariants = cva('leading-[1.5]', {
+export const textVariants = cva('leading-[1.5]', {
   variants: {
     variant: {
       default: 'text-[1rem]',
