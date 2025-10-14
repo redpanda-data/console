@@ -26,17 +26,6 @@ import {
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table';
-import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import {
-  DataTableColumnHeader,
-  DataTablePagination,
-  DataTableViewOptions,
-} from 'components/redpanda-ui/components/data-table';
-import { Input } from 'components/redpanda-ui/components/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Text } from 'components/redpanda-ui/components/typography';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,11 +36,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from 'components/redpanda-ui/components/alert-dialog';
-import { InlineCode } from 'components/redpanda-ui/components/typography';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import {
+  DataTableColumnHeader,
+  DataTablePagination,
+  DataTableViewOptions,
+} from 'components/redpanda-ui/components/data-table';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Check, Loader2, Pause, Plus, Trash2, X } from 'lucide-react';
 import { runInAction } from 'mobx';
-import { ShadowLinkState, ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import type { ShadowLink } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { ShadowLinkState, ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import React, { useEffect, useState } from 'react';
 import {
   useDeleteShadowLinkMutation,
@@ -95,7 +94,7 @@ const StatusIcon = ({ state }: { state: ShadowLinkState }) => {
   );
 };
 
-export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): ColumnDef<ShadowLink>[] => [
+export const createColumns = (_setIsDeleteDialogOpen: (open: boolean) => void): ColumnDef<ShadowLink>[] => [
   {
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
@@ -186,12 +185,12 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
             <Button disabled={isDeleting} onClick={() => setShowDeleteDialog(true)} size="sm" variant="destructive">
               {isDeleting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Deleting...
                 </>
               ) : (
                 <>
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash2 className="mr-2 h-4 w-4" />
                   Delete
                 </>
               )}
@@ -207,7 +206,9 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
                   <Text>
                     You are about to delete <InlineCode>{shadowLink.name}</InlineCode>
                   </Text>
-                  <Text>This action will cause data loss. To confirm, type "delete" into the confirmation box below.</Text>
+                  <Text>
+                    This action will cause data loss. To confirm, type "delete" into the confirmation box below.
+                  </Text>
                   <Input
                     className="mt-4"
                     onChange={(e) => setConfirmationText(e.target.value)}
@@ -357,7 +358,7 @@ export const ShadowLinkListPage = () => {
   });
 
   // Empty state when no shadowlinks exist
-  if (!isLoading && !error && shadowLinks.length === 0) {
+  if (!(isLoading || error) && shadowLinks.length === 0) {
     return (
       <div className="flex flex-col gap-4">
         <Card size="full">
@@ -390,7 +391,12 @@ export const ShadowLinkListPage = () => {
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <span className="inline-block">
-              <Button disabled={hasShadowLink} onClick={() => navigate('/shadowlinks/create')} size="sm" variant="secondary">
+              <Button
+                disabled={hasShadowLink}
+                onClick={() => navigate('/shadowlinks/create')}
+                size="sm"
+                variant="secondary"
+              >
                 <Plus className="h-4 w-4" />
                 Create Shadowlink
               </Button>

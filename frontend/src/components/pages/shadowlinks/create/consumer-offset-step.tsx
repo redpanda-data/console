@@ -46,7 +46,7 @@ export const ConsumerOffsetStep = ({ form }: ConsumerOffsetStepProps) => {
     if (enableConsumerOffsetSync) {
       form.trigger();
     }
-  }, [enableConsumerOffsetSync, includeAllGroups, listSpecificGroups, includeGroupPrefix, excludeGroupPrefix, form]);
+  }, [enableConsumerOffsetSync, form]);
 
   return (
     <Card size="full">
@@ -76,7 +76,7 @@ export const ConsumerOffsetStep = ({ form }: ConsumerOffsetStepProps) => {
           {enableConsumerOffsetSync && (
             <>
               {/* Sync Interval */}
-              <div className="pt-4 border-t">
+              <div className="border-t pt-4">
                 <FormField
                   control={form.control}
                   name="consumerOffsetSyncInterval"
@@ -100,7 +100,7 @@ export const ConsumerOffsetStep = ({ form }: ConsumerOffsetStepProps) => {
               </div>
 
               {/* Consumer Group Filters */}
-              <div className="pt-6 border-t">
+              <div className="border-t pt-6">
                 <div className="space-y-6">
                   <div>
                     <FormLabel>Consumer Group Filters</FormLabel>
@@ -109,7 +109,7 @@ export const ConsumerOffsetStep = ({ form }: ConsumerOffsetStepProps) => {
 
                   {/* Show validation error at the top */}
                   {groupSelectionError && (
-                    <div className="text-sm text-destructive font-medium">{groupSelectionError}</div>
+                    <div className="font-medium text-destructive text-sm">{groupSelectionError}</div>
                   )}
 
                   {/* Include all groups - mutually exclusive */}
@@ -168,7 +168,7 @@ export const ConsumerOffsetStep = ({ form }: ConsumerOffsetStepProps) => {
                         </div>
 
                         {listSpecificGroups && (
-                          <div className="ml-9 mt-3">
+                          <div className="mt-3 ml-9">
                             <FormField
                               control={form.control}
                               name="specificGroupNames"
@@ -218,7 +218,7 @@ export const ConsumerOffsetStep = ({ form }: ConsumerOffsetStepProps) => {
                         </div>
 
                         {includeGroupPrefix && (
-                          <div className="ml-9 mt-3">
+                          <div className="mt-3 ml-9">
                             <FormField
                               control={form.control}
                               name="includeGroupPrefixValue"
@@ -264,7 +264,7 @@ export const ConsumerOffsetStep = ({ form }: ConsumerOffsetStepProps) => {
                         </div>
 
                         {excludeGroupPrefix && (
-                          <div className="ml-9 mt-3">
+                          <div className="mt-3 ml-9">
                             <FormField
                               control={form.control}
                               name="excludeGroupPrefixValue"
@@ -273,9 +273,7 @@ export const ConsumerOffsetStep = ({ form }: ConsumerOffsetStepProps) => {
                                   <FormControl>
                                     <Input placeholder="e.g., test-, internal-" {...field} />
                                   </FormControl>
-                                  <FormDescription>
-                                    Groups starting with this prefix will be excluded
-                                  </FormDescription>
+                                  <FormDescription>Groups starting with this prefix will be excluded</FormDescription>
                                   <FormMessage />
                                 </FormItem>
                               )}

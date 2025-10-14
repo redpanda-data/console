@@ -52,7 +52,7 @@ export const TopicsStep = ({
   // Re-validate whenever topic checkbox selections change
   useEffect(() => {
     form.trigger();
-  }, [includeAllTopics, listSpecificTopics, includeTopicPrefix, excludeTopicPrefix, form]);
+  }, [form]);
 
   return (
     <Card size="full">
@@ -63,9 +63,7 @@ export const TopicsStep = ({
       <CardContent>
         <div className="space-y-6">
           {/* Show validation error at the top */}
-          {topicSelectionError && (
-            <div className="text-sm text-destructive font-medium">{topicSelectionError}</div>
-          )}
+          {topicSelectionError && <div className="font-medium text-destructive text-sm">{topicSelectionError}</div>}
           {/* Include all topics - mutually exclusive */}
           <FormField
             control={form.control}
@@ -122,7 +120,7 @@ export const TopicsStep = ({
                 </div>
 
                 {listSpecificTopics && (
-                  <div className="ml-9 mt-3">
+                  <div className="mt-3 ml-9">
                     <FormField
                       control={form.control}
                       name="specificTopicNames"
@@ -172,7 +170,7 @@ export const TopicsStep = ({
                 </div>
 
                 {includeTopicPrefix && (
-                  <div className="ml-9 mt-3">
+                  <div className="mt-3 ml-9">
                     <FormField
                       control={form.control}
                       name="includePrefix"
@@ -218,7 +216,7 @@ export const TopicsStep = ({
                 </div>
 
                 {excludeTopicPrefix && (
-                  <div className="ml-9 mt-3">
+                  <div className="mt-3 ml-9">
                     <FormField
                       control={form.control}
                       name="excludePrefix"
@@ -239,7 +237,7 @@ export const TopicsStep = ({
           />
 
           {/* Topic Properties Section */}
-          <div className="pt-6 border-t">
+          <div className="border-t pt-6">
             <div className="space-y-3">
               <div>
                 <FormLabel>Additional Topic Properties (Optional)</FormLabel>
@@ -271,7 +269,7 @@ export const TopicsStep = ({
               ))}
 
               <Button onClick={() => appendTopicProperty('')} size="sm" type="button" variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 Add Property
               </Button>
             </div>

@@ -9,14 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { z } from 'zod';
-import {
-  ACLOperation,
-  ACLPattern,
-  ACLPermissionType,
-  ACLResource,
-} from 'protogen/redpanda/core/common/acl_pb';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/acl_pb';
+import { z } from 'zod';
 
 // TLS mode: either file paths or PEM content
 export const TLS_MODE = {
@@ -192,9 +187,7 @@ export const FormSchema = z
   .refine(
     (data) => {
       // At least one topic selection option must be selected
-      return (
-        data.includeAllTopics || data.listSpecificTopics || data.includeTopicPrefix || data.excludeTopicPrefix
-      );
+      return data.includeAllTopics || data.listSpecificTopics || data.includeTopicPrefix || data.excludeTopicPrefix;
     },
     {
       message: 'At least one topic selection option is required',
@@ -205,7 +198,7 @@ export const FormSchema = z
     (data) => {
       // If includeAllTopics is true, others must be false
       if (data.includeAllTopics) {
-        return !data.listSpecificTopics && !data.includeTopicPrefix && !data.excludeTopicPrefix;
+        return !(data.listSpecificTopics || data.includeTopicPrefix || data.excludeTopicPrefix);
       }
       return true;
     },
@@ -257,9 +250,7 @@ export const FormSchema = z
     (data) => {
       // If consumer offset sync is enabled, at least one group filter option must be selected
       if (data.enableConsumerOffsetSync) {
-        return (
-          data.includeAllGroups || data.listSpecificGroups || data.includeGroupPrefix || data.excludeGroupPrefix
-        );
+        return data.includeAllGroups || data.listSpecificGroups || data.includeGroupPrefix || data.excludeGroupPrefix;
       }
       return true;
     },
@@ -272,7 +263,7 @@ export const FormSchema = z
     (data) => {
       // If includeAllGroups is true, others must be false
       if (data.includeAllGroups) {
-        return !data.listSpecificGroups && !data.includeGroupPrefix && !data.excludeGroupPrefix;
+        return !(data.listSpecificGroups || data.includeGroupPrefix || data.excludeGroupPrefix);
       }
       return true;
     },
@@ -319,8 +310,7 @@ export const FormSchema = z
       message: 'Prefix is required when "Exclude group names starting with" is selected',
       path: ['excludeGroupPrefixValue'],
     }
-  )
-;
+  );
 
 export type FormValues = z.infer<typeof FormSchema>;
 

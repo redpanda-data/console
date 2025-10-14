@@ -58,8 +58,6 @@ import { RemoteMCPDetailsPage } from './pages/mcp-servers/details/remote-mcp-det
 import { RemoteMCPListPage } from './pages/mcp-servers/list/remote-mcp-list-page';
 import { APIConnectWizard } from './pages/overview/api-connect-wizard';
 import { BrokerDetails } from './pages/overview/broker-details';
-import { ShadowLinkCreatePage } from './pages/shadowlinks/create/shadowlink-create-page';
-import { ShadowLinkListPage } from './pages/shadowlinks/list/shadowlink-list-page';
 import Overview from './pages/overview/overview';
 import type { PageComponentType, PageProps } from './pages/page';
 import QuotasList from './pages/quotas/quotas-list';
@@ -78,6 +76,9 @@ import { SchemaAddVersionPage, SchemaCreatePage } from './pages/schemas/schema-c
 import SchemaDetailsView from './pages/schemas/schema-details';
 import SchemaList from './pages/schemas/schema-list';
 import { SecretsStorePage } from './pages/secrets/secrets-store-page';
+import { ShadowLinkCreatePage } from './pages/shadowlinks/create/shadowlink-create-page';
+import { ShadowLinkDetailsPage } from './pages/shadowlinks/details/shadowlink-details-page';
+import { ShadowLinkListPage } from './pages/shadowlinks/list/shadowlink-list-page';
 import TopicDetails from './pages/topics/topic-details';
 import TopicList from './pages/topics/topic-list';
 import { TopicProducePage } from './pages/topics/topic-produce';
@@ -587,16 +588,9 @@ export const APP_ROUTES: IRouteEntry[] = [
   MakeRoute<{}>('/mcp-servers/create', RemoteMCPCreatePage, 'Create Remote MCP Server'),
   MakeRoute<{ id: string }>('/mcp-servers/:id', RemoteMCPDetailsPage, 'Remote MCP Details'),
 
-  MakeRoute<{}>(
-    '/shadowlinks',
-    ShadowLinkListPage,
-    'Shadow Links',
-    LinkIcon,
-    true,
-    routeVisibility(true)
-  ),
+  MakeRoute<{}>('/shadowlinks', ShadowLinkListPage, 'Shadow Links', LinkIcon, true, routeVisibility(true)),
   MakeRoute<{}>('/shadowlinks/create', ShadowLinkCreatePage, 'Create Shadow Link'),
-  MakeRoute<{ name: string }>('/shadowlinks/:name', ShadowLinkListPage, 'Shadow Link Details'),
+  MakeRoute<{ name: string }>('/shadowlinks/:name', ShadowLinkDetailsPage, 'Shadow Link Details'),
 
   MakeRoute<{}>(
     '/agents',
