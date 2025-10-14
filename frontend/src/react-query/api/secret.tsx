@@ -68,25 +68,27 @@ export const useListSecretsQuery = (
   };
 };
 
-export const useGetSecretQuery = (input?: MessageInit<GetSecretRequestDataPlane>) => {
+export const useGetSecretQuery = (input?: MessageInit<GetSecretRequestDataPlane>, options?: { enabled?: boolean }) => {
   const getSecretRequestDataPlane = create(GetSecretRequestSchemaDataPlane, { id: input?.id });
   const getSecretRequest = create(GetSecretRequestSchema, { request: getSecretRequestDataPlane });
 
-  return useQuery(getSecret, getSecretRequest);
+  return useQuery(getSecret, getSecretRequest, { enabled: options?.enabled });
 };
 
-export const useCreateSecretMutation = () => {
+export const useCreateSecretMutation = (options?: { skipInvalidation?: boolean }) => {
   const queryClient = useQueryClient();
 
   return useMutation(createSecret, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: SecretService.method.listSecrets,
-          cardinality: 'infinite',
-        }),
-        exact: false,
-      });
+      if (!options?.skipInvalidation) {
+        await queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({
+            schema: SecretService.method.listSecrets,
+            cardinality: 'infinite',
+          }),
+          exact: false,
+        });
+      }
     },
     onError: (error) =>
       formatToastErrorMessageGRPC({
@@ -119,18 +121,20 @@ export const useUpdateSecretMutation = () => {
   });
 };
 
-export const useDeleteSecretMutation = () => {
+export const useDeleteSecretMutation = (options?: { skipInvalidation?: boolean }) => {
   const queryClient = useQueryClient();
 
   return useMutation(deleteSecret, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: SecretService.method.listSecrets,
-          cardinality: 'infinite',
-        }),
-        exact: false,
-      });
+      if (!options?.skipInvalidation) {
+        await queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({
+            schema: SecretService.method.listSecrets,
+            cardinality: 'infinite',
+          }),
+          exact: false,
+        });
+      }
     },
     onError: (error) =>
       formatToastErrorMessageGRPC({

@@ -101,18 +101,20 @@ export const useGetServiceAccountCredentialsQuery = (
     retry: 1, // Provide quick feedback to the user in case of an error
   });
 
-export const useCreateServiceAccountMutation = () => {
+export const useCreateServiceAccountMutation = (options?: { skipInvalidation?: boolean }) => {
   const queryClient = useQueryClient();
 
   return useMutation(createServiceAccount, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: ServiceAccountService.method.listServiceAccounts,
-          cardinality: 'finite',
-        }),
-        exact: false,
-      });
+      if (!options?.skipInvalidation) {
+        await queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({
+            schema: ServiceAccountService.method.listServiceAccounts,
+            cardinality: 'finite',
+          }),
+          exact: false,
+        });
+      }
     },
     onError: (error) => {
       if (error.code === Code.PermissionDenied) {
