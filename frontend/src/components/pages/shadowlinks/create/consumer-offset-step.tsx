@@ -38,8 +38,8 @@ export const ConsumerOffsetStep = ({ form }: ConsumerOffsetStepProps) => {
   const includeGroupPrefix = form.watch('includeGroupPrefix');
   const excludeGroupPrefix = form.watch('excludeGroupPrefix');
 
-  // Get root-level group selection validation error
-  const groupSelectionError = form.formState.errors.groupSelection?.message;
+  // Get root-level group selection validation error (custom error path from Zod refine)
+  const groupSelectionError = (form.formState.errors as any).groupSelection?.message;
 
   // Re-validate whenever group checkbox selections change
   useEffect(() => {

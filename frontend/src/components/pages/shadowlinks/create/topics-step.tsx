@@ -24,15 +24,15 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Plus, X } from 'lucide-react';
 import { useEffect } from 'react';
-import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
+import type { UseFormReturn } from 'react-hook-form';
 
 import type { FormValues } from './schemas';
 
 interface TopicsStepProps {
   form: UseFormReturn<FormValues>;
-  topicPropertiesFields: UseFieldArrayReturn<FormValues, 'topicProperties', 'id'>['fields'];
-  appendTopicProperty: UseFieldArrayReturn<FormValues, 'topicProperties', 'id'>['append'];
-  removeTopicProperty: UseFieldArrayReturn<FormValues, 'topicProperties', 'id'>['remove'];
+  topicPropertiesFields: any[];
+  appendTopicProperty: (value: any) => void;
+  removeTopicProperty: (index: number) => void;
 }
 
 export const TopicsStep = ({
@@ -46,8 +46,8 @@ export const TopicsStep = ({
   const includeTopicPrefix = form.watch('includeTopicPrefix');
   const excludeTopicPrefix = form.watch('excludeTopicPrefix');
 
-  // Get root-level topic selection validation error
-  const topicSelectionError = form.formState.errors.topicSelection?.message;
+  // Get root-level topic selection validation error (custom error path from Zod refine)
+  const topicSelectionError = (form.formState.errors as any).topicSelection?.message;
 
   // Re-validate whenever topic checkbox selections change
   useEffect(() => {

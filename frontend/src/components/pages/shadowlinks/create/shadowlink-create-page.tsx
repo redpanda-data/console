@@ -37,10 +37,11 @@ import {
   ShadowLinkSchema,
   TLSFileSettingsSchema,
   TLSPEMSettingsSchema,
+  TLSSettingsSchema,
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/acl_pb';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useCreateShadowLinkMutation } from 'react-query/api/shadowlink';
 import { useNavigate } from 'react-router-dom';
@@ -114,27 +115,27 @@ export const ShadowLinkCreatePage = () => {
     fields: bootstrapServerFields,
     append: appendBootstrapServer,
     remove: removeBootstrapServer,
-  } = useFieldArray({
+  } = useFieldArray<FormValues>({
     control: form.control,
-    name: 'bootstrapServers',
+    name: 'bootstrapServers' as any,
   });
 
   const {
     fields: topicPropertiesFields,
     append: appendTopicProperty,
     remove: removeTopicProperty,
-  } = useFieldArray({
+  } = useFieldArray<FormValues>({
     control: form.control,
-    name: 'topicProperties',
+    name: 'topicProperties' as any,
   });
 
   const {
     fields: aclFiltersFields,
     append: appendAclFilter,
     remove: removeAclFilter,
-  } = useFieldArray({
+  } = useFieldArray<FormValues>({
     control: form.control,
-    name: 'aclFilters',
+    name: 'aclFilters' as any,
   });
 
   useEffect(() => {
@@ -187,13 +188,6 @@ export const ShadowLinkCreatePage = () => {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      // Build the shadow link configuration
-      const clientOptions = create(ShadowLinkClientOptionsSchema, {
-        bootstrapServers: values.bootstrapServers.filter((s) => s.trim()),
-        clientId: '', // Optional, can be added later
-        sourceClusterId: '', // Optional, can be added later
-      });
-
       // Build authentication configuration if SCRAM is enabled
       const authenticationConfiguration = values.useScram
         ? create(AuthenticationConfigurationSchema, {
@@ -210,24 +204,44 @@ export const ShadowLinkCreatePage = () => {
         : undefined;
 
       // Build TLS configuration if enabled
-      let tlsFileSettings;
-      let tlsPemSettings;
+      let tlsSettings;
 
       if (values.useTls) {
         if (values.tlsMode === TLS_MODE.FILE_PATH) {
-          tlsFileSettings = create(TLSFileSettingsSchema, {
-            caPath: values.tlsCaPath || '',
-            keyPath: values.tlsKeyPath || '',
-            certPath: values.tlsCertPath || '',
+          tlsSettings = create(TLSSettingsSchema, {
+            enabled: true,
+            tlsSettings: {
+              case: 'tlsFileSettings',
+              value: create(TLSFileSettingsSchema, {
+                caPath: values.tlsCaPath || '',
+                keyPath: values.tlsKeyPath || '',
+                certPath: values.tlsCertPath || '',
+              }),
+            },
           });
         } else {
-          tlsPemSettings = create(TLSPEMSettingsSchema, {
-            ca: values.tlsCaPem || '',
-            key: values.tlsKeyPem || '',
-            cert: values.tlsCertPem || '',
+          tlsSettings = create(TLSSettingsSchema, {
+            enabled: true,
+            tlsSettings: {
+              case: 'tlsPemSettings',
+              value: create(TLSPEMSettingsSchema, {
+                ca: values.tlsCaPem || '',
+                key: values.tlsKeyPem || '',
+                cert: values.tlsCertPem || '',
+              }),
+            },
           });
         }
       }
+
+      // Build the shadow link client configuration with auth and TLS
+      const clientOptions = create(ShadowLinkClientOptionsSchema, {
+        bootstrapServers: values.bootstrapServers.filter((s) => s.trim()),
+        clientId: '', // Optional, can be added later
+        sourceClusterId: '', // Optional, can be added later
+        authenticationConfiguration,
+        tlsSettings,
+      });
 
       // Build topic filters from form selections
       const topicFilters = [];
@@ -278,7 +292,7 @@ export const ShadowLinkCreatePage = () => {
       const topicMetadataSyncOptions = create(TopicMetadataSyncOptionsSchema, {
         autoCreateShadowTopicFilters: topicFilters,
         shadowedTopicProperties: values.topicProperties?.filter((p) => p.trim()) || [],
-        interval: { seconds: '30' },
+        interval: { seconds: 30n },
       });
 
       // Build ACL filters from form
@@ -304,7 +318,7 @@ export const ShadowLinkCreatePage = () => {
         roleFilters: [],
         scramCredFilters: [],
         enabled: aclFilters.length > 0,
-        interval: { seconds: '30' },
+        interval: { seconds: 30n },
       });
 
       // Build consumer group filters from form selections
@@ -358,14 +372,11 @@ export const ShadowLinkCreatePage = () => {
       const consumerOffsetSyncOptions = create(ConsumerOffsetSyncOptionsSchema, {
         groupFilters,
         enabled: values.enableConsumerOffsetSync,
-        interval: { seconds: String(values.consumerOffsetSyncInterval || 30) },
+        interval: { seconds: BigInt(values.consumerOffsetSyncInterval || 30) },
       });
 
       const configurations = create(ShadowLinkConfigurationsSchema, {
         clientOptions,
-        authenticationConfiguration,
-        tlsFileSettings,
-        tlsPemSettings,
         topicMetadataSyncOptions,
         securitySyncOptions,
         consumerOffsetSyncOptions,
@@ -396,9 +407,9 @@ export const ShadowLinkCreatePage = () => {
     !!form.formState.errors.tlsCaPath ||
     !!form.formState.errors.tlsCaPem;
 
-  // Check if topics step has errors
+  // Check if topics step has errors (topicSelection is a custom Zod error path)
   const hasTopicErrors =
-    !!form.formState.errors.topicSelection ||
+    !!(form.formState.errors as any).topicSelection ||
     !!form.formState.errors.specificTopicNames ||
     !!form.formState.errors.includePrefix ||
     !!form.formState.errors.excludePrefix;
@@ -406,9 +417,9 @@ export const ShadowLinkCreatePage = () => {
   // Check if ACLs step has errors
   const hasAclErrors = !!form.formState.errors.aclFilters;
 
-  // Check if consumer offset step has errors
+  // Check if consumer offset step has errors (groupSelection is a custom Zod error path)
   const hasConsumerOffsetErrors =
-    !!form.formState.errors.groupSelection ||
+    !!(form.formState.errors as any).groupSelection ||
     !!form.formState.errors.specificGroupNames ||
     !!form.formState.errors.includeGroupPrefixValue ||
     !!form.formState.errors.excludeGroupPrefixValue ||
@@ -452,7 +463,7 @@ export const ShadowLinkCreatePage = () => {
                 <Stepper.Panel>
                   <div className="space-y-4">
                     <ConnectionStep
-                      appendBootstrapServer={appendBootstrapServer}
+                      appendBootstrapServer={appendBootstrapServer as any}
                       bootstrapServerFields={bootstrapServerFields}
                       form={form}
                       removeBootstrapServer={removeBootstrapServer}
@@ -467,7 +478,7 @@ export const ShadowLinkCreatePage = () => {
               {methods.current.id === 'topics' && (
                 <Stepper.Panel>
                   <TopicsStep
-                    appendTopicProperty={appendTopicProperty}
+                    appendTopicProperty={appendTopicProperty as any}
                     form={form}
                     removeTopicProperty={removeTopicProperty}
                     topicPropertiesFields={topicPropertiesFields}
