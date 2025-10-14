@@ -7,11 +7,9 @@ package dataplanev1alpha2connect
 import (
 	context "context"
 	fmt "fmt"
-
 	runtime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	connect_gateway "go.vallahaye.net/connect-gateway"
-
 	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
+	connect_gateway "go.vallahaye.net/connect-gateway"
 )
 
 // TransformServiceGatewayServer implements the gRPC server API for the TransformService service.

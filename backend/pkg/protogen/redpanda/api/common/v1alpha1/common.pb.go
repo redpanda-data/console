@@ -9,13 +9,12 @@
 package commonv1alpha1
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	code "google.golang.org/genproto/googleapis/rpc/code"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	anypb "google.golang.org/protobuf/types/known/anypb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (

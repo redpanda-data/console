@@ -7,13 +7,11 @@ package consolev1alpha1connect
 import (
 	context "context"
 	fmt "fmt"
-
 	runtime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	connect_gateway "go.vallahaye.net/connect-gateway"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-
-	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 )
 
 // ConsoleServiceGatewayServer implements the gRPC server API for the ConsoleService service.
