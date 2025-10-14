@@ -28,7 +28,7 @@ components:
         resources:
           $ref: '#/components/schemas/Resources'
         service_account:
-          $ref: '#/components/schemas/ServiceAccount'
+          $ref: '#/components/schemas/AIAgent.ServiceAccount'
         state:
           $ref: '#/components/schemas/AIAgent.State'
         system_prompt:
@@ -71,6 +71,16 @@ components:
       required:
         - api_key
       type: object
+    AIAgent.ServiceAccount:
+      properties:
+        client_id:
+          type: string
+        client_secret:
+          type: string
+      required:
+        - client_id
+        - client_secret
+      type: object
     AIAgent.State:
       description: |-
         State of the AI agent.
@@ -111,7 +121,7 @@ components:
         resources:
           $ref: '#/components/schemas/Resources'
         service_account:
-          $ref: '#/components/schemas/ServiceAccount'
+          $ref: '#/components/schemas/AIAgent.ServiceAccount'
         system_prompt:
           description: System instructions that define how the AI agent should behave and respond.
           type: string
@@ -150,7 +160,7 @@ components:
         resources:
           $ref: '#/components/schemas/Resources'
         service_account:
-          $ref: '#/components/schemas/ServiceAccount'
+          $ref: '#/components/schemas/AIAgent.ServiceAccount'
         system_prompt:
           description: System instructions that define how the AI agent should behave and respond.
           type: string
@@ -858,16 +868,6 @@ components:
         - SASL_MECHANISM_SCRAM_SHA_256
         - SASL_MECHANISM_SCRAM_SHA_512
       type: string
-    ServiceAccount:
-      properties:
-        client_id:
-          type: string
-        client_secret:
-          type: string
-      required:
-        - client_id
-        - client_secret
-      type: object
     StartAIAgentResponse:
       properties:
         ai_agent:
