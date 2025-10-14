@@ -4,6 +4,7 @@ import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connec
 import { useQueryClient } from '@tanstack/react-query';
 import {
   GetSecretRequestSchema,
+  type GetSecretResponse,
   type ListSecretsRequest,
   ListSecretsRequestSchema,
   type ListSecretsResponse,
@@ -68,7 +69,10 @@ export const useListSecretsQuery = (
   };
 };
 
-export const useGetSecretQuery = (input?: MessageInit<GetSecretRequestDataPlane>, options?: { enabled?: boolean }) => {
+export const useGetSecretQuery = (
+  input?: MessageInit<GetSecretRequestDataPlane>,
+  options?: QueryOptions<GenMessage<GetSecretResponse>>
+) => {
   const getSecretRequestDataPlane = create(GetSecretRequestSchemaDataPlane, { id: input?.id });
   const getSecretRequest = create(GetSecretRequestSchema, { request: getSecretRequestDataPlane });
 

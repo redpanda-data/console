@@ -23,9 +23,8 @@ import {
 import { create } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { TransportProvider } from '@connectrpc/connect-query';
-import { createConnectTransport } from '@connectrpc/connect-web';
-import { addBearerTokenInterceptor, config } from 'config';
-import { protobufRegistry } from 'protobuf-registry';
+import { config } from 'config';
+import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { CreateSecretRequestSchema as CreateSecretRequestSchemaConsole } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { forwardRef, useEffect, useImperativeHandle } from 'react';
@@ -176,13 +175,7 @@ ServiceAccountSelectorComponent.displayName = 'ServiceAccountSelectorComponent';
 // Wrapper component that provides controlplane transport
 export const ServiceAccountSelector = forwardRef<ServiceAccountSelectorRef, ServiceAccountSelectorProps>(
   (props, ref) => {
-    const controlplaneTransport = createConnectTransport({
-      baseUrl: config.controlplaneUrl,
-      interceptors: [addBearerTokenInterceptor],
-      jsonOptions: {
-        registry: protobufRegistry,
-      },
-    });
+    const controlplaneTransport = useControlplaneTransport();
 
     return (
       <TransportProvider transport={controlplaneTransport}>

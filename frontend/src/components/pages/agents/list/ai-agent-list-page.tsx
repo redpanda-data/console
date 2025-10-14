@@ -33,37 +33,23 @@ import {
   DataTablePagination,
   DataTableViewOptions,
 } from 'components/redpanda-ui/components/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Label } from 'components/redpanda-ui/components/label';
-import { Switch } from 'components/redpanda-ui/components/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
-import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { AlertCircle, Check, Copy, Loader2, MoreHorizontal, Pause, Play, Plus, X } from 'lucide-react';
+import { Text } from 'components/redpanda-ui/components/typography';
+import { AlertCircle, Check, Loader2, Pause, Plus, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import type { AIAgent as APIAIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import React, { useCallback, useEffect } from 'react';
-import {
-  useDeleteAIAgentMutation,
-  useListAIAgentsQuery,
-  useStartAIAgentMutation,
-  useStopAIAgentMutation,
-} from 'react-query/api/ai-agent';
+import { useDeleteAIAgentMutation, useListAIAgentsQuery } from 'react-query/api/ai-agent';
 import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useDeleteSecretMutation } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
+import { AIAgentActions } from './ai-agent-actions';
 import { AIAgentDeleteHandler, type AIAgentDeleteHandlerRef } from './ai-agent-delete-handler';
 import { AIAgentModel } from '../ai-agent-model';
 
@@ -240,121 +226,14 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<AIAgent>
     {
       id: 'actions',
       enableHiding: false,
-      cell: ({ row }) => {
-        const { mutate: startAIAgent, isPending: isStarting } = useStartAIAgentMutation();
-        const { mutate: stopAIAgent, isPending: isStopping } = useStopAIAgentMutation();
-        const [deleteServiceAccountFlag, setDeleteServiceAccountFlag] = React.useState(false);
-
-        const agent = row.original;
-
-        // Get service account and secret info from agent tags
-        const serviceAccountId = agent.tags?.service_account_id || null;
-        const secretName = agent.tags?.secret_id || null;
-
-        const handleDelete = async (id: string) => {
-          await handleDeleteWithServiceAccount(id, deleteServiceAccountFlag, secretName, serviceAccountId);
-          setDeleteServiceAccountFlag(false);
-        };
-
-        const handleCopy = () => {
-          if (agent.url) {
-            navigator.clipboard.writeText(agent.url);
-            toast.success('URL copied to clipboard');
-          }
-        };
-
-        const handleStart = (event: React.MouseEvent<HTMLDivElement>) => {
-          event.preventDefault();
-          startAIAgent({ id: agent.id });
-        };
-
-        const handleStop = (event: React.MouseEvent<HTMLDivElement>) => {
-          event.preventDefault();
-          stopAIAgent({ id: agent.id });
-        };
-
-        const canStart = agent.state === AIAgent_State.STOPPED || agent.state === AIAgent_State.ERROR;
-        const canStop = agent.state === AIAgent_State.RUNNING;
-
-        return (
-          <div data-actions-column>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button className="h-8 w-8 data-[state=open]:bg-muted" size="icon" variant="ghost">
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[160px]">
-                {agent.url && (
-                  <>
-                    <DropdownMenuItem onClick={handleCopy}>
-                      <div className="flex items-center gap-4">
-                        <Copy className="h-4 w-4" /> Copy URL
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
-                {canStart && (
-                  <DropdownMenuItem onClick={handleStart}>
-                    {isStarting ? (
-                      <div className="flex items-center gap-4">
-                        <Loader2 className="h-4 w-4 animate-spin" /> Starting
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-4">
-                        <Play className="h-4 w-4" />
-                        Start Agent
-                      </div>
-                    )}
-                  </DropdownMenuItem>
-                )}
-                {canStop && (
-                  <DropdownMenuItem onClick={handleStop}>
-                    {isStopping ? (
-                      <div className="flex items-center gap-4">
-                        <Loader2 className="h-4 w-4 animate-spin" /> Stopping
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-4">
-                        <Pause className="h-4 w-4" /> Stop Agent
-                      </div>
-                    )}
-                  </DropdownMenuItem>
-                )}
-                {(canStart || canStop) && <DropdownMenuSeparator />}
-                <DeleteResourceAlertDialog
-                  isDeleting={isDeletingAgent}
-                  onDelete={handleDelete}
-                  onOpenChange={(open) => {
-                    setIsDeleteDialogOpen(open);
-                    if (!open) {
-                      setDeleteServiceAccountFlag(false);
-                    }
-                  }}
-                  resourceId={agent.id}
-                  resourceName={agent.name}
-                  resourceType="AI Agent"
-                >
-                  {serviceAccountId && secretName && (
-                    <div className="flex items-center space-x-2 rounded-lg border border-muted bg-muted/10 p-4">
-                      <Switch
-                        checked={deleteServiceAccountFlag}
-                        id="delete-service-account"
-                        onCheckedChange={setDeleteServiceAccountFlag}
-                      />
-                      <Label className="cursor-pointer font-normal" htmlFor="delete-service-account">
-                        Also delete associated service account and secret <InlineCode>{secretName}</InlineCode>
-                      </Label>
-                    </div>
-                  )}
-                </DeleteResourceAlertDialog>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        );
-      },
+      cell: ({ row }) => (
+        <AIAgentActions
+          agent={row.original}
+          isDeletingAgent={isDeletingAgent}
+          onDeleteWithServiceAccount={handleDeleteWithServiceAccount}
+          setIsDeleteDialogOpen={setIsDeleteDialogOpen}
+        />
+      ),
     },
   ];
 };

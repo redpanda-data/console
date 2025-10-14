@@ -12,11 +12,9 @@
 'use client';
 
 import { TransportProvider } from '@connectrpc/connect-query';
-import { createConnectTransport } from '@connectrpc/connect-web';
-import { addBearerTokenInterceptor, config } from 'config';
-import { protobufRegistry } from 'protobuf-registry';
+import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import type { ReactNode } from 'react';
-import { forwardRef, useImperativeHandle, useMemo } from 'react';
+import { forwardRef, useImperativeHandle } from 'react';
 import { useDeleteServiceAccountMutation } from 'react-query/api/controlplane/service-account';
 
 type AIAgentDeleteHandlerProps = {
@@ -47,17 +45,7 @@ AIAgentDeleteHandlerComponent.displayName = 'AIAgentDeleteHandlerComponent';
 
 export const AIAgentDeleteHandler = forwardRef<AIAgentDeleteHandlerRef, AIAgentDeleteHandlerProps>(
   ({ children }, ref) => {
-    const controlplaneTransport = useMemo(
-      () =>
-        createConnectTransport({
-          baseUrl: config.controlplaneUrl,
-          interceptors: [addBearerTokenInterceptor],
-          jsonOptions: {
-            registry: protobufRegistry,
-          },
-        }),
-      []
-    );
+    const controlplaneTransport = useControlplaneTransport();
 
     return (
       <>

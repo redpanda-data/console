@@ -101,19 +101,29 @@ export const useGetServiceAccountCredentialsQuery = (
     retry: 1, // Provide quick feedback to the user in case of an error
   });
 
-export const useCreateServiceAccountMutation = (options?: { skipInvalidation?: boolean }) => {
+const useInvalidateServiceAccountsList = () => {
   const queryClient = useQueryClient();
+
+  const invalidate = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: createConnectQueryKey({
+        schema: ServiceAccountService.method.listServiceAccounts,
+        cardinality: 'finite',
+      }),
+      exact: false,
+    });
+  };
+
+  return { invalidate };
+};
+
+export const useCreateServiceAccountMutation = (options?: { skipInvalidation?: boolean }) => {
+  const { invalidate } = useInvalidateServiceAccountsList();
 
   return useMutation(createServiceAccount, {
     onSuccess: async () => {
       if (!options?.skipInvalidation) {
-        await queryClient.invalidateQueries({
-          queryKey: createConnectQueryKey({
-            schema: ServiceAccountService.method.listServiceAccounts,
-            cardinality: 'finite',
-          }),
-          exact: false,
-        });
+        await invalidate();
       }
     },
     onError: (error) => {
@@ -132,16 +142,11 @@ export const useCreateServiceAccountMutation = (options?: { skipInvalidation?: b
 
 export const useUpdateServiceAccountMutation = () => {
   const queryClient = useQueryClient();
+  const { invalidate } = useInvalidateServiceAccountsList();
 
   return useMutation(updateServiceAccount, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: ServiceAccountService.method.listServiceAccounts,
-          cardinality: 'finite',
-        }),
-        exact: false,
-      });
+      await invalidate();
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: ServiceAccountService.method.getServiceAccount,
@@ -192,18 +197,12 @@ export const useRotateServiceAccountSecretMutation = () => {
 };
 
 export const useDeleteServiceAccountMutation = (options?: { skipInvalidation?: boolean }) => {
-  const queryClient = useQueryClient();
+  const { invalidate } = useInvalidateServiceAccountsList();
 
   return useMutation(deleteServiceAccount, {
     onSuccess: async () => {
       if (!options?.skipInvalidation) {
-        await queryClient.invalidateQueries({
-          queryKey: createConnectQueryKey({
-            schema: ServiceAccountService.method.listServiceAccounts,
-            cardinality: 'finite',
-          }),
-          exact: false,
-        });
+        await invalidate();
       }
     },
     onError: (error) => {

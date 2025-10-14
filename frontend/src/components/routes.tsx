@@ -43,7 +43,7 @@ import LicenseExpiredPage from './pages/admin/license-expired-page';
 import UploadLicensePage from './pages/admin/upload-license-page';
 import { AIAgentCreatePage } from './pages/agents/create/ai-agent-create-page';
 import { AIAgentDetailsPage } from './pages/agents/details/ai-agent-details-page';
-import { AIAgentsListPage } from './pages/agents/list/ai-agents-list-page';
+import { AIAgentsListPage } from './pages/agents/list/ai-agent-list-page';
 import KafkaClusterDetails from './pages/connect/cluster-details';
 import KafkaConnectorDetails from './pages/connect/connector-details';
 import CreateConnector from './pages/connect/create-connector';
