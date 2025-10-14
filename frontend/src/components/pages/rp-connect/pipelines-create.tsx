@@ -43,6 +43,7 @@ import { extractLintHintsFromError, formatPipelineError } from './errors';
 import { CreatePipelineSidebar } from './onboarding/create-pipeline-sidebar';
 import { SecretsQuickAdd } from './secrets/secrets-quick-add';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+import { getContextualVariableSyntax, REDPANDA_CONTEXTUAL_VARIABLES } from './types/constants';
 import type { ConnectComponentType } from './types/schema';
 import type { AddUserFormData, WizardFormData } from './types/wizard';
 import { getConnectTemplate } from './utils/yaml';
@@ -347,6 +348,39 @@ const registerSecretsAutocomplete = async (
   setSecretAutocomplete(autocomplete);
 };
 
+const registerContextualVariablesAutocomplete = (
+  monaco: Monaco,
+  setContextualVarsAutocomplete: Dispatch<SetStateAction<IDisposable | undefined>>
+) => {
+  const contextualVars = Object.values(REDPANDA_CONTEXTUAL_VARIABLES);
+
+  const autocomplete = monaco.languages.registerCompletionItemProvider('yaml', {
+    triggerCharacters: ['$', '{'],
+    provideCompletionItems: (model, position) => {
+      const word = model.getWordUntilPosition(position);
+      const range = {
+        startLineNumber: position.lineNumber,
+        endLineNumber: position.lineNumber,
+        startColumn: word.startColumn,
+        endColumn: word.endColumn,
+      };
+
+      const suggestions = contextualVars.map<languages.CompletionItem>((cv) => ({
+        label: getContextualVariableSyntax(cv.name),
+        kind: monaco.languages.CompletionItemKind.Variable,
+        detail: cv.description,
+        documentation: `Contextual variable: ${cv.description}`,
+        insertText: getContextualVariableSyntax(cv.name),
+        range,
+      }));
+
+      return { suggestions };
+    },
+  });
+
+  setContextualVarsAutocomplete(autocomplete);
+};
+
 export const PipelineEditor = observer(
   (p: {
     yaml: string;
@@ -357,6 +391,7 @@ export const PipelineEditor = observer(
   }) => {
     const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
+    const [contextualVarsAutocomplete, setContextualVarsAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
     const [persistedFormData] = useSessionStorage<Partial<WizardFormData>>(CONNECT_WIZARD_CONNECTOR_KEY, {});
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
@@ -453,8 +488,12 @@ export const PipelineEditor = observer(
           // avoid duplicate secret autocomplete registration
           secretAutocomplete.dispose();
         }
+        if (contextualVarsAutocomplete) {
+          // avoid duplicate contextual variables autocomplete registration
+          contextualVarsAutocomplete.dispose();
+        }
       };
-    }, [secretAutocomplete]);
+    }, [secretAutocomplete, contextualVarsAutocomplete]);
 
     // Sync actual editor content with editor instance
     // This ensures sidebar always sees what's actually in the editor
@@ -504,6 +543,7 @@ export const PipelineEditor = observer(
                       setEditorInstance(editorRef);
                       setMonaco(monacoInst);
                       await registerSecretsAutocomplete(monacoInst, setSecretAutocomplete);
+                      registerContextualVariablesAutocomplete(monacoInst, setContextualVarsAutocomplete);
                     }}
                     options={{
                       readOnly: p.isDisabled,

@@ -61,6 +61,25 @@ export const isUserField = (fieldName: string): boolean => {
 export const isPasswordField = (fieldName: string): boolean => fieldName.toLowerCase() === 'password';
 
 /**
+ * Checks if a field should be prepopulated with REDPANDA_BROKERS contextual variable
+ * Matches: 'seed_brokers', 'addresses', 'brokers'
+ */
+export const isBrokerField = (fieldName: string): boolean => {
+  const normalized = fieldName.toLowerCase();
+  return normalized === 'seed_brokers' || normalized === 'addresses' || normalized === 'brokers';
+};
+
+/**
+ * Checks if a field is schema_registry.url that should use REDPANDA_SCHEMA_REGISTRY_URL
+ * Requires checking both field name and parent context
+ */
+export const isSchemaRegistryUrlField = (fieldName: string, parentName?: string): boolean => {
+  const isUrl = fieldName.toLowerCase() === 'url';
+  const parentIsSchemaRegistry = parentName?.toLowerCase() === 'schema_registry';
+  return isUrl && !!parentIsSchemaRegistry;
+};
+
+/**
  * Checks if a RawFieldSpec or its children have wizard-relevant fields
  * Used to determine if advanced/optional fields should be shown
  */

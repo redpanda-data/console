@@ -28,6 +28,50 @@ export const CRITICAL_CONNECTION_FIELDS = new Set(['addresses', 'seed_brokers', 
  */
 export const NON_CRITICAL_CONFIG_OBJECTS = new Set(['tls', 'metadata', 'batching', 'backoff', 'retry']);
 
+export const REDPANDA_CONTEXTUAL_VARIABLES = {
+  REDPANDA_BROKERS: {
+    name: 'REDPANDA_BROKERS' as const,
+    description: 'Bootstrap server address of the cluster',
+    usedIn: ['seed_brokers', 'addresses', 'brokers'] as const,
+  },
+  REDPANDA_SCHEMA_REGISTRY_URL: {
+    name: 'REDPANDA_SCHEMA_REGISTRY_URL' as const,
+    description: 'Schema Registry URL for the cluster',
+    usedIn: ['url'] as const, // Within schema_registry object
+  },
+  REDPANDA_ID: {
+    name: 'REDPANDA_ID' as const,
+    description: 'Cluster ID',
+    usedIn: [] as const, // Metadata/tracking
+  },
+  REDPANDA_REGION: {
+    name: 'REDPANDA_REGION' as const,
+    description: 'Cloud region where pipeline is deployed',
+    usedIn: [] as const, // Regional context
+  },
+  REDPANDA_PIPELINE_ID: {
+    name: 'REDPANDA_PIPELINE_ID' as const,
+    description: 'Pipeline ID currently running',
+    usedIn: [] as const, // Pipeline tracking
+  },
+  REDPANDA_PIPELINE_NAME: {
+    name: 'REDPANDA_PIPELINE_NAME' as const,
+    description: 'Pipeline display name currently running',
+    usedIn: [] as const, // Pipeline tracking
+  },
+} as const;
+
+export const getContextualVariableSyntax = (name: ContextualVariableName): string => `\${${name}}`;
+
+export type ContextualVariableName = keyof typeof REDPANDA_CONTEXTUAL_VARIABLES;
+
+export const REDPANDA_SERVERLESS_SECRETS = {
+  USERNAME: 'REDPANDA_USERNAME',
+  PASSWORD: 'REDPANDA_PASSWORD',
+} as const;
+
+export const getSecretSyntax = (secretName: string): string => `\${secrets.${secretName}}`;
+
 export const CUSTOM_COMPONENT_NAME = 'custom';
 
 export const customComponentConfig: ConnectComponentSpec = {

@@ -1,11 +1,22 @@
 import { isFalsy } from 'utils/falsy';
 
-import { getPersistedWizardData, hasWizardRelevantFields, isPasswordField, isTopicField, isUserField } from './wizard';
+import {
+  getPersistedWizardData,
+  hasWizardRelevantFields,
+  isBrokerField,
+  isPasswordField,
+  isSchemaRegistryUrlField,
+  isTopicField,
+  isUserField,
+} from './wizard';
 import benthosSchemaFull from '../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
 import {
   CRITICAL_CONNECTION_FIELDS,
+  getContextualVariableSyntax,
+  getSecretSyntax,
   NON_CRITICAL_CONFIG_OBJECTS,
   REDPANDA_SECRET_COMPONENTS,
+  REDPANDA_SERVERLESS_SECRETS,
 } from '../types/constants';
 import {
   type BenthosSchemaFull,
@@ -156,7 +167,10 @@ export const schemaToConfig = (
     return;
   }
 
-  const connectionConfig = generateDefaultValue(componentSpec.config, showOptionalFields, componentSpec.name);
+  const connectionConfig = generateDefaultValue(componentSpec.config, {
+    showOptionalFields,
+    componentName: componentSpec.name,
+  });
 
   const config: Partial<ConnectConfigObject> = {};
 
@@ -203,7 +217,7 @@ export const schemaToConfig = (
   return config;
 };
 
-function populateWizardFields(spec: RawFieldSpec): unknown | undefined {
+function populateWizardFields(spec: RawFieldSpec, componentName?: string): unknown | undefined {
   if (!spec.name) {
     return undefined;
   }
@@ -215,14 +229,96 @@ function populateWizardFields(spec: RawFieldSpec): unknown | undefined {
     return spec.kind === 'array' ? [topicData.topicName] : topicData.topicName;
   }
 
-  // Populate username fields
+  // Priority 1: Use wizard data if available (explicit user choice)
   if (isUserField(spec.name) && userData?.username) {
     return userData.username;
   }
 
-  // Populate password fields (empty string for manual entry)
+  // Password: empty string for manual entry when wizard username exists
   if (isPasswordField(spec.name) && userData?.username) {
     return '';
+  }
+
+  // Priority 2: For REDPANDA_SECRET_COMPONENTS without wizard data, default to secret references
+  if (componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName)) {
+    if (isUserField(spec.name)) {
+      return getSecretSyntax(REDPANDA_SERVERLESS_SECRETS.USERNAME);
+    }
+
+    if (isPasswordField(spec.name)) {
+      return getSecretSyntax(REDPANDA_SERVERLESS_SECRETS.PASSWORD);
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Populates fields with Redpanda contextual variables for supported components
+ * @param spec - Field specification
+ * @param componentName - Component name to check if contextual variables should be used
+ * @param parentName - Parent field name for context-sensitive checks (e.g., schema_registry.url)
+ * @returns Contextual variable syntax or undefined
+ */
+function populateContextualVariables(
+  spec: RawFieldSpec,
+  componentName?: string,
+  parentName?: string
+): unknown | undefined {
+  if (!(spec.name && componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName))) {
+    return undefined;
+  }
+
+  // Broker fields get REDPANDA_BROKERS
+  if (isBrokerField(spec.name)) {
+    const brokersSyntax = getContextualVariableSyntax('REDPANDA_BROKERS');
+    // Array field (e.g., seed_brokers)
+    if (spec.kind === 'array') {
+      return [brokersSyntax];
+    }
+    // String field (e.g., addresses as comma-separated)
+    return brokersSyntax;
+  }
+
+  // Schema Registry URL within schema_registry object
+  if (isSchemaRegistryUrlField(spec.name, parentName)) {
+    return getContextualVariableSyntax('REDPANDA_SCHEMA_REGISTRY_URL');
+  }
+
+  return undefined;
+}
+
+/**
+ * Populates connection defaults for REDPANDA_SECRET_COMPONENTS
+ * These are reasonable defaults for Redpanda Cloud connections:
+ * - TLS enabled: true (Redpanda Cloud requires TLS)
+ * - SASL mechanism: from session storage or default to SCRAM-SHA-256
+ *
+ * @param spec - Field specification
+ * @param componentName - Component name
+ * @param parentName - Parent field name for context
+ * @returns Default value or undefined
+ */
+function populateConnectionDefaults(
+  spec: RawFieldSpec,
+  componentName?: string,
+  parentName?: string
+): unknown | undefined {
+  if (!(spec.name && componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName))) {
+    return undefined;
+  }
+
+  // TLS enabled should be true for Redpanda Cloud connections
+  const isTlsEnabled = spec.name.toLowerCase() === 'enabled' && parentName?.toLowerCase() === 'tls';
+  if (isTlsEnabled) {
+    return true;
+  }
+
+  // SASL mechanism from session storage or default to SCRAM-SHA-256
+  const isMechanismField = spec.name.toLowerCase() === 'mechanism' && parentName?.toLowerCase() === 'sasl';
+  if (isMechanismField) {
+    const { userData } = getPersistedWizardData();
+    return userData?.saslMechanism || 'SCRAM-SHA-256';
   }
 
   return undefined;
@@ -291,9 +387,9 @@ function shouldHideField(params: {
 
 function generateObjectValue(
   spec: RawFieldSpec,
-  showOptionalFields: boolean,
+  showOptionalFields: boolean | undefined,
   componentName: string | undefined,
-  insideWizardContext: boolean
+  insideWizardContext: boolean | undefined
 ): Record<string, unknown> | undefined {
   if (!spec.children) {
     return {};
@@ -317,7 +413,12 @@ function generateObjectValue(
 
   const inWizardContext = insideWizardContext || hasDirectWizardChildren;
   for (const child of spec.children) {
-    const childValue = generateDefaultValue(child, showOptionalFields, componentName, inWizardContext);
+    const childValue = generateDefaultValue(child, {
+      showOptionalFields,
+      componentName,
+      insideWizardContext: inWizardContext,
+      parentName: spec.name,
+    });
 
     if (childValue !== undefined && child.name) {
       obj[child.name] = childValue;
@@ -369,7 +470,12 @@ function generateArrayValue(params: {
       const saslObj = {} as Record<string, unknown>;
 
       for (const child of spec.children) {
-        const childValue = generateDefaultValue(child, showOptionalFields, componentName, true);
+        const childValue = generateDefaultValue(child, {
+          showOptionalFields,
+          componentName,
+          insideWizardContext: true,
+          parentName: spec.name,
+        });
         if (childValue !== undefined && child.name) {
           saslObj[child.name] = childValue;
         }
@@ -393,12 +499,8 @@ function generateArrayValue(params: {
   return [];
 }
 
-function generateScalarValue(
-  spec: RawFieldSpec,
-  showOptionalFields: boolean,
-  componentName: string | undefined,
-  insideWizardContext: boolean
-): unknown {
+function generateScalarValue(spec: RawFieldSpec, options: GenerateDefaultValueOptions): unknown {
+  const { showOptionalFields, componentName, insideWizardContext } = options;
   switch (spec.type) {
     case 'string':
       return '';
@@ -414,12 +516,18 @@ function generateScalarValue(
   }
 }
 
+interface GenerateDefaultValueOptions {
+  showOptionalFields?: boolean;
+  componentName?: string;
+  insideWizardContext?: boolean;
+  parentName?: string;
+}
+
 export function generateDefaultValue(
   spec: RawFieldSpec,
-  showOptionalFields?: boolean,
-  componentName?: string,
-  insideWizardContext?: boolean
+  options?: GenerateDefaultValueOptions
 ): RawFieldSpec['default'] {
+  const { showOptionalFields, componentName, insideWizardContext, parentName } = options || {};
   // Generate schema comment for YAML generation
   if (spec.default !== undefined) {
     spec.comment = `Default: ${JSON.stringify(spec.default)}`;
@@ -429,9 +537,21 @@ export function generateDefaultValue(
 
   // Try wizard data population first for Redpanda secret components
   if (componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName)) {
-    const wizardValue = populateWizardFields(spec);
+    const wizardValue = populateWizardFields(spec, componentName);
     if (wizardValue !== undefined) {
       return wizardValue;
+    }
+
+    // Then try contextual variables for supported components
+    const contextualValue = populateContextualVariables(spec, componentName, parentName);
+    if (contextualValue !== undefined) {
+      return contextualValue;
+    }
+
+    // Then try connection defaults (TLS enabled, SASL mechanism)
+    const connectionDefault = populateConnectionDefaults(spec, componentName, parentName);
+    if (connectionDefault !== undefined) {
+      return connectionDefault;
     }
   }
 
@@ -463,7 +583,7 @@ export function generateDefaultValue(
   // Generate value based on field kind
   switch (spec.kind) {
     case 'scalar':
-      return generateScalarValue(spec, showOptionalFields ?? false, componentName, insideWizardContext ?? false);
+      return generateScalarValue(spec, options || {});
     case 'array':
       return generateArrayValue({
         spec,
