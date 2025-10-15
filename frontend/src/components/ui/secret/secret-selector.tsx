@@ -105,11 +105,9 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
   });
 
   const handleCreateSecret = async (data: NewSecretFormData) => {
-    const secretName = data.name.toUpperCase();
-
     try {
       const dataPlaneRequest = create(CreateSecretRequestSchemaDataPlane, {
-        id: secretName,
+        id: data.name,
         secretData: base64ToUInt8Array(encodeBase64(data.value)),
         scopes,
         labels: {},
@@ -121,13 +119,13 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
         })
       );
 
-      toast.success(`Secret "${secretName}" created successfully`);
+      toast.success(`Secret "${data.name}" created successfully`);
 
       // Select the newly created secret
-      onChange(secretName);
+      onChange(data.name);
 
       // Call callback if provided
-      onSecretCreated?.(secretName);
+      onSecretCreated?.(data.name);
 
       // Close dialog and reset form
       setIsCreateDialogOpen(false);
@@ -136,7 +134,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
       const errorMessage = formatToastErrorMessageGRPC({
         error: error as ConnectError,
         action: 'create',
-        entity: `secret ${secretName}`,
+        entity: `secret ${data.name}`,
       });
       toast.error(errorMessage);
     }
@@ -203,7 +201,11 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
                   <FormItem>
                     <FormLabel>Secret Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., OPENAI_API_KEY" {...field} />
+                      <Input
+                        placeholder="e.g., OPENAI_API_KEY"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                      />
                     </FormControl>
                     <FormDescription>Secrets are stored in uppercase</FormDescription>
                     <FormMessage />
