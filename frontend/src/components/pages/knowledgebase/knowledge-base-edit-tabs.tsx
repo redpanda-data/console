@@ -77,6 +77,7 @@ import {
   KnowledgeBaseUpdate_VectorDatabaseSchema,
   KnowledgeBaseUpdateSchema,
 } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { createMCPClientWithSession } from '../../../react-query/api/remote-mcp';
 import { useListUsersQuery } from '../../../react-query/api/user';
 import { rpcnSecretManagerApi } from '../../../state/backend-api';
 import { getMessageFieldMetadata } from '../../../utils/protobuf-reflection';
@@ -89,6 +90,14 @@ const { ToastContainer, toast } = createStandaloneToast();
 
 const CREATE_NEW_OPTION_VALUE = 'CREATE_NEW_OPTION_VALUE';
 const REGEX_SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/;
+
+// Type for MCP tool call response
+type MCPToolResponse = {
+  content: Array<{
+    type: string;
+    text?: string;
+  }>;
+};
 
 const UserDropdown = ({
   label,
@@ -1416,7 +1425,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
     );
   };
 
-  // Method to call the retrieval API
+  // Method to call the retrieval API via MCP protocol
   callRetrievalAPI = async () => {
     if (!this.query.trim()) {
       toast({
@@ -1455,23 +1464,34 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
         return;
       }
 
-      const response = await fetch(`${knowledgeBase.retrievalApiUrl}/query`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Create MCP client and call the retrieval tool
+      const { client } = await createMCPClientWithSession(knowledgeBase.retrievalApiUrl, 'redpanda-console-playground');
+
+      const mcpResponse = (await client.callTool({
+        name: 'retrieval',
+        arguments: {
           query: this.query,
           top_n: this.topN,
-        }),
-      });
+        },
+      })) as MCPToolResponse;
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Parse MCP response format
+      // Response structure: { content: [{ type: "text", text: "[{...}]" }] }
+      if (!mcpResponse.content || mcpResponse.content.length === 0) {
+        throw new Error('Invalid MCP response: no content returned');
       }
 
-      const results = await response.json();
+      const textContent = mcpResponse.content[0];
+      if (textContent.type !== 'text' || !textContent.text) {
+        throw new Error('Invalid MCP response: expected text content');
+      }
+
+      // Parse the JSON string to get the array of results
+      const results = JSON.parse(textContent.text);
+      if (!Array.isArray(results)) {
+        throw new Error('Invalid MCP response: expected array of results');
+      }
+
       this.retrievalResults = results;
 
       toast({
@@ -1496,7 +1516,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
     }
   };
 
-  // Method to call the chat API
+  // Method to call the chat API via MCP protocol
   callChatAPI = async () => {
     if (!this.query.trim()) {
       toast({
@@ -1544,23 +1564,34 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
         return;
       }
 
-      const response = await fetch(`${knowledgeBase.retrievalApiUrl}/chat`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Create MCP client and call the chat tool
+      const { client } = await createMCPClientWithSession(knowledgeBase.retrievalApiUrl, 'redpanda-console-playground');
+
+      const mcpResponse = (await client.callTool({
+        name: 'chat',
+        arguments: {
           query: this.query,
           top_n: this.topN,
-        }),
-      });
+        },
+      })) as MCPToolResponse;
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Parse MCP response format
+      // Response structure: { content: [{ type: "text", text: "{\"response\":\"...\"}" }] }
+      if (!mcpResponse.content || mcpResponse.content.length === 0) {
+        throw new Error('Invalid MCP response: no content returned');
       }
 
-      const result = await response.json();
+      const textContent = mcpResponse.content[0];
+      if (textContent.type !== 'text' || !textContent.text) {
+        throw new Error('Invalid MCP response: expected text content');
+      }
+
+      // Parse the JSON string to get the response object
+      const result = JSON.parse(textContent.text);
+      if (typeof result !== 'object' || result === null) {
+        throw new Error('Invalid MCP response: expected JSON object');
+      }
+
       this.chatResponse = result.response || 'No response received';
 
       toast({
