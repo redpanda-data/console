@@ -30,6 +30,7 @@ import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplan
 import { forwardRef, useEffect, useImperativeHandle } from 'react';
 import { useCreateServiceAccountMutation } from 'react-query/api/controlplane/service-account';
 import { toast } from 'sonner';
+import { generateServiceAccountSecretId } from 'utils/secret.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
@@ -49,12 +50,6 @@ export type ServiceAccountSelectorRef = {
   createServiceAccount: (resourceName: string) => Promise<{ secretName: string; serviceAccountId: string } | null>;
   isPending: boolean;
 };
-
-// Regex to check if string starts with uppercase letter
-const STARTS_WITH_LETTER_REGEX = /^[A-Z]/;
-
-// Regex to remove trailing underscores
-const TRAILING_UNDERSCORES_REGEX = /_+$/;
 
 const ServiceAccountSelectorComponent = forwardRef<ServiceAccountSelectorRef, ServiceAccountSelectorProps>(
   (
@@ -110,19 +105,8 @@ const ServiceAccountSelectorComponent = forwardRef<ServiceAccountSelectorRef, Se
 
         // Create a single JSON secret for client credentials using the callback
         if (credentials?.clientId && credentials?.clientSecret) {
-          // Sanitize resource name to match secret ID regex pattern: ^[A-Z][A-Z0-9_]*$
-          // Convert to uppercase, replace non-alphanumeric chars with underscores
-          let sanitizedResourceName = resourceName.toUpperCase().replace(/[^A-Z0-9_]/g, '_');
-
-          // Remove trailing underscores
-          sanitizedResourceName = sanitizedResourceName.replace(TRAILING_UNDERSCORES_REGEX, '');
-
-          // Ensure it starts with a letter (if not, prepend 'SA_')
-          if (!STARTS_WITH_LETTER_REGEX.test(sanitizedResourceName)) {
-            sanitizedResourceName = `SA_${sanitizedResourceName}`;
-          }
-
-          const secretName = `SERVICE_ACCOUNT_${sanitizedResourceName}`;
+          // Generate secret ID in format: SA_{service_account_xid}_{resource_name}
+          const secretName = generateServiceAccountSecretId(serviceAccountId, resourceName);
 
           // Create JSON object with client_id and client_secret
           const credentialsJson = JSON.stringify({

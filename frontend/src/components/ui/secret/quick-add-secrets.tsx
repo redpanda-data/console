@@ -166,11 +166,9 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
   };
 
   const handleCreateNewSecret = async (data: NewSecretFormData) => {
-    const secretName = data.name.toUpperCase();
-
     try {
       const dataPlaneRequest = create(CreateSecretRequestSchemaDataPlane, {
-        id: secretName,
+        id: data.name,
         secretData: base64ToUInt8Array(encodeBase64(data.value)),
         scopes,
         labels: {},
@@ -183,19 +181,19 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
       );
 
       // Update created secrets state
-      setCreatedSecrets((prev) => [...prev, secretName]);
-      setNewlyCreatedSecrets((prev) => [...prev, secretName]);
+      setCreatedSecrets((prev) => [...prev, data.name]);
+      setNewlyCreatedSecrets((prev) => [...prev, data.name]);
       // Call onSecretsCreated callback
-      onSecretsCreated?.([secretName]);
+      onSecretsCreated?.([data.name]);
       // Reset form
       newSecretForm.reset();
 
-      toast.success(`Secret "${secretName}" created successfully`);
+      toast.success(`Secret "${data.name}" created successfully`);
     } catch (error) {
       const errorMessage = formatToastErrorMessageGRPC({
         error: error as ConnectError,
         action: 'create',
-        entity: `secret ${secretName}`,
+        entity: `secret ${data.name}`,
       });
 
       if (onError) {
@@ -320,7 +318,11 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                       <FormItem>
                         <FormLabel className="font-medium text-sm">Secret Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., API_KEY, DATABASE_PASSWORD" {...field} />
+                          <Input
+                            placeholder="e.g., API_KEY, DATABASE_PASSWORD"
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                          />
                         </FormControl>
                         <FormDescription>Secrets are stored in uppercase</FormDescription>
                         <FormMessage />
