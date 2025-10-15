@@ -454,7 +454,7 @@ message ListAIAgentsRequest {
   message Filter {
     // Substring match on AI agent name. Case-sensitive.
     string name_contains = 1 [
-      (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
+      (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
       (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
       (buf.validate.field).string.max_len = 128,
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Any AI agents that partially match this name will be returned."}

@@ -455,7 +455,7 @@ message ListMCPServersRequest {
   message Filter {
     // Substring match on MCP server name. Case-sensitive.
     string display_name_contains = 1 [
-      (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
+      (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
       (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
       (buf.validate.field).string.max_len = 128,
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Any MCP Server that partially match this name will be returned."}
@@ -474,7 +474,7 @@ message ListMCPServersRequest {
 
     // Match MCP servers that use this secret ID.
     string secret_id = 3 [
-      (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
+      (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
       (buf.validate.field).string.pattern = "^[A-Z][A-Z0-9_]*$"
     ];
   }
