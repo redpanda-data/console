@@ -96,7 +96,10 @@ export const AIAgentCreatePage = () => {
   });
 
   // Session storage for form persistence
-  const [storedFormValues, setStoredFormValues] = useSessionStorage<FormValues>('ai-agent-create-form', initialValues);
+  const [storedFormValues, setStoredFormValues] = useSessionStorage<FormValues>(
+    '@rp/ai-agent-create-form',
+    initialValues
+  );
 
   // Ref to ServiceAccountSelector to call createServiceAccount
   const serviceAccountSelectorRef = useRef<ServiceAccountSelectorRef>(null);
@@ -651,7 +654,12 @@ export const AIAgentCreatePage = () => {
                 Cancel
               </Button>
               <Button
-                disabled={isCreateAgentPending || isCreateServiceAccountPending || isCreateSecretPending}
+                disabled={
+                  !form.formState.isValid ||
+                  isCreateAgentPending ||
+                  isCreateServiceAccountPending ||
+                  isCreateSecretPending
+                }
                 type="submit"
               >
                 {isCreateAgentPending || isCreateServiceAccountPending || isCreateSecretPending ? (
