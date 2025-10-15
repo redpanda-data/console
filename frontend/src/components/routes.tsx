@@ -56,6 +56,7 @@ import KnowledgeBaseList from './pages/knowledgebase/knowledge-base-list';
 import { RemoteMCPCreatePage } from './pages/mcp-servers/create/remote-mcp-create-page';
 import { RemoteMCPDetailsPage } from './pages/mcp-servers/details/remote-mcp-details-page';
 import { RemoteMCPListPage } from './pages/mcp-servers/list/remote-mcp-list-page';
+import { APIConnectWizard } from './pages/overview/api-connect-wizard';
 import { BrokerDetails } from './pages/overview/broker-details';
 import Overview from './pages/overview/overview';
 import type { PageComponentType, PageProps } from './pages/page';
@@ -360,6 +361,14 @@ function routeVisibility(
 export const APP_ROUTES: IRouteEntry[] = [
   MakeRoute<{}>('/overview', Overview, 'Overview', HomeIcon),
   MakeRoute<{ brokerId: string }>('/overview/:brokerId', BrokerDetails, 'Broker Details'),
+  MakeRoute<{}>(
+    '/get-started/api',
+    APIConnectWizard,
+    'Getting Started with API',
+    undefined,
+    undefined,
+    routeVisibility(() => isServerless() && isFeatureFlagEnabled('enableServerlessOnboardingWizard'))
+  ),
 
   MakeRoute<{}>('/topics', TopicList, 'Topics', CollectionIcon),
   MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),

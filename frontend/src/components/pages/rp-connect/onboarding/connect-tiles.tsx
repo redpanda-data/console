@@ -22,7 +22,6 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 import { useForm } from 'react-hook-form';
 
 import { ConnectorLogo } from './connector-logo';
-import { useResetWizardSessionStorage } from '../hooks/use-reset-wizard-session-storage';
 import { CUSTOM_COMPONENT_NAME, customComponentConfig } from '../types/constants';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 import type { BaseStepRef } from '../types/wizard';
@@ -40,23 +39,19 @@ const getComponentSummary = (component: ConnectComponentSpec, componentTypeFilte
   return component.summary;
 };
 
+const logoStyle = {
+  height: '24px',
+};
+
 const getLogoForComponent = (component: ConnectComponentSpec) => {
   if (component.name === CUSTOM_COMPONENT_NAME) {
     return <Settings className="size-6 text-muted-foreground" />;
   }
   if (component?.logoUrl) {
-    return <img alt={component.name} className="size-6" src={component.logoUrl} />;
+    return <img alt={component.name} src={component.logoUrl} style={logoStyle} />;
   }
   if (componentLogoMap[component.name as ComponentName]) {
-    return (
-      <ConnectorLogo
-        name={component.name as ComponentName}
-        style={{
-          width: '24px',
-          height: '24px',
-        }}
-      />
-    );
+    return <ConnectorLogo name={component.name as ComponentName} style={logoStyle} />;
   }
   return <Waypoints className="size-6 text-muted-foreground" />;
 };
@@ -86,65 +81,77 @@ const searchComponents = (
   filters?: {
     types?: ConnectComponentType[];
     categories?: string[];
+  },
+  additionalComponents?: ExtendedConnectComponentSpec[]
+): ConnectComponentSpec[] => {
+  const matchesFilters = (component: ConnectComponentSpec) => {
+    if (filters?.types?.length && !filters.types.includes(component.type)) {
+      return false;
+    }
+
+    if (query.trim()) {
+      const matchesName = component.name.toLowerCase().includes(query.toLowerCase());
+      if (!matchesName) {
+        return false;
+      }
+    }
+
+    if (filters?.categories?.length) {
+      const hasMatchingCategory = component.categories?.some((cat: string) => filters.categories?.includes(cat));
+      if (!hasMatchingCategory) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const result: ConnectComponentSpec[] = [];
+
+  // 1. Custom component always first (if input/output in filter)
+  if (filters?.types?.includes('input') || filters?.types?.includes('output')) {
+    result.push(customComponentConfig);
   }
-): ConnectComponentSpec[] =>
-  [
-    ...allComponents,
-    ...(filters?.types?.includes('input') || filters?.types?.includes('output') ? [customComponentConfig] : []),
-  ]
-    .flat()
+
+  // 2. Additional components that match filters (excluding custom if already added)
+  if (additionalComponents?.length) {
+    const filteredAdditional = additionalComponents.filter(
+      (comp) => comp.name !== CUSTOM_COMPONENT_NAME && matchesFilters(comp)
+    );
+    result.push(...filteredAdditional);
+  }
+
+  // 3. Priority components that match filters (excluding custom and additional)
+  const additionalNames = new Set(additionalComponents?.map((c) => c.name) || []);
+  const priorityComponents = allComponents
+    .filter(
+      (comp) =>
+        comp.name !== CUSTOM_COMPONENT_NAME &&
+        !additionalNames.has(comp.name) &&
+        PRIORITY_COMPONENTS.includes(comp.name) &&
+        matchesFilters(comp)
+    )
     .sort((a, b) => {
       const aIndex = PRIORITY_COMPONENTS.indexOf(a.name);
       const bIndex = PRIORITY_COMPONENTS.indexOf(b.name);
-
-      // If both are priority components, sort by their priority order
-      if (aIndex !== -1 && bIndex !== -1) {
-        return aIndex - bIndex;
-      }
-
-      // If only a is priority, it comes first
-      if (aIndex !== -1) {
-        return -1;
-      }
-
-      // If only b is priority, it comes first
-      if (bIndex !== -1) {
-        return 1;
-      }
-
-      // If neither are priority, sort alphabetically
-      return a.name.localeCompare(b.name);
-    })
-    .filter((component) => {
-      // Always show custom component regardless of type filter
-      if (
-        component.name === CUSTOM_COMPONENT_NAME &&
-        (filters?.types?.includes('input') || filters?.types?.includes('output'))
-      ) {
-        return true;
-      }
-
-      if (filters?.types?.length && !filters.types.includes(component.type)) {
-        return false;
-      }
-
-      if (query.trim()) {
-        const matchesName = component.name.toLowerCase().includes(query.toLowerCase());
-
-        if (!matchesName) {
-          return false;
-        }
-      }
-
-      if (filters?.categories?.length) {
-        const hasMatchingCategory = component.categories?.some((cat: string) => filters.categories?.includes(cat));
-        if (!hasMatchingCategory) {
-          return false;
-        }
-      }
-
-      return true;
+      return aIndex - bIndex;
     });
+  result.push(...priorityComponents);
+
+  // 4. Remaining components that match filters (alphabetically sorted)
+  const remainingComponents = allComponents
+    .filter(
+      (comp) =>
+        comp.name !== CUSTOM_COMPONENT_NAME &&
+        !additionalNames.has(comp.name) &&
+        !PRIORITY_COMPONENTS.includes(comp.name) &&
+        matchesFilters(comp)
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
+  result.push(...remainingComponents);
+
+  return result;
+};
 
 export type ConnectTilesProps = {
   additionalComponents?: ExtendedConnectComponentSpec[];
@@ -159,11 +166,11 @@ export type ConnectTilesProps = {
   size?: CardSize;
   className?: string;
   tileWrapperClassName?: string;
-  title?: string;
-  handleSkip?: () => void;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
 };
 
-export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
+export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, ConnectTilesProps>(
   (
     {
       additionalComponents,
@@ -179,7 +186,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
       className,
       tileWrapperClassName,
       title,
-      handleSkip: handleSkipProp,
+      description,
     },
     ref
   ) => {
@@ -188,7 +195,6 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
     const [showScrollGradient, setShowScrollGradient] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [showDescription, setShowDescription] = useState<string | undefined>(undefined);
-    const resetWizardSessionStorage = useResetWizardSessionStorage();
 
     const checkScrollable = useCallback(() => {
       const container = scrollContainerRef.current;
@@ -225,27 +231,24 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
       [additionalComponents]
     );
 
-    const categories = useMemo(() => getAllCategories(allComponents), [allComponents]);
+    const categories = useMemo(
+      () => getAllCategories(allComponents, componentTypeFilter),
+      [allComponents, componentTypeFilter]
+    );
 
     const filteredComponents = useMemo(
       () =>
-        searchComponents(allComponents, filter, {
-          types: componentTypeFilter,
-          categories: selectedCategories,
-        }),
-      [componentTypeFilter, filter, selectedCategories, allComponents]
+        searchComponents(
+          allComponents,
+          filter,
+          {
+            types: componentTypeFilter,
+            categories: selectedCategories,
+          },
+          additionalComponents
+        ),
+      [componentTypeFilter, filter, selectedCategories, allComponents, additionalComponents]
     );
-
-    const handleSkip = useCallback(() => {
-      // Reset form state before clearing storage
-      form.reset({
-        connectionName: undefined,
-        connectionType: undefined,
-      });
-      // Notify parent to reset its state
-      resetWizardSessionStorage();
-      handleSkipProp?.();
-    }, [form, handleSkipProp, resetWizardSessionStorage]);
 
     useEffect(() => {
       requestAnimationFrame(() => {
@@ -281,34 +284,39 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
               <Heading level={2}>{title ?? 'Select a connector'}</Heading>
             </CardTitle>
             <CardDescription className="mt-4">
-              <Text>
-                Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that
-                drive real-time analytics and actionable business insights. Integrate data across systems with hundreds
-                of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable pipelines.{' '}
-                <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
-                  Learn more.
-                </Link>
-              </Text>
-              <Text>
-                For help creating your pipeline see our{' '}
-                <Link
-                  href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
-                  target="_blank"
-                >
-                  quickstart documentation
-                </Link>
-                , our{' '}
-                <Link href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" target="_blank">
-                  library of examples
-                </Link>
-                , or our{' '}
-                <Link
-                  href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/"
-                  target="_blank"
-                >
-                  connector catalog
-                </Link>
-              </Text>
+              {description ?? (
+                <>
+                  <Text>
+                    Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines
+                    that drive real-time analytics and actionable business insights. Integrate data across systems with
+                    hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable
+                    pipelines.{' '}
+                    <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
+                      Learn more.
+                    </Link>
+                  </Text>
+                  <Text>
+                    For help creating your pipeline see our{' '}
+                    <Link
+                      href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
+                      target="_blank"
+                    >
+                      quickstart documentation
+                    </Link>
+                    , our{' '}
+                    <Link href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" target="_blank">
+                      library of examples
+                    </Link>
+                    , or our{' '}
+                    <Link
+                      href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/"
+                      target="_blank"
+                    >
+                      connector catalog
+                    </Link>
+                  </Text>
+                </>
+              )}
             </CardDescription>
           </CardHeader>
         )}
@@ -384,10 +392,6 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                                     className={cn('relative h-full', shouldShowDescription && 'hover:shadow-none')}
                                     key={uniqueKey}
                                     onClick={() => {
-                                      if (component.name === CUSTOM_COMPONENT_NAME) {
-                                        handleSkip();
-                                        return;
-                                      }
                                       field.onChange(component.name);
                                       form.setValue('connectionType', component.type as ConnectComponentType);
                                       // Only call onChange for non-wizard use cases (e.g., dialog)

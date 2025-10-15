@@ -4,21 +4,23 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { useSessionStorage } from 'hooks/use-session-storage';
-import { ChevronLeftIcon } from 'lucide-react';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CONNECT_WIZARD_CONNECTOR_KEY } from 'state/connect/state';
+import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
 import { uiState } from 'state/ui-state';
 
 import { AddTopicStep } from './add-topic-step';
 import { AddUserStep } from './add-user-step';
 import { ConnectTiles } from './connect-tiles';
+import { useResetWizardSessionStorage } from '../hooks/use-reset-wizard-session-storage';
 import RpConnectPipelinesCreate from '../pipelines-create';
 import {
+  CUSTOM_COMPONENT_NAME,
   WizardStep,
   WizardStepper,
   type WizardStepperSteps,
@@ -26,7 +28,15 @@ import {
   wizardStepDefinitions,
 } from '../types/constants';
 import type { ExtendedConnectComponentSpec } from '../types/schema';
-import type { BaseStepRef, WizardFormData } from '../types/wizard';
+import type {
+  AddTopicFormData,
+  AddUserFormData,
+  BaseStepRef,
+  ConnectTilesFormData,
+  MinimalTopicData,
+  MinimalUserData,
+  WizardFormData,
+} from '../types/wizard';
 import { handleStepResult } from '../utils/wizard';
 
 export type ConnectOnboardingWizardProps = {
@@ -42,20 +52,40 @@ export const ConnectOnboardingWizard = ({
   onChange,
   onCancel: onCancelProp,
 }: ConnectOnboardingWizardProps = {}) => {
-  const [persistedConnector, setPersistedConnector] = useSessionStorage<Partial<WizardFormData>>(
+  const [persistedWizardData, setPersistedWizardData] = useSessionStorage<Partial<WizardFormData>>(
     CONNECT_WIZARD_CONNECTOR_KEY,
+    {}
+  );
+  const [persistedTopicData, setPersistedTopicData] = useSessionStorage<Partial<MinimalTopicData>>(
+    CONNECT_WIZARD_TOPIC_KEY,
+    {}
+  );
+  const [persistedUserData, setPersistedUserData] = useSessionStorage<Partial<MinimalUserData>>(
+    CONNECT_WIZARD_USER_KEY,
     {}
   );
   const navigate = useNavigate();
 
   const persistedInputConnectionName = useMemo(
-    () => persistedConnector.input?.connectionName,
-    [persistedConnector.input?.connectionName]
+    () => persistedWizardData.input?.connectionName,
+    [persistedWizardData.input?.connectionName]
   );
   const persistedInputConnectionType = useMemo(
-    () => persistedConnector.input?.connectionType,
-    [persistedConnector.input?.connectionType]
+    () => persistedWizardData.input?.connectionType,
+    [persistedWizardData.input?.connectionType]
   );
+  const persistedOutputConnectionName = useMemo(
+    () => persistedWizardData.output?.connectionName,
+    [persistedWizardData.output?.connectionName]
+  );
+  const persistedOutputConnectionType = useMemo(
+    () => persistedWizardData.output?.connectionType,
+    [persistedWizardData.output?.connectionType]
+  );
+  const persistedTopicName = useMemo(() => persistedTopicData.topicName, [persistedTopicData.topicName]);
+  const persistedUserSaslMechanism = useMemo(() => persistedUserData.saslMechanism, [persistedUserData.saslMechanism]);
+  const persistedUsername = useMemo(() => persistedUserData.username, [persistedUserData.username]);
+  const resetWizardSessionStorage = useResetWizardSessionStorage();
 
   const [searchParams] = useSearchParams();
 
@@ -77,10 +107,10 @@ export const ConnectOnboardingWizard = ({
     }
   }, [searchParams]);
 
-  const addInputStepRef = useRef<BaseStepRef>(null);
-  const addOutputStepRef = useRef<BaseStepRef>(null);
-  const addTopicStepRef = useRef<BaseStepRef>(null);
-  const addUserStepRef = useRef<BaseStepRef>(null);
+  const addInputStepRef = useRef<BaseStepRef<ConnectTilesFormData>>(null);
+  const addOutputStepRef = useRef<BaseStepRef<ConnectTilesFormData>>(null);
+  const addTopicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
+  const addUserStepRef = useRef<BaseStepRef<AddUserFormData>>(null);
 
   const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
     hideInternalTopics: true,
@@ -97,22 +127,42 @@ export const ConnectOnboardingWizard = ({
     });
   }, []);
 
+  const handleSkipToCreatePipeline = (methods: WizardStepperSteps) => {
+    if (methods.current.id === WizardStep.ADD_INPUT) {
+      resetWizardSessionStorage();
+    } else if (methods.current.id === WizardStep.ADD_OUTPUT) {
+      setPersistedWizardData({
+        input: persistedWizardData.input,
+        output: {},
+      });
+      setPersistedTopicData({});
+      setPersistedUserData({});
+    }
+    methods.goTo(WizardStep.CREATE_CONFIG);
+  };
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: helpers to reduce complexity wouldn't apply here
   const handleNext = async (methods: WizardStepperSteps) => {
     switch (methods.current.id) {
       case WizardStep.ADD_INPUT: {
         const result = await addInputStepRef.current?.triggerSubmit();
+        const connectionName = result?.data?.connectionName;
+        const connectionType = result?.data?.connectionType;
+
+        if (connectionName === CUSTOM_COMPONENT_NAME) {
+          handleSkipToCreatePipeline(methods);
+          return;
+        }
         if (result?.success) {
-          // Save to session storage only after validation passes
-          if (result.data?.connectionName && result.data?.connectionType) {
-            setPersistedConnector({
+          if (connectionName && connectionType) {
+            setPersistedWizardData({
               input: {
-                connectionName: result.data.connectionName,
-                connectionType: result.data.connectionType,
+                connectionName,
+                connectionType,
               },
-              ...(persistedConnector.output && { output: persistedConnector.output }),
+              ...(persistedWizardData.output && { output: persistedWizardData.output }),
             });
-            // Notify parent of connector selection
-            onChange?.(result.data.connectionName, result.data.connectionType as string);
+            onChange?.(connectionName, connectionType);
           }
           methods.next();
         }
@@ -120,18 +170,23 @@ export const ConnectOnboardingWizard = ({
       }
       case WizardStep.ADD_OUTPUT: {
         const result = await addOutputStepRef.current?.triggerSubmit();
+        const connectionName = result?.data?.connectionName;
+        const connectionType = result?.data?.connectionType;
+
+        if (connectionName === CUSTOM_COMPONENT_NAME) {
+          handleSkipToCreatePipeline(methods);
+          return;
+        }
         if (result?.success) {
-          // Save to session storage only after validation passes
-          if (result.data?.connectionName && result.data?.connectionType) {
-            setPersistedConnector({
+          if (connectionName && connectionType) {
+            setPersistedWizardData({
               output: {
-                connectionName: result.data.connectionName,
-                connectionType: result.data.connectionType,
+                connectionName,
+                connectionType,
               },
-              ...(persistedConnector.input && { input: persistedConnector.input }),
+              ...(persistedWizardData.input && { input: persistedWizardData.input }),
             });
-            // Notify parent of connector selection
-            onChange?.(result.data.connectionName, result.data.connectionType as string);
+            onChange?.(connectionName, connectionType);
           }
           methods.next();
         }
@@ -139,21 +194,26 @@ export const ConnectOnboardingWizard = ({
       }
       case WizardStep.ADD_TOPIC: {
         const result = await addTopicStepRef.current?.triggerSubmit();
+        if (result?.success && result.data) {
+          setPersistedTopicData({ topicName: result.data.topicName });
+        }
         handleStepResult(result, methods.next);
         break;
       }
       case WizardStep.ADD_USER: {
         const result = await addUserStepRef.current?.triggerSubmit();
+        if (result?.success && result.data) {
+          setPersistedUserData({
+            username: result.data.username,
+            saslMechanism: result.data.saslMechanism,
+          });
+        }
         handleStepResult(result, methods.next);
         break;
       }
       default:
         methods.next();
     }
-  };
-
-  const handleSkip = (methods: WizardStepperSteps) => {
-    methods.goTo(WizardStep.CREATE_CONFIG);
   };
 
   const getCurrentStepLoading = (currentStepId: WizardStepType): boolean => {
@@ -174,10 +234,12 @@ export const ConnectOnboardingWizard = ({
   const handleCancel = useCallback(() => {
     if (onCancelProp) {
       onCancelProp();
+    } else if (searchParams.get('serverless') === 'true') {
+      navigate('/overview');
     } else {
       navigate('/connect-clusters');
     }
-  }, [onCancelProp, navigate]);
+  }, [onCancelProp, navigate, searchParams]);
 
   return (
     <PageContent className={className}>
@@ -204,7 +266,6 @@ export const ConnectOnboardingWizard = ({
                       componentTypeFilter={['input']}
                       defaultConnectionName={persistedInputConnectionName}
                       defaultConnectionType={persistedInputConnectionType}
-                      handleSkip={() => handleSkip(methods)}
                       key="input-connector-tiles"
                       ref={addInputStepRef}
                       tileWrapperClassName="min-h-[300px] max-h-[40vh]"
@@ -215,18 +276,30 @@ export const ConnectOnboardingWizard = ({
                     <ConnectTiles
                       additionalComponents={additionalComponents}
                       componentTypeFilter={['output']}
-                      defaultConnectionName={persistedConnector.output?.connectionName}
-                      defaultConnectionType={persistedConnector.output?.connectionType}
-                      handleSkip={() => handleSkip(methods)}
+                      defaultConnectionName={persistedOutputConnectionName}
+                      defaultConnectionType={persistedOutputConnectionType}
                       key="output-connector-tiles"
                       ref={addOutputStepRef}
                       tileWrapperClassName="min-h-[300px] max-h-[40vh]"
                       title="Read data from your pipeline"
                     />
                   ),
-                  // TODO add persisted data to both steps
-                  [WizardStep.ADD_TOPIC]: () => <AddTopicStep ref={addTopicStepRef} topicList={topicList.topics} />,
-                  [WizardStep.ADD_USER]: () => <AddUserStep ref={addUserStepRef} usersList={usersList?.users} />,
+                  [WizardStep.ADD_TOPIC]: () => (
+                    <AddTopicStep
+                      defaultTopicName={persistedTopicName}
+                      ref={addTopicStepRef}
+                      topicList={topicList.topics}
+                    />
+                  ),
+                  [WizardStep.ADD_USER]: () => (
+                    <AddUserStep
+                      defaultSaslMechanism={persistedUserSaslMechanism}
+                      defaultUsername={persistedUsername}
+                      ref={addUserStepRef}
+                      topicName={persistedTopicName}
+                      usersList={usersList?.users}
+                    />
+                  ),
                   [WizardStep.CREATE_CONFIG]: () => (
                     <Card size="full">
                       <CardHeader>
@@ -255,13 +328,13 @@ export const ConnectOnboardingWizard = ({
                 </div>
                 <div className="flex gap-2">
                   {!methods.isLast && (
-                    <Button onClick={() => handleNext(methods)} type="button" variant="outline">
+                    <Button onClick={() => methods.next()} type="button" variant="outline">
                       Skip
                     </Button>
                   )}
                   {!methods.isLast && (
                     <Button disabled={isCurrentStepLoading} onClick={() => handleNext(methods)}>
-                      {isCurrentStepLoading ? 'Loading...' : 'Next'}
+                      {isCurrentStepLoading ? 'Loading...' : 'Next'} <ChevronRightIcon />
                     </Button>
                   )}
                 </div>

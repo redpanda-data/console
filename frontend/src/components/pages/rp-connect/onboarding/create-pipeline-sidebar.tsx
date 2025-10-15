@@ -4,6 +4,7 @@ import { memo, useMemo, useState } from 'react';
 
 import { AddConnectorDialog } from './add-connector-dialog';
 import { AddConnectorsCard } from './add-connectors-card';
+import { AddContextualVariablesCard } from './add-contextual-variables-card';
 import { AddSecretsCard } from './add-secrets-card';
 import { AddSecretsDialog } from './add-secrets-dialog';
 import type { ConnectComponentType } from '../types/schema';
@@ -75,6 +76,8 @@ export const CreatePipelineSidebar = memo(
           onClose={() => setIsSecretsDialogOpen(false)}
           onSecretsCreated={handleSecretsCreated}
         />
+
+        <AddContextualVariablesCard editorContent={editorContent} editorInstance={editorInstance} />
 
         <AddConnectorsCard
           editorContent={editorContent}
