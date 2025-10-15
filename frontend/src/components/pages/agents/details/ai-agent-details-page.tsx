@@ -9,15 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { AlertCircle, Loader2, Search, Settings } from 'lucide-react';
 import { runInAction } from 'mobx';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { uiState } from 'state/ui-state';
 
-import { AIAgentConfigurationPage } from './ai-agent-configuration-page';
+import { AIAgentConfigurationTab } from './ai-agent-configuration-tab';
 import { AIAgentDetailsHeader } from './ai-agent-details-header';
+import { AIAgentInspectorTab } from './ai-agent-inspector-tab';
 
 export const updatePageTitle = (agentName?: string) => {
   runInAction(() => {
@@ -31,6 +33,10 @@ export const updatePageTitle = (agentName?: string) => {
 
 export const AIAgentDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabFromUrl || 'configuration');
 
   const { data: aiAgentData, isLoading, error } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
 
@@ -39,6 +45,20 @@ export const AIAgentDetailsPage = () => {
       updatePageTitle(aiAgentData.aiAgent.displayName);
     }
   }, [aiAgentData]);
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    } else {
+      setActiveTab('configuration');
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setSearchParams({ tab: value });
+  };
 
   if (isLoading) {
     return (
@@ -70,7 +90,27 @@ export const AIAgentDetailsPage = () => {
     <div className="flex flex-col gap-4">
       <AIAgentDetailsHeader />
 
-      <AIAgentConfigurationPage />
+      <Tabs onValueChange={handleTabChange} value={activeTab}>
+        <TabsList>
+          <TabsTrigger className="gap-2" value="configuration">
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Configuration
+            </div>
+          </TabsTrigger>
+          <TabsTrigger className="gap-2" value="inspector">
+            <Search className="h-4 w-4" />
+            Inspector
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="configuration">
+          <AIAgentConfigurationTab />
+        </TabsContent>
+        <TabsContent value="inspector">
+          <AIAgentInspectorTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
