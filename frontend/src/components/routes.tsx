@@ -588,7 +588,14 @@ export const APP_ROUTES: IRouteEntry[] = [
   MakeRoute<{}>('/mcp-servers/create', RemoteMCPCreatePage, 'Create Remote MCP Server'),
   MakeRoute<{ id: string }>('/mcp-servers/:id', RemoteMCPDetailsPage, 'Remote MCP Details'),
 
-  MakeRoute<{}>('/shadowlinks', ShadowLinkListPage, 'Shadow Links', LinkIcon, true, routeVisibility(true)),
+  MakeRoute<{}>(
+    '/shadowlinks',
+    ShadowLinkListPage,
+    'Shadow Links',
+    LinkIcon,
+    true,
+    routeVisibility(true, [Feature.ShadowLinkService], [], ['SHADOW_LINKS'])
+  ),
   MakeRoute<{}>('/shadowlinks/create', ShadowLinkCreatePage, 'Create Shadow Link'),
   MakeRoute<{ name: string }>('/shadowlinks/:name', ShadowLinkDetailsPage, 'Shadow Link Details'),
 

@@ -38,12 +38,13 @@ export const isBakedInTrial = (license: License): boolean =>
 
 /**
  * Checks if a list of enterprise features includes enabled features for authentication,
- * specifically 'sso' (Single Sign-On) or 'rbac' (Reassign Partitions).
+ * specifically 'sso' (Single Sign-On), 'rbac' (Reassign Partitions), or 'shadowlinks' (Shadow Links).
  *
- * @returns {boolean} - Returns `true` if an enabled feature with name 'sso' or 'reassign partitions' is found, otherwise `false`.
+ * @returns {boolean} - Returns `true` if an enabled feature with name 'sso', 'reassign partitions', or 'shadow links' is found, otherwise `false`.
  */
-export const consoleHasEnterpriseFeature = (feature: 'SINGLE_SIGN_ON' | 'REASSIGN_PARTITIONS'): boolean =>
-  AppFeatures[feature] ?? false;
+export const consoleHasEnterpriseFeature = (
+  feature: 'SINGLE_SIGN_ON' | 'REASSIGN_PARTITIONS' | 'SHADOW_LINKS'
+): boolean => AppFeatures[feature] ?? false;
 
 /**
  * Determines if the CORE system includes any enabled enterprise features.
