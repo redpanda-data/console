@@ -105,8 +105,8 @@ const ServiceAccountSelectorComponent = forwardRef<ServiceAccountSelectorRef, Se
 
         // Create a single JSON secret for client credentials using the callback
         if (credentials?.clientId && credentials?.clientSecret) {
-          // Generate secret ID in format: SA_{service_account_xid}_{resource_name}
-          const secretName = generateServiceAccountSecretId(serviceAccountId, resourceName);
+          // Generate secret ID in format: SERVICE_ACCOUNT_{service_account_xid}
+          const secretName = generateServiceAccountSecretId(serviceAccountId);
 
           // Create JSON object with client_id and client_secret
           const credentialsJson = JSON.stringify({

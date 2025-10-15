@@ -14,7 +14,7 @@ import { describe, expect, test } from 'vitest';
 import { generateServiceAccountSecretId, sanitizeSecretId } from './secret.utils';
 
 // Regex patterns for validation
-const SA_PREFIX_REGEX = /^SA_/;
+const SERVICE_ACCOUNT_PREFIX_REGEX = /^SERVICE_ACCOUNT_/;
 const SECRET_ID_REGEX = /^[A-Z][A-Z0-9_]*$/;
 
 describe('sanitizeSecretId', () => {
@@ -53,46 +53,42 @@ describe('sanitizeSecretId', () => {
 
 describe('generateServiceAccountSecretId', () => {
   test('should generate ID with correct format', () => {
-    const result = generateServiceAccountSecretId('account-123', 'agent-name');
-    expect(result).toBe('SA_ACCOUNT_123_AGENT_NAME');
-    expect(result).toMatch(SA_PREFIX_REGEX);
+    const result = generateServiceAccountSecretId('account-123');
+    expect(result).toBe('SERVICE_ACCOUNT_ACCOUNT_123');
+    expect(result).toMatch(SERVICE_ACCOUNT_PREFIX_REGEX);
   });
 
-  test('should sanitize both service account ID and resource name', () => {
-    const result = generateServiceAccountSecretId('srv-acc-123', 'My Agent');
-    expect(result).toBe('SA_SRV_ACC_123_MY_AGENT');
+  test('should sanitize service account ID', () => {
+    const result = generateServiceAccountSecretId('srv-acc-123');
+    expect(result).toBe('SERVICE_ACCOUNT_SRV_ACC_123');
   });
 
   test('should handle UUID-style service account IDs', () => {
-    const result = generateServiceAccountSecretId('abc-123-def-456', 'TestAgent');
-    expect(result).toBe('SA_ABC_123_DEF_456_TESTAGENT');
+    const result = generateServiceAccountSecretId('abc-123-def-456');
+    expect(result).toBe('SERVICE_ACCOUNT_ABC_123_DEF_456');
   });
 
-  test('should handle special characters in both parts', () => {
-    const result = generateServiceAccountSecretId('srv@acc#123', 'agent@v2.0');
-    expect(result).toBe('SA_SRV_ACC_123_AGENT_V2_0');
+  test('should handle special characters', () => {
+    const result = generateServiceAccountSecretId('srv@acc#123');
+    expect(result).toBe('SERVICE_ACCOUNT_SRV_ACC_123');
   });
 
   test('should remove trailing underscores', () => {
-    const result = generateServiceAccountSecretId('acc-123-', 'agent-name-');
-    expect(result).toBe('SA_ACC_123_AGENT_NAME');
+    const result = generateServiceAccountSecretId('acc-123-');
+    expect(result).toBe('SERVICE_ACCOUNT_ACC_123');
   });
 
   test('should handle real-world examples', () => {
-    expect(generateServiceAccountSecretId('srv-acc-abc123', 'Customer Support Bot')).toBe(
-      'SA_SRV_ACC_ABC123_CUSTOMER_SUPPORT_BOT'
-    );
+    expect(generateServiceAccountSecretId('srv-acc-abc123')).toBe('SERVICE_ACCOUNT_SRV_ACC_ABC123');
 
-    expect(generateServiceAccountSecretId('service-account-uuid-123', 'My AI Agent v2.5')).toBe(
-      'SA_SERVICE_ACCOUNT_UUID_123_MY_AI_AGENT_V2_5'
-    );
+    expect(generateServiceAccountSecretId('service-account-uuid-123')).toBe('SERVICE_ACCOUNT_SERVICE_ACCOUNT_UUID_123');
   });
 
   test('should generate IDs that match the required regex pattern', () => {
-    const result = generateServiceAccountSecretId('test-account', 'test-agent');
+    const result = generateServiceAccountSecretId('test-account');
     expect(result).toMatch(SECRET_ID_REGEX);
 
-    const complexResult = generateServiceAccountSecretId('test@#$-account', 'agent!@#');
+    const complexResult = generateServiceAccountSecretId('test@#$-account');
     expect(complexResult).toMatch(SECRET_ID_REGEX);
   });
 });

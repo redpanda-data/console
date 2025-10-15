@@ -46,21 +46,19 @@ export function sanitizeSecretId(value: string): string {
 }
 
 /**
- * Generates a service account secret ID with the format: SA_{service_account_xid}_{resource_name}
+ * Generates a service account secret ID with the format: SERVICE_ACCOUNT_{service_account_xid}
  *
- * Both the service account ID and resource name are sanitized to match the pattern ^[A-Z][A-Z0-9_]*$
+ * The service account ID is sanitized to match the pattern ^[A-Z][A-Z0-9_]*$
  *
  * @param serviceAccountId - The service account ID (may contain hyphens, lowercase, etc.)
- * @param resourceName - The resource name (e.g., agent name, pipeline name)
  * @returns The formatted secret ID
  *
  * @example
- * generateServiceAccountSecretId("abc-123-def", "My Agent")
- * // Returns "SA_ABC_123_DEF_MY_AGENT"
+ * generateServiceAccountSecretId("abc-123-def")
+ * // Returns "SERVICE_ACCOUNT_ABC_123_DEF"
  */
-export function generateServiceAccountSecretId(serviceAccountId: string, resourceName: string): string {
+export function generateServiceAccountSecretId(serviceAccountId: string): string {
   const sanitizedServiceAccountId = sanitizeSecretId(serviceAccountId);
-  const sanitizedResourceName = sanitizeSecretId(resourceName);
 
-  return `SA_${sanitizedServiceAccountId}_${sanitizedResourceName}`;
+  return `SERVICE_ACCOUNT_${sanitizedServiceAccountId}`;
 }
