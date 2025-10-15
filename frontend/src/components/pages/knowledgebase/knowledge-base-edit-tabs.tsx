@@ -832,8 +832,8 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
     const updateMask: string[] = [];
 
     for (const fieldPath of this.changedFields) {
-      // Convert dot-notation path to protobuf field path
-      // e.g., "generation.provider.apiKey" -> "generation.provider.api_key"
+      // Convert camelCase to snake_case for protobuf field names
+      // e.g., "vectorDatabase.postgres.dsn" -> "vector_database.postgres.dsn"
       const protobufPath = fieldPath
         .split('.')
         .map((segment) => segment.replace(/([A-Z])/g, '_$1').toLowerCase())
@@ -1020,8 +1020,8 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             helperText="All credentials are securely stored in your Secrets Store"
             isRequired
             label="PostgreSQL DSN"
-            onChange={(value) => this.updateFormData('vectorDatabase.vectorDatabase.value.dsn', value)}
-            onCreateNew={() => this.openAddSecret('vectorDatabase.vectorDatabase.value.dsn')}
+            onChange={(value) => this.updateFormData('vectorDatabase.postgres.dsn', value)}
+            onCreateNew={() => this.openAddSecret('vectorDatabase.postgres.dsn')}
             placeholder="postgresql://user:password@host:port/database"
             value={
               this.formData.vectorDatabase?.vectorDatabase.case === 'postgres'
@@ -1109,11 +1109,17 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
               onChange={(value) => {
                 const path =
                   embeddingGen?.provider?.provider.case === 'openai'
-                    ? 'embeddingGenerator.provider.provider.value.apiKey'
-                    : 'embeddingGenerator.provider.provider.value.apiKey';
+                    ? 'embeddingGenerator.provider.openai.apiKey'
+                    : 'embeddingGenerator.provider.cohere.apiKey';
                 this.updateFormData(path, value);
               }}
-              onCreateNew={() => this.openAddSecret('embeddingGenerator.provider.provider.value.apiKey')}
+              onCreateNew={() => {
+                const path =
+                  embeddingGen?.provider?.provider.case === 'openai'
+                    ? 'embeddingGenerator.provider.openai.apiKey'
+                    : 'embeddingGenerator.provider.cohere.apiKey';
+                this.openAddSecret(path);
+              }}
               placeholder={`Select ${embeddingGen?.provider?.provider.case === 'openai' ? 'OpenAI' : 'Cohere'} API key from secrets`}
               value={(() => {
                 if (embeddingGen?.provider?.provider.case === 'openai') {
@@ -1360,7 +1366,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
                   <FormLabel>Model</FormLabel>
                   <Input
                     onChange={(e) =>
-                      this.updateFormData('retriever.reranker.provider.provider.value.model', e.target.value)
+                      this.updateFormData('retriever.reranker.provider.cohere.model', e.target.value)
                     }
                     value={this.formData.retriever?.reranker?.provider?.provider.value?.model || 'rerank-v3.5'}
                   />
@@ -1370,8 +1376,8 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
                   helperText="All credentials are securely stored in your Secrets Store"
                   isRequired
                   label="API Key"
-                  onChange={(value) => this.updateFormData('retriever.reranker.provider.provider.value.apiKey', value)}
-                  onCreateNew={() => this.openAddSecret('retriever.reranker.provider.provider.value.apiKey')}
+                  onChange={(value) => this.updateFormData('retriever.reranker.provider.cohere.apiKey', value)}
+                  onCreateNew={() => this.openAddSecret('retriever.reranker.provider.cohere.apiKey')}
                   placeholder="Select Cohere API key from secrets"
                   value={this.formData.retriever?.reranker?.provider?.provider.value?.apiKey || ''}
                 />
@@ -1656,9 +1662,9 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
               isRequired
               label="API Key"
               onChange={(value) => {
-                this.updateFormData('generation.provider.provider.value.apiKey', value);
+                this.updateFormData('generation.provider.openai.apiKey', value);
               }}
-              onCreateNew={() => this.openAddSecret('generation.provider.provider.value.apiKey')}
+              onCreateNew={() => this.openAddSecret('generation.provider.openai.apiKey')}
               value={generation?.provider?.provider.case === 'openai' ? generation.provider.provider.value.apiKey : ''}
             />
           </>
