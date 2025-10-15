@@ -152,7 +152,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
           <Text className="mb-4 text-center" variant="muted">
             Create a secret to securely store your OpenAI API key
           </Text>
-          <Button onClick={() => setIsCreateDialogOpen(true)} variant="outline">
+          <Button onClick={() => setIsCreateDialogOpen(true)} type="button" variant="outline">
             <div className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               <Text as="span">Create Secret</Text>
@@ -174,7 +174,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={() => setIsCreateDialogOpen(true)} variant="outline">
+          <Button onClick={() => setIsCreateDialogOpen(true)} type="button" variant="outline">
             <div className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               <Text as="span">Create Secret</Text>
