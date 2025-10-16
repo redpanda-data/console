@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { DownloadIcon, KebabHorizontalIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
+import { DownloadIcon, KebabHorizontalIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
 import {
   action,
   autorun,
@@ -21,24 +21,20 @@ import {
   untracked,
 } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component, type FC, type ReactNode, useState } from 'react';
+import React, { Component, type FC, useState } from 'react';
 
-import { api, createMessageSearch, type MessageSearch, type MessageSearchRequest } from '../../../../state/backend-api';
-import type { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/rest-interfaces';
-import { Feature, isSupported } from '../../../../state/supported-features';
+import { api, createMessageSearch, type MessageSearchRequest } from '../../../../state/backend-api';
+import type { Topic, TopicMessage } from '../../../../state/rest-interfaces';
 import {
-  type ColumnList,
   type DataColumnKey,
   DEFAULT_SEARCH_PARAMS,
   FilterEntry,
   PartitionOffsetOrigin,
   type PartitionOffsetOriginType,
   type PreviewTagV2,
-  type TimestampDisplayFormat,
 } from '../../../../state/ui';
 import { uiState } from '../../../../state/ui-state';
 import '../../../../utils/array-extensions';
-import { InfoIcon, WarningIcon } from '@chakra-ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -47,45 +43,25 @@ import {
   Badge,
   Box,
   Button,
-  Checkbox,
   DataTable,
-  DateTimeInput,
   Flex,
   Grid,
   GridItem,
-  Heading,
   IconButton,
   Input,
-  Link,
   Menu,
   MenuButton,
   MenuDivider,
   MenuItem,
   MenuList,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  RadioGroup,
-  Tabs as RpTabs,
-  Stack,
-  Tag,
-  TagCloseButton,
-  TagLabel,
-  Text,
   Tooltip,
   useBreakpoint,
-  useColorModeValue,
   useToast,
 } from '@redpanda-data/ui';
 import type { ColumnDef } from '@tanstack/react-table';
 import { parseAsInteger, parseAsString } from 'nuqs';
 import {
   MdCalendarToday,
-  MdDoNotDisturb,
   MdDownload,
   MdJavascript,
   MdKeyboardTab,
@@ -96,40 +72,34 @@ import {
   MdOutlineSkipPrevious,
   MdOutlineTimer,
 } from 'react-icons/md';
-import { Link as ReactRouterLink } from 'react-router-dom';
 
+import { MessageSearchFilterBar } from './common/message-search-filter-bar';
+import { SaveMessagesDialog } from './dialogs/save-messages-dialog';
+import { StartOffsetDateTimePicker } from './forms/start-offset-date-time-picker';
 import JavascriptFilterModal from './javascript-filter-modal';
-import { getPreviewTags, PreviewSettings } from './preview-settings';
+import { ExpandedMessage } from './message-display/expanded-message';
+import { MessageKeyPreview } from './message-display/message-key-preview';
+import { MessagePreview } from './message-display/message-preview';
+import { ColumnSettings } from './modals/column-settings';
+import { DeserializersModal } from './modals/deserializers-modal';
+import { PreviewFieldsModal } from './modals/preview-fields-modal';
 import { isServerless } from '../../../../config';
-import usePaginationParams from '../../../../hooks/use-pagination-params';
 import { useQueryStateWithCallback } from '../../../../hooks/use-query-state-with-callback';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { appGlobal } from '../../../../state/app-global';
 import { IsDev } from '../../../../utils/env';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filter-helper';
 import { FilterableDataSource } from '../../../../utils/filterable-data-source';
-import { toJson } from '../../../../utils/json-utils';
 import { onPaginationChange } from '../../../../utils/pagination';
-import { editQuery } from '../../../../utils/query-helper';
 import {
-  Ellipsis,
   Label,
   navigatorClipboardErrorHandler,
   numberToThousandsString,
   StatusIndicator,
   TimestampDisplay,
-  toSafeString,
 } from '../../../../utils/tsx-utils';
-import {
-  base64FromUInt8Array,
-  cullText,
-  encodeBase64,
-  prettyBytes,
-  prettyMilliseconds,
-  titleCase,
-} from '../../../../utils/utils';
+import { encodeBase64, prettyBytes, prettyMilliseconds } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
-import { KowlJsonView } from '../../../misc/kowl-json-view';
 import RemovableFilter from '../../../misc/removable-filter';
 import { SingleSelect } from '../../../misc/select';
 
@@ -170,10 +140,20 @@ type TopicMessageViewInternalProps = TopicMessageViewProps & {
   maxResults: number;
   startOffset: number;
   quickSearch: string;
+  pageIndex: number;
+  pageSize: number;
   setPartitionID: (val: number) => void;
   setMaxResults: (val: number) => void;
   setStartOffset: (val: number) => void;
   setQuickSearch: (val: string) => void;
+  setPageIndex: (val: number) => void;
+  setPageSize: (val: number) => void;
+  showColumnSettingsModal: boolean;
+  setShowColumnSettingsModal: (val: boolean) => void;
+  showPreviewFieldsModal: boolean;
+  setShowPreviewFieldsModal: (val: boolean) => void;
+  showDeserializersModal: boolean;
+  setShowDeserializersModal: (val: boolean) => void;
 };
 
 // Add these type definitions and helper functions at the top of the file
@@ -186,9 +166,6 @@ type TopicMessageParams = {
 
 // Define the column order as a constant
 const COLUMN_ORDER: DataColumnKey[] = ['timestamp', 'partitionID', 'offset', 'key', 'value', 'keySize', 'valueSize'];
-
-// Regex for checking printable ASCII characters
-const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/;
 
 /*
     TODO:
@@ -272,10 +249,6 @@ const inlineSelectChakraStyles = {
 class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> {
   @observable previewDisplay: string[] = [];
   @observable currentParams: TopicMessageParams;
-
-  @observable showColumnSettingsModal = false;
-  @observable showPreviewFieldsModal = false;
-  @observable showDeserializersModal = false;
 
   @observable fetchError = null as Error | null;
 
@@ -586,21 +559,21 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
               <MenuList>
                 <MenuItem
                   onClick={() => {
-                    this.showDeserializersModal = true;
+                    this.props.setShowDeserializersModal(true);
                   }}
                 >
                   Deserialization
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
-                    this.showColumnSettingsModal = true;
+                    this.props.setShowColumnSettingsModal(true);
                   }}
                 >
                   Column settings
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
-                    this.showPreviewFieldsModal = true;
+                    this.props.setShowPreviewFieldsModal(true);
                   }}
                 >
                   Preview fields
@@ -813,10 +786,12 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
   MessageTable = observer(() => {
     const toast = useToast();
     const breakpoint = useBreakpoint({ ssr: false });
-    const paginationParams = usePaginationParams(
-      this.messageSource.data.length,
-      uiState.topicSettings.searchParams.pageSize
-    );
+
+    // Use pagination values from props (managed by nuqs in parent)
+    const paginationParams = {
+      pageIndex: this.props.pageIndex,
+      pageSize: this.props.pageSize,
+    };
 
     const tsFormat = uiState.topicSettings.previewTimestamps;
     const hasKeyTags = uiState.topicSettings.previewTags.count((x) => x.isActive && x.searchInMessageKey) > 0;
@@ -886,7 +861,7 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
               Key{' '}
               <button
                 onClick={(e) => {
-                  this.showDeserializersModal = true;
+                  this.props.setShowDeserializersModal(true);
                   e.stopPropagation(); // don't sort
                 }}
                 type="button"
@@ -912,7 +887,7 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
               Value{' '}
               <button
                 onClick={(e) => {
-                  this.showDeserializersModal = true;
+                  this.props.setShowDeserializersModal(true);
                   e.stopPropagation(); // don't sort
                 }}
                 type="button"
@@ -1051,10 +1026,8 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
           isLoading={this.messageSearch.searchPhase !== null}
           onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
             uiState.topicSettings.searchParams.pageSize = pageSize;
-            editQuery((query) => {
-              query.page = String(pageIndex);
-              query.pageSize = String(pageSize);
-            });
+            this.props.setPageIndex(pageIndex);
+            this.props.setPageSize(pageSize);
           })}
           // we need (?? []) to be compatible with searchParams of clients already stored in local storage
           // otherwise we would get undefined for some of the existing ones
@@ -1100,19 +1073,19 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
         />
 
         <ColumnSettings
-          getShowDialog={() => this.showColumnSettingsModal}
-          setShowDialog={(s) => (this.showColumnSettingsModal = s)}
+          getShowDialog={() => this.props.showColumnSettingsModal}
+          setShowDialog={this.props.setShowColumnSettingsModal}
         />
 
         <PreviewFieldsModal
-          getShowDialog={() => this.showPreviewFieldsModal}
+          getShowDialog={() => this.props.showPreviewFieldsModal}
           messageSearch={this.messageSearch}
-          setShowDialog={(s) => (this.showPreviewFieldsModal = s)}
+          setShowDialog={this.props.setShowPreviewFieldsModal}
         />
 
         <DeserializersModal
-          getShowDialog={() => this.showDeserializersModal}
-          setShowDialog={(s) => (this.showDeserializersModal = s)}
+          getShowDialog={() => this.props.showDeserializersModal}
+          setShowDialog={this.props.setShowDeserializersModal}
         />
       </>
     );
@@ -1190,1207 +1163,6 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
   }
 }
 
-@observer
-class SaveMessagesDialog extends Component<{
-  messages: TopicMessage[] | null;
-  onClose: () => void;
-  onRequireRawPayload: () => Promise<TopicMessage[]>;
-}> {
-  @observable isOpen = false;
-  @observable format = 'json' as 'json' | 'csv';
-  @observable includeRawContent = false;
-
-  radioStyle = { display: 'block', lineHeight: '30px' };
-
-  constructor(p: {
-    messages: TopicMessage[] | null;
-    onClose: () => void;
-    onRequireRawPayload: () => Promise<TopicMessage[]>;
-  }) {
-    super(p);
-    makeObservable(this);
-  }
-
-  render() {
-    const { messages, onClose } = this.props;
-    const count = messages?.length ?? 0;
-    const title = count > 1 ? 'Save Messages' : 'Save Message';
-
-    // Keep dialog open after closing it, so it can play its closing animation
-    if (count > 0 && !this.isOpen) {
-      setTimeout(() => (this.isOpen = true));
-    }
-    if (this.isOpen && count === 0) {
-      setTimeout(() => (this.isOpen = false));
-    }
-
-    return (
-      <Modal isOpen={count > 0} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent minW="2xl">
-          <ModalHeader>{title}</ModalHeader>
-          <ModalBody display="flex" flexDirection="column" gap="4">
-            <div>Select the format in which you want to save {count === 1 ? 'the message' : 'all messages'}</div>
-            <Box py={2}>
-              <RadioGroup
-                name="format"
-                onChange={(value) => (this.format = value)}
-                options={[
-                  {
-                    value: 'json',
-                    label: 'JSON',
-                  },
-                  {
-                    value: 'csv',
-                    label: 'CSV',
-                  },
-                ]}
-                value={this.format}
-              />
-            </Box>
-            <Checkbox isChecked={this.includeRawContent} onChange={(e) => (this.includeRawContent = e.target.checked)}>
-              Include raw data
-            </Checkbox>
-          </ModalBody>
-          <ModalFooter gap={2}>
-            <Button colorScheme="red" onClick={onClose} variant="outline">
-              Cancel
-            </Button>
-            <Button
-              isDisabled={!this.props.messages || this.props.messages.length === 0}
-              onClick={() => this.saveMessages()}
-              variant="solid"
-            >
-              Save Messages
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  }
-
-  saveMessages() {
-    const messages = this.props.messages;
-    if (!messages) {
-      return;
-    }
-
-    const cleanMessages = this.cleanMessages(messages);
-
-    // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.log(`saving cleaned messages; messages: ${messages.length}`);
-
-    if (this.format === 'json') {
-      const json = toJson(cleanMessages, 4);
-      const link = document.createElement('a');
-      const file = new Blob([json], { type: 'application/json' });
-      link.href = URL.createObjectURL(file);
-      link.download = 'messages.json';
-      document.body.appendChild(link); // required in firefox
-      link.click();
-    } else if (this.format === 'csv') {
-      const csvContent = this.convertToCSV(cleanMessages as TopicMessage[]);
-      const link = document.createElement('a');
-      const file = new Blob([csvContent], { type: 'text/csv' });
-      link.href = URL.createObjectURL(file);
-      link.download = 'messages.csv';
-      document.body.appendChild(link); // required in firefox
-      link.click();
-    }
-
-    this.props.onClose();
-  }
-
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 40, refactor later
-  convertToCSV(messages: TopicMessage[]): string {
-    if (messages.length === 0) {
-      return '';
-    }
-
-    const headers: string[] = [...COLUMN_ORDER];
-
-    // Add other common fields that might not be in COLUMN_ORDER
-    if (messages[0].compression && !headers.includes('compression')) {
-      headers.push('compression');
-    }
-    if (messages[0].isTransactional !== undefined && !headers.includes('isTransactional')) {
-      headers.push('isTransactional');
-    }
-
-    const csvRows: string[] = [];
-
-    // Add the headers
-    csvRows.push(headers.join(','));
-
-    // Add the data
-    for (const message of messages) {
-      const values: (string | number | boolean)[] = [];
-
-      // Add fields in the same order as headers
-      for (const header of headers) {
-        if (header === 'key') {
-          if (message.key) {
-            const keyValue = message.key.payload || '';
-            values.push(
-              typeof keyValue === 'object'
-                ? JSON.stringify(keyValue).replace(/,/g, ';')
-                : String(keyValue).replace(/,/g, ';')
-            );
-          } else {
-            values.push('');
-          }
-        } else if (header === 'value') {
-          if (message.value) {
-            const valuePayload = message.value.payload || '';
-            values.push(
-              typeof valuePayload === 'object'
-                ? JSON.stringify(valuePayload).replace(/,/g, ';')
-                : String(valuePayload).replace(/,/g, ';')
-            );
-          } else {
-            values.push('');
-          }
-        } else if (header === 'keySize') {
-          values.push(message.key?.size || '');
-        } else if (header === 'valueSize') {
-          values.push(message.value?.size || '');
-        } else {
-          // For other simple fields like partitionID, offset, timestamp, compression, isTransactional
-          const messageValue = (message as Record<string, unknown>)[header];
-          values.push(
-            messageValue !== undefined && messageValue !== null ? (messageValue as string | number | boolean) : ''
-          );
-        }
-      }
-
-      csvRows.push(values.join(','));
-    }
-
-    return csvRows.join('\n');
-  }
-
-  cleanMessages(messages: TopicMessage[]): unknown[] {
-    const ar: unknown[] = [];
-
-    // create a copy of each message, omitting properties that don't make
-    // sense for the user, like 'size' or caching properties like 'keyJson'.
-    const includeRaw = this.includeRawContent;
-
-    const cleanPayload = (p: Payload): Payload | undefined => {
-      if (!p) {
-        return undefined;
-      }
-
-      const cleanedPayload = {
-        payload: p.payload,
-        rawPayload: includeRaw && p.rawBytes ? base64FromUInt8Array(p.rawBytes) : undefined,
-        encoding: p.encoding,
-        isPayloadNull: p.isPayloadNull,
-        schemaId: 0,
-        size: p.size,
-      } as Payload;
-
-      if (p.schemaId && p.schemaId !== 0) {
-        cleanedPayload.schemaId = p.schemaId;
-      }
-
-      return cleanedPayload;
-    };
-
-    for (const src of messages) {
-      const msg = {} as Partial<typeof src>;
-
-      msg.partitionID = src.partitionID;
-      msg.offset = src.offset;
-      msg.timestamp = src.timestamp;
-      msg.compression = src.compression;
-      msg.isTransactional = src.isTransactional;
-
-      msg.headers = src.headers.map((h) => ({
-        key: h.key,
-        value: cleanPayload(h.value) as Payload,
-      }));
-
-      msg.key = cleanPayload(src.key);
-      msg.value = cleanPayload(src.value);
-
-      ar.push(msg);
-    }
-
-    return ar;
-  }
-}
-
-@observer
-class MessageKeyPreview extends Component<{ msg: TopicMessage; previewFields: () => PreviewTagV2[] }> {
-  render() {
-    const msg = this.props.msg;
-    const key = msg.key;
-
-    if (key.troubleshootReport && key.troubleshootReport.length > 0) {
-      return (
-        <Flex alignItems="center" color="red.600" gap="2">
-          <WarningIcon fontSize="1.25em" />
-          There were issues deserializing the key
-        </Flex>
-      );
-    }
-
-    const isPrimitive =
-      typeof key.payload === 'string' || typeof key.payload === 'number' || typeof key.payload === 'boolean';
-    try {
-      if (key.isPayloadNull) {
-        return <EmptyBadge mode="null" />;
-      }
-      if (key.payload == null || (typeof key.payload === 'string' && key.payload.length === 0)) {
-        return <EmptyBadge mode="empty" />;
-      }
-
-      let text: ReactNode = <></>;
-
-      if (key.encoding === 'binary') {
-        text = cullText(msg.keyBinHexPreview as string, 44);
-      } else if (key.encoding === 'utf8WithControlChars') {
-        text = highlightControlChars(key.payload as string);
-      } else if (isPrimitive) {
-        text = cullText(key.payload as string, 44);
-      } else {
-        // Only thing left is 'object'
-        // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
-        const previewTags = this.props.previewFields().filter((t) => t.searchInMessageValue);
-        if (previewTags.length > 0) {
-          const tags = getPreviewTags(key.payload as Record<string, unknown>, previewTags);
-          text = (
-            <span className="cellDiv fade" style={{ fontSize: '95%' }}>
-              <div className={`previewTags previewTags-${uiState.topicSettings.previewDisplayMode}`}>
-                {tags.map((t, i) => (
-                  <React.Fragment key={i}>{t}</React.Fragment>
-                ))}
-              </div>
-            </span>
-          );
-          return text;
-        }
-        // Normal display (json, no filters). Just stringify the whole object
-        text = cullText(JSON.stringify(key.payload), 44);
-      }
-
-      return (
-        <Flex flexDirection="column">
-          <span className="cellDiv" style={{ minWidth: '10ch', width: 'auto', maxWidth: '45ch' }}>
-            <code style={{ fontSize: '95%' }}>{text}</code>
-          </span>
-          <Text color="gray.500">
-            {key.encoding.toUpperCase()} - {prettyBytes(key.size)}
-          </Text>
-        </Flex>
-      );
-    } catch (e) {
-      return <span style={{ color: 'red' }}>Error in RenderPreview: {(e as Error).message ?? String(e)}</span>;
-    }
-  }
-}
-
-@observer
-class StartOffsetDateTimePicker extends Component<Record<string, never>> {
-  constructor(p: Record<string, never>) {
-    super(p);
-    const searchParams = uiState.topicSettings.searchParams;
-    if (!searchParams.startTimestampWasSetByUser) {
-      // so far, the user did not change the startTimestamp, so we set it to 'now'
-      searchParams.startTimestamp = Date.now();
-    }
-  }
-
-  render() {
-    const searchParams = uiState.topicSettings.searchParams;
-    // new Date().getTimezoneOffset()
-
-    return (
-      <DateTimeInput
-        onChange={(value) => {
-          searchParams.startTimestamp = value;
-          searchParams.startTimestampWasSetByUser = true;
-        }}
-        value={searchParams.startTimestamp}
-      />
-    );
-  }
-}
-
-@observer
-export class MessagePreview extends Component<{
-  msg: TopicMessage;
-  previewFields: () => PreviewTagV2[];
-  isCompactTopic: boolean;
-}> {
-  render() {
-    const msg = this.props.msg;
-    const value = msg.value;
-
-    if (value.troubleshootReport && value.troubleshootReport.length > 0) {
-      return (
-        <Flex alignItems="center" color="red.600" gap="2">
-          <WarningIcon fontSize="1.25em" />
-          There were issues deserializing the value
-        </Flex>
-      );
-    }
-
-    if (value.isPayloadTooLarge) {
-      return (
-        <Flex alignItems="center" color="blue.500" gap="2">
-          <InfoIcon fontSize="1.25em" />
-          Message size exceeds the display limit.
-        </Flex>
-      );
-    }
-
-    const isPrimitive =
-      typeof value.payload === 'string' || typeof value.payload === 'number' || typeof value.payload === 'boolean';
-
-    try {
-      let text: ReactNode = <></>;
-
-      if (value.isPayloadNull) {
-        return <EmptyBadge mode="null" />;
-      }
-      if (
-        value.encoding === 'null' ||
-        value.payload == null ||
-        (typeof value.payload === 'string' && value.payload.length === 0)
-      ) {
-        return <EmptyBadge mode="empty" />;
-      }
-      if (msg.value.encoding === 'binary') {
-        // If the original data was binary, display as hex dump
-        text = msg.valueBinHexPreview as React.ReactNode;
-      } else if (isPrimitive) {
-        // If we can show the value as a primitive, do so.
-        text = value.payload as React.ReactNode;
-      } else {
-        // Only thing left is 'object'
-        // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
-        const previewTags = this.props.previewFields().filter((t) => t.searchInMessageValue);
-        if (previewTags.length > 0) {
-          const tags = getPreviewTags(value.payload as Record<string, unknown>, previewTags);
-          text = (
-            <span className="cellDiv fade" style={{ fontSize: '95%' }}>
-              <div className={`previewTags previewTags-${uiState.topicSettings.previewDisplayMode}`}>
-                {tags.map((t, i) => (
-                  <React.Fragment key={i}>{t}</React.Fragment>
-                ))}
-              </div>
-            </span>
-          );
-          return text;
-        }
-        // Normal display (json, no filters). Just stringify the whole object
-        text = cullText(JSON.stringify(value.payload), 300);
-      }
-
-      return (
-        <Flex flexDirection="column">
-          <code>
-            <span className="cellDiv" style={{ fontSize: '95%' }}>
-              {text}
-            </span>
-          </code>
-          <Text color="gray.500">
-            {value.encoding.toUpperCase()} - {prettyBytes(value.size)}
-          </Text>
-        </Flex>
-      );
-    } catch (e) {
-      return <span style={{ color: 'red' }}>Error in RenderPreview: {(e as Error).message ?? String(e)}</span>;
-    }
-  }
-}
-
-const ExpandedMessageFooter: FC<{ children?: ReactNode; onDownloadRecord?: () => void }> = ({
-  children,
-  onDownloadRecord,
-}) => (
-  <Flex gap={2} justifyContent="flex-end" my={4}>
-    {children}
-    {onDownloadRecord && (
-      <Button onClick={onDownloadRecord} variant="outline">
-        Download Record
-      </Button>
-    )}
-  </Flex>
-);
-
-export const ExpandedMessage: FC<{
-  msg: TopicMessage;
-  loadLargeMessage: () => Promise<void>;
-  onDownloadRecord?: () => void;
-  onCopyKey?: (original: TopicMessage) => void;
-  onCopyValue?: (original: TopicMessage) => void;
-}> = ({ msg, loadLargeMessage, onDownloadRecord, onCopyKey, onCopyValue }) => {
-  const bg = useColorModeValue('gray.50', 'gray.600');
-
-  return (
-    <Box bg={bg} px={10} py={6}>
-      <MessageMetaData msg={msg} />
-      <RpTabs
-        defaultIndex={1}
-        isFitted
-        items={[
-          {
-            key: 'key',
-            name: (
-              <Box minWidth="6rem">
-                {msg.key === null || msg.key.size === 0 ? 'Key' : `Key (${prettyBytes(msg.key.size)})`}
-              </Box>
-            ),
-            isDisabled: msg.key == null || msg.key.size === 0,
-            component: (
-              <Box>
-                <TroubleshootReportViewer payload={msg.key} />
-                <PayloadComponent loadLargeMessage={loadLargeMessage} payload={msg.key} />
-                <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
-                  {onCopyKey && (
-                    <Button isDisabled={msg.key.isPayloadNull} onClick={() => onCopyKey(msg)} variant="outline">
-                      Copy Key
-                    </Button>
-                  )}
-                </ExpandedMessageFooter>
-              </Box>
-            ),
-          },
-          {
-            key: 'value',
-            name: (
-              <Box minWidth="6rem">
-                {msg.value === null || msg.value.size === 0 ? 'Value' : `Value (${prettyBytes(msg.value.size)})`}
-              </Box>
-            ),
-            component: (
-              <Box>
-                <TroubleshootReportViewer payload={msg.value} />
-                <PayloadComponent loadLargeMessage={loadLargeMessage} payload={msg.value} />
-                <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
-                  {onCopyValue && (
-                    <Button isDisabled={msg.value.isPayloadNull} onClick={() => onCopyValue(msg)} variant="outline">
-                      Copy Value
-                    </Button>
-                  )}
-                </ExpandedMessageFooter>
-              </Box>
-            ),
-          },
-          {
-            key: 'headers',
-            name: <Box minWidth="6rem">{msg.headers.length === 0 ? 'Headers' : `Headers (${msg.headers.length})`}</Box>,
-            isDisabled: msg.headers.length === 0,
-            component: (
-              <Box>
-                <MessageHeaders msg={msg} />
-                {onDownloadRecord && <ExpandedMessageFooter onDownloadRecord={onDownloadRecord} />}
-              </Box>
-            ),
-          },
-        ]}
-        variant="fitted"
-      />
-    </Box>
-  );
-};
-
-const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () => Promise<void> }) => {
-  const { payload, loadLargeMessage } = p;
-  const toast = useToast();
-  const [isLoadingLargeMessage, setLoadingLargeMessage] = useState(false);
-
-  if (payload.isPayloadTooLarge) {
-    return (
-      <Flex flexDirection="column" gap="4">
-        <Flex alignItems="center" gap="2">
-          Because this message size exceeds the display limit, loading it could cause performance degradation.
-        </Flex>
-        <Button
-          data-testid="load-anyway-button"
-          isLoading={isLoadingLargeMessage}
-          loadingText="Loading..."
-          onClick={() => {
-            setLoadingLargeMessage(true);
-            loadLargeMessage()
-              .catch((err) =>
-                toast({
-                  status: 'error',
-                  description: err instanceof Error ? err.message : String(err),
-                })
-              )
-              .finally(() => setLoadingLargeMessage(false));
-          }}
-          size="small"
-          variant="outline"
-          width="10rem"
-        >
-          Load anyway
-        </Button>
-      </Flex>
-    );
-  }
-
-  try {
-    if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined) {
-      return <code>null</code>;
-    }
-
-    const val = payload.payload;
-    const isPrimitive = typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean';
-
-    if (payload.encoding === 'binary') {
-      const mode = 'hex' as 'ascii' | 'raw' | 'hex';
-      if (mode === 'raw') {
-        return (
-          <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val as React.ReactNode}</code>
-        );
-      }
-      if (mode === 'hex') {
-        const rawBytes = payload.rawBytes ?? payload.normalizedPayload;
-
-        if (rawBytes && (typeof rawBytes === 'string' || Array.isArray(rawBytes) || rawBytes instanceof Uint8Array)) {
-          let result = '';
-          for (const rawByte of rawBytes as Uint8Array) {
-            result += `${rawByte.toString(16).padStart(2, '0')} `;
-          }
-          return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
-        }
-        return <div>Raw bytes not available</div>;
-      }
-      const str = String(val);
-      let result = '';
-      for (let i = 0; i < str.length; i++) {
-        let ch = String.fromCharCode(str.charCodeAt(i)); // str.charAt(i);
-        ch = PRINTABLE_CHAR_REGEX.test(ch) ? ch : '. ';
-        result += `${ch} `;
-      }
-
-      return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
-    }
-
-    // Decode payload from base64 and render control characters as code highlighted text, such as
-    // `NUL`, `ACK` etc.
-    if (payload.encoding === 'utf8WithControlChars') {
-      const elements = highlightControlChars(val as string);
-
-      return (
-        <div className="codeBox" data-testid="payload-content">
-          {elements}
-        </div>
-      );
-    }
-
-    if (isPrimitive) {
-      return (
-        <div className="codeBox" data-testid="payload-content">
-          {String(val)}
-        </div>
-      );
-    }
-
-    return <KowlJsonView srcObj={val} />;
-  } catch (e) {
-    return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {(e as Error).message ?? String(e)}</span>;
-  }
-});
-
-function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
-  const elements: ReactNode[] = [];
-  // To reduce the number of JSX elements we try to append normal chars to a single string
-  // until we hit a control character.
-  let sequentialChars = '';
-  let numChars = 0;
-
-  for (const char of str) {
-    const code = char.charCodeAt(0);
-    if (code < 32) {
-      if (sequentialChars.length > 0) {
-        elements.push(sequentialChars);
-        sequentialChars = '';
-      }
-      elements.push(<span className="controlChar">{getControlCharacterName(code)}</span>);
-      if (code === 10) {
-        // LineFeed (\n) should be rendered properly
-        elements.push(<br />);
-      }
-    } else {
-      sequentialChars += char;
-    }
-
-    if (maxLength !== undefined) {
-      numChars++;
-      if (numChars >= maxLength) {
-        break;
-      }
-    }
-  }
-
-  if (sequentialChars.length > 0) {
-    elements.push(sequentialChars);
-  }
-
-  return elements;
-}
-
-function getControlCharacterName(code: number): string {
-  switch (code) {
-    case 0:
-      return 'NUL';
-    case 1:
-      return 'SOH';
-    case 2:
-      return 'STX';
-    case 3:
-      return 'ETX';
-    case 4:
-      return 'EOT';
-    case 5:
-      return 'ENQ';
-    case 6:
-      return 'ACK';
-    case 7:
-      return 'BEL';
-    case 8:
-      return 'BS';
-    case 9:
-      return 'HT';
-    case 10:
-      return 'LF';
-    case 11:
-      return 'VT';
-    case 12:
-      return 'FF';
-    case 13:
-      return 'CR';
-    case 14:
-      return 'SO';
-    case 15:
-      return 'SI';
-    case 16:
-      return 'DLE';
-    case 17:
-      return 'DC1';
-    case 18:
-      return 'DC2';
-    case 19:
-      return 'DC3';
-    case 20:
-      return 'DC4';
-    case 21:
-      return 'NAK';
-    case 22:
-      return 'SYN';
-    case 23:
-      return 'ETB';
-    case 24:
-      return 'CAN';
-    case 25:
-      return 'EM';
-    case 26:
-      return 'SUB';
-    case 27:
-      return 'ESC';
-    case 28:
-      return 'FS';
-    case 29:
-      return 'GS';
-    case 30:
-      return 'RS';
-    case 31:
-      return 'US';
-    default:
-      return '';
-  }
-}
-
-const TroubleshootReportViewer = observer((props: { payload: Payload }) => {
-  const report = props.payload.troubleshootReport;
-  const [show, setShow] = useState(true);
-
-  if (!report) {
-    return null;
-  }
-  if (report.length === 0) {
-    return null;
-  }
-
-  return (
-    <Box mb="4" mt="4">
-      <Heading as="h4">Deserialization Troubleshoot Report</Heading>
-      <Alert background="red.50" flexDirection="column" my={4} status="error" variant="subtle">
-        <AlertTitle
-          alignItems="center"
-          alignSelf="flex-start"
-          display="flex"
-          flexDirection="row"
-          fontWeight="normal"
-          pb="4"
-        >
-          <AlertIcon /> Errors were encountered when deserializing this message
-          <Link onClick={() => setShow(!show)} pl="2">
-            {show ? 'Hide' : 'Show'}
-          </Link>
-        </AlertTitle>
-        <AlertDescription display={show ? undefined : 'none'} whiteSpace="pre-wrap">
-          <Grid columnGap="4" rowGap="1" templateColumns="auto 1fr">
-            {report.map((e) => (
-              <>
-                <GridItem
-                  fontWeight="bold"
-                  key={`${e.serdeName}-name`}
-                  pl="8"
-                  px="5"
-                  py="2"
-                  textTransform="capitalize"
-                  w="100%"
-                >
-                  {e.serdeName}
-                </GridItem>
-                <GridItem
-                  background="red.100"
-                  fontFamily="monospace"
-                  key={`${e.serdeName}-message`}
-                  px="5"
-                  py="2"
-                  w="100%"
-                >
-                  {e.message}
-                </GridItem>
-              </>
-            ))}
-          </Grid>
-        </AlertDescription>
-      </Alert>
-    </Box>
-  );
-});
-
-const MessageMetaData = observer((props: { msg: TopicMessage }) => {
-  const msg = props.msg;
-  const data: { [k: string]: React.ReactNode } = {
-    Partition: msg.partitionID,
-    Offset: numberToThousandsString(msg.offset),
-    Key: msg.key.isPayloadNull ? 'Null' : `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
-    Value: msg.value.isPayloadNull
-      ? 'Null'
-      : `${titleCase(msg.value.encoding)} (${msg.value.schemaId > 0 ? `${msg.value.schemaId} / ` : ''}${prettyBytes(msg.value.size)})`,
-    Headers: msg.headers.length > 0 ? `${msg.headers.length}` : 'No headers set',
-    Compression: msg.compression,
-    Transactional: msg.isTransactional ? 'true' : 'false',
-    // "Producer ID": "(msg.producerId)",
-  };
-
-  if (msg.value.schemaId) {
-    data.Schema = <MessageSchema schemaId={msg.value.schemaId} />;
-  }
-
-  return (
-    <Flex gap={10} my={6}>
-      {Object.entries(data).map(([k, v]) => (
-        <Flex direction="column" key={k} rowGap=".4em">
-          <Text fontSize="md" fontWeight="600">
-            {k}
-          </Text>
-          <Text color="" fontSize="sm">
-            {v}
-          </Text>
-        </Flex>
-      ))}
-    </Flex>
-  );
-});
-
-const MessageSchema = observer((p: { schemaId: number }) => {
-  const subjects = api.schemaUsagesById.get(p.schemaId);
-  if (!subjects || subjects.length === 0) {
-    api.refreshSchemaUsagesById(p.schemaId);
-    return <>ID {p.schemaId} (unknown subject)</>;
-  }
-
-  const s = subjects[0];
-  return (
-    <Link as={ReactRouterLink} to={`/schema-registry/subjects/${encodeURIComponent(s.subject)}?version=${s.version}`}>
-      {s.subject} (version {s.version})
-    </Link>
-  );
-});
-
-const MessageHeaders = observer((props: { msg: TopicMessage }) => {
-  return (
-    <div className="messageHeaders">
-      <div>
-        <DataTable<{ key: string; value: Payload }>
-          columns={[
-            {
-              size: 200,
-              header: 'Key',
-              accessorKey: 'key',
-              cell: ({
-                row: {
-                  original: { key: headerKey },
-                },
-              }) => (
-                <span className="cellDiv" style={{ width: 'auto' }}>
-                  {headerKey ? <Ellipsis>{toSafeString(headerKey)}</Ellipsis> : renderEmptyIcon('Empty Key')}
-                </span>
-              ),
-            },
-            {
-              size: Number.POSITIVE_INFINITY,
-              header: 'Value',
-              accessorKey: 'value',
-              cell: ({
-                row: {
-                  original: { value: headerValue },
-                },
-              }) => {
-                if (typeof headerValue.payload === 'undefined') {
-                  return renderEmptyIcon('"undefined"');
-                }
-                if (headerValue.payload === null) {
-                  return renderEmptyIcon('"null"');
-                }
-                if (typeof headerValue.payload === 'number') {
-                  return <span>{String(headerValue.payload)}</span>;
-                }
-
-                if (typeof headerValue.payload === 'string') {
-                  return <span className="cellDiv">{headerValue.payload}</span>;
-                }
-
-                // object
-                return <span className="cellDiv">{toSafeString(headerValue.payload)}</span>;
-              },
-            },
-            {
-              size: 120,
-              header: 'Encoding',
-              accessorKey: 'value',
-              cell: ({
-                row: {
-                  original: { value: payload },
-                },
-              }) => <span className="nowrap">{payload.encoding}</span>,
-            },
-          ]}
-          data={props.msg.headers}
-          pagination
-          sorting
-          subComponent={({ row: { original: header } }) => (
-            <Box px={10} py={6}>
-              {typeof header.value?.payload !== 'object' ? (
-                <div className="codeBox" style={{ margin: '0', width: '100%' }}>
-                  {toSafeString(header.value.payload)}
-                </div>
-              ) : (
-                <KowlJsonView srcObj={header.value.payload as object} style={{ margin: '2em 0' }} />
-              )}
-            </Box>
-          )}
-        />
-      </div>
-    </div>
-  );
-});
-
-const ColumnSettings: FC<{
-  getShowDialog: () => boolean;
-  setShowDialog: (val: boolean) => void;
-}> = observer(({ getShowDialog, setShowDialog }) => {
-  const columnSettings: ColumnList[] = [
-    { title: 'Offset', dataIndex: 'offset' },
-    { title: 'Partition', dataIndex: 'partitionID' },
-    { title: 'Timestamp', dataIndex: 'timestamp' },
-    { title: 'Key', dataIndex: 'key' },
-    { title: 'Value', dataIndex: 'value' },
-    { title: 'Key Size', dataIndex: 'keySize' },
-    { title: 'Value Size', dataIndex: 'valueSize' },
-  ];
-
-  return (
-    <Modal
-      isOpen={getShowDialog()}
-      onClose={() => {
-        setShowDialog(false);
-      }}
-    >
-      <ModalOverlay />
-      <ModalContent minW="4xl">
-        <ModalHeader>Column Settings</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <Text>Choose which columns will be shown in the messages table, as well as the format of the timestamp.</Text>
-          <Box my={6}>
-            <Label text="Columns shown">
-              <Stack direction="row" spacing={5}>
-                {columnSettings.map(({ title, dataIndex }) => (
-                  <Checkbox
-                    isChecked={!!uiState.topicSettings.previewColumnFields.find((x) => x.dataIndex === dataIndex)}
-                    key={dataIndex}
-                    onChange={({ target: { checked } }) => {
-                      if (checked) {
-                        uiState.topicSettings.previewColumnFields.pushDistinct({
-                          title,
-                          dataIndex,
-                        });
-                      } else {
-                        const idxToRemove = uiState.topicSettings.previewColumnFields.findIndex(
-                          (x) => x.dataIndex === dataIndex
-                        );
-                        uiState.topicSettings.previewColumnFields.splice(idxToRemove, 1);
-                      }
-                    }}
-                    size="lg"
-                  >
-                    {title}
-                  </Checkbox>
-                ))}
-              </Stack>
-            </Label>
-            <Button
-              mt={2}
-              onClick={() => {
-                uiState.topicSettings.previewColumnFields = [];
-              }}
-              // we need to pass this using sx to increase specificity, using p={0} won't work
-              sx={{ padding: 0 }}
-              variant="link"
-            >
-              Clear
-            </Button>
-          </Box>
-          <Grid gap={4} my={6} templateColumns="1fr 2fr">
-            <GridItem>
-              <Label text="Timestamp format">
-                <SingleSelect<TimestampDisplayFormat>
-                  onChange={(e) => (uiState.topicSettings.previewTimestamps = e)}
-                  options={[
-                    { label: 'Local DateTime', value: 'default' },
-                    { label: 'Unix DateTime', value: 'unixTimestamp' },
-                    { label: 'Relative', value: 'relative' },
-                    { label: 'Local Date', value: 'onlyDate' },
-                    { label: 'Local Time', value: 'onlyTime' },
-                    { label: 'Unix Millis', value: 'unixMillis' },
-                  ]}
-                  value={uiState.topicSettings.previewTimestamps}
-                />
-              </Label>
-            </GridItem>
-            <GridItem>
-              <Label text="Preview">
-                <TimestampDisplay format={uiState.topicSettings.previewTimestamps} unixEpochMillisecond={Date.now()} />
-              </Label>
-            </GridItem>
-          </Grid>
-        </ModalBody>
-        <ModalFooter gap={2}>
-          <Button
-            colorScheme="red"
-            onClick={() => {
-              setShowDialog(false);
-            }}
-          >
-            Close
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-  );
-});
-
-const PreviewFieldsModal: FC<{
-  getShowDialog: () => boolean;
-  setShowDialog: (val: boolean) => void;
-  messageSearch: MessageSearch;
-}> = observer(({ getShowDialog, setShowDialog, messageSearch }) => (
-  <Modal
-    isOpen={getShowDialog()}
-    onClose={() => {
-      setShowDialog(false);
-    }}
-  >
-    <ModalOverlay />
-    <ModalContent minW="4xl">
-      <ModalHeader>Preview fields</ModalHeader>
-      <ModalCloseButton />
-      <ModalBody>
-        <PreviewSettings messageSearch={messageSearch} />
-      </ModalBody>
-      <ModalFooter gap={2}>
-        <Button
-          colorScheme="red"
-          onClick={() => {
-            setShowDialog(false);
-          }}
-        >
-          Close
-        </Button>
-      </ModalFooter>
-    </ModalContent>
-  </Modal>
-));
-
-const DeserializersModal: FC<{
-  getShowDialog: () => boolean;
-  setShowDialog: (val: boolean) => void;
-}> = observer(({ getShowDialog, setShowDialog }) => {
-  const searchParams = uiState.topicSettings.searchParams;
-
-  return (
-    <Modal
-      isOpen={getShowDialog()}
-      onClose={() => {
-        setShowDialog(false);
-      }}
-    >
-      <ModalOverlay />
-      <ModalContent minW="xl">
-        <ModalHeader>Deserialize</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody display="flex" flexDirection="column" gap={4}>
-          <Text>
-            Redpanda attempts to automatically detect a deserialization strategy. You can choose one manually here.
-          </Text>
-          <Box>
-            <Label text="Key Deserializer">
-              <SingleSelect<PayloadEncoding>
-                onChange={(e) => (searchParams.keyDeserializer = e)}
-                options={payloadEncodingPairs}
-                value={searchParams.keyDeserializer}
-              />
-            </Label>
-          </Box>
-          <Label text="Value Deserializer">
-            <SingleSelect<PayloadEncoding>
-              onChange={(e) => (searchParams.valueDeserializer = e)}
-              options={payloadEncodingPairs}
-              value={searchParams.valueDeserializer}
-            />
-          </Label>
-        </ModalBody>
-        <ModalFooter gap={2}>
-          <Button
-            colorScheme="red"
-            onClick={() => {
-              setShowDialog(false);
-            }}
-          >
-            Close
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-  );
-});
-
-const MessageSearchFilterBar: FC<{ onEdit: (filter: FilterEntry) => void }> = observer(({ onEdit }) => {
-  const settings = uiState.topicSettings.searchParams;
-
-  return (
-    <GridItem display="flex" gridColumn="-1/1" justifyContent="space-between">
-      <Box columnGap="8px" display="inline-flex" flexWrap="wrap" rowGap="2px" width="calc(100% - 200px)">
-        {/* Existing Tags List  */}
-        {settings.filters?.map((e) => (
-          <Tag
-            className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
-            key={e.id}
-            style={{ userSelect: 'none' }}
-          >
-            <MdOutlineSettings
-              onClick={() => {
-                onEdit(e);
-              }}
-              size={14}
-            />
-            <TagLabel
-              alignItems="center"
-              border="0px solid hsl(0 0% 85% / 1)"
-              borderWidth="0px 1px"
-              display="inline-flex"
-              height="100%"
-              mx="2"
-              onClick={() => (e.isActive = !e.isActive)}
-              px="6px"
-              textDecoration={e.isActive ? '' : 'line-through'}
-            >
-              {e.name || e.code || 'New Filter'}
-            </TagLabel>
-            <TagCloseButton m="0" onClick={() => settings.filters.remove(e)} opacity={1} px="1" />
-          </Tag>
-        ))}
-      </Box>
-    </GridItem>
-  );
-});
-
-const EmptyBadge: FC<{ mode: 'empty' | 'null' }> = ({ mode }) => (
-  <Badge variant="inverted">
-    <Flex gap={2} verticalAlign="center">
-      <MdDoNotDisturb size={16} />
-      <Text>
-        {
-          {
-            empty: 'Empty',
-            null: 'Null',
-          }[mode]
-        }
-      </Text>
-    </Flex>
-  </Badge>
-);
-
-function renderEmptyIcon(tooltipText?: string) {
-  const text = tooltipText || 'Empty';
-  return (
-    <Tooltip hasArrow label={text} openDelay={1} placement="top">
-      <span style={{ opacity: 0.66, marginLeft: '2px' }}>
-        <SkipIcon />
-      </span>
-    </Tooltip>
-  );
-}
-
-function hasDeleteRecordsPrivilege(allowedActions: TopicAction[] | undefined) {
-  // undefined has the same meaning as 'all'
-  return !allowedActions || allowedActions.includes('deleteTopicRecords') || allowedActions.includes('all');
-}
-
-export function DeleteRecordsMenuItem(
-  isCompacted: boolean,
-  allowedActions: TopicAction[] | undefined,
-  onClick: () => void
-) {
-  const isEnabled = !isCompacted && hasDeleteRecordsPrivilege(allowedActions) && isSupported(Feature.DeleteRecords);
-
-  let errorText: string | undefined;
-  if (isCompacted) {
-    errorText = "Records on Topics with the 'compact' cleanup policy cannot be deleted.";
-  } else if (!hasDeleteRecordsPrivilege(allowedActions)) {
-    errorText = "You're not permitted to delete records on this topic.";
-  } else if (!isSupported(Feature.DeleteRecords)) {
-    errorText = "The cluster doesn't support deleting records.";
-  }
-
-  let content: JSX.Element | string = 'Delete Records';
-  if (errorText) {
-    content = (
-      <Tooltip hasArrow label={errorText} placement="top">
-        {content}
-      </Tooltip>
-    );
-  }
-
-  return (
-    <Button isDisabled={!isEnabled} onClick={onClick} variant="outline">
-      {content}
-    </Button>
-  );
-}
-
 // Functional wrapper component that manages URL query state
 export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   // Use nuqs hooks for URL query state management with localStorage sync
@@ -2438,16 +1210,54 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     parseAsString.withDefault('')
   );
 
+  // Pagination state managed by nuqs
+  const [pageIndex, setPageIndex] = useQueryStateWithCallback<number>(
+    {
+      onUpdate: () => {
+        // Page index is just for URL state, no need to sync to uiState
+      },
+      getDefaultValue: () => 0,
+    },
+    'page',
+    parseAsInteger.withDefault(0)
+  );
+
+  const [pageSize, setPageSize] = useQueryStateWithCallback<number>(
+    {
+      onUpdate: (val) => {
+        uiState.topicSettings.searchParams.pageSize = val;
+      },
+      getDefaultValue: () => uiState.topicSettings.searchParams.pageSize,
+    },
+    'pageSize',
+    parseAsInteger.withDefault(50)
+  );
+
+  // Modal states (moved from class component)
+  const [showColumnSettingsModal, setShowColumnSettingsModal] = useState(false);
+  const [showPreviewFieldsModal, setShowPreviewFieldsModal] = useState(false);
+  const [showDeserializersModal, setShowDeserializersModal] = useState(false);
+
   return (
     <TopicMessageViewInternal
       {...props}
       maxResults={maxResults}
+      pageIndex={pageIndex}
+      pageSize={pageSize}
       partitionID={partitionID}
       quickSearch={quickSearch}
       setMaxResults={setMaxResults}
+      setPageIndex={setPageIndex}
+      setPageSize={setPageSize}
       setPartitionID={setPartitionID}
       setQuickSearch={setQuickSearch}
+      setShowColumnSettingsModal={setShowColumnSettingsModal}
+      setShowDeserializersModal={setShowDeserializersModal}
+      setShowPreviewFieldsModal={setShowPreviewFieldsModal}
       setStartOffset={setStartOffset}
+      showColumnSettingsModal={showColumnSettingsModal}
+      showDeserializersModal={showDeserializersModal}
+      showPreviewFieldsModal={showPreviewFieldsModal}
       startOffset={startOffset}
     />
   );
