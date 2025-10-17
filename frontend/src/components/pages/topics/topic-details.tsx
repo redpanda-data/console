@@ -26,7 +26,8 @@ import { MdError, MdOutlineWarning, MdOutlineWarningAmber } from 'react-icons/md
 import DeleteRecordsModal from './DeleteRecordsModal/delete-records-modal';
 import { TopicQuickInfoStatistic } from './quick-info';
 import AclList from './Tab.Acl/acl-list';
-import { DeleteRecordsMenuItem, TopicMessageView } from './Tab.Messages';
+import { TopicMessageView } from './Tab.Messages';
+import { DeleteRecordsMenuItem } from './Tab.Messages/common/delete-records-menu-item';
 import { TopicConfiguration } from './tab-config';
 import { TopicConsumers } from './tab-consumers';
 import { TopicDocumentation } from './tab-docu';
