@@ -10,6 +10,7 @@
  */
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, Loader2, Search, Settings } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
@@ -32,6 +33,8 @@ export const updatePageTitle = (agentName?: string) => {
 };
 
 export const AIAgentDetailsPage = () => {
+  const isAiAgentsInspectorFeatureEnabled = isFeatureFlagEnabled('enableAiAgentsInspectorInConsole');
+
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -98,18 +101,22 @@ export const AIAgentDetailsPage = () => {
               Configuration
             </div>
           </TabsTrigger>
-          <TabsTrigger className="gap-2" value="inspector">
-            <Search className="h-4 w-4" />
-            Inspector
-          </TabsTrigger>
+          {isAiAgentsInspectorFeatureEnabled && (
+            <TabsTrigger className="gap-2" value="inspector">
+              <Search className="h-4 w-4" />
+              Inspector
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="configuration">
           <AIAgentConfigurationTab />
         </TabsContent>
-        <TabsContent value="inspector">
-          <AIAgentInspectorTab />
-        </TabsContent>
+        {isAiAgentsInspectorFeatureEnabled && (
+          <TabsContent value="inspector">
+            <AIAgentInspectorTab />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
