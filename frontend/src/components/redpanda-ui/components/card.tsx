@@ -3,6 +3,7 @@ import React from 'react';
 
 import { Heading, Text } from './typography';
 import { cn } from '../lib/utils';
+import { motion, MotionProps } from 'motion/react';
 
 const cardVariants = cva(
   'rounded-lg min-w-0 border border-solid bg-white border-base-200 flex flex-col shadow-elevated dark:bg-base-900 dark:border-base-800',
@@ -32,20 +33,40 @@ const cardVariants = cva(
 export type CardVariant = VariantProps<typeof cardVariants>['variant'];
 export type CardSize = VariantProps<typeof cardVariants>['size'];
 
-export interface CardProps extends React.ComponentProps<'div'> {
+type BaseCardProps = {
   size?: CardSize;
   testId?: string;
   variant?: CardVariant;
-}
+  className?: string;
+};
 
-const Card = React.forwardRef<HTMLDivElement, CardProps>(({ className, size, variant, testId, ...props }, ref) => {
+type StaticCardProps = BaseCardProps & Omit<React.ComponentProps<'div'>, keyof BaseCardProps> & { animated?: false };
+type AnimatedCardProps = BaseCardProps & Omit<MotionProps, keyof BaseCardProps> & { animated: true };
+
+export type CardProps = StaticCardProps | AnimatedCardProps;
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(({ className, size, variant, testId, animated = false, ...props }, ref) => {
+  const cardClassName = cn(cardVariants({ size, variant }), className);
+  
+  if (animated) {
+    return (
+      <motion.div
+        ref={ref}
+        data-slot="card"
+        data-testid={testId}
+        className={cardClassName}
+        {...(props as Omit<AnimatedCardProps, 'animated' | 'className' | 'size' | 'variant' | 'testId'>)}
+      />
+    );
+  }
+  
   return (
     <div
       ref={ref}
       data-slot="card"
       data-testid={testId}
-      className={cn(cardVariants({ size, variant }), className)}
-      {...props}
+      className={cardClassName}
+      {...(props as Omit<StaticCardProps, 'animated' | 'className' | 'size' | 'variant' | 'testId'>)}
     />
   );
 });

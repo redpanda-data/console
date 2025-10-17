@@ -54,7 +54,7 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
         name="replicationFactor"
         render={({ field }) => (
           <FormItem className={isExistingTopic ? '' : 'opacity-70'}>
-            <FormLabel>Replication Factor</FormLabel>
+            <FormLabel>Replication factor</FormLabel>
             <FormControl>
               <Input
                 {...field}
@@ -73,7 +73,7 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
         disabled={disabled}
         form={form}
         isExistingTopic={isExistingTopic}
-        label="Retention Time"
+        label="Retention time"
         onChange={createFloatChangeHandler}
         unitField="retentionTimeUnit"
         units={retentionTimeUnits}
@@ -84,7 +84,7 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
         disabled={disabled}
         form={form}
         isExistingTopic={isExistingTopic}
-        label="Retention Size"
+        label="Retention size"
         onChange={createFloatChangeHandler}
         unitField="retentionSizeUnit"
         units={retentionSizeUnits}

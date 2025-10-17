@@ -77,6 +77,11 @@ const mergeRateLimitResource = (doc: Document.Parsed, newConfigObject: Partial<C
 const mergeRootComponent = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
   if (newConfigObject) {
     for (const [key, value] of Object.entries(newConfigObject)) {
+      // Skip 'redpanda' key if it already exists (for redpanda_common components)
+      // This prevents duplicate top-level redpanda blocks when using multiple redpanda_common components
+      if (key === 'redpanda' && doc.has('redpanda')) {
+        continue;
+      }
       doc.set(key, value);
     }
   }

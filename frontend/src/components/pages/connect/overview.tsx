@@ -111,7 +111,7 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
 
   render() {
     // Redirect to wizard if enableRpcnTiles is enabled and there are no existing pipelines
-    if (isFeatureFlagEnabled('enableRpcnTiles') && pipelinesApi.pipelines?.length === 0) {
+    if (isFeatureFlagEnabled('enableRpcnTiles') && isServerless() && pipelinesApi.pipelines?.length === 0) {
       return <Navigate replace to="/rp-connect/wizard" />;
     }
 
@@ -125,7 +125,7 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
         ),
         content: (
           <Box>
-            {!isFeatureFlagEnabled('enableRpcnTiles') && (
+            {!(isFeatureFlagEnabled('enableRpcnTiles') && isServerless()) && (
               <Text mb={4}>
                 Redpanda Connect is an alternative to Kafka Connect. Choose from a growing ecosystem of readily
                 available connectors.{' '}
@@ -162,7 +162,7 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
 
     return (
       <PageContent>
-        {!isFeatureFlagEnabled('enableRpcnTiles') && (
+        {!(isFeatureFlagEnabled('enableRpcnTiles') && isServerless()) && (
           <Text>
             There are two ways to integrate your Redpanda data with data from external systems: Redpanda Connect and
             Kafka Connect.

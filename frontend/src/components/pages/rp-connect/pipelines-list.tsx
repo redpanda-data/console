@@ -13,7 +13,7 @@ import { CheckIcon } from '@chakra-ui/icons';
 import { TrashIcon } from '@heroicons/react/outline';
 import { Box, Button, createStandaloneToast, DataTable, Flex, Image, SearchField, Text } from '@redpanda-data/ui';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
-import { isFeatureFlagEnabled } from 'config';
+import { isFeatureFlagEnabled, isServerless } from 'config';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { useCallback } from 'react';
@@ -218,7 +218,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
         {/* Pipeline List */}
 
         {pipelinesApi.pipelines.length !== 0 &&
-          (isFeatureFlagEnabled('enableRpcnTiles') ? (
+          (isFeatureFlagEnabled('enableRpcnTiles') && isServerless() ? (
             <div className="my-5">
               <WizardCreatePipelineButton />
             </div>

@@ -13,7 +13,7 @@ import { create } from '@bufbuild/protobuf';
 import { Button, type CreateToastFnReturn, Flex, FormField, Input, NumberInput, useToast } from '@redpanda-data/ui';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
-import { isFeatureFlagEnabled } from 'config';
+import { isFeatureFlagEnabled, isServerless } from 'config';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { type Pipeline_ServiceAccount, PipelineUpdateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
@@ -164,11 +164,14 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
           <PipelineEditor onChange={(x) => (this.editorContent = x)} secrets={this.secrets} yaml={this.editorContent} />
         </div>
 
-        {isFeatureFlagEnabled('enableRpcnTiles') && this.lintResults && Object.keys(this.lintResults).length > 0 && (
-          <div className="mt-4">
-            <LintHintList lintHints={this.lintResults} />
-          </div>
-        )}
+        {isFeatureFlagEnabled('enableRpcnTiles') &&
+          isServerless() &&
+          this.lintResults &&
+          Object.keys(this.lintResults).length > 0 && (
+            <div className="mt-4">
+              <LintHintList lintHints={this.lintResults} />
+            </div>
+          )}
 
         <Flex alignItems="center" gap="4">
           <UpdateButton />
@@ -183,7 +186,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   updatePipeline(toast: CreateToastFnReturn) {
     this.isUpdating = true;
     const pipelineId = this.props.pipelineId;
-    const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
+    const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles') && isServerless();
 
     pipelinesApi
       .updatePipeline(

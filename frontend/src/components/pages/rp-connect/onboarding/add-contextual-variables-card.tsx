@@ -109,7 +109,7 @@ export const AddContextualVariablesCard = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Contextual Variables</CardTitle>
+        <CardTitle>Contextual variables</CardTitle>
         <CardDescription>
           Predefined variables automatically available in your Redpanda Cloud environment.
         </CardDescription>

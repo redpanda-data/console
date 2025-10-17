@@ -59,7 +59,13 @@ export const CreatePipelineSidebar = memo(
     };
 
     return (
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
+        <AddConnectorsCard
+          editorContent={editorContent}
+          hasInput={hasInput}
+          hasOutput={hasOutput}
+          onAddConnector={handleConnectorTypeChange}
+        />
         <AddSecretsCard
           detectedSecrets={detectedSecrets}
           editorInstance={editorInstance}
@@ -67,6 +73,7 @@ export const CreatePipelineSidebar = memo(
           missingSecrets={missingSecrets}
           onOpenDialog={() => setIsSecretsDialogOpen(true)}
         />
+        <AddContextualVariablesCard editorContent={editorContent} editorInstance={editorInstance} />
 
         <AddSecretsDialog
           defaultValues={secretDefaultValues}
@@ -76,16 +83,6 @@ export const CreatePipelineSidebar = memo(
           onClose={() => setIsSecretsDialogOpen(false)}
           onSecretsCreated={handleSecretsCreated}
         />
-
-        <AddContextualVariablesCard editorContent={editorContent} editorInstance={editorInstance} />
-
-        <AddConnectorsCard
-          editorContent={editorContent}
-          hasInput={hasInput}
-          hasOutput={hasOutput}
-          onAddConnector={handleConnectorTypeChange}
-        />
-
         <AddConnectorDialog
           connectorType={selectedConnector}
           isOpen={isAddConnectorOpen}

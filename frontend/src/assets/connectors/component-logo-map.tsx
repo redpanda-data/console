@@ -38,6 +38,7 @@ import {
   RefreshCw,
   ScrollText,
   Server,
+  Settings,
   Terminal,
   Type,
   Workflow,
@@ -96,6 +97,7 @@ import {
 } from './logos';
 
 export const componentLogoMap = {
+  custom: Settings,
   amqp_0_9: RabbitMQLogo,
   amqp_1: ApacheactivemqLogo,
   archive: Archive,
