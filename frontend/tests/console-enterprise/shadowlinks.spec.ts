@@ -310,7 +310,8 @@ test.describe('Shadowlinks', () => {
   });
 
   test('should show delete confirmation dialog', async ({ page }) => {
-    // Setup mock data
+    // Setup mock data with NO active topics (shadowTopicStatuses empty or no active state)
+    // This ensures the Delete button is shown instead of Failover
     await page.route('**/redpanda.api.console.v1alpha1.ShadowLinkService/ListShadowLinks', async (route) => {
       await route.fulfill({
         status: 200,
@@ -320,7 +321,10 @@ test.describe('Shadowlinks', () => {
             {
               name: 'test-shadowlink',
               uid: '123',
-              status: { state: 1 },
+              status: {
+                state: 1,
+                shadowTopicStatuses: [], // No topics = no active topics
+              },
               configurations: {
                 clientOptions: {
                   bootstrapServers: ['broker1:9092'],
@@ -342,15 +346,13 @@ test.describe('Shadowlinks', () => {
 
     await page.reload();
 
-    // Open actions dropdown
-    await page.getByRole('button', { name: 'Open menu' }).click();
-
-    // Click delete
-    await page.getByRole('menuitem', { name: /delete/i }).click();
+    // Click the Delete button directly (no dropdown menu in current implementation)
+    await page.getByRole('button', { name: /delete/i }).click();
 
     // Verify confirmation dialog
     await expect(page.getByRole('alertdialog')).toBeVisible();
-    await expect(page.getByText(/are you sure/i)).toBeVisible();
+    await expect(page.getByText(/delete shadowlink/i)).toBeVisible();
+    await expect(page.getByText(/you are about to delete/i)).toBeVisible();
   });
 
   test('should handle API loading state', async ({ page }) => {
