@@ -19,6 +19,9 @@ export type ChatMessage = {
   sender: 'user' | 'system';
   timestamp: Date;
   failure: boolean;
+  isStreaming?: boolean;
+  taskId?: string; // ID of the associated task
+  reasoning?: string; // Accumulated reasoning/thinking steps for tasks
 };
 
 class ChatDatabase extends Dexie {
@@ -37,6 +40,10 @@ class ChatDatabase extends Dexie {
 
   addMessage(message: ChatMessage): Promise<string> {
     return this.messages.add(message);
+  }
+
+  updateMessage(id: string, updates: Partial<ChatMessage>): Promise<number> {
+    return this.messages.update(id, updates);
   }
 
   async clearAllMessages(agentId: string): Promise<void> {
