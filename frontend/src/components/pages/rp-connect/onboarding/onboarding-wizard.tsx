@@ -98,10 +98,6 @@ export const ConnectOnboardingWizard = ({
     () => persistedInputConnectionName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(persistedInputConnectionName),
     [persistedInputConnectionName]
   );
-  const persistedOutputHasTopicAndUser = useMemo(
-    () => persistedOutputConnectionName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(persistedOutputConnectionName),
-    [persistedOutputConnectionName]
-  );
 
   const [searchParams] = useSearchParams();
 
@@ -170,8 +166,6 @@ export const ConnectOnboardingWizard = ({
           return;
         }
         if (result?.success && connectionName && connectionType) {
-          onChange?.(connectionName, connectionType);
-
           if (connectionName === 'redpanda_common') {
             setPersistedWizardData({
               input: {
@@ -194,6 +188,7 @@ export const ConnectOnboardingWizard = ({
             });
             methods.next();
           }
+          onChange?.(connectionName, connectionType);
         }
         break;
       }
@@ -208,8 +203,6 @@ export const ConnectOnboardingWizard = ({
         }
 
         if (result?.success && connectionName && connectionType) {
-          onChange?.(connectionName, connectionType);
-
           if (connectionName === 'redpanda_common') {
             setPersistedWizardData({
               input: {
@@ -230,7 +223,9 @@ export const ConnectOnboardingWizard = ({
               ...(persistedWizardData.input && { input: persistedWizardData.input }),
             });
           }
-          if (persistedInputHasTopicAndUser || persistedOutputHasTopicAndUser) {
+          onChange?.(connectionName, connectionType);
+          const outputNeedsTopicAndUser = REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(connectionName);
+          if (persistedInputHasTopicAndUser || outputNeedsTopicAndUser) {
             methods.next();
           } else {
             methods.goTo(WizardStep.CREATE_CONFIG);
