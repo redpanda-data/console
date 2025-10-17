@@ -12,7 +12,7 @@
 import { WarningIcon } from '@chakra-ui/icons';
 import { Flex, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import React, { Component, type ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import type { PreviewTagV2 } from '../../../../../state/ui';
@@ -127,10 +127,8 @@ function getControlCharacterName(code: number): string {
   }
 }
 
-@observer
-export class MessageKeyPreview extends Component<{ msg: TopicMessage; previewFields: () => PreviewTagV2[] }> {
-  render() {
-    const msg = this.props.msg;
+export const MessageKeyPreview = observer(
+  ({ msg, previewFields }: { msg: TopicMessage; previewFields: () => PreviewTagV2[] }) => {
     const key = msg.key;
 
     if (key.troubleshootReport && key.troubleshootReport.length > 0) {
@@ -163,7 +161,7 @@ export class MessageKeyPreview extends Component<{ msg: TopicMessage; previewFie
       } else {
         // Only thing left is 'object'
         // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
-        const previewTags = this.props.previewFields().filter((t) => t.searchInMessageValue);
+        const previewTags = previewFields().filter((t) => t.searchInMessageValue);
         if (previewTags.length > 0) {
           const tags = getPreviewTags(key.payload as Record<string, unknown>, previewTags);
           text = (
@@ -195,4 +193,4 @@ export class MessageKeyPreview extends Component<{ msg: TopicMessage; previewFie
       return <span style={{ color: 'red' }}>Error in RenderPreview: {(e as Error).message ?? String(e)}</span>;
     }
   }
-}
+);

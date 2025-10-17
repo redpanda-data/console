@@ -12,7 +12,7 @@
 import { InfoIcon, WarningIcon } from '@chakra-ui/icons';
 import { Flex, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import React, { Component, type ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import type { PreviewTagV2 } from '../../../../../state/ui';
@@ -21,14 +21,16 @@ import { cullText, prettyBytes } from '../../../../../utils/utils';
 import { EmptyBadge } from '../common/empty-badge';
 import { getPreviewTags } from '../preview-settings';
 
-@observer
-export class MessagePreview extends Component<{
-  msg: TopicMessage;
-  previewFields: () => PreviewTagV2[];
-  isCompactTopic: boolean;
-}> {
-  render() {
-    const msg = this.props.msg;
+export const MessagePreview = observer(
+  ({
+    msg,
+    previewFields,
+    isCompactTopic: _isCompactTopic,
+  }: {
+    msg: TopicMessage;
+    previewFields: () => PreviewTagV2[];
+    isCompactTopic: boolean;
+  }) => {
     const value = msg.value;
 
     if (value.troubleshootReport && value.troubleshootReport.length > 0) {
@@ -74,7 +76,7 @@ export class MessagePreview extends Component<{
       } else {
         // Only thing left is 'object'
         // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
-        const previewTags = this.props.previewFields().filter((t) => t.searchInMessageValue);
+        const previewTags = previewFields().filter((t) => t.searchInMessageValue);
         if (previewTags.length > 0) {
           const tags = getPreviewTags(value.payload as Record<string, unknown>, previewTags);
           text = (
@@ -108,4 +110,4 @@ export class MessagePreview extends Component<{
       return <span style={{ color: 'red' }}>Error in RenderPreview: {(e as Error).message ?? String(e)}</span>;
     }
   }
-}
+);

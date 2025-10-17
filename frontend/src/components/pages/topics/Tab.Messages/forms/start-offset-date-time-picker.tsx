@@ -11,33 +11,29 @@
 
 import { DateTimeInput } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import { Component } from 'react';
+import { useEffect } from 'react';
 
 import { uiState } from '../../../../../state/ui-state';
 
-@observer
-export class StartOffsetDateTimePicker extends Component<Record<string, never>> {
-  constructor(p: Record<string, never>) {
-    super(p);
+export const StartOffsetDateTimePicker = observer(() => {
+  // Initialize timestamp on mount if not set by user
+  useEffect(() => {
     const searchParams = uiState.topicSettings.searchParams;
     if (!searchParams.startTimestampWasSetByUser) {
       // so far, the user did not change the startTimestamp, so we set it to 'now'
       searchParams.startTimestamp = Date.now();
     }
-  }
+  }, []);
 
-  render() {
-    const searchParams = uiState.topicSettings.searchParams;
-    // new Date().getTimezoneOffset()
+  const searchParams = uiState.topicSettings.searchParams;
 
-    return (
-      <DateTimeInput
-        onChange={(value) => {
-          searchParams.startTimestamp = value;
-          searchParams.startTimestampWasSetByUser = true;
-        }}
-        value={searchParams.startTimestamp}
-      />
-    );
-  }
-}
+  return (
+    <DateTimeInput
+      onChange={(value) => {
+        searchParams.startTimestamp = value;
+        searchParams.startTimestampWasSetByUser = true;
+      }}
+      value={searchParams.startTimestamp}
+    />
+  );
+});

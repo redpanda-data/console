@@ -27,9 +27,8 @@ import {
   useDisclosure,
 } from '@redpanda-data/ui';
 import { arrayMoveMutable } from 'array-move';
-import { computed, makeObservable } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component } from 'react';
+import React from 'react';
 import {
   DragDropContext,
   Draggable,
@@ -185,133 +184,119 @@ const globHelp = (
   </div>
 );
 
-@observer
-export class PreviewSettings extends Component<{
-  messageSearch: MessageSearch;
-}> {
-  @computed.struct get allCurrentKeys() {
-    // @ts-expect-error perhaps we still need this due to MobX behavior?
-    const _unused = this.props.messageSearch.messages.length;
-    return getAllMessageKeys(this.props.messageSearch.messages)
-      .map((p) => p.propertyName)
-      .distinct();
-  }
+export const PreviewSettings = observer(({ messageSearch }: { messageSearch: MessageSearch }) => {
+  const allCurrentKeys = getAllMessageKeys(messageSearch.messages)
+    .map((p) => p.propertyName)
+    .distinct();
 
-  constructor(p: { messageSearch: MessageSearch }) {
-    super(p);
-    makeObservable(this);
-  }
+  const currentKeys = allCurrentKeys;
+  const tags = uiState.topicSettings.previewTags;
 
-  render() {
-    // const currentKeys = this.props.getShowDialog() ? this.allCurrentKeys : [];
-    const currentKeys = this.allCurrentKeys;
-
-    const tags = uiState.topicSettings.previewTags;
-    // add ids to elements that don't have any
-    const getFreeId = (): string => {
-      let i = 1;
-      while (tags.any((t) => t.id === String(i))) {
-        i++;
-      }
-      return String(i);
-    };
-    const filteredTags = tags.filter((t) => t.id);
-    for (const tag of filteredTags) {
-      tag.id = getFreeId();
+  // add ids to elements that don't have any
+  const getFreeId = (): string => {
+    let i = 1;
+    while (tags.any((t) => t.id === String(i))) {
+      i++;
     }
+    return String(i);
+  };
 
-    const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
-      if (!result.destination) {
-        return;
-      }
-      arrayMoveMutable(tags, result.source.index, result.destination.index);
-    };
-
-    const content = (
-      <>
-        <div>
-          <span>
-            When viewing large messages we're often only interested in a few specific fields. Add <PatternHelpDrawer />
-            <Popover content={globHelp} hideCloseButton placement="bottom" size="auto" trigger={'click'} /> to this list
-            to show found values as previews.
-          </span>
-        </div>
-
-        <div className="previewTagsList">
-          <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="droppable">
-              {(droppableProvided, _droppableSnapshot) => (
-                <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
-                  {tags.map((tag, index) => (
-                    <Draggable draggableId={tag.id} index={index} key={tag.id}>
-                      {(draggableProvided, _draggableSnapshot) => (
-                        <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
-                          <PreviewTagSettings
-                            allCurrentKeys={currentKeys}
-                            draggableProvided={draggableProvided}
-                            index={index}
-                            onRemove={() => tags.removeAll((t) => t.id === tag.id)}
-                            tag={tag}
-                          />
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {droppableProvided.placeholder}
-                  <Button
-                    onClick={() => {
-                      const newTag: PreviewTagV2 = {
-                        id: getFreeId(),
-                        isActive: true,
-                        pattern: '',
-                        searchInMessageHeaders: false,
-                        searchInMessageKey: false,
-                        searchInMessageValue: true,
-                      };
-                      tags.push(newTag);
-                    }}
-                    variant="outline"
-                  >
-                    Add entry...
-                  </Button>
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
-
-          {/* <CustomTagList tags={uiState.topicSettings.previewTags} allCurrentKeys={this.props.allCurrentKeys} /> */}
-        </div>
-
-        <div style={{ marginTop: '1em' }}>
-          <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
-          <div className="previewTagsSettings">
-            <OptionGroup<'caseSensitive' | 'ignoreCase'>
-              label="Matching"
-              onChange={(e) => (uiState.topicSettings.previewTagsCaseSensitive = e)}
-              options={{ 'Ignore Case': 'ignoreCase', 'Case Sensitive': 'caseSensitive' }}
-              value={uiState.topicSettings.previewTagsCaseSensitive}
-            />
-            <OptionGroup
-              label="Multiple Results"
-              onChange={(e) => (uiState.topicSettings.previewMultiResultMode = e)}
-              options={{ 'First result': 'showOnlyFirst', 'Show All': 'showAll' }}
-              value={uiState.topicSettings.previewMultiResultMode}
-            />
-
-            <OptionGroup
-              label="Wrapping"
-              onChange={(e) => (uiState.topicSettings.previewDisplayMode = e)}
-              options={{ 'Single Line': 'single', Wrap: 'wrap', Rows: 'rows' }}
-              value={uiState.topicSettings.previewDisplayMode}
-            />
-          </div>
-        </div>
-      </>
-    );
-
-    return <Box>{content}</Box>;
+  const filteredTags = tags.filter((t) => t.id);
+  for (const tag of filteredTags) {
+    tag.id = getFreeId();
   }
-}
+
+  const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
+    if (!result.destination) {
+      return;
+    }
+    arrayMoveMutable(tags, result.source.index, result.destination.index);
+  };
+
+  const content = (
+    <>
+      <div>
+        <span>
+          When viewing large messages we're often only interested in a few specific fields. Add <PatternHelpDrawer />
+          <Popover content={globHelp} hideCloseButton placement="bottom" size="auto" trigger={'click'} /> to this list
+          to show found values as previews.
+        </span>
+      </div>
+
+      <div className="previewTagsList">
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="droppable">
+            {(droppableProvided, _droppableSnapshot) => (
+              <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
+                {tags.map((tag, index) => (
+                  <Draggable draggableId={tag.id} index={index} key={tag.id}>
+                    {(draggableProvided, _draggableSnapshot) => (
+                      <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
+                        <PreviewTagSettings
+                          allCurrentKeys={currentKeys}
+                          draggableProvided={draggableProvided}
+                          index={index}
+                          onRemove={() => tags.removeAll((t) => t.id === tag.id)}
+                          tag={tag}
+                        />
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {droppableProvided.placeholder}
+                <Button
+                  onClick={() => {
+                    const newTag: PreviewTagV2 = {
+                      id: getFreeId(),
+                      isActive: true,
+                      pattern: '',
+                      searchInMessageHeaders: false,
+                      searchInMessageKey: false,
+                      searchInMessageValue: true,
+                    };
+                    tags.push(newTag);
+                  }}
+                  variant="outline"
+                >
+                  Add entry...
+                </Button>
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+
+        {/* <CustomTagList tags={uiState.topicSettings.previewTags} allCurrentKeys={this.props.allCurrentKeys} /> */}
+      </div>
+
+      <div style={{ marginTop: '1em' }}>
+        <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
+        <div className="previewTagsSettings">
+          <OptionGroup<'caseSensitive' | 'ignoreCase'>
+            label="Matching"
+            onChange={(e) => (uiState.topicSettings.previewTagsCaseSensitive = e)}
+            options={{ 'Ignore Case': 'ignoreCase', 'Case Sensitive': 'caseSensitive' }}
+            value={uiState.topicSettings.previewTagsCaseSensitive}
+          />
+          <OptionGroup
+            label="Multiple Results"
+            onChange={(e) => (uiState.topicSettings.previewMultiResultMode = e)}
+            options={{ 'First result': 'showOnlyFirst', 'Show All': 'showAll' }}
+            value={uiState.topicSettings.previewMultiResultMode}
+          />
+
+          <OptionGroup
+            label="Wrapping"
+            onChange={(e) => (uiState.topicSettings.previewDisplayMode = e)}
+            options={{ 'Single Line': 'single', Wrap: 'wrap', Rows: 'rows' }}
+            value={uiState.topicSettings.previewDisplayMode}
+          />
+        </div>
+      </div>
+    </>
+  );
+
+  return <Box>{content}</Box>;
+});
 
 /*
 todo:
@@ -319,17 +304,19 @@ todo:
 - better auto-complete: get suggestions from current pattern (except for last segment)
 -
  */
-@observer
-class PreviewTagSettings extends Component<{
-  tag: PreviewTagV2;
-  index: number;
-  onRemove: () => void;
-  allCurrentKeys: string[];
-  draggableProvided: DraggableProvided;
-}> {
-  render() {
-    const { tag, onRemove, allCurrentKeys, draggableProvided } = this.props;
-
+const PreviewTagSettings = observer(
+  ({
+    tag,
+    onRemove,
+    allCurrentKeys,
+    draggableProvided,
+  }: {
+    tag: PreviewTagV2;
+    index: number;
+    onRemove: () => void;
+    allCurrentKeys: string[];
+    draggableProvided: DraggableProvided;
+  }) => {
     return (
       <Flex borderRadius={1} gap={1} mb={1.5} p={1} placeItems="center">
         {/* Move Handle */}
@@ -404,7 +391,7 @@ class PreviewTagSettings extends Component<{
       </Flex>
     );
   }
-}
+);
 
 /*
 todo:

@@ -10,18 +10,9 @@
  */
 
 import { DownloadIcon, KebabHorizontalIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
-import {
-  action,
-  autorun,
-  computed,
-  type IReactionDisposer,
-  makeObservable,
-  observable,
-  transaction,
-  untracked,
-} from 'mobx';
+import { autorun, type IReactionDisposer, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component, type FC, useState } from 'react';
+import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { api, createMessageSearch, type MessageSearchRequest } from '../../../../state/backend-api';
 import type { Topic, TopicMessage } from '../../../../state/rest-interfaces';
@@ -31,7 +22,6 @@ import {
   FilterEntry,
   PartitionOffsetOrigin,
   type PartitionOffsetOriginType,
-  type PreviewTagV2,
 } from '../../../../state/ui';
 import { uiState } from '../../../../state/ui-state';
 import '../../../../utils/array-extensions';
@@ -245,110 +235,267 @@ const inlineSelectChakraStyles = {
   }),
 } as const;
 
-@observer
-class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> {
-  @observable previewDisplay: string[] = [];
-  @observable currentParams: TopicMessageParams;
+const TopicMessageViewInternal = observer((props: TopicMessageViewInternalProps) => {
+  // Convert @observable to useState
+  const [currentParams, setCurrentParams] = useState<TopicMessageParams>({
+    partitionID: props.partitionID,
+    maxResults: props.maxResults,
+    startOffset: props.startOffset,
+    quickSearch: props.quickSearch,
+  });
+  const [fetchError, setFetchError] = useState<Error | null>(null);
+  const [downloadMessages, setDownloadMessages] = useState<TopicMessage[] | null>(null);
 
-  @observable fetchError = null as Error | null;
+  // Convert instance properties to useRef
+  const messageSearchRef = useRef(createMessageSearch());
+  const messageSourceRef = useRef<FilterableDataSource<TopicMessage> | null>(null);
+  const autoSearchReactionRef = useRef<IReactionDisposer | null>(null);
+  const currentSearchRunRef = useRef<string | null>(null);
 
-  messageSearch = createMessageSearch();
-  messageSource = new FilterableDataSource<TopicMessage>(
-    () => this.messageSearch.messages,
-    (filterText, m) => this.isFilterMatch(filterText, m),
-    100 // Increased debounce time to match default
+  const messageSearch = messageSearchRef.current;
+
+  // Initialize messageSource on first render
+  if (!messageSourceRef.current) {
+    messageSourceRef.current = new FilterableDataSource<TopicMessage>(
+      () => messageSearchRef.current.messages,
+      (filterText, m) => isFilterMatch(filterText, m),
+      100 // Increased debounce time to match default
+    );
+  }
+  const messageSource = messageSourceRef.current;
+
+  // Convert isFilterMatch method to useCallback
+  const isFilterMatch = useCallback(
+    (_str: string, m: TopicMessage) => {
+      const searchStr = currentParams.quickSearch.toLowerCase();
+      // If search string is empty, show all messages
+      if (!searchStr) {
+        return true;
+      }
+
+      if (m.offset.toString().toLowerCase().includes(searchStr)) {
+        return true;
+      }
+      if (m.keyJson?.toLowerCase().includes(searchStr)) {
+        return true;
+      }
+      if (m.valueJson?.toLowerCase().includes(searchStr)) {
+        return true;
+      }
+      return false;
+    },
+    [currentParams.quickSearch]
   );
 
-  autoSearchReaction: IReactionDisposer | null = null;
-  currentSearchRun: string | null = null;
+  // Sync props to currentParams when they change (replaces componentDidUpdate)
+  useEffect(() => {
+    transaction(() => {
+      setCurrentParams({
+        partitionID: props.partitionID,
+        maxResults: props.maxResults,
+        startOffset: props.startOffset,
+        quickSearch: props.quickSearch,
+      });
+    });
+  }, [props.partitionID, props.maxResults, props.startOffset, props.quickSearch]);
 
-  @observable downloadMessages: TopicMessage[] | null = null;
-  @observable expandedKeys: React.Key[] = [];
+  // Convert @computed activePreviewTags to useMemo
+  const activePreviewTags = useMemo(() => uiState.topicSettings.previewTags.filter((t) => t.isActive), []);
 
-  constructor(props: TopicMessageViewInternalProps) {
-    super(props);
-    // Initialize from props
-    this.currentParams = {
-      partitionID: props.partitionID,
-      maxResults: props.maxResults,
-      startOffset: props.startOffset,
-      quickSearch: props.quickSearch,
-    };
-    this.executeMessageSearch = this.executeMessageSearch.bind(this);
-    this.isFilterMatch = this.isFilterMatch.bind(this);
+  // Cleanup effect (replaces componentWillUnmount)
+  useEffect(
+    () => () => {
+      messageSourceRef.current?.dispose();
+      if (autoSearchReactionRef.current) {
+        autoSearchReactionRef.current();
+      }
+      messageSearchRef.current.stopSearch();
+      appGlobal.searchMessagesFunc = undefined;
+    },
+    []
+  );
 
-    makeObservable(this);
-  }
+  // Convert executeMessageSearch to useCallback
+  const executeMessageSearch = useCallback((): Promise<TopicMessage[]> => {
+    const canUseFilters =
+      (api.topicPermissions.get(props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
 
-  componentDidMount() {
-    // Auto search when parameters change
-    this.autoSearchReaction = autorun(() => this.searchFunc('auto'), {
+    let filterCode = '';
+    if (canUseFilters) {
+      const functionNames: string[] = [];
+      const functions: string[] = [];
+
+      const filteredSearchParams = uiState.topicSettings.searchParams.filters.filter(
+        (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode
+      );
+
+      for (const searchParam of filteredSearchParams) {
+        const name = `filter${functionNames.length + 1}`;
+        functionNames.push(name);
+        functions.push(`function ${name}() {
+                    ${wrapFilterFragment(searchParam.transpiledCode)}
+                }`);
+      }
+
+      if (functions.length > 0) {
+        filterCode = `${functions.join('\n\n')}\n\nreturn ${functionNames.map((f) => `${f}()`).join(' && ')}`;
+        if (IsDev) {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          console.log(`constructed filter code (${functions.length} functions)`, `\n\n${filterCode}`);
+        }
+      }
+    }
+
+    const request = {
+      topicName: props.topic.topicName,
+      partitionId: currentParams.partitionID,
+      startOffset: currentParams.startOffset,
+      startTimestamp: uiState.topicSettings.searchParams.startTimestamp,
+      maxResults: currentParams.maxResults,
+      filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
+      includeRawPayload: true,
+      keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
+      valueDeserializer: uiState.topicSettings.searchParams.valueDeserializer,
+    } as MessageSearchRequest;
+
+    return transaction(() => {
+      try {
+        setFetchError(null);
+        return messageSearch.startSearch(request).catch((err) => {
+          const msg = (err as Error).message ?? String(err);
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          console.error(`error in searchTopicMessages: ${msg}`);
+          setFetchError(err);
+          return [];
+        });
+      } catch (error: unknown) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
+        console.error(`error in searchTopicMessages: ${(error as Error).message ?? String(error)}`);
+        setFetchError(error as Error);
+        return Promise.resolve([]);
+      }
+    });
+  }, [props.topic.topicName, currentParams, messageSearch]);
+
+  // Convert loadLargeMessage to useCallback
+  const loadLargeMessage = useCallback(
+    async (topicName: string, partitionID: number, offset: number) => {
+      // Create a new search that looks for only this message specifically
+      const search = createMessageSearch();
+      const searchReq: MessageSearchRequest = {
+        filterInterpreterCode: '',
+        maxResults: 1,
+        partitionId: partitionID,
+        startOffset: offset,
+        startTimestamp: 0,
+        topicName,
+        includeRawPayload: true,
+        ignoreSizeLimit: true,
+        keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
+        valueDeserializer: uiState.topicSettings.searchParams.valueDeserializer,
+      };
+      const messages = await search.startSearch(searchReq);
+
+      if (messages && messages.length === 1) {
+        // We must update the old message (that still says "payload too large")
+        // So we just find its index and replace it in the array we are currently displaying
+        const indexOfOldMessage = messageSearch.messages.findIndex(
+          (x) => x.partitionID === partitionID && x.offset === offset
+        );
+        if (indexOfOldMessage > -1) {
+          messageSearch.messages[indexOfOldMessage] = messages[0];
+        } else {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          console.error('LoadLargeMessage: cannot find old message to replace', {
+            searchReq,
+            messages,
+          });
+          throw new Error(
+            'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
+          );
+        }
+      } else {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
+        console.error('LoadLargeMessage: messages response is empty', { messages });
+        throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
+      }
+    },
+    [messageSearch]
+  );
+
+  // Convert searchFunc to useCallback
+  const searchFunc = useCallback(
+    (source: 'auto' | 'manual') => {
+      // need to do this first, so we trigger mobx
+      const searchParams = `${currentParams.startOffset} ${currentParams.maxResults} ${currentParams.partitionID} ${uiState.topicSettings.searchParams.startTimestamp} ${uiState.topicSettings.searchParams.keyDeserializer} ${uiState.topicSettings.searchParams.valueDeserializer}`;
+
+      untracked(() => {
+        const phase = messageSearch.searchPhase;
+
+        if (searchParams === currentSearchRunRef.current && source === 'auto') {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          console.log('ignoring serach, search params are up to date, and source is auto', {
+            newParams: searchParams,
+            oldParams: currentSearchRunRef.current,
+            currentSearchPhase: phase,
+            trigger: source,
+          });
+          return;
+        }
+
+        // Abort current search if one is running
+        if (phase !== 'Done') {
+          messageSearch.stopSearch();
+        }
+
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
+        console.log('starting a new message search', {
+          newParams: searchParams,
+          oldParams: currentSearchRunRef.current,
+          currentSearchPhase: phase,
+          trigger: source,
+        });
+
+        // Start new search
+        currentSearchRunRef.current = searchParams;
+        try {
+          executeMessageSearch()
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
+            .catch(console.error)
+            .finally(() => {
+              untracked(() => {
+                currentSearchRunRef.current = null;
+              });
+            });
+        } catch (err) {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          console.error('error in message search', { error: err });
+        }
+      });
+    },
+    [currentParams, messageSearch, executeMessageSearch]
+  );
+
+  // Auto search when parameters change (replaces componentDidMount autoSearchReaction)
+  useEffect(() => {
+    autoSearchReactionRef.current = autorun(() => searchFunc('auto'), {
       delay: 100,
       name: 'auto search when parameters change',
     });
 
-    appGlobal.searchMessagesFunc = this.searchFunc;
-  }
+    appGlobal.searchMessagesFunc = searchFunc;
 
-  componentDidUpdate(prevProps: TopicMessageViewInternalProps) {
-    // Sync props to observable currentParams
-    if (
-      prevProps.partitionID !== this.props.partitionID ||
-      prevProps.maxResults !== this.props.maxResults ||
-      prevProps.startOffset !== this.props.startOffset ||
-      prevProps.quickSearch !== this.props.quickSearch
-    ) {
-      transaction(() => {
-        this.currentParams.partitionID = this.props.partitionID;
-        this.currentParams.maxResults = this.props.maxResults;
-        this.currentParams.startOffset = this.props.startOffset;
-        this.currentParams.quickSearch = this.props.quickSearch;
-      });
-    }
-  }
+    return () => {
+      if (autoSearchReactionRef.current) {
+        autoSearchReactionRef.current();
+        autoSearchReactionRef.current = null;
+      }
+    };
+  }, [searchFunc]);
 
-  componentWillUnmount() {
-    this.messageSource.dispose();
-    if (this.autoSearchReaction) {
-      this.autoSearchReaction();
-    }
-
-    this.messageSearch.stopSearch();
-
-    appGlobal.searchMessagesFunc = undefined;
-  }
-
-  render() {
-    return (
-      <>
-        <this.SearchControlsBar />
-
-        {/* Message Table (or error display) */}
-        {this.fetchError ? (
-          <Alert status="error">
-            <AlertIcon alignSelf="flex-start" />
-            <Box>
-              <AlertTitle>Backend Error</AlertTitle>
-              <AlertDescription>
-                <Box>Please check and modify the request before resubmitting.</Box>
-                <Box mt="4">
-                  <div className="codeBox">{(this.fetchError as Error).message ?? String(this.fetchError)}</div>
-                </Box>
-                <Button mt="4" onClick={() => this.executeMessageSearch()}>
-                  Retry Search
-                </Button>
-              </AlertDescription>
-            </Box>
-          </Alert>
-        ) : (
-          <this.MessageTable />
-        )}
-      </>
-    );
-  }
-  SearchControlsBar = observer(() => {
-    const topic = this.props.topic;
-    const { setPartitionID, setMaxResults, setStartOffset, setQuickSearch } = this.props;
+  const SearchControlsBar = observer(() => {
+    const topic = props.topic;
+    const { setPartitionID, setMaxResults, setStartOffset, setQuickSearch } = props;
     const canUseFilters = (api.topicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
     const [customStartOffsetValue, setCustomStartOffsetValue] = useState(0 as number | string);
     const customStartOffsetValid = !Number.isNaN(Number(customStartOffsetValue));
@@ -370,7 +517,7 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
         label: (
           <Flex alignItems="center" gap={2}>
             <MdOutlineQuickreply />
-            <span data-testid="start-offset-newest">{`Newest - ${String(this.currentParams.maxResults)}`}</span>
+            <span data-testid="start-offset-newest">{`Newest - ${String(currentParams.maxResults)}`}</span>
           </Flex>
         ),
       },
@@ -405,7 +552,7 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
 
     // Determine the current offset origin based on startOffset
     const currentOffsetOrigin = (
-      this.currentParams.startOffset >= 0 ? PartitionOffsetOrigin.Custom : this.currentParams.startOffset
+      currentParams.startOffset >= 0 ? PartitionOffsetOrigin.Custom : currentParams.startOffset
     ) as PartitionOffsetOriginType;
 
     return (
@@ -419,7 +566,7 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
                   data-testid="start-offset-dropdown"
                   onChange={(e) => {
                     if (e === PartitionOffsetOrigin.Custom) {
-                      if (this.currentParams.startOffset < 0) {
+                      if (currentParams.startOffset < 0) {
                         setStartOffset(0);
                       }
                     } else {
@@ -455,7 +602,7 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
                   setMaxResults(c);
                 }}
                 options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map((i) => ({ value: i }))}
-                value={this.currentParams.maxResults}
+                value={currentParams.maxResults}
               />
             </Label>
 
@@ -486,7 +633,7 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
                               label: String(i),
                             }))
                           )}
-                          value={this.currentParams.partitionID}
+                          value={currentParams.partitionID}
                         />
                       </RemovableFilter>
                     </Label>
@@ -528,15 +675,15 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
             </Flex>
 
             {/* Search Progress Indicator: "Consuming Messages 30/30" */}
-            {Boolean(this.messageSearch.searchPhase && this.messageSearch.searchPhase.length > 0) && (
+            {Boolean(messageSearch.searchPhase && messageSearch.searchPhase.length > 0) && (
               <StatusIndicator
-                bytesConsumed={prettyBytes(this.messageSearch.bytesConsumed)}
-                fillFactor={(this.messageSearch.messages?.length ?? 0) / this.currentParams.maxResults}
+                bytesConsumed={prettyBytes(messageSearch.bytesConsumed)}
+                fillFactor={(messageSearch.messages?.length ?? 0) / currentParams.maxResults}
                 identityKey="messageSearch"
-                messagesConsumed={String(this.messageSearch.totalMessagesConsumed)}
-                progressText={`${this.messageSearch.messages?.length ?? 0} / ${this.currentParams.maxResults}`}
+                messagesConsumed={String(messageSearch.totalMessagesConsumed)}
+                progressText={`${messageSearch.messages?.length ?? 0} / ${currentParams.maxResults}`}
                 // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-                statusText={this.messageSearch.searchPhase!}
+                statusText={messageSearch.searchPhase!}
               />
             )}
           </GridItem>
@@ -559,21 +706,21 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
               <MenuList>
                 <MenuItem
                   onClick={() => {
-                    this.props.setShowDeserializersModal(true);
+                    props.setShowDeserializersModal(true);
                   }}
                 >
                   Deserialization
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
-                    this.props.setShowColumnSettingsModal(true);
+                    props.setShowColumnSettingsModal(true);
                   }}
                 >
                   Column settings
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
-                    this.props.setShowPreviewFieldsModal(true);
+                    props.setShowPreviewFieldsModal(true);
                   }}
                 >
                   Preview fields
@@ -582,23 +729,23 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
             </Menu>
             <Flex alignItems="flex-end">
               {/* Refresh Button */}
-              {this.messageSearch.searchPhase == null && (
+              {messageSearch.searchPhase == null && (
                 <Tooltip hasArrow label="Repeat current search" placement="top">
                   <IconButton
                     aria-label="Repeat current search"
                     icon={<SyncIcon />}
-                    onClick={() => this.searchFunc('manual')}
+                    onClick={() => searchFunc('manual')}
                     variant="outline"
                   />
                 </Tooltip>
               )}
-              {this.messageSearch.searchPhase != null && (
+              {messageSearch.searchPhase != null && (
                 <Tooltip hasArrow label="Stop searching" placement="top">
                   <IconButton
                     aria-label="Stop searching"
                     colorScheme="red"
                     icon={<XCircleIcon />}
-                    onClick={() => this.messageSearch.stopSearch()}
+                    onClick={() => messageSearch.stopSearch()}
                     variant="solid"
                   />
                 </Tooltip>
@@ -621,17 +768,17 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
               }}
               placeholder="Filter table content ..."
               px={4}
-              value={this.currentParams.quickSearch}
+              value={currentParams.quickSearch}
             />
             <Flex alignItems="center" fontSize="sm" gap={2} whiteSpace="nowrap">
-              {this.messageSearch.searchPhase === null || this.messageSearch.searchPhase === 'Done' ? (
+              {messageSearch.searchPhase === null || messageSearch.searchPhase === 'Done' ? (
                 <>
                   <Flex alignItems="center" gap={2}>
-                    <MdDownload size={14} /> {prettyBytes(this.messageSearch.bytesConsumed)}
+                    <MdDownload size={14} /> {prettyBytes(messageSearch.bytesConsumed)}
                   </Flex>
                   <Flex alignItems="center" gap={2}>
                     <MdOutlineTimer size={14} />{' '}
-                    {this.messageSearch.elapsedMs ? prettyMilliseconds(this.messageSearch.elapsedMs) : ''}
+                    {messageSearch.elapsedMs ? prettyMilliseconds(messageSearch.elapsedMs) : ''}
                   </Flex>
                 </>
               ) : (
@@ -658,7 +805,7 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
                   uiState.topicSettings.searchParams.filters.splice(idx, 1, filter);
                 }
               }
-              this.searchFunc('manual');
+              searchFunc('manual');
             }}
           />
         )}
@@ -666,131 +813,14 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
     );
   });
 
-  searchFunc = (source: 'auto' | 'manual') => {
-    // need to do this first, so we trigger mobx
-    const searchParams = `${this.currentParams.startOffset} ${this.currentParams.maxResults} ${this.currentParams.partitionID} ${uiState.topicSettings.searchParams.startTimestamp} ${uiState.topicSettings.searchParams.keyDeserializer} ${uiState.topicSettings.searchParams.valueDeserializer}`;
-
-    untracked(() => {
-      const phase = this.messageSearch.searchPhase;
-
-      if (searchParams === this.currentSearchRun && source === 'auto') {
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.log('ignoring serach, search params are up to date, and source is auto', {
-          newParams: searchParams,
-          oldParams: this.currentSearchRun,
-          currentSearchPhase: phase,
-          trigger: source,
-        });
-        return;
-      }
-
-      // Abort current search if one is running
-      if (phase !== 'Done') {
-        this.messageSearch.stopSearch();
-      }
-
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.log('starting a new message search', {
-        newParams: searchParams,
-        oldParams: this.currentSearchRun,
-        currentSearchPhase: phase,
-        trigger: source,
-      });
-
-      // Start new search
-      this.currentSearchRun = searchParams;
-      try {
-        this.executeMessageSearch()
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          .catch(console.error)
-          .finally(() => {
-            untracked(() => {
-              this.currentSearchRun = null;
-            });
-          });
-      } catch (err) {
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error('error in message search', { error: err });
-      }
-    });
-  };
-
-  cancelSearch = () => this.messageSearch.stopSearch();
-
-  isFilterMatch(_str: string, m: TopicMessage) {
-    const searchStr = this.currentParams.quickSearch.toLowerCase();
-    // If search string is empty, show all messages
-    if (!searchStr) {
-      return true;
-    }
-
-    if (m.offset.toString().toLowerCase().includes(searchStr)) {
-      return true;
-    }
-    if (m.keyJson?.toLowerCase().includes(searchStr)) {
-      return true;
-    }
-    if (m.valueJson?.toLowerCase().includes(searchStr)) {
-      return true;
-    }
-    return false;
-  }
-
-  async loadLargeMessage(topicName: string, partitionID: number, offset: number) {
-    // Create a new search that looks for only this message specifically
-    const search = createMessageSearch();
-    const searchReq: MessageSearchRequest = {
-      filterInterpreterCode: '',
-      maxResults: 1,
-      partitionId: partitionID,
-      startOffset: offset,
-      startTimestamp: 0,
-      topicName,
-      includeRawPayload: true,
-      ignoreSizeLimit: true,
-      keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
-      valueDeserializer: uiState.topicSettings.searchParams.valueDeserializer,
-    };
-    const messages = await search.startSearch(searchReq);
-
-    if (messages && messages.length === 1) {
-      // We must update the old message (that still says "payload too large")
-      // So we just find its index and replace it in the array we are currently displaying
-      const indexOfOldMessage = this.messageSearch.messages.findIndex(
-        (x) => x.partitionID === partitionID && x.offset === offset
-      );
-      if (indexOfOldMessage > -1) {
-        this.messageSearch.messages[indexOfOldMessage] = messages[0];
-      } else {
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error('LoadLargeMessage: cannot find old message to replace', {
-          searchReq,
-          messages,
-        });
-        throw new Error(
-          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
-        );
-      }
-    } else {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error('LoadLargeMessage: messages response is empty', { messages });
-      throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
-    }
-  }
-
-  @computed
-  get activePreviewTags(): PreviewTagV2[] {
-    return uiState.topicSettings.previewTags.filter((t) => t.isActive);
-  }
-
-  MessageTable = observer(() => {
+  const MessageTable = observer(() => {
     const toast = useToast();
     const breakpoint = useBreakpoint({ ssr: false });
 
     // Use pagination values from props (managed by nuqs in parent)
     const paginationParams = {
-      pageIndex: this.props.pageIndex,
-      pageSize: this.props.pageSize,
+      pageIndex: props.pageIndex,
+      pageSize: props.pageSize,
     };
 
     const tsFormat = uiState.topicSettings.previewTimestamps;
@@ -861,7 +891,7 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
               Key{' '}
               <button
                 onClick={(e) => {
-                  this.props.setShowDeserializersModal(true);
+                  props.setShowDeserializersModal(true);
                   e.stopPropagation(); // don't sort
                 }}
                 type="button"
@@ -876,9 +906,7 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
           ),
         size: hasKeyTags ? 300 : 1,
         accessorKey: 'key',
-        cell: ({ row: { original } }) => (
-          <MessageKeyPreview msg={original} previewFields={() => this.activePreviewTags} />
-        ),
+        cell: ({ row: { original } }) => <MessageKeyPreview msg={original} previewFields={() => activePreviewTags} />,
       },
       value: {
         header: () =>
@@ -887,7 +915,7 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
               Value{' '}
               <button
                 onClick={(e) => {
-                  this.props.setShowDeserializersModal(true);
+                  props.setShowDeserializersModal(true);
                   e.stopPropagation(); // don't sort
                 }}
                 type="button"
@@ -903,9 +931,9 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
         accessorKey: 'value',
         cell: ({ row: { original } }) => (
           <MessagePreview
-            isCompactTopic={this.props.topic.cleanupPolicy.includes('compact')}
+            isCompactTopic={props.topic.cleanupPolicy.includes('compact')}
             msg={original}
-            previewFields={() => this.activePreviewTags}
+            previewFields={() => activePreviewTags}
           />
         ),
       },
@@ -1006,7 +1034,7 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
               </MenuItem>
               <MenuItem
                 onClick={() => {
-                  this.downloadMessages = [original];
+                  setDownloadMessages([original]);
                 }}
               >
                 Save to File
@@ -1021,13 +1049,13 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
       <>
         <DataTable<TopicMessage>
           columns={columns}
-          data={this.messageSource.data}
+          data={messageSource.data}
           emptyText="No messages"
-          isLoading={this.messageSearch.searchPhase !== null}
+          isLoading={messageSearch.searchPhase !== null}
           onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
             uiState.topicSettings.searchParams.pageSize = pageSize;
-            this.props.setPageIndex(pageIndex);
-            this.props.setPageSize(pageSize);
+            props.setPageIndex(pageIndex);
+            props.setPageSize(pageSize);
           })}
           // we need (?? []) to be compatible with searchParams of clients already stored in local storage
           // otherwise we would get undefined for some of the existing ones
@@ -1040,23 +1068,21 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
           sorting={uiState.topicSettings.searchParams.sorting ?? []}
           subComponent={({ row: { original } }) => (
             <ExpandedMessage
-              loadLargeMessage={() =>
-                this.loadLargeMessage(this.props.topic.topicName, original.partitionID, original.offset)
-              }
+              loadLargeMessage={() => loadLargeMessage(props.topic.topicName, original.partitionID, original.offset)}
               msg={original}
               onCopyKey={onCopyKey}
               onCopyValue={onCopyValue}
               onDownloadRecord={() => {
-                this.downloadMessages = [original];
+                setDownloadMessages([original]);
               }}
             />
           )}
         />
         <Button
-          isDisabled={!this.messageSearch.messages || this.messageSearch.messages.length === 0}
+          isDisabled={!messageSearch.messages || messageSearch.messages.length === 0}
           mt={4}
           onClick={() => {
-            this.downloadMessages = this.messageSearch.messages;
+            setDownloadMessages(messageSearch.messages);
           }}
           variant="outline"
         >
@@ -1067,101 +1093,58 @@ class TopicMessageViewInternal extends Component<TopicMessageViewInternalProps> 
         </Button>
 
         <SaveMessagesDialog
-          messages={this.downloadMessages}
-          onClose={() => (this.downloadMessages = null)}
-          onRequireRawPayload={() => this.executeMessageSearch()}
+          messages={downloadMessages}
+          onClose={() => setDownloadMessages(null)}
+          onRequireRawPayload={() => executeMessageSearch()}
         />
 
         <ColumnSettings
-          getShowDialog={() => this.props.showColumnSettingsModal}
-          setShowDialog={this.props.setShowColumnSettingsModal}
+          getShowDialog={() => props.showColumnSettingsModal}
+          setShowDialog={props.setShowColumnSettingsModal}
         />
 
         <PreviewFieldsModal
-          getShowDialog={() => this.props.showPreviewFieldsModal}
-          messageSearch={this.messageSearch}
-          setShowDialog={this.props.setShowPreviewFieldsModal}
+          getShowDialog={() => props.showPreviewFieldsModal}
+          messageSearch={messageSearch}
+          setShowDialog={props.setShowPreviewFieldsModal}
         />
 
         <DeserializersModal
-          getShowDialog={() => this.props.showDeserializersModal}
-          setShowDialog={this.props.setShowDeserializersModal}
+          getShowDialog={() => props.showDeserializersModal}
+          setShowDialog={props.setShowDeserializersModal}
         />
       </>
     );
   });
 
-  @action toggleRecordExpand(r: TopicMessage) {
-    const key = `${r.offset} ${r.partitionID}${r.timestamp}`;
-    // try collapsing it, removeAll returns the number of matches
-    const removed = this.expandedKeys.removeAll((x) => x === key);
-    if (removed === 0) {
-      // wasn't expanded, so expand it now
-      this.expandedKeys.push(key);
-    }
-  }
+  // Return JSX for the component
+  return (
+    <>
+      <SearchControlsBar />
 
-  executeMessageSearch(): Promise<TopicMessage[]> {
-    const canUseFilters =
-      (api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
-
-    let filterCode = '';
-    if (canUseFilters) {
-      const functionNames: string[] = [];
-      const functions: string[] = [];
-
-      const filteredSearchParams = uiState.topicSettings.searchParams.filters.filter(
-        (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode
-      );
-
-      for (const searchParam of filteredSearchParams) {
-        const name = `filter${functionNames.length + 1}`;
-        functionNames.push(name);
-        functions.push(`function ${name}() {
-                    ${wrapFilterFragment(searchParam.transpiledCode)}
-                }`);
-      }
-
-      if (functions.length > 0) {
-        filterCode = `${functions.join('\n\n')}\n\nreturn ${functionNames.map((f) => `${f}()`).join(' && ')}`;
-        if (IsDev) {
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.log(`constructed filter code (${functions.length} functions)`, `\n\n${filterCode}`);
-        }
-      }
-    }
-
-    const request = {
-      topicName: this.props.topic.topicName,
-      partitionId: this.currentParams.partitionID,
-      startOffset: this.currentParams.startOffset,
-      startTimestamp: uiState.topicSettings.searchParams.startTimestamp,
-      maxResults: this.currentParams.maxResults,
-      filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
-      includeRawPayload: true,
-      keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
-      valueDeserializer: uiState.topicSettings.searchParams.valueDeserializer,
-    } as MessageSearchRequest;
-
-    return transaction(() => {
-      try {
-        this.fetchError = null;
-        return this.messageSearch.startSearch(request).catch((err) => {
-          const msg = (err as Error).message ?? String(err);
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.error(`error in searchTopicMessages: ${msg}`);
-          this.fetchError = err;
-          return [];
-        });
-      } catch (error: unknown) {
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error(`error in searchTopicMessages: ${(error as Error).message ?? String(error)}`);
-        this.fetchError = error as Error;
-        return Promise.resolve([]);
-      }
-    });
-  }
-}
+      {/* Message Table (or error display) */}
+      {fetchError ? (
+        <Alert status="error">
+          <AlertIcon alignSelf="flex-start" />
+          <Box>
+            <AlertTitle>Backend Error</AlertTitle>
+            <AlertDescription>
+              <Box>Please check and modify the request before resubmitting.</Box>
+              <Box mt="4">
+                <div className="codeBox">{(fetchError as Error).message ?? String(fetchError)}</div>
+              </Box>
+              <Button mt="4" onClick={() => executeMessageSearch()}>
+                Retry Search
+              </Button>
+            </AlertDescription>
+          </Box>
+        </Alert>
+      ) : (
+        <MessageTable />
+      )}
+    </>
+  );
+});
 
 // Functional wrapper component that manages URL query state
 export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
