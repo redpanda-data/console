@@ -1,7 +1,5 @@
-import { GetServerlessClusterRequestSchema } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/serverless_pb';
-import { getServerlessCluster } from '@buf/redpandadata_cloud.connectrpc_query-es/redpanda/api/controlplane/v1/serverless-ServerlessClusterService_connectquery';
 import { create } from '@bufbuild/protobuf';
-import { TransportProvider, useQuery } from '@connectrpc/connect-query';
+import { TransportProvider } from '@connectrpc/connect-query';
 import { Markdown } from '@redpanda-data/ui';
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -16,6 +14,7 @@ import { runInAction } from 'mobx';
 import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetOnboardingCodeSnippetQuery } from 'react-query/api/onboarding';
+import { useGetServerlessClusterQuery } from 'react-query/api/serverless';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { useNavigate } from 'react-router-dom';
@@ -66,12 +65,9 @@ const HowToConnectComponent = ({ connectionName, topicName, username, saslMechan
   const { data: codeSnippet, isLoading: isLoadingCodeSnippet } = useGetOnboardingCodeSnippetQuery({
     language: connectionName,
   });
-  const { data: cluster } = useQuery(
-    getServerlessCluster,
-    create(GetServerlessClusterRequestSchema, {
-      id: config.clusterId,
-    })
-  );
+  const { data: cluster } = useGetServerlessClusterQuery({
+    id: config.clusterId,
+  });
   const bootstrapServerUrl = cluster?.serverlessCluster?.kafkaApi?.seedBrokers.join(',') as string;
 
   const formattedCodeSnippet = useMemo(() => {

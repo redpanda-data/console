@@ -1,9 +1,11 @@
 import { create } from '@bufbuild/protobuf';
+import { ConnectError } from '@connectrpc/connect';
 import { CreateSecretRequestSchema as CreateSecretRequestSchemaConsole } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import type { useLegacyCreateACLMutation } from 'react-query/api/acl';
 import type { useCreateSecretMutation } from 'react-query/api/secret';
 import type { useCreateUserMutation } from 'react-query/api/user';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import type { SaslMechanism } from 'utils/user';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
@@ -69,10 +71,15 @@ export const configureUserPermissions = async (
       message: `Granted full permissions for topic "${topicName}"`,
     };
   } catch (error) {
+    const connectError = ConnectError.from(error);
     return {
       operation: 'Configure permissions',
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'configure',
+        entity: 'permissions',
+      }),
     };
   }
 };
@@ -101,10 +108,15 @@ export const createUsernameSecret = async (
       message: 'Username stored securely for pipeline use',
     };
   } catch (error) {
+    const connectError = ConnectError.from(error);
     return {
       operation: 'Store username secret',
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'store',
+        entity: 'username secret',
+      }),
     };
   }
 };
@@ -134,10 +146,15 @@ export const createPasswordSecret = async (
       message: 'Password stored securely for pipeline use',
     };
   } catch (error) {
+    const connectError = ConnectError.from(error);
     return {
       operation: 'Store password secret',
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'store',
+        entity: 'password secret',
+      }),
     };
   }
 };
@@ -162,10 +179,15 @@ export const createKafkaUser = async (
       message: `User "${userData.username}" created successfully`,
     };
   } catch (error) {
+    const connectError = ConnectError.from(error);
     return {
       operation: 'Create user',
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'create',
+        entity: 'user',
+      }),
     };
   }
 };
