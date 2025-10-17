@@ -1262,9 +1262,3 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     />
   );
 };
-
-// Re-export components for backward compatibility
-// biome-ignore lint/performance/noBarrelFile: backward compatibility re-exports
-export { DeleteRecordsMenuItem } from './common/delete-records-menu-item';
-export { ExpandedMessage } from './message-display/expanded-message';
-export { MessagePreview } from './message-display/message-preview';
