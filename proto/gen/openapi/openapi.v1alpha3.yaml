@@ -215,6 +215,15 @@ components:
       type: object
     DeleteMCPServerResponse:
       type: object
+    FailOverBody:
+      properties:
+        shadow_topic_name:
+          title: |-
+            The name of the shadow topic to fail over, if not set will fail over
+            the entire shadow link
+          type: string
+      title: Request to fail over a shadow link or a single shadow topic
+      type: object
     GetAIAgentResponse:
       properties:
         ai_agent:
@@ -926,6 +935,8 @@ components:
         message:
           type: string
       type: object
+    v1alpha3.FailOverResponse:
+      type: object
     v1alpha3.MCPServer:
       description: Defines the MCP server resource.
       properties:
@@ -1625,6 +1636,40 @@ paths:
       summary: Lint a Redpanda Connect MCP tools configuration
       tags:
         - Redpanda Connect MCP servers
+  /v1alpha3/shadowlink/{name}/failover:
+    post:
+      description: Fail over a shadow link or a specific shadow topic within a link.
+      operationId: ShadowLinkService_FailOver
+      parameters:
+        - description: The name of the shadow link to fail over
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailOverBody'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alpha3.FailOverResponse'
+          description: Failover completed
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Fail Over Shadow Link
+      tags:
+        - Shadow Links (Dataplane)
 security:
   - auth0: []
 servers:
@@ -1644,3 +1689,5 @@ tags:
     name: Redpanda AI KnowledgeBase
   - description: Create and manage Redpanda Connect MCP servers and their configurations.
     name: Redpanda Connect MCP servers
+  - description: Dataplane operations for Redpanda shadow links.
+    name: Shadow Links (Dataplane)
