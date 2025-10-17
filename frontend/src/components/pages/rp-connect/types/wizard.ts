@@ -18,11 +18,19 @@ export const connectTilesFormSchema = z.object({
 
 export type ConnectTilesFormData = z.infer<typeof connectTilesFormSchema>;
 
-export type StepSubmissionResult<T> = {
+export type OperationResult = {
+  operation: string; // e.g., "Create user", "Create ACL", "Create secret"
   success: boolean;
   message?: string;
   error?: string;
-  data?: T;
+};
+
+export type StepSubmissionResult<T> = {
+  success: boolean; // Overall success (all operations succeeded)
+  message?: string; // Overall summary message
+  error?: string; // Overall error message
+  data?: T; // Form data
+  operations?: OperationResult[]; // Detailed results for each operation
 };
 
 export type BaseStepRef<T> = {

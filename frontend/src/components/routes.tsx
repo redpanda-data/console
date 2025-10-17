@@ -509,7 +509,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Connectors',
     undefined,
     undefined,
-    routeVisibility(() => isFeatureFlagEnabled('enableRpcnTiles'))
+    routeVisibility(() => isFeatureFlagEnabled('enableRpcnTiles') && isServerless())
   ),
   MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Connectors'),
   MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId/edit', RpConnectPipelinesEdit, 'Connectors'),

@@ -1,12 +1,10 @@
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
-
-import type { ConnectComponentSpec } from './schema';
+import type { MotionProps } from 'motion/react';
 
 /**
- * Components that support Redpanda secret population from wizard
- * Includes Kafka-compatible components and Redpanda migrator tools
+ * Components that include keys for redpanda topics and users/sasl/acls
  */
-export const REDPANDA_SECRET_COMPONENTS = [
+export const REDPANDA_TOPIC_AND_USER_COMPONENTS = [
   'kafka',
   'kafka_franz',
   'redpanda',
@@ -25,8 +23,9 @@ export const CRITICAL_CONNECTION_FIELDS = new Set(['addresses', 'seed_brokers', 
 /**
  * Configuration object fields that should be hidden for REDPANDA_SECRET_COMPONENTS
  * when wizard data exists (unless showOptionalFields is true)
+ * Note: 'tls' is NOT included here because Redpanda Cloud always requires TLS enabled
  */
-export const NON_CRITICAL_CONFIG_OBJECTS = new Set(['tls', 'metadata', 'batching', 'backoff', 'retry']);
+export const NON_CRITICAL_CONFIG_OBJECTS = new Set(['metadata', 'batching', 'backoff', 'retry']);
 
 export const REDPANDA_CONTEXTUAL_VARIABLES = {
   REDPANDA_BROKERS: {
@@ -65,20 +64,9 @@ export const getContextualVariableSyntax = (name: ContextualVariableName): strin
 
 export type ContextualVariableName = keyof typeof REDPANDA_CONTEXTUAL_VARIABLES;
 
-export const REDPANDA_SERVERLESS_SECRETS = {
-  USERNAME: 'REDPANDA_USERNAME',
-  PASSWORD: 'REDPANDA_PASSWORD',
-} as const;
+export const convertToScreamingSnakeCase = (value: string): string => value.toUpperCase().replace(/[^A-Z0-9]/g, '_');
 
 export const getSecretSyntax = (secretName: string): string => `\${secrets.${secretName}}`;
-
-export const CUSTOM_COMPONENT_NAME = 'custom';
-
-export const customComponentConfig: ConnectComponentSpec = {
-  name: CUSTOM_COMPONENT_NAME,
-  type: 'custom',
-  plugin: false,
-};
 
 export const WizardStep = {
   ADD_INPUT: 'add-input-step',
@@ -93,14 +81,21 @@ export type WizardStepType = (typeof WizardStep)[keyof typeof WizardStep];
 export const wizardStepDefinitions = [
   {
     id: WizardStep.ADD_INPUT,
-    title: 'Send data',
+    title: 'Add an input',
   },
-  { id: WizardStep.ADD_OUTPUT, title: 'Receive data' },
+  { id: WizardStep.ADD_OUTPUT, title: 'Add an output' },
   { id: WizardStep.ADD_TOPIC, title: 'Add a topic' },
-  { id: WizardStep.ADD_USER, title: 'Add a user' },
-  { id: WizardStep.CREATE_CONFIG, title: 'Create pipeline' },
+  { id: WizardStep.ADD_USER, title: 'Add credentials' },
+  { id: WizardStep.CREATE_CONFIG, title: 'Edit pipeline' },
 ];
 
 const Stepper = defineStepper(...wizardStepDefinitions);
 export const WizardStepper = Stepper.Stepper;
 export type WizardStepperSteps = typeof Stepper.Steps;
+
+export const stepMotionProps: MotionProps = {
+  initial: { opacity: 0, x: 20 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -20 },
+  transition: { duration: 0.3, ease: 'easeInOut' },
+};

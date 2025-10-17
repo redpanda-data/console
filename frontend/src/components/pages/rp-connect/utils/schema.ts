@@ -12,11 +12,11 @@ import {
 import benthosSchemaFull from '../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
 import {
   CRITICAL_CONNECTION_FIELDS,
+  convertToScreamingSnakeCase,
   getContextualVariableSyntax,
   getSecretSyntax,
   NON_CRITICAL_CONFIG_OBJECTS,
-  REDPANDA_SECRET_COMPONENTS,
-  REDPANDA_SERVERLESS_SECRETS,
+  REDPANDA_TOPIC_AND_USER_COMPONENTS,
 } from '../types/constants';
 import {
   type BenthosSchemaFull,
@@ -152,6 +152,33 @@ export const getBuiltInComponents = (): ConnectComponentSpec[] => {
   return _builtInComponentsCache;
 };
 
+const generateRedpandaTopLevelConfig = (): Record<string, unknown> => {
+  const { userData } = getPersistedWizardData();
+  const redpandaConfig: Record<string, unknown> = {};
+
+  const brokers = getContextualVariableSyntax('REDPANDA_BROKERS');
+  redpandaConfig.seed_brokers = [brokers];
+
+  redpandaConfig.tls = {
+    enabled: true,
+  };
+
+  if (userData?.username) {
+    const usernameSecretId = `KAFKA_USER_${convertToScreamingSnakeCase(userData.username)}`;
+    const passwordSecretId = `KAFKA_PASSWORD_${convertToScreamingSnakeCase(userData.username)}`;
+
+    redpandaConfig.sasl = [
+      {
+        mechanism: userData.saslMechanism || 'SCRAM-SHA-256',
+        username: getSecretSyntax(usernameSecretId),
+        password: getSecretSyntax(passwordSecretId),
+      },
+    ];
+  }
+
+  return redpandaConfig;
+};
+
 /**
  * Phase 1: Converts a component specification to a config object structure with default values
  * following the Redpanda Connect YAML schema structure
@@ -167,12 +194,36 @@ export const schemaToConfig = (
     return;
   }
 
+  const isRedpandaCommon = componentSpec.name === 'redpanda_common';
+
   const connectionConfig = generateDefaultValue(componentSpec.config, {
     showOptionalFields,
     componentName: componentSpec.name,
   });
 
   const config: Partial<ConnectConfigObject> = {};
+
+  if (isRedpandaCommon) {
+    const redpandaBlockConfig = generateRedpandaTopLevelConfig();
+
+    if (Object.keys(redpandaBlockConfig).length > 0) {
+      config.redpanda = redpandaBlockConfig;
+    }
+
+    // Structure the component config (topics, consumer_group, etc.)
+    switch (componentSpec.type) {
+      case 'input':
+      case 'output':
+        config[typeToYamlConfigKey[componentSpec.type]] = {
+          [componentSpec.name]: connectionConfig,
+        };
+        break;
+      default:
+        break;
+    }
+
+    return config;
+  }
 
   // Structure the config according to Redpanda Connect YAML schema
   switch (componentSpec.type) {
@@ -229,24 +280,18 @@ function populateWizardFields(spec: RawFieldSpec, componentName?: string): unkno
     return spec.kind === 'array' ? [topicData.topicName] : topicData.topicName;
   }
 
-  // Priority 1: Use wizard data if available (explicit user choice)
-  if (isUserField(spec.name) && userData?.username) {
-    return userData.username;
-  }
-
-  // Password: empty string for manual entry when wizard username exists
-  if (isPasswordField(spec.name) && userData?.username) {
-    return '';
-  }
-
-  // Priority 2: For REDPANDA_SECRET_COMPONENTS without wizard data, default to secret references
-  if (componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName)) {
+  // For Redpanda components with username in session storage, inject secret references
+  if (componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName) && userData?.username) {
+    // Username field: use secret reference instead of plain text
     if (isUserField(spec.name)) {
-      return getSecretSyntax(REDPANDA_SERVERLESS_SECRETS.USERNAME);
+      const usernameSecretId = `KAFKA_USER_${convertToScreamingSnakeCase(userData.username)}`;
+      return getSecretSyntax(usernameSecretId);
     }
 
+    // Password field: use secret reference
     if (isPasswordField(spec.name)) {
-      return getSecretSyntax(REDPANDA_SERVERLESS_SECRETS.PASSWORD);
+      const passwordSecretId = `KAFKA_PASSWORD_${convertToScreamingSnakeCase(userData.username)}`;
+      return getSecretSyntax(passwordSecretId);
     }
   }
 
@@ -265,7 +310,7 @@ function populateContextualVariables(
   componentName?: string,
   parentName?: string
 ): unknown | undefined {
-  if (!(spec.name && componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName))) {
+  if (!(spec.name && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
     return undefined;
   }
 
@@ -304,7 +349,7 @@ function populateConnectionDefaults(
   componentName?: string,
   parentName?: string
 ): unknown | undefined {
-  if (!(spec.name && componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName))) {
+  if (!(spec.name && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
     return undefined;
   }
 
@@ -342,11 +387,19 @@ function shouldHideField(params: {
     isCriticalField,
     insideWizardContext,
   } = params;
+
+  // Never hide TLS object for Redpanda Cloud components (TLS is always required)
+  const isTlsObject = spec.name?.toLowerCase() === 'tls';
+  const isRedpandaComponent = componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName);
+  if (isTlsObject && isRedpandaComponent) {
+    return false;
+  }
+
   // Hide non-critical config objects for REDPANDA_SECRET_COMPONENTS
   const isNonCriticalConfigObject =
     componentName &&
     spec.name &&
-    REDPANDA_SECRET_COMPONENTS.includes(componentName) &&
+    REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName) &&
     NON_CRITICAL_CONFIG_OBJECTS.has(spec.name);
 
   if (isNonCriticalConfigObject && !showOptionalFields && !isExplicitlyRequired) {
@@ -377,7 +430,11 @@ function shouldHideField(params: {
       return true;
     }
     // For REDPANDA_SECRET_COMPONENTS, hide non-critical scalar fields with defaults
-    if (componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName) && !(isCriticalField || hasWizardData)) {
+    if (
+      componentName &&
+      REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName) &&
+      !(isCriticalField || hasWizardData)
+    ) {
       return true;
     }
   }
@@ -398,7 +455,9 @@ function generateObjectValue(
   const obj = {} as Record<string, unknown>;
 
   const { userData } =
-    componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName) ? getPersistedWizardData() : { userData: null };
+    componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)
+      ? getPersistedWizardData()
+      : { userData: null };
 
   const hasDirectWizardChildren =
     spec.children?.some((child) => {
@@ -412,6 +471,10 @@ function generateObjectValue(
     }) ?? false;
 
   const inWizardContext = insideWizardContext || hasDirectWizardChildren;
+
+  const isTlsObject = spec.name?.toLowerCase() === 'tls';
+  const isRedpandaComponent = componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName);
+
   for (const child of spec.children) {
     const childValue = generateDefaultValue(child, {
       showOptionalFields,
@@ -423,6 +486,10 @@ function generateObjectValue(
     if (childValue !== undefined && child.name) {
       obj[child.name] = childValue;
     }
+  }
+
+  if (isTlsObject && isRedpandaComponent && obj.enabled === undefined) {
+    obj.enabled = true;
   }
 
   const objKeys = Object.keys(obj);
@@ -443,7 +510,7 @@ function generateObjectValue(
     // For REDPANDA_SECRET_COMPONENTS: hide empty objects without wizard-relevant data
     if (
       componentName &&
-      REDPANDA_SECRET_COMPONENTS.includes(componentName) &&
+      REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName) &&
       !(hasWizardData || showOptionalFields || isExplicitlyRequired)
     ) {
       return undefined;
@@ -463,7 +530,7 @@ function generateArrayValue(params: {
   const { spec, showOptionalFields, componentName, isExplicitlyRequired, hasWizardData } = params;
   // Special case: SASL arrays for redpanda/kafka_franz components
   const isSaslArray = spec.name?.toLowerCase() === 'sasl';
-  if (isSaslArray && spec.children && componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName)) {
+  if (isSaslArray && spec.children && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)) {
     const { userData } = getPersistedWizardData();
 
     if (userData?.username) {
@@ -536,7 +603,7 @@ export function generateDefaultValue(
   }
 
   // Try wizard data population first for Redpanda secret components
-  if (componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName)) {
+  if (componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)) {
     const wizardValue = populateWizardFields(spec, componentName);
     if (wizardValue !== undefined) {
       return wizardValue;

@@ -1,18 +1,41 @@
 import { toast } from 'sonner';
 import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
 
-import { REDPANDA_SECRET_COMPONENTS } from '../types/constants';
+import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
 import type { RawFieldSpec } from '../types/schema';
 import type { AddTopicFormData, AddUserFormData, StepSubmissionResult } from '../types/wizard';
 
 export const handleStepResult = <T>(result: StepSubmissionResult<T> | undefined, onSuccess: () => void): boolean => {
-  if (result?.success) {
-    if (result.message) {
+  if (!result) {
+    return false;
+  }
+
+  if (result.operations && result.operations.length > 0) {
+    for (const operation of result.operations) {
+      if (operation.success && operation.message) {
+        toast.success(operation.message, {
+          description: operation.operation,
+        });
+      } else if (!operation.success && operation.error) {
+        toast.error(operation.error, {
+          description: operation.operation,
+        });
+      }
+    }
+  }
+
+  if (result.success) {
+    if ((!result.operations || result.operations.length === 0) && result.message) {
       toast.success(result.message);
     }
     onSuccess();
     return true;
   }
+
+  if (result.error && (!result.operations || result.operations.length === 0)) {
+    toast.error(result.error);
+  }
+
   return false;
 };
 
@@ -84,7 +107,7 @@ export const isSchemaRegistryUrlField = (fieldName: string, parentName?: string)
  * Used to determine if advanced/optional fields should be shown
  */
 export const hasWizardRelevantFields = (spec: RawFieldSpec, componentName?: string): boolean => {
-  if (!(componentName && REDPANDA_SECRET_COMPONENTS.includes(componentName))) {
+  if (!(componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
     return false;
   }
 

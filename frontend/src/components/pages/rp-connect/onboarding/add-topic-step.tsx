@@ -7,6 +7,7 @@ import { Combobox, type ComboboxOption } from 'components/redpanda-ui/components
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { ChevronDown } from 'lucide-react';
+import type { MotionProps } from 'motion/react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { Topic } from 'state/rest-interfaces';
@@ -20,6 +21,7 @@ import {
 } from '../../../../protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCreateTopicMutation, useTopicConfigQuery } from '../../../../react-query/api/topic';
 import { convertRetentionSizeToBytes, convertRetentionTimeToMs } from '../../../../utils/topic-utils';
+import type { ConnectComponentType } from '../types/schema';
 import {
   type AddTopicFormData,
   addTopicFormSchema,
@@ -31,10 +33,11 @@ import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FO
 interface AddTopicStepProps {
   topicList: Topic[] | undefined;
   defaultTopicName?: string;
+  connectionType?: ConnectComponentType;
 }
 
-export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps>(
-  ({ topicList, defaultTopicName }, ref) => {
+export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps & MotionProps>(
+  ({ topicList, defaultTopicName, connectionType, ...motionProps }, ref) => {
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
     const initialTopicOptions = useMemo(
@@ -103,8 +106,6 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       async (data: AddTopicFormData): Promise<StepSubmissionResult<AddTopicFormData>> => {
         try {
           if (existingTopicBeingEdited) {
-            // Topic already exists - fields are readonly so no backend changes needed
-            // Just return success with data so parent can update session storage
             return {
               success: true,
               message: `Using existing topic "${data.topicName}"`,
@@ -112,7 +113,6 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
             };
           }
 
-          // This is a new topic, create it with React Query optimistic updates
           const configs = [
             create(CreateTopicRequest_Topic_ConfigSchema, {
               name: 'cleanup.policy',
@@ -146,7 +146,6 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
             }),
           });
 
-          // React Query will handle optimistic updates automatically
           await createTopicMutation.mutateAsync(request);
 
           return {
@@ -186,19 +185,19 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
     }));
 
     return (
-      <Card size="full">
+      <Card size="full" {...motionProps} animated>
         <CardHeader className="max-w-2xl">
           <CardTitle>
-            <Heading level={2}>Select a topic to send data to</Heading>
+            <Heading level={2}>
+              {connectionType === 'input' ? 'Read data from a topic' : 'Write data to a topic'}
+            </Heading>
           </CardTitle>
           <CardDescription className="mt-4">
-            A topic is where data is sent and received in a Kafka-based system. Think of it as a streaming inbox for
-            your data. Producers write data to a topic, and consumers read from it. You need to create a topic to
-            organize and manage your real-time data streams, whether it's logs, events, or messages. Without a topic,
-            there's nowhere for your data to go or be retrieved from.
+            Select or create a topic to store data for this streaming pipeline. A topic can have multiple clients
+            writing data to it (producers) and reading data from it (consumers)
           </CardDescription>
         </CardHeader>
-        <CardContent className="max-h-[50vh] min-h-[400px] overflow-y-auto">
+        <CardContent className="max-h-[35vh] min-h-[300px] overflow-y-auto">
           <Form {...form}>
             <div className="max-w-2xl space-y-6">
               <FormField
@@ -206,7 +205,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                 name="topicName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Topic Name</FormLabel>
+                    <FormLabel>Topic name</FormLabel>
                     <FormControl>
                       <Combobox
                         {...field}
@@ -227,7 +226,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                 <CollapsibleTrigger asChild>
                   <Button className="w-fit p-0" disabled={isLoading} size="sm" variant="ghost">
                     <ChevronDown className="h-4 w-4" />
-                    Show Advanced Settings
+                    Show advanced settings
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="mt-4 space-y-6">

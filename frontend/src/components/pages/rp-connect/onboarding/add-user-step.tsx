@@ -1,4 +1,3 @@
-import { create } from '@bufbuild/protobuf';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { generatePassword } from 'components/pages/acls/user-create';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
@@ -28,20 +27,18 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
 import { CircleAlert, RefreshCcw } from 'lucide-react';
+import type { MotionProps } from 'motion/react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { SASL_MECHANISMS } from 'utils/user';
 
-import { CreateACLRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
-import {
-  CreateUserRequestSchema,
-  type ListUsersResponse_User,
-} from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
+import type { ListUsersResponse_User } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
 import { useLegacyCreateACLMutation } from '../../../../react-query/api/acl';
+import { useCreateSecretMutation } from '../../../../react-query/api/secret';
 import { useCreateUserMutation } from '../../../../react-query/api/user';
-import type { BaseStepRef, StepSubmissionResult } from '../types/wizard';
+import type { BaseStepRef, OperationResult, StepSubmissionResult } from '../types/wizard';
 import { type AddUserFormData, addUserFormSchema } from '../types/wizard';
-import { createTopicSuperuserACLs, saslMechanismToProto } from '../utils/user';
+import { configureUserPermissions, createKafkaUser, createPasswordSecret, createUsernameSecret } from '../utils/user';
 
 interface AddUserStepProps {
   usersList: ListUsersResponse_User[];
@@ -50,8 +47,8 @@ interface AddUserStepProps {
   topicName?: string;
 }
 
-export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepProps>(
-  ({ usersList, defaultUsername, defaultSaslMechanism, topicName }, ref) => {
+export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepProps & MotionProps>(
+  ({ usersList, defaultUsername, defaultSaslMechanism, topicName, ...motionProps }, ref) => {
     const initialUserOptions = useMemo(
       () =>
         usersList.map((user) => ({
@@ -63,8 +60,9 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
     const [userOptions, setUserOptions] = useState<ComboboxOption[]>(initialUserOptions);
     const createUserMutation = useCreateUserMutation();
     const createACLMutation = useLegacyCreateACLMutation();
+    const createSecretMutation = useCreateSecretMutation({ skipInvalidation: true });
 
-    const isLoading = createUserMutation.isPending || createACLMutation.isPending;
+    const isLoading = createUserMutation.isPending || createACLMutation.isPending || createSecretMutation.isPending;
 
     const form = useForm<AddUserFormData>({
       resolver: zodResolver(addUserFormSchema),
@@ -116,54 +114,84 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
 
     const handleSubmit = useCallback(
       async (userData: AddUserFormData): Promise<StepSubmissionResult<AddUserFormData>> => {
-        try {
-          if (existingUserSelected) {
-            // User already exists - no backend changes needed
-            // Just return success with data so parent can update session storage
-            return {
-              success: true,
-              message: `Using existing user "${userData.username}"`,
-              data: userData,
-            };
-          }
+        const operations: OperationResult[] = [];
 
-          // Create new user
-          const createUserRequest = create(CreateUserRequestSchema, {
-            user: {
-              name: userData.username,
-              password: userData.password,
-              mechanism: saslMechanismToProto(userData.saslMechanism),
-            },
-          });
-
-          await createUserMutation.mutateAsync(createUserRequest);
-
-          // Create ACLs if topic is specified and superuser is enabled
-          if (topicName && userData.superuser) {
-            const aclConfigs = createTopicSuperuserACLs(topicName, userData.username);
-
-            for (const config of aclConfigs) {
-              const aclRequest = create(CreateACLRequestSchema, config);
-              await createACLMutation.mutateAsync(aclRequest);
-            }
-          }
-
+        if (existingUserSelected) {
           return {
             success: true,
-            message: `Created user "${userData.username}" successfully!${
-              topicName && userData.superuser ? ` with permissions for topic "${topicName}"` : ''
-            }`,
+            message: `Using existing user "${userData.username}"`,
             data: userData,
-          };
-        } catch (error) {
-          return {
-            success: false,
-            message: 'Failed to create user or configure permissions',
-            error: error instanceof Error ? error.message : 'Unknown error',
+            operations: [
+              {
+                operation: 'Select existing user',
+                success: true,
+                message: `User "${userData.username}" already exists`,
+              },
+            ],
           };
         }
+
+        const userResult = await createKafkaUser(userData, createUserMutation);
+        operations.push(userResult);
+
+        if (!userResult.success) {
+          return {
+            success: false,
+            message: 'Failed to create user',
+            error: userResult.error,
+            data: userData,
+            operations,
+          };
+        }
+
+        if (topicName && userData.superuser) {
+          const aclResult = await configureUserPermissions(topicName, userData.username, createACLMutation);
+          operations.push(aclResult);
+
+          if (!aclResult.success) {
+            return {
+              success: false,
+              message: 'User created but failed to configure permissions',
+              error: aclResult.error,
+              data: userData,
+              operations,
+            };
+          }
+        }
+
+        const usernameSecretResult = await createUsernameSecret(userData.username, createSecretMutation);
+        operations.push(usernameSecretResult);
+
+        const passwordSecretResult = await createPasswordSecret(
+          userData.username,
+          userData.password,
+          createSecretMutation
+        );
+        operations.push(passwordSecretResult);
+
+        const allSucceeded = operations.every((op) => op.success);
+        const criticalOps = operations.filter(
+          (op) => op.operation.includes('user') || op.operation.includes('permissions')
+        );
+        const criticalSucceeded = criticalOps.length === 0 || criticalOps.every((op) => op.success);
+
+        let message: string;
+        if (allSucceeded) {
+          message = `Created user "${userData.username}" successfully!`;
+        } else if (criticalSucceeded) {
+          message = `User "${userData.username}" created but some non-critical operations failed`;
+        } else {
+          message = 'Failed to complete user creation';
+        }
+
+        return {
+          success: allSucceeded,
+          message,
+          data: userData,
+          operations,
+        };
       },
-      [existingUserSelected, createUserMutation, topicName, createACLMutation]
+      [existingUserSelected, createUserMutation, topicName, createACLMutation, createSecretMutation]
     );
 
     useImperativeHandle(ref, () => ({
@@ -184,18 +212,16 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
     }));
 
     return (
-      <Card size="full">
+      <Card size="full" {...motionProps} animated>
         <CardHeader className="max-w-2xl">
           <CardTitle>
-            <Heading level={2}>Select a user</Heading>
+            <Heading level={2}>Configure a user with permissions</Heading>
           </CardTitle>
           <CardDescription className="mt-4">
-            A Kafka user represents an application, service, or human identity that interacts with a cluster, either to
-            produce data, consume data, or perform administrative tasks. Kafka uses Access Control Lists (ACLs) to
-            manage what each user is allowed to do, providing fine-grained security and preventing unauthorized access.
+            Select or create a SASL-SCRAM user that will interact with this pipeline.
           </CardDescription>
         </CardHeader>
-        <CardContent className="max-h-[50vh] min-h-[400px] overflow-y-auto">
+        <CardContent className="max-h-[35vh] min-h-[300px] overflow-y-auto">
           <Form {...form}>
             <div className="max-w-2xl space-y-8">
               <FormField
@@ -225,10 +251,13 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                   <AlertTitle>Existing user selected</AlertTitle>
                   <AlertDescription>
                     <span>
-                      This user already exists. To enable topic-specific permissions automatically, please create a new
-                      user. You can see if this existing user already has permissions{' '}
-                      <Link href={`/security/users/${existingUserSelected.name}/details`} target="_blank">
-                        here
+                      To enable topic-level permissions, create a new user. See existing users and permissions on the{' '}
+                      <Link
+                        className="text-blue-800"
+                        href={`/security/users/${existingUserSelected.name}/details`}
+                        target="_blank"
+                      >
+                        Permissions List
                       </Link>
                       .
                     </span>
@@ -281,7 +310,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                     name="saslMechanism"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>SASL Mechanism</FormLabel>
+                        <FormLabel>SASL mechanism</FormLabel>
                         <FormControl>
                           <Select {...field}>
                             <SelectTrigger>
@@ -334,10 +363,11 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                                   </AlertTitle>
                                   <AlertDescription>
                                     <Text variant="small">
-                                      You can configure custom ACLs to connect your data to Redpanda{' '}
+                                      Configure{' '}
                                       <Link href="/security/acls" rel="noopener noreferrer" target="_blank">
-                                        here
+                                        access control lists (ACLs)
                                       </Link>
+                                      .
                                     </Text>
                                   </AlertDescription>
                                 </Alert>

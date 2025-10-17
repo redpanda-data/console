@@ -42,7 +42,7 @@ export const AddSecretsDialog = ({
     <Dialog onOpenChange={onClose} open={isOpen}>
       <DialogContent size="xl">
         <DialogHeader>
-          <DialogTitle>Add Secrets</DialogTitle>
+          <DialogTitle>Add secrets</DialogTitle>
           <DialogDescription>Add secrets to your pipeline.</DialogDescription>
         </DialogHeader>
         <DialogBody>

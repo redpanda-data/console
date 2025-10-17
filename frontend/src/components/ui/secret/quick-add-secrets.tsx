@@ -216,7 +216,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Key className="h-4 w-4" />
-              Add Required Secrets
+              Add required secrets
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -260,7 +260,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                       className="w-full"
                       disabled={isCreateSecretPending || !form.formState.isValid}
                       type="submit"
-                      variant="dashed"
+                      variant="secondary"
                     >
                       {isCreateSecretPending ? (
                         <div className="flex items-center gap-2">
@@ -270,7 +270,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                       ) : (
                         <>
                           <Plus className="h-4 w-4" />
-                          Create {missingSecrets.length} Secret
+                          Create {missingSecrets.length} secret
                           {missingSecrets.length > 1 ? 's' : ''}
                         </>
                       )}
@@ -287,14 +287,14 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Key className="h-4 w-4" />
-              Add Secrets
+              Add secrets
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Display newly created secrets */}
             {newlyCreatedSecrets.length > 0 && (
               <div className="space-y-2">
-                <Text className="font-medium text-muted-foreground text-sm">Created Secrets:</Text>
+                <Text className="font-medium text-muted-foreground text-sm">Created secrets:</Text>
                 <div className="space-y-2">
                   {newlyCreatedSecrets.map((secretName) => (
                     <Input className="font-mono" disabled key={secretName} readOnly value={secretName}>
@@ -316,7 +316,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-medium text-sm">Secret Name</FormLabel>
+                        <FormLabel className="font-medium text-sm">Secret name</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="e.g., API_KEY, DATABASE_PASSWORD"
@@ -348,7 +348,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                     className="w-full"
                     disabled={isCreateSecretPending || !newSecretForm.formState.isValid}
                     type="submit"
-                    variant="dashed"
+                    variant="secondary"
                   >
                     {isCreateSecretPending ? (
                       <div className="flex items-center gap-2">

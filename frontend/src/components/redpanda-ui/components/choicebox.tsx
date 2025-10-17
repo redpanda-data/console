@@ -1,7 +1,7 @@
 import { Circle } from 'lucide-react';
 import { AnimatePresence, motion, type Transition } from 'motion/react';
 import { RadioGroup as RadioGroupPrimitive } from 'radix-ui';
-import type { ComponentProps, HTMLAttributes } from 'react';
+import { forwardRef, type ComponentProps, type HTMLAttributes } from 'react';
 
 import { Card, CardContent, CardDescription, CardHeader, type CardProps, CardTitle } from './card';
 import { RadioGroup } from './radio-group';
@@ -17,22 +17,26 @@ export type ChoiceboxItemProps = RadioGroupPrimitive.RadioGroupItemProps & { tes
     Pick<CardProps, 'size'>
   >;
 
-export const ChoiceboxItem = ({ className, children, testId, size, ...props }: ChoiceboxItemProps) => (
-  <RadioGroupPrimitive.Item {...props} className="group">
-    <Card
-      size={size}
-      className={cn(
-        'flex cursor-pointer flex-row items-start justify-between rounded-md p-4 shadow-none transition-all border-2 border-solid text-left',
-        'group-data-[state=checked]:!border-selected',
-        'hover:shadow-elevated',
-        className,
-      )}
-      data-testid={testId}
-    >
-      {children}
-    </Card>
-  </RadioGroupPrimitive.Item>
+export const ChoiceboxItem = forwardRef<HTMLButtonElement, ChoiceboxItemProps>(
+  ({ className, children, testId, size, checked, ...props }, ref) => (
+    <RadioGroupPrimitive.Item {...props} ref={ref} className="group" checked={checked}>
+      <Card
+        size={size}
+        className={cn(
+          'flex cursor-pointer flex-row items-start justify-between rounded-md p-4 shadow-none transition-all border-2 border-solid text-left',
+          checked && '!border-selected',
+          'hover:shadow-elevated',
+          className,
+        )}
+        data-testid={testId}
+      >
+        {children}
+      </Card>
+    </RadioGroupPrimitive.Item>
+  ),
 );
+
+ChoiceboxItem.displayName = 'ChoiceboxItem';
 
 export type ChoiceboxItemHeaderProps = ComponentProps<typeof CardHeader>;
 
