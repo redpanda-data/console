@@ -11,12 +11,12 @@ import { z } from 'zod';
 
 import { CONNECT_COMPONENT_TYPE } from './schema';
 
-export const connectTilesFormSchema = z.object({
+export const connectTilesListFormSchema = z.object({
   connectionName: z.optional(z.string().min(1, { message: 'Please select a connection method.' })),
   connectionType: z.optional(z.enum(CONNECT_COMPONENT_TYPE)),
 });
 
-export type ConnectTilesFormData = z.infer<typeof connectTilesFormSchema>;
+export type ConnectTilesListFormData = z.infer<typeof connectTilesListFormSchema>;
 
 export type OperationResult = {
   operation: string; // e.g., "Create user", "Create ACL", "Create secret"
@@ -80,8 +80,8 @@ export const addUserFormSchema = z.object({
 export type AddUserFormData = z.infer<typeof addUserFormSchema>;
 
 const wizardFormSchema = z.object({
-  input: connectTilesFormSchema,
-  output: connectTilesFormSchema,
+  input: connectTilesListFormSchema,
+  output: connectTilesListFormSchema,
   topicName: z.optional(addTopicFormSchema.shape.topicName),
   username: z.optional(addUserFormSchema.shape.username),
 });

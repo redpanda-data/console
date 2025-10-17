@@ -17,7 +17,7 @@ import { uiState } from 'state/ui-state';
 
 import { AddTopicStep } from './add-topic-step';
 import { AddUserStep } from './add-user-step';
-import { ConnectTiles } from './connect-tiles-list';
+import { ConnectTilesList } from './connect-tiles-list';
 import { useResetWizardSessionStorage } from '../hooks/use-reset-wizard-session-storage';
 import RpConnectPipelinesCreate from '../pipelines-create';
 import {
@@ -34,7 +34,7 @@ import type {
   AddTopicFormData,
   AddUserFormData,
   BaseStepRef,
-  ConnectTilesFormData,
+  ConnectTilesListFormData,
   MinimalTopicData,
   MinimalUserData,
   WizardFormData,
@@ -123,8 +123,8 @@ export const ConnectOnboardingWizard = ({
     }
   }, [searchParams]);
 
-  const addInputStepRef = useRef<BaseStepRef<ConnectTilesFormData>>(null);
-  const addOutputStepRef = useRef<BaseStepRef<ConnectTilesFormData>>(null);
+  const addInputStepRef = useRef<BaseStepRef<ConnectTilesListFormData>>(null);
+  const addOutputStepRef = useRef<BaseStepRef<ConnectTilesListFormData>>(null);
   const addTopicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const addUserStepRef = useRef<BaseStepRef<AddUserFormData>>(null);
 
@@ -309,7 +309,7 @@ export const ConnectOnboardingWizard = ({
                 <AnimatePresence mode="wait">
                   {methods.switch({
                     [WizardStep.ADD_INPUT]: () => (
-                      <ConnectTiles
+                      <ConnectTilesList
                         {...stepMotionProps}
                         additionalComponents={additionalComponents}
                         componentTypeFilter={['input', 'custom']}
@@ -322,7 +322,7 @@ export const ConnectOnboardingWizard = ({
                       />
                     ),
                     [WizardStep.ADD_OUTPUT]: () => (
-                      <ConnectTiles
+                      <ConnectTilesList
                         {...stepMotionProps}
                         additionalComponents={additionalComponents}
                         componentTypeFilter={['output', 'custom']}

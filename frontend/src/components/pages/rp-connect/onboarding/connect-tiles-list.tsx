@@ -23,7 +23,7 @@ import { useForm } from 'react-hook-form';
 import { ConnectTile } from './connect-tile';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 import type { BaseStepRef } from '../types/wizard';
-import { type ConnectTilesFormData, connectTilesFormSchema } from '../types/wizard';
+import { type ConnectTilesListFormData, connectTilesListFormSchema } from '../types/wizard';
 import { getAllCategories } from '../utils/categories';
 import { getBuiltInComponents } from '../utils/schema';
 
@@ -113,7 +113,7 @@ const searchComponents = (
   return result;
 };
 
-export type ConnectTilesProps = {
+export type ConnectTilesListProps = {
   additionalComponents?: ExtendedConnectComponentSpec[];
   componentTypeFilter?: ConnectComponentType[];
   onChange?: (connectionName: string, connectionType: ConnectComponentType) => void;
@@ -130,7 +130,7 @@ export type ConnectTilesProps = {
   description?: React.ReactNode;
 };
 
-export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, ConnectTilesProps & MotionProps>(
+export const ConnectTilesList = forwardRef<BaseStepRef<ConnectTilesListFormData>, ConnectTilesListProps & MotionProps>(
   (
     {
       additionalComponents,
@@ -170,8 +170,8 @@ export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, Connec
       setShowScrollGradient(isScrollable && !isNearBottom);
     }, []);
 
-    const form = useForm<ConnectTilesFormData>({
-      resolver: zodResolver(connectTilesFormSchema),
+    const form = useForm<ConnectTilesListFormData>({
+      resolver: zodResolver(connectTilesListFormSchema),
       mode: 'onSubmit',
       defaultValues: {
         connectionName: defaultConnectionName,

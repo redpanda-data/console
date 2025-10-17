@@ -7,7 +7,7 @@ module.exports = {
   exposes: {
     './EmbeddedApp': './src/embedded-app.tsx',
     './injectApp': './src/inject-app.tsx',
-    './connect-tiles': './src/components/pages/rp-connect/onboarding/connect-tiles.tsx',
+    './connect-tiles-list': './src/components/pages/rp-connect/onboarding/connect-tiles-list.tsx',
     './config': './src/config.ts',
   },
 

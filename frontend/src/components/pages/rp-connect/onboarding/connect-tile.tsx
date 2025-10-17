@@ -111,13 +111,14 @@ export const ConnectTile = ({
       </div>
     </ChoiceboxItem>
   );
-  const description = component.summary;
-  return description ? (
+  return component.summary ? (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>{content}</TooltipTrigger>
-        <TooltipContent className="max-w-sm text-wrap">
-          <Text variant="small">{description}</Text>
+        <TooltipContent className="max-w-sm">
+          <Text className="line-clamp-4 text-wrap" variant="small">
+            {component.summary}
+          </Text>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
