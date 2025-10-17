@@ -15,6 +15,7 @@ import {
   convertToScreamingSnakeCase,
   getContextualVariableSyntax,
   getSecretSyntax,
+  MANAGED_ONLY_CONNECT_COMPONENTS,
   NON_CRITICAL_CONFIG_OBJECTS,
   REDPANDA_TOPIC_AND_USER_COMPONENTS,
 } from '../types/constants';
@@ -119,6 +120,9 @@ const parseSchema = () => {
     }
 
     for (const comp of componentsArray) {
+      if (MANAGED_ONLY_CONNECT_COMPONENTS.includes(comp.name)) {
+        continue;
+      }
       const componentSpec: ConnectComponentSpec = {
         name: comp.name,
         type: comp.type as Exclude<ConnectComponentType, 'custom'>,

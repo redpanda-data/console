@@ -204,6 +204,7 @@ export const APIConnectWizard = () => {
 
   const handleCancel = useCallback(() => {
     navigate('/overview');
+    window.location.reload();
   }, [navigate]);
 
   useEffect(() => {

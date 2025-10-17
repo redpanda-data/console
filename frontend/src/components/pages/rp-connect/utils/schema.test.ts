@@ -6,7 +6,6 @@ import type { RawFieldSpec } from '../types/schema';
 
 describe('generateDefaultValue', () => {
   beforeEach(() => {
-    // Clear session storage before each test
     sessionStorage.clear();
   });
 
@@ -88,7 +87,6 @@ describe('generateDefaultValue', () => {
 
   describe('Wizard data population', () => {
     beforeEach(() => {
-      // Set up wizard data in session storage
       sessionStorage.setItem(CONNECT_WIZARD_TOPIC_KEY, JSON.stringify({ topicName: 'example' }));
       sessionStorage.setItem(
         CONNECT_WIZARD_USER_KEY,
@@ -292,7 +290,6 @@ describe('generateDefaultValue', () => {
         parentName: 'http',
       });
 
-      // Should not populate contextual variable, just return default
       expect(result).toBe('http://example.com');
     });
 
@@ -715,7 +712,6 @@ describe('generateDefaultValue', () => {
 
       const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'redpanda' });
 
-      // Empty array for optional field should be undefined
       expect(result).toBeUndefined();
     });
 
@@ -738,7 +734,6 @@ describe('generateDefaultValue', () => {
 
       const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' });
 
-      // Optional object with only optional children should be undefined
       expect(result).toBeUndefined();
     });
   });
@@ -799,9 +794,8 @@ describe('generateDefaultValue', () => {
       expect(outputConfig).toBeDefined();
       expect(outputConfig.topic).toBe('example');
       // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
-      expect(outputConfig.addresses).toEqual(['${REDPANDA_BROKERS}']); // Now populated with contextual variable
+      expect(outputConfig.addresses).toEqual(['${REDPANDA_BROKERS}']);
 
-      // Should have sasl with user (using secret syntax)
       expect(outputConfig.sasl).toBeDefined();
       // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
       expect(outputConfig.sasl.user).toBe('${secrets.KAFKA_USER_ADMIN}');
@@ -812,7 +806,6 @@ describe('generateDefaultValue', () => {
       expect(outputConfig.tls).toBeDefined();
       expect(outputConfig.tls.enabled).toBe(true);
 
-      // Should NOT have these optional fields
       expect(outputConfig.batching).toBeUndefined();
       expect(outputConfig.metadata).toBeUndefined();
       expect(outputConfig.backoff).toBeUndefined();
@@ -838,9 +831,8 @@ describe('generateDefaultValue', () => {
       expect(inputConfig).toBeDefined();
       expect(inputConfig.topics).toEqual(['example']);
       // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
-      expect(inputConfig.seed_brokers).toEqual(['${REDPANDA_BROKERS}']); // Now populated with contextual variable
+      expect(inputConfig.seed_brokers).toEqual(['${REDPANDA_BROKERS}']);
 
-      // Should have sasl array with username populated (redpanda uses array-based SASL with secret syntax)
       expect(inputConfig.sasl).toBeDefined();
       expect(Array.isArray(inputConfig.sasl)).toBe(true);
       expect(inputConfig.sasl.length).toBeGreaterThan(0);
@@ -853,7 +845,6 @@ describe('generateDefaultValue', () => {
       expect(inputConfig.tls).toBeDefined();
       expect(inputConfig.tls.enabled).toBe(true);
 
-      // Should NOT have these optional fields
       expect(inputConfig.client_id).toBeUndefined();
       expect(inputConfig.metadata_max_age).toBeUndefined();
       expect(inputConfig.request_timeout_overhead).toBeUndefined();

@@ -263,6 +263,23 @@ const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: strin
       appGlobal.historyPush('/overview');
       window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
     }
+    // enableRpcnTiles /wizard route
+    if (
+      !isFeatureFlagEnabled('enableRpcnTiles') &&
+      path.includes('/rp-connect/wizard') &&
+      location.pathname !== '/overview'
+    ) {
+      appGlobal.historyPush('/overview');
+      window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
+    }
+    if (
+      !isFeatureFlagEnabled('enableServerlessOnboardingWizard') &&
+      path.includes('/get-started/api') &&
+      location.pathname !== '/overview'
+    ) {
+      appGlobal.historyPush('/overview');
+      window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
+    }
   }, [isKnowledgeBaseFeatureEnabled, isRemoteMcpFeatureEnabled, path, location.pathname]);
 
   return children;
