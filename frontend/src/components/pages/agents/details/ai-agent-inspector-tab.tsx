@@ -9,27 +9,70 @@
  * by the Apache License, Version 2.0
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { Search } from 'lucide-react';
+import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
+import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
+import { useParams } from 'react-router-dom';
 
-export const AIAgentInspectorTab = () => (
-  <Card className="px-0 py-0" size="full">
-    <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
-      <CardTitle className="flex items-center gap-2">
-        <Search className="h-4 w-4" />
-        <Text className="font-semibold">AI Agent Inspector</Text>
-      </CardTitle>
-    </CardHeader>
-    <CardContent className="px-4 pb-4">
-      <div className="flex flex-col items-center justify-center py-12">
-        <Text className="text-center text-muted-foreground" variant="default">
-          Inspector functionality coming soon.
-        </Text>
-        <Text className="text-center text-muted-foreground" variant="small">
-          Test your AI agent by sending messages and viewing responses.
-        </Text>
-      </div>
-    </CardContent>
-  </Card>
-);
+import { AIAgentChat } from './ai-agent-chat';
+
+export const AIAgentInspectorTab = () => {
+  const { id } = useParams<{ id: string }>();
+  const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
+
+  const agent = aiAgentData?.aiAgent;
+  const isAgentRunning = agent?.state === AIAgent_State.RUNNING;
+  const agentUrl = agent?.url;
+
+  if (!agent) {
+    return (
+      <Card size="full">
+        <CardContent className="py-12">
+          <div className="flex flex-col items-center justify-center text-center">
+            <Text className="text-muted-foreground">Loading agent details...</Text>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!isAgentRunning) {
+    return (
+      <Card size="full">
+        <CardHeader>
+          <CardTitle>Agent Inspector</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center text-center">
+            <Text className="text-muted-foreground">Agent is not running</Text>
+            <Text className="text-muted-foreground" variant="small">
+              Start the agent to begin testing
+            </Text>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!agentUrl) {
+    return (
+      <Card size="full">
+        <CardHeader>
+          <CardTitle>Agent Inspector</CardTitle>
+          <CardDescription>Unable to connect to the agent</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Text className="text-muted-foreground">Agent URL not available</Text>
+            <Text className="text-muted-foreground" variant="small">
+              Please try restarting the agent
+            </Text>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return <AIAgentChat agentId={id || ''} agentUrl={agentUrl} />;
+};
