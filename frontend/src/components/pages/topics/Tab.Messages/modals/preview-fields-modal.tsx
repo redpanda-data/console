@@ -22,14 +22,14 @@ import {
 import { observer } from 'mobx-react';
 import type { FC } from 'react';
 
-import type { MessageSearch } from '../../../../../state/backend-api';
+import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import { PreviewSettings } from '../preview-settings';
 
 export const PreviewFieldsModal: FC<{
   getShowDialog: () => boolean;
   setShowDialog: (val: boolean) => void;
-  messageSearch: MessageSearch;
-}> = observer(({ getShowDialog, setShowDialog, messageSearch }) => (
+  messages: TopicMessage[];
+}> = observer(({ getShowDialog, setShowDialog, messages }) => (
   <Modal
     isOpen={getShowDialog()}
     onClose={() => {
@@ -41,7 +41,7 @@ export const PreviewFieldsModal: FC<{
       <ModalHeader>Preview fields</ModalHeader>
       <ModalCloseButton />
       <ModalBody>
-        <PreviewSettings messageSearch={messageSearch} />
+        <PreviewSettings messages={messages} />
       </ModalBody>
       <ModalFooter gap={2}>
         <Button

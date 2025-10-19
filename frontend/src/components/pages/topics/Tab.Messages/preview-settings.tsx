@@ -39,7 +39,7 @@ import {
 } from 'react-beautiful-dnd';
 
 import globExampleImg from '../../../../assets/globExample.png';
-import type { MessageSearch } from '../../../../state/backend-api';
+import type { TopicMessage } from '../../../../state/rest-interfaces';
 import type { PreviewTagV2 } from '../../../../state/ui';
 import { uiState } from '../../../../state/ui-state';
 import { IsDev } from '../../../../utils/env';
@@ -184,8 +184,8 @@ const globHelp = (
   </div>
 );
 
-export const PreviewSettings = observer(({ messageSearch }: { messageSearch: MessageSearch }) => {
-  const allCurrentKeys = getAllMessageKeys(messageSearch.messages)
+export const PreviewSettings = observer(({ messages }: { messages: TopicMessage[] }) => {
+  const allCurrentKeys = getAllMessageKeys(messages)
     .map((p) => p.propertyName)
     .distinct();
 

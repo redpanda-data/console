@@ -47,7 +47,8 @@ import {
   useToast,
 } from '@redpanda-data/ui';
 import type { ColumnDef } from '@tanstack/react-table';
-import { parseAsInteger, parseAsString } from 'nuqs';
+import { observer } from 'mobx-react';
+import { parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import {
   MdCalendarToday,
   MdDownload,
@@ -77,7 +78,6 @@ import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alp
 import { appGlobal } from '../../../../state/app-global';
 import { IsDev } from '../../../../utils/env';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filter-helper';
-import { FilterableDataSource } from '../../../../utils/filterable-data-source';
 import { onPaginationChange } from '../../../../utils/pagination';
 import {
   Label,
@@ -121,28 +121,6 @@ const PAYLOAD_ENCODING_LABELS = payloadEncodingPairs.reduce(
 type TopicMessageViewProps = {
   topic: Topic;
   refreshTopicData: (force: boolean) => void;
-};
-
-// Add these type definitions and helper functions at the top of the file
-type TopicMessageParams = {
-  partitionID: number;
-  maxResults: number;
-  startOffset: number;
-  quickSearch: string;
-};
-
-type SearchControlsBarProps = {
-  topic: Topic;
-  currentParams: TopicMessageParams;
-  setPartitionID: (value: number) => void;
-  setMaxResults: (value: number) => void;
-  setStartOffset: (value: number) => void;
-  setQuickSearch: (value: string) => void;
-  messageSearch: ReturnType<typeof createMessageSearch>;
-  searchFunc: (source: 'auto' | 'manual') => void;
-  setShowDeserializersModal: (value: boolean) => void;
-  setShowColumnSettingsModal: (value: boolean) => void;
-  setShowPreviewFieldsModal: (value: boolean) => void;
 };
 
 // Define the column order as a constant
@@ -226,338 +204,32 @@ const inlineSelectChakraStyles = {
   }),
 } as const;
 
-// Extract SearchControlsBar to module-level component
-const SearchControlsBar: FC<SearchControlsBarProps> = ({
-  topic,
-  currentParams,
-  setPartitionID,
-  setMaxResults,
-  setStartOffset,
-  setQuickSearch,
-  messageSearch,
-  searchFunc,
-  setShowDeserializersModal,
-  setShowColumnSettingsModal,
-  setShowPreviewFieldsModal,
-}) => {
-  const canUseFilters = (api.topicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
-  const [customStartOffsetValue, setCustomStartOffsetValue] = useState(0 as number | string);
-  const customStartOffsetValid = !Number.isNaN(Number(customStartOffsetValue));
+function onCopyValue(original: TopicMessage, toast: ReturnType<typeof useToast>) {
+  navigator.clipboard
+    .writeText(getPayloadAsString((original.value.payload ?? original.value.rawBytes) as string | Uint8Array | object))
+    .then(() => {
+      toast({
+        status: 'success',
+        description: 'Value copied to clipboard',
+      });
+    })
+    .catch(navigatorClipboardErrorHandler);
+}
 
-  const [currentJSFilter, setCurrentJSFilter] = useState<FilterEntry | null>(null);
+function onCopyKey(original: TopicMessage, toast: ReturnType<typeof useToast>) {
+  navigator.clipboard
+    .writeText(getPayloadAsString((original.key.payload ?? original.key.rawBytes) as string | Uint8Array | object))
+    .then(() => {
+      toast({
+        status: 'success',
+        description: 'Key copied to clipboard',
+      });
+    })
+    .catch(navigatorClipboardErrorHandler);
+}
 
-  const startOffsetOptions = [
-    {
-      value: PartitionOffsetOrigin.End,
-      label: (
-        <Flex alignItems="center" gap={2}>
-          <MdOutlinePlayCircle />
-          <span data-testid="start-offset-latest-live">Latest / Live</span>
-        </Flex>
-      ),
-    },
-    {
-      value: PartitionOffsetOrigin.EndMinusResults,
-      label: (
-        <Flex alignItems="center" gap={2}>
-          <MdOutlineQuickreply />
-          <span data-testid="start-offset-newest">{`Newest - ${String(currentParams.maxResults)}`}</span>
-        </Flex>
-      ),
-    },
-    {
-      value: PartitionOffsetOrigin.Start,
-      label: (
-        <Flex alignItems="center" gap={2}>
-          <MdOutlineSkipPrevious />
-          <span data-testid="start-offset-beginning">Beginning</span>
-        </Flex>
-      ),
-    },
-    {
-      value: PartitionOffsetOrigin.Custom,
-      label: (
-        <Flex alignItems="center" gap={2}>
-          <MdKeyboardTab />
-          <span data-testid="start-offset-custom">Offset</span>
-        </Flex>
-      ),
-    },
-    {
-      value: PartitionOffsetOrigin.Timestamp,
-      label: (
-        <Flex alignItems="center" gap={2}>
-          <MdCalendarToday />
-          <span data-testid="start-offset-timestamp">Timestamp</span>
-        </Flex>
-      ),
-    },
-  ];
-
-  // Determine the current offset origin based on startOffset
-  const currentOffsetOrigin = (
-    currentParams.startOffset >= 0 ? PartitionOffsetOrigin.Custom : currentParams.startOffset
-  ) as PartitionOffsetOriginType;
-
-  return (
-    <>
-      <Grid gap={3} gridTemplateColumns="auto 1fr" my={4} width="full">
-        <GridItem display="flex" gap={3} gridColumn={{ base: '1/-1', md: '1' }}>
-          <Label text="Start Offset">
-            <Flex gap={3}>
-              <SingleSelect<PartitionOffsetOriginType>
-                chakraStyles={defaultSelectChakraStyles}
-                data-testid="start-offset-dropdown"
-                onChange={(e) => {
-                  if (e === PartitionOffsetOrigin.Custom) {
-                    if (currentParams.startOffset < 0) {
-                      setStartOffset(0);
-                    }
-                  } else {
-                    setStartOffset(e);
-                  }
-                }}
-                options={startOffsetOptions}
-                value={currentOffsetOrigin}
-              />
-              {currentOffsetOrigin === PartitionOffsetOrigin.Custom && (
-                <Tooltip hasArrow isOpen={!customStartOffsetValid} label="Offset must be a number" placement="right">
-                  <Input
-                    isDisabled={currentOffsetOrigin !== PartitionOffsetOrigin.Custom}
-                    maxLength={20}
-                    onChange={(e) => {
-                      setCustomStartOffsetValue(e.target.value);
-                      if (!Number.isNaN(Number(e.target.value))) {
-                        setStartOffset(Number(e.target.value));
-                      }
-                    }}
-                    style={{ width: '7.5em' }}
-                    value={customStartOffsetValue}
-                  />
-                </Tooltip>
-              )}
-              {currentOffsetOrigin === PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
-            </Flex>
-          </Label>
-
-          <Label text="Max Results">
-            <SingleSelect<number>
-              onChange={(c) => {
-                setMaxResults(c);
-              }}
-              options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map((i) => ({ value: i }))}
-              value={currentParams.maxResults}
-            />
-          </Label>
-
-          {uiState.topicSettings.dynamicFilters.map(
-            (filter) =>
-              ({
-                partition: (
-                  <Label text="Partition">
-                    <RemovableFilter
-                      onRemove={() => {
-                        uiState.topicSettings.dynamicFilters.remove('partition');
-                        setPartitionID(DEFAULT_SEARCH_PARAMS.partitionID);
-                      }}
-                    >
-                      <SingleSelect<number>
-                        chakraStyles={inlineSelectChakraStyles}
-                        onChange={(c) => {
-                          setPartitionID(c);
-                        }}
-                        options={[
-                          {
-                            value: -1,
-                            label: 'All',
-                          },
-                        ].concat(
-                          range(0, topic.partitionCount).map((i) => ({
-                            value: i,
-                            label: String(i),
-                          }))
-                        )}
-                        value={currentParams.partitionID}
-                      />
-                    </RemovableFilter>
-                  </Label>
-                ),
-              })[filter]
-          )}
-
-          <Flex alignItems="flex-end">
-            <Menu>
-              <MenuButton as={Button} data-testid="add-topic-filter" variant="outline">
-                Add filter
-              </MenuButton>
-              <MenuList>
-                <MenuItem
-                  data-testid="add-topic-filter-partition"
-                  icon={<MdOutlineLayers size="1.5rem" />}
-                  isDisabled={uiState.topicSettings.dynamicFilters.includes('partition')}
-                  onClick={() => uiState.topicSettings.dynamicFilters.pushDistinct('partition')}
-                >
-                  Partition
-                </MenuItem>
-                <MenuDivider />
-                <MenuItem
-                  data-testid="add-topic-filter-javascript"
-                  icon={<MdJavascript size="1.5rem" />}
-                  // TODO: "You don't have permissions to use search filters in this topic",
-                  // we need support for disabledReason in @redpanda-data/ui
-                  isDisabled={!canUseFilters}
-                  onClick={() => {
-                    const filter = new FilterEntry();
-                    filter.isNew = true;
-                    setCurrentJSFilter(filter);
-                  }}
-                >
-                  JavaScript Filter
-                </MenuItem>
-              </MenuList>
-            </Menu>
-          </Flex>
-
-          {/* Search Progress Indicator: "Consuming Messages 30/30" */}
-          {Boolean(messageSearch.searchPhase && messageSearch.searchPhase.length > 0) && (
-            <StatusIndicator
-              bytesConsumed={prettyBytes(messageSearch.bytesConsumed)}
-              fillFactor={(messageSearch.messages?.length ?? 0) / currentParams.maxResults}
-              identityKey="messageSearch"
-              messagesConsumed={String(messageSearch.totalMessagesConsumed)}
-              progressText={`${messageSearch.messages?.length ?? 0} / ${currentParams.maxResults}`}
-              // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-              statusText={messageSearch.searchPhase!}
-            />
-          )}
-        </GridItem>
-
-        {/*
-                api.MessageSearchPhase && api.MessageSearchPhase.length > 0 && searchParams.filters.length>0 &&
-                    <StatusIndicator
-                        identityKey='messageSearch'
-                        fillFactor={(api.Messages?.length ?? 0) / searchParams.maxResults}
-                        statusText={api.MessageSearchPhase}
-                        progressText={`${api.Messages?.length ?? 0} / ${searchParams.maxResults}`}
-                        bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.MessagesBytesConsumed) : undefined}
-                        messagesConsumed={searchParams.filtersEnabled ? String(api.MessagesTotalConsumed) : undefined}
-                    />
-                    */}
-
-        <GridItem alignItems="flex-end" display="flex" gap={3} justifyContent="flex-end">
-          <Menu>
-            <MenuButton as={IconButton} icon={<MdOutlineSettings size="1.5rem" />} variant="outline" />
-            <MenuList>
-              <MenuItem
-                onClick={() => {
-                  setShowDeserializersModal(true);
-                }}
-              >
-                Deserialization
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  setShowColumnSettingsModal(true);
-                }}
-              >
-                Column settings
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  setShowPreviewFieldsModal(true);
-                }}
-              >
-                Preview fields
-              </MenuItem>
-            </MenuList>
-          </Menu>
-          <Flex alignItems="flex-end">
-            {/* Refresh Button */}
-            {messageSearch.searchPhase == null && (
-              <Tooltip hasArrow label="Repeat current search" placement="top">
-                <IconButton
-                  aria-label="Repeat current search"
-                  icon={<SyncIcon />}
-                  onClick={() => searchFunc('manual')}
-                  variant="outline"
-                />
-              </Tooltip>
-            )}
-            {messageSearch.searchPhase != null && (
-              <Tooltip hasArrow label="Stop searching" placement="top">
-                <IconButton
-                  aria-label="Stop searching"
-                  colorScheme="red"
-                  icon={<XCircleIcon />}
-                  onClick={() => messageSearch.stopSearch()}
-                  variant="solid"
-                />
-              </Tooltip>
-            )}
-          </Flex>
-        </GridItem>
-
-        {/* Filter Tags */}
-        <MessageSearchFilterBar
-          onEdit={(filter) => {
-            setCurrentJSFilter(filter);
-          }}
-        />
-
-        <GridItem display="flex" gap={4} gridColumn="1/-1" mt={4}>
-          {/* Quick Search */}
-          <Input
-            onChange={(x) => {
-              setQuickSearch(x.target.value);
-            }}
-            placeholder="Filter table content ..."
-            px={4}
-            value={currentParams.quickSearch}
-          />
-          <Flex alignItems="center" fontSize="sm" gap={2} whiteSpace="nowrap">
-            {messageSearch.searchPhase === null || messageSearch.searchPhase === 'Done' ? (
-              <>
-                <Flex alignItems="center" gap={2}>
-                  <MdDownload size={14} /> {prettyBytes(messageSearch.bytesConsumed)}
-                </Flex>
-                <Flex alignItems="center" gap={2}>
-                  <MdOutlineTimer size={14} />{' '}
-                  {messageSearch.elapsedMs ? prettyMilliseconds(messageSearch.elapsedMs) : ''}
-                </Flex>
-              </>
-            ) : (
-              <>
-                <span className="spinner" />
-                <span className="pulsating">Fetching data...</span>
-              </>
-            )}
-          </Flex>
-        </GridItem>
-      </Grid>
-
-      {currentJSFilter && (
-        <JavascriptFilterModal
-          currentFilter={currentJSFilter}
-          onClose={() => setCurrentJSFilter(null)}
-          onSave={(filter) => {
-            if (filter.isNew) {
-              uiState.topicSettings.searchParams.filters.push(filter);
-              filter.isNew = false;
-            } else {
-              const idx = uiState.topicSettings.searchParams.filters.findIndex((x) => x.id === filter.id);
-              if (idx !== -1) {
-                uiState.topicSettings.searchParams.filters.splice(idx, 1, filter);
-              }
-            }
-            searchFunc('manual');
-          }}
-        />
-      )}
-    </>
-  );
-};
-
-export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: this is because of the refactoring effort, the scope will be minimised eventually
+export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
   const toast = useToast();
   const breakpoint = useBreakpoint({ ssr: false });
 
@@ -595,16 +267,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     parseAsInteger.withDefault(DEFAULT_SEARCH_PARAMS.startOffset)
   );
 
-  const [quickSearch, setQuickSearch] = useQueryStateWithCallback<string>(
-    {
-      onUpdate: (val) => {
-        uiState.topicSettings.quickSearch = val;
-      },
-      getDefaultValue: () => '',
-    },
-    'q',
-    parseAsString.withDefault('')
-  );
+  const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
   // Pagination state managed by nuqs
   const [pageIndex, setPageIndex] = useQueryStateWithCallback<number>(
@@ -634,66 +297,34 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const [showPreviewFieldsModal, setShowPreviewFieldsModal] = useState(false);
   const [showDeserializersModal, setShowDeserializersModal] = useState(false);
 
-  // Local state for current params
-  const [currentParams, setCurrentParams] = useState<TopicMessageParams>({
-    partitionID,
-    maxResults,
-    startOffset,
-    quickSearch,
-  });
   const [fetchError, setFetchError] = useState<Error | null>(null);
   const [downloadMessages, setDownloadMessages] = useState<TopicMessage[] | null>(null);
 
-  // Convert instance properties to useRef
-  const messageSearchRef = useRef(createMessageSearch());
-  const messageSourceRef = useRef<FilterableDataSource<TopicMessage> | null>(null);
-  const autoSearchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Search controls state
+  const [customStartOffsetValue, setCustomStartOffsetValue] = useState<number | string>(0);
+  const [currentJSFilter, setCurrentJSFilter] = useState<FilterEntry | null>(null);
+
+  // Message search state
+  const [messages, setMessages] = useState<TopicMessage[]>([]);
+  const [searchPhase, setSearchPhase] = useState<string | null>(null);
+  const [bytesConsumed, setBytesConsumed] = useState(0);
+  const [totalMessagesConsumed, setTotalMessagesConsumed] = useState(0);
+  const [elapsedMs, setElapsedMs] = useState<number | null>(null);
+
   const currentSearchRunRef = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const messageSearch = messageSearchRef.current;
-
-  // Initialize messageSource on first render
-  if (!messageSourceRef.current) {
-    messageSourceRef.current = new FilterableDataSource<TopicMessage>(
-      () => messageSearchRef.current.messages,
-      (filterText, m) => isFilterMatch(filterText, m),
-      100 // Increased debounce time to match default
-    );
-  }
-  const messageSource = messageSourceRef.current;
-
-  // Convert isFilterMatch method to useCallback
-  const isFilterMatch = useCallback(
-    (_str: string, m: TopicMessage) => {
-      const searchStr = currentParams.quickSearch.toLowerCase();
-      // If search string is empty, show all messages
-      if (!searchStr) {
-        return true;
-      }
-
-      if (m.offset.toString().toLowerCase().includes(searchStr)) {
-        return true;
-      }
-      if (m.keyJson?.toLowerCase().includes(searchStr)) {
-        return true;
-      }
-      if (m.valueJson?.toLowerCase().includes(searchStr)) {
-        return true;
-      }
-      return false;
-    },
-    [currentParams.quickSearch]
-  );
-
-  // Sync URL query state to currentParams when they change
-  useEffect(() => {
-    setCurrentParams({
-      partitionID,
-      maxResults,
-      startOffset,
-      quickSearch,
-    });
-  }, [partitionID, maxResults, startOffset, quickSearch]);
+  // Filter messages based on quick search
+  const filteredMessages = quickSearch
+    ? messages.filter((m) => {
+        const searchStr = quickSearch.toLowerCase();
+        return (
+          m.offset.toString().toLowerCase().includes(searchStr) ||
+          m.keyJson?.toLowerCase().includes(searchStr) ||
+          m.valueJson?.toLowerCase().includes(searchStr)
+        );
+      })
+    : messages;
 
   // Convert @computed activePreviewTags to useMemo
   const activePreviewTags = useMemo(() => uiState.topicSettings.previewTags.filter((t) => t.isActive), []);
@@ -701,18 +332,16 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   // Cleanup effect (replaces componentWillUnmount)
   useEffect(
     () => () => {
-      messageSourceRef.current?.dispose();
-      if (autoSearchTimerRef.current) {
-        clearTimeout(autoSearchTimerRef.current);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-      messageSearchRef.current.stopSearch();
       appGlobal.searchMessagesFunc = undefined;
     },
     []
   );
 
   // Convert executeMessageSearch to useCallback
-  const executeMessageSearch = useCallback((): Promise<TopicMessage[]> => {
+  const executeMessageSearch = useCallback(async (): Promise<TopicMessage[]> => {
     const canUseFilters =
       (api.topicPermissions.get(props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
 
@@ -744,10 +373,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
     const request = {
       topicName: props.topic.topicName,
-      partitionId: currentParams.partitionID,
-      startOffset: currentParams.startOffset,
+      partitionId: partitionID,
+      startOffset,
       startTimestamp: uiState.topicSettings.searchParams.startTimestamp,
-      maxResults: currentParams.maxResults,
+      maxResults,
       filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
       includeRawPayload: true,
       keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
@@ -756,135 +385,142 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
     try {
       setFetchError(null);
-      return messageSearch.startSearch(request).catch((err) => {
-        const msg = (err as Error).message ?? String(err);
+      setSearchPhase('Searching...');
+
+      const messageSearch = createMessageSearch();
+      const startTime = Date.now();
+
+      const result = await messageSearch.startSearch(request).catch((err: Error) => {
+        const msg = err.message ?? String(err);
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(`error in searchTopicMessages: ${msg}`);
         setFetchError(err);
+        setSearchPhase(null);
         return [];
       });
+
+      const endTime = Date.now();
+      setMessages(result);
+      setSearchPhase(null);
+      setElapsedMs(endTime - startTime);
+      setBytesConsumed(messageSearch.bytesConsumed);
+      setTotalMessagesConsumed(messageSearch.totalMessagesConsumed);
+
+      return result;
     } catch (error: unknown) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`error in searchTopicMessages: ${(error as Error).message ?? String(error)}`);
       setFetchError(error as Error);
-      return Promise.resolve([]);
+      setSearchPhase(null);
+      return [];
     }
-  }, [props.topic.topicName, currentParams, messageSearch]);
+  }, [props.topic.topicName, partitionID, startOffset, maxResults]);
 
   // Convert loadLargeMessage to useCallback
-  const loadLargeMessage = useCallback(
-    async (topicName: string, messagePartitionID: number, offset: number) => {
-      // Create a new search that looks for only this message specifically
-      const search = createMessageSearch();
-      const searchReq: MessageSearchRequest = {
-        filterInterpreterCode: '',
-        maxResults: 1,
-        partitionId: messagePartitionID,
-        startOffset: offset,
-        startTimestamp: 0,
-        topicName,
-        includeRawPayload: true,
-        ignoreSizeLimit: true,
-        keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
-        valueDeserializer: uiState.topicSettings.searchParams.valueDeserializer,
-      };
-      const messages = await search.startSearch(searchReq);
+  const loadLargeMessage = useCallback(async (topicName: string, messagePartitionID: number, offset: number) => {
+    // Create a new search that looks for only this message specifically
+    const search = createMessageSearch();
+    const searchReq: MessageSearchRequest = {
+      filterInterpreterCode: '',
+      maxResults: 1,
+      partitionId: messagePartitionID,
+      startOffset: offset,
+      startTimestamp: 0,
+      topicName,
+      includeRawPayload: true,
+      ignoreSizeLimit: true,
+      keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
+      valueDeserializer: uiState.topicSettings.searchParams.valueDeserializer,
+    };
+    const result = await search.startSearch(searchReq);
 
-      if (messages && messages.length === 1) {
-        // We must update the old message (that still says "payload too large")
-        // So we just find its index and replace it in the array we are currently displaying
-        const indexOfOldMessage = messageSearch.messages.findIndex(
+    if (result && result.length === 1) {
+      // We must update the old message (that still says "payload too large")
+      // So we just find its index and replace it in the array we are currently displaying
+      setMessages((currentMessages) => {
+        const indexOfOldMessage = currentMessages.findIndex(
           (x) => x.partitionID === messagePartitionID && x.offset === offset
         );
         if (indexOfOldMessage > -1) {
-          messageSearch.messages[indexOfOldMessage] = messages[0];
-        } else {
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.error('LoadLargeMessage: cannot find old message to replace', {
-            searchReq,
-            messages,
-          });
-          throw new Error(
-            'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
-          );
+          const newMessages = [...currentMessages];
+          newMessages[indexOfOldMessage] = result[0];
+          return newMessages;
         }
-      } else {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error('LoadLargeMessage: messages response is empty', { messages });
-        throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
-      }
-    },
-    [messageSearch]
-  );
+        console.error('LoadLargeMessage: cannot find old message to replace', {
+          searchReq,
+          result,
+        });
+        throw new Error(
+          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
+        );
+      });
+    } else {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
+      console.error('LoadLargeMessage: messages response is empty', { result });
+      throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
+    }
+  }, []);
 
   // Convert searchFunc to useCallback
   const searchFunc = useCallback(
     (source: 'auto' | 'manual') => {
       // Create search params signature
-      const searchParams = `${currentParams.startOffset} ${currentParams.maxResults} ${currentParams.partitionID} ${uiState.topicSettings.searchParams.startTimestamp} ${uiState.topicSettings.searchParams.keyDeserializer} ${uiState.topicSettings.searchParams.valueDeserializer}`;
-
-      const phase = messageSearch.searchPhase;
+      const searchParams = `${startOffset} ${maxResults} ${partitionID} ${uiState.topicSettings.searchParams.startTimestamp} ${uiState.topicSettings.searchParams.keyDeserializer} ${uiState.topicSettings.searchParams.valueDeserializer}`;
 
       if (searchParams === currentSearchRunRef.current && source === 'auto') {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.log('ignoring search, search params are up to date, and source is auto', {
           newParams: searchParams,
           oldParams: currentSearchRunRef.current,
-          currentSearchPhase: phase,
           trigger: source,
         });
         return;
       }
 
       // Abort current search if one is running
-      if (phase !== 'Done') {
-        messageSearch.stopSearch();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
       }
 
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.log('starting a new message search', {
         newParams: searchParams,
         oldParams: currentSearchRunRef.current,
-        currentSearchPhase: phase,
         trigger: source,
       });
 
       // Start new search
       currentSearchRunRef.current = searchParams;
+      abortControllerRef.current = new AbortController();
+
       try {
         executeMessageSearch()
           // biome-ignore lint/suspicious/noConsole: intentional console usage
           .catch(console.error)
           .finally(() => {
             currentSearchRunRef.current = null;
+            abortControllerRef.current = null;
           });
       } catch (err) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error('error in message search', { error: err });
       }
     },
-    [currentParams, messageSearch, executeMessageSearch]
+    [startOffset, maxResults, partitionID, executeMessageSearch]
   );
 
-  // Auto search when parameters change (replaces autorun with debounced effect)
+  // Auto search when parameters change
   useEffect(() => {
-    // Clear existing timer
-    if (autoSearchTimerRef.current) {
-      clearTimeout(autoSearchTimerRef.current);
-    }
-
     // Set up auto-search with 100ms delay
-    autoSearchTimerRef.current = setTimeout(() => {
+    const timer = setTimeout(() => {
       searchFunc('auto');
     }, 100);
 
     appGlobal.searchMessagesFunc = searchFunc;
 
-    return () => {
-      if (autoSearchTimerRef.current) {
-        clearTimeout(autoSearchTimerRef.current);
-      }
-    };
+    return () => clearTimeout(timer);
   }, [searchFunc]);
 
   // Message Table rendering variables and functions
@@ -895,32 +531,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   const tsFormat = uiState.topicSettings.previewTimestamps;
   const hasKeyTags = uiState.topicSettings.previewTags.count((x) => x.isActive && x.searchInMessageKey) > 0;
-
-  function onCopyValue(original: TopicMessage) {
-    navigator.clipboard
-      .writeText(
-        getPayloadAsString((original.value.payload ?? original.value.rawBytes) as string | Uint8Array | object)
-      )
-      .then(() => {
-        toast({
-          status: 'success',
-          description: 'Value copied to clipboard',
-        });
-      })
-      .catch(navigatorClipboardErrorHandler);
-  }
-
-  function onCopyKey(original: TopicMessage) {
-    navigator.clipboard
-      .writeText(getPayloadAsString((original.key.payload ?? original.key.rawBytes) as string | Uint8Array | object))
-      .then(() => {
-        toast({
-          status: 'success',
-          description: 'Key copied to clipboard',
-        });
-      })
-      .catch(navigatorClipboardErrorHandler);
-  }
 
   const isValueDeserializerActive =
     uiState.topicSettings.searchParams.valueDeserializer !== null &&
@@ -1079,10 +689,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             >
               Copy Message
             </MenuItem>
-            <MenuItem isDisabled={original.key.isPayloadNull} onClick={() => onCopyKey(original)}>
+            <MenuItem isDisabled={original.key.isPayloadNull} onClick={() => onCopyKey(original, toast)}>
               Copy Key
             </MenuItem>
-            <MenuItem isDisabled={original.value.isPayloadNull} onClick={() => onCopyValue(original)}>
+            <MenuItem isDisabled={original.value.isPayloadNull} onClick={() => onCopyValue(original, toast)}>
               Copy Value
             </MenuItem>
             <MenuItem
@@ -1113,22 +723,307 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     },
   ];
 
+  // Search controls derived state
+  const canUseFilters =
+    (api.topicPermissions.get(props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
+  const customStartOffsetValid = !Number.isNaN(Number(customStartOffsetValue));
+
+  const startOffsetOptions = [
+    {
+      value: PartitionOffsetOrigin.End,
+      label: (
+        <Flex alignItems="center" gap={2}>
+          <MdOutlinePlayCircle />
+          <span data-testid="start-offset-latest-live">Latest / Live</span>
+        </Flex>
+      ),
+    },
+    {
+      value: PartitionOffsetOrigin.EndMinusResults,
+      label: (
+        <Flex alignItems="center" gap={2}>
+          <MdOutlineQuickreply />
+          <span data-testid="start-offset-newest">{`Newest - ${String(maxResults)}`}</span>
+        </Flex>
+      ),
+    },
+    {
+      value: PartitionOffsetOrigin.Start,
+      label: (
+        <Flex alignItems="center" gap={2}>
+          <MdOutlineSkipPrevious />
+          <span data-testid="start-offset-beginning">Beginning</span>
+        </Flex>
+      ),
+    },
+    {
+      value: PartitionOffsetOrigin.Custom,
+      label: (
+        <Flex alignItems="center" gap={2}>
+          <MdKeyboardTab />
+          <span data-testid="start-offset-custom">Offset</span>
+        </Flex>
+      ),
+    },
+    {
+      value: PartitionOffsetOrigin.Timestamp,
+      label: (
+        <Flex alignItems="center" gap={2}>
+          <MdCalendarToday />
+          <span data-testid="start-offset-timestamp">Timestamp</span>
+        </Flex>
+      ),
+    },
+  ];
+
+  const currentOffsetOrigin = (
+    startOffset >= 0 ? PartitionOffsetOrigin.Custom : startOffset
+  ) as PartitionOffsetOriginType;
+
   // Return JSX for the component
   return (
     <>
-      <SearchControlsBar
-        currentParams={currentParams}
-        messageSearch={messageSearch}
-        searchFunc={searchFunc}
-        setMaxResults={setMaxResults}
-        setPartitionID={setPartitionID}
-        setQuickSearch={setQuickSearch}
-        setShowColumnSettingsModal={setShowColumnSettingsModal}
-        setShowDeserializersModal={setShowDeserializersModal}
-        setShowPreviewFieldsModal={setShowPreviewFieldsModal}
-        setStartOffset={setStartOffset}
-        topic={props.topic}
-      />
+      <Grid gap={3} gridTemplateColumns="auto 1fr" my={4} width="full">
+        <GridItem display="flex" gap={3} gridColumn={{ base: '1/-1', md: '1' }}>
+          <Label text="Start Offset">
+            <Flex gap={3}>
+              <SingleSelect<PartitionOffsetOriginType>
+                chakraStyles={defaultSelectChakraStyles}
+                data-testid="start-offset-dropdown"
+                onChange={(e) => {
+                  if (e === PartitionOffsetOrigin.Custom) {
+                    if (startOffset < 0) {
+                      setStartOffset(0);
+                    }
+                  } else {
+                    setStartOffset(e);
+                  }
+                }}
+                options={startOffsetOptions}
+                value={currentOffsetOrigin}
+              />
+              {currentOffsetOrigin === PartitionOffsetOrigin.Custom && (
+                <Tooltip hasArrow isOpen={!customStartOffsetValid} label="Offset must be a number" placement="right">
+                  <Input
+                    isDisabled={currentOffsetOrigin !== PartitionOffsetOrigin.Custom}
+                    maxLength={20}
+                    onChange={(e) => {
+                      setCustomStartOffsetValue(e.target.value);
+                      if (!Number.isNaN(Number(e.target.value))) {
+                        setStartOffset(Number(e.target.value));
+                      }
+                    }}
+                    style={{ width: '7.5em' }}
+                    value={customStartOffsetValue}
+                  />
+                </Tooltip>
+              )}
+              {currentOffsetOrigin === PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
+            </Flex>
+          </Label>
+
+          <Label text="Max Results">
+            <SingleSelect<number>
+              onChange={(c) => {
+                setMaxResults(c);
+              }}
+              options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map((i) => ({ value: i }))}
+              value={maxResults}
+            />
+          </Label>
+
+          {uiState.topicSettings.dynamicFilters.map(
+            (filter) =>
+              ({
+                partition: (
+                  <Label text="Partition">
+                    <RemovableFilter
+                      onRemove={() => {
+                        uiState.topicSettings.dynamicFilters.remove('partition');
+                        setPartitionID(DEFAULT_SEARCH_PARAMS.partitionID);
+                      }}
+                    >
+                      <SingleSelect<number>
+                        chakraStyles={inlineSelectChakraStyles}
+                        onChange={(c) => {
+                          setPartitionID(c);
+                        }}
+                        options={[
+                          {
+                            value: -1,
+                            label: 'All',
+                          },
+                        ].concat(
+                          range(0, props.topic.partitionCount).map((i) => ({
+                            value: i,
+                            label: String(i),
+                          }))
+                        )}
+                        value={partitionID}
+                      />
+                    </RemovableFilter>
+                  </Label>
+                ),
+              })[filter]
+          )}
+
+          <Flex alignItems="flex-end">
+            <Menu>
+              <MenuButton as={Button} data-testid="add-topic-filter" variant="outline">
+                Add filter
+              </MenuButton>
+              <MenuList>
+                <MenuItem
+                  data-testid="add-topic-filter-partition"
+                  icon={<MdOutlineLayers size="1.5rem" />}
+                  isDisabled={uiState.topicSettings.dynamicFilters.includes('partition')}
+                  onClick={() => uiState.topicSettings.dynamicFilters.pushDistinct('partition')}
+                >
+                  Partition
+                </MenuItem>
+                <MenuDivider />
+                <MenuItem
+                  data-testid="add-topic-filter-javascript"
+                  icon={<MdJavascript size="1.5rem" />}
+                  isDisabled={!canUseFilters}
+                  onClick={() => {
+                    const filter = new FilterEntry();
+                    filter.isNew = true;
+                    setCurrentJSFilter(filter);
+                  }}
+                >
+                  JavaScript Filter
+                </MenuItem>
+              </MenuList>
+            </Menu>
+          </Flex>
+
+          {/* Search Progress Indicator: "Consuming Messages 30/30" */}
+          {Boolean(searchPhase && searchPhase.length > 0) && (
+            <StatusIndicator
+              bytesConsumed={prettyBytes(bytesConsumed)}
+              fillFactor={messages.length / maxResults}
+              identityKey="messageSearch"
+              messagesConsumed={String(totalMessagesConsumed)}
+              progressText={`${messages.length} / ${maxResults}`}
+              // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
+              statusText={searchPhase!}
+            />
+          )}
+        </GridItem>
+
+        <GridItem alignItems="flex-end" display="flex" gap={3} justifyContent="flex-end">
+          <Menu>
+            <MenuButton as={IconButton} icon={<MdOutlineSettings size="1.5rem" />} variant="outline" />
+            <MenuList>
+              <MenuItem
+                onClick={() => {
+                  setShowDeserializersModal(true);
+                }}
+              >
+                Deserialization
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setShowColumnSettingsModal(true);
+                }}
+              >
+                Column settings
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setShowPreviewFieldsModal(true);
+                }}
+              >
+                Preview fields
+              </MenuItem>
+            </MenuList>
+          </Menu>
+          <Flex alignItems="flex-end">
+            {/* Refresh Button */}
+            {searchPhase == null && (
+              <Tooltip hasArrow label="Repeat current search" placement="top">
+                <IconButton
+                  aria-label="Repeat current search"
+                  icon={<SyncIcon />}
+                  onClick={() => searchFunc('manual')}
+                  variant="outline"
+                />
+              </Tooltip>
+            )}
+            {searchPhase != null && (
+              <Tooltip hasArrow label="Stop searching" placement="top">
+                <IconButton
+                  aria-label="Stop searching"
+                  colorScheme="red"
+                  icon={<XCircleIcon />}
+                  onClick={() => {
+                    if (abortControllerRef.current) {
+                      abortControllerRef.current.abort();
+                    }
+                  }}
+                  variant="solid"
+                />
+              </Tooltip>
+            )}
+          </Flex>
+        </GridItem>
+
+        {/* Filter Tags */}
+        <MessageSearchFilterBar
+          onEdit={(filter) => {
+            setCurrentJSFilter(filter);
+          }}
+        />
+
+        <GridItem display="flex" gap={4} gridColumn="1/-1" mt={4}>
+          {/* Quick Search */}
+          <Input
+            onChange={(x) => {
+              setQuickSearch(x.target.value);
+            }}
+            placeholder="Filter table content ..."
+            px={4}
+            value={quickSearch}
+          />
+          <Flex alignItems="center" fontSize="sm" gap={2} whiteSpace="nowrap">
+            {searchPhase === null || searchPhase === 'Done' ? (
+              <>
+                <Flex alignItems="center" gap={2}>
+                  <MdDownload size={14} /> {prettyBytes(bytesConsumed)}
+                </Flex>
+                <Flex alignItems="center" gap={2}>
+                  <MdOutlineTimer size={14} /> {elapsedMs ? prettyMilliseconds(elapsedMs) : ''}
+                </Flex>
+              </>
+            ) : (
+              <>
+                <span className="spinner" />
+                <span className="pulsating">Fetching data...</span>
+              </>
+            )}
+          </Flex>
+        </GridItem>
+      </Grid>
+
+      {currentJSFilter && (
+        <JavascriptFilterModal
+          currentFilter={currentJSFilter}
+          onClose={() => setCurrentJSFilter(null)}
+          onSave={(filter) => {
+            if (filter.isNew) {
+              uiState.topicSettings.searchParams.filters.push(filter);
+              filter.isNew = false;
+            } else {
+              const idx = uiState.topicSettings.searchParams.filters.findIndex((x) => x.id === filter.id);
+              if (idx !== -1) {
+                uiState.topicSettings.searchParams.filters.splice(idx, 1, filter);
+              }
+            }
+            searchFunc('manual');
+          }}
+        />
+      )}
 
       {/* Message Table (or error display) */}
       {fetchError ? (
@@ -1151,9 +1046,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         <>
           <DataTable<TopicMessage>
             columns={columns}
-            data={messageSource.data}
+            data={filteredMessages}
             emptyText="No messages"
-            isLoading={messageSearch.searchPhase !== null}
+            isLoading={searchPhase !== null}
             onPaginationChange={onPaginationChange(
               paginationParams,
               ({ pageSize: newPageSize, pageIndex: newPageIndex }) => {
@@ -1175,8 +1070,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
               <ExpandedMessage
                 loadLargeMessage={() => loadLargeMessage(props.topic.topicName, original.partitionID, original.offset)}
                 msg={original}
-                onCopyKey={onCopyKey}
-                onCopyValue={onCopyValue}
+                onCopyKey={(msg) => onCopyKey(msg, toast)}
+                onCopyValue={(msg) => onCopyValue(msg, toast)}
                 onDownloadRecord={() => {
                   setDownloadMessages([original]);
                 }}
@@ -1184,10 +1079,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             )}
           />
           <Button
-            isDisabled={!messageSearch.messages || messageSearch.messages.length === 0}
+            isDisabled={messages.length === 0}
             mt={4}
             onClick={() => {
-              setDownloadMessages(messageSearch.messages);
+              setDownloadMessages(messages);
             }}
             variant="outline"
           >
@@ -1207,7 +1102,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
           <PreviewFieldsModal
             getShowDialog={() => showPreviewFieldsModal}
-            messageSearch={messageSearch}
+            messages={messages}
             setShowDialog={setShowPreviewFieldsModal}
           />
 
@@ -1216,4 +1111,4 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       )}
     </>
   );
-};
+});
