@@ -49,3 +49,21 @@ export const updateShadowLink = ShadowLinkService.method.updateShadowLink;
  * @generated from rpc redpanda.core.admin.v2.ShadowLinkService.FailOver
  */
 export const failOver = ShadowLinkService.method.failOver;
+
+/**
+ * This operation returns information about a Shadow Topic on a Shadow Link.
+ * A Shadow Topic is a resource created automatically by a Shadow Link.  The
+ * Shadow Topic 'shadows' a topic on a source cluster, mirroring the data
+ * and properties of that topic.
+ *
+ * @generated from rpc redpanda.core.admin.v2.ShadowLinkService.GetShadowTopic
+ */
+export const getShadowTopic = ShadowLinkService.method.getShadowTopic;
+
+/**
+ * This operation returns a list of all Shadow Topics on a Shadow Link and
+ * their status
+ *
+ * @generated from rpc redpanda.core.admin.v2.ShadowLinkService.ListShadowTopics
+ */
+export const listShadowTopics = ShadowLinkService.method.listShadowTopics;
