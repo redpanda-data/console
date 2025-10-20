@@ -24,6 +24,8 @@ import {
 } from 'react-beautiful-dnd';
 
 import { globHelp, PatternHelpDrawer } from './preview-settings/pattern-help-drawer';
+import { usePreviewDisplayMode } from '../../../../hooks/use-preview-display-mode';
+import { usePreviewMultiResultMode } from '../../../../hooks/use-preview-multi-result-mode';
 import { usePreviewTagsCaseSensitive } from '../../../../hooks/use-preview-tags-case-sensitive';
 import type { TopicMessage } from '../../../../state/rest-interfaces';
 import type { PreviewTagV2 } from '../../../../state/ui';
@@ -35,14 +37,9 @@ import { SingleSelect } from '../../../misc/select';
 
 export const PreviewSettings = observer(({ messages, topicName }: { messages: TopicMessage[]; topicName: string }) => {
   const [caseSensitive, setCaseSensitive] = usePreviewTagsCaseSensitive(topicName);
-  const {
-    setPreviewTags: setStoredPreviewTags,
-    getPreviewMultiResultMode,
-    setPreviewMultiResultMode,
-    getPreviewDisplayMode,
-    setPreviewDisplayMode,
-    perTopicSettings,
-  } = useTopicSettingsStore();
+  const [multiResultMode, setMultiResultMode] = usePreviewMultiResultMode(topicName);
+  const [displayMode, setDisplayMode] = usePreviewDisplayMode(topicName);
+  const { setPreviewTags: setStoredPreviewTags, perTopicSettings } = useTopicSettingsStore();
 
   const currentKeys = getAllMessageKeys(messages)
     .map((p) => p.propertyName)
@@ -141,22 +138,18 @@ export const PreviewSettings = observer(({ messages, topicName }: { messages: To
             options={{ 'Ignore Case': 'ignoreCase', 'Case Sensitive': 'caseSensitive' }}
             value={caseSensitive}
           />
-          <OptionGroup
+          <OptionGroup<'showOnlyFirst' | 'showAll'>
             label="Multiple Results"
-            onChange={(e) => {
-              setPreviewMultiResultMode(topicName, e);
-            }}
+            onChange={(e) => setMultiResultMode(e)}
             options={{ 'First result': 'showOnlyFirst', 'Show All': 'showAll' }}
-            value={getPreviewMultiResultMode(topicName)}
+            value={multiResultMode}
           />
 
-          <OptionGroup
+          <OptionGroup<'single' | 'wrap' | 'rows'>
             label="Wrapping"
-            onChange={(e) => {
-              setPreviewDisplayMode(topicName, e);
-            }}
+            onChange={(e) => setDisplayMode(e)}
             options={{ 'Single Line': 'single', Wrap: 'wrap', Rows: 'rows' }}
-            value={getPreviewDisplayMode(topicName)}
+            value={displayMode}
           />
         </div>
       </div>

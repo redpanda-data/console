@@ -15,22 +15,22 @@ import { useQueryStateWithCallback } from './use-query-state-with-callback';
 import { useTopicSettingsStore } from '../stores/topic-settings-store';
 
 /**
- * Hook for managing preview tags case sensitivity with URL state and localStorage persistence
+ * Hook for managing preview multi result mode with URL state and localStorage persistence
  * Syncs between URL query params and Zustand store
  */
-export function usePreviewTagsCaseSensitive(topicName: string) {
-  const { setPreviewTagsCaseSensitive, getPreviewTagsCaseSensitive } = useTopicSettingsStore();
+export function usePreviewMultiResultMode(topicName: string) {
+  const { setPreviewMultiResultMode, getPreviewMultiResultMode } = useTopicSettingsStore();
 
-  const [caseSensitive, setCaseSensitive] = useQueryStateWithCallback<'caseSensitive' | 'ignoreCase'>(
+  const [multiResultMode, setMultiResultMode] = useQueryStateWithCallback<'showOnlyFirst' | 'showAll'>(
     {
       onUpdate: (val) => {
-        setPreviewTagsCaseSensitive(topicName, val);
+        setPreviewMultiResultMode(topicName, val);
       },
-      getDefaultValue: () => getPreviewTagsCaseSensitive(topicName),
+      getDefaultValue: () => getPreviewMultiResultMode(topicName),
     },
-    'caseSensitive',
-    parseAsStringLiteral(['caseSensitive', 'ignoreCase'] as const).withDefault('ignoreCase')
+    'multiResult',
+    parseAsStringLiteral(['showOnlyFirst', 'showAll'] as const).withDefault('showAll')
   );
 
-  return [caseSensitive, setCaseSensitive] as const;
+  return [multiResultMode, setMultiResultMode] as const;
 }

@@ -174,7 +174,18 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
             return { perTopicSettings: updated };
           }
 
-          return state;
+          // Create new topic settings if it doesn't exist
+          return {
+            perTopicSettings: [
+              ...state.perTopicSettings,
+              createDefaultTopicSettings(topicName, {
+                searchParams: {
+                  ...DEFAULT_SEARCH_PARAMS,
+                  sorting,
+                },
+              }),
+            ],
+          };
         });
       },
 
@@ -199,7 +210,18 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
             return { perTopicSettings: updated };
           }
 
-          return state;
+          // Create new topic settings if it doesn't exist
+          return {
+            perTopicSettings: [
+              ...state.perTopicSettings,
+              createDefaultTopicSettings(topicName, {
+                searchParams: {
+                  ...DEFAULT_SEARCH_PARAMS,
+                  ...searchParams,
+                },
+              }),
+            ],
+          };
         });
       },
 
@@ -409,11 +431,14 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
 // This ensures that when MobX saves to localStorage (after 2 second delay), it has the latest data from Zustand
 useTopicSettingsStore.subscribe((state) => {
   // Dynamically import uiSettings to avoid circular dependencies
-  import('../state/ui').then(({ uiSettings }) => {
-    // Update MobX's perTopicSettings with Zustand's data
-    // This keeps them in sync so MobX's autorun doesn't overwrite Zustand's changes
-    uiSettings.perTopicSettings.splice(0, uiSettings.perTopicSettings.length, ...state.perTopicSettings);
-  }).catch((error) => {
-    console.error('Failed to sync Zustand to MobX:', error);
-  });
+  import('../state/ui')
+    .then(({ uiSettings }) => {
+      // Update MobX's perTopicSettings with Zustand's data
+      // This keeps them in sync so MobX's autorun doesn't overwrite Zustand's changes
+      uiSettings.perTopicSettings.splice(0, uiSettings.perTopicSettings.length, ...state.perTopicSettings);
+    })
+    .catch((error) => {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage for debugging sync errors
+      console.error('Failed to sync Zustand to MobX:', error);
+    });
 });

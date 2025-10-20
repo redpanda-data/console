@@ -286,19 +286,44 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
   const breakpoint = useBreakpoint({ ssr: false });
 
   // Zustand store for topic settings
-  const { setSorting, getSorting, perTopicSettings } = useTopicSettingsStore();
+  const { setSorting, getSorting, setTopicSettings, perTopicSettings, setSearchParams, getSearchParams } =
+    useTopicSettingsStore();
 
   // Access perTopicSettings directly to trigger re-renders when Zustand state changes
   const topicSettings = perTopicSettings.find((t) => t.topicName === props.topic.topicName);
   const previewDisplayMode = topicSettings?.previewDisplayMode ?? 'wrap';
+  const dynamicFilters = topicSettings?.dynamicFilters ?? [];
+
+  // Helper functions for managing dynamic filters
+  const addDynamicFilter = useCallback(
+    (filter: 'partition') => {
+      const currentFilters = topicSettings?.dynamicFilters ?? [];
+      if (!currentFilters.includes(filter)) {
+        setTopicSettings(props.topic.topicName, {
+          dynamicFilters: [...currentFilters, filter],
+        });
+      }
+    },
+    [props.topic.topicName, topicSettings?.dynamicFilters, setTopicSettings]
+  );
+
+  const removeDynamicFilter = useCallback(
+    (filter: 'partition') => {
+      const currentFilters = topicSettings?.dynamicFilters ?? [];
+      setTopicSettings(props.topic.topicName, {
+        dynamicFilters: currentFilters.filter((f) => f !== filter),
+      });
+    },
+    [props.topic.topicName, topicSettings?.dynamicFilters, setTopicSettings]
+  );
 
   // URL query state management with localStorage sync
   const [partitionID, setPartitionID] = useQueryStateWithCallback<number>(
     {
       onUpdate: (val) => {
-        uiState.topicSettings.searchParams.partitionID = val;
+        setSearchParams(props.topic.topicName, { partitionID: val });
       },
-      getDefaultValue: () => uiState.topicSettings.searchParams.partitionID,
+      getDefaultValue: () => getSearchParams(props.topic.topicName)?.partitionID ?? DEFAULT_SEARCH_PARAMS.partitionID,
     },
     'p',
     parseAsInteger.withDefault(DEFAULT_SEARCH_PARAMS.partitionID)
@@ -307,9 +332,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
   const [maxResults, setMaxResults] = useQueryStateWithCallback<number>(
     {
       onUpdate: (val) => {
-        uiState.topicSettings.searchParams.maxResults = val;
+        setSearchParams(props.topic.topicName, { maxResults: val });
       },
-      getDefaultValue: () => uiState.topicSettings.searchParams.maxResults,
+      getDefaultValue: () => getSearchParams(props.topic.topicName)?.maxResults ?? DEFAULT_SEARCH_PARAMS.maxResults,
     },
     's',
     parseAsInteger.withDefault(DEFAULT_SEARCH_PARAMS.maxResults)
@@ -318,9 +343,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
   const [startOffset, setStartOffset] = useQueryStateWithCallback<number>(
     {
       onUpdate: (val) => {
-        uiState.topicSettings.searchParams.startOffset = val;
+        setSearchParams(props.topic.topicName, { startOffset: val });
       },
-      getDefaultValue: () => uiState.topicSettings.searchParams.startOffset,
+      getDefaultValue: () => getSearchParams(props.topic.topicName)?.startOffset ?? DEFAULT_SEARCH_PARAMS.startOffset,
     },
     'o',
     parseAsInteger.withDefault(DEFAULT_SEARCH_PARAMS.startOffset)
@@ -343,9 +368,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
   const [pageSize, setPageSize] = useQueryStateWithCallback<number>(
     {
       onUpdate: (val) => {
-        uiState.topicSettings.searchParams.pageSize = val;
+        setSearchParams(props.topic.topicName, { pageSize: val });
       },
-      getDefaultValue: () => uiState.topicSettings.searchParams.pageSize,
+      getDefaultValue: () => getSearchParams(props.topic.topicName)?.pageSize ?? DEFAULT_SEARCH_PARAMS.pageSize,
     },
     'pageSize',
     parseAsInteger.withDefault(50)
@@ -356,8 +381,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
     {
       onUpdate: (val) => {
         setSorting(props.topic.topicName, val);
-        // Keep MobX state in sync for backward compatibility
-        uiState.topicSettings.searchParams.sorting = val;
       },
       getDefaultValue: () => getSorting(props.topic.topicName),
     },
@@ -867,14 +890,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
             />
           </Label>
 
-          {uiState.topicSettings.dynamicFilters.map(
+          {dynamicFilters.map(
             (filter) =>
               ({
                 partition: (
                   <Label text="Partition">
                     <RemovableFilter
                       onRemove={() => {
-                        uiState.topicSettings.dynamicFilters.remove('partition');
+                        removeDynamicFilter('partition');
                         setPartitionID(DEFAULT_SEARCH_PARAMS.partitionID);
                       }}
                     >
@@ -911,8 +934,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
                 <MenuItem
                   data-testid="add-topic-filter-partition"
                   icon={<MdOutlineLayers size="1.5rem" />}
-                  isDisabled={uiState.topicSettings.dynamicFilters.includes('partition')}
-                  onClick={() => uiState.topicSettings.dynamicFilters.pushDistinct('partition')}
+                  isDisabled={dynamicFilters.includes('partition')}
+                  onClick={() => addDynamicFilter('partition')}
                 >
                   Partition
                 </MenuItem>
