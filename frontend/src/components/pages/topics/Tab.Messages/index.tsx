@@ -46,7 +46,7 @@ import {
   useBreakpoint,
   useToast,
 } from '@redpanda-data/ui';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { observer } from 'mobx-react';
 import { parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import {
@@ -76,9 +76,11 @@ import { isServerless } from '../../../../config';
 import { useQueryStateWithCallback } from '../../../../hooks/use-query-state-with-callback';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { appGlobal } from '../../../../state/app-global';
+import { useTopicSettingsStore } from '../../../../stores/topic-settings-store';
 import { IsDev } from '../../../../utils/env';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filter-helper';
 import { onPaginationChange } from '../../../../utils/pagination';
+import { sortingParser } from '../../../../utils/sorting-parser';
 import {
   Label,
   navigatorClipboardErrorHandler,
@@ -283,6 +285,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
   const toast = useToast();
   const breakpoint = useBreakpoint({ ssr: false });
 
+  // Zustand store for topic settings
+  const { setSorting, getSorting } = useTopicSettingsStore();
+
   // URL query state management with localStorage sync
   const [partitionID, setPartitionID] = useQueryStateWithCallback<number>(
     {
@@ -340,6 +345,20 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
     },
     'pageSize',
     parseAsInteger.withDefault(50)
+  );
+
+  // Sorting state managed by nuqs with Zustand store sync
+  const [sorting, setSortingState] = useQueryStateWithCallback<SortingState>(
+    {
+      onUpdate: (val) => {
+        setSorting(props.topic.topicName, val);
+        // Keep MobX state in sync for backward compatibility
+        uiState.topicSettings.searchParams.sorting = val;
+      },
+      getDefaultValue: () => getSorting(props.topic.topicName),
+    },
+    'sort',
+    sortingParser.withDefault([])
   );
 
   // Modal states
@@ -1061,15 +1080,13 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
                 setPageSize(newPageSize);
               }
             )}
-            // we need (?? []) to be compatible with searchParams of clients already stored in local storage
-            // otherwise we would get undefined for some of the existing ones
-            onSortingChange={(sorting) => {
-              uiState.topicSettings.searchParams.sorting =
-                typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
+            onSortingChange={(newSorting) => {
+              const updatedSorting: SortingState = typeof newSorting === 'function' ? newSorting(sorting) : newSorting;
+              setSortingState(updatedSorting);
             }}
             pagination={paginationParams}
             size={['lg', 'md', 'sm'].includes(breakpoint) ? 'sm' : 'md'}
-            sorting={uiState.topicSettings.searchParams.sorting ?? []}
+            sorting={sorting}
             subComponent={({ row: { original } }) => (
               <ExpandedMessage
                 loadLargeMessage={() =>
