@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Redpanda Data, Inc.
+ * Copyright 2025 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -180,9 +180,6 @@ export const SaveMessagesDialog = observer(
       }
 
       const cleaned = cleanMessages(messages);
-
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.log(`saving cleaned messages; messages: ${messages.length}`);
 
       if (format === 'json') {
         const json = toJson(cleaned, 4);
