@@ -165,7 +165,7 @@ export const AIAgentMessageView = ({ message, isStreaming = false }: AIAgentMess
         </div>
         <p className={`mt-2 text-xs ${message.sender === 'user' ? 'text-blue-100' : 'text-slate-500'}`}>
           {message.timestamp.toLocaleTimeString()}
-          {message.taskId && <span className="ml-2 opacity-50">Task: {message.taskId.slice(0, 8)}...</span>}
+          {message.taskId && <span className="ml-2 opacity-50">Task: {message.taskId}</span>}
         </p>
       </article>
     </div>
