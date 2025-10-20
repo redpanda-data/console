@@ -18,7 +18,15 @@ export const REDPANDA_TOPIC_AND_USER_COMPONENTS = [
  * Fields that are critical for connection and should always be shown
  * even when they have defaults
  */
-export const CRITICAL_CONNECTION_FIELDS = new Set(['addresses', 'seed_brokers', 'topics', 'topic', 'brokers']);
+export const CRITICAL_CONNECTION_FIELDS = new Set([
+  'addresses',
+  'seed_brokers',
+  'topics',
+  'topic',
+  'brokers',
+  'tls',
+  'consumer_group',
+]);
 
 /**
  * Configuration object fields that should be hidden for REDPANDA_SECRET_COMPONENTS

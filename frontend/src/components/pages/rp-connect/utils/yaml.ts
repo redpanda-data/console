@@ -1,4 +1,4 @@
-import { type Document, parseDocument, stringify as yamlStringify } from 'yaml';
+import { Document, parseDocument, stringify as yamlStringify } from 'yaml';
 
 import { getBuiltInComponents, schemaToConfig } from './schema';
 import type { ConnectConfigObject } from '../types/schema';
@@ -230,29 +230,145 @@ export const mergeConnectConfigs = (
   return doc;
 };
 
-export const configToYaml = (configObject: Document.Parsed | Partial<ConnectConfigObject> | undefined): string => {
-  try {
-    let yamlString: string;
+const yamlConfig = {
+  indent: 2,
+  lineWidth: 120,
+  minContentWidth: 20,
+  doubleQuotedAsJSON: false,
+};
 
-    // Check if this is a YAML Document (from mergeConnectConfigs with existing YAML)
-    // Type guard: Document.Parsed has getIn method
-    if (configObject && typeof (configObject as Document.Parsed).getIn === 'function') {
-      // It's a Document - convert to string (preserves comments!)
-      yamlString = (configObject as Document.Parsed).toString();
-      // Apply root spacing for readability (adds newlines between root-level keys)
-      yamlString = addRootSpacing(yamlString);
-    } else {
-      // It's a plain object - stringify to YAML
-      yamlString = yamlStringify(configObject, {
-        indent: 2,
-        lineWidth: 120,
-        minContentWidth: 20,
-        doubleQuotedAsJSON: false,
-      });
+type YAMLNode = { items?: unknown[]; comment?: string; commentBefore?: string };
+type YAMLKey = { value?: string; comment?: string };
+type YAMLPair = { key?: YAMLKey; value?: YAMLNode };
 
-      yamlString = addRootSpacing(yamlString);
+function addCommentsRecursive(node: YAMLNode, spec: import('../types/schema').RawFieldSpec): void {
+  if (!node.items) {
+    return;
+  }
+
+  if (!spec.children) {
+    return;
+  }
+
+  for (const item of node.items) {
+    const pair = item as YAMLPair;
+    const key = pair?.key?.value;
+    if (!key) {
+      continue;
     }
 
+    const fieldSpec = spec.children.find((child) => child.name === key);
+    if (!fieldSpec) {
+      continue;
+    }
+
+    // Determine if this is a parent object (has nested children) vs an array or leaf
+    const isParentObject = pair.value?.items && fieldSpec.children;
+    const isArray = pair.value?.items && !fieldSpec.children;
+
+    if (fieldSpec.comment) {
+      // For arrays, add comment to the key (inline with the field name)
+      // For leaf values, add to the value (inline with the value)
+      // For parent objects, skip (they get comments on their children)
+      if (isArray && pair.key) {
+        pair.key.comment = ` ${fieldSpec.comment}`;
+      } else if (!isParentObject && pair.value) {
+        pair.value.comment = ` ${fieldSpec.comment}`;
+      }
+    }
+
+    if (isParentObject && pair.value) {
+      addCommentsRecursive(pair.value, fieldSpec);
+    }
+  }
+}
+
+function addCommentsFromSpec(
+  doc: Document.Parsed | Document,
+  componentSpec: import('../types/schema').ConnectComponentSpec
+): void {
+  if (!componentSpec.config) {
+    return;
+  }
+
+  const componentName = componentSpec.name;
+  let configPath: string[] = [];
+
+  switch (componentSpec.type) {
+    case 'input':
+    case 'output':
+    case 'buffer':
+    case 'metrics':
+    case 'tracer':
+      configPath = [componentSpec.type, componentName];
+      break;
+    case 'processor':
+      configPath = ['pipeline', 'processors', '0', componentName];
+      break;
+    case 'cache':
+    case 'rate_limit': {
+      const resourceKey = componentSpec.type === 'cache' ? 'cache_resources' : 'rate_limit_resources';
+      configPath = [resourceKey, '0', componentName];
+      break;
+    }
+    case 'scanner':
+      configPath = [componentName];
+      break;
+    default:
+      return;
+  }
+
+  let currentNode: YAMLNode | undefined = doc.contents as YAMLNode;
+  for (const segment of configPath) {
+    if (!currentNode?.items) {
+      break;
+    }
+
+    const foundPair: YAMLPair | undefined = (currentNode.items as YAMLPair[]).find(
+      (item) => item?.key?.value === segment
+    );
+    if (foundPair?.value) {
+      currentNode = foundPair.value;
+    } else if (Number.isNaN(Number(segment))) {
+      // Not a valid key or array index - stop navigation
+      break;
+    } else {
+      // It's an array index
+      currentNode = (currentNode.items as YAMLNode[])[Number(segment)];
+    }
+  }
+
+  if (currentNode && componentSpec.config) {
+    addCommentsRecursive(currentNode, componentSpec.config);
+  }
+}
+
+export const configToYaml = (
+  configObject: Document.Parsed | Partial<ConnectConfigObject> | undefined,
+  componentSpec?: import('../types/schema').ConnectComponentSpec
+): string => {
+  try {
+    if (!configObject) {
+      return '';
+    }
+
+    let doc: Document.Parsed | Document;
+
+    if (typeof (configObject as Document.Parsed).getIn === 'function') {
+      // It's a merged document - regenerate to ensure consistent structure
+      // This fixes navigation issues with nodes added via doc.set()
+      const tempYaml = yamlStringify(configObject, yamlConfig);
+      doc = parseDocument(tempYaml);
+    } else {
+      doc = new Document(configObject);
+    }
+
+    if (componentSpec) {
+      addCommentsFromSpec(doc, componentSpec);
+    }
+
+    let yamlString = yamlStringify(doc, yamlConfig);
+    yamlString = addRootSpacing(yamlString);
     return yamlString;
   } catch (_error) {
     return JSON.stringify(configObject, null, 2);
@@ -282,16 +398,18 @@ export const getConnectTemplate = ({
   }
 
   // Phase 1: Generate config object for new component
-  const newConfigObject = schemaToConfig(componentSpec, showOptionalFields);
-  if (!newConfigObject) {
+  const result = schemaToConfig(componentSpec, showOptionalFields);
+  if (!result) {
     return;
   }
+
+  const { config: newConfigObject, spec } = result;
 
   // Phase 2 & 3: Merge with existing (if any) and convert to YAML
   if (existingYaml) {
     const mergedConfig = mergeConnectConfigs(existingYaml, newConfigObject);
-    return configToYaml(mergedConfig);
+    return configToYaml(mergedConfig, spec);
   }
 
-  return configToYaml(newConfigObject);
+  return configToYaml(newConfigObject, spec);
 };

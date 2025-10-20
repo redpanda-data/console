@@ -29,8 +29,7 @@ export interface RawFieldSpec {
   comment?: string; // Schema-derived comment for YAML generation
 }
 
-// ConnectAnnotatedExample for component examples
-export interface ConnectAnnotatedExample {
+interface ConnectAnnotatedExample {
   title: string;
   summary: string;
   config: string;
