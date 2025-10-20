@@ -216,6 +216,7 @@ export type ConnectConfigKey =
   | 'scanner'
   | 'metrics'
   | 'tracer'
-  | 'scanner';
+  | 'scanner'
+  | 'redpanda'; // Top-level block for redpanda_common components
 
 export type ConnectConfigObject = Record<ConnectConfigKey, unknown>;

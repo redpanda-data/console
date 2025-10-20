@@ -27,7 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'compo
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
-import { isFeatureFlagEnabled } from 'config';
+import { isFeatureFlagEnabled, isServerless } from 'config';
 import { useSessionStorage } from 'hooks/use-session-storage';
 import { AlertCircle, PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
@@ -111,7 +111,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
     const CreateButton = () => {
       const toast = useToast();
-      const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
+      const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles') && isServerless();
 
       return (
         <Button
@@ -187,11 +187,14 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           <PipelineEditor onChange={(x) => (this.editorContent = x)} secrets={this.secrets} yaml={this.editorContent} />
         </div>
 
-        {isFeatureFlagEnabled('enableRpcnTiles') && this.lintResults && Object.keys(this.lintResults).length > 0 && (
-          <div className="mt-4">
-            <LintHintList lintHints={this.lintResults} />
-          </div>
-        )}
+        {isFeatureFlagEnabled('enableRpcnTiles') &&
+          isServerless() &&
+          this.lintResults &&
+          Object.keys(this.lintResults).length > 0 && (
+            <div className="mt-4">
+              <LintHintList lintHints={this.lintResults} />
+            </div>
+          )}
 
         <Flex alignItems="center" gap="4">
           <CreateButton />
@@ -309,7 +312,7 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
         <CardContent>
           <NewButton onClick={openAddSecret} variant="secondary">
             <PlusIcon className="size-4" color="white" />
-            Add Secrets
+            Add secrets
           </NewButton>
         </CardContent>
       </Card>
@@ -394,7 +397,7 @@ export const PipelineEditor = observer(
     const [contextualVarsAutocomplete, setContextualVarsAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
     const [persistedFormData] = useSessionStorage<Partial<WizardFormData>>(CONNECT_WIZARD_CONNECTOR_KEY, {});
-    const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
+    const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles') && isServerless();
 
     // Track actual editor content to keep sidebar in sync with editor's real state
     const [actualEditorContent, setActualEditorContent] = useState<string>('');
@@ -411,12 +414,14 @@ export const PipelineEditor = observer(
         showOptionalFields: false,
       });
       if (persistedOutput?.connectionName && persistedOutput?.connectionType) {
+        // Merge output into the existing input template to avoid duplicate top-level blocks
         const outputTemplate = getConnectTemplate({
           connectionName: persistedOutput.connectionName,
           connectionType: persistedOutput.connectionType,
           showOptionalFields: false,
+          existingYaml: inputTemplate,
         });
-        return `${inputTemplate}\n${outputTemplate}`;
+        return outputTemplate;
       }
       return inputTemplate;
     }, [persistedFormData]);

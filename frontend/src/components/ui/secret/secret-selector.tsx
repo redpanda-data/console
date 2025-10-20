@@ -147,7 +147,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-muted border-dashed bg-muted/10 py-12">
           <KeyRound className="mb-4 h-12 w-12 text-muted-foreground opacity-50" />
           <Text className="mb-2 font-medium" variant="default">
-            No Secrets Available
+            No secrets available
           </Text>
           <Text className="mb-4 text-center" variant="muted">
             Create a secret to securely store your OpenAI API key
@@ -155,7 +155,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
           <Button onClick={() => setIsCreateDialogOpen(true)} type="button" variant="outline">
             <div className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              <Text as="span">Create Secret</Text>
+              <Text as="span">Create secret</Text>
             </div>
           </Button>
         </div>
@@ -177,7 +177,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
           <Button onClick={() => setIsCreateDialogOpen(true)} type="button" variant="outline">
             <div className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              <Text as="span">Create Secret</Text>
+              <Text as="span">Create secret</Text>
             </div>
           </Button>
         </div>
@@ -186,7 +186,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
       <Dialog onOpenChange={setIsCreateDialogOpen} open={isCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New Secret</DialogTitle>
+            <DialogTitle>Create new secret</DialogTitle>
             <DialogDescription>
               Create a new secret for your OpenAI API key. The secret will be stored securely.
             </DialogDescription>
@@ -199,7 +199,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Secret Name</FormLabel>
+                    <FormLabel>Secret name</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="e.g., OPENAI_API_KEY"
@@ -218,7 +218,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
                 name="value"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Secret Value</FormLabel>
+                    <FormLabel>Secret value</FormLabel>
                     <FormControl>
                       <Input placeholder="sk-..." type="password" {...field} />
                     </FormControl>

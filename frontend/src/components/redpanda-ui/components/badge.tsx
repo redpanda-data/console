@@ -5,7 +5,7 @@ import React from 'react';
 import { cn } from '../lib/utils';
 
 const badgeVariants = cva(
-  'inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium max-w-full whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden text-ellipsis truncate selection:bg-selected selection:text-selected-foreground',
+  'inline-flex items-center justify-center rounded-md border  font-medium max-w-full whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden text-ellipsis truncate selection:bg-selected selection:text-selected-foreground',
   {
     variants: {
       variant: {
@@ -36,14 +36,20 @@ const badgeVariants = cva(
         red: 'border-transparent bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 [a&]:hover:bg-red-200 dark:[a&]:hover:bg-red-800',
         gray: 'border-transparent bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300 [a&]:hover:bg-gray-200 dark:[a&]:hover:bg-gray-800',
       },
+      size: {
+        default: 'px-2 py-0.5 text-xs',
+        sm: 'px-1 py-0.25 text-[10px]',
+      }
     },
     defaultVariants: {
       variant: 'default',
+      size: 'default',
     },
   },
 );
 
 export type BadgeVariant = VariantProps<typeof badgeVariants>['variant'];
+export type BadgeSize = VariantProps<typeof badgeVariants>['size'];
 
 function Badge({
   className,
@@ -52,17 +58,19 @@ function Badge({
   testId,
   icon,
   children,
+  size,
   ...props
 }: React.ComponentProps<'span'> & {
   asChild?: boolean;
   testId?: string;
   icon?: React.ReactNode;
   variant?: BadgeVariant;
+  size?: BadgeSize;
 }) {
   const Comp = asChild ? SlotPrimitive.Slot : 'span';
 
   return (
-    <Comp data-slot="badge" data-testid={testId} className={cn(badgeVariants({ variant }), className)} {...props}>
+    <Comp data-slot="badge" data-testid={testId} className={cn(badgeVariants({ variant, size }), className)} {...props}>
       {icon}
       {children && <span className="truncate">{children}</span>}
     </Comp>

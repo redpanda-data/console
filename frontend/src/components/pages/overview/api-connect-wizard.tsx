@@ -1,25 +1,27 @@
 import { create } from '@bufbuild/protobuf';
+import { TransportProvider } from '@connectrpc/connect-query';
 import { Markdown } from '@redpanda-data/ui';
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import { CopyButton } from 'components/redpanda-ui/components/copy-button';
-import { Group } from 'components/redpanda-ui/components/group';
-import { Input } from 'components/redpanda-ui/components/input';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { Heading } from 'components/redpanda-ui/components/typography';
+import { config } from 'config';
+import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { useSessionStorage } from 'hooks/use-session-storage';
 import { ChevronLeftIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetOnboardingCodeSnippetQuery } from 'react-query/api/onboarding';
+import { useGetServerlessClusterQuery } from 'react-query/api/serverless';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { useNavigate } from 'react-router-dom';
 import { uiState } from 'state/ui-state';
 import { capitalizeFirst } from 'utils/utils';
 
+import { useResetWizardSessionStorage } from '../rp-connect/hooks/use-reset-wizard-session-storage';
 import { AddTopicStep } from '../rp-connect/onboarding/add-topic-step';
 import { AddUserStep } from '../rp-connect/onboarding/add-user-step';
 import type { AddTopicFormData, AddUserFormData, BaseStepRef } from '../rp-connect/types/wizard';
@@ -27,14 +29,14 @@ import { handleStepResult } from '../rp-connect/utils/wizard';
 
 const API_WIZARD_CONNECTOR_NAME_KEY = 'api-wizard-connector-name';
 
-export const APIWizardStep = {
+const APIWizardStep = {
   ADD_TOPIC: 'add-topic-step',
   ADD_USER: 'add-user-step',
   CONNECT_CLUSTER: 'connect-cluster-step',
 };
-export type APIWizardStepType = (typeof APIWizardStep)[keyof typeof APIWizardStep];
+type APIWizardStepType = (typeof APIWizardStep)[keyof typeof APIWizardStep];
 
-export const apiWizardStepDefinitions = [
+const apiWizardStepDefinitions = [
   { id: APIWizardStep.ADD_TOPIC, title: 'Add a topic' },
   { id: APIWizardStep.ADD_USER, title: 'Add a user' },
   { id: APIWizardStep.CONNECT_CLUSTER, title: 'Connect cluster' },
@@ -42,8 +44,8 @@ export const apiWizardStepDefinitions = [
 
 const APIStepper = defineStepper(...apiWizardStepDefinitions);
 
-export const APIWizardStepper = APIStepper.Stepper;
-export type APIWizardStepperSteps = typeof APIStepper.Steps;
+const APIWizardStepper = APIStepper.Stepper;
+type APIWizardStepperSteps = typeof APIStepper.Steps;
 
 type APIConnectWizardFormData = {
   connectionName?: string;
@@ -52,29 +54,40 @@ type APIConnectWizardFormData = {
   saslMechanism?: string;
 };
 
-export type StepSubmissionResult = {
-  success: boolean;
-  message?: string;
-  error?: string;
-  data?: APIConnectWizardFormData;
+type HowToConnectProps = {
+  connectionName?: string;
+  topicName?: string;
+  username?: string;
+  saslMechanism?: string;
 };
 
-const CopyableValue = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex items-center gap-2">
-    <Text className="w-36" variant="label">
-      {label}
-    </Text>
-    <Group>
-      <Input className="bg-accent text-muted-foreground" readOnly value={value} />
-      <CopyButton className="bg-accent text-muted-foreground" content={value} size="icon" />
-    </Group>
-  </div>
-);
-
-const HowToConnectStep = ({ connectionName, topicName, username, saslMechanism }: APIConnectWizardFormData) => {
+const HowToConnectComponent = ({ connectionName, topicName, username, saslMechanism }: HowToConnectProps) => {
   const { data: codeSnippet, isLoading: isLoadingCodeSnippet } = useGetOnboardingCodeSnippetQuery({
     language: connectionName,
   });
+  const { data: cluster } = useGetServerlessClusterQuery({
+    id: config.clusterId,
+  });
+  const bootstrapServerUrl = cluster?.serverlessCluster?.kafkaApi?.seedBrokers.join(',') as string;
+
+  const formattedCodeSnippet = useMemo(() => {
+    let codeSnippetWithVariables = codeSnippet;
+    if (bootstrapServerUrl) {
+      codeSnippetWithVariables = codeSnippetWithVariables?.replaceAll('<bootstrap-server-address>', bootstrapServerUrl);
+    }
+    if (topicName) {
+      codeSnippetWithVariables = codeSnippetWithVariables?.replaceAll('demo-topic', topicName);
+    }
+    if (username) {
+      codeSnippetWithVariables = codeSnippetWithVariables?.replaceAll('<username>', username);
+    }
+    if (saslMechanism) {
+      codeSnippetWithVariables = codeSnippetWithVariables
+        ?.replaceAll('<scram-sha-256 or scram-sha-512>', saslMechanism)
+        ?.replaceAll('<SCRAM-SHA-256 or SCRAM-SHA-512>', saslMechanism);
+    }
+    return codeSnippetWithVariables;
+  }, [codeSnippet, bootstrapServerUrl, topicName, username, saslMechanism]);
 
   const content = useMemo(() => {
     if (isLoadingCodeSnippet) {
@@ -84,26 +97,15 @@ const HowToConnectStep = ({ connectionName, topicName, username, saslMechanism }
         </div>
       );
     }
-    if (codeSnippet) {
-      return (
-        <Markdown
-          showLineNumbers
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-          }}
-        >
-          {codeSnippet}
-        </Markdown>
-      );
+    if (formattedCodeSnippet) {
+      return <Markdown showLineNumbers>{formattedCodeSnippet}</Markdown>;
     }
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-muted-foreground">No code snippet found</div>
       </div>
     );
-  }, [isLoadingCodeSnippet, codeSnippet]);
+  }, [isLoadingCodeSnippet, formattedCodeSnippet]);
 
   return (
     <Card size="full">
@@ -116,23 +118,34 @@ const HowToConnectStep = ({ connectionName, topicName, username, saslMechanism }
           API.
         </CardDescription>
       </CardHeader>
-      <CardContent className="relative flex gap-8">
-        <div className="max-w-3xl rounded-md border border-base-200 bg-slate-100 p-8">{content}</div>
-        {(topicName || username) && (
-          <Card className="sticky top-0 left-0 flex h-fit flex-col gap-2">
-            {topicName && <CopyableValue label="Topic" value={topicName} />}
-            {username && <CopyableValue label="User" value={username} />}
-            {saslMechanism && <CopyableValue label="SASL Mechanism" value={saslMechanism} />}
-          </Card>
-        )}
+      <CardContent className="relative flex max-h-[50vh] min-h-[400px] gap-8 overflow-y-auto">
+        <div className="max-w-4xl rounded-md border border-base-200 bg-slate-100 p-6">{content}</div>
       </CardContent>
     </Card>
   );
 };
 
+const HowToConnectStep = ({ connectionName, topicName, username, saslMechanism }: HowToConnectProps) => {
+  const controlplaneTransport = useControlplaneTransport();
+  return (
+    <TransportProvider transport={controlplaneTransport}>
+      <HowToConnectComponent
+        connectionName={connectionName}
+        saslMechanism={saslMechanism}
+        topicName={topicName}
+        username={username}
+      />
+    </TransportProvider>
+  );
+};
+
 export const APIConnectWizard = () => {
   const navigate = useNavigate();
-  const [persistedAPIWizardData] = useSessionStorage<APIConnectWizardFormData>(API_WIZARD_CONNECTOR_NAME_KEY, {});
+  const [persistedAPIWizardData, setPersistedAPIWizardData] = useSessionStorage<APIConnectWizardFormData>(
+    API_WIZARD_CONNECTOR_NAME_KEY,
+    {}
+  );
+  const resetWizardSessionStorage = useResetWizardSessionStorage();
   const connectionName = useMemo(() => persistedAPIWizardData.connectionName, [persistedAPIWizardData.connectionName]);
   const [topicName, setTopicName] = useState<string | undefined>(undefined);
   const [username, setUsername] = useState<string | undefined>(undefined);
@@ -187,6 +200,7 @@ export const APIConnectWizard = () => {
 
   const handleCancel = useCallback(() => {
     navigate('/overview');
+    window.location.reload();
   }, [navigate]);
 
   useEffect(() => {
@@ -198,6 +212,12 @@ export const APIConnectWizard = () => {
       ];
     });
   }, []);
+
+  const handleFinish = useCallback(() => {
+    resetWizardSessionStorage();
+    setPersistedAPIWizardData({});
+    navigate('/overview');
+  }, [navigate, resetWizardSessionStorage, setPersistedAPIWizardData]);
 
   return (
     <PageContent>
@@ -257,7 +277,12 @@ export const APIConnectWizard = () => {
                       Skip
                     </Button>
                   )}
-                  {!methods.isLast && (
+
+                  {methods.isLast ? (
+                    <Button onClick={handleFinish} type="button">
+                      Finish
+                    </Button>
+                  ) : (
                     <Button disabled={isCurrentStepLoading} onClick={() => handleNext(methods)}>
                       {isCurrentStepLoading ? 'Loading...' : 'Next'}
                     </Button>

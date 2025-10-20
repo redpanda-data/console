@@ -6,7 +6,6 @@ import type { RawFieldSpec } from '../types/schema';
 
 describe('generateDefaultValue', () => {
   beforeEach(() => {
-    // Clear session storage before each test
     sessionStorage.clear();
   });
 
@@ -88,7 +87,6 @@ describe('generateDefaultValue', () => {
 
   describe('Wizard data population', () => {
     beforeEach(() => {
-      // Set up wizard data in session storage
       sessionStorage.setItem(CONNECT_WIZARD_TOPIC_KEY, JSON.stringify({ topicName: 'example' }));
       sessionStorage.setItem(
         CONNECT_WIZARD_USER_KEY,
@@ -175,7 +173,8 @@ describe('generateDefaultValue', () => {
         componentName: 'redpanda_migrator_offsets',
       });
 
-      expect(result).toBe('admin');
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(result).toBe('${secrets.KAFKA_USER_ADMIN}');
     });
 
     test('should populate user field in sasl object', () => {
@@ -189,10 +188,11 @@ describe('generateDefaultValue', () => {
 
       const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' });
 
-      expect(result).toBe('admin');
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(result).toBe('${secrets.KAFKA_USER_ADMIN}');
     });
 
-    test('should populate password field as empty string', () => {
+    test('should populate password field with secret syntax', () => {
       const spec: RawFieldSpec = {
         name: 'password',
         type: 'string',
@@ -204,7 +204,8 @@ describe('generateDefaultValue', () => {
 
       const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' });
 
-      expect(result).toBe('');
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(result).toBe('${secrets.KAFKA_PASSWORD_ADMIN}');
     });
   });
 
@@ -289,7 +290,6 @@ describe('generateDefaultValue', () => {
         parentName: 'http',
       });
 
-      // Should not populate contextual variable, just return default
       expect(result).toBe('http://example.com');
     });
 
@@ -404,13 +404,16 @@ describe('generateDefaultValue', () => {
     });
   });
 
-  describe('Secrets syntax when no wizard data', () => {
+  describe('Secrets syntax with wizard data', () => {
     beforeEach(() => {
-      // Clear wizard data to test secrets syntax defaults
-      sessionStorage.clear();
+      // Set wizard data to test secret syntax with user credentials
+      sessionStorage.setItem(
+        CONNECT_WIZARD_USER_KEY,
+        JSON.stringify({ username: 'test-user', saslMechanism: 'SCRAM-SHA-256' })
+      );
     });
 
-    test('should use secrets syntax for user field when no wizard data', () => {
+    test('should use secret syntax for user field with wizard data', () => {
       const spec: RawFieldSpec = {
         name: 'user',
         type: 'string',
@@ -421,10 +424,10 @@ describe('generateDefaultValue', () => {
       const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' });
 
       // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
-      expect(result).toBe('${secrets.REDPANDA_USERNAME}');
+      expect(result).toBe('${secrets.KAFKA_USER_TEST_USER}');
     });
 
-    test('should use secrets syntax for password field when no wizard data', () => {
+    test('should use secret syntax for password field with wizard data', () => {
       const spec: RawFieldSpec = {
         name: 'password',
         type: 'string',
@@ -436,10 +439,10 @@ describe('generateDefaultValue', () => {
       const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' });
 
       // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
-      expect(result).toBe('${secrets.REDPANDA_PASSWORD}');
+      expect(result).toBe('${secrets.KAFKA_PASSWORD_TEST_USER}');
     });
 
-    test('should use secrets syntax for username field when no wizard data', () => {
+    test('should use secret syntax for username field with wizard data', () => {
       const spec: RawFieldSpec = {
         name: 'username',
         type: 'string',
@@ -450,10 +453,10 @@ describe('generateDefaultValue', () => {
       const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'redpanda' });
 
       // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
-      expect(result).toBe('${secrets.REDPANDA_USERNAME}');
+      expect(result).toBe('${secrets.KAFKA_USER_TEST_USER}');
     });
 
-    test('should NOT use secrets syntax for non-REDPANDA_SECRET_COMPONENTS', () => {
+    test('should NOT use secret syntax for non-REDPANDA_SECRET_COMPONENTS', () => {
       const spec: RawFieldSpec = {
         name: 'user',
         type: 'string',
@@ -466,10 +469,10 @@ describe('generateDefaultValue', () => {
       expect(result).toBe('');
     });
 
-    test('wizard data should take precedence over secrets syntax', () => {
+    test('should convert username to screaming snake case in secret key', () => {
       sessionStorage.setItem(
         CONNECT_WIZARD_USER_KEY,
-        JSON.stringify({ username: 'wizard-user', saslMechanism: 'SCRAM-SHA-256' })
+        JSON.stringify({ username: 'my-kafka-user', saslMechanism: 'SCRAM-SHA-256' })
       );
 
       const spec: RawFieldSpec = {
@@ -481,7 +484,8 @@ describe('generateDefaultValue', () => {
 
       const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' });
 
-      expect(result).toBe('wizard-user');
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(result).toBe('${secrets.KAFKA_USER_MY_KAFKA_USER}');
     });
   });
 
@@ -541,8 +545,10 @@ describe('generateDefaultValue', () => {
 
       expect(result).toBeDefined();
       expect(result.mechanism).toBe('SCRAM-SHA-256'); // Now uses wizard saslMechanism
-      expect(result.user).toBe('admin');
-      expect(result.password).toBe('');
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(result.user).toBe('${secrets.KAFKA_USER_ADMIN}');
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(result.password).toBe('${secrets.KAFKA_PASSWORD_ADMIN}');
       expect(result.access_token).toBeUndefined(); // Optional advanced field should be hidden
     });
 
@@ -624,9 +630,9 @@ describe('generateDefaultValue', () => {
       expect(result.timeout).toBeUndefined(); // Optional - hidden
     });
 
-    test('should NOT show optional nested objects when parent has wizard data', () => {
-      // This tests the critical issue: TLS, batching, metadata should NOT be shown
-      // just because the parent config has wizard-relevant fields (topic/user)
+    test('should show TLS for Redpanda components but hide other optional nested objects', () => {
+      // TLS is always shown for Redpanda Cloud components (required for cloud connections)
+      // But batching, metadata should NOT be shown just because parent has wizard data
       const spec: RawFieldSpec = {
         name: 'config',
         type: 'object',
@@ -643,7 +649,7 @@ describe('generateDefaultValue', () => {
             name: 'tls',
             type: 'object',
             kind: 'scalar',
-            is_optional: true, // Optional - should be HIDDEN
+            is_optional: true, // Optional but SHOWN for Redpanda components
             children: [
               {
                 name: 'enabled',
@@ -690,7 +696,8 @@ describe('generateDefaultValue', () => {
       >;
 
       expect(result.topic).toBe('example');
-      expect(result.tls).toBeUndefined(); // Should NOT be shown
+      expect(result.tls).toBeDefined(); // TLS is SHOWN for Redpanda components
+      expect(result.tls).toEqual({ enabled: true }); // TLS enabled defaults to true for Redpanda Cloud
       expect(result.batching).toBeUndefined(); // Should NOT be shown
     });
 
@@ -705,7 +712,6 @@ describe('generateDefaultValue', () => {
 
       const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'redpanda' });
 
-      // Empty array for optional field should be undefined
       expect(result).toBeUndefined();
     });
 
@@ -728,7 +734,6 @@ describe('generateDefaultValue', () => {
 
       const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' });
 
-      // Optional object with only optional children should be undefined
       expect(result).toBeUndefined();
     });
   });
@@ -739,7 +744,7 @@ describe('generateDefaultValue', () => {
       sessionStorage.setItem(CONNECT_WIZARD_USER_KEY, JSON.stringify({ username: 'admin' }));
     });
 
-    test('TLS field should be hidden when advanced and no wizard data', () => {
+    test('TLS field should be shown for Redpanda components even when advanced', () => {
       const builtInComponents = getBuiltInComponents();
       const kafkaOutput = builtInComponents.find((c) => c.name === 'kafka' && c.type === 'output');
       const tlsSpec = kafkaOutput?.config?.children?.find((c) => c.name === 'tls');
@@ -754,7 +759,9 @@ describe('generateDefaultValue', () => {
           componentName: 'kafka',
           insideWizardContext: false,
         });
-        expect(result).toBeUndefined();
+        // TLS is always shown for Redpanda components (required for cloud connections)
+        expect(result).toBeDefined();
+        expect((result as any).enabled).toBe(true);
       }
     });
 
@@ -787,15 +794,18 @@ describe('generateDefaultValue', () => {
       expect(outputConfig).toBeDefined();
       expect(outputConfig.topic).toBe('example');
       // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
-      expect(outputConfig.addresses).toEqual(['${REDPANDA_BROKERS}']); // Now populated with contextual variable
+      expect(outputConfig.addresses).toEqual(['${REDPANDA_BROKERS}']);
 
-      // Should have sasl with user
       expect(outputConfig.sasl).toBeDefined();
-      expect(outputConfig.sasl.user).toBe('admin');
-      expect(outputConfig.sasl.password).toBe('');
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(outputConfig.sasl.user).toBe('${secrets.KAFKA_USER_ADMIN}');
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(outputConfig.sasl.password).toBe('${secrets.KAFKA_PASSWORD_ADMIN}');
 
-      // Should NOT have these fields
-      expect(outputConfig.tls).toBeUndefined();
+      // TLS should be shown for Redpanda components (always required for cloud)
+      expect(outputConfig.tls).toBeDefined();
+      expect(outputConfig.tls.enabled).toBe(true);
+
       expect(outputConfig.batching).toBeUndefined();
       expect(outputConfig.metadata).toBeUndefined();
       expect(outputConfig.backoff).toBeUndefined();
@@ -821,17 +831,20 @@ describe('generateDefaultValue', () => {
       expect(inputConfig).toBeDefined();
       expect(inputConfig.topics).toEqual(['example']);
       // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
-      expect(inputConfig.seed_brokers).toEqual(['${REDPANDA_BROKERS}']); // Now populated with contextual variable
+      expect(inputConfig.seed_brokers).toEqual(['${REDPANDA_BROKERS}']);
 
-      // Should have sasl array with username populated (redpanda uses array-based SASL)
       expect(inputConfig.sasl).toBeDefined();
       expect(Array.isArray(inputConfig.sasl)).toBe(true);
       expect(inputConfig.sasl.length).toBeGreaterThan(0);
-      expect(inputConfig.sasl[0].username).toBe('admin');
-      expect(inputConfig.sasl[0].password).toBe('');
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(inputConfig.sasl[0].username).toBe('${secrets.KAFKA_USER_ADMIN}');
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      expect(inputConfig.sasl[0].password).toBe('${secrets.KAFKA_PASSWORD_ADMIN}');
 
-      // Should NOT have these fields
-      expect(inputConfig.tls).toBeUndefined();
+      // TLS should be shown for Redpanda components (always required for cloud)
+      expect(inputConfig.tls).toBeDefined();
+      expect(inputConfig.tls.enabled).toBe(true);
+
       expect(inputConfig.client_id).toBeUndefined();
       expect(inputConfig.metadata_max_age).toBeUndefined();
       expect(inputConfig.request_timeout_overhead).toBeUndefined();

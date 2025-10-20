@@ -8,12 +8,11 @@ describe('yaml utils for creating connect configs', () => {
     test('should add newline between root-level items when adding cache', () => {
       const builtInComponents = getBuiltInComponents();
       const existingYaml = `input:
-  stdin:
-    codec: lines
+  generate:
+    mapping: 'root = {}'
 
 output:
-  stdout:
-    codec: lines`;
+  drop: {}`;
 
       const cacheSpec = builtInComponents.find((c) => c.name === 'memory' && c.type === 'cache');
       if (!cacheSpec) {
@@ -28,19 +27,18 @@ output:
       const mergedDoc = mergeConnectConfigs(existingYaml, newConfig);
       const yamlString = configToYaml(mergedDoc);
 
-      // Should have newlines between root-level keys
-      expect(yamlString).toContain('output:\n  stdout:\n    codec: lines\n\ncache_resources:');
+      expect(yamlString).toContain('output:\n  drop: {}\n\ncache_resources:');
     });
 
     test('should add newline between root-level items when adding processor', () => {
       const builtInComponents = getBuiltInComponents();
       const existingYaml = `input:
-  stdin:
-    codec: lines`;
+  generate:
+    mapping: 'root = {}'`;
 
-      const processorSpec = builtInComponents.find((c) => c.name === 'log' && c.type === 'processor');
+      const processorSpec = builtInComponents.find((c) => c.name === 'bloblang' && c.type === 'processor');
       if (!processorSpec) {
-        throw new Error('log processor not found');
+        throw new Error('bloblang processor not found');
       }
 
       const newConfig = schemaToConfig(processorSpec, false);
@@ -51,8 +49,7 @@ output:
       const mergedDoc = mergeConnectConfigs(existingYaml, newConfig);
       const yamlString = configToYaml(mergedDoc);
 
-      // Should have newlines between root-level keys
-      expect(yamlString).toContain('input:\n  stdin:\n    codec: lines\n\npipeline:');
+      expect(yamlString).toContain("input:\n  generate:\n    mapping: 'root = {}'\n\npipeline:");
     });
   });
 });

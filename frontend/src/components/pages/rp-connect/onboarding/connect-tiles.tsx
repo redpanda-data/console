@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
 import {
   Card,
   CardContent,
@@ -9,55 +8,26 @@ import {
   CardTitle,
   type CardVariant,
 } from 'components/redpanda-ui/components/card';
-import { Choicebox, ChoiceboxItem, ChoiceboxItemIndicator } from 'components/redpanda-ui/components/choicebox';
+import { Choicebox } from 'components/redpanda-ui/components/choicebox';
 import { Form, FormControl, FormField, FormItem, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input, InputStart } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { SimpleMultiSelect } from 'components/redpanda-ui/components/multi-select';
 import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { SearchIcon, Settings, Waypoints } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
+import { SearchIcon } from 'lucide-react';
+import type { MotionProps } from 'motion/react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
-import { ConnectorLogo } from './connector-logo';
-import { CUSTOM_COMPONENT_NAME, customComponentConfig } from '../types/constants';
+import { ConnectTile } from './connect-tile';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 import type { BaseStepRef } from '../types/wizard';
-import { type ConnectTilesFormData, connectTilesFormSchema } from '../types/wizard';
+import { type ConnectTilesListFormData, connectTilesListFormSchema } from '../types/wizard';
 import { getAllCategories } from '../utils/categories';
 import { getBuiltInComponents } from '../utils/schema';
 
-const getComponentSummary = (component: ConnectComponentSpec, componentTypeFilter?: ConnectComponentType[]) => {
-  if (component.name === 'redpanda' && componentTypeFilter?.includes('input')) {
-    return 'Add data to a topic on this cluster';
-  }
-  if (component.name === 'redpanda' && componentTypeFilter?.includes('output')) {
-    return 'Read data from a topic on this cluster';
-  }
-  return component.summary;
-};
-
-const logoStyle = {
-  height: '24px',
-};
-
-const getLogoForComponent = (component: ConnectComponentSpec) => {
-  if (component.name === CUSTOM_COMPONENT_NAME) {
-    return <Settings className="size-6 text-muted-foreground" />;
-  }
-  if (component?.logoUrl) {
-    return <img alt={component.name} src={component.logoUrl} style={logoStyle} />;
-  }
-  if (componentLogoMap[component.name as ComponentName]) {
-    return <ConnectorLogo name={component.name as ComponentName} style={logoStyle} />;
-  }
-  return <Waypoints className="size-6 text-muted-foreground" />;
-};
-
 const PRIORITY_COMPONENTS = [
-  CUSTOM_COMPONENT_NAME,
   'redpanda',
   'aws_s3',
   'gcp_cloud_storage',
@@ -108,28 +78,17 @@ const searchComponents = (
 
   const result: ConnectComponentSpec[] = [];
 
-  // 1. Custom component always first (if input/output in filter)
-  if (filters?.types?.includes('input') || filters?.types?.includes('output')) {
-    result.push(customComponentConfig);
-  }
-
-  // 2. Additional components that match filters (excluding custom if already added)
+  // 1. Additional components that match filters (in the order provided)
   if (additionalComponents?.length) {
-    const filteredAdditional = additionalComponents.filter(
-      (comp) => comp.name !== CUSTOM_COMPONENT_NAME && matchesFilters(comp)
-    );
+    const filteredAdditional = additionalComponents.filter((comp) => matchesFilters(comp));
     result.push(...filteredAdditional);
   }
 
-  // 3. Priority components that match filters (excluding custom and additional)
+  // 2. Priority components that match filters (excluding additional components)
   const additionalNames = new Set(additionalComponents?.map((c) => c.name) || []);
   const priorityComponents = allComponents
     .filter(
-      (comp) =>
-        comp.name !== CUSTOM_COMPONENT_NAME &&
-        !additionalNames.has(comp.name) &&
-        PRIORITY_COMPONENTS.includes(comp.name) &&
-        matchesFilters(comp)
+      (comp) => !additionalNames.has(comp.name) && PRIORITY_COMPONENTS.includes(comp.name) && matchesFilters(comp)
     )
     .sort((a, b) => {
       const aIndex = PRIORITY_COMPONENTS.indexOf(a.name);
@@ -138,15 +97,16 @@ const searchComponents = (
     });
   result.push(...priorityComponents);
 
-  // 4. Remaining components that match filters (alphabetically sorted)
+  // 3. Remaining components that match filters (alphabetically sorted)
   const remainingComponents = allComponents
-    .filter(
-      (comp) =>
-        comp.name !== CUSTOM_COMPONENT_NAME &&
-        !additionalNames.has(comp.name) &&
-        !PRIORITY_COMPONENTS.includes(comp.name) &&
-        matchesFilters(comp)
-    )
+    .filter((comp) => {
+      const isAdditional = additionalNames.has(comp.name);
+      const isPriority = PRIORITY_COMPONENTS.includes(comp.name);
+      if (isAdditional || isPriority) {
+        return false;
+      }
+      return matchesFilters(comp);
+    })
     .sort((a, b) => a.name.localeCompare(b.name));
   result.push(...remainingComponents);
 
@@ -170,7 +130,7 @@ export type ConnectTilesProps = {
   description?: React.ReactNode;
 };
 
-export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, ConnectTilesProps>(
+export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesListFormData>, ConnectTilesProps & MotionProps>(
   (
     {
       additionalComponents,
@@ -187,6 +147,7 @@ export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, Connec
       tileWrapperClassName,
       title,
       description,
+      ...motionProps
     },
     ref
   ) => {
@@ -194,7 +155,6 @@ export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, Connec
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [showScrollGradient, setShowScrollGradient] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
-    const [showDescription, setShowDescription] = useState<string | undefined>(undefined);
 
     const checkScrollable = useCallback(() => {
       const container = scrollContainerRef.current;
@@ -210,8 +170,8 @@ export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, Connec
       setShowScrollGradient(isScrollable && !isNearBottom);
     }, []);
 
-    const form = useForm<ConnectTilesFormData>({
-      resolver: zodResolver(connectTilesFormSchema),
+    const form = useForm<ConnectTilesListFormData>({
+      resolver: zodResolver(connectTilesListFormSchema),
       mode: 'onSubmit',
       defaultValues: {
         connectionName: defaultConnectionName,
@@ -277,7 +237,7 @@ export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, Connec
     }));
 
     return (
-      <Card className={cn(className, 'relative')} size={size} variant={variant}>
+      <Card className={cn(className, 'relative')} size={size} variant={variant} {...motionProps} animated>
         {!hideHeader && (
           <CardHeader className="bg-background">
             <CardTitle>
@@ -285,37 +245,15 @@ export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, Connec
             </CardTitle>
             <CardDescription className="mt-4">
               {description ?? (
-                <>
-                  <Text>
-                    Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines
-                    that drive real-time analytics and actionable business insights. Integrate data across systems with
-                    hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable
-                    pipelines.{' '}
-                    <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
-                      Learn more.
-                    </Link>
-                  </Text>
-                  <Text>
-                    For help creating your pipeline see our{' '}
-                    <Link
-                      href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
-                      target="_blank"
-                    >
-                      quickstart documentation
-                    </Link>
-                    , our{' '}
-                    <Link href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" target="_blank">
-                      library of examples
-                    </Link>
-                    , or our{' '}
-                    <Link
-                      href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/"
-                      target="_blank"
-                    >
-                      connector catalog
-                    </Link>
-                  </Text>
-                </>
+                <Text>
+                  Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines
+                  that drive real-time analytics and actionable business insights. Integrate data across systems with
+                  hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable
+                  pipelines.{' '}
+                  <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
+                    Learn more.
+                  </Link>
+                </Text>
               )}
             </CardDescription>
           </CardHeader>
@@ -384,55 +322,21 @@ export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, Connec
                                 const uniqueKey = `${component.type}-${component.name}`;
                                 const isChecked =
                                   field.value === component.name && form.getValues('connectionType') === component.type;
-                                const shouldShowDescription = showDescription === component.name && component.summary;
 
                                 return (
-                                  <ChoiceboxItem
+                                  <ConnectTile
                                     checked={isChecked}
-                                    className={cn('relative h-full', shouldShowDescription && 'hover:shadow-none')}
+                                    component={component}
                                     key={uniqueKey}
-                                    onClick={() => {
+                                    onChange={() => {
                                       field.onChange(component.name);
                                       form.setValue('connectionType', component.type as ConnectComponentType);
                                       // Only call onChange for non-wizard use cases (e.g., dialog)
                                       // Wizard saves to session storage only after "Next" is clicked
                                       onChange?.(component.name, component.type as ConnectComponentType);
                                     }}
-                                    onPointerEnter={() => {
-                                      setShowDescription(component.name);
-                                    }}
-                                    onPointerLeave={() => {
-                                      setShowDescription(undefined);
-                                    }}
-                                    value={component.name}
-                                  >
-                                    <div className="flex w-full items-center justify-between gap-4">
-                                      <div className="flex min-w-0 flex-col gap-1">
-                                        <Text className="truncate font-medium">{component.name}</Text>
-                                        <AnimatePresence>
-                                          {shouldShowDescription && (
-                                            <motion.div
-                                              animate={{ opacity: 1 }}
-                                              className={cn(
-                                                '-inset-x-0.5 -top-0.5 absolute z-10 flex min-h-[58px] items-center rounded-md border-2 border-border border-solid bg-white p-4 shadow-elevated',
-                                                isChecked && '!border-selected'
-                                              )}
-                                              exit={{ opacity: 0 }}
-                                              initial={{ opacity: 0 }}
-                                              key={`component-description-${component.name}`}
-                                              transition={{ duration: 0.15, ease: 'easeInOut' }}
-                                            >
-                                              <Text className="text-muted-foreground text-sm">
-                                                {getComponentSummary(component, componentTypeFilter)}
-                                              </Text>
-                                            </motion.div>
-                                          )}
-                                        </AnimatePresence>
-                                      </div>
-                                      <div>{getLogoForComponent(component)}</div>
-                                      {isChecked && <ChoiceboxItemIndicator className="absolute top-2 right-2 z-20" />}
-                                    </div>
-                                  </ChoiceboxItem>
+                                    uniqueKey={uniqueKey}
+                                  />
                                 );
                               })}
                             </div>
@@ -446,7 +350,7 @@ export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesFormData>, Connec
               </div>
               {/* Gradient overlay to indicate scrollability - only show when not at bottom */}
               {showScrollGradient && (
-                <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-gradient-to-t from-background via-background/80 to-transparent" />
+                <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-gradient-to-t from-background via-background/60 to-transparent" />
               )}
             </div>
           </Form>

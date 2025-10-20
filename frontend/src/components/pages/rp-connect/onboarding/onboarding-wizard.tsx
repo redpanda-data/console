@@ -6,6 +6,7 @@ import { Heading } from 'components/redpanda-ui/components/typography';
 import { useSessionStorage } from 'hooks/use-session-storage';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
+import { AnimatePresence } from 'motion/react';
 import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
@@ -20,7 +21,8 @@ import { ConnectTiles } from './connect-tiles';
 import { useResetWizardSessionStorage } from '../hooks/use-reset-wizard-session-storage';
 import RpConnectPipelinesCreate from '../pipelines-create';
 import {
-  CUSTOM_COMPONENT_NAME,
+  REDPANDA_TOPIC_AND_USER_COMPONENTS,
+  stepMotionProps,
   WizardStep,
   WizardStepper,
   type WizardStepperSteps,
@@ -32,7 +34,7 @@ import type {
   AddTopicFormData,
   AddUserFormData,
   BaseStepRef,
-  ConnectTilesFormData,
+  ConnectTilesListFormData,
   MinimalTopicData,
   MinimalUserData,
   WizardFormData,
@@ -48,7 +50,13 @@ export type ConnectOnboardingWizardProps = {
 
 export const ConnectOnboardingWizard = ({
   className,
-  additionalComponents,
+  additionalComponents = [
+    {
+      name: 'custom',
+      type: 'custom',
+      plugin: false,
+    },
+  ],
   onChange,
   onCancel: onCancelProp,
 }: ConnectOnboardingWizardProps = {}) => {
@@ -86,6 +94,10 @@ export const ConnectOnboardingWizard = ({
   const persistedUserSaslMechanism = useMemo(() => persistedUserData.saslMechanism, [persistedUserData.saslMechanism]);
   const persistedUsername = useMemo(() => persistedUserData.username, [persistedUserData.username]);
   const resetWizardSessionStorage = useResetWizardSessionStorage();
+  const persistedInputHasTopicAndUser = useMemo(
+    () => persistedInputConnectionName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(persistedInputConnectionName),
+    [persistedInputConnectionName]
+  );
 
   const [searchParams] = useSearchParams();
 
@@ -107,8 +119,8 @@ export const ConnectOnboardingWizard = ({
     }
   }, [searchParams]);
 
-  const addInputStepRef = useRef<BaseStepRef<ConnectTilesFormData>>(null);
-  const addOutputStepRef = useRef<BaseStepRef<ConnectTilesFormData>>(null);
+  const addInputStepRef = useRef<BaseStepRef<ConnectTilesListFormData>>(null);
+  const addOutputStepRef = useRef<BaseStepRef<ConnectTilesListFormData>>(null);
   const addTopicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const addUserStepRef = useRef<BaseStepRef<AddUserFormData>>(null);
 
@@ -149,12 +161,24 @@ export const ConnectOnboardingWizard = ({
         const connectionName = result?.data?.connectionName;
         const connectionType = result?.data?.connectionType;
 
-        if (connectionName === CUSTOM_COMPONENT_NAME) {
+        if (connectionType === 'custom') {
           handleSkipToCreatePipeline(methods);
           return;
         }
-        if (result?.success) {
-          if (connectionName && connectionType) {
+        if (result?.success && connectionName && connectionType) {
+          if (connectionName === 'redpanda_common') {
+            setPersistedWizardData({
+              input: {
+                connectionName,
+                connectionType,
+              },
+              output: {
+                connectionName,
+                connectionType: 'output',
+              },
+            });
+            methods.goTo(WizardStep.ADD_TOPIC);
+          } else {
             setPersistedWizardData({
               input: {
                 connectionName,
@@ -162,9 +186,9 @@ export const ConnectOnboardingWizard = ({
               },
               ...(persistedWizardData.output && { output: persistedWizardData.output }),
             });
-            onChange?.(connectionName, connectionType);
+            methods.next();
           }
-          methods.next();
+          onChange?.(connectionName, connectionType);
         }
         break;
       }
@@ -173,12 +197,24 @@ export const ConnectOnboardingWizard = ({
         const connectionName = result?.data?.connectionName;
         const connectionType = result?.data?.connectionType;
 
-        if (connectionName === CUSTOM_COMPONENT_NAME) {
+        if (connectionType === 'custom') {
           handleSkipToCreatePipeline(methods);
           return;
         }
-        if (result?.success) {
-          if (connectionName && connectionType) {
+
+        if (result?.success && connectionName && connectionType) {
+          if (connectionName === 'redpanda_common') {
+            setPersistedWizardData({
+              input: {
+                connectionName,
+                connectionType: 'input',
+              },
+              output: {
+                connectionName,
+                connectionType,
+              },
+            });
+          } else {
             setPersistedWizardData({
               output: {
                 connectionName,
@@ -186,9 +222,14 @@ export const ConnectOnboardingWizard = ({
               },
               ...(persistedWizardData.input && { input: persistedWizardData.input }),
             });
-            onChange?.(connectionName, connectionType);
           }
-          methods.next();
+          onChange?.(connectionName, connectionType);
+          const outputNeedsTopicAndUser = REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(connectionName);
+          if (persistedInputHasTopicAndUser || outputNeedsTopicAndUser) {
+            methods.next();
+          } else {
+            methods.goTo(WizardStep.CREATE_CONFIG);
+          }
         }
         break;
       }
@@ -232,6 +273,7 @@ export const ConnectOnboardingWizard = ({
   };
 
   const handleCancel = useCallback(() => {
+    resetWizardSessionStorage();
     if (onCancelProp) {
       onCancelProp();
     } else if (searchParams.get('serverless') === 'true') {
@@ -239,7 +281,7 @@ export const ConnectOnboardingWizard = ({
     } else {
       navigate('/connect-clusters');
     }
-  }, [onCancelProp, navigate, searchParams]);
+  }, [onCancelProp, navigate, resetWizardSessionStorage, searchParams]);
 
   return (
     <PageContent className={className}>
@@ -259,60 +301,69 @@ export const ConnectOnboardingWizard = ({
                     ))}
                   </WizardStepper.Navigation>
                 </div>
-                {methods.switch({
-                  [WizardStep.ADD_INPUT]: () => (
-                    <ConnectTiles
-                      additionalComponents={additionalComponents}
-                      componentTypeFilter={['input']}
-                      defaultConnectionName={persistedInputConnectionName}
-                      defaultConnectionType={persistedInputConnectionType}
-                      key="input-connector-tiles"
-                      ref={addInputStepRef}
-                      tileWrapperClassName="min-h-[300px] max-h-[40vh]"
-                      title="Send data to your pipeline"
-                    />
-                  ),
-                  [WizardStep.ADD_OUTPUT]: () => (
-                    <ConnectTiles
-                      additionalComponents={additionalComponents}
-                      componentTypeFilter={['output']}
-                      defaultConnectionName={persistedOutputConnectionName}
-                      defaultConnectionType={persistedOutputConnectionType}
-                      key="output-connector-tiles"
-                      ref={addOutputStepRef}
-                      tileWrapperClassName="min-h-[300px] max-h-[40vh]"
-                      title="Read data from your pipeline"
-                    />
-                  ),
-                  [WizardStep.ADD_TOPIC]: () => (
-                    <AddTopicStep
-                      defaultTopicName={persistedTopicName}
-                      ref={addTopicStepRef}
-                      topicList={topicList.topics}
-                    />
-                  ),
-                  [WizardStep.ADD_USER]: () => (
-                    <AddUserStep
-                      defaultSaslMechanism={persistedUserSaslMechanism}
-                      defaultUsername={persistedUsername}
-                      ref={addUserStepRef}
-                      topicName={persistedTopicName}
-                      usersList={usersList?.users}
-                    />
-                  ),
-                  [WizardStep.CREATE_CONFIG]: () => (
-                    <Card size="full">
-                      <CardHeader>
-                        <CardTitle>
-                          <Heading level={2}>Create pipeline</Heading>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <RpConnectPipelinesCreate matchedPath="/rp-connect/wizard" />
-                      </CardContent>
-                    </Card>
-                  ),
-                })}
+                <AnimatePresence mode="wait">
+                  {methods.switch({
+                    [WizardStep.ADD_INPUT]: () => (
+                      <ConnectTiles
+                        {...stepMotionProps}
+                        additionalComponents={additionalComponents}
+                        componentTypeFilter={['input', 'custom']}
+                        defaultConnectionName={persistedInputConnectionName}
+                        defaultConnectionType={persistedInputConnectionType}
+                        key="input-connector-tiles"
+                        ref={addInputStepRef}
+                        tileWrapperClassName="min-h-[300px] max-h-[35vh]"
+                        title="Stream data to your pipeline"
+                      />
+                    ),
+                    [WizardStep.ADD_OUTPUT]: () => (
+                      <ConnectTiles
+                        {...stepMotionProps}
+                        additionalComponents={additionalComponents}
+                        componentTypeFilter={['output', 'custom']}
+                        defaultConnectionName={persistedOutputConnectionName}
+                        defaultConnectionType={persistedOutputConnectionType}
+                        key="output-connector-tiles"
+                        ref={addOutputStepRef}
+                        tileWrapperClassName="min-h-[300px] max-h-[35vh]"
+                        title="Stream data from your pipeline"
+                      />
+                    ),
+                    [WizardStep.ADD_TOPIC]: () => (
+                      <AddTopicStep
+                        {...stepMotionProps}
+                        connectionType={persistedInputConnectionType}
+                        defaultTopicName={persistedTopicName}
+                        key="add-topic-step"
+                        ref={addTopicStepRef}
+                        topicList={topicList.topics}
+                      />
+                    ),
+                    [WizardStep.ADD_USER]: () => (
+                      <AddUserStep
+                        {...stepMotionProps}
+                        defaultSaslMechanism={persistedUserSaslMechanism}
+                        defaultUsername={persistedUsername}
+                        key="add-user-step"
+                        ref={addUserStepRef}
+                        topicName={persistedTopicName}
+                        usersList={usersList?.users}
+                      />
+                    ),
+                    [WizardStep.CREATE_CONFIG]: () => (
+                      <Card key="create-config-step" size="full" {...stepMotionProps} animated>
+                        <CardHeader>
+                          <CardTitle>
+                            <Heading level={2}>Create pipeline</Heading>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <RpConnectPipelinesCreate matchedPath="/rp-connect/wizard" />
+                        </CardContent>
+                      </Card>
+                    ),
+                  })}
+                </AnimatePresence>
               </div>
               <WizardStepper.Controls className="justify-between">
                 <div className="flex gap-2">
