@@ -17,7 +17,7 @@
     "e2e-test": "playwright test tests/console/ -c playwright.config.ts",
     "e2e-test-enterprise": "playwright test tests/console-enterprise/ -c playwright.enterprise.config.ts",
     "e2e-test:ui": "playwright test tests/console/ -c playwright.config.ts --ui",
-    "test": "TZ=GMT vitest run",
+    "test": "NODE_OPTIONS='--loader=./tests/css-loader.mjs' TZ=GMT vitest run",
     "test:coverage": "TZ=GMT vitest run --coverage",
     "test:ui": "TZ=GMT vitest --ui",
     "test:watch": "TZ=GMT vitest --watch --ui",

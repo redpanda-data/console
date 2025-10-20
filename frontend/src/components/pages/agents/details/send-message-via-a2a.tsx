@@ -8,7 +8,7 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-/** biome-ignore-all lint/suspicious/useAwait: test */
+/** biome-ignore-all lint/suspicious/useAwait: required for compatibility with A2A SDK streaming API */
 
 import type { Message, MessageSendParams, Task } from '@a2a-js/sdk';
 import { A2AClient } from '@a2a-js/sdk/client';
@@ -306,14 +306,6 @@ async function sendNonStreamingMessage(client: A2AClient, sendParams: MessageSen
     success: true,
   };
 }
-
-// const authenticatedFetch = createAuthenticatingFetchWithRetry(config.fetch, {
-//   headers: async () => {
-//     return {
-//       Authorization: `Bearer ${config.jwt}`,
-//     };
-//   },
-// });
 
 const fetchWithCustomHeader: typeof fetch = async (url, init) => {
   const headers = new Headers(init?.headers);

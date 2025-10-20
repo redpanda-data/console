@@ -17,6 +17,14 @@ import { useParams } from 'react-router-dom';
 
 import { AIAgentChat } from './ai-agent-chat';
 
+/**
+ * Main tab component for inspecting AI agent details.
+ *
+ * This component displays the agent's status, loading state, and provides
+ * access to the chat interface for interacting with the agent. It is used
+ * within the agent details interface and conditionally renders content
+ * based on the agent's state and availability.
+ */
 export const AIAgentInspectorTab = () => {
   const { id } = useParams<{ id: string }>();
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
