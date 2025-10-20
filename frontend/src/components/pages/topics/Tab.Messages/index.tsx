@@ -228,6 +228,56 @@ function onCopyKey(original: TopicMessage, toast: ReturnType<typeof useToast>) {
     .catch(navigatorClipboardErrorHandler);
 }
 
+async function loadLargeMessage(
+  topicName: string,
+  messagePartitionID: number,
+  offset: number,
+  setMessages: React.Dispatch<React.SetStateAction<TopicMessage[]>>
+) {
+  // Create a new search that looks for only this message specifically
+  const search = createMessageSearch();
+  const searchReq: MessageSearchRequest = {
+    filterInterpreterCode: '',
+    maxResults: 1,
+    partitionId: messagePartitionID,
+    startOffset: offset,
+    startTimestamp: 0,
+    topicName,
+    includeRawPayload: true,
+    ignoreSizeLimit: true,
+    keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
+    valueDeserializer: uiState.topicSettings.searchParams.valueDeserializer,
+  };
+  const result = await search.startSearch(searchReq);
+
+  if (result && result.length === 1) {
+    // We must update the old message (that still says "payload too large")
+    // So we just find its index and replace it in the array we are currently displaying
+    setMessages((currentMessages) => {
+      const indexOfOldMessage = currentMessages.findIndex(
+        (x) => x.partitionID === messagePartitionID && x.offset === offset
+      );
+      if (indexOfOldMessage > -1) {
+        const newMessages = [...currentMessages];
+        newMessages[indexOfOldMessage] = result[0];
+        return newMessages;
+      }
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
+      console.error('LoadLargeMessage: cannot find old message to replace', {
+        searchReq,
+        result,
+      });
+      throw new Error(
+        'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
+      );
+    });
+  } else {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.error('LoadLargeMessage: messages response is empty', { result });
+    throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
+  }
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: this is because of the refactoring effort, the scope will be minimised eventually
 export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
   const toast = useToast();
@@ -415,52 +465,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
       return [];
     }
   }, [props.topic.topicName, partitionID, startOffset, maxResults]);
-
-  // Convert loadLargeMessage to useCallback
-  const loadLargeMessage = useCallback(async (topicName: string, messagePartitionID: number, offset: number) => {
-    // Create a new search that looks for only this message specifically
-    const search = createMessageSearch();
-    const searchReq: MessageSearchRequest = {
-      filterInterpreterCode: '',
-      maxResults: 1,
-      partitionId: messagePartitionID,
-      startOffset: offset,
-      startTimestamp: 0,
-      topicName,
-      includeRawPayload: true,
-      ignoreSizeLimit: true,
-      keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
-      valueDeserializer: uiState.topicSettings.searchParams.valueDeserializer,
-    };
-    const result = await search.startSearch(searchReq);
-
-    if (result && result.length === 1) {
-      // We must update the old message (that still says "payload too large")
-      // So we just find its index and replace it in the array we are currently displaying
-      setMessages((currentMessages) => {
-        const indexOfOldMessage = currentMessages.findIndex(
-          (x) => x.partitionID === messagePartitionID && x.offset === offset
-        );
-        if (indexOfOldMessage > -1) {
-          const newMessages = [...currentMessages];
-          newMessages[indexOfOldMessage] = result[0];
-          return newMessages;
-        }
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error('LoadLargeMessage: cannot find old message to replace', {
-          searchReq,
-          result,
-        });
-        throw new Error(
-          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
-        );
-      });
-    } else {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error('LoadLargeMessage: messages response is empty', { result });
-      throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
-    }
-  }, []);
 
   // Convert searchFunc to useCallback
   const searchFunc = useCallback(
@@ -1068,7 +1072,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
             sorting={uiState.topicSettings.searchParams.sorting ?? []}
             subComponent={({ row: { original } }) => (
               <ExpandedMessage
-                loadLargeMessage={() => loadLargeMessage(props.topic.topicName, original.partitionID, original.offset)}
+                loadLargeMessage={() =>
+                  loadLargeMessage(props.topic.topicName, original.partitionID, original.offset, setMessages)
+                }
                 msg={original}
                 onCopyKey={(msg) => onCopyKey(msg, toast)}
                 onCopyValue={(msg) => onCopyValue(msg, toast)}
