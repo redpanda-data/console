@@ -38,6 +38,7 @@ import {
   AIAgentUpdateSchema,
   UpdateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
+import type { MCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useCallback, useMemo, useState } from 'react';
 import { useGetAIAgentQuery, useUpdateAIAgentMutation } from 'react-query/api/ai-agent';
 import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
@@ -72,7 +73,56 @@ const detectProvider = (modelName: string): (typeof PROVIDER_INFO)[keyof typeof 
   return null;
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: refactor later
+/**
+ * MCP Servers section component
+ */
+const MCPServersSection = ({
+  isEditing,
+  availableMcpServers,
+  connectedMcpServers,
+  selectedMcpServers,
+  onServerSelectionChange,
+}: {
+  isEditing: boolean;
+  availableMcpServers: MCPServer[];
+  connectedMcpServers: MCPServer[];
+  selectedMcpServers: string[];
+  onServerSelectionChange?: (newServers: string[]) => void;
+}) => {
+  const serversToDisplay = isEditing ? availableMcpServers : connectedMcpServers;
+  const hasNoServers = isEditing && availableMcpServers.length === 0;
+
+  return (
+    <Card className="px-0 py-0" size="full">
+      <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
+        <CardTitle className="flex items-center gap-2">
+          <MCPIcon className="h-4 w-4" />
+          <Text className="font-semibold">MCP Servers</Text>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-4 pb-4">
+        <div className="space-y-4">
+          {isEditing && <Text variant="muted">Select MCP servers to enable tools for this agent</Text>}
+          {hasNoServers ? (
+            <MCPEmpty>
+              <Text className="mb-4 text-center" variant="muted">
+                Create MCP servers first to enable additional tools for your AI agent
+              </Text>
+            </MCPEmpty>
+          ) : (
+            <MCPServerCardList
+              onValueChange={isEditing ? onServerSelectionChange : undefined}
+              servers={serversToDisplay}
+              showCheckbox={isEditing}
+              value={selectedMcpServers}
+            />
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 export const AIAgentConfigurationTab = () => {
   const { id } = useParams<{ id: string }>();
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
@@ -164,17 +214,6 @@ export const AIAgentConfigurationTab = () => {
       ...currentData,
       tags: updatedTags,
     });
-  };
-
-  const hasDuplicateKeys = (tags: Array<{ key: string; value: string }>) => {
-    const keys = tags.map((tag) => tag.key.trim()).filter((key) => key !== '');
-    return keys.length !== new Set(keys).size;
-  };
-
-  const getDuplicateKeys = (tags: Array<{ key: string; value: string }>) => {
-    const keys = tags.map((tag) => tag.key.trim()).filter((key) => key !== '');
-    const duplicates = keys.filter((key, index) => keys.indexOf(key) !== index);
-    return new Set(duplicates);
   };
 
   const handleSave = async () => {
@@ -412,46 +451,22 @@ export const AIAgentConfigurationTab = () => {
 
           {/* MCP Servers - Always visible */}
           {(connectedMcpServers.length > 0 || isEditing) && (
-            <Card className="px-0 py-0" size="full">
-              <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
-                <CardTitle className="flex items-center gap-2">
-                  <MCPIcon className="h-4 w-4" />
-                  <Text className="font-semibold">MCP Servers</Text>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="space-y-4">
-                  {isEditing && <Text variant="muted">Select MCP servers to enable tools for this agent</Text>}
-                  {isEditing && availableMcpServers.length === 0 ? (
-                    <MCPEmpty>
-                      <Text className="mb-4 text-center" variant="muted">
-                        Create MCP servers first to enable additional tools for your AI agent
-                      </Text>
-                    </MCPEmpty>
-                  ) : (
-                    <MCPServerCardList
-                      onValueChange={
-                        isEditing
-                          ? (newServers) => {
-                              const currentData = getCurrentData();
-                              if (!currentData) {
-                                return;
-                              }
-                              setEditedAgentData({
-                                ...currentData,
-                                selectedMcpServers: newServers,
-                              });
-                            }
-                          : undefined
-                      }
-                      servers={isEditing ? availableMcpServers : connectedMcpServers}
-                      showCheckbox={isEditing}
-                      value={displayData.selectedMcpServers}
-                    />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <MCPServersSection
+              availableMcpServers={availableMcpServers}
+              connectedMcpServers={connectedMcpServers}
+              isEditing={isEditing}
+              onServerSelectionChange={(newServers) => {
+                const currentData = getCurrentData();
+                if (!currentData) {
+                  return;
+                }
+                setEditedAgentData({
+                  ...currentData,
+                  selectedMcpServers: newServers,
+                });
+              }}
+              selectedMcpServers={displayData.selectedMcpServers}
+            />
           )}
         </div>
 
@@ -606,44 +621,34 @@ export const AIAgentConfigurationTab = () => {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label>Tags</Label>
-                      {isEditing && hasDuplicateKeys(displayData.tags) && (
-                        <Text className="text-destructive" variant="small">
-                          Tags must have unique keys
-                        </Text>
-                      )}
                       <div className="space-y-2">
-                        {displayData.tags.map((tag, index) => {
-                          const duplicateKeys = isEditing ? getDuplicateKeys(displayData.tags) : new Set();
-                          const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
-                          return (
-                            <div className="flex items-center gap-2" key={`tag-${index}`}>
-                              <div className="flex-1">
-                                <Input
-                                  className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
-                                  disabled={!isEditing}
-                                  onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
-                                  placeholder="Key"
-                                  value={tag.key}
-                                />
-                              </div>
-                              <div className="flex-1">
-                                <Input
-                                  disabled={!isEditing}
-                                  onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
-                                  placeholder="Value"
-                                  value={tag.value}
-                                />
-                              </div>
-                              {isEditing && (
-                                <div className="flex h-9 items-end">
-                                  <Button onClick={() => handleRemoveTag(index)} size="sm" variant="outline">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              )}
+                        {displayData.tags.map((tag, index) => (
+                          <div className="flex items-center gap-2" key={`tag-${index}`}>
+                            <div className="flex-1">
+                              <Input
+                                disabled={!isEditing}
+                                onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
+                                placeholder="Key"
+                                value={tag.key}
+                              />
                             </div>
-                          );
-                        })}
+                            <div className="flex-1">
+                              <Input
+                                disabled={!isEditing}
+                                onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
+                                placeholder="Value"
+                                value={tag.value}
+                              />
+                            </div>
+                            {isEditing && (
+                              <div className="flex h-9 items-end">
+                                <Button onClick={() => handleRemoveTag(index)} size="sm" variant="outline">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
                         {isEditing && (
                           <Button className="w-full" onClick={handleAddTag} variant="dashed">
                             <Plus className="h-4 w-4" />
