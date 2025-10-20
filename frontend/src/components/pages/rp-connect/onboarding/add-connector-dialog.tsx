@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
 
-import { ConnectTilesList } from './connect-tiles-list';
+import { ConnectTiles } from './connect-tiles';
 import type { ConnectComponentType } from '../types/schema';
 
 export const AddConnectorDialog = ({
@@ -28,7 +28,7 @@ export const AddConnectorDialog = ({
         <DialogDescription>Add a connector to your pipeline.</DialogDescription>
       </DialogHeader>
       <DialogBody>
-        <ConnectTilesList
+        <ConnectTiles
           className="px-0 pt-0"
           componentTypeFilter={connectorType ? [connectorType] : undefined}
           gridCols={3}

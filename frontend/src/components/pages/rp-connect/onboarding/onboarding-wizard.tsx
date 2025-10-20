@@ -17,7 +17,7 @@ import { uiState } from 'state/ui-state';
 
 import { AddTopicStep } from './add-topic-step';
 import { AddUserStep } from './add-user-step';
-import { ConnectTilesList } from './connect-tiles-list';
+import { ConnectTiles } from './connect-tiles';
 import { useResetWizardSessionStorage } from '../hooks/use-reset-wizard-session-storage';
 import RpConnectPipelinesCreate from '../pipelines-create';
 import {
@@ -304,7 +304,7 @@ export const ConnectOnboardingWizard = ({
                 <AnimatePresence mode="wait">
                   {methods.switch({
                     [WizardStep.ADD_INPUT]: () => (
-                      <ConnectTilesList
+                      <ConnectTiles
                         {...stepMotionProps}
                         additionalComponents={additionalComponents}
                         componentTypeFilter={['input', 'custom']}
@@ -317,7 +317,7 @@ export const ConnectOnboardingWizard = ({
                       />
                     ),
                     [WizardStep.ADD_OUTPUT]: () => (
-                      <ConnectTilesList
+                      <ConnectTiles
                         {...stepMotionProps}
                         additionalComponents={additionalComponents}
                         componentTypeFilter={['output', 'custom']}

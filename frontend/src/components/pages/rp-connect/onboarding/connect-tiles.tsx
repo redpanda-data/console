@@ -113,7 +113,7 @@ const searchComponents = (
   return result;
 };
 
-export type ConnectTilesListProps = {
+export type ConnectTilesProps = {
   additionalComponents?: ExtendedConnectComponentSpec[];
   componentTypeFilter?: ConnectComponentType[];
   onChange?: (connectionName: string, connectionType: ConnectComponentType) => void;
@@ -130,7 +130,7 @@ export type ConnectTilesListProps = {
   description?: React.ReactNode;
 };
 
-export const ConnectTilesList = forwardRef<BaseStepRef<ConnectTilesListFormData>, ConnectTilesListProps & MotionProps>(
+export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesListFormData>, ConnectTilesProps & MotionProps>(
   (
     {
       additionalComponents,
