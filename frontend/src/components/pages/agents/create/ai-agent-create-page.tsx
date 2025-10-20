@@ -550,10 +550,10 @@ export const AIAgentCreatePage = () => {
               </Card>
             </div>
 
-            {/* System Prompt */}
+            {/* Prompt */}
             <Card size="full">
               <CardHeader>
-                <CardTitle>System Prompt</CardTitle>
+                <CardTitle>Prompt</CardTitle>
                 <Text variant="muted">Define the agent's behavior and instructions</Text>
               </CardHeader>
               <CardContent>
@@ -562,6 +562,7 @@ export const AIAgentCreatePage = () => {
                   name="systemPrompt"
                   render={({ field }) => (
                     <FormItem>
+                      <FormLabel required>System Prompt</FormLabel>
                       <FormControl>
                         <Textarea placeholder="You are a helpful AI agent that..." rows={8} {...field} />
                       </FormControl>

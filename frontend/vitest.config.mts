@@ -24,6 +24,9 @@ export default defineConfig(({ mode }) => {
       globals: true,
       environment: 'jsdom',
       setupFiles: './vitest.setup.ts',
+      deps: {
+        registerNodeLoader: true,
+      },
       alias: [
         {
           find: /^@redpanda-data\/ui$/, // For Redpanda UI we generate both CommonJS and ESM versions, but Vitest is ESM 1st, so we want to force ESM to be used.
