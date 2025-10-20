@@ -788,7 +788,8 @@ describe('generateDefaultValue', () => {
       const builtInComponents = getBuiltInComponents();
       const kafkaOutput = builtInComponents.find((c) => c.name === 'kafka' && c.type === 'output');
 
-      const config = schemaToConfig(kafkaOutput, false) as Record<string, any>;
+      const result = schemaToConfig(kafkaOutput, false);
+      const config = result?.config as Record<string, any>;
       const outputConfig = config?.output?.kafka;
 
       expect(outputConfig).toBeDefined();
@@ -825,7 +826,8 @@ describe('generateDefaultValue', () => {
       const builtInComponents = getBuiltInComponents();
       const redpandaInput = builtInComponents.find((c) => c.name === 'redpanda' && c.type === 'input');
 
-      const config = schemaToConfig(redpandaInput, false) as Record<string, any>;
+      const result = schemaToConfig(redpandaInput, false);
+      const config = result?.config as Record<string, any>;
       const inputConfig = config?.input?.redpanda;
 
       expect(inputConfig).toBeDefined();
@@ -857,7 +859,8 @@ describe('generateDefaultValue', () => {
       const builtInComponents = getBuiltInComponents();
       const avroScanner = builtInComponents.find((c) => c.name === 'avro' && c.type === 'scanner');
 
-      const config = schemaToConfig(avroScanner, true) as Record<string, any>;
+      const result = schemaToConfig(avroScanner, true);
+      const config = result?.config as Record<string, any>;
       const scannerConfig = config?.avro;
 
       expect(scannerConfig).toBeDefined();
@@ -868,7 +871,8 @@ describe('generateDefaultValue', () => {
       const builtInComponents = getBuiltInComponents();
       const avroScanner = builtInComponents.find((c) => c.name === 'avro' && c.type === 'scanner');
 
-      const config = schemaToConfig(avroScanner, false) as Record<string, any>;
+      const result = schemaToConfig(avroScanner, false);
+      const config = result?.config as Record<string, any>;
       const scannerConfig = config?.avro;
 
       expect(scannerConfig).toBeDefined();

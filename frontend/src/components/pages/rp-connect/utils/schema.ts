@@ -188,17 +188,15 @@ const generateRedpandaTopLevelConfig = (): Record<string, unknown> => {
  * following the Redpanda Connect YAML schema structure
  * @param componentSpec - the component spec to convert to a config object
  * @param showOptionalFields - whether to show optional fields
- * @returns ConnectConfigObject or undefined
+ * @returns Object with config and spec, or undefined
  */
 export const schemaToConfig = (
   componentSpec?: ConnectComponentSpec,
   showOptionalFields?: boolean
-): Partial<ConnectConfigObject> | undefined => {
+): { config: Partial<ConnectConfigObject>; spec: ConnectComponentSpec } | undefined => {
   if (!componentSpec?.config) {
     return;
   }
-
-  const isRedpandaCommon = componentSpec.name === 'redpanda_common';
 
   const connectionConfig = generateDefaultValue(componentSpec.config, {
     showOptionalFields,
@@ -207,7 +205,7 @@ export const schemaToConfig = (
 
   const config: Partial<ConnectConfigObject> = {};
 
-  if (isRedpandaCommon) {
+  if (componentSpec.name === 'redpanda_common') {
     const redpandaBlockConfig = generateRedpandaTopLevelConfig();
 
     if (Object.keys(redpandaBlockConfig).length > 0) {
@@ -226,7 +224,7 @@ export const schemaToConfig = (
         break;
     }
 
-    return config;
+    return { config, spec: componentSpec };
   }
 
   // Structure the config according to Redpanda Connect YAML schema
@@ -263,13 +261,16 @@ export const schemaToConfig = (
 
     case 'scanner':
       // Scanners are embedded in inputs, return config directly
-      return { [componentSpec.name]: connectionConfig };
+      return {
+        config: { [componentSpec.name]: connectionConfig },
+        spec: componentSpec,
+      };
 
     default:
       break;
   }
 
-  return config;
+  return { config, spec: componentSpec };
 };
 
 function populateWizardFields(spec: RawFieldSpec, componentName?: string): unknown | undefined {
@@ -392,10 +393,12 @@ function shouldHideField(params: {
     insideWizardContext,
   } = params;
 
-  // Never hide TLS object for Redpanda Cloud components (TLS is always required)
-  const isTlsObject = spec.name?.toLowerCase() === 'tls';
-  const isRedpandaComponent = componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName);
-  if (isTlsObject && isRedpandaComponent) {
+  // never hide critical connection fields for Redpanda components
+  if (
+    componentName &&
+    CRITICAL_CONNECTION_FIELDS.has(spec.name as string) &&
+    REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)
+  ) {
     return false;
   }
 
@@ -411,7 +414,7 @@ function shouldHideField(params: {
   }
 
   const isAdvancedField = spec.is_advanced === true;
-  if (isAdvancedField && !showOptionalFields && !hasWizardData && !isExplicitlyRequired) {
+  if (isAdvancedField && !showOptionalFields && !hasWizardData && !isExplicitlyRequired && !isCriticalField) {
     const hasEmptyDefault = isFalsy(spec.default);
     const isEffectivelyOptional = spec.is_optional === true || (hasEmptyDefault && spec.is_optional !== false);
     if (!insideWizardContext || isEffectivelyOptional) {
@@ -599,11 +602,22 @@ export function generateDefaultValue(
   options?: GenerateDefaultValueOptions
 ): RawFieldSpec['default'] {
   const { showOptionalFields, componentName, insideWizardContext, parentName } = options || {};
-  // Generate schema comment for YAML generation
-  if (spec.default !== undefined) {
-    spec.comment = `Default: ${JSON.stringify(spec.default)}`;
-  } else if (spec.is_optional === false) {
+
+  const isCriticalField = spec.name ? CRITICAL_CONNECTION_FIELDS.has(spec.name) : false;
+  const isExplicitlyRequired = spec.is_optional === false;
+
+  // Don't add comments for empty string defaults
+  const hasNonEmptyDefault = spec.default !== undefined && spec.default !== '';
+
+  if (hasNonEmptyDefault && isExplicitlyRequired) {
+    spec.comment = `Required (default: ${JSON.stringify(spec.default)})`;
+  } else if (isExplicitlyRequired) {
     spec.comment = 'Required';
+  } else if (hasNonEmptyDefault) {
+    spec.comment = `Optional (default: ${JSON.stringify(spec.default)})`;
+  } else if (isCriticalField) {
+    // Critical fields that are optional with no default
+    spec.comment = 'Optional';
   }
 
   // Try wizard data population first for Redpanda secret components
@@ -626,9 +640,6 @@ export function generateDefaultValue(
     }
   }
 
-  // Determine field properties
-  const isExplicitlyRequired = spec.is_optional === false;
-  const isCriticalField = spec.name ? CRITICAL_CONNECTION_FIELDS.has(spec.name) : false;
   const hasWizardData = hasWizardRelevantFields(spec, componentName);
 
   // Check if field should be hidden
