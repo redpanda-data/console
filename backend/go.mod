@@ -5,6 +5,7 @@ go 1.25.1
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.9-20250912141014-52f32327d4b0.1
 	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.9-20250904135917-9feeb2588236.1
+	buf.build/gen/go/redpandadata/core/connectrpc/go v1.19.1-20251017110713-2ba1d059d4b5.2
 	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.10-20251017110713-2ba1d059d4b5.1
 	buf.build/go/protovalidate v1.0.0
 	connectrpc.com/connect v1.19.1
@@ -73,7 +74,6 @@ require (
 )
 
 require (
-	buf.build/gen/go/redpandadata/core/connectrpc/go v1.19.1-20251017110713-2ba1d059d4b5.2 // indirect
 	cel.dev/expr v0.24.0 // indirect
 	cuelang.org/go v0.14.1 // indirect
 	dario.cat/mergo v1.0.2 // indirect
