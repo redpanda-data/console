@@ -29,7 +29,8 @@ export const PreviewFieldsModal: FC<{
   getShowDialog: () => boolean;
   setShowDialog: (val: boolean) => void;
   messages: TopicMessage[];
-}> = observer(({ getShowDialog, setShowDialog, messages }) => (
+  topicName: string;
+}> = observer(({ getShowDialog, setShowDialog, messages, topicName }) => (
   <Modal
     isOpen={getShowDialog()}
     onClose={() => {
@@ -41,7 +42,7 @@ export const PreviewFieldsModal: FC<{
       <ModalHeader>Preview fields</ModalHeader>
       <ModalCloseButton />
       <ModalBody>
-        <PreviewSettings messages={messages} />
+        <PreviewSettings messages={messages} topicName={topicName} />
       </ModalBody>
       <ModalFooter gap={2}>
         <Button

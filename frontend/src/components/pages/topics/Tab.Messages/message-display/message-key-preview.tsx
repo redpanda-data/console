@@ -128,7 +128,15 @@ function getControlCharacterName(code: number): string {
 }
 
 export const MessageKeyPreview = observer(
-  ({ msg, previewFields }: { msg: TopicMessage; previewFields: () => PreviewTagV2[] }) => {
+  ({
+    msg,
+    previewFields,
+    previewDisplayMode,
+  }: {
+    msg: TopicMessage;
+    previewFields: () => PreviewTagV2[];
+    previewDisplayMode?: 'single' | 'wrap' | 'rows';
+  }) => {
     const key = msg.key;
 
     if (key.troubleshootReport && key.troubleshootReport.length > 0) {
@@ -163,10 +171,12 @@ export const MessageKeyPreview = observer(
         // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
         const previewTags = previewFields().filter((t) => t.searchInMessageValue);
         if (previewTags.length > 0) {
-          const tags = getPreviewTags(key.payload as Record<string, unknown>, previewTags);
+          const caseSensitive = uiState.topicSettings.previewTagsCaseSensitive === 'caseSensitive';
+          const tags = getPreviewTags(key.payload as Record<string, unknown>, previewTags, caseSensitive);
+          const displayMode = previewDisplayMode ?? uiState.topicSettings.previewDisplayMode;
           text = (
             <span className="cellDiv fade" style={{ fontSize: '95%' }}>
-              <div className={`previewTags previewTags-${uiState.topicSettings.previewDisplayMode}`}>
+              <div className={`previewTags previewTags-${displayMode}`}>
                 {tags.map((t, i) => (
                   <React.Fragment key={i}>{t}</React.Fragment>
                 ))}

@@ -83,6 +83,22 @@ export interface TopicSettingsStore {
   setSearchParams: (topicName: string, searchParams: Partial<TopicSearchParams>) => void;
   getSearchParams: (topicName: string) => TopicSearchParams | undefined;
 
+  // Actions for preview tags case sensitivity
+  setPreviewTagsCaseSensitive: (topicName: string, caseSensitive: 'caseSensitive' | 'ignoreCase') => void;
+  getPreviewTagsCaseSensitive: (topicName: string) => 'caseSensitive' | 'ignoreCase';
+
+  // Actions for preview tags
+  setPreviewTags: (topicName: string, tags: PreviewTagV2[]) => void;
+  getPreviewTags: (topicName: string) => PreviewTagV2[];
+
+  // Actions for preview multi result mode
+  setPreviewMultiResultMode: (topicName: string, mode: 'showOnlyFirst' | 'showAll') => void;
+  getPreviewMultiResultMode: (topicName: string) => 'showOnlyFirst' | 'showAll';
+
+  // Actions for preview display mode
+  setPreviewDisplayMode: (topicName: string, mode: 'single' | 'wrap' | 'rows') => void;
+  getPreviewDisplayMode: (topicName: string) => 'single' | 'wrap' | 'rows';
+
   // Actions for complete topic settings
   getTopicSettings: (topicName: string) => TopicSettings | undefined;
   setTopicSettings: (topicName: string, settings: Partial<TopicSettings>) => void;
@@ -110,6 +126,32 @@ const DEFAULT_SEARCH_PARAMS: TopicSearchParams = {
   keyDeserializer: PayloadEncoding.UNSPECIFIED,
   valueDeserializer: PayloadEncoding.UNSPECIFIED,
 };
+
+// Helper function to create default topic settings
+const createDefaultTopicSettings = (topicName: string, overrides: Partial<TopicSettings> = {}): TopicSettings => ({
+  topicName,
+  searchParams: { ...DEFAULT_SEARCH_PARAMS },
+  dynamicFilters: [],
+  messagesPageSize: 20,
+  favConfigEntries: ['cleanup.policy', 'segment.bytes', 'segment.ms'],
+  previewTags: [],
+  previewTagsCaseSensitive: 'ignoreCase',
+  previewMultiResultMode: 'showAll',
+  previewDisplayMode: 'wrap',
+  previewShowEmptyMessages: true,
+  showMessageMetadata: true,
+  showMessageHeaders: false,
+  searchParametersLocalTimeMode: true,
+  previewTimestamps: 'default',
+  previewColumnFields: [],
+  consumerPageSize: 20,
+  partitionPageSize: 20,
+  aclPageSize: 20,
+  produceRecordEncoding: PayloadEncoding.TEXT,
+  produceRecordCompression: CompressionType.SNAPPY,
+  quickSearch: '',
+  ...overrides,
+});
 
 export const useTopicSettingsStore = create<TopicSettingsStore>()(
   persist(
@@ -166,6 +208,115 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
         return topic?.searchParams;
       },
 
+      setPreviewTagsCaseSensitive: (topicName: string, caseSensitive: 'caseSensitive' | 'ignoreCase') => {
+        set((state) => {
+          const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
+
+          if (existingIndex >= 0) {
+            const updated = [...state.perTopicSettings];
+            updated[existingIndex] = {
+              ...updated[existingIndex],
+              previewTagsCaseSensitive: caseSensitive,
+            };
+            return { perTopicSettings: updated };
+          }
+
+          // Create new topic settings if it doesn't exist
+          return {
+            perTopicSettings: [
+              ...state.perTopicSettings,
+              createDefaultTopicSettings(topicName, { previewTagsCaseSensitive: caseSensitive }),
+            ],
+          };
+        });
+      },
+
+      getPreviewTagsCaseSensitive: (topicName: string) => {
+        const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
+        return topic?.previewTagsCaseSensitive ?? 'ignoreCase';
+      },
+
+      setPreviewTags: (topicName: string, tags: PreviewTagV2[]) => {
+        set((state) => {
+          const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
+
+          if (existingIndex >= 0) {
+            const updated = [...state.perTopicSettings];
+            updated[existingIndex] = {
+              ...updated[existingIndex],
+              previewTags: tags,
+            };
+            return { perTopicSettings: updated };
+          }
+
+          // Create new topic settings if it doesn't exist
+          return {
+            perTopicSettings: [...state.perTopicSettings, createDefaultTopicSettings(topicName, { previewTags: tags })],
+          };
+        });
+      },
+
+      getPreviewTags: (topicName: string) => {
+        const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
+        return topic?.previewTags ?? [];
+      },
+
+      setPreviewMultiResultMode: (topicName: string, mode: 'showOnlyFirst' | 'showAll') => {
+        set((state) => {
+          const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
+
+          if (existingIndex >= 0) {
+            const updated = [...state.perTopicSettings];
+            updated[existingIndex] = {
+              ...updated[existingIndex],
+              previewMultiResultMode: mode,
+            };
+            return { perTopicSettings: updated };
+          }
+
+          // Create new topic settings if it doesn't exist
+          return {
+            perTopicSettings: [
+              ...state.perTopicSettings,
+              createDefaultTopicSettings(topicName, { previewMultiResultMode: mode }),
+            ],
+          };
+        });
+      },
+
+      getPreviewMultiResultMode: (topicName: string) => {
+        const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
+        return topic?.previewMultiResultMode ?? 'showAll';
+      },
+
+      setPreviewDisplayMode: (topicName: string, mode: 'single' | 'wrap' | 'rows') => {
+        set((state) => {
+          const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
+
+          if (existingIndex >= 0) {
+            const updated = [...state.perTopicSettings];
+            updated[existingIndex] = {
+              ...updated[existingIndex],
+              previewDisplayMode: mode,
+            };
+            return { perTopicSettings: updated };
+          }
+
+          // Create new topic settings if it doesn't exist
+          return {
+            perTopicSettings: [
+              ...state.perTopicSettings,
+              createDefaultTopicSettings(topicName, { previewDisplayMode: mode }),
+            ],
+          };
+        });
+      },
+
+      getPreviewDisplayMode: (topicName: string) => {
+        const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
+        return topic?.previewDisplayMode ?? 'wrap';
+      },
+
       getTopicSettings: (topicName: string) => get().perTopicSettings.find((t) => t.topicName === topicName),
 
       setTopicSettings: (topicName: string, settings: Partial<TopicSettings>) => {
@@ -183,32 +334,7 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
           }
 
           // Create new topic settings if it doesn't exist
-          const newTopic: TopicSettings = {
-            topicName,
-            searchParams: { ...DEFAULT_SEARCH_PARAMS },
-            dynamicFilters: [],
-            messagesPageSize: 20,
-            favConfigEntries: ['cleanup.policy', 'segment.bytes', 'segment.ms'],
-            previewTags: [],
-            previewTagsCaseSensitive: 'ignoreCase',
-            previewMultiResultMode: 'showAll',
-            previewDisplayMode: 'wrap',
-            previewShowEmptyMessages: true,
-            showMessageMetadata: true,
-            showMessageHeaders: false,
-            searchParametersLocalTimeMode: true,
-            previewTimestamps: 'default',
-            previewColumnFields: [],
-            consumerPageSize: 20,
-            partitionPageSize: 20,
-            aclPageSize: 20,
-            produceRecordEncoding: PayloadEncoding.TEXT,
-            produceRecordCompression: CompressionType.SNAPPY,
-            quickSearch: '',
-            ...settings,
-          };
-
-          return { perTopicSettings: [...state.perTopicSettings, newTopic] };
+          return { perTopicSettings: [...state.perTopicSettings, createDefaultTopicSettings(topicName, settings)] };
         });
       },
 
@@ -278,3 +404,16 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
     }
   )
 );
+
+// Sync Zustand changes back to MobX to prevent MobX's autorun from overwriting Zustand's changes
+// This ensures that when MobX saves to localStorage (after 2 second delay), it has the latest data from Zustand
+useTopicSettingsStore.subscribe((state) => {
+  // Dynamically import uiSettings to avoid circular dependencies
+  import('../state/ui').then(({ uiSettings }) => {
+    // Update MobX's perTopicSettings with Zustand's data
+    // This keeps them in sync so MobX's autorun doesn't overwrite Zustand's changes
+    uiSettings.perTopicSettings.splice(0, uiSettings.perTopicSettings.length, ...state.perTopicSettings);
+  }).catch((error) => {
+    console.error('Failed to sync Zustand to MobX:', error);
+  });
+});

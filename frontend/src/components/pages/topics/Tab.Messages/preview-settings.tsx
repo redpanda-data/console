@@ -24,21 +24,32 @@ import {
 } from 'react-beautiful-dnd';
 
 import { globHelp, PatternHelpDrawer } from './preview-settings/pattern-help-drawer';
+import { usePreviewTagsCaseSensitive } from '../../../../hooks/use-preview-tags-case-sensitive';
 import type { TopicMessage } from '../../../../state/rest-interfaces';
 import type { PreviewTagV2 } from '../../../../state/ui';
-import { uiState } from '../../../../state/ui-state';
+import { useTopicSettingsStore } from '../../../../stores/topic-settings-store';
 import { IsDev } from '../../../../utils/env';
 import { Label, OptionGroup, toSafeString } from '../../../../utils/tsx-utils';
 import { type CollectedProperty, collectElements2, getAllMessageKeys, randomId } from '../../../../utils/utils';
 import { SingleSelect } from '../../../misc/select';
 
-export const PreviewSettings = observer(({ messages }: { messages: TopicMessage[] }) => {
-  const allCurrentKeys = getAllMessageKeys(messages)
+export const PreviewSettings = observer(({ messages, topicName }: { messages: TopicMessage[]; topicName: string }) => {
+  const [caseSensitive, setCaseSensitive] = usePreviewTagsCaseSensitive(topicName);
+  const {
+    setPreviewTags: setStoredPreviewTags,
+    getPreviewMultiResultMode,
+    setPreviewMultiResultMode,
+    getPreviewDisplayMode,
+    setPreviewDisplayMode,
+    perTopicSettings,
+  } = useTopicSettingsStore();
+
+  const currentKeys = getAllMessageKeys(messages)
     .map((p) => p.propertyName)
     .distinct();
 
-  const currentKeys = allCurrentKeys;
-  const tags = uiState.topicSettings.previewTags;
+  // Access perTopicSettings to trigger re-render when it changes
+  const tags = perTopicSettings.find((t) => t.topicName === topicName)?.previewTags ?? [];
 
   // add ids to elements that don't have any
   const getFreeId = (): string => {
@@ -58,7 +69,9 @@ export const PreviewSettings = observer(({ messages }: { messages: TopicMessage[
     if (!result.destination) {
       return;
     }
-    arrayMoveMutable(tags, result.source.index, result.destination.index);
+    const newTags = [...tags];
+    arrayMoveMutable(newTags, result.source.index, result.destination.index);
+    setStoredPreviewTags(topicName, newTags);
   };
 
   const content = (
@@ -84,8 +97,12 @@ export const PreviewSettings = observer(({ messages }: { messages: TopicMessage[
                           allCurrentKeys={currentKeys}
                           draggableProvided={draggableProvided}
                           index={index}
-                          onRemove={() => tags.removeAll((t) => t.id === tag.id)}
+                          onRemove={() => {
+                            const newTags = tags.filter((t) => t.id !== tag.id);
+                            setStoredPreviewTags(topicName, newTags);
+                          }}
                           tag={tag}
+                          topicName={topicName}
                         />
                       </div>
                     )}
@@ -102,7 +119,8 @@ export const PreviewSettings = observer(({ messages }: { messages: TopicMessage[
                       searchInMessageKey: false,
                       searchInMessageValue: true,
                     };
-                    tags.push(newTag);
+                    const newTags = [...tags, newTag];
+                    setStoredPreviewTags(topicName, newTags);
                   }}
                   variant="outline"
                 >
@@ -119,22 +137,26 @@ export const PreviewSettings = observer(({ messages }: { messages: TopicMessage[
         <div className="previewTagsSettings">
           <OptionGroup<'caseSensitive' | 'ignoreCase'>
             label="Matching"
-            onChange={(e) => (uiState.topicSettings.previewTagsCaseSensitive = e)}
+            onChange={(e) => setCaseSensitive(e)}
             options={{ 'Ignore Case': 'ignoreCase', 'Case Sensitive': 'caseSensitive' }}
-            value={uiState.topicSettings.previewTagsCaseSensitive}
+            value={caseSensitive}
           />
           <OptionGroup
             label="Multiple Results"
-            onChange={(e) => (uiState.topicSettings.previewMultiResultMode = e)}
+            onChange={(e) => {
+              setPreviewMultiResultMode(topicName, e);
+            }}
             options={{ 'First result': 'showOnlyFirst', 'Show All': 'showAll' }}
-            value={uiState.topicSettings.previewMultiResultMode}
+            value={getPreviewMultiResultMode(topicName)}
           />
 
           <OptionGroup
             label="Wrapping"
-            onChange={(e) => (uiState.topicSettings.previewDisplayMode = e)}
+            onChange={(e) => {
+              setPreviewDisplayMode(topicName, e);
+            }}
             options={{ 'Single Line': 'single', Wrap: 'wrap', Rows: 'rows' }}
-            value={uiState.topicSettings.previewDisplayMode}
+            value={getPreviewDisplayMode(topicName)}
           />
         </div>
       </div>
@@ -156,13 +178,23 @@ const PreviewTagSettings = observer(
     onRemove,
     allCurrentKeys,
     draggableProvided,
+    topicName,
   }: {
     tag: PreviewTagV2;
     index: number;
     onRemove: () => void;
     allCurrentKeys: string[];
     draggableProvided: DraggableProvided;
+    topicName: string;
   }) => {
+    const { getPreviewTags: getStoredTags, setPreviewTags: setStoredTags } = useTopicSettingsStore();
+
+    const updateTag = (updates: Partial<PreviewTagV2>) => {
+      const allTags = getStoredTags(topicName);
+      const newTags = allTags.map((t) => (t.id === tag.id ? { ...t, ...updates } : t));
+      setStoredTags(topicName, newTags);
+    };
+
     return (
       <Flex borderRadius={1} gap={1} mb={1.5} p={1} placeItems="center">
         {/* Move Handle */}
@@ -171,7 +203,7 @@ const PreviewTagSettings = observer(
         </span>
 
         {/* Enabled */}
-        <Checkbox isChecked={tag.isActive} onChange={(e) => (tag.isActive = e.target.checked)} />
+        <Checkbox isChecked={tag.isActive} onChange={(e) => updateTag({ isActive: e.target.checked })} />
 
         {/* Settings */}
         <Popover
@@ -182,7 +214,7 @@ const PreviewTagSettings = observer(
                   autoComplete={randomId()}
                   flexBasis={50}
                   flexGrow={1}
-                  onChange={(e) => (tag.customName = e.target.value)}
+                  onChange={(e) => updateTag({ customName: e.target.value })}
                   placeholder="Enter a display name..."
                   size="sm"
                   spellCheck={false}
@@ -193,7 +225,7 @@ const PreviewTagSettings = observer(
               <span>
                 <Checkbox
                   isChecked={tag.searchInMessageKey}
-                  onChange={(e) => (tag.searchInMessageKey = e.target.checked)}
+                  onChange={(e) => updateTag({ searchInMessageKey: e.target.checked })}
                 >
                   Search in message key
                 </Checkbox>
@@ -201,7 +233,7 @@ const PreviewTagSettings = observer(
               <span>
                 <Checkbox
                   isChecked={tag.searchInMessageValue}
-                  onChange={(e) => (tag.searchInMessageValue = e.target.checked)}
+                  onChange={(e) => updateTag({ searchInMessageValue: e.target.checked })}
                 >
                   Search in message value
                 </Checkbox>
@@ -221,9 +253,7 @@ const PreviewTagSettings = observer(
         <Box w="full">
           <SingleSelect<string>
             creatable
-            onChange={(value) => {
-              tag.pattern = value;
-            }}
+            onChange={(value) => updateTag({ pattern: value })}
             options={allCurrentKeys.map((t) => ({ label: t, value: t }))}
             placeholder="Pattern..."
             value={tag.pattern}
@@ -246,11 +276,13 @@ todo:
     - in order to match `/pattern/` our 'parseJsonPath' must support escaping forward slashes: "\/"
 
 */
-export function getPreviewTags(targetObject: Record<string, unknown>, tags: PreviewTagV2[]): React.ReactNode[] {
+export function getPreviewTags(
+  targetObject: Record<string, unknown>,
+  tags: PreviewTagV2[],
+  caseSensitive: boolean
+): React.ReactNode[] {
   const ar: React.ReactNode[] = [];
-
   const results: { prop: CollectedProperty; tag: PreviewTagV2; fullPath: string }[] = [];
-  const caseSensitive = uiState.topicSettings.previewTagsCaseSensitive === 'caseSensitive';
 
   for (const t of tags) {
     if (t.pattern.length === 0) {

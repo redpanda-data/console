@@ -286,7 +286,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
   const breakpoint = useBreakpoint({ ssr: false });
 
   // Zustand store for topic settings
-  const { setSorting, getSorting } = useTopicSettingsStore();
+  const { setSorting, getSorting, perTopicSettings } = useTopicSettingsStore();
+
+  // Access perTopicSettings directly to trigger re-renders when Zustand state changes
+  const topicSettings = perTopicSettings.find((t) => t.topicName === props.topic.topicName);
+  const previewDisplayMode = topicSettings?.previewDisplayMode ?? 'wrap';
 
   // URL query state management with localStorage sync
   const [partitionID, setPartitionID] = useQueryStateWithCallback<number>(
@@ -396,7 +400,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
     : messages;
 
   // Convert @computed activePreviewTags to useMemo
-  const activePreviewTags = useMemo(() => uiState.topicSettings.previewTags.filter((t) => t.isActive), []);
+  const activePreviewTags = useMemo(
+    () => (topicSettings?.previewTags ?? []).filter((t) => t.isActive),
+    [topicSettings?.previewTags]
+  );
 
   // Cleanup effect (replaces componentWillUnmount)
   useEffect(
@@ -552,17 +559,16 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
     pageSize,
   };
 
-  const tsFormat = uiState.topicSettings.previewTimestamps;
-  const hasKeyTags = uiState.topicSettings.previewTags.count((x) => x.isActive && x.searchInMessageKey) > 0;
+  const tsFormat = topicSettings?.previewTimestamps ?? 'default';
+  const hasKeyTags = (topicSettings?.previewTags ?? []).filter((x) => x.isActive && x.searchInMessageKey).length > 0;
+
+  const valueDeserializer = topicSettings?.searchParams.valueDeserializer ?? PayloadEncoding.UNSPECIFIED;
+  const keyDeserializer = topicSettings?.searchParams.keyDeserializer ?? PayloadEncoding.UNSPECIFIED;
 
   const isValueDeserializerActive =
-    uiState.topicSettings.searchParams.valueDeserializer !== null &&
-    uiState.topicSettings.searchParams.valueDeserializer !== undefined &&
-    uiState.topicSettings.searchParams.valueDeserializer !== PayloadEncoding.UNSPECIFIED;
+    valueDeserializer !== null && valueDeserializer !== undefined && valueDeserializer !== PayloadEncoding.UNSPECIFIED;
   const isKeyDeserializerActive =
-    uiState.topicSettings.searchParams.keyDeserializer !== null &&
-    uiState.topicSettings.searchParams.keyDeserializer !== undefined &&
-    uiState.topicSettings.searchParams.keyDeserializer !== PayloadEncoding.UNSPECIFIED;
+    keyDeserializer !== null && keyDeserializer !== undefined && keyDeserializer !== PayloadEncoding.UNSPECIFIED;
 
   const dataTableColumns: Record<DataColumnKey, ColumnDef<TopicMessage>> = {
     offset: {
@@ -599,7 +605,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
               }}
               type="button"
             >
-              <Badge>Deserializer: {PAYLOAD_ENCODING_LABELS[uiState.topicSettings.searchParams.keyDeserializer]}</Badge>
+              <Badge>Deserializer: {PAYLOAD_ENCODING_LABELS[keyDeserializer]}</Badge>
             </button>
           </Flex>
         ) : (
@@ -607,7 +613,13 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
         ),
       size: hasKeyTags ? 300 : 1,
       accessorKey: 'key',
-      cell: ({ row: { original } }) => <MessageKeyPreview msg={original} previewFields={() => activePreviewTags} />,
+      cell: ({ row: { original } }) => (
+        <MessageKeyPreview
+          msg={original}
+          previewDisplayMode={previewDisplayMode}
+          previewFields={() => activePreviewTags}
+        />
+      ),
     },
     value: {
       header: () =>
@@ -621,9 +633,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
               }}
               type="button"
             >
-              <Badge>
-                Deserializer: {PAYLOAD_ENCODING_LABELS[uiState.topicSettings.searchParams.valueDeserializer]}
-              </Badge>
+              <Badge>Deserializer: {PAYLOAD_ENCODING_LABELS[valueDeserializer]}</Badge>
             </button>
           </Flex>
         ) : (
@@ -634,6 +644,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
         <MessagePreview
           isCompactTopic={props.topic.cleanupPolicy.includes('compact')}
           msg={original}
+          previewDisplayMode={previewDisplayMode}
           previewFields={() => activePreviewTags}
         />
       ),
@@ -666,11 +677,12 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
 
   const newColumns: ColumnDef<TopicMessage>[] = columnsVisibleByDefault.map((key) => dataTableColumns[key]);
 
-  if (uiState.topicSettings.previewColumnFields.length > 0) {
+  const previewColumnFields = topicSettings?.previewColumnFields ?? [];
+  if (previewColumnFields.length > 0) {
     newColumns.splice(0, newColumns.length);
 
     // let's be defensive and remove any duplicates before showing in the table
-    const selectedColumns = new Set(uiState.topicSettings.previewColumnFields.map((field) => field.dataIndex));
+    const selectedColumns = new Set(previewColumnFields.map((field) => field.dataIndex));
 
     for (const column of COLUMN_ORDER) {
       if (selectedColumns.has(column)) {
@@ -1127,6 +1139,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
             getShowDialog={() => showPreviewFieldsModal}
             messages={messages}
             setShowDialog={setShowPreviewFieldsModal}
+            topicName={props.topic.topicName}
           />
 
           <DeserializersModal getShowDialog={() => showDeserializersModal} setShowDialog={setShowDeserializersModal} />

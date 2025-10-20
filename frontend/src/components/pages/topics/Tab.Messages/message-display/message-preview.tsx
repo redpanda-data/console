@@ -26,10 +26,12 @@ export const MessagePreview = observer(
     msg,
     previewFields,
     isCompactTopic: _isCompactTopic,
+    previewDisplayMode,
   }: {
     msg: TopicMessage;
     previewFields: () => PreviewTagV2[];
     isCompactTopic: boolean;
+    previewDisplayMode?: 'single' | 'wrap' | 'rows';
   }) => {
     const value = msg.value;
 
@@ -78,10 +80,12 @@ export const MessagePreview = observer(
         // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
         const previewTags = previewFields().filter((t) => t.searchInMessageValue);
         if (previewTags.length > 0) {
-          const tags = getPreviewTags(value.payload as Record<string, unknown>, previewTags);
+          const caseSensitive = uiState.topicSettings.previewTagsCaseSensitive === 'caseSensitive';
+          const tags = getPreviewTags(value.payload as Record<string, unknown>, previewTags, caseSensitive);
+          const displayMode = previewDisplayMode ?? uiState.topicSettings.previewDisplayMode;
           text = (
             <span className="cellDiv fade" style={{ fontSize: '95%' }}>
-              <div className={`previewTags previewTags-${uiState.topicSettings.previewDisplayMode}`}>
+              <div className={`previewTags previewTags-${displayMode}`}>
                 {tags.map((t, i) => (
                   <React.Fragment key={i}>{t}</React.Fragment>
                 ))}
