@@ -82,7 +82,7 @@ export const AIAgentChat = ({ agentUrl, agentId }: AIAgentChatProps) => {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-screen-xl flex-col px-4">
+    <div className="mx-auto flex w-full flex-col px-4">
       <div className="flex min-h-0 flex-col">
         {messages?.length > 0 && <ChatClearButton onClear={handleClearChat} />}
         {!isLoadingMessages && (
