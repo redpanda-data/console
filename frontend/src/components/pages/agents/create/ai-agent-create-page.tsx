@@ -49,7 +49,6 @@ import {
 } from 'components/ui/service-account/service-account-selector';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { config } from 'config';
-import { useSessionStorage } from 'hooks/use-session-storage';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -95,12 +94,6 @@ export const AIAgentCreatePage = () => {
     skipInvalidation: true,
   });
 
-  // Session storage for form persistence
-  const [storedFormValues, setStoredFormValues] = useSessionStorage<FormValues>(
-    '@rp/ai-agent-create-form',
-    initialValues
-  );
-
   // Ref to ServiceAccountSelector to call createServiceAccount
   const serviceAccountSelectorRef = useRef<ServiceAccountSelectorRef>(null);
 
@@ -111,10 +104,10 @@ export const AIAgentCreatePage = () => {
   } | null>(null);
   const [isCreateServiceAccountPending, setIsCreateServiceAccountPending] = useState(false);
 
-  // Form setup - initialize with stored values
+  // Form setup - always start with fresh values
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
-    defaultValues: storedFormValues,
+    defaultValues: initialValues,
     mode: 'onChange',
   });
 
@@ -174,14 +167,6 @@ export const AIAgentCreatePage = () => {
       form.setValue('apiKeySecret', openAISecret.id);
     }
   }, [availableSecrets, form]);
-
-  // Persist form values to session storage on change
-  useEffect(() => {
-    const subscription = form.watch((formValues) => {
-      setStoredFormValues(formValues as FormValues);
-    });
-    return () => subscription.unsubscribe();
-  }, [form, setStoredFormValues]);
 
   // Get available MCP servers (all servers, regardless of state)
   const availableMcpServers = useMemo(() => {
@@ -336,8 +321,6 @@ export const AIAgentCreatePage = () => {
         onError: handleValidationError,
         onSuccess: (data) => {
           if (data?.aiAgent?.id) {
-            // Clear session storage on successful creation
-            setStoredFormValues(initialValues);
             toast.success('AI agent created successfully');
             navigate(`/agents/${data.aiAgent.id}`);
           }
@@ -645,8 +628,6 @@ export const AIAgentCreatePage = () => {
             <div className="flex justify-end gap-2">
               <Button
                 onClick={() => {
-                  // Clear session storage when canceling
-                  setStoredFormValues(initialValues);
                   navigate('/agents');
                 }}
                 type="button"
