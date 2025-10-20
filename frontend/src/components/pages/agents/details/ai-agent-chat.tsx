@@ -9,12 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
+import { ConnectError } from '@connectrpc/connect';
 import { ChatClearButton } from 'components/chat/chat-clear-button';
 import { ChatLoadingIndicator } from 'components/chat/chat-loading-indicator';
 import { ChatTypingIndicator } from 'components/chat/chat-typing-indicator';
 import { chatDb } from 'database/chat-db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { AIAgentChatInput } from './ai-agent-chat-input';
 import { AIAgentMessageView } from './ai-agent-message-view';
@@ -68,8 +71,9 @@ export const AIAgentChat = ({ agentUrl, agentId }: AIAgentChatProps) => {
       }
       await chatDb.clearAllMessages(agentId);
     } catch (error) {
-      // biome-ignore lint/suspicious/noConsole: error logging for debugging clear failures
-      console.error('Error clearing messages:', error);
+      const connectError = ConnectError.from(error);
+
+      toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'clear', entity: 'chat messages' }));
     }
   };
 

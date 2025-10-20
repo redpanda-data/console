@@ -14,6 +14,7 @@ import type { Message, MessageSendParams, Task } from '@a2a-js/sdk';
 import { A2AClient } from '@a2a-js/sdk/client';
 import { config } from 'config';
 import type { ChatMessage } from 'database/chat-db';
+import { getAgentCardUrl } from 'utils/ai-agent.utils';
 import { v4 as uuidv4 } from 'uuid';
 
 type A2AApiResponse = {
@@ -192,8 +193,6 @@ async function processStreamingResponse(
     // Handle task creation
     if (evt.kind === 'task') {
       taskId = evt.id || '';
-      // biome-ignore lint/suspicious/noConsole: debug logging
-      console.log(`Task created: ${taskId}`);
 
       // Extract and display task description/plan
       const taskText = extractTaskText(evt);
@@ -329,20 +328,11 @@ export const sendMessageViaA2A = async ({
   onStreamUpdate,
 }: SendMessageViaA2AProps): Promise<A2AApiResponse> => {
   try {
-    // Determine the agent card URL
-    // If agentUrl already includes /.well-known/agent.json, use it as-is
-    // Otherwise, append the standard path
-    const agentCardUrl =
-      agentUrl.includes('agent.json') || agentUrl.includes('well-known')
-        ? agentUrl
-        : `${agentUrl}/.well-known/agent.json`;
-    // biome-ignore lint/suspicious/noConsole: debug logging
-    console.log('agentCardUrl', agentCardUrl);
+    // Resolve the full agent card URL from the provided agent URL
+    const agentCardUrl = getAgentCardUrl({ agentUrl });
+
     // Create A2A client from the agent card URL
     const client = await A2AClient.fromCardUrl(agentCardUrl, { fetchImpl: fetchWithCustomHeader });
-
-    // biome-ignore lint/suspicious/noConsole: debug logging
-    console.log('client', client);
 
     const sendParams: MessageSendParams = {
       message: {
@@ -369,9 +359,6 @@ export const sendMessageViaA2A = async ({
       return await sendNonStreamingMessage(client, sendParams);
     }
   } catch (error) {
-    // biome-ignore lint/suspicious/noConsole: error logging for debugging A2A request failures
-    console.error('Error sending message via A2A protocol:', error);
-
     let errorMessage = 'Failed to send message to agent. Please try again later.';
 
     if (error instanceof Error) {

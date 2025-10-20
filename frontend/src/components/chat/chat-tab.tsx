@@ -3,6 +3,7 @@ import { chatDb } from 'database/chat-db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 import { ChatBlankState } from './chat-blank-state';
 import { ChatClearButton } from './chat-clear-button';
@@ -63,9 +64,11 @@ export const ChatTab = ({ pipeline }: ChatTabProps) => {
         return;
       }
       await chatDb.clearAllMessages(id);
+      toast.success('Chat messages cleared successfully');
     } catch (error) {
       // biome-ignore lint/suspicious/noConsole: error logging for debugging clear failures
       console.error('Error clearing messages:', error);
+      toast.error('Failed to clear chat messages. Please try again.');
     }
   };
 
