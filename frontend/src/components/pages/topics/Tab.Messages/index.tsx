@@ -47,7 +47,6 @@ import {
   useToast,
 } from '@redpanda-data/ui';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
-import { observer } from 'mobx-react';
 import { parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import {
   MdCalendarToday,
@@ -281,7 +280,7 @@ async function loadLargeMessage(
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: this is because of the refactoring effort, the scope will be minimised eventually
-export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
+export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const toast = useToast();
   const breakpoint = useBreakpoint({ ssr: false });
 
@@ -1170,4 +1169,4 @@ export const TopicMessageView: FC<TopicMessageViewProps> = observer((props) => {
       )}
     </>
   );
-});
+};

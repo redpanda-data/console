@@ -12,7 +12,6 @@
 import { GearIcon, ThreeBarsIcon, XIcon } from '@primer/octicons-react';
 import { Box, Button, Checkbox, Flex, Input, Popover } from '@redpanda-data/ui';
 import { arrayMoveMutable } from 'array-move';
-import { observer } from 'mobx-react';
 import React from 'react';
 import {
   DragDropContext,
@@ -35,7 +34,7 @@ import { Label, OptionGroup, toSafeString } from '../../../../utils/tsx-utils';
 import { type CollectedProperty, collectElements2, getAllMessageKeys, randomId } from '../../../../utils/utils';
 import { SingleSelect } from '../../../misc/select';
 
-export const PreviewSettings = observer(({ messages, topicName }: { messages: TopicMessage[]; topicName: string }) => {
+export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessage[]; topicName: string }) => {
   const [caseSensitive, setCaseSensitive] = usePreviewTagsCaseSensitive(topicName);
   const [multiResultMode, setMultiResultMode] = usePreviewMultiResultMode(topicName);
   const [displayMode, setDisplayMode] = usePreviewDisplayMode(topicName);
@@ -157,7 +156,7 @@ export const PreviewSettings = observer(({ messages, topicName }: { messages: To
   );
 
   return <Box>{content}</Box>;
-});
+};
 
 /*
 todo:
@@ -165,102 +164,100 @@ todo:
 - better auto-complete: get suggestions from current pattern (except for last segment)
 -
  */
-const PreviewTagSettings = observer(
-  ({
-    tag,
-    onRemove,
-    allCurrentKeys,
-    draggableProvided,
-    topicName,
-  }: {
-    tag: PreviewTagV2;
-    index: number;
-    onRemove: () => void;
-    allCurrentKeys: string[];
-    draggableProvided: DraggableProvided;
-    topicName: string;
-  }) => {
-    const { getPreviewTags: getStoredTags, setPreviewTags: setStoredTags } = useTopicSettingsStore();
+const PreviewTagSettings = ({
+  tag,
+  onRemove,
+  allCurrentKeys,
+  draggableProvided,
+  topicName,
+}: {
+  tag: PreviewTagV2;
+  index: number;
+  onRemove: () => void;
+  allCurrentKeys: string[];
+  draggableProvided: DraggableProvided;
+  topicName: string;
+}) => {
+  const { getPreviewTags: getStoredTags, setPreviewTags: setStoredTags } = useTopicSettingsStore();
 
-    const updateTag = (updates: Partial<PreviewTagV2>) => {
-      const allTags = getStoredTags(topicName);
-      const newTags = allTags.map((t) => (t.id === tag.id ? { ...t, ...updates } : t));
-      setStoredTags(topicName, newTags);
-    };
+  const updateTag = (updates: Partial<PreviewTagV2>) => {
+    const allTags = getStoredTags(topicName);
+    const newTags = allTags.map((t) => (t.id === tag.id ? { ...t, ...updates } : t));
+    setStoredTags(topicName, newTags);
+  };
 
-    return (
-      <Flex borderRadius={1} gap={1} mb={1.5} p={1} placeItems="center">
-        {/* Move Handle */}
-        <span className="moveHandle" {...draggableProvided.dragHandleProps}>
-          <ThreeBarsIcon />
+  return (
+    <Flex borderRadius={1} gap={1} mb={1.5} p={1} placeItems="center">
+      {/* Move Handle */}
+      <span className="moveHandle" {...draggableProvided.dragHandleProps}>
+        <ThreeBarsIcon />
+      </span>
+
+      {/* Enabled */}
+      <Checkbox isChecked={tag.isActive} onChange={(e) => updateTag({ isActive: e.target.checked })} />
+
+      {/* Settings */}
+      <Popover
+        content={
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.3em' }}>
+            <Label style={{ marginBottom: '.5em' }} text="Display Name">
+              <Input
+                autoComplete={randomId()}
+                flexBasis={50}
+                flexGrow={1}
+                onChange={(e) => updateTag({ customName: e.target.value })}
+                placeholder="Enter a display name..."
+                size="sm"
+                spellCheck={false}
+                value={tag.customName}
+              />
+            </Label>
+
+            <span>
+              <Checkbox
+                isChecked={tag.searchInMessageKey}
+                onChange={(e) => updateTag({ searchInMessageKey: e.target.checked })}
+              >
+                Search in message key
+              </Checkbox>
+            </span>
+            <span>
+              <Checkbox
+                isChecked={tag.searchInMessageValue}
+                onChange={(e) => updateTag({ searchInMessageValue: e.target.checked })}
+              >
+                Search in message value
+              </Checkbox>
+            </span>
+          </div>
+        }
+        hideCloseButton
+        placement="bottom-start"
+        size="auto"
+        trigger={'click'}
+      >
+        <span className="inlineButton">
+          <GearIcon />
         </span>
+      </Popover>
 
-        {/* Enabled */}
-        <Checkbox isChecked={tag.isActive} onChange={(e) => updateTag({ isActive: e.target.checked })} />
+      <Box w="full">
+        <SingleSelect<string>
+          creatable
+          onChange={(value) => updateTag({ pattern: value })}
+          options={allCurrentKeys.map((t) => ({ label: t, value: t }))}
+          placeholder="Pattern..."
+          value={tag.pattern}
+        />
+      </Box>
 
-        {/* Settings */}
-        <Popover
-          content={
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '.3em' }}>
-              <Label style={{ marginBottom: '.5em' }} text="Display Name">
-                <Input
-                  autoComplete={randomId()}
-                  flexBasis={50}
-                  flexGrow={1}
-                  onChange={(e) => updateTag({ customName: e.target.value })}
-                  placeholder="Enter a display name..."
-                  size="sm"
-                  spellCheck={false}
-                  value={tag.customName}
-                />
-              </Label>
-
-              <span>
-                <Checkbox
-                  isChecked={tag.searchInMessageKey}
-                  onChange={(e) => updateTag({ searchInMessageKey: e.target.checked })}
-                >
-                  Search in message key
-                </Checkbox>
-              </span>
-              <span>
-                <Checkbox
-                  isChecked={tag.searchInMessageValue}
-                  onChange={(e) => updateTag({ searchInMessageValue: e.target.checked })}
-                >
-                  Search in message value
-                </Checkbox>
-              </span>
-            </div>
-          }
-          hideCloseButton
-          placement="bottom-start"
-          size="auto"
-          trigger={'click'}
-        >
-          <span className="inlineButton">
-            <GearIcon />
-          </span>
-        </Popover>
-
-        <Box w="full">
-          <SingleSelect<string>
-            creatable
-            onChange={(value) => updateTag({ pattern: value })}
-            options={allCurrentKeys.map((t) => ({ label: t, value: t }))}
-            placeholder="Pattern..."
-            value={tag.pattern}
-          />
-        </Box>
-
-        {/* Remove */}
-        <button className="inlineButton" onClick={onRemove} type="button">
-          <XIcon />
-        </button>
-      </Flex>
-    );
-  }
-);
+      {/* Remove */}
+      <button className="inlineButton" onClick={onRemove} type="button">
+        <XIcon />
+      </button>
+    </Flex>
+  );
+};
 
 /*
 todo:
