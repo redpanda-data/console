@@ -32,7 +32,6 @@ type OnboardingWizardState = {
   reset: () => void;
 };
 
-// Create separate stores for each session storage key to maintain exact same behavior
 export const useOnboardingWizardDataStore = create<{
   wizardData: Partial<OnboardingWizardFormData>;
   setWizardData: (data: Partial<OnboardingWizardFormData>) => void;
@@ -123,7 +122,6 @@ export const useOnboardingUserDataStore = create<{
   )
 );
 
-// Composite hook for convenience
 export const useOnboardingWizardStore = (): OnboardingWizardState => {
   const { wizardData, setWizardData } = useOnboardingWizardDataStore();
   const { topicData, setTopicData } = useOnboardingTopicDataStore();

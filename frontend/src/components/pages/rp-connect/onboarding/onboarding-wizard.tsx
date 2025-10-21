@@ -18,6 +18,7 @@ import {
   useOnboardingWizardStore,
 } from 'state/onboarding-wizard-store';
 import { uiState } from 'state/ui-state';
+import { useShallow } from 'zustand/react/shallow';
 
 import { AddTopicStep } from './add-topic-step';
 import { AddUserStep } from './add-user-step';
@@ -57,13 +58,15 @@ export const ConnectOnboardingWizard = ({
 }: ConnectOnboardingWizardProps = {}) => {
   const navigate = useNavigate();
 
-  const persistedInputConnectionName = useOnboardingWizardDataStore((state) => state.wizardData.input?.connectionName);
-  const persistedOutputConnectionName = useOnboardingWizardDataStore(
-    (state) => state.wizardData.output?.connectionName
+  const persistedInputConnectionName = useOnboardingWizardDataStore(
+    useShallow((state) => state.wizardData.input?.connectionName)
   );
-  const persistedTopicName = useOnboardingTopicDataStore((state) => state.topicData.topicName);
-  const persistedUserSaslMechanism = useOnboardingUserDataStore((state) => state.userData.saslMechanism);
-  const persistedUsername = useOnboardingUserDataStore((state) => state.userData.username);
+  const persistedOutputConnectionName = useOnboardingWizardDataStore(
+    useShallow((state) => state.wizardData.output?.connectionName)
+  );
+  const persistedTopicName = useOnboardingTopicDataStore(useShallow((state) => state.topicData.topicName));
+  const persistedUserSaslMechanism = useOnboardingUserDataStore(useShallow((state) => state.userData.saslMechanism));
+  const persistedUsername = useOnboardingUserDataStore(useShallow((state) => state.userData.username));
   const { setWizardData, setTopicData, setUserData, reset } = useOnboardingWizardStore();
 
   const persistedInputHasTopicAndUser = useMemo(
@@ -111,8 +114,6 @@ export const ConnectOnboardingWizard = ({
     });
   }, []);
 
-  // Force rehydration from sessionStorage on mount
-  // This handles cases where external apps modify sessionStorage and navigate here
   useEffect(() => {
     useOnboardingWizardDataStore.getState().rehydrate();
     useOnboardingTopicDataStore.getState().rehydrate();
@@ -123,7 +124,6 @@ export const ConnectOnboardingWizard = ({
     if (methods.current.id === WizardStep.ADD_INPUT) {
       reset();
     } else if (methods.current.id === WizardStep.ADD_OUTPUT) {
-      // Get current wizard data to preserve input when clearing output
       const currentWizardData = useOnboardingWizardDataStore.getState().wizardData;
       setWizardData({
         input: currentWizardData.input,
@@ -161,7 +161,6 @@ export const ConnectOnboardingWizard = ({
             });
             methods.goTo(WizardStep.ADD_TOPIC);
           } else {
-            // Get current wizard data to preserve output if it exists
             const currentWizardData = useOnboardingWizardDataStore.getState().wizardData;
             setWizardData({
               input: {
@@ -199,7 +198,6 @@ export const ConnectOnboardingWizard = ({
               },
             });
           } else {
-            // Get current wizard data to preserve input if it exists
             const currentWizardData = useOnboardingWizardDataStore.getState().wizardData;
             setWizardData({
               output: {
