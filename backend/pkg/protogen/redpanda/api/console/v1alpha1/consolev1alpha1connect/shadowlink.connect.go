@@ -54,6 +54,9 @@ const (
 	// ShadowLinkServiceListShadowLinkTopicsProcedure is the fully-qualified name of the
 	// ShadowLinkService's ListShadowLinkTopics RPC.
 	ShadowLinkServiceListShadowLinkTopicsProcedure = "/redpanda.api.console.v1alpha1.ShadowLinkService/ListShadowLinkTopics"
+	// ShadowLinkServiceGetShadowTopicProcedure is the fully-qualified name of the ShadowLinkService's
+	// GetShadowTopic RPC.
+	ShadowLinkServiceGetShadowTopicProcedure = "/redpanda.api.console.v1alpha1.ShadowLinkService/GetShadowTopic"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -65,6 +68,7 @@ var (
 	shadowLinkServiceUpdateShadowLinkMethodDescriptor     = shadowLinkServiceServiceDescriptor.Methods().ByName("UpdateShadowLink")
 	shadowLinkServiceDeleteShadowLinkMethodDescriptor     = shadowLinkServiceServiceDescriptor.Methods().ByName("DeleteShadowLink")
 	shadowLinkServiceListShadowLinkTopicsMethodDescriptor = shadowLinkServiceServiceDescriptor.Methods().ByName("ListShadowLinkTopics")
+	shadowLinkServiceGetShadowTopicMethodDescriptor       = shadowLinkServiceServiceDescriptor.Methods().ByName("GetShadowTopic")
 )
 
 // ShadowLinkServiceClient is a client for the redpanda.api.console.v1alpha1.ShadowLinkService
@@ -76,6 +80,7 @@ type ShadowLinkServiceClient interface {
 	UpdateShadowLink(context.Context, *connect.Request[v2.UpdateShadowLinkRequest]) (*connect.Response[v1alpha1.UpdateShadowLinkResponse], error)
 	DeleteShadowLink(context.Context, *connect.Request[v2.DeleteShadowLinkRequest]) (*connect.Response[v1alpha1.DeleteShadowLinkResponse], error)
 	ListShadowLinkTopics(context.Context, *connect.Request[v1alpha1.ListShadowLinkTopicsRequest]) (*connect.Response[v1alpha1.ListShadowLinkTopicsResponse], error)
+	GetShadowTopic(context.Context, *connect.Request[v1alpha1.GetShadowTopicRequest]) (*connect.Response[v1alpha1.GetShadowTopicResponse], error)
 }
 
 // NewShadowLinkServiceClient constructs a client for the
@@ -125,6 +130,12 @@ func NewShadowLinkServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			connect.WithSchema(shadowLinkServiceListShadowLinkTopicsMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		getShadowTopic: connect.NewClient[v1alpha1.GetShadowTopicRequest, v1alpha1.GetShadowTopicResponse](
+			httpClient,
+			baseURL+ShadowLinkServiceGetShadowTopicProcedure,
+			connect.WithSchema(shadowLinkServiceGetShadowTopicMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -136,6 +147,7 @@ type shadowLinkServiceClient struct {
 	updateShadowLink     *connect.Client[v2.UpdateShadowLinkRequest, v1alpha1.UpdateShadowLinkResponse]
 	deleteShadowLink     *connect.Client[v2.DeleteShadowLinkRequest, v1alpha1.DeleteShadowLinkResponse]
 	listShadowLinkTopics *connect.Client[v1alpha1.ListShadowLinkTopicsRequest, v1alpha1.ListShadowLinkTopicsResponse]
+	getShadowTopic       *connect.Client[v1alpha1.GetShadowTopicRequest, v1alpha1.GetShadowTopicResponse]
 }
 
 // CreateShadowLink calls redpanda.api.console.v1alpha1.ShadowLinkService.CreateShadowLink.
@@ -168,6 +180,11 @@ func (c *shadowLinkServiceClient) ListShadowLinkTopics(ctx context.Context, req 
 	return c.listShadowLinkTopics.CallUnary(ctx, req)
 }
 
+// GetShadowTopic calls redpanda.api.console.v1alpha1.ShadowLinkService.GetShadowTopic.
+func (c *shadowLinkServiceClient) GetShadowTopic(ctx context.Context, req *connect.Request[v1alpha1.GetShadowTopicRequest]) (*connect.Response[v1alpha1.GetShadowTopicResponse], error) {
+	return c.getShadowTopic.CallUnary(ctx, req)
+}
+
 // ShadowLinkServiceHandler is an implementation of the
 // redpanda.api.console.v1alpha1.ShadowLinkService service.
 type ShadowLinkServiceHandler interface {
@@ -177,6 +194,7 @@ type ShadowLinkServiceHandler interface {
 	UpdateShadowLink(context.Context, *connect.Request[v2.UpdateShadowLinkRequest]) (*connect.Response[v1alpha1.UpdateShadowLinkResponse], error)
 	DeleteShadowLink(context.Context, *connect.Request[v2.DeleteShadowLinkRequest]) (*connect.Response[v1alpha1.DeleteShadowLinkResponse], error)
 	ListShadowLinkTopics(context.Context, *connect.Request[v1alpha1.ListShadowLinkTopicsRequest]) (*connect.Response[v1alpha1.ListShadowLinkTopicsResponse], error)
+	GetShadowTopic(context.Context, *connect.Request[v1alpha1.GetShadowTopicRequest]) (*connect.Response[v1alpha1.GetShadowTopicResponse], error)
 }
 
 // NewShadowLinkServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -221,6 +239,12 @@ func NewShadowLinkServiceHandler(svc ShadowLinkServiceHandler, opts ...connect.H
 		connect.WithSchema(shadowLinkServiceListShadowLinkTopicsMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	shadowLinkServiceGetShadowTopicHandler := connect.NewUnaryHandler(
+		ShadowLinkServiceGetShadowTopicProcedure,
+		svc.GetShadowTopic,
+		connect.WithSchema(shadowLinkServiceGetShadowTopicMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.console.v1alpha1.ShadowLinkService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ShadowLinkServiceCreateShadowLinkProcedure:
@@ -235,6 +259,8 @@ func NewShadowLinkServiceHandler(svc ShadowLinkServiceHandler, opts ...connect.H
 			shadowLinkServiceDeleteShadowLinkHandler.ServeHTTP(w, r)
 		case ShadowLinkServiceListShadowLinkTopicsProcedure:
 			shadowLinkServiceListShadowLinkTopicsHandler.ServeHTTP(w, r)
+		case ShadowLinkServiceGetShadowTopicProcedure:
+			shadowLinkServiceGetShadowTopicHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -266,4 +292,8 @@ func (UnimplementedShadowLinkServiceHandler) DeleteShadowLink(context.Context, *
 
 func (UnimplementedShadowLinkServiceHandler) ListShadowLinkTopics(context.Context, *connect.Request[v1alpha1.ListShadowLinkTopicsRequest]) (*connect.Response[v1alpha1.ListShadowLinkTopicsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ShadowLinkService.ListShadowLinkTopics is not implemented"))
+}
+
+func (UnimplementedShadowLinkServiceHandler) GetShadowTopic(context.Context, *connect.Request[v1alpha1.GetShadowTopicRequest]) (*connect.Response[v1alpha1.GetShadowTopicResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ShadowLinkService.GetShadowTopic is not implemented"))
 }

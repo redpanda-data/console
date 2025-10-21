@@ -24,6 +24,7 @@ type ShadowLinkServiceGatewayServer struct {
 	updateShadowLink     connect_gateway.UnaryHandler[v2.UpdateShadowLinkRequest, v1alpha1.UpdateShadowLinkResponse]
 	deleteShadowLink     connect_gateway.UnaryHandler[v2.DeleteShadowLinkRequest, v1alpha1.DeleteShadowLinkResponse]
 	listShadowLinkTopics connect_gateway.UnaryHandler[v1alpha1.ListShadowLinkTopicsRequest, v1alpha1.ListShadowLinkTopicsResponse]
+	getShadowTopic       connect_gateway.UnaryHandler[v1alpha1.GetShadowTopicRequest, v1alpha1.GetShadowTopicResponse]
 }
 
 // NewShadowLinkServiceGatewayServer constructs a Connect-Gateway gRPC server for the
@@ -36,6 +37,7 @@ func NewShadowLinkServiceGatewayServer(svc ShadowLinkServiceHandler, opts ...con
 		updateShadowLink:     connect_gateway.NewUnaryHandler(ShadowLinkServiceUpdateShadowLinkProcedure, svc.UpdateShadowLink, opts...),
 		deleteShadowLink:     connect_gateway.NewUnaryHandler(ShadowLinkServiceDeleteShadowLinkProcedure, svc.DeleteShadowLink, opts...),
 		listShadowLinkTopics: connect_gateway.NewUnaryHandler(ShadowLinkServiceListShadowLinkTopicsProcedure, svc.ListShadowLinkTopics, opts...),
+		getShadowTopic:       connect_gateway.NewUnaryHandler(ShadowLinkServiceGetShadowTopicProcedure, svc.GetShadowTopic, opts...),
 	}
 }
 
@@ -61,6 +63,10 @@ func (s *ShadowLinkServiceGatewayServer) DeleteShadowLink(ctx context.Context, r
 
 func (s *ShadowLinkServiceGatewayServer) ListShadowLinkTopics(ctx context.Context, req *v1alpha1.ListShadowLinkTopicsRequest) (*v1alpha1.ListShadowLinkTopicsResponse, error) {
 	return s.listShadowLinkTopics(ctx, req)
+}
+
+func (s *ShadowLinkServiceGatewayServer) GetShadowTopic(ctx context.Context, req *v1alpha1.GetShadowTopicRequest) (*v1alpha1.GetShadowTopicResponse, error) {
+	return s.getShadowTopic(ctx, req)
 }
 
 // RegisterShadowLinkServiceHandlerGatewayServer registers the Connect handlers for the
