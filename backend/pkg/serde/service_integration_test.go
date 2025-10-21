@@ -116,8 +116,7 @@ func (s *SerdeIntegrationTestSuite) SetupSuite() {
 
 	ctx := t.Context()
 
-	// redpandaContainer, err := redpanda.Run(ctx, "redpandadata/redpanda:v23.3.18")
-	redpandaContainer, err := redpanda.Run(ctx, "redpandadata/redpanda-unstable:v24.2.1-rc5")
+	redpandaContainer, err := redpanda.Run(ctx, testutil.IntegrationTestImage)
 	require.NoError(err)
 
 	s.redpandaContainer = redpandaContainer

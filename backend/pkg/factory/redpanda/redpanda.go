@@ -177,4 +177,7 @@ type AdminAPIClient interface {
 	//   - UpdateShadowLink: Updates an existing shadow link
 	//   - FailOver: Fails over a shadow link or single shadow topic
 	ShadowLinkService(opts ...connect.ClientOption) adminv2connect.ShadowLinkServiceClient
+
+	// ClusterService returns a client for listing kafka connections
+	ClusterService(opts ...connect.ClientOption) adminv2connect.ClusterServiceClient
 }

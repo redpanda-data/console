@@ -18,6 +18,14 @@ components:
         - OPERATION_CREATE_TOKENS
         - OPERATION_DESCRIBE_TOKENS
       type: string
+    APIVersion:
+      properties:
+        api:
+          $ref: '#/components/schemas/KafkaAPI'
+        version:
+          format: int32
+          type: integer
+      type: object
     Action:
       enum:
         - ACTION_PREPARE
@@ -25,6 +33,22 @@ components:
         - ACTION_FINISH
         - ACTION_CANCEL
       type: string
+    ActiveRequests:
+      properties:
+        has_more_requests:
+          type: boolean
+        requests:
+          items:
+            $ref: '#/components/schemas/ActiveRequests.Request'
+          type: array
+      type: object
+    ActiveRequests.Request:
+      properties:
+        api:
+          $ref: '#/components/schemas/KafkaAPI'
+        duration:
+          type: string
+      type: object
     AddPartitionsToTopicsRequest:
       properties:
         partition_count:
@@ -72,6 +96,37 @@ components:
           description: The topic name.
           type: string
       type: object
+    AuthenticationInfo:
+      properties:
+        mechanism:
+          $ref: '#/components/schemas/AuthenticationMechanism'
+        state:
+          $ref: '#/components/schemas/AuthenticationState'
+        user_principal:
+          title: Authenticated user principal
+          type: string
+      title: Other Messages
+      type: object
+    AuthenticationMechanism:
+      enum:
+        - AUTHENTICATION_MECHANISM_MTLS
+        - AUTHENTICATION_MECHANISM_SASL_SCRAM
+        - AUTHENTICATION_MECHANISM_SASL_OAUTHBEARER
+        - AUTHENTICATION_MECHANISM_SASL_PLAIN
+        - AUTHENTICATION_MECHANISM_SASL_GSSAPI
+      title: |-
+        - AUTHENTICATION_MECHANISM_MTLS: Mutual TLS using client certificates
+         - AUTHENTICATION_MECHANISM_SASL_SCRAM: SASL SCRAM
+         - AUTHENTICATION_MECHANISM_SASL_OAUTHBEARER: SASL OAUTHBEARER (OAuth 2.0 / OpenID Connect)
+         - AUTHENTICATION_MECHANISM_SASL_PLAIN: SASL PLAIN (username/password in plaintext)
+         - AUTHENTICATION_MECHANISM_SASL_GSSAPI: SASL GSSAPI (Kerberos)
+      type: string
+    AuthenticationState:
+      enum:
+        - AUTHENTICATION_STATE_UNAUTHENTICATED
+        - AUTHENTICATION_STATE_SUCCESS
+        - AUTHENTICATION_STATE_FAILURE
+      type: string
     BadRequest:
       description: |-
         Describes violations in a client request. This error type focuses on the
@@ -229,6 +284,65 @@ components:
           type: string
         version:
           description: Connect worker version.
+          type: string
+      type: object
+    Connection:
+      properties:
+        active_requests:
+          $ref: '#/components/schemas/ActiveRequests'
+        api_versions:
+          items:
+            $ref: '#/components/schemas/APIVersion'
+          type: array
+        authentication:
+          $ref: '#/components/schemas/AuthenticationInfo'
+        client:
+          $ref: '#/components/schemas/ConnectionClient'
+        close_time:
+          format: date-time
+          type: string
+        connection_duration:
+          type: string
+        group:
+          $ref: '#/components/schemas/GroupInfo'
+        idle_duration:
+          type: string
+        listener_name:
+          type: string
+        node_id:
+          format: int32
+          type: integer
+        open_time:
+          format: date-time
+          type: string
+        request_statistics_1m:
+          $ref: '#/components/schemas/RequestStatistics'
+        request_statistics_all:
+          $ref: '#/components/schemas/RequestStatistics'
+        shard_id:
+          format: int64
+          type: integer
+        state:
+          $ref: '#/components/schemas/KafkaConnectionState'
+        tls_enabled:
+          type: boolean
+        transactional_id:
+          type: string
+        uid:
+          type: string
+      type: object
+    ConnectionClient:
+      properties:
+        id:
+          type: string
+        ip:
+          type: string
+        port:
+          format: int64
+          type: integer
+        software_name:
+          type: string
+        software_version:
           type: string
       type: object
     Connector:
@@ -888,6 +1002,15 @@ components:
         transform:
           $ref: '#/components/schemas/TransformMetadata'
       type: object
+    GroupInfo:
+      properties:
+        id:
+          type: string
+        instance_id:
+          type: string
+        member_id:
+          type: string
+      type: object
     Help:
       description: |-
         Provides links to documentation or for performing an out of band action.
@@ -903,6 +1026,44 @@ components:
           type: array
       title: Help
       type: object
+    KafkaAPI:
+      enum:
+        - KAFKA_API_PRODUCE
+        - KAFKA_API_FETCH
+        - KAFKA_API_OFFSETS
+        - KAFKA_API_METADATA
+        - KAFKA_API_LEADER_AND_ISR
+        - KAFKA_API_STOP_REPLICA
+        - KAFKA_API_UPDATE_METADATA
+        - KAFKA_API_CONTROLLED_SHUTDOWN
+        - KAFKA_API_OFFSET_COMMIT
+        - KAFKA_API_OFFSET_FETCH
+        - KAFKA_API_GROUP_COORDINATOR
+        - KAFKA_API_JOIN_GROUP
+        - KAFKA_API_HEARTBEAT
+        - KAFKA_API_LEAVE_GROUP
+        - KAFKA_API_SYNC_GROUP
+        - KAFKA_API_DESCRIBE_GROUPS
+        - KAFKA_API_LIST_GROUPS
+        - KAFKA_API_SASL_HANDSHAKE
+        - KAFKA_API_API_VERSIONS
+        - KAFKA_API_CREATE_TOPICS
+        - KAFKA_API_DELETE_TOPICS
+      title: Everything is up by one (produce is actually 0, fetch -> 1, etc)
+      type: string
+    KafkaConnectionState:
+      description: |-
+        - KAFKA_CONNECTION_STATE_OPEN: The connection is accepting requests.
+         - KAFKA_CONNECTION_STATE_ABORTING: The connection is aborting ongoing requests and about to be closed.
+        This is a transient state between open and closed that should rarely be
+        observable under normal circumstances.
+         - KAFKA_CONNECTION_STATE_CLOSED: The connection has been closed.
+      enum:
+        - KAFKA_CONNECTION_STATE_OPEN
+        - KAFKA_CONNECTION_STATE_ABORTING
+        - KAFKA_CONNECTION_STATE_CLOSED
+      title: Enums
+      type: string
     Link:
       description: Describes a URL link.
       properties:
@@ -989,6 +1150,13 @@ components:
         clusters:
           items:
             $ref: '#/components/schemas/ConnectCluster'
+          type: array
+      type: object
+    ListConnectionsResponse:
+      properties:
+        connections:
+          items:
+            $ref: '#/components/schemas/Connection'
           type: array
       type: object
     ListConnectorTopicsResponse:
@@ -1703,6 +1871,27 @@ components:
           type: number
         value_type:
           $ref: '#/components/schemas/ValueType'
+      type: object
+    RequestStatistics:
+      properties:
+        fetch_bytes:
+          description: Sum of bytes fetched.
+          format: uint64
+          type: string
+        produce_batch_count:
+          format: uint64
+          title: |-
+            Number of produced batches.
+            Average batch size = produce_bytes / produce_batch_count
+          type: string
+        produce_bytes:
+          description: Sum of bytes produced.
+          format: uint64
+          type: string
+        request_count:
+          description: Number of requests the client has made.
+          format: uint64
+          type: string
       type: object
     Resource:
       properties:
@@ -3774,6 +3963,95 @@ paths:
       summary: Update Connect cluster secret
       tags:
         - Secrets
+  /v1/monitoring/connections:
+    get:
+      description: List information on recent connections to the cluster.
+      operationId: MonitoringService_ListConnections
+      parameters:
+        - description: |2-
+             - KAFKA_CONNECTION_STATE_OPEN: The connection is accepting requests.
+             - KAFKA_CONNECTION_STATE_ABORTING: The connection is aborting ongoing requests and about to be closed.
+            This is a transient state between open and closed that should rarely be
+            observable under normal circumstances.
+             - KAFKA_CONNECTION_STATE_CLOSED: The connection has been closed.
+          in: query
+          name: state
+          schema:
+            enum:
+              - KAFKA_CONNECTION_STATE_OPEN
+              - KAFKA_CONNECTION_STATE_ABORTING
+              - KAFKA_CONNECTION_STATE_CLOSED
+            type: string
+        - in: query
+          name: ip_address
+          schema:
+            type: string
+        - in: query
+          name: client_id
+          schema:
+            type: string
+        - in: query
+          name: client_software_name
+          schema:
+            type: string
+        - in: query
+          name: client_software_version
+          schema:
+            type: string
+        - in: query
+          name: group_id
+          schema:
+            type: string
+        - in: query
+          name: user
+          schema:
+            type: string
+        - in: query
+          name: idle_ms
+          schema:
+            format: int64
+            type: string
+        - in: query
+          name: filter_raw
+          schema:
+            type: string
+        - in: query
+          name: order_by
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            format: int64
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListConnectionsResponse'
+          description: Recent connections
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Recent Connections
+      tags:
+        - Monitoring
   /v1/quotas:
     get:
       description: List client quotas. Use filter parameters to narrow results by entity type and filter criteria.
@@ -6024,6 +6302,8 @@ tags:
     name: Wasm Transforms
   - description: Manage [connectors](https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/) and interact with the Kafka Connect API.
     name: Kafka Connect
+  - description: Monitoring operations for Redpanda.
+    name: Monitoring
   - description: Create and manage [Redpanda Connect](https://docs.redpanda.com/redpanda-cloud/develop/connect/about) pipelines and their configurations.
     name: Redpanda Connect Pipelines
   - description: Manage client throughput limits. See [Redpanda Client Throughput Limits](https://docs.redpanda.com/current/manage/cluster-maintenance/manage-throughput/#client-throughput-limits) for more information.
