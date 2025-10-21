@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-import { AIAgentChatInput } from './ai-agent-chat-input';
+import { AIAgentChatInput, type AIAgentChatInputRef } from './ai-agent-chat-input';
 import { AIAgentMessageView } from './ai-agent-message-view';
 
 type AIAgentChatProps = {
@@ -37,6 +37,7 @@ export const AIAgentChat = ({ agentUrl, agentId }: AIAgentChatProps) => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<AIAgentChatInputRef>(null);
 
   // Use live query to listen for message changes in the database
   const messages =
@@ -70,6 +71,8 @@ export const AIAgentChat = ({ agentUrl, agentId }: AIAgentChatProps) => {
         return;
       }
       await chatDb.clearAllMessages(agentId);
+      // Reset the context ID to start a fresh conversation
+      chatInputRef.current?.resetContext();
     } catch (error) {
       const connectError = ConnectError.from(error);
 
@@ -103,6 +106,7 @@ export const AIAgentChat = ({ agentUrl, agentId }: AIAgentChatProps) => {
         agentId={agentId}
         agentUrl={agentUrl}
         messagesEndRef={messagesEndRef}
+        ref={chatInputRef}
         setIsTyping={setIsTyping}
       />
     </div>
