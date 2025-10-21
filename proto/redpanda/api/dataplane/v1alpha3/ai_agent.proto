@@ -42,7 +42,6 @@ message AIAgent {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 10,
-    (buf.validate.field).string.max_len = 16384,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "System instructions that define how the AI agent should behave and respond."}
   ];
 
@@ -367,7 +366,6 @@ message AIAgentCreate {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 10,
-    (buf.validate.field).string.max_len = 16384,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "System instructions that define how the AI agent should behave and respond."}
   ];
 
@@ -498,7 +496,6 @@ message AIAgentUpdate {
   // System Prompt for the AI agent behavior.
   string system_prompt = 3 [
     (buf.validate.field).string.min_len = 10,
-    (buf.validate.field).string.max_len = 16384,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "System instructions that define how the AI agent should behave and respond."}
   ];
 
