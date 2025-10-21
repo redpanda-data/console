@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAPIWizardStore } from 'state/api-wizard-store';
 import { uiState } from 'state/ui-state';
 import { capitalizeFirst } from 'utils/utils';
+import { useShallow } from 'zustand/react/shallow';
 
 import { AddTopicStep } from '../rp-connect/onboarding/add-topic-step';
 import { AddUserStep } from '../rp-connect/onboarding/add-user-step';
@@ -132,7 +133,7 @@ const HowToConnectStep = ({ connectionName, topicName, username, saslMechanism }
 export const APIConnectWizard = () => {
   const navigate = useNavigate();
   const { reset } = useAPIWizardStore();
-  const connectionName = useAPIWizardStore((state) => state.apiWizardData.connectionName);
+  const connectionName = useAPIWizardStore(useShallow((state) => state.apiWizardData.connectionName));
   const [topicName, setTopicName] = useState<string | undefined>(undefined);
   const [username, setUsername] = useState<string | undefined>(undefined);
   const [saslMechanism, setSaslMechanism] = useState<string | undefined>(undefined);
