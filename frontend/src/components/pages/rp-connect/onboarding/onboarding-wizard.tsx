@@ -57,7 +57,6 @@ export const ConnectOnboardingWizard = ({
 }: ConnectOnboardingWizardProps = {}) => {
   const navigate = useNavigate();
 
-  // Use Zustand selectors to subscribe to specific values only
   const persistedInputConnectionName = useOnboardingWizardDataStore((state) => state.wizardData.input?.connectionName);
   const persistedOutputConnectionName = useOnboardingWizardDataStore(
     (state) => state.wizardData.output?.connectionName
@@ -110,6 +109,14 @@ export const ConnectOnboardingWizard = ({
         { title: 'Create Pipeline', linkTo: '' },
       ];
     });
+  }, []);
+
+  // Force rehydration from sessionStorage on mount
+  // This handles cases where external apps modify sessionStorage and navigate here
+  useEffect(() => {
+    useOnboardingWizardDataStore.getState().rehydrate();
+    useOnboardingTopicDataStore.getState().rehydrate();
+    useOnboardingUserDataStore.getState().rehydrate();
   }, []);
 
   const handleSkipToCreatePipeline = (methods: WizardStepperSteps) => {

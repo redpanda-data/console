@@ -171,21 +171,19 @@ export const ConnectTiles = memo(
         setShowScrollGradient(isScrollable && !isNearBottom);
       }, []);
 
+      const defaultValues = useMemo(
+        () => ({
+          connectionName: defaultConnectionName,
+          connectionType: defaultConnectionType,
+        }),
+        [defaultConnectionName, defaultConnectionType]
+      );
+
       const form = useForm<ConnectTilesListFormData>({
         resolver: zodResolver(connectTilesListFormSchema),
         mode: 'onSubmit',
-        defaultValues: {
-          connectionName: defaultConnectionName,
-          connectionType: defaultConnectionType,
-        },
+        defaultValues,
       });
-
-      useEffect(() => {
-        form.reset({
-          connectionName: defaultConnectionName,
-          connectionType: defaultConnectionType,
-        });
-      }, [defaultConnectionName, defaultConnectionType, form.reset]);
 
       const allComponents = useMemo(
         () => [...getBuiltInComponents(), ...(additionalComponents || [])],
