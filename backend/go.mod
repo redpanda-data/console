@@ -3,10 +3,12 @@ module github.com/redpanda-data/console/backend
 go 1.25.1
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.9-20250912141014-52f32327d4b0.1
-	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.9-20250904135917-9feeb2588236.1
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.10-20250912141014-52f32327d4b0.1
+	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.10-20250904135917-9feeb2588236.1
+	buf.build/gen/go/redpandadata/core/connectrpc/go v1.19.1-20251018180253-9bdd967d0bf7.2
+	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.10-20251018180253-9bdd967d0bf7.1
 	buf.build/go/protovalidate v1.0.0
-	connectrpc.com/connect v1.18.1
+	connectrpc.com/connect v1.19.1
 	connectrpc.com/grpcreflect v1.3.0
 	github.com/aws/aws-sdk-go-v2/config v1.31.8
 	github.com/basgys/goxml2json v1.1.0
@@ -41,7 +43,7 @@ require (
 	github.com/redpanda-data/benthos/v4 v4.56.0
 	github.com/redpanda-data/common-go/api v0.0.0-20250913225531-ce670c336046
 	github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7
-	github.com/redpanda-data/common-go/rpadmin v0.1.16
+	github.com/redpanda-data/common-go/rpadmin v0.1.17-0.20251020144719-b6a2aa280c0b
 	github.com/redpanda-data/common-go/rpsr v0.1.2
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/stretchr/testify v1.11.1
@@ -65,10 +67,10 @@ require (
 	golang.org/x/sync v0.17.0
 	golang.org/x/text v0.29.0
 	google.golang.org/genproto v0.0.0-20250908214217-97024824d090
-	google.golang.org/genproto/googleapis/api v0.0.0-20250908214217-97024824d090
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250908214217-97024824d090
+	google.golang.org/genproto/googleapis/api v0.0.0-20251014184007-4626949a642f
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251007200510-49b9836ed3ff
 	google.golang.org/grpc v1.75.1
-	google.golang.org/protobuf v1.36.9
+	google.golang.org/protobuf v1.36.10
 )
 
 require (
