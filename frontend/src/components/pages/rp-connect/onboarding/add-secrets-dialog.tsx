@@ -17,14 +17,12 @@ export const AddSecretsDialog = ({
   onClose,
   missingSecrets,
   existingSecrets,
-  defaultValues,
   onSecretsCreated,
 }: {
   isOpen: boolean;
   onClose: () => void;
   missingSecrets: string[];
   existingSecrets: string[];
-  defaultValues: Record<string, string>;
   onSecretsCreated: () => void;
 }) => {
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
@@ -59,7 +57,6 @@ export const AddSecretsDialog = ({
             </Alert>
           )}
           <QuickAddSecrets
-            defaultValues={defaultValues}
             enableNewSecrets
             existingSecrets={existingSecrets}
             onError={handleError}

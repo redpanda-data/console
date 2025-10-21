@@ -21,7 +21,6 @@ import {
 } from '../../../../protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCreateTopicMutation, useTopicConfigQuery } from '../../../../react-query/api/topic';
 import { convertRetentionSizeToBytes, convertRetentionTimeToMs } from '../../../../utils/topic-utils';
-import type { ConnectComponentType } from '../types/schema';
 import {
   type AddTopicFormData,
   addTopicFormSchema,
@@ -33,11 +32,10 @@ import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FO
 interface AddTopicStepProps {
   topicList: Topic[] | undefined;
   defaultTopicName?: string;
-  connectionType?: ConnectComponentType;
 }
 
 export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps & MotionProps>(
-  ({ topicList, defaultTopicName, connectionType, ...motionProps }, ref) => {
+  ({ topicList, defaultTopicName, ...motionProps }, ref) => {
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
     const initialTopicOptions = useMemo(
@@ -188,9 +186,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       <Card size="full" {...motionProps} animated>
         <CardHeader className="max-w-2xl">
           <CardTitle>
-            <Heading level={2}>
-              {connectionType === 'input' ? 'Read data from a topic' : 'Write data to a topic'}
-            </Heading>
+            <Heading level={2}>Read or write data from a topic</Heading>
           </CardTitle>
           <CardDescription className="mt-4">
             Select or create a topic to store data for this streaming pipeline. A topic can have multiple clients

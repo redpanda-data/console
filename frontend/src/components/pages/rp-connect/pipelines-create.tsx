@@ -28,7 +28,6 @@ import { Link as UILink, Text as UIText } from 'components/redpanda-ui/component
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { isFeatureFlagEnabled, isServerless } from 'config';
-import { useSessionStorage } from 'hooks/use-session-storage';
 import { AlertCircle, PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -37,7 +36,7 @@ import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipelin
 import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { Link } from 'react-router-dom';
-import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
+import { onboardingWizardStore, useOnboardingWizardDataStore } from 'state/onboarding-wizard-store';
 
 import { extractLintHintsFromError, formatPipelineError } from './errors';
 import { CreatePipelineSidebar } from './onboarding/create-pipeline-sidebar';
@@ -45,7 +44,6 @@ import { SecretsQuickAdd } from './secrets/secrets-quick-add';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { getContextualVariableSyntax, REDPANDA_CONTEXTUAL_VARIABLES } from './types/constants';
 import type { ConnectComponentType } from './types/schema';
-import type { AddUserFormData, WizardFormData } from './types/wizard';
 import { getConnectTemplate } from './utils/yaml';
 import type { LintHint } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
 import { appGlobal } from '../../../state/app-global';
@@ -93,9 +91,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   }
 
   handleWizardClick = () => {
-    sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
-    sessionStorage.removeItem(CONNECT_WIZARD_TOPIC_KEY);
-    sessionStorage.removeItem(CONNECT_WIZARD_USER_KEY);
+    onboardingWizardStore.reset();
   };
 
   render() {
@@ -198,7 +194,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
         <Flex alignItems="center" gap="4">
           <CreateButton />
-          <Link to="/connect-clusters">
+          <Link onClick={() => onboardingWizardStore.reset()} to="/connect-clusters">
             <Button variant="link">Cancel</Button>
           </Link>
         </Flex>
@@ -246,9 +242,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
             }
           } else {
             this.lintResults = {};
-            sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
-            sessionStorage.removeItem(CONNECT_WIZARD_TOPIC_KEY);
-            sessionStorage.removeItem(CONNECT_WIZARD_USER_KEY);
+            onboardingWizardStore.reset();
           }
 
           await pipelinesApi.refreshPipelines(true);
@@ -396,35 +390,49 @@ export const PipelineEditor = observer(
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [contextualVarsAutocomplete, setContextualVarsAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
-    const [persistedFormData] = useSessionStorage<Partial<WizardFormData>>(CONNECT_WIZARD_CONNECTOR_KEY, {});
+    const persistedInputConnectionName = useOnboardingWizardDataStore(
+      (state) => state.wizardData.input?.connectionName
+    );
+    const persistedInputConnectionType = useOnboardingWizardDataStore(
+      (state) => state.wizardData.input?.connectionType
+    );
+    const persistedOutputConnectionName = useOnboardingWizardDataStore(
+      (state) => state.wizardData.output?.connectionName
+    );
+    const persistedOutputConnectionType = useOnboardingWizardDataStore(
+      (state) => state.wizardData.output?.connectionType
+    );
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles') && isServerless();
 
     // Track actual editor content to keep sidebar in sync with editor's real state
     const [actualEditorContent, setActualEditorContent] = useState<string>('');
 
     const persistedConnectComponentTemplate = useMemo(() => {
-      const persistedInput = persistedFormData?.input;
-      const persistedOutput = persistedFormData?.output;
-      if (!(persistedInput?.connectionName && persistedInput?.connectionType)) {
+      if (!(persistedInputConnectionName && persistedInputConnectionType)) {
         return undefined;
       }
       const inputTemplate = getConnectTemplate({
-        connectionName: persistedInput.connectionName,
-        connectionType: persistedInput.connectionType,
+        connectionName: persistedInputConnectionName,
+        connectionType: persistedInputConnectionType,
         showOptionalFields: false,
       });
-      if (persistedOutput?.connectionName && persistedOutput?.connectionType) {
+      if (persistedOutputConnectionName && persistedOutputConnectionType) {
         // Merge output into the existing input template to avoid duplicate top-level blocks
         const outputTemplate = getConnectTemplate({
-          connectionName: persistedOutput.connectionName,
-          connectionType: persistedOutput.connectionType,
+          connectionName: persistedOutputConnectionName,
+          connectionType: persistedOutputConnectionType,
           showOptionalFields: false,
           existingYaml: inputTemplate,
         });
         return outputTemplate;
       }
       return inputTemplate;
-    }, [persistedFormData]);
+    }, [
+      persistedInputConnectionName,
+      persistedInputConnectionType,
+      persistedOutputConnectionName,
+      persistedOutputConnectionType,
+    ]);
 
     const yaml = useMemo(
       () => (enableRpcnTiles && persistedConnectComponentTemplate ? persistedConnectComponentTemplate : p.yaml),
@@ -448,35 +456,16 @@ export const PipelineEditor = observer(
       }
     }, [yaml]);
 
-    const [wizardUserData] = useSessionStorage<AddUserFormData>(CONNECT_WIZARD_USER_KEY);
-
-    const secretDefaultValues = useMemo(() => {
-      if (!wizardUserData) {
-        return {};
-      }
-      const values: Record<string, string> = {};
-      if (wizardUserData.username) {
-        values.REDPANDA_USERNAME = wizardUserData.username;
-      }
-      if (wizardUserData.password) {
-        values.REDPANDA_PASSWORD = wizardUserData.password;
-      }
-      return values;
-    }, [wizardUserData]);
-
     const handleAddConnector = (connectionName: string, connectionType: ConnectComponentType) => {
       if (!editorInstance) {
         return;
       }
 
       const currentValue = editorInstance.getValue();
-      // For explicitly-added components (scanner, processor, cache, buffer),
-      // we want to show all fields since users are adding them to customize behavior.
-      const showAllFields = ['scanner', 'processor', 'cache', 'buffer'].includes(connectionType);
       const mergedYaml = getConnectTemplate({
         connectionName,
         connectionType,
-        showOptionalFields: showAllFields,
+        showOptionalFields: false,
         existingYaml: currentValue,
       });
 
@@ -565,7 +554,6 @@ export const PipelineEditor = observer(
                         existingSecrets={existingSecrets}
                         onAddConnector={handleAddConnector}
                         onSecretsCreated={refetchSecrets}
-                        secretDefaultValues={secretDefaultValues}
                       />
                     ) : (
                       <QuickActions

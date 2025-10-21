@@ -17,7 +17,7 @@ import { Heading, Link, Text } from 'components/redpanda-ui/components/typograph
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { SearchIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { ConnectTile } from './connect-tile';
@@ -130,232 +130,235 @@ export type ConnectTilesProps = {
   description?: React.ReactNode;
 };
 
-export const ConnectTiles = forwardRef<BaseStepRef<ConnectTilesListFormData>, ConnectTilesProps & MotionProps>(
-  (
-    {
-      additionalComponents,
-      componentTypeFilter,
-      onChange,
-      hideHeader,
-      hideFilters,
-      defaultConnectionName,
-      defaultConnectionType,
-      gridCols = 4,
-      variant = 'default',
-      size = 'full',
-      className,
-      tileWrapperClassName,
-      title,
-      description,
-      ...motionProps
-    },
-    ref
-  ) => {
-    const [filter, setFilter] = useState<string>('');
-    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-    const [showScrollGradient, setShowScrollGradient] = useState(false);
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-    const checkScrollable = useCallback(() => {
-      const container = scrollContainerRef.current;
-      if (!container) {
-        return;
-      }
-
-      const { scrollTop, scrollHeight, clientHeight } = container;
-      const isScrollable = scrollHeight > clientHeight;
-      const isNearBottom = scrollTop + clientHeight >= scrollHeight - 40;
-
-      // Show gradient if scrollable AND not near bottom
-      setShowScrollGradient(isScrollable && !isNearBottom);
-    }, []);
-
-    const form = useForm<ConnectTilesListFormData>({
-      resolver: zodResolver(connectTilesListFormSchema),
-      mode: 'onSubmit',
-      defaultValues: {
-        connectionName: defaultConnectionName,
-        connectionType: defaultConnectionType,
+export const ConnectTiles = memo(
+  forwardRef<BaseStepRef<ConnectTilesListFormData>, ConnectTilesProps & MotionProps>(
+    (
+      {
+        additionalComponents,
+        componentTypeFilter,
+        onChange,
+        hideHeader,
+        hideFilters,
+        defaultConnectionName,
+        defaultConnectionType,
+        gridCols = 4,
+        variant = 'default',
+        size = 'full',
+        className,
+        tileWrapperClassName,
+        title,
+        description,
+        ...motionProps
       },
-    });
+      ref
+    ) => {
+      const [filter, setFilter] = useState<string>('');
+      const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+      const [showScrollGradient, setShowScrollGradient] = useState(false);
+      const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-      form.reset({
-        connectionName: defaultConnectionName,
-        connectionType: defaultConnectionType,
-      });
-    }, [defaultConnectionName, defaultConnectionType, form]);
-
-    const allComponents = useMemo(
-      () => [...getBuiltInComponents(), ...(additionalComponents || [])],
-      [additionalComponents]
-    );
-
-    const categories = useMemo(
-      () => getAllCategories(allComponents, componentTypeFilter),
-      [allComponents, componentTypeFilter]
-    );
-
-    const filteredComponents = useMemo(
-      () =>
-        searchComponents(
-          allComponents,
-          filter,
-          {
-            types: componentTypeFilter,
-            categories: selectedCategories,
-          },
-          additionalComponents
-        ),
-      [componentTypeFilter, filter, selectedCategories, allComponents, additionalComponents]
-    );
-
-    useEffect(() => {
-      requestAnimationFrame(() => {
-        checkScrollable();
-      });
-    }, [checkScrollable]);
-
-    useImperativeHandle(ref, () => ({
-      triggerSubmit: async () => {
-        const isValid = await form.trigger();
-        if (isValid) {
-          const values = form.getValues();
-          return {
-            success: true,
-            message: 'Connector selected successfully',
-            data: values,
-          };
+      const checkScrollable = useCallback(() => {
+        const container = scrollContainerRef.current;
+        if (!container) {
+          return;
         }
-        return {
-          success: false,
-          message: 'Please fix the form errors before proceeding',
-          error: 'Form validation failed',
-        };
-      },
-      isLoading: false,
-    }));
 
-    return (
-      <Card className={cn(className, 'relative')} size={size} variant={variant} {...motionProps} animated>
-        {!hideHeader && (
-          <CardHeader className="bg-background">
-            <CardTitle>
-              <Heading level={2}>{title ?? 'Select a connector'}</Heading>
-            </CardTitle>
-            <CardDescription className="mt-4">
-              {description ?? (
-                <Text>
-                  Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines
-                  that drive real-time analytics and actionable business insights. Integrate data across systems with
-                  hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable
-                  pipelines.{' '}
-                  <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
-                    Learn more.
-                  </Link>
-                </Text>
-              )}
-            </CardDescription>
-          </CardHeader>
-        )}
-        <CardContent className="mt-2" id="rp-connect-onboarding-wizard">
-          <Form {...form}>
-            {!hideFilters && (
-              <div className="sticky top-0 z-10 mb-0 flex flex-col gap-4 border-b-2 bg-background pt-2 pb-4">
-                <div className="flex justify-between gap-4">
-                  <Label className="w-[240px]">
-                    Search connectors
-                    <Input
-                      className="flex-1"
-                      onChange={(e) => {
-                        setFilter(e.target.value);
-                      }}
-                      placeholder="Snowflake, S3..."
-                      value={filter}
-                    >
-                      <InputStart>
-                        <SearchIcon className="size-4" />
-                      </InputStart>
-                    </Input>
-                  </Label>
-                  <Label className="w-[240px]">
-                    Categories
-                    <SimpleMultiSelect
-                      container={document.getElementById('rp-connect-onboarding-wizard') ?? undefined}
-                      onValueChange={setSelectedCategories}
-                      options={categories.map((category) => ({
-                        value: category.id,
-                        label: category.name,
-                      }))}
-                      placeholder="Databases, Social..."
-                      value={selectedCategories}
-                      width="full"
-                    />
-                  </Label>
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        const isScrollable = scrollHeight > clientHeight;
+        const isNearBottom = scrollTop + clientHeight >= scrollHeight - 40;
+
+        // Show gradient if scrollable AND not near bottom
+        setShowScrollGradient(isScrollable && !isNearBottom);
+      }, []);
+
+      const form = useForm<ConnectTilesListFormData>({
+        resolver: zodResolver(connectTilesListFormSchema),
+        mode: 'onSubmit',
+        defaultValues: {
+          connectionName: defaultConnectionName,
+          connectionType: defaultConnectionType,
+        },
+      });
+
+      useEffect(() => {
+        form.reset({
+          connectionName: defaultConnectionName,
+          connectionType: defaultConnectionType,
+        });
+      }, [defaultConnectionName, defaultConnectionType, form.reset]);
+
+      const allComponents = useMemo(
+        () => [...getBuiltInComponents(), ...(additionalComponents || [])],
+        [additionalComponents]
+      );
+
+      const categories = useMemo(
+        () => getAllCategories(allComponents, componentTypeFilter),
+        [allComponents, componentTypeFilter]
+      );
+
+      const filteredComponents = useMemo(
+        () =>
+          searchComponents(
+            allComponents,
+            filter,
+            {
+              types: componentTypeFilter,
+              categories: selectedCategories,
+            },
+            additionalComponents
+          ),
+        [componentTypeFilter, filter, selectedCategories, allComponents, additionalComponents]
+      );
+
+      useEffect(() => {
+        requestAnimationFrame(() => {
+          checkScrollable();
+        });
+      }, [checkScrollable]);
+
+      useImperativeHandle(ref, () => ({
+        triggerSubmit: async () => {
+          const isValid = await form.trigger();
+          if (isValid) {
+            const values = form.getValues();
+            return {
+              success: true,
+              message: 'Connector selected successfully',
+              data: values,
+            };
+          }
+          return {
+            success: false,
+            message: 'Please fix the form errors before proceeding',
+            error: 'Form validation failed',
+          };
+        },
+        isLoading: false,
+      }));
+
+      return (
+        <Card className={cn(className, 'relative')} size={size} variant={variant} {...motionProps} animated>
+          {!hideHeader && (
+            <CardHeader className="bg-background">
+              <CardTitle>
+                <Heading level={2}>{title ?? 'Select a connector'}</Heading>
+              </CardTitle>
+              <CardDescription className="mt-4">
+                {description ?? (
+                  <Text>
+                    Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines
+                    that drive real-time analytics and actionable business insights. Integrate data across systems with
+                    hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable
+                    pipelines.{' '}
+                    <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
+                      Learn more.
+                    </Link>
+                  </Text>
+                )}
+              </CardDescription>
+            </CardHeader>
+          )}
+          <CardContent className="mt-2" id="rp-connect-onboarding-wizard">
+            <Form {...form}>
+              {!hideFilters && (
+                <div className="sticky top-0 z-10 mb-0 flex flex-col gap-4 border-b-2 bg-background pt-2 pb-4">
+                  <div className="flex justify-between gap-4">
+                    <Label className="w-[240px]">
+                      Search connectors
+                      <Input
+                        className="flex-1"
+                        onChange={(e) => {
+                          setFilter(e.target.value);
+                        }}
+                        placeholder="Snowflake, S3..."
+                        value={filter}
+                      >
+                        <InputStart>
+                          <SearchIcon className="size-4" />
+                        </InputStart>
+                      </Input>
+                    </Label>
+                    <Label className="w-[240px]">
+                      Categories
+                      <SimpleMultiSelect
+                        container={document.getElementById('rp-connect-onboarding-wizard') ?? undefined}
+                        onValueChange={setSelectedCategories}
+                        options={categories.map((category) => ({
+                          value: category.id,
+                          label: category.name,
+                        }))}
+                        placeholder="Databases, Social..."
+                        value={selectedCategories}
+                        width="full"
+                      />
+                    </Label>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            <div className="relative">
-              <div
-                className={cn('max-h-[50vh] min-h-[400px] overflow-y-auto py-4', tileWrapperClassName)}
-                onScroll={checkScrollable}
-                ref={scrollContainerRef}
-              >
-                <FormField
-                  control={form.control}
-                  name="connectionName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        {filteredComponents.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center py-8 text-center">
-                            <Text className="text-muted-foreground">No connections found matching your filters</Text>
-                            <Text className="mt-1 text-muted-foreground text-sm">
-                              Try adjusting your search or category filters
-                            </Text>
-                          </div>
-                        ) : (
-                          <Choicebox>
-                            <div className={cn('grid-auto-rows-fr grid gap-2', `grid-cols-${gridCols}`)}>
-                              {filteredComponents.map((component) => {
-                                const uniqueKey = `${component.type}-${component.name}`;
-                                const isChecked =
-                                  field.value === component.name && form.getValues('connectionType') === component.type;
-
-                                return (
-                                  <ConnectTile
-                                    checked={isChecked}
-                                    component={component}
-                                    key={uniqueKey}
-                                    onChange={() => {
-                                      field.onChange(component.name);
-                                      form.setValue('connectionType', component.type as ConnectComponentType);
-                                      // Only call onChange for non-wizard use cases (e.g., dialog)
-                                      // Wizard saves to session storage only after "Next" is clicked
-                                      onChange?.(component.name, component.type as ConnectComponentType);
-                                    }}
-                                    uniqueKey={uniqueKey}
-                                  />
-                                );
-                              })}
-                            </div>
-                          </Choicebox>
-                        )}
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              {/* Gradient overlay to indicate scrollability - only show when not at bottom */}
-              {showScrollGradient && (
-                <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-gradient-to-t from-background via-background/60 to-transparent" />
               )}
-            </div>
-          </Form>
-        </CardContent>
-      </Card>
-    );
-  }
+
+              <div className="relative">
+                <div
+                  className={cn('max-h-[50vh] min-h-[400px] overflow-y-auto py-4', tileWrapperClassName)}
+                  onScroll={checkScrollable}
+                  ref={scrollContainerRef}
+                >
+                  <FormField
+                    control={form.control}
+                    name="connectionName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          {filteredComponents.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-8 text-center">
+                              <Text className="text-muted-foreground">No connections found matching your filters</Text>
+                              <Text className="mt-1 text-muted-foreground text-sm">
+                                Try adjusting your search or category filters
+                              </Text>
+                            </div>
+                          ) : (
+                            <Choicebox>
+                              <div className={cn('grid-auto-rows-fr grid gap-2', `grid-cols-${gridCols}`)}>
+                                {filteredComponents.map((component) => {
+                                  const uniqueKey = `${component.type}-${component.name}`;
+                                  const isChecked =
+                                    field.value === component.name &&
+                                    form.getValues('connectionType') === component.type;
+
+                                  return (
+                                    <ConnectTile
+                                      checked={isChecked}
+                                      component={component}
+                                      key={uniqueKey}
+                                      onChange={() => {
+                                        field.onChange(component.name);
+                                        form.setValue('connectionType', component.type as ConnectComponentType);
+                                        // Only call onChange for non-wizard use cases (e.g., dialog)
+                                        // Wizard saves to session storage only after "Next" is clicked
+                                        onChange?.(component.name, component.type as ConnectComponentType);
+                                      }}
+                                      uniqueKey={uniqueKey}
+                                    />
+                                  );
+                                })}
+                              </div>
+                            </Choicebox>
+                          )}
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                {/* Gradient overlay to indicate scrollability - only show when not at bottom */}
+                {showScrollGradient && (
+                  <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-gradient-to-t from-background via-background/60 to-transparent" />
+                )}
+              </div>
+            </Form>
+          </CardContent>
+        </Card>
+      );
+    }
+  )
 );
