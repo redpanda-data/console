@@ -163,10 +163,11 @@ export const AIAgentMessageView = ({ message, isStreaming = false }: AIAgentMess
             </>
           )}
         </div>
-        <p className={`mt-2 text-xs ${message.sender === 'user' ? 'text-blue-100' : 'text-slate-500'}`}>
-          {message.timestamp.toLocaleTimeString()}
-          {message.taskId && <span className="ml-2 opacity-50">Task: {message.taskId}</span>}
-        </p>
+        <div className={`mt-2 text-xs ${message.sender === 'user' ? 'text-blue-100' : 'text-slate-500'}`}>
+          <p>{message.timestamp.toLocaleTimeString()}</p>
+          {message.contextId && <p className="mt-1 opacity-50">Context: {message.contextId}</p>}
+          {message.taskId && <p className="mt-0.5 opacity-50">Task: {message.taskId}</p>}
+        </div>
       </article>
     </div>
   );

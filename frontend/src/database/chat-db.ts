@@ -21,6 +21,7 @@ export type ChatMessage = {
   failure: boolean;
   isStreaming?: boolean;
   taskId?: string; // ID of the associated task
+  contextId?: string; // ID used to group related interactions in a conversation
   reasoning?: string; // Accumulated reasoning/thinking steps for tasks
 };
 

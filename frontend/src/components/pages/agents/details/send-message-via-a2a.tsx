@@ -22,6 +22,7 @@ type A2AApiResponse = {
   success: boolean;
   error?: string;
   taskId?: string;
+  contextId?: string;
   reasoning?: string;
   completionMessage?: string; // Separate completion message for tasks
 };
@@ -33,6 +34,8 @@ type SendMessageViaA2AProps = {
   message: string;
   chatHistory: ChatMessage[]; // Reserved for future use with conversation context
   agentUrl: string;
+  contextId?: string; // Context ID for grouping related interactions
+  taskId?: string; // Task ID if continuing an existing task
   onStreamUpdate?: (partialContent: string) => void | Promise<void>;
 };
 
@@ -91,6 +94,7 @@ type StreamEvent = {
   kind: string;
   id?: string;
   taskId?: string;
+  contextId?: string;
   parts?: { kind: string; text?: string }[];
   status?: {
     state?: string;
@@ -169,6 +173,7 @@ function extractTaskText(evt: StreamEvent): string | null {
 type StreamingResult = {
   message: string;
   taskId?: string;
+  contextId?: string;
   reasoning?: string;
   completionMessage?: string;
 };
@@ -183,12 +188,18 @@ async function processStreamingResponse(
 ): Promise<StreamingResult> {
   let taskPlan = '';
   let taskId = '';
+  let contextId = '';
   const reasoningSteps: string[] = [];
   let lastAgentMessage = '';
   let hasSeenFinalStatus = false;
 
   for await (const event of stream) {
     const evt = event as StreamEvent;
+
+    // Extract contextId from any event that has it
+    if (evt.contextId) {
+      contextId = evt.contextId;
+    }
 
     // Handle task creation
     if (evt.kind === 'task') {
@@ -207,6 +218,11 @@ async function processStreamingResponse(
 
     // Handle status updates
     if (evt.kind === 'status-update') {
+      // Extract taskId from status updates as well
+      if (evt.taskId) {
+        taskId = evt.taskId;
+      }
+
       const statusText = extractStatusText(evt);
 
       if (statusText) {
@@ -239,6 +255,11 @@ async function processStreamingResponse(
 
     // Handle message events (for simple streaming responses without tasks)
     if (evt.kind === 'message') {
+      // Extract taskId from message events as well
+      if (evt.taskId) {
+        taskId = evt.taskId;
+      }
+
       const messageText = extractMessageText(evt);
       if (messageText && !taskId) {
         // For non-task messages, just concatenate
@@ -252,6 +273,11 @@ async function processStreamingResponse(
 
     // Handle artifact updates
     if (evt.kind === 'artifact-update') {
+      // Extract taskId from artifact updates as well
+      if (evt.taskId) {
+        taskId = evt.taskId;
+      }
+
       const artifactText = extractArtifactText(evt);
       if (artifactText) {
         lastAgentMessage = artifactText;
@@ -269,6 +295,10 @@ async function processStreamingResponse(
 
   if (taskId) {
     result.taskId = taskId;
+  }
+
+  if (contextId) {
+    result.contextId = contextId;
   }
 
   if (reasoningSteps.length > 0) {
@@ -300,9 +330,17 @@ async function sendNonStreamingMessage(client: A2AClient, sendParams: MessageSen
   }
 
   const responseText = extractTextFromResult(response.result);
+  const result = response.result as Task | Message;
+
+  // Extract taskId and contextId from the result
+  const taskId = result.kind === 'task' ? (result as Task).id : (result as Message).taskId;
+  const contextId = result.kind === 'task' ? (result as Task).contextId : (result as Message).contextId;
+
   return {
     message: responseText,
     success: true,
+    taskId,
+    contextId,
   };
 }
 
@@ -325,6 +363,8 @@ const fetchWithCustomHeader: typeof fetch = async (url, init) => {
 export const sendMessageViaA2A = async ({
   message,
   agentUrl,
+  contextId,
+  taskId,
   onStreamUpdate,
 }: SendMessageViaA2AProps): Promise<A2AApiResponse> => {
   try {
@@ -337,6 +377,8 @@ export const sendMessageViaA2A = async ({
     const sendParams: MessageSendParams = {
       message: {
         messageId: uuidv4(),
+        contextId,
+        taskId,
         role: 'user',
         parts: [{ kind: 'text', text: message }],
         kind: 'message',
@@ -351,6 +393,7 @@ export const sendMessageViaA2A = async ({
         message: result.message,
         success: true,
         taskId: result.taskId,
+        contextId: result.contextId,
         reasoning: result.reasoning,
         completionMessage: result.completionMessage,
       };
