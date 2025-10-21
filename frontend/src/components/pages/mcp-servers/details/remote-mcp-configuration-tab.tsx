@@ -660,7 +660,7 @@ export const RemoteMCPConfigurationTab = () => {
                           key={tool.id}
                           name={tool.name}
                           onClick={() => setSelectedToolId(tool.id)}
-                          onRemove={() => handleRemoveTool(tool.id)}
+                          onRemove={displayData.tools.length > 1 ? () => handleRemoveTool(tool.id) : undefined}
                         />
                       ))}
                     </div>
