@@ -44,9 +44,7 @@ export const FormSchema = z.object({
   individualTools: z.array(z.string()).default([]),
   selectedMcpServers: z.array(z.string()),
   resourcesTier: z.string().default('Small'),
-  systemPrompt: z
-    .string()
-    .min(10, 'System prompt must be at least 10 characters'),
+  systemPrompt: z.string().min(10, 'System prompt must be at least 10 characters'),
   serviceAccountName: z
     .string()
     .min(3, 'Service account name must be at least 3 characters')

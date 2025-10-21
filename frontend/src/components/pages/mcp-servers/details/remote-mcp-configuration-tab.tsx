@@ -28,18 +28,27 @@ import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { RedpandaConnectComponentTypeBadge } from 'components/ui/connect/redpanda-connect-component-type-badge';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
+import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
+import { ExpandedYamlDialog } from 'components/ui/yaml/expanded-yaml-dialog';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { Edit, FileText, Hammer, Plus, Save, Settings, Trash2 } from 'lucide-react';
+import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
+  LintMCPConfigRequestSchema,
   type MCPServer_State,
   MCPServer_Tool_ComponentType,
   UpdateMCPServerRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import React, { useCallback, useEffect, useState } from 'react';
-import { useGetMCPServerQuery, useListMCPServerTools, useUpdateMCPServerMutation } from 'react-query/api/remote-mcp';
+import {
+  useGetMCPServerQuery,
+  useLintMCPConfigMutation,
+  useListMCPServerTools,
+  useUpdateMCPServerMutation,
+} from 'react-query/api/remote-mcp';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -75,6 +84,7 @@ export const RemoteMCPConfigurationTab = () => {
   const { id } = useParams<{ id: string }>();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
   const { mutateAsync: updateMCPServer, isPending: isUpdateMCPServerPending } = useUpdateMCPServerMutation();
+  const { mutateAsync: lintConfig, isPending: isLintConfigPending } = useLintMCPConfigMutation();
   const { data: serverToolsData } = useListMCPServerTools({ mcpServer: mcpServerData?.mcpServer });
   const { data: secretsData } = useListSecretsQuery();
 
@@ -82,6 +92,8 @@ export const RemoteMCPConfigurationTab = () => {
   const [editedServerData, setEditedServerData] = useState<LocalMCPServer | null>(null);
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
   const [detectedSecrets, setDetectedSecrets] = useState<string[]>([]);
+  const [lintHints, setLintHints] = useState<Record<string, Record<string, LintHint>>>({});
+  const [isExpandedDialogOpen, setIsExpandedDialogOpen] = useState(false);
 
   const getResourceTierFromServer = useCallback((resources?: { cpuShares?: string; memoryShares?: string }) => {
     if (!resources) {
@@ -162,6 +174,12 @@ export const RemoteMCPConfigurationTab = () => {
       return;
     }
 
+    // Lint all tools before saving
+    const lintPassed = await handleLintAllTools();
+    if (!lintPassed) {
+      return;
+    }
+
     try {
       const toolsMap: { [key: string]: { componentType: number; configYaml: string } } = {};
       for (const tool of currentData.tools) {
@@ -205,6 +223,7 @@ export const RemoteMCPConfigurationTab = () => {
       );
       setIsEditing(false);
       setEditedServerData(null);
+      setLintHints({});
     } catch (error) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('Failed to update MCP server:', error);
@@ -268,6 +287,13 @@ export const RemoteMCPConfigurationTab = () => {
       if (updates.config && updates.config !== updatedTools[toolIndex].config) {
         updatedTool.selectedTemplate = undefined;
 
+        // Clear lint hints when config changes
+        setLintHints((prev) => {
+          const newHints = { ...prev };
+          delete newHints[toolId];
+          return newHints;
+        });
+
         // Sync tool name from YAML label when config changes
         try {
           const parsed = parse(updates.config);
@@ -298,6 +324,89 @@ export const RemoteMCPConfigurationTab = () => {
       ...currentData,
       tools: updatedTools,
     });
+  };
+
+  const handleLintTool = async (toolId: string) => {
+    const currentData = getCurrentData();
+    if (!currentData) {
+      return;
+    }
+
+    const tool = currentData.tools.find((t) => t.id === toolId);
+    if (!(tool?.name.trim() && tool.config.trim())) {
+      toast.error('Tool name and configuration are required for linting');
+      return;
+    }
+
+    const toolsMap: Record<string, { componentType: number; configYaml: string }> = {
+      [tool.name.trim()]: {
+        componentType: tool.componentType,
+        configYaml: tool.config,
+      },
+    };
+
+    const response = await lintConfig(
+      create(LintMCPConfigRequestSchema, {
+        tools: toolsMap,
+      })
+    );
+
+    // Update lint hints for this tool
+    setLintHints((prev) => ({
+      ...prev,
+      [toolId]: response.lintHints || {},
+    }));
+  };
+
+  const handleLintAllTools = async (): Promise<boolean> => {
+    const currentData = getCurrentData();
+    if (!currentData) {
+      return true;
+    }
+
+    const newLintHints: Record<string, Record<string, LintHint>> = {};
+    let hasIssues = false;
+
+    try {
+      // Lint each tool individually to properly map results
+      for (const tool of currentData.tools) {
+        if (!(tool.name.trim() && tool.config.trim())) {
+          continue;
+        }
+
+        const toolsMap: Record<string, { componentType: number; configYaml: string }> = {
+          [tool.name.trim()]: {
+            componentType: tool.componentType,
+            configYaml: tool.config,
+          },
+        };
+
+        const response = await lintConfig(
+          create(LintMCPConfigRequestSchema, {
+            tools: toolsMap,
+          })
+        );
+
+        // Store hints for this tool
+        if (response.lintHints && Object.keys(response.lintHints).length > 0) {
+          newLintHints[tool.id] = response.lintHints;
+          hasIssues = true;
+        }
+      }
+
+      setLintHints(newLintHints);
+
+      if (hasIssues) {
+        toast.error('Configuration has linting issues. Please fix them before saving.');
+        return false;
+      }
+
+      return true;
+    } catch (_error) {
+      // If linting fails, allow save but show warning
+      toast.warning('Unable to validate configuration. Proceeding with save.');
+      return true;
+    }
   };
 
   const handleAddTag = () => {
@@ -457,14 +566,27 @@ export const RemoteMCPConfigurationTab = () => {
                   <div className="flex gap-2">
                     {isEditing ? (
                       <>
-                        <Button disabled={isUpdateMCPServerPending} onClick={handleSave} variant="secondary">
+                        <Button
+                          disabled={isUpdateMCPServerPending || isLintConfigPending}
+                          onClick={handleSave}
+                          variant="secondary"
+                        >
                           <Save className="h-4 w-4" />
-                          {isUpdateMCPServerPending ? 'Saving...' : 'Save Changes'}
+                          {(() => {
+                            if (isLintConfigPending) {
+                              return 'Validating...';
+                            }
+                            if (isUpdateMCPServerPending) {
+                              return 'Saving...';
+                            }
+                            return 'Save Changes';
+                          })()}
                         </Button>
                         <Button
                           onClick={() => {
                             setIsEditing(false);
                             setEditedServerData(null);
+                            setLintHints({});
                           }}
                           variant="outline"
                         >
@@ -654,6 +776,7 @@ export const RemoteMCPConfigurationTab = () => {
                         <RemoteMCPToolButton
                           componentType={tool.componentType}
                           description={getToolDescription(tool)}
+                          hasLintIssues={isEditing && lintHints[tool.id] && Object.keys(lintHints[tool.id]).length > 0}
                           id={tool.id}
                           isEditing={isEditing}
                           isSelected={selectedToolId === tool.id}
@@ -759,16 +882,24 @@ export const RemoteMCPConfigurationTab = () => {
                           </div>
                         </div>
                       )}
-                      <YamlEditorCard
-                        height="500px"
-                        key={selectedTool.id}
-                        onChange={(value) => handleUpdateTool(selectedTool.id, { config: value })}
-                        options={{
-                          readOnly: !isEditing,
-                          theme: 'vs',
-                        }}
-                        value={selectedTool.config}
-                      />
+                      <div className="space-y-2">
+                        <YamlEditorCard
+                          height="500px"
+                          isLinting={isLintConfigPending}
+                          key={selectedTool.id}
+                          onChange={(value) => handleUpdateTool(selectedTool.id, { config: value })}
+                          onExpand={() => setIsExpandedDialogOpen(true)}
+                          onLint={isEditing ? () => handleLintTool(selectedTool.id) : undefined}
+                          options={{
+                            readOnly: !isEditing,
+                            theme: 'vs',
+                          }}
+                          showExpand
+                          showLint={isEditing}
+                          value={selectedTool.config}
+                        />
+                        {isEditing && <LintHintList lintHints={lintHints[selectedTool.id] || {}} />}
+                      </div>
                     </div>
                   )}
 
@@ -808,6 +939,22 @@ export const RemoteMCPConfigurationTab = () => {
           )}
         </div>
       </div>
+
+      {/* Expanded YAML Editor Dialog */}
+      {selectedTool && (
+        <ExpandedYamlDialog
+          isLintConfigPending={isLintConfigPending}
+          isOpen={isExpandedDialogOpen}
+          lintHints={lintHints[selectedTool.id] || {}}
+          mode="direct"
+          onChange={(value) => handleUpdateTool(selectedTool.id, { config: value })}
+          onClose={() => setIsExpandedDialogOpen(false)}
+          onLint={() => handleLintTool(selectedTool.id)}
+          readOnly={!isEditing}
+          toolName={selectedTool.name}
+          value={selectedTool.config}
+        />
+      )}
     </div>
   );
 };
