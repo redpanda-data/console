@@ -27,6 +27,8 @@ export const AIAgentChatInput = ({ setIsTyping, agentUrl, agentId, messagesEndRe
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Track contextId for conversation continuity
+  const contextIdRef = useRef<string | undefined>(undefined);
 
   // Use live query to listen for message changes in the database
   const messages =
@@ -94,6 +96,7 @@ export const AIAgentChatInput = ({ setIsTyping, agentUrl, agentId, messagesEndRe
         message: userMessage.content,
         chatHistory: messages.filter((message) => !message.failure),
         agentUrl,
+        contextId: contextIdRef.current,
         onStreamUpdate: async (partialContent: string, reasoning?: string) => {
           // Update the system message with partial content and reasoning during streaming
           await chatDb.updateMessage(systemMessageId, {
@@ -117,6 +120,11 @@ export const AIAgentChatInput = ({ setIsTyping, agentUrl, agentId, messagesEndRe
 
       // Update with final content and mark streaming as complete
       if (apiResponse.message) {
+        // Update contextId for conversation continuity
+        if (apiResponse.contextId) {
+          contextIdRef.current = apiResponse.contextId;
+        }
+
         await chatDb.updateMessage(systemMessageId, {
           content: apiResponse.success
             ? apiResponse.message
@@ -124,7 +132,9 @@ export const AIAgentChatInput = ({ setIsTyping, agentUrl, agentId, messagesEndRe
           failure: !apiResponse.success,
           isStreaming: false, // Streaming complete
           taskId: apiResponse.taskId,
+          contextId: apiResponse.contextId,
           reasoning: apiResponse.reasoning,
+          artifacts: apiResponse.artifacts,
         });
       }
 
@@ -140,6 +150,8 @@ export const AIAgentChatInput = ({ setIsTyping, agentUrl, agentId, messagesEndRe
           failure: false,
           isStreaming: false,
           taskId: apiResponse.taskId,
+          contextId: apiResponse.contextId,
+          artifacts: apiResponse.artifacts,
         };
 
         // Add completion message to database

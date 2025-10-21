@@ -1,8 +1,11 @@
+import { ConnectError } from '@connectrpc/connect';
 import { Spinner } from '@redpanda-data/ui';
 import { chatDb } from 'database/chat-db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { ChatBlankState } from './chat-blank-state';
 import { ChatClearButton } from './chat-clear-button';
@@ -64,8 +67,8 @@ export const ChatTab = ({ pipeline }: ChatTabProps) => {
       }
       await chatDb.clearAllMessages(id);
     } catch (error) {
-      // biome-ignore lint/suspicious/noConsole: error logging for debugging clear failures
-      console.error('Error clearing messages:', error);
+      const connectError = ConnectError.from(error);
+      toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'clear', entity: 'chat messages' }));
     }
   };
 

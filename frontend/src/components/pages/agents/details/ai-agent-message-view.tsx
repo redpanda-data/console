@@ -163,10 +163,93 @@ export const AIAgentMessageView = ({ message, isStreaming = false }: AIAgentMess
             </>
           )}
         </div>
-        <p className={`mt-2 text-xs ${message.sender === 'user' ? 'text-blue-100' : 'text-slate-500'}`}>
-          {message.timestamp.toLocaleTimeString()}
-          {message.taskId && <span className="ml-2 opacity-50">Task: {message.taskId.slice(0, 8)}...</span>}
-        </p>
+        <div className={`mt-2 text-xs ${message.sender === 'user' ? 'text-blue-100' : 'text-slate-500'}`}>
+          <p>{message.timestamp.toLocaleTimeString()}</p>
+          {message.contextId && <p className="mt-1 opacity-50">Context: {message.contextId}</p>}
+          {message.taskId && <p className="mt-0.5 opacity-50">Task: {message.taskId}</p>}
+          {message.artifacts && message.artifacts.length > 0 && (
+            <div className="mt-2 space-y-2">
+              {message.artifacts.map((artifact, index) => (
+                <details
+                  className="group rounded-md border border-slate-200 bg-slate-50"
+                  key={artifact.id || `artifact-${index}`}
+                >
+                  <summary className="flex cursor-pointer items-center justify-between p-3 hover:bg-slate-100">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400 transition-transform group-open:rotate-90">▶</span>
+                        <div>
+                          {artifact.name && <p className="font-medium text-slate-900 text-sm">{artifact.name}</p>}
+                          {artifact.description && (
+                            <p className="mt-0.5 text-slate-600 text-xs">{artifact.description}</p>
+                          )}
+                          {artifact.id && <p className="mt-0.5 text-slate-400 text-xs opacity-50">ID: {artifact.id}</p>}
+                        </div>
+                      </div>
+                    </div>
+                  </summary>
+                  <div className="border-slate-200 border-t bg-white p-3">
+                    {/* Display direct text content if present */}
+                    {artifact.text && (
+                      <div className="whitespace-pre-wrap rounded border border-slate-200 bg-slate-50 p-3 font-mono text-slate-700 text-xs">
+                        {artifact.text}
+                      </div>
+                    )}
+                    {/* Display parts if present */}
+                    {artifact.parts && artifact.parts.length > 0 && (
+                      <div className={`space-y-2 ${artifact.text ? 'mt-2' : ''}`}>
+                        {artifact.parts.map((part, partIndex) => {
+                          if (part.kind === 'text' && part.text) {
+                            return (
+                              <div
+                                className="whitespace-pre-wrap rounded border border-slate-200 bg-slate-50 p-3 font-mono text-slate-700 text-xs"
+                                key={`part-${partIndex}`}
+                              >
+                                {part.text}
+                              </div>
+                            );
+                          }
+                          if (part.kind === 'file' && part.file) {
+                            return (
+                              <a
+                                className="flex items-center gap-2 rounded border border-slate-200 bg-slate-50 p-3 text-blue-600 text-xs hover:bg-blue-50 hover:underline"
+                                href={part.file.uri}
+                                key={`part-${partIndex}`}
+                                rel="noopener noreferrer"
+                                target="_blank"
+                              >
+                                <span>📄</span>
+                                <span className="font-medium">{part.file.mimeType}</span>
+                                <span className="text-slate-500">→</span>
+                                <span className="truncate">{part.file.uri}</span>
+                              </a>
+                            );
+                          }
+                          if (part.kind === 'data' && part.data) {
+                            return (
+                              <details
+                                className="rounded border border-slate-200 bg-slate-50 p-3 text-xs"
+                                key={`part-${partIndex}`}
+                              >
+                                <summary className="cursor-pointer font-medium text-slate-700">
+                                  View structured data
+                                </summary>
+                                <pre className="mt-2 overflow-auto rounded border border-slate-300 bg-white p-2 font-mono text-slate-700">
+                                  {JSON.stringify(part.data, null, 2)}
+                                </pre>
+                              </details>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </details>
+              ))}
+            </div>
+          )}
+        </div>
       </article>
     </div>
   );
