@@ -134,6 +134,7 @@ export const AIAgentChatInput = ({ setIsTyping, agentUrl, agentId, messagesEndRe
           taskId: apiResponse.taskId,
           contextId: apiResponse.contextId,
           reasoning: apiResponse.reasoning,
+          artifacts: apiResponse.artifacts,
         });
       }
 
@@ -150,6 +151,7 @@ export const AIAgentChatInput = ({ setIsTyping, agentUrl, agentId, messagesEndRe
           isStreaming: false,
           taskId: apiResponse.taskId,
           contextId: apiResponse.contextId,
+          artifacts: apiResponse.artifacts,
         };
 
         // Add completion message to database
