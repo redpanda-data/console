@@ -46,19 +46,24 @@ const APIWizardStepper = APIStepper.Stepper;
 type APIWizardStepperSteps = typeof APIStepper.Steps;
 
 type HowToConnectProps = {
-  connectionName?: string;
   topicName?: string;
   username?: string;
   saslMechanism?: string;
 };
 
-const HowToConnectComponent = ({ connectionName, topicName, username, saslMechanism }: HowToConnectProps) => {
+const HowToConnectComponent = ({ topicName, username, saslMechanism }: HowToConnectProps) => {
+  const connectionName = useAPIWizardStore(useShallow((state) => state.connectionName));
   const { data: codeSnippet, isLoading: isLoadingCodeSnippet } = useGetOnboardingCodeSnippetQuery({
     language: connectionName,
   });
   const { data: cluster } = useGetServerlessClusterQuery({
     id: config.clusterId,
   });
+
+  useEffect(() => {
+    useAPIWizardStore.persist.rehydrate();
+  }, []);
+
   const bootstrapServerUrl = cluster?.serverlessCluster?.kafkaApi?.seedBrokers.join(',') as string;
 
   const formattedCodeSnippet = useMemo(() => {
@@ -116,24 +121,18 @@ const HowToConnectComponent = ({ connectionName, topicName, username, saslMechan
   );
 };
 
-const HowToConnectStep = ({ connectionName, topicName, username, saslMechanism }: HowToConnectProps) => {
+const HowToConnectStep = ({ topicName, username, saslMechanism }: HowToConnectProps) => {
   const controlplaneTransport = useControlplaneTransport();
   return (
     <TransportProvider transport={controlplaneTransport}>
-      <HowToConnectComponent
-        connectionName={connectionName}
-        saslMechanism={saslMechanism}
-        topicName={topicName}
-        username={username}
-      />
+      <HowToConnectComponent saslMechanism={saslMechanism} topicName={topicName} username={username} />
     </TransportProvider>
   );
 };
 
 export const APIConnectWizard = () => {
   const navigate = useNavigate();
-  const { reset } = useAPIWizardStore();
-  const connectionName = useAPIWizardStore(useShallow((state) => state.apiWizardData.connectionName));
+  const { setApiWizardData } = useAPIWizardStore();
   const [topicName, setTopicName] = useState<string | undefined>(undefined);
   const [username, setUsername] = useState<string | undefined>(undefined);
   const [saslMechanism, setSaslMechanism] = useState<string | undefined>(undefined);
@@ -187,8 +186,9 @@ export const APIConnectWizard = () => {
 
   const handleCancel = useCallback(() => {
     navigate('/overview');
+    setApiWizardData({});
     window.location.reload();
-  }, [navigate]);
+  }, [navigate, setApiWizardData]);
 
   useEffect(() => {
     runInAction(() => {
@@ -201,9 +201,9 @@ export const APIConnectWizard = () => {
   }, []);
 
   const handleFinish = useCallback(() => {
-    reset();
+    setApiWizardData({});
     navigate('/overview');
-  }, [navigate, reset]);
+  }, [navigate, setApiWizardData]);
 
   return (
     <PageContent>
@@ -236,12 +236,7 @@ export const APIConnectWizard = () => {
                     />
                   ),
                   [APIWizardStep.CONNECT_CLUSTER]: () => (
-                    <HowToConnectStep
-                      connectionName={connectionName}
-                      saslMechanism={saslMechanism}
-                      topicName={topicName}
-                      username={username}
-                    />
+                    <HowToConnectStep saslMechanism={saslMechanism} topicName={topicName} username={username} />
                   ),
                 })}
               </div>

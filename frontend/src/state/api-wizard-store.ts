@@ -9,8 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { createFlatStorage } from 'utils/store';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
 export const API_WIZARD_CONNECTOR_NAME_KEY = 'api-wizard-connector-name';
 
@@ -18,22 +19,18 @@ export type APIConnectWizardFormData = {
   connectionName?: string;
 };
 
-type APIWizardState = {
-  apiWizardData: Partial<APIConnectWizardFormData>;
-  setApiWizardData: (data: Partial<APIConnectWizardFormData>) => void;
-  reset: () => void;
-};
-
-export const useAPIWizardStore = create<APIWizardState>()(
+export const useAPIWizardStore = create<
+  Partial<APIConnectWizardFormData> & {
+    setApiWizardData: (data: Partial<APIConnectWizardFormData>) => void;
+  }
+>()(
   persist(
     (set) => ({
-      apiWizardData: {},
-      setApiWizardData: (data) => set({ apiWizardData: data }),
-      reset: () => set({ apiWizardData: {} }),
+      setApiWizardData: (data) => set(data),
     }),
     {
       name: API_WIZARD_CONNECTOR_NAME_KEY,
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createFlatStorage<Partial<APIConnectWizardFormData>>(),
     }
   )
 );

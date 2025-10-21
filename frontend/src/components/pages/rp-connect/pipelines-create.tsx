@@ -390,18 +390,10 @@ export const PipelineEditor = observer(
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [contextualVarsAutocomplete, setContextualVarsAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
-    const persistedInputConnectionName = useOnboardingWizardDataStore(
-      (state) => state.wizardData.input?.connectionName
-    );
-    const persistedInputConnectionType = useOnboardingWizardDataStore(
-      (state) => state.wizardData.input?.connectionType
-    );
-    const persistedOutputConnectionName = useOnboardingWizardDataStore(
-      (state) => state.wizardData.output?.connectionName
-    );
-    const persistedOutputConnectionType = useOnboardingWizardDataStore(
-      (state) => state.wizardData.output?.connectionType
-    );
+    const persistedInputConnectionName = useOnboardingWizardDataStore((state) => state.input?.connectionName);
+    const persistedInputConnectionType = useOnboardingWizardDataStore((state) => state.input?.connectionType);
+    const persistedOutputConnectionName = useOnboardingWizardDataStore((state) => state.output?.connectionName);
+    const persistedOutputConnectionType = useOnboardingWizardDataStore((state) => state.output?.connectionType);
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles') && isServerless();
 
     // Track actual editor content to keep sidebar in sync with editor's real state

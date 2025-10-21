@@ -15,7 +15,7 @@ import {
   useOnboardingTopicDataStore,
   useOnboardingUserDataStore,
   useOnboardingWizardDataStore,
-  useOnboardingWizardStore,
+  useResetOnboardingWizardStore,
 } from 'state/onboarding-wizard-store';
 import { uiState } from 'state/ui-state';
 import { useShallow } from 'zustand/react/shallow';
@@ -58,21 +58,26 @@ export const ConnectOnboardingWizard = ({
 }: ConnectOnboardingWizardProps = {}) => {
   const navigate = useNavigate();
 
-  const persistedInputConnectionName = useOnboardingWizardDataStore(
-    useShallow((state) => state.wizardData.input?.connectionName)
-  );
+  const persistedInputConnectionName = useOnboardingWizardDataStore(useShallow((state) => state.input?.connectionName));
   const persistedOutputConnectionName = useOnboardingWizardDataStore(
-    useShallow((state) => state.wizardData.output?.connectionName)
+    useShallow((state) => state.output?.connectionName)
   );
-  const persistedTopicName = useOnboardingTopicDataStore(useShallow((state) => state.topicData.topicName));
-  const persistedUserSaslMechanism = useOnboardingUserDataStore(useShallow((state) => state.userData.saslMechanism));
-  const persistedUsername = useOnboardingUserDataStore(useShallow((state) => state.userData.username));
-  const { setWizardData, setTopicData, setUserData, reset } = useOnboardingWizardStore();
+  const persistedTopicName = useOnboardingTopicDataStore(useShallow((state) => state.topicName));
+  const persistedUserSaslMechanism = useOnboardingUserDataStore(useShallow((state) => state.saslMechanism));
+  const persistedUsername = useOnboardingUserDataStore(useShallow((state) => state.username));
+  const resetOnboardingWizardStore = useResetOnboardingWizardStore();
+  const setWizardData = useOnboardingWizardDataStore(useShallow((state) => state.setWizardData));
+  const setTopicData = useOnboardingTopicDataStore(useShallow((state) => state.setTopicData));
+  const setUserData = useOnboardingUserDataStore(useShallow((state) => state.setUserData));
 
   const persistedInputHasTopicAndUser = useMemo(
     () => persistedInputConnectionName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(persistedInputConnectionName),
     [persistedInputConnectionName]
   );
+
+  useEffect(() => {
+    useOnboardingWizardDataStore.persist.rehydrate();
+  }, []);
 
   const [searchParams] = useSearchParams();
 
@@ -114,17 +119,11 @@ export const ConnectOnboardingWizard = ({
     });
   }, []);
 
-  useEffect(() => {
-    useOnboardingWizardDataStore.getState().rehydrate();
-    useOnboardingTopicDataStore.getState().rehydrate();
-    useOnboardingUserDataStore.getState().rehydrate();
-  }, []);
-
   const handleSkipToCreatePipeline = (methods: WizardStepperSteps) => {
     if (methods.current.id === WizardStep.ADD_INPUT) {
-      reset();
+      resetOnboardingWizardStore();
     } else if (methods.current.id === WizardStep.ADD_OUTPUT) {
-      const currentWizardData = useOnboardingWizardDataStore.getState().wizardData;
+      const { setWizardData: _, ...currentWizardData } = useOnboardingWizardDataStore.getState();
       setWizardData({
         input: currentWizardData.input,
         output: {},
@@ -161,7 +160,7 @@ export const ConnectOnboardingWizard = ({
             });
             methods.goTo(WizardStep.ADD_TOPIC);
           } else {
-            const currentWizardData = useOnboardingWizardDataStore.getState().wizardData;
+            const { setWizardData: _, ...currentWizardData } = useOnboardingWizardDataStore.getState();
             setWizardData({
               input: {
                 connectionName,
@@ -198,7 +197,7 @@ export const ConnectOnboardingWizard = ({
               },
             });
           } else {
-            const currentWizardData = useOnboardingWizardDataStore.getState().wizardData;
+            const { setWizardData: _, ...currentWizardData } = useOnboardingWizardDataStore.getState();
             setWizardData({
               output: {
                 connectionName,
@@ -257,7 +256,7 @@ export const ConnectOnboardingWizard = ({
   };
 
   const handleCancel = useCallback(() => {
-    reset();
+    resetOnboardingWizardStore();
     if (onCancelProp) {
       onCancelProp();
     } else if (searchParams.get('serverless') === 'true') {
@@ -265,7 +264,7 @@ export const ConnectOnboardingWizard = ({
     } else {
       navigate('/connect-clusters');
     }
-  }, [onCancelProp, navigate, reset, searchParams]);
+  }, [onCancelProp, navigate, resetOnboardingWizardStore, searchParams]);
 
   return (
     <PageContent className={className}>

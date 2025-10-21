@@ -21,7 +21,7 @@ import { FaRegStopCircle } from 'react-icons/fa';
 import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
-import { useOnboardingWizardStore } from 'state/onboarding-wizard-store';
+import { useResetOnboardingWizardStore } from 'state/onboarding-wizard-store';
 
 import { openDeleteModal } from './modals';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
@@ -52,13 +52,13 @@ const LegacyCreatePipelineButton = () => (
  * Navigates to wizard and clears session storage
  */
 const WizardCreatePipelineButton = () => {
-  const { reset } = useOnboardingWizardStore();
+  const resetOnboardingWizardStore = useResetOnboardingWizardStore();
   const navigate = useNavigate();
 
   const handleClick = useCallback(() => {
-    reset();
+    resetOnboardingWizardStore();
     navigate('/rp-connect/wizard');
-  }, [reset, navigate]);
+  }, [resetOnboardingWizardStore, navigate]);
 
   return (
     <div>

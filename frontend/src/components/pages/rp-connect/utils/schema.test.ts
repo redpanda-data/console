@@ -1,7 +1,7 @@
+import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/onboarding-wizard-store';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { generateDefaultValue, getBuiltInComponents, schemaToConfig } from './schema';
-import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from '../../../../state/connect/state';
 import type { RawFieldSpec } from '../types/schema';
 
 describe('generateDefaultValue', () => {
