@@ -14,7 +14,6 @@ type CreatePipelineSidebarProps = {
   onAddConnector: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
   detectedSecrets: string[];
   existingSecrets: string[];
-  secretDefaultValues: Record<string, string>;
   onSecretsCreated: () => void;
   editorContent: string;
 };
@@ -25,7 +24,6 @@ export const CreatePipelineSidebar = memo(
     onAddConnector,
     detectedSecrets,
     existingSecrets,
-    secretDefaultValues,
     onSecretsCreated,
     editorContent,
   }: CreatePipelineSidebarProps) => {
@@ -76,7 +74,6 @@ export const CreatePipelineSidebar = memo(
         <AddContextualVariablesCard editorContent={editorContent} editorInstance={editorInstance} />
 
         <AddSecretsDialog
-          defaultValues={secretDefaultValues}
           existingSecrets={existingSecrets}
           isOpen={isSecretsDialogOpen}
           missingSecrets={missingSecrets}

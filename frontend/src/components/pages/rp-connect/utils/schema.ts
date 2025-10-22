@@ -1,7 +1,7 @@
+import { onboardingWizardStore } from 'state/onboarding-wizard-store';
 import { isFalsy } from 'utils/falsy';
 
 import {
-  getPersistedWizardData,
   hasWizardRelevantFields,
   isBrokerField,
   isPasswordField,
@@ -157,7 +157,7 @@ export const getBuiltInComponents = (): ConnectComponentSpec[] => {
 };
 
 const generateRedpandaTopLevelConfig = (): Record<string, unknown> => {
-  const { userData } = getPersistedWizardData();
+  const userData = onboardingWizardStore.getUserData();
   const redpandaConfig: Record<string, unknown> = {};
 
   const brokers = getContextualVariableSyntax('REDPANDA_BROKERS');
@@ -278,7 +278,8 @@ function populateWizardFields(spec: RawFieldSpec, componentName?: string): unkno
     return undefined;
   }
 
-  const { topicData, userData } = getPersistedWizardData();
+  const topicData = onboardingWizardStore.getTopicData();
+  const userData = onboardingWizardStore.getUserData();
 
   // Populate topic fields
   if (isTopicField(spec.name) && topicData?.topicName) {
@@ -367,7 +368,7 @@ function populateConnectionDefaults(
   // SASL mechanism from session storage or default to SCRAM-SHA-256
   const isMechanismField = spec.name.toLowerCase() === 'mechanism' && parentName?.toLowerCase() === 'sasl';
   if (isMechanismField) {
-    const { userData } = getPersistedWizardData();
+    const userData = onboardingWizardStore.getUserData();
     return userData?.saslMechanism || 'SCRAM-SHA-256';
   }
 
@@ -461,10 +462,10 @@ function generateObjectValue(
 
   const obj = {} as Record<string, unknown>;
 
-  const { userData } =
+  const userData =
     componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)
-      ? getPersistedWizardData()
-      : { userData: null };
+      ? onboardingWizardStore.getUserData()
+      : undefined;
 
   const hasDirectWizardChildren =
     spec.children?.some((child) => {
@@ -538,7 +539,7 @@ function generateArrayValue(params: {
   // Special case: SASL arrays for redpanda/kafka_franz components
   const isSaslArray = spec.name?.toLowerCase() === 'sasl';
   if (isSaslArray && spec.children && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)) {
-    const { userData } = getPersistedWizardData();
+    const userData = onboardingWizardStore.getUserData();
 
     if (userData?.username) {
       const saslObj = {} as Record<string, unknown>;

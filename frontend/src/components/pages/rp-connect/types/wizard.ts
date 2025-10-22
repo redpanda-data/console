@@ -79,14 +79,14 @@ export const addUserFormSchema = z.object({
 
 export type AddUserFormData = z.infer<typeof addUserFormSchema>;
 
-const wizardFormSchema = z.object({
+const onboardingWizardFormSchema = z.object({
   input: connectTilesListFormSchema,
   output: connectTilesListFormSchema,
   topicName: z.optional(addTopicFormSchema.shape.topicName),
   username: z.optional(addUserFormSchema.shape.username),
 });
 
-export type WizardFormData = z.infer<typeof wizardFormSchema>;
+export type OnboardingWizardFormData = z.infer<typeof onboardingWizardFormSchema>;
 
 export type MinimalTopicData = {
   topicName: string;

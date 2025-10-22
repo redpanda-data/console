@@ -1,9 +1,9 @@
 import { toast } from 'sonner';
-import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
+import { onboardingWizardStore } from 'state/onboarding-wizard-store';
 
 import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
 import type { RawFieldSpec } from '../types/schema';
-import type { AddTopicFormData, AddUserFormData, StepSubmissionResult } from '../types/wizard';
+import type { StepSubmissionResult } from '../types/wizard';
 
 export const handleStepResult = <T>(result: StepSubmissionResult<T> | undefined, onSuccess: () => void): boolean => {
   if (!result) {
@@ -37,26 +37,6 @@ export const handleStepResult = <T>(result: StepSubmissionResult<T> | undefined,
   }
 
   return false;
-};
-
-/**
- * Reads persisted wizard data from session storage
- */
-export const getPersistedWizardData = () => {
-  let topicData: AddTopicFormData | undefined;
-  let userData: AddUserFormData | undefined;
-
-  const topicJson = sessionStorage.getItem(CONNECT_WIZARD_TOPIC_KEY);
-  if (topicJson) {
-    topicData = JSON.parse(topicJson);
-  }
-
-  const userJson = sessionStorage.getItem(CONNECT_WIZARD_USER_KEY);
-  if (userJson) {
-    userData = JSON.parse(userJson);
-  }
-
-  return { topicData, userData };
 };
 
 /**
@@ -111,7 +91,8 @@ export const hasWizardRelevantFields = (spec: RawFieldSpec, componentName?: stri
     return false;
   }
 
-  const { topicData, userData } = getPersistedWizardData();
+  const topicData = onboardingWizardStore.getTopicData();
+  const userData = onboardingWizardStore.getUserData();
 
   if (spec.name && isTopicField(spec.name) && topicData?.topicName) {
     return true;

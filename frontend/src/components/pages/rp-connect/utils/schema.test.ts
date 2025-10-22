@@ -1,8 +1,10 @@
-import { beforeEach, describe, expect, test } from 'vitest';
+import { onboardingWizardStore } from 'state/onboarding-wizard-store';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { generateDefaultValue, getBuiltInComponents, schemaToConfig } from './schema';
-import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from '../../../../state/connect/state';
 import type { RawFieldSpec } from '../types/schema';
+
+vi.mock('zustand');
 
 describe('generateDefaultValue', () => {
   beforeEach(() => {
@@ -87,11 +89,8 @@ describe('generateDefaultValue', () => {
 
   describe('Wizard data population', () => {
     beforeEach(() => {
-      sessionStorage.setItem(CONNECT_WIZARD_TOPIC_KEY, JSON.stringify({ topicName: 'example' }));
-      sessionStorage.setItem(
-        CONNECT_WIZARD_USER_KEY,
-        JSON.stringify({ username: 'admin', saslMechanism: 'SCRAM-SHA-256' })
-      );
+      onboardingWizardStore.setTopicData({ topicName: 'example' });
+      onboardingWizardStore.setUserData({ username: 'admin', saslMechanism: 'SCRAM-SHA-256' });
     });
 
     test('should populate topic field for redpanda components', () => {
@@ -365,10 +364,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should use wizard SASL mechanism when available', () => {
-      sessionStorage.setItem(
-        CONNECT_WIZARD_USER_KEY,
-        JSON.stringify({ username: 'admin', saslMechanism: 'SCRAM-SHA-512' })
-      );
+      onboardingWizardStore.setUserData({ username: 'admin', saslMechanism: 'SCRAM-SHA-512' });
 
       const spec: RawFieldSpec = {
         name: 'mechanism',
@@ -406,11 +402,7 @@ describe('generateDefaultValue', () => {
 
   describe('Secrets syntax with wizard data', () => {
     beforeEach(() => {
-      // Set wizard data to test secret syntax with user credentials
-      sessionStorage.setItem(
-        CONNECT_WIZARD_USER_KEY,
-        JSON.stringify({ username: 'test-user', saslMechanism: 'SCRAM-SHA-256' })
-      );
+      onboardingWizardStore.setUserData({ username: 'test-user', saslMechanism: 'SCRAM-SHA-256' });
     });
 
     test('should use secret syntax for user field with wizard data', () => {
@@ -470,10 +462,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should convert username to screaming snake case in secret key', () => {
-      sessionStorage.setItem(
-        CONNECT_WIZARD_USER_KEY,
-        JSON.stringify({ username: 'my-kafka-user', saslMechanism: 'SCRAM-SHA-256' })
-      );
+      onboardingWizardStore.setUserData({ username: 'my-kafka-user', saslMechanism: 'SCRAM-SHA-256' });
 
       const spec: RawFieldSpec = {
         name: 'user',
@@ -491,10 +480,7 @@ describe('generateDefaultValue', () => {
 
   describe('SASL object generation', () => {
     beforeEach(() => {
-      sessionStorage.setItem(
-        CONNECT_WIZARD_USER_KEY,
-        JSON.stringify({ username: 'admin', saslMechanism: 'SCRAM-SHA-256' })
-      );
+      onboardingWizardStore.setUserData({ username: 'admin', saslMechanism: 'SCRAM-SHA-256' });
     });
 
     test('should populate sasl object with mechanism, user, and password when user exists', () => {
@@ -616,7 +602,7 @@ describe('generateDefaultValue', () => {
         ],
       };
 
-      sessionStorage.setItem(CONNECT_WIZARD_TOPIC_KEY, JSON.stringify({ topicName: 'example' }));
+      onboardingWizardStore.setTopicData({ topicName: 'example' });
 
       const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' }) as Record<
         string,
@@ -688,7 +674,7 @@ describe('generateDefaultValue', () => {
         ],
       };
 
-      sessionStorage.setItem(CONNECT_WIZARD_TOPIC_KEY, JSON.stringify({ topicName: 'example' }));
+      onboardingWizardStore.setTopicData({ topicName: 'example' });
 
       const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka' }) as Record<
         string,
@@ -740,8 +726,8 @@ describe('generateDefaultValue', () => {
 
   describe('Full integration with real schema components', () => {
     beforeEach(() => {
-      sessionStorage.setItem(CONNECT_WIZARD_TOPIC_KEY, JSON.stringify({ topicName: 'example' }));
-      sessionStorage.setItem(CONNECT_WIZARD_USER_KEY, JSON.stringify({ username: 'admin' }));
+      onboardingWizardStore.setTopicData({ topicName: 'example' });
+      onboardingWizardStore.setUserData({ username: 'admin' });
     });
 
     test('TLS field should be shown for Redpanda components even when advanced', () => {

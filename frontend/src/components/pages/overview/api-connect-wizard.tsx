@@ -8,7 +8,6 @@ import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
-import { useSessionStorage } from 'hooks/use-session-storage';
 import { ChevronLeftIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
@@ -18,16 +17,15 @@ import { useGetServerlessClusterQuery } from 'react-query/api/serverless';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { useNavigate } from 'react-router-dom';
+import { useAPIWizardStore } from 'state/api-wizard-store';
 import { uiState } from 'state/ui-state';
 import { capitalizeFirst } from 'utils/utils';
+import { useShallow } from 'zustand/react/shallow';
 
-import { useResetWizardSessionStorage } from '../rp-connect/hooks/use-reset-wizard-session-storage';
 import { AddTopicStep } from '../rp-connect/onboarding/add-topic-step';
 import { AddUserStep } from '../rp-connect/onboarding/add-user-step';
 import type { AddTopicFormData, AddUserFormData, BaseStepRef } from '../rp-connect/types/wizard';
 import { handleStepResult } from '../rp-connect/utils/wizard';
-
-const API_WIZARD_CONNECTOR_NAME_KEY = 'api-wizard-connector-name';
 
 const APIWizardStep = {
   ADD_TOPIC: 'add-topic-step',
@@ -47,27 +45,25 @@ const APIStepper = defineStepper(...apiWizardStepDefinitions);
 const APIWizardStepper = APIStepper.Stepper;
 type APIWizardStepperSteps = typeof APIStepper.Steps;
 
-type APIConnectWizardFormData = {
-  connectionName?: string;
-  topicName?: string;
-  username?: string;
-  saslMechanism?: string;
-};
-
 type HowToConnectProps = {
-  connectionName?: string;
   topicName?: string;
   username?: string;
   saslMechanism?: string;
 };
 
-const HowToConnectComponent = ({ connectionName, topicName, username, saslMechanism }: HowToConnectProps) => {
+const HowToConnectComponent = ({ topicName, username, saslMechanism }: HowToConnectProps) => {
+  const connectionName = useAPIWizardStore(useShallow((state) => state.connectionName));
   const { data: codeSnippet, isLoading: isLoadingCodeSnippet } = useGetOnboardingCodeSnippetQuery({
     language: connectionName,
   });
   const { data: cluster } = useGetServerlessClusterQuery({
     id: config.clusterId,
   });
+
+  useEffect(() => {
+    useAPIWizardStore.persist.rehydrate();
+  }, []);
+
   const bootstrapServerUrl = cluster?.serverlessCluster?.kafkaApi?.seedBrokers.join(',') as string;
 
   const formattedCodeSnippet = useMemo(() => {
@@ -125,28 +121,18 @@ const HowToConnectComponent = ({ connectionName, topicName, username, saslMechan
   );
 };
 
-const HowToConnectStep = ({ connectionName, topicName, username, saslMechanism }: HowToConnectProps) => {
+const HowToConnectStep = ({ topicName, username, saslMechanism }: HowToConnectProps) => {
   const controlplaneTransport = useControlplaneTransport();
   return (
     <TransportProvider transport={controlplaneTransport}>
-      <HowToConnectComponent
-        connectionName={connectionName}
-        saslMechanism={saslMechanism}
-        topicName={topicName}
-        username={username}
-      />
+      <HowToConnectComponent saslMechanism={saslMechanism} topicName={topicName} username={username} />
     </TransportProvider>
   );
 };
 
 export const APIConnectWizard = () => {
   const navigate = useNavigate();
-  const [persistedAPIWizardData, setPersistedAPIWizardData] = useSessionStorage<APIConnectWizardFormData>(
-    API_WIZARD_CONNECTOR_NAME_KEY,
-    {}
-  );
-  const resetWizardSessionStorage = useResetWizardSessionStorage();
-  const connectionName = useMemo(() => persistedAPIWizardData.connectionName, [persistedAPIWizardData.connectionName]);
+  const { setApiWizardData } = useAPIWizardStore();
   const [topicName, setTopicName] = useState<string | undefined>(undefined);
   const [username, setUsername] = useState<string | undefined>(undefined);
   const [saslMechanism, setSaslMechanism] = useState<string | undefined>(undefined);
@@ -200,8 +186,9 @@ export const APIConnectWizard = () => {
 
   const handleCancel = useCallback(() => {
     navigate('/overview');
+    setApiWizardData({});
     window.location.reload();
-  }, [navigate]);
+  }, [navigate, setApiWizardData]);
 
   useEffect(() => {
     runInAction(() => {
@@ -214,10 +201,9 @@ export const APIConnectWizard = () => {
   }, []);
 
   const handleFinish = useCallback(() => {
-    resetWizardSessionStorage();
-    setPersistedAPIWizardData({});
+    setApiWizardData({});
     navigate('/overview');
-  }, [navigate, resetWizardSessionStorage, setPersistedAPIWizardData]);
+  }, [navigate, setApiWizardData]);
 
   return (
     <PageContent>
@@ -250,12 +236,7 @@ export const APIConnectWizard = () => {
                     />
                   ),
                   [APIWizardStep.CONNECT_CLUSTER]: () => (
-                    <HowToConnectStep
-                      connectionName={connectionName}
-                      saslMechanism={saslMechanism}
-                      topicName={topicName}
-                      username={username}
-                    />
+                    <HowToConnectStep saslMechanism={saslMechanism} topicName={topicName} username={username} />
                   ),
                 })}
               </div>
