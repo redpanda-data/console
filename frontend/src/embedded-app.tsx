@@ -32,6 +32,7 @@ import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { AnalyticsProvider } from 'analytics-provider';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
@@ -70,12 +71,20 @@ export interface EmbeddedProps extends SetConfigArguments {
    */
   isConsoleReadyToMount?: boolean;
   /**
-   * LaunchDarkly feature flags to be used in console UI when in embedded mode.
+   * Callback for Console to track analytics events
+   * @param eventName - The name of the event
+   * @param eventData - Optional additional event data
    */
-  featureFlags?: Record<string, boolean>;
+  captureEvent?: (eventName: string, eventData?: Record<string, unknown>) => void;
+  /**
+   * Callback for Console to identify user and track analytics events in one call
+   * @param eventName - The name of the event
+   * @param eventData - Optional additional event data
+   */
+  captureUserEvent?: (eventName: string, eventData?: Record<string, unknown>) => void;
 }
 
-function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
+function EmbeddedApp({ basePath, captureEvent, captureUserEvent, ...p }: EmbeddedProps) {
   useEffect(() => {
     const shellNavigationHandler = (event: Event) => {
       const pathname = (event as CustomEvent<string>).detail;
@@ -109,13 +118,20 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
       <BrowserRouter basename={basePath}>
         <HistorySetter />
         <ChakraProvider resetCSS={false} theme={redpandaTheme} toastOptions={redpandaToastOptions}>
-          <TransportProvider transport={dataplaneTransport}>
-            <QueryClientProvider client={queryClient}>
-              <ErrorBoundary>
-                <AppContent />
-              </ErrorBoundary>
-            </QueryClientProvider>
-          </TransportProvider>
+          <AnalyticsProvider
+            value={{
+              captureEvent,
+              captureUserEvent,
+            }}
+          >
+            <TransportProvider transport={dataplaneTransport}>
+              <QueryClientProvider client={queryClient}>
+                <ErrorBoundary>
+                  <AppContent />
+                </ErrorBoundary>
+              </QueryClientProvider>
+            </TransportProvider>
+          </AnalyticsProvider>
         </ChakraProvider>
       </BrowserRouter>
     </CustomFeatureFlagProvider>

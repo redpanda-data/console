@@ -1,4 +1,5 @@
 import { create } from '@bufbuild/protobuf';
+import { useAnalytics } from 'analytics-provider';
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -18,6 +19,13 @@ import {
   useResetOnboardingWizardStore,
 } from 'state/onboarding-wizard-store';
 import { uiState } from 'state/ui-state';
+import {
+  isAnalyticsEnabled,
+  rpcnOnboardingWizardExistingTopicChangeEvent,
+  rpcnOnboardingWizardExistingUserChangeEvent,
+  rpcnOnboardingWizardInputConnectorChangeEvent,
+  rpcnOnboardingWizardOutputConnectorChangeEvent,
+} from 'utils/analytics';
 import { useShallow } from 'zustand/react/shallow';
 
 import { AddTopicStep } from './add-topic-step';
@@ -80,6 +88,7 @@ export const ConnectOnboardingWizard = ({
   }, []);
 
   const [searchParams] = useSearchParams();
+  const isServerlessGetStartedUser = useMemo(() => searchParams.get('serverless') === 'true', [searchParams]);
 
   const initialStep = useMemo(() => {
     const stepSearchParam = searchParams.get('step');
@@ -103,6 +112,8 @@ export const ConnectOnboardingWizard = ({
   const addOutputStepRef = useRef<BaseStepRef<ConnectTilesListFormData>>(null);
   const addTopicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const addUserStepRef = useRef<BaseStepRef<AddUserFormData>>(null);
+
+  const { captureUserEvent } = useAnalytics();
 
   const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
     hideInternalTopics: true,
@@ -142,6 +153,14 @@ export const ConnectOnboardingWizard = ({
         const connectionName = result?.data?.connectionName;
         const connectionType = result?.data?.connectionType;
 
+        if (isAnalyticsEnabled()) {
+          captureUserEvent?.(rpcnOnboardingWizardInputConnectorChangeEvent, {
+            connectionName,
+            connectionType,
+            isServerlessGetStartedUser,
+          });
+        }
+
         if (connectionType === 'custom') {
           handleSkipToCreatePipeline(methods);
           return;
@@ -178,6 +197,14 @@ export const ConnectOnboardingWizard = ({
         const result = await addOutputStepRef.current?.triggerSubmit();
         const connectionName = result?.data?.connectionName;
         const connectionType = result?.data?.connectionType;
+
+        if (isAnalyticsEnabled()) {
+          captureUserEvent?.(rpcnOnboardingWizardOutputConnectorChangeEvent, {
+            connectionName,
+            connectionType,
+            isServerlessGetStartedUser,
+          });
+        }
 
         if (connectionType === 'custom') {
           handleSkipToCreatePipeline(methods);
@@ -220,6 +247,12 @@ export const ConnectOnboardingWizard = ({
         const result = await addTopicStepRef.current?.triggerSubmit();
         if (result?.success && result.data) {
           setTopicData({ topicName: result.data.topicName });
+          if (isAnalyticsEnabled()) {
+            captureUserEvent?.(rpcnOnboardingWizardExistingTopicChangeEvent, {
+              topicName: result.data.topicName,
+              isServerlessGetStartedUser,
+            });
+          }
         }
         handleStepResult(result, methods.next);
         break;
@@ -231,6 +264,13 @@ export const ConnectOnboardingWizard = ({
             username: result.data.username,
             saslMechanism: result.data.saslMechanism,
           });
+          if (isAnalyticsEnabled()) {
+            captureUserEvent?.(rpcnOnboardingWizardExistingUserChangeEvent, {
+              username: result.data.username,
+              saslMechanism: result.data.saslMechanism,
+              isServerlessGetStartedUser,
+            });
+          }
         }
         handleStepResult(result, methods.next);
         break;
@@ -259,12 +299,12 @@ export const ConnectOnboardingWizard = ({
     resetOnboardingWizardStore();
     if (onCancelProp) {
       onCancelProp();
-    } else if (searchParams.get('serverless') === 'true') {
+    } else if (isServerlessGetStartedUser) {
       navigate('/overview');
     } else {
       navigate('/connect-clusters');
     }
-  }, [onCancelProp, navigate, resetOnboardingWizardStore, searchParams]);
+  }, [onCancelProp, navigate, resetOnboardingWizardStore, isServerlessGetStartedUser]);
 
   return (
     <PageContent className={className}>

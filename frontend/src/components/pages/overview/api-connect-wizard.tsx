@@ -1,6 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { Markdown } from '@redpanda-data/ui';
+import { useAnalytics } from 'analytics-provider';
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -19,6 +20,11 @@ import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { useNavigate } from 'react-router-dom';
 import { useAPIWizardStore } from 'state/api-wizard-store';
 import { uiState } from 'state/ui-state';
+import {
+  isAnalyticsEnabled,
+  serverlessApiOnboardingWizardExistingTopicChangeEvent,
+  serverlessApiOnboardingWizardExistingUserChangeEvent,
+} from 'utils/analytics';
 import { capitalizeFirst } from 'utils/utils';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -132,7 +138,8 @@ const HowToConnectStep = ({ topicName, username, saslMechanism }: HowToConnectPr
 
 export const APIConnectWizard = () => {
   const navigate = useNavigate();
-  const { setApiWizardData } = useAPIWizardStore();
+  const { connectionName, setApiWizardData } = useAPIWizardStore();
+  const { captureUserEvent } = useAnalytics();
   const [topicName, setTopicName] = useState<string | undefined>(undefined);
   const [username, setUsername] = useState<string | undefined>(undefined);
   const [saslMechanism, setSaslMechanism] = useState<string | undefined>(undefined);
@@ -151,6 +158,12 @@ export const APIConnectWizard = () => {
         const result = await addTopicStepRef.current?.triggerSubmit();
         if (result?.success) {
           setTopicName(result.data?.topicName);
+          if (isAnalyticsEnabled()) {
+            captureUserEvent?.(serverlessApiOnboardingWizardExistingTopicChangeEvent, {
+              topicName: result.data?.topicName,
+              connectionName,
+            });
+          }
         }
         handleStepResult(result, methods.next);
         break;
@@ -160,6 +173,13 @@ export const APIConnectWizard = () => {
         if (result?.success) {
           setUsername(result.data?.username);
           setSaslMechanism(result.data?.saslMechanism);
+          if (isAnalyticsEnabled()) {
+            captureUserEvent?.(serverlessApiOnboardingWizardExistingUserChangeEvent, {
+              username: result.data?.username,
+              saslMechanism: result.data?.saslMechanism,
+              connectionName,
+            });
+          }
         }
         handleStepResult(result, methods.next);
         break;
