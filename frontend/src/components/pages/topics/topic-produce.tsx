@@ -419,7 +419,17 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                               .refreshSchemaDetails(newVal)
                               .then(() => {
                                 const detail = api.schemaDetails.get(newVal);
-                                setValue('key.schemaVersion', detail?.latestActiveVersion);
+                                if (detail?.latestActiveVersion) {
+                                  setValue('key.schemaVersion', detail.latestActiveVersion);
+
+                                  // Also set the schemaId for the latest version
+                                  const latestSchema = detail.schemas.find(
+                                    (schema) => schema.version === detail.latestActiveVersion && !schema.isSoftDeleted
+                                  );
+                                  if (latestSchema) {
+                                    setValue('key.schemaId', latestSchema.id);
+                                  }
+                                }
                               })
                               .catch(() => {
                                 // Error handling managed by API layer
@@ -447,7 +457,19 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                       const schemaDetail = keySchemaName ? api.schemaDetails.get(keySchemaName) : undefined;
                       return (
                         <SingleSelect<number | undefined>
-                          onChange={onChange}
+                          onChange={(newVersion) => {
+                            onChange(newVersion);
+
+                            // Set schemaId when version is selected
+                            if (newVersion && schemaDetail) {
+                              const selectedSchema = schemaDetail.schemas.find(
+                                (schema) => schema.version === newVersion && !schema.isSoftDeleted
+                              );
+                              if (selectedSchema) {
+                                setValue('key.schemaId', selectedSchema.id);
+                              }
+                            }
+                          }}
                           options={
                             schemaDetail?.versions
                               .slice()
@@ -543,7 +565,17 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                               // Fetch schema details to get available versions
                               api.refreshSchemaDetails(newVal).then(() => {
                                 const detail = api.schemaDetails.get(newVal);
-                                setValue('value.schemaVersion', detail?.latestActiveVersion);
+                                if (detail?.latestActiveVersion) {
+                                  setValue('value.schemaVersion', detail.latestActiveVersion);
+
+                                  // Also set the schemaId for the latest version
+                                  const latestSchema = detail.schemas.find(
+                                    (schema) => schema.version === detail.latestActiveVersion && !schema.isSoftDeleted
+                                  );
+                                  if (latestSchema) {
+                                    setValue('value.schemaId', latestSchema.id);
+                                  }
+                                }
                               });
                             }
                           }}
@@ -568,7 +600,19 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                         const schemaDetail = valueSchemaName ? api.schemaDetails.get(valueSchemaName) : undefined;
                         return (
                           <SingleSelect<number | undefined>
-                            onChange={onChange}
+                            onChange={(newVersion) => {
+                              onChange(newVersion);
+
+                              // Set schemaId when version is selected
+                              if (newVersion && schemaDetail) {
+                                const selectedSchema = schemaDetail.schemas.find(
+                                  (schema) => schema.version === newVersion && !schema.isSoftDeleted
+                                );
+                                if (selectedSchema) {
+                                  setValue('value.schemaId', selectedSchema.id);
+                                }
+                              }
+                            }}
                             options={
                               schemaDetail?.versions
                                 .slice()
