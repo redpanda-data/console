@@ -282,7 +282,21 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
       }
       req.key.data = encodeData(data.key.data, data.key.encoding);
       req.key.encoding = data.key.encoding;
-      req.key.schemaId = data.key.schemaId;
+      
+      // Determine schemaId from schemaVersion if schema is selected and encoding is Avro or Protobuf
+      if ((data.key.encoding === PayloadEncoding.AVRO || data.key.encoding === PayloadEncoding.PROTOBUF) && 
+          data.key.schemaName && data.key.schemaVersion) {
+        const schemaDetail = api.schemaDetails.get(data.key.schemaName);
+        if (schemaDetail) {
+          const selectedSchema = schemaDetail.schemas.find(
+            (schema) => schema.version === data.key.schemaVersion && !schema.isSoftDeleted
+          );
+          if (selectedSchema) {
+            req.key.schemaId = selectedSchema.id;
+          }
+        }
+      }
+      
       req.key.index = data.key.protobufIndex;
     }
 
@@ -298,7 +312,21 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
         return;
       }
       req.value.encoding = data.value.encoding;
-      req.value.schemaId = data.value.schemaId;
+      
+      // Determine schemaId from schemaVersion if schema is selected and encoding is Avro or Protobuf
+      if ((data.value.encoding === PayloadEncoding.AVRO || data.value.encoding === PayloadEncoding.PROTOBUF) && 
+          data.value.schemaName && data.value.schemaVersion) {
+        const schemaDetail = api.schemaDetails.get(data.value.schemaName);
+        if (schemaDetail) {
+          const selectedSchema = schemaDetail.schemas.find(
+            (schema) => schema.version === data.value.schemaVersion && !schema.isSoftDeleted
+          );
+          if (selectedSchema) {
+            req.value.schemaId = selectedSchema.id;
+          }
+        }
+      }
+      
       req.value.index = data.value.protobufIndex;
     }
 
@@ -421,14 +449,6 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                                 const detail = api.schemaDetails.get(newVal);
                                 if (detail?.latestActiveVersion) {
                                   setValue('key.schemaVersion', detail.latestActiveVersion);
-
-                                  // Also set the schemaId for the latest version
-                                  const latestSchema = detail.schemas.find(
-                                    (schema) => schema.version === detail.latestActiveVersion && !schema.isSoftDeleted
-                                  );
-                                  if (latestSchema) {
-                                    setValue('key.schemaId', latestSchema.id);
-                                  }
                                 }
                               })
                               .catch(() => {
@@ -457,19 +477,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                       const schemaDetail = keySchemaName ? api.schemaDetails.get(keySchemaName) : undefined;
                       return (
                         <SingleSelect<number | undefined>
-                          onChange={(newVersion) => {
-                            onChange(newVersion);
-
-                            // Set schemaId when version is selected
-                            if (newVersion && schemaDetail) {
-                              const selectedSchema = schemaDetail.schemas.find(
-                                (schema) => schema.version === newVersion && !schema.isSoftDeleted
-                              );
-                              if (selectedSchema) {
-                                setValue('key.schemaId', selectedSchema.id);
-                              }
-                            }
-                          }}
+                          onChange={onChange}
                           options={
                             schemaDetail?.versions
                               .slice()
@@ -567,14 +575,6 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                                 const detail = api.schemaDetails.get(newVal);
                                 if (detail?.latestActiveVersion) {
                                   setValue('value.schemaVersion', detail.latestActiveVersion);
-
-                                  // Also set the schemaId for the latest version
-                                  const latestSchema = detail.schemas.find(
-                                    (schema) => schema.version === detail.latestActiveVersion && !schema.isSoftDeleted
-                                  );
-                                  if (latestSchema) {
-                                    setValue('value.schemaId', latestSchema.id);
-                                  }
                                 }
                               });
                             }
@@ -600,19 +600,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                         const schemaDetail = valueSchemaName ? api.schemaDetails.get(valueSchemaName) : undefined;
                         return (
                           <SingleSelect<number | undefined>
-                            onChange={(newVersion) => {
-                              onChange(newVersion);
-
-                              // Set schemaId when version is selected
-                              if (newVersion && schemaDetail) {
-                                const selectedSchema = schemaDetail.schemas.find(
-                                  (schema) => schema.version === newVersion && !schema.isSoftDeleted
-                                );
-                                if (selectedSchema) {
-                                  setValue('value.schemaId', selectedSchema.id);
-                                }
-                              }
-                            }}
+                            onChange={onChange}
                             options={
                               schemaDetail?.versions
                                 .slice()
