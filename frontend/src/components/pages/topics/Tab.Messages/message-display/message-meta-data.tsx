@@ -30,7 +30,6 @@ export const MessageMetaData = observer((props: { msg: TopicMessage }) => {
     Headers: msg.headers.length > 0 ? `${msg.headers.length}` : 'No headers set',
     Compression: msg.compression,
     Transactional: msg.isTransactional ? 'true' : 'false',
-    // "Producer ID": "(msg.producerId)",
   };
 
   if (msg.value.schemaId) {
