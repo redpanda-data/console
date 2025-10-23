@@ -78,6 +78,7 @@
     "hast-util-to-jsx-runtime": "^2.3.6",
     "js-base64": "^3.7.8",
     "jwt-decode": "^4.0.0",
+    "lottie-react": "^2.4.1",
     "lucide-react": "^0.544.0",
     "mobx": "^6.10.0",
     "mobx-react": "^7.6.0",

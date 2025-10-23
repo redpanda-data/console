@@ -15,6 +15,7 @@ import {
   ACL_ResourcePatternType,
   ACL_ResourceType,
   CreateACLRequestSchema,
+  type ListACLsResponse_Resource,
 } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { CreateUserRequestSchema, SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
 import { convertToScreamingSnakeCase } from '../types/constants';
@@ -50,6 +51,51 @@ export const createTopicSuperuserACLs = (topicName: string, username: string) =>
     operation,
     permissionType: ACL_PermissionType.ALLOW,
   }));
+};
+
+export const checkUserHasTopicSuperuserPermissions = (
+  aclResources: ListACLsResponse_Resource[],
+  topicName: string,
+  username: string
+): boolean => {
+  const requiredOps = [
+    ACL_Operation.ALL,
+    ACL_Operation.READ,
+    ACL_Operation.WRITE,
+    ACL_Operation.CREATE,
+    ACL_Operation.DELETE,
+    ACL_Operation.DESCRIBE,
+    ACL_Operation.DESCRIBE_CONFIGS,
+    ACL_Operation.ALTER,
+    ACL_Operation.ALTER_CONFIGS,
+  ];
+
+  // Filter ACLs for this specific topic
+  const topicACLs = aclResources.filter(
+    (resource) =>
+      resource.resourceType === ACL_ResourceType.TOPIC &&
+      resource.resourceName === topicName &&
+      resource.resourcePatternType === ACL_ResourcePatternType.LITERAL
+  );
+
+  if (topicACLs.length === 0) {
+    return false;
+  }
+
+  // Get all operations that the user has ALLOW permissions for
+  const userAllowedOps = new Set<ACL_Operation>();
+  const principal = `User:${username}`;
+
+  for (const resource of topicACLs) {
+    for (const acl of resource.acls) {
+      if (acl.principal === principal && acl.permissionType === ACL_PermissionType.ALLOW) {
+        userAllowedOps.add(acl.operation);
+      }
+    }
+  }
+
+  // Check if user has all required operations
+  return requiredOps.every((op) => userAllowedOps.has(op));
 };
 
 export const configureUserPermissions = async (

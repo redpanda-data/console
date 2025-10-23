@@ -355,9 +355,11 @@ export const ConnectOnboardingWizard = ({
                       Previous
                     </Button>
                   )}
-                  <Button onClick={handleCancel} type="button" variant="outline">
-                    Cancel
-                  </Button>
+                  {!methods.isLast && (
+                    <Button onClick={handleCancel} type="button" variant="outline">
+                      Cancel
+                    </Button>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   {!methods.isLast && (

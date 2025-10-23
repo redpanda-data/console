@@ -146,7 +146,7 @@ export const wizardStepDefinitions = [
   },
   { id: WizardStep.ADD_OUTPUT, title: 'Add an output' },
   { id: WizardStep.ADD_TOPIC, title: 'Add a topic' },
-  { id: WizardStep.ADD_USER, title: 'Add credentials' },
+  { id: WizardStep.ADD_USER, title: 'Add permissions' },
   { id: WizardStep.CREATE_CONFIG, title: 'Edit pipeline' },
 ];
 

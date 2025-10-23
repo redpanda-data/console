@@ -68,6 +68,7 @@ export function Combobox({
   }, [options, inputValue, autocomplete]);
 
   const displayContent = useMemo(() => {
+    if(controlledValue && (!inputValue || inputValue === '')) return controlledValue;
     if (!inputValue) return placeholder;
 
     if (!bestMatchOption) {
@@ -145,7 +146,10 @@ export function Combobox({
   );
 
   const handleInputClick = useCallback(() => {
-    if (!open) setOpen(true);
+    if (!open) {
+      setOpen(true)
+      setInputValue('');
+    };
   }, [open]);
 
   const filteredOptions = useMemo(() => {
@@ -162,7 +166,7 @@ export function Combobox({
       <PopoverTrigger asChild>
         <Input
           placeholder={placeholder}
-          className="w-full shadow-none text-transparent placeholder:text-transparent caret-foreground relative selection:text-transparent"
+          className="w-full shadow-none text-transparent placeholder:!text-transparent caret-foreground relative selection:text-transparent"
           value={inputValue}
           containerClassName={className}
           onChange={handleInputChange}
