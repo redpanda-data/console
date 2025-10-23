@@ -21,11 +21,9 @@ import {
   ModalOverlay,
   Text,
 } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 import type { FC } from 'react';
 
 import { PayloadEncoding } from '../../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { uiState } from '../../../../../state/ui-state';
 import { Label } from '../../../../../utils/tsx-utils';
 import { SingleSelect } from '../../../../misc/select';
 
@@ -51,8 +49,11 @@ const payloadEncodingPairs = [
 export const DeserializersModal: FC<{
   getShowDialog: () => boolean;
   setShowDialog: (val: boolean) => void;
-}> = observer(({ getShowDialog, setShowDialog }) => {
-  const searchParams = uiState.topicSettings.searchParams;
+  keyDeserializer: PayloadEncoding;
+  valueDeserializer: PayloadEncoding;
+  setKeyDeserializer: (val: PayloadEncoding) => void;
+  setValueDeserializer: (val: PayloadEncoding) => void;
+}> = ({ getShowDialog, setShowDialog, keyDeserializer, valueDeserializer, setKeyDeserializer, setValueDeserializer }) => {
 
   return (
     <Modal
@@ -72,17 +73,17 @@ export const DeserializersModal: FC<{
           <Box>
             <Label text="Key Deserializer">
               <SingleSelect<PayloadEncoding>
-                onChange={(e) => (searchParams.keyDeserializer = e)}
+                onChange={setKeyDeserializer}
                 options={payloadEncodingPairs}
-                value={searchParams.keyDeserializer}
+                value={keyDeserializer}
               />
             </Label>
           </Box>
           <Label text="Value Deserializer">
             <SingleSelect<PayloadEncoding>
-              onChange={(e) => (searchParams.valueDeserializer = e)}
+              onChange={setValueDeserializer}
               options={payloadEncodingPairs}
-              value={searchParams.valueDeserializer}
+              value={valueDeserializer}
             />
           </Label>
         </ModalBody>
@@ -99,4 +100,4 @@ export const DeserializersModal: FC<{
       </ModalContent>
     </Modal>
   );
-});
+};

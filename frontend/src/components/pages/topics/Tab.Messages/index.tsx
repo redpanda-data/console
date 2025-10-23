@@ -233,7 +233,9 @@ async function loadLargeMessage(
   topicName: string,
   messagePartitionID: number,
   offset: number,
-  setMessages: React.Dispatch<React.SetStateAction<TopicMessage[]>>
+  setMessages: React.Dispatch<React.SetStateAction<TopicMessage[]>>,
+  keyDeserializer: PayloadEncoding,
+  valueDeserializer: PayloadEncoding
 ) {
   // Create a new search that looks for only this message specifically
   const search = createMessageSearch();
@@ -246,8 +248,8 @@ async function loadLargeMessage(
     topicName,
     includeRawPayload: true,
     ignoreSizeLimit: true,
-    keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
-    valueDeserializer: uiState.topicSettings.searchParams.valueDeserializer,
+    keyDeserializer: keyDeserializer,
+    valueDeserializer: valueDeserializer,
   };
   const result = await search.startSearch(searchReq);
 
@@ -352,6 +354,29 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
+  // Deserializer settings with URL state management
+  const [keyDeserializer, setKeyDeserializer] = useQueryStateWithCallback<PayloadEncoding>(
+    {
+      onUpdate: (val) => {
+        setSearchParams(props.topic.topicName, { keyDeserializer: val });
+      },
+      getDefaultValue: () => getSearchParams(props.topic.topicName)?.keyDeserializer ?? PayloadEncoding.UNSPECIFIED,
+    },
+    'kd',
+    parseAsInteger.withDefault(PayloadEncoding.UNSPECIFIED)
+  );
+
+  const [valueDeserializer, setValueDeserializer] = useQueryStateWithCallback<PayloadEncoding>(
+    {
+      onUpdate: (val) => {
+        setSearchParams(props.topic.topicName, { valueDeserializer: val });
+      },
+      getDefaultValue: () => getSearchParams(props.topic.topicName)?.valueDeserializer ?? PayloadEncoding.UNSPECIFIED,
+    },
+    'vd',
+    parseAsInteger.withDefault(PayloadEncoding.UNSPECIFIED)
+  );
+
   // Pagination state managed by nuqs
   const [pageIndex, setPageIndex] = useQueryStateWithCallback<number>(
     {
@@ -443,12 +468,15 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     const canUseFilters =
       (api.topicPermissions.get(props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
 
+    // Get current search params from Zustand store for filters
+    const currentSearchParams = getSearchParams(props.topic.topicName);
+
     let filterCode = '';
     if (canUseFilters) {
       const functionNames: string[] = [];
       const functions: string[] = [];
 
-      const filteredSearchParams = uiState.topicSettings.searchParams.filters.filter(
+      const filteredSearchParams = (currentSearchParams?.filters ?? []).filter(
         (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode
       );
 
@@ -473,12 +501,12 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       topicName: props.topic.topicName,
       partitionId: partitionID,
       startOffset,
-      startTimestamp: uiState.topicSettings.searchParams.startTimestamp,
+      startTimestamp: currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp,
       maxResults,
       filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
       includeRawPayload: true,
-      keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
-      valueDeserializer: uiState.topicSettings.searchParams.valueDeserializer,
+      keyDeserializer: keyDeserializer,
+      valueDeserializer: valueDeserializer,
     } as MessageSearchRequest;
 
     try {
@@ -512,13 +540,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       setSearchPhase(null);
       return [];
     }
-  }, [props.topic.topicName, partitionID, startOffset, maxResults]);
+  }, [props.topic.topicName, partitionID, startOffset, maxResults, getSearchParams, keyDeserializer, valueDeserializer]);
 
   // Convert searchFunc to useCallback
   const searchFunc = useCallback(
     (source: 'auto' | 'manual') => {
       // Create search params signature
-      const searchParams = `${startOffset} ${maxResults} ${partitionID} ${uiState.topicSettings.searchParams.startTimestamp} ${uiState.topicSettings.searchParams.keyDeserializer} ${uiState.topicSettings.searchParams.valueDeserializer}`;
+      const currentSearchParams = getSearchParams(props.topic.topicName);
+      const searchParams = `${startOffset} ${maxResults} ${partitionID} ${currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp} ${keyDeserializer} ${valueDeserializer}`;
 
       if (searchParams === currentSearchRunRef.current && source === 'auto') {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -560,7 +589,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         console.error('error in message search', { error: err });
       }
     },
-    [startOffset, maxResults, partitionID, executeMessageSearch]
+    [startOffset, maxResults, partitionID, executeMessageSearch, getSearchParams, props.topic.topicName, keyDeserializer, valueDeserializer]
   );
 
   // Auto search when parameters change
@@ -583,9 +612,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   const tsFormat = topicSettings?.previewTimestamps ?? 'default';
   const hasKeyTags = (topicSettings?.previewTags ?? []).filter((x) => x.isActive && x.searchInMessageKey).length > 0;
-
-  const valueDeserializer = topicSettings?.searchParams.valueDeserializer ?? PayloadEncoding.UNSPECIFIED;
-  const keyDeserializer = topicSettings?.searchParams.keyDeserializer ?? PayloadEncoding.UNSPECIFIED;
 
   const isValueDeserializerActive =
     valueDeserializer !== null && valueDeserializer !== undefined && valueDeserializer !== PayloadEncoding.UNSPECIFIED;
@@ -1124,7 +1150,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             subComponent={({ row: { original } }) => (
               <ExpandedMessage
                 loadLargeMessage={() =>
-                  loadLargeMessage(props.topic.topicName, original.partitionID, original.offset, setMessages)
+                  loadLargeMessage(props.topic.topicName, original.partitionID, original.offset, setMessages, keyDeserializer, valueDeserializer)
                 }
                 msg={original}
                 onCopyKey={(msg) => onCopyKey(msg, toast)}
@@ -1164,7 +1190,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             topicName={props.topic.topicName}
           />
 
-          <DeserializersModal getShowDialog={() => showDeserializersModal} setShowDialog={setShowDeserializersModal} />
+          <DeserializersModal 
+            getShowDialog={() => showDeserializersModal} 
+            setShowDialog={setShowDeserializersModal} 
+            keyDeserializer={keyDeserializer}
+            valueDeserializer={valueDeserializer}
+            setKeyDeserializer={setKeyDeserializer}
+            setValueDeserializer={setValueDeserializer}
+          />
         </>
       )}
     </>
