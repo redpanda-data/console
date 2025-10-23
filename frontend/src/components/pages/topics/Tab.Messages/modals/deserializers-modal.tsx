@@ -53,51 +53,55 @@ export const DeserializersModal: FC<{
   valueDeserializer: PayloadEncoding;
   setKeyDeserializer: (val: PayloadEncoding) => void;
   setValueDeserializer: (val: PayloadEncoding) => void;
-}> = ({ getShowDialog, setShowDialog, keyDeserializer, valueDeserializer, setKeyDeserializer, setValueDeserializer }) => {
-
-  return (
-    <Modal
-      isOpen={getShowDialog()}
-      onClose={() => {
-        setShowDialog(false);
-      }}
-    >
-      <ModalOverlay />
-      <ModalContent minW="xl">
-        <ModalHeader>Deserialize</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody display="flex" flexDirection="column" gap={4}>
-          <Text>
-            Redpanda attempts to automatically detect a deserialization strategy. You can choose one manually here.
-          </Text>
-          <Box>
-            <Label text="Key Deserializer">
-              <SingleSelect<PayloadEncoding>
-                onChange={setKeyDeserializer}
-                options={payloadEncodingPairs}
-                value={keyDeserializer}
-              />
-            </Label>
-          </Box>
-          <Label text="Value Deserializer">
+}> = ({
+  getShowDialog,
+  setShowDialog,
+  keyDeserializer,
+  valueDeserializer,
+  setKeyDeserializer,
+  setValueDeserializer,
+}) => (
+  <Modal
+    isOpen={getShowDialog()}
+    onClose={() => {
+      setShowDialog(false);
+    }}
+  >
+    <ModalOverlay />
+    <ModalContent minW="xl">
+      <ModalHeader>Deserialize</ModalHeader>
+      <ModalCloseButton />
+      <ModalBody display="flex" flexDirection="column" gap={4}>
+        <Text>
+          Redpanda attempts to automatically detect a deserialization strategy. You can choose one manually here.
+        </Text>
+        <Box>
+          <Label text="Key Deserializer">
             <SingleSelect<PayloadEncoding>
-              onChange={setValueDeserializer}
+              onChange={setKeyDeserializer}
               options={payloadEncodingPairs}
-              value={valueDeserializer}
+              value={keyDeserializer}
             />
           </Label>
-        </ModalBody>
-        <ModalFooter gap={2}>
-          <Button
-            colorScheme="red"
-            onClick={() => {
-              setShowDialog(false);
-            }}
-          >
-            Close
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-  );
-};
+        </Box>
+        <Label text="Value Deserializer">
+          <SingleSelect<PayloadEncoding>
+            onChange={setValueDeserializer}
+            options={payloadEncodingPairs}
+            value={valueDeserializer}
+          />
+        </Label>
+      </ModalBody>
+      <ModalFooter gap={2}>
+        <Button
+          colorScheme="red"
+          onClick={() => {
+            setShowDialog(false);
+          }}
+        >
+          Close
+        </Button>
+      </ModalFooter>
+    </ModalContent>
+  </Modal>
+);

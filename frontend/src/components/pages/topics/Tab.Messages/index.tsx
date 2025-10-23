@@ -229,14 +229,23 @@ function onCopyKey(original: TopicMessage, toast: ReturnType<typeof useToast>) {
     .catch(navigatorClipboardErrorHandler);
 }
 
-async function loadLargeMessage(
-  topicName: string,
-  messagePartitionID: number,
-  offset: number,
-  setMessages: React.Dispatch<React.SetStateAction<TopicMessage[]>>,
-  keyDeserializer: PayloadEncoding,
-  valueDeserializer: PayloadEncoding
-) {
+interface LoadLargeMessageParams {
+  topicName: string;
+  messagePartitionID: number;
+  offset: number;
+  setMessages: React.Dispatch<React.SetStateAction<TopicMessage[]>>;
+  keyDeserializer: PayloadEncoding;
+  valueDeserializer: PayloadEncoding;
+}
+
+async function loadLargeMessage({
+  topicName,
+  messagePartitionID,
+  offset,
+  setMessages,
+  keyDeserializer,
+  valueDeserializer,
+}: LoadLargeMessageParams) {
   // Create a new search that looks for only this message specifically
   const search = createMessageSearch();
   const searchReq: MessageSearchRequest = {
@@ -248,8 +257,8 @@ async function loadLargeMessage(
     topicName,
     includeRawPayload: true,
     ignoreSizeLimit: true,
-    keyDeserializer: keyDeserializer,
-    valueDeserializer: valueDeserializer,
+    keyDeserializer,
+    valueDeserializer,
   };
   const result = await search.startSearch(searchReq);
 
@@ -505,8 +514,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       maxResults,
       filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
       includeRawPayload: true,
-      keyDeserializer: keyDeserializer,
-      valueDeserializer: valueDeserializer,
+      keyDeserializer,
+      valueDeserializer,
     } as MessageSearchRequest;
 
     try {
@@ -540,7 +549,15 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       setSearchPhase(null);
       return [];
     }
-  }, [props.topic.topicName, partitionID, startOffset, maxResults, getSearchParams, keyDeserializer, valueDeserializer]);
+  }, [
+    props.topic.topicName,
+    partitionID,
+    startOffset,
+    maxResults,
+    getSearchParams,
+    keyDeserializer,
+    valueDeserializer,
+  ]);
 
   // Convert searchFunc to useCallback
   const searchFunc = useCallback(
@@ -589,7 +606,16 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         console.error('error in message search', { error: err });
       }
     },
-    [startOffset, maxResults, partitionID, executeMessageSearch, getSearchParams, props.topic.topicName, keyDeserializer, valueDeserializer]
+    [
+      startOffset,
+      maxResults,
+      partitionID,
+      executeMessageSearch,
+      getSearchParams,
+      props.topic.topicName,
+      keyDeserializer,
+      valueDeserializer,
+    ]
   );
 
   // Auto search when parameters change
@@ -1150,7 +1176,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             subComponent={({ row: { original } }) => (
               <ExpandedMessage
                 loadLargeMessage={() =>
-                  loadLargeMessage(props.topic.topicName, original.partitionID, original.offset, setMessages, keyDeserializer, valueDeserializer)
+                  loadLargeMessage({
+                    topicName: props.topic.topicName,
+                    messagePartitionID: original.partitionID,
+                    offset: original.offset,
+                    setMessages,
+                    keyDeserializer,
+                    valueDeserializer,
+                  })
                 }
                 msg={original}
                 onCopyKey={(msg) => onCopyKey(msg, toast)}
@@ -1190,13 +1223,13 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             topicName={props.topic.topicName}
           />
 
-          <DeserializersModal 
-            getShowDialog={() => showDeserializersModal} 
-            setShowDialog={setShowDeserializersModal} 
+          <DeserializersModal
+            getShowDialog={() => showDeserializersModal}
             keyDeserializer={keyDeserializer}
-            valueDeserializer={valueDeserializer}
             setKeyDeserializer={setKeyDeserializer}
+            setShowDialog={setShowDeserializersModal}
             setValueDeserializer={setValueDeserializer}
+            valueDeserializer={valueDeserializer}
           />
         </>
       )}
