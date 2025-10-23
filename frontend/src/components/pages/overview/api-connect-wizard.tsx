@@ -21,7 +21,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAPIWizardStore } from 'state/api-wizard-store';
 import { uiState } from 'state/ui-state';
 import {
-  isAnalyticsEnabled,
   serverlessApiOnboardingWizardExistingTopicChangeEvent,
   serverlessApiOnboardingWizardExistingUserChangeEvent,
 } from 'utils/analytics';
@@ -158,12 +157,10 @@ export const APIConnectWizard = () => {
         const result = await addTopicStepRef.current?.triggerSubmit();
         if (result?.success) {
           setTopicName(result.data?.topicName);
-          if (isAnalyticsEnabled()) {
-            captureUserEvent?.(serverlessApiOnboardingWizardExistingTopicChangeEvent, {
-              topicName: result.data?.topicName,
-              connectionName,
-            });
-          }
+          captureUserEvent?.(serverlessApiOnboardingWizardExistingTopicChangeEvent, {
+            topicName: result.data?.topicName,
+            connectionName,
+          });
         }
         handleStepResult(result, methods.next);
         break;
@@ -173,13 +170,11 @@ export const APIConnectWizard = () => {
         if (result?.success) {
           setUsername(result.data?.username);
           setSaslMechanism(result.data?.saslMechanism);
-          if (isAnalyticsEnabled()) {
-            captureUserEvent?.(serverlessApiOnboardingWizardExistingUserChangeEvent, {
-              username: result.data?.username,
-              saslMechanism: result.data?.saslMechanism,
-              connectionName,
-            });
-          }
+          captureUserEvent?.(serverlessApiOnboardingWizardExistingUserChangeEvent, {
+            username: result.data?.username,
+            saslMechanism: result.data?.saslMechanism,
+            connectionName,
+          });
         }
         handleStepResult(result, methods.next);
         break;

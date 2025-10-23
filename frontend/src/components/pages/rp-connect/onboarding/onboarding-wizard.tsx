@@ -20,7 +20,6 @@ import {
 } from 'state/onboarding-wizard-store';
 import { uiState } from 'state/ui-state';
 import {
-  isAnalyticsEnabled,
   rpcnOnboardingWizardExistingTopicChangeEvent,
   rpcnOnboardingWizardExistingUserChangeEvent,
   rpcnOnboardingWizardInputConnectorChangeEvent,
@@ -153,13 +152,11 @@ export const ConnectOnboardingWizard = ({
         const connectionName = result?.data?.connectionName;
         const connectionType = result?.data?.connectionType;
 
-        if (isAnalyticsEnabled()) {
-          captureUserEvent?.(rpcnOnboardingWizardInputConnectorChangeEvent, {
-            connectionName,
-            connectionType,
-            isServerlessGetStartedUser,
-          });
-        }
+        captureUserEvent?.(rpcnOnboardingWizardInputConnectorChangeEvent, {
+          connectionName,
+          connectionType,
+          isServerlessGetStartedUser,
+        });
 
         if (connectionType === 'custom') {
           handleSkipToCreatePipeline(methods);
@@ -198,13 +195,11 @@ export const ConnectOnboardingWizard = ({
         const connectionName = result?.data?.connectionName;
         const connectionType = result?.data?.connectionType;
 
-        if (isAnalyticsEnabled()) {
-          captureUserEvent?.(rpcnOnboardingWizardOutputConnectorChangeEvent, {
-            connectionName,
-            connectionType,
-            isServerlessGetStartedUser,
-          });
-        }
+        captureUserEvent?.(rpcnOnboardingWizardOutputConnectorChangeEvent, {
+          connectionName,
+          connectionType,
+          isServerlessGetStartedUser,
+        });
 
         if (connectionType === 'custom') {
           handleSkipToCreatePipeline(methods);
@@ -247,12 +242,11 @@ export const ConnectOnboardingWizard = ({
         const result = await addTopicStepRef.current?.triggerSubmit();
         if (result?.success && result.data) {
           setTopicData({ topicName: result.data.topicName });
-          if (isAnalyticsEnabled()) {
-            captureUserEvent?.(rpcnOnboardingWizardExistingTopicChangeEvent, {
-              topicName: result.data.topicName,
-              isServerlessGetStartedUser,
-            });
-          }
+
+          captureUserEvent?.(rpcnOnboardingWizardExistingTopicChangeEvent, {
+            topicName: result.data.topicName,
+            isServerlessGetStartedUser,
+          });
         }
         handleStepResult(result, methods.next);
         break;
@@ -264,13 +258,11 @@ export const ConnectOnboardingWizard = ({
             username: result.data.username,
             saslMechanism: result.data.saslMechanism,
           });
-          if (isAnalyticsEnabled()) {
-            captureUserEvent?.(rpcnOnboardingWizardExistingUserChangeEvent, {
-              username: result.data.username,
-              saslMechanism: result.data.saslMechanism,
-              isServerlessGetStartedUser,
-            });
-          }
+          captureUserEvent?.(rpcnOnboardingWizardExistingUserChangeEvent, {
+            username: result.data.username,
+            saslMechanism: result.data.saslMechanism,
+            isServerlessGetStartedUser,
+          });
         }
         handleStepResult(result, methods.next);
         break;
