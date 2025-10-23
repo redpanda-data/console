@@ -239,6 +239,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
   const keySchemaName = watch('key.schemaName');
   const valueSchemaName = watch('value.schemaName');
 
+  // biome-ignore lint/complexity: This will be refactored anyway as part of MobX removal
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     const req = create(PublishMessageRequestSchema);
     req.topic = topicName;
@@ -282,10 +283,13 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
       }
       req.key.data = encodeData(data.key.data, data.key.encoding);
       req.key.encoding = data.key.encoding;
-      
+
       // Determine schemaId from schemaVersion if schema is selected and encoding is Avro or Protobuf
-      if ((data.key.encoding === PayloadEncoding.AVRO || data.key.encoding === PayloadEncoding.PROTOBUF) && 
-          data.key.schemaName && data.key.schemaVersion) {
+      if (
+        (data.key.encoding === PayloadEncoding.AVRO || data.key.encoding === PayloadEncoding.PROTOBUF) &&
+        data.key.schemaName &&
+        data.key.schemaVersion
+      ) {
         const schemaDetail = api.schemaDetails.get(data.key.schemaName);
         if (schemaDetail) {
           const selectedSchema = schemaDetail.schemas.find(
@@ -296,7 +300,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
           }
         }
       }
-      
+
       req.key.index = data.key.protobufIndex;
     }
 
@@ -312,10 +316,13 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
         return;
       }
       req.value.encoding = data.value.encoding;
-      
+
       // Determine schemaId from schemaVersion if schema is selected and encoding is Avro or Protobuf
-      if ((data.value.encoding === PayloadEncoding.AVRO || data.value.encoding === PayloadEncoding.PROTOBUF) && 
-          data.value.schemaName && data.value.schemaVersion) {
+      if (
+        (data.value.encoding === PayloadEncoding.AVRO || data.value.encoding === PayloadEncoding.PROTOBUF) &&
+        data.value.schemaName &&
+        data.value.schemaVersion
+      ) {
         const schemaDetail = api.schemaDetails.get(data.value.schemaName);
         if (schemaDetail) {
           const selectedSchema = schemaDetail.schemas.find(
@@ -326,7 +333,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
           }
         }
       }
-      
+
       req.value.index = data.value.protobufIndex;
     }
 
