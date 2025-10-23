@@ -57,7 +57,7 @@ export const ConnectTile = ({
   const content = (
     <ChoiceboxItem
       checked={checked}
-      className={cn('relative h-full')}
+      className={cn('relative h-[78px]')}
       key={uniqueKey}
       onClick={onChange}
       value={component.name}
