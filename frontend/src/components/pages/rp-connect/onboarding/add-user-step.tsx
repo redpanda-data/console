@@ -29,7 +29,6 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Heading, Link, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
-import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
 import { CircleAlert, RefreshCcw, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
@@ -406,7 +405,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                     </AlertDescription>
                   </Alert>
                 )}
-              {!existingUserSelected && isLoading && <WaitingRedpanda />}
+
               {!(existingUserSelected || isLoading) && userSelectionType === CreatableSelectionOptions.CREATE && (
                 <>
                   <FormField
