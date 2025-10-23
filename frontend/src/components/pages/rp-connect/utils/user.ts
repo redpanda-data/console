@@ -2,7 +2,7 @@ import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { CreateSecretRequestSchema as CreateSecretRequestSchemaConsole } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import type { useLegacyCreateACLMutation } from 'react-query/api/acl';
+import type { useCreateACLMutation } from 'react-query/api/acl';
 import type { useCreateSecretMutation } from 'react-query/api/secret';
 import type { useCreateUserMutation } from 'react-query/api/user';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -15,6 +15,7 @@ import {
   ACL_ResourcePatternType,
   ACL_ResourceType,
   CreateACLRequestSchema,
+  type ListACLsResponse_Resource,
 } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { CreateUserRequestSchema, SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
 import { convertToScreamingSnakeCase } from '../types/constants';
@@ -52,10 +53,81 @@ export const createTopicSuperuserACLs = (topicName: string, username: string) =>
   }));
 };
 
+export interface TopicPermissionCheck {
+  hasPermissions: ACL_Operation[];
+  missingPermissions: ACL_Operation[];
+}
+
+export const getACLOperationName = (operation: ACL_Operation): string => {
+  switch (operation) {
+    case ACL_Operation.READ:
+      return 'READ';
+    case ACL_Operation.WRITE:
+      return 'WRITE';
+    case ACL_Operation.CREATE:
+      return 'CREATE';
+    case ACL_Operation.DELETE:
+      return 'DELETE';
+    case ACL_Operation.ALTER:
+      return 'ALTER';
+    case ACL_Operation.DESCRIBE:
+      return 'DESCRIBE';
+    case ACL_Operation.ALL:
+      return 'ALL';
+    case ACL_Operation.DESCRIBE_CONFIGS:
+      return 'DESCRIBE_CONFIGS';
+    case ACL_Operation.ALTER_CONFIGS:
+      return 'ALTER_CONFIGS';
+    case ACL_Operation.CLUSTER_ACTION:
+      return 'CLUSTER_ACTION';
+    case ACL_Operation.IDEMPOTENT_WRITE:
+      return 'IDEMPOTENT_WRITE';
+    default:
+      return 'UNKNOWN';
+  }
+};
+
+export const checkUserHasTopicReadWritePermissions = (
+  aclResources: ListACLsResponse_Resource[],
+  topicName: string,
+  username: string
+): TopicPermissionCheck => {
+  const requiredOps = [ACL_Operation.READ, ACL_Operation.WRITE];
+
+  // Filter ACLs for this specific topic
+  const topicACLs = aclResources.filter(
+    (resource) =>
+      resource.resourceType === ACL_ResourceType.TOPIC &&
+      resource.resourceName === topicName &&
+      resource.resourcePatternType === ACL_ResourcePatternType.LITERAL
+  );
+
+  // Get all operations that the user has ALLOW permissions for
+  const userAllowedOps = new Set<ACL_Operation>();
+  const principal = `User:${username}`;
+
+  for (const resource of topicACLs) {
+    for (const acl of resource.acls) {
+      if (acl.principal === principal && acl.permissionType === ACL_PermissionType.ALLOW) {
+        userAllowedOps.add(acl.operation);
+      }
+    }
+  }
+
+  // Determine which permissions the user has and which are missing
+  const hasPermissions = requiredOps.filter((op) => userAllowedOps.has(op));
+  const missingPermissions = requiredOps.filter((op) => !userAllowedOps.has(op));
+
+  return {
+    hasPermissions,
+    missingPermissions,
+  };
+};
+
 export const configureUserPermissions = async (
   topicName: string,
   username: string,
-  createACLMutation: ReturnType<typeof useLegacyCreateACLMutation>
+  createACLMutation: ReturnType<typeof useCreateACLMutation>
 ): Promise<OperationResult> => {
   try {
     const aclConfigs = createTopicSuperuserACLs(topicName, username);

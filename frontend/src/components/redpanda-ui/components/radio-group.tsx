@@ -10,12 +10,12 @@ type RadioGroupProps = React.ComponentProps<typeof RadioGroupPrimitive.Root> & {
   testId?: string;
 };
 
-function RadioGroup({ className, testId, ...props }: RadioGroupProps) {
+function RadioGroup({ className, orientation = 'vertical', testId, ...props }: RadioGroupProps) {
   return (
     <RadioGroupPrimitive.Root
       data-slot="radio-group"
       data-testid={testId}
-      className={cn('grid gap-2.5', className)}
+      className={cn('grid gap-2.5', orientation === 'horizontal' && 'grid-cols-2', className)}
       {...props}
     />
   );
@@ -29,7 +29,7 @@ function RadioGroupIndicator({ className, transition, ...props }: RadioGroupIndi
   return (
     <RadioGroupPrimitive.Indicator
       data-slot="radio-group-indicator"
-      className={cn('flex items-center justify-center', className)}
+      className={cn('flex items-center justify-center -mt-[3px]', className)}
       {...props}
     >
       <AnimatePresence>

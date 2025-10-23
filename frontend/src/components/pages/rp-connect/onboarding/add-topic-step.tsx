@@ -4,9 +4,20 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Combobox, type ComboboxOption } from 'components/redpanda-ui/components/combobox';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from 'components/redpanda-ui/components/form';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
+import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
 import { Heading } from 'components/redpanda-ui/components/typography';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -25,6 +36,8 @@ import {
   type AddTopicFormData,
   addTopicFormSchema,
   type BaseStepRef,
+  CreatableSelectionOptions,
+  type CreatableSelectionType,
   type StepSubmissionResult,
 } from '../types/wizard';
 import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FORM_DEFAULTS } from '../utils/topic';
@@ -48,6 +61,9 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
     );
 
     const [topicOptions, setTopicOptions] = useState<ComboboxOption[]>(initialTopicOptions);
+    const [topicSelectionType, setTopicSelectionType] = useState<CreatableSelectionType>(
+      topicOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
+    );
 
     const createTopicMutation = useCreateTopicMutation();
 
@@ -74,7 +90,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
 
     const watchedTopicName = form.watch('topicName');
 
-    const existingTopicBeingEdited = useMemo(() => {
+    const existingTopicSelected = useMemo(() => {
       // Only check if the CURRENT form topic name matches an existing topic
       if (!watchedTopicName) {
         return undefined;
@@ -83,27 +99,27 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
     }, [watchedTopicName, topicList]);
 
     const { data: topicConfig } = useTopicConfigQuery(
-      existingTopicBeingEdited?.topicName || '',
-      !isFalsy(existingTopicBeingEdited?.topicName)
+      existingTopicSelected?.topicName || '',
+      !isFalsy(existingTopicSelected?.topicName)
     );
 
     useEffect(() => {
-      if (existingTopicBeingEdited) {
+      if (existingTopicSelected) {
         if (topicConfig && !topicConfig.error) {
-          const allTopicValues = parseTopicConfigFromExisting(existingTopicBeingEdited, topicConfig);
+          const allTopicValues = parseTopicConfigFromExisting(existingTopicSelected, topicConfig);
           form.reset(allTopicValues, { keepDefaultValues: false });
         } else {
-          form.setValue('topicName', existingTopicBeingEdited.topicName, {
+          form.setValue('topicName', existingTopicSelected.topicName, {
             shouldDirty: false,
           });
         }
       }
-    }, [existingTopicBeingEdited, topicConfig, form]);
+    }, [existingTopicSelected, topicConfig, form]);
 
     const handleSubmit = useCallback(
       async (data: AddTopicFormData): Promise<StepSubmissionResult<AddTopicFormData>> => {
         try {
-          if (existingTopicBeingEdited) {
+          if (existingTopicSelected) {
             return {
               success: true,
               message: `Using existing topic "${data.topicName}"`,
@@ -159,12 +175,20 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
           };
         }
       },
-      [existingTopicBeingEdited, createTopicMutation]
+      [existingTopicSelected, createTopicMutation]
     );
 
-    const handleCreateTopicOption = useCallback((value: string) => {
-      setTopicOptions((prev) => [...prev, { value, label: value }]);
-    }, []);
+    const handleTopicSelectionTypeChange = useCallback(
+      (value: string) => {
+        setTopicSelectionType(value as CreatableSelectionType);
+        form.setValue('topicName', '', { shouldDirty: true });
+      },
+      [form]
+    );
+
+    const handleClearTopicName = useCallback(() => {
+      form.setValue('topicName', '', { shouldDirty: true });
+    }, [form]);
 
     useImperativeHandle(ref, () => ({
       triggerSubmit: async () => {
@@ -193,30 +217,70 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
             writing data to it (producers) and reading data from it (consumers)
           </CardDescription>
         </CardHeader>
-        <CardContent className="max-h-[35vh] min-h-[300px] overflow-y-auto">
+        <CardContent className="min-h-[300px]">
           <Form {...form}>
-            <div className="max-w-2xl space-y-6">
-              <FormField
-                control={form.control}
-                name="topicName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Topic name</FormLabel>
-                    <FormControl>
-                      <Combobox
-                        {...field}
-                        className="max-w-[300px]"
-                        creatable
-                        disabled={isLoading}
-                        onCreateOption={handleCreateTopicOption}
-                        options={topicOptions}
-                        placeholder="Select or create a topic..."
+            <div className="mt-4 max-w-2xl space-y-6">
+              <div className="flex flex-col gap-2">
+                <FormLabel>Topic name</FormLabel>
+                <FormDescription>
+                  Choose an existing topic to read or write data from, or create a new topic.
+                </FormDescription>
+                <div className="flex gap-2">
+                  <RadioGroup
+                    className="max-h-8 min-w-[220px]"
+                    defaultValue={topicSelectionType}
+                    disabled={isLoading}
+                    onValueChange={handleTopicSelectionTypeChange}
+                    orientation="horizontal"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        id={CreatableSelectionOptions.EXISTING}
+                        value={CreatableSelectionOptions.EXISTING}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <Label htmlFor={CreatableSelectionOptions.EXISTING}>Existing topic</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem id={CreatableSelectionOptions.CREATE} value={CreatableSelectionOptions.CREATE} />
+                      <Label htmlFor={CreatableSelectionOptions.CREATE}>New topic</Label>
+                    </div>
+                  </RadioGroup>
+
+                  <FormField
+                    control={form.control}
+                    name="topicName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          {topicSelectionType === CreatableSelectionOptions.EXISTING ? (
+                            <Combobox
+                              {...field}
+                              className="w-[300px]"
+                              disabled={isLoading}
+                              options={topicOptions}
+                              placeholder="Select a topic"
+                            />
+                          ) : (
+                            <Input
+                              {...field}
+                              className="w-[300px]"
+                              disabled={isLoading}
+                              placeholder="Enter a topic name"
+                            />
+                          )}
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {watchedTopicName !== '' && watchedTopicName.length > 0 && (
+                    <Button onClick={handleClearTopicName} size="icon" variant="ghost">
+                      <XIcon size={16} />
+                    </Button>
+                  )}
+                </div>
+              </div>
 
               <Collapsible onOpenChange={setShowAdvancedSettings} open={showAdvancedSettings}>
                 <CollapsibleTrigger asChild>
@@ -229,7 +293,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                   <AdvancedTopicSettings
                     disabled={isLoading}
                     form={form}
-                    isExistingTopic={Boolean(existingTopicBeingEdited)}
+                    isExistingTopic={Boolean(existingTopicSelected)}
                   />
                 </CollapsibleContent>
               </Collapsible>

@@ -15,7 +15,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetOnboardingCodeSnippetQuery } from 'react-query/api/onboarding';
 import { useGetServerlessClusterQuery } from 'react-query/api/serverless';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
-import { useLegacyListUsersQuery } from 'react-query/api/user';
+import { useListUsersQuery } from 'react-query/api/user';
+import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { useNavigate } from 'react-router-dom';
 import { useAPIWizardStore } from 'state/api-wizard-store';
 import { uiState } from 'state/ui-state';
@@ -142,8 +143,13 @@ export const APIConnectWizard = () => {
 
   const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
     hideInternalTopics: true,
+    staleTime: LONG_LIVED_CACHE_STALE_TIME,
+    refetchOnWindowFocus: false,
   });
-  const { data: usersList } = useLegacyListUsersQuery();
+  const { data: usersList } = useListUsersQuery(undefined, {
+    staleTime: LONG_LIVED_CACHE_STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
 
   const handleNext = async (methods: APIWizardStepperSteps) => {
     switch (methods.current.id) {
@@ -232,7 +238,7 @@ export const APIConnectWizard = () => {
                       defaultUsername={username}
                       ref={addUserStepRef}
                       topicName={topicName}
-                      usersList={usersList?.users}
+                      usersList={usersList?.users ?? []}
                     />
                   ),
                   [APIWizardStep.CONNECT_CLUSTER]: () => (

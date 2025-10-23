@@ -9,7 +9,8 @@ import { AnimatePresence } from 'motion/react';
 import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
-import { useLegacyListUsersQuery } from 'react-query/api/user';
+import { useListUsersQuery } from 'react-query/api/user';
+import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useOnboardingTopicDataStore,
@@ -106,8 +107,13 @@ export const ConnectOnboardingWizard = ({
 
   const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
     hideInternalTopics: true,
+    staleTime: LONG_LIVED_CACHE_STALE_TIME,
+    refetchOnWindowFocus: false,
   });
-  const { data: usersList } = useLegacyListUsersQuery();
+  const { data: usersList } = useListUsersQuery(undefined, {
+    staleTime: LONG_LIVED_CACHE_STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
 
   useEffect(() => {
     runInAction(() => {
@@ -329,7 +335,7 @@ export const ConnectOnboardingWizard = ({
                         key="add-user-step"
                         ref={addUserStepRef}
                         topicName={persistedTopicName}
-                        usersList={usersList?.users}
+                        usersList={usersList?.users ?? []}
                       />
                     ),
                     [WizardStep.CREATE_CONFIG]: () => (
@@ -355,9 +361,11 @@ export const ConnectOnboardingWizard = ({
                       Previous
                     </Button>
                   )}
-                  <Button onClick={handleCancel} type="button" variant="outline">
-                    Cancel
-                  </Button>
+                  {!methods.isLast && (
+                    <Button onClick={handleCancel} type="button" variant="outline">
+                      Cancel
+                    </Button>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   {!methods.isLast && (

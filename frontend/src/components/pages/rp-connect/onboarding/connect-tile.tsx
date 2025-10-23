@@ -8,23 +8,10 @@ import { CheckIcon, Waypoints } from 'lucide-react';
 import { AnimatePresence, type MotionProps, motion } from 'motion/react';
 
 import { ConnectorLogo } from './connector-logo';
-import type { ConnectComponentSpec, ConnectComponentStatus } from '../types/schema';
+import type { ConnectComponentSpec } from '../types/schema';
 
 const logoStyle = {
   height: '24px',
-};
-
-const getBadgeVariantForStatus = (status: ConnectComponentStatus) => {
-  switch (status) {
-    case 'deprecated':
-      return 'red';
-    case 'experimental':
-      return 'orange';
-    case 'beta':
-      return 'amber';
-    default:
-      return 'default';
-  }
 };
 
 const getLogoForComponent = (component: ConnectComponentSpec) => {
@@ -70,19 +57,23 @@ export const ConnectTile = ({
   const content = (
     <ChoiceboxItem
       checked={checked}
-      className={cn('relative h-full')}
+      className={cn('relative h-[78px]')}
       key={uniqueKey}
       onClick={onChange}
       value={component.name}
     >
       {/* padding right to compensate for the absolute position of the logo */}
-      <div className="relative flex w-full items-center gap-2 pr-8">
-        <Text className="truncate font-medium">{component.name}</Text>
-        {component.status && component.status !== 'stable' && (
-          <Badge size="sm" variant={getBadgeVariantForStatus(component.status)}>
-            {component.status}
-          </Badge>
-        )}
+      <div className="relative flex h-full w-full items-center gap-2 pr-8">
+        <div className="flex flex-col gap-1">
+          <Text className="truncate font-medium">{component.name}</Text>
+          <span>
+            {component.status && component.status !== 'stable' && component.name !== 'redpanda' && (
+              <Badge size="sm" variant="gray">
+                {component.status}
+              </Badge>
+            )}
+          </span>
+        </div>
         <div className="-translate-y-1/2 absolute top-1/2 right-0">
           <AnimatePresence mode="wait">
             {checked ? (

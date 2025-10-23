@@ -96,3 +96,10 @@ export type MinimalUserData = {
   username: string;
   saslMechanism: (typeof SASL_MECHANISMS)[number];
 };
+
+export const CreatableSelectionOptions = {
+  EXISTING: 'existing',
+  CREATE: 'create',
+} as const;
+
+export type CreatableSelectionType = (typeof CreatableSelectionOptions)[keyof typeof CreatableSelectionOptions];
