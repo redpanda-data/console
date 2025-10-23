@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, ChevronsUpDown } from 'lucide-react';
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from './command';
 import { Input, InputEnd } from './input';
@@ -13,9 +13,9 @@ export type ComboboxOption = {
   label: string;
 };
 
-export function Combobox({
+export const Combobox = memo(({
   options,
-  value: controlledValue,
+  value: controlledValue = '',
   onChange,
   placeholder,
   disabled,
@@ -36,17 +36,28 @@ export function Combobox({
   /** Callback function to create a new option */
   onCreateOption?: (value: string) => void;
   className?: string;
-}) {
+}) => {
   const [open, setOpen] = useState(false);
-  const [inputValue, setInputValue] = useState(controlledValue ?? '');
+  const [inputValue, setInputValue] = useState(controlledValue);
   const inputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
+
+  // Sync inputValue when controlled value changes externally
+  useEffect(() => {
+    setInputValue(controlledValue);
+  }, [controlledValue]);
 
   // Only focus when popover opens, not when it closes
   useEffect(() => {
     if (inputRef.current && open) {
       // Small timeout to ensure DOM is ready
-      setTimeout(() => inputRef.current?.focus(), 0);
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          const length = inputRef.current.value.length;
+          inputRef.current.setSelectionRange(length, length);
+        }
+      }, 0);
     }
   }, [open]);
 
@@ -68,8 +79,7 @@ export function Combobox({
   }, [options, inputValue, autocomplete]);
 
   const displayContent = useMemo(() => {
-    if(controlledValue && (!inputValue || inputValue === '')) return controlledValue;
-    if (!inputValue) return placeholder;
+    if (!inputValue || inputValue === '') return placeholder;
 
     if (!bestMatchOption) {
       return inputValue;
@@ -108,6 +118,18 @@ export function Combobox({
     onCreateOption?.(inputValue);
   }, [inputValue, onChange, onCreateOption]);
 
+  const handleBlur = useCallback(() => {
+    if (inputValue !== controlledValue) {
+      const matchesOption = options.some(
+        (opt) => opt.value === inputValue || opt.label === inputValue
+      );
+      
+      if (!creatable || (!matchesOption && inputValue.trim() === '')) {
+        setInputValue(controlledValue ?? '');
+      }
+    }
+  }, [inputValue, controlledValue, options, creatable]);
+
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
       if (event.key === 'ArrowRight' || event.key === 'Tab') {
@@ -121,12 +143,19 @@ export function Combobox({
       } else if (event.key === 'Enter') {
         if (creatable && inputValue.length > 0 && !options.some((option) => option.value === inputValue)) {
           handleCreatableSubmit();
+        } else if (bestMatchOption) {
+          onChange(bestMatchOption.value);
+          setOpen(false);
+          setInputValue(bestMatchOption.value);
+        } else if (!creatable) {
+          setInputValue(controlledValue ?? '');
+          setOpen(false);
         }
       } else if (event.key === 'Escape') {
         setOpen(false);
       }
     },
-    [bestMatchOption, onChange, creatable, inputValue, options, handleCreatableSubmit],
+    [bestMatchOption, onChange, creatable, inputValue, options, handleCreatableSubmit, controlledValue],
   );
 
   const handlePopoverOpenChange = useCallback(
@@ -172,6 +201,7 @@ export function Combobox({
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onClick={handleInputClick}
+          onBlur={handleBlur}
           role="combobox"
           autoComplete="off"
           autoCorrect="off"
@@ -203,6 +233,9 @@ export function Combobox({
         style={{
           width: inputRef.current?.clientWidth,
         }}
+        onMouseDown={(e) => {
+          e.preventDefault();
+        }}
       >
         <Command size="full" loop shouldFilter={false}>
           <CommandList id={listId}>
@@ -233,4 +266,4 @@ export function Combobox({
       </PopoverContent>
     </Popover>
   );
-}
+});

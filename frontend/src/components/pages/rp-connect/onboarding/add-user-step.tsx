@@ -28,9 +28,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
+import { Heading, Link, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
-import { CircleAlert, RefreshCcw } from 'lucide-react';
+import { CircleAlert, RefreshCcw, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -39,7 +39,7 @@ import { SASL_MECHANISMS } from 'utils/user';
 
 import { listACLs } from '../../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import type { ListUsersResponse_User } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
-import { useLegacyCreateACLMutation, useLegacyListACLsQuery } from '../../../../react-query/api/acl';
+import { useCreateACLMutation, useListACLsQuery } from '../../../../react-query/api/acl';
 import { useCreateSecretMutation } from '../../../../react-query/api/secret';
 import { useCreateUserMutation } from '../../../../react-query/api/user';
 import type { BaseStepRef, OperationResult, StepSubmissionResult } from '../types/wizard';
@@ -50,11 +50,12 @@ import {
   type CreatableSelectionType,
 } from '../types/wizard';
 import {
-  checkUserHasTopicSuperuserPermissions,
+  checkUserHasTopicReadWritePermissions,
   configureUserPermissions,
   createKafkaUser,
   createPasswordSecret,
   createUsernameSecret,
+  getACLOperationName,
 } from '../utils/user';
 
 interface AddUserStepProps {
@@ -76,11 +77,11 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
     );
     const [userOptions, setUserOptions] = useState<ComboboxOption[]>(initialUserOptions);
     const [userSelectionType, setUserSelectionType] = useState<CreatableSelectionType>(
-      initialUserOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
+      userOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
     );
     const queryClient = useQueryClient();
     const createUserMutation = useCreateUserMutation();
-    const createACLMutation = useLegacyCreateACLMutation();
+    const createACLMutation = useCreateACLMutation();
     const createSecretMutation = useCreateSecretMutation({ skipInvalidation: true });
 
     const form = useForm<AddUserFormData>({
@@ -109,10 +110,10 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
       return usersList?.find((user) => user.name === watchedUsername);
     }, [watchedUsername, usersList]);
 
-    const { data: aclData, refetch: refetchACLs } = useLegacyListACLsQuery(undefined, {
+    const { data: aclData, refetch: refetchACLs } = useListACLsQuery(undefined, {
       enabled: Boolean(existingUserSelected && topicName),
       refetchOnMount: 'always',
-      staleTime: 0, // Always consider data stale to force refetch
+      staleTime: 0,
     });
 
     // Refetch ACLs whenever the selected user changes
@@ -122,13 +123,12 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
       }
     }, [existingUserSelected, topicName, refetchACLs]);
 
-    const existingUserHasTopicPermissions = useMemo(() => {
+    const userTopicPermissions = useMemo(() => {
       if (!(existingUserSelected && topicName && aclData?.aclResources)) {
-        return false;
+        return null;
       }
 
-      const result = checkUserHasTopicSuperuserPermissions(aclData.aclResources, topicName, existingUserSelected.name);
-      return result;
+      return checkUserHasTopicReadWritePermissions(aclData.aclResources, topicName, existingUserSelected.name);
     }, [existingUserSelected, topicName, aclData]);
 
     const isLoading = createUserMutation.isPending || createACLMutation.isPending || createSecretMutation.isPending;
@@ -165,7 +165,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
               {
                 operation: 'Select existing user',
                 success: true,
-                message: `User "${userData.username}" already exists`,
+                message: `Using existing user "${userData.username}"`,
               },
             ],
           };
@@ -252,6 +252,10 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
       [form]
     );
 
+    const handleClearUsername = useCallback(() => {
+      form.setValue('username', '', { shouldDirty: true });
+    }, [form]);
+
     useImperativeHandle(ref, () => ({
       triggerSubmit: async () => {
         const isUserFormValid = await form.trigger();
@@ -337,31 +341,73 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                       </FormItem>
                     )}
                   />
+
+                  {watchedUsername !== '' && watchedUsername.length > 0 && (
+                    <Button onClick={handleClearUsername} size="icon" variant="ghost">
+                      <XIcon size={16} />
+                    </Button>
+                  )}
                 </div>
               </div>
 
-              {existingUserSelected && topicName && !isLoading && !existingUserHasTopicPermissions && (
-                <Alert variant="warning">
-                  <CircleAlert className="h-4 w-4" />
-                  <AlertTitle>User does not have required permissions</AlertTitle>
-                  <AlertDescription>
-                    <span>
-                      The user will need full permissions to interact with the <b>{topicName}</b> topic from a pipeline.
-                      To enable topic-level permissions, edit the user's{' '}
-                      <Link
-                        as={ReactRouterLink}
-                        className="text-blue-800"
-                        to={`/security/users/${existingUserSelected.name}/details`}
-                      >
-                        ACLs
-                      </Link>
-                      .
-                    </span>
-                  </AlertDescription>
-                </Alert>
-              )}
+              {existingUserSelected &&
+                topicName &&
+                !isLoading &&
+                userTopicPermissions &&
+                userTopicPermissions.missingPermissions.length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertTitle>
+                      <CircleAlert className="h-4 w-4" /> User does not have required permissions
+                    </AlertTitle>
+                    <AlertDescription>
+                      <Text variant="small">
+                        The user <b>{existingUserSelected.name}</b> is missing the following permissions for the{' '}
+                        <b>{topicName}</b> topic:
+                        <List>
+                          {userTopicPermissions.missingPermissions.map((permission) => (
+                            <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
+                          ))}
+                        </List>
+                      </Text>
+                      <Text variant="small">
+                        The user will need both READ and WRITE permissions to interact with the <b>{topicName}</b> topic
+                        within a pipeline. Edit the user's{' '}
+                        <Link
+                          as={ReactRouterLink}
+                          className="text-blue-800"
+                          to={`/security/users/${existingUserSelected.name}/details`}
+                        >
+                          ACLs
+                        </Link>{' '}
+                        to add the missing permissions.
+                      </Text>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              {existingUserSelected &&
+                topicName &&
+                !isLoading &&
+                userTopicPermissions &&
+                userTopicPermissions.hasPermissions.length > 0 && (
+                  <Alert variant="success">
+                    <AlertTitle>
+                      <CircleAlert className="h-4 w-4" /> User has required permissions
+                    </AlertTitle>
+                    <AlertDescription>
+                      <Text variant="small">
+                        The user <b>{existingUserSelected.name}</b> has the following permissions for the{' '}
+                        <b>{topicName}</b> topic:
+                        <List>
+                          {userTopicPermissions.hasPermissions.map((permission) => (
+                            <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
+                          ))}
+                        </List>
+                      </Text>
+                    </AlertDescription>
+                  </Alert>
+                )}
               {!existingUserSelected && isLoading && <WaitingRedpanda />}
-              {!(existingUserSelected || isLoading) && (
+              {!(existingUserSelected || isLoading) && userSelectionType === CreatableSelectionOptions.CREATE && (
                 <>
                   <FormField
                     control={form.control}

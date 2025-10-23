@@ -17,7 +17,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
 import { Heading } from 'components/redpanda-ui/components/typography';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -60,10 +60,10 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       [topicList]
     );
 
-    const [topicSelectionType, setTopicSelectionType] = useState<CreatableSelectionType>(
-      initialTopicOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
-    );
     const [topicOptions, setTopicOptions] = useState<ComboboxOption[]>(initialTopicOptions);
+    const [topicSelectionType, setTopicSelectionType] = useState<CreatableSelectionType>(
+      topicOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
+    );
 
     const createTopicMutation = useCreateTopicMutation();
 
@@ -186,6 +186,10 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       [form]
     );
 
+    const handleClearTopicName = useCallback(() => {
+      form.setValue('topicName', '', { shouldDirty: true });
+    }, [form]);
+
     useImperativeHandle(ref, () => ({
       triggerSubmit: async () => {
         const isValid = await form.trigger();
@@ -269,6 +273,12 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                       </FormItem>
                     )}
                   />
+
+                  {watchedTopicName !== '' && watchedTopicName.length > 0 && (
+                    <Button onClick={handleClearTopicName} size="icon" variant="ghost">
+                      <XIcon size={16} />
+                    </Button>
+                  )}
                 </div>
               </div>
 

@@ -27,7 +27,6 @@ import { createACL, deleteACLs, listACLs } from 'protogen/redpanda/api/dataplane
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 import type {
   AclStrOperation,
-  AclStrPermission,
   AclStrResourcePatternType,
   AclStrResourceType,
   GetAclOverviewResponse,
@@ -127,24 +126,6 @@ const getACLResourcePatternTypeLegacy = (resourcePatternType: AclStrResourcePatt
 };
 
 /**
- * TODO: Remove once Console v3 is released.
- */
-const getACLPermissionTypeLegacy = (permissionType: AclStrPermission) => {
-  switch (permissionType) {
-    case 'Unknown':
-      return ACL_PermissionType.UNSPECIFIED;
-    case 'Any':
-      return ACL_PermissionType.ANY;
-    case 'Deny':
-      return ACL_PermissionType.DENY;
-    case 'Allow':
-      return ACL_PermissionType.ALLOW;
-    default:
-      return ACL_PermissionType.UNSPECIFIED;
-  }
-};
-
-/**
  * We need to use legacy API to list ACLs for now
  * because of authorization that is only possible with Console v3 and above.
  * TODO: Remove once Console v3 is released.
@@ -193,7 +174,6 @@ export const useLegacyListACLsQuery = (
             principal: acl.principal,
             host: acl.host,
             operation: getACLOperationLegacy(acl.operation),
-            permissionType: getACLPermissionTypeLegacy(acl.permissionType),
           })
         ),
       })
