@@ -18,8 +18,8 @@ import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import type { PreviewTagV2 } from '../../../../../state/ui';
 import { uiState } from '../../../../../state/ui-state';
 import { cullText, prettyBytes } from '../../../../../utils/utils';
-import { getControlCharacterName } from '../helpers';
 import { EmptyBadge } from '../common/empty-badge';
+import { getControlCharacterName } from '../helpers';
 import { getPreviewTags } from '../preview-settings';
 
 function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
@@ -56,7 +56,6 @@ function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
 
   return elements;
 }
-
 
 export const MessageKeyPreview = observer(
   ({

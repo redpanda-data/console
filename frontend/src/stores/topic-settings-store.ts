@@ -11,7 +11,7 @@
 
 import type { SortingState } from '@tanstack/react-table';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 
 import { CompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 import type {
@@ -153,292 +153,281 @@ const createDefaultTopicSettings = (topicName: string, overrides: Partial<TopicS
   ...overrides,
 });
 
-export const useTopicSettingsStore = create<TopicSettingsStore>()(
-  persist(
-    (set, get) => ({
-      perTopicSettings: [],
+export const useTopicSettingsStore = devtools(
+  create<TopicSettingsStore>()(
+    persist(
+      (set, get) => ({
+        perTopicSettings: [],
 
-      setSorting: (topicName: string, sorting: SortingState) => {
-        set((state) => {
-          const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
+        setSorting: (topicName: string, sorting: SortingState) => {
+          set((state) => {
+            const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
 
-          if (existingIndex >= 0) {
-            const updated = [...state.perTopicSettings];
-            updated[existingIndex] = {
-              ...updated[existingIndex],
-              searchParams: {
-                ...updated[existingIndex].searchParams,
-                sorting,
-              },
-            };
-            return { perTopicSettings: updated };
-          }
-
-          // Create new topic settings if it doesn't exist
-          return {
-            perTopicSettings: [
-              ...state.perTopicSettings,
-              createDefaultTopicSettings(topicName, {
+            if (existingIndex >= 0) {
+              const updated = [...state.perTopicSettings];
+              updated[existingIndex] = {
+                ...updated[existingIndex],
                 searchParams: {
-                  ...DEFAULT_SEARCH_PARAMS,
+                  ...updated[existingIndex].searchParams,
                   sorting,
                 },
-              }),
-            ],
-          };
-        });
-      },
+              };
+              return { perTopicSettings: updated };
+            }
 
-      getSorting: (topicName: string) => {
-        const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
-        return topic?.searchParams.sorting ?? DEFAULT_SORTING;
-      },
-
-      setSearchParams: (topicName: string, searchParams: Partial<TopicSearchParams>) => {
-        set((state) => {
-          const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
-
-          if (existingIndex >= 0) {
-            const updated = [...state.perTopicSettings];
-            updated[existingIndex] = {
-              ...updated[existingIndex],
-              searchParams: {
-                ...updated[existingIndex].searchParams,
-                ...searchParams,
-              },
+            // Create new topic settings if it doesn't exist
+            return {
+              perTopicSettings: [
+                ...state.perTopicSettings,
+                createDefaultTopicSettings(topicName, {
+                  searchParams: {
+                    ...DEFAULT_SEARCH_PARAMS,
+                    sorting,
+                  },
+                }),
+              ],
             };
-            return { perTopicSettings: updated };
-          }
+          });
+        },
 
-          // Create new topic settings if it doesn't exist
-          return {
-            perTopicSettings: [
-              ...state.perTopicSettings,
-              createDefaultTopicSettings(topicName, {
+        getSorting: (topicName: string) => {
+          const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
+          return topic?.searchParams.sorting ?? DEFAULT_SORTING;
+        },
+
+        setSearchParams: (topicName: string, searchParams: Partial<TopicSearchParams>) => {
+          set((state) => {
+            const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
+
+            if (existingIndex >= 0) {
+              const updated = [...state.perTopicSettings];
+              updated[existingIndex] = {
+                ...updated[existingIndex],
                 searchParams: {
-                  ...DEFAULT_SEARCH_PARAMS,
+                  ...updated[existingIndex].searchParams,
                   ...searchParams,
                 },
-              }),
-            ],
-          };
-        });
-      },
-
-      getSearchParams: (topicName: string) => {
-        const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
-        return topic?.searchParams;
-      },
-
-      setPreviewTagsCaseSensitive: (topicName: string, caseSensitive: 'caseSensitive' | 'ignoreCase') => {
-        set((state) => {
-          const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
-
-          if (existingIndex >= 0) {
-            const updated = [...state.perTopicSettings];
-            updated[existingIndex] = {
-              ...updated[existingIndex],
-              previewTagsCaseSensitive: caseSensitive,
-            };
-            return { perTopicSettings: updated };
-          }
-
-          // Create new topic settings if it doesn't exist
-          return {
-            perTopicSettings: [
-              ...state.perTopicSettings,
-              createDefaultTopicSettings(topicName, { previewTagsCaseSensitive: caseSensitive }),
-            ],
-          };
-        });
-      },
-
-      getPreviewTagsCaseSensitive: (topicName: string) => {
-        const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
-        return topic?.previewTagsCaseSensitive ?? 'ignoreCase';
-      },
-
-      setPreviewTags: (topicName: string, tags: PreviewTagV2[]) => {
-        set((state) => {
-          const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
-
-          if (existingIndex >= 0) {
-            const updated = [...state.perTopicSettings];
-            updated[existingIndex] = {
-              ...updated[existingIndex],
-              previewTags: tags,
-            };
-            return { perTopicSettings: updated };
-          }
-
-          // Create new topic settings if it doesn't exist
-          return {
-            perTopicSettings: [...state.perTopicSettings, createDefaultTopicSettings(topicName, { previewTags: tags })],
-          };
-        });
-      },
-
-      getPreviewTags: (topicName: string) => {
-        const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
-        return topic?.previewTags ?? [];
-      },
-
-      setPreviewMultiResultMode: (topicName: string, mode: 'showOnlyFirst' | 'showAll') => {
-        set((state) => {
-          const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
-
-          if (existingIndex >= 0) {
-            const updated = [...state.perTopicSettings];
-            updated[existingIndex] = {
-              ...updated[existingIndex],
-              previewMultiResultMode: mode,
-            };
-            return { perTopicSettings: updated };
-          }
-
-          // Create new topic settings if it doesn't exist
-          return {
-            perTopicSettings: [
-              ...state.perTopicSettings,
-              createDefaultTopicSettings(topicName, { previewMultiResultMode: mode }),
-            ],
-          };
-        });
-      },
-
-      getPreviewMultiResultMode: (topicName: string) => {
-        const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
-        return topic?.previewMultiResultMode ?? 'showAll';
-      },
-
-      setPreviewDisplayMode: (topicName: string, mode: 'single' | 'wrap' | 'rows') => {
-        set((state) => {
-          const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
-
-          if (existingIndex >= 0) {
-            const updated = [...state.perTopicSettings];
-            updated[existingIndex] = {
-              ...updated[existingIndex],
-              previewDisplayMode: mode,
-            };
-            return { perTopicSettings: updated };
-          }
-
-          // Create new topic settings if it doesn't exist
-          return {
-            perTopicSettings: [
-              ...state.perTopicSettings,
-              createDefaultTopicSettings(topicName, { previewDisplayMode: mode }),
-            ],
-          };
-        });
-      },
-
-      getPreviewDisplayMode: (topicName: string) => {
-        const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
-        return topic?.previewDisplayMode ?? 'wrap';
-      },
-
-      getTopicSettings: (topicName: string) => get().perTopicSettings.find((t) => t.topicName === topicName),
-
-      setTopicSettings: (topicName: string, settings: Partial<TopicSettings>) => {
-        set((state) => {
-          const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
-
-          if (existingIndex >= 0) {
-            const updated = [...state.perTopicSettings];
-            updated[existingIndex] = {
-              ...updated[existingIndex],
-              ...settings,
-              topicName, // Ensure topicName is not overwritten
-            };
-            return { perTopicSettings: updated };
-          }
-
-          // Create new topic settings if it doesn't exist
-          return { perTopicSettings: [...state.perTopicSettings, createDefaultTopicSettings(topicName, settings)] };
-        });
-      },
-
-      clearTopicSettings: (topicName: string) => {
-        set((state) => ({
-          perTopicSettings: state.perTopicSettings.filter((t) => t.topicName !== topicName),
-        }));
-      },
-
-      clearAllSettings: () => {
-        set({ perTopicSettings: [] });
-      },
-    }),
-    {
-      name: 'uiSettings-v3',
-      version: 1,
-      // Custom storage to read/write only perTopicSettings from the full uiSettings-v3 object
-      storage: {
-        getItem: (name) => {
-          const str = localStorage.getItem(name);
-          if (!str) {
-            return null;
-          }
-
-          try {
-            const fullSettings = JSON.parse(str);
-            // Return only the perTopicSettings part
-            if (fullSettings && Array.isArray(fullSettings.perTopicSettings)) {
-              return {
-                state: {
-                  perTopicSettings: fullSettings.perTopicSettings,
-                },
-                version: 1,
               };
+              return { perTopicSettings: updated };
             }
-          } catch (error) {
-            // biome-ignore lint/suspicious/noConsole: intentional console usage for debugging
-            console.error('Error parsing uiSettings-v3:', error);
-          }
 
-          return null;
+            // Create new topic settings if it doesn't exist
+            return {
+              perTopicSettings: [
+                ...state.perTopicSettings,
+                createDefaultTopicSettings(topicName, {
+                  searchParams: {
+                    ...DEFAULT_SEARCH_PARAMS,
+                    ...searchParams,
+                  },
+                }),
+              ],
+            };
+          });
         },
-        setItem: (name, value) => {
-          // Read existing settings
-          const existingStr = localStorage.getItem(name);
-          let fullSettings: Record<string, unknown> = {};
 
-          if (existingStr) {
+        getSearchParams: (topicName: string) => {
+          const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
+          return topic?.searchParams;
+        },
+
+        setPreviewTagsCaseSensitive: (topicName: string, caseSensitive: 'caseSensitive' | 'ignoreCase') => {
+          set((state) => {
+            const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
+
+            if (existingIndex >= 0) {
+              const updated = [...state.perTopicSettings];
+              updated[existingIndex] = {
+                ...updated[existingIndex],
+                previewTagsCaseSensitive: caseSensitive,
+              };
+              return { perTopicSettings: updated };
+            }
+
+            // Create new topic settings if it doesn't exist
+            return {
+              perTopicSettings: [
+                ...state.perTopicSettings,
+                createDefaultTopicSettings(topicName, { previewTagsCaseSensitive: caseSensitive }),
+              ],
+            };
+          });
+        },
+
+        getPreviewTagsCaseSensitive: (topicName: string) => {
+          const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
+          return topic?.previewTagsCaseSensitive ?? 'ignoreCase';
+        },
+
+        setPreviewTags: (topicName: string, tags: PreviewTagV2[]) => {
+          set((state) => {
+            const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
+
+            if (existingIndex >= 0) {
+              const updated = [...state.perTopicSettings];
+              updated[existingIndex] = {
+                ...updated[existingIndex],
+                previewTags: tags,
+              };
+              return { perTopicSettings: updated };
+            }
+
+            // Create new topic settings if it doesn't exist
+            return {
+              perTopicSettings: [
+                ...state.perTopicSettings,
+                createDefaultTopicSettings(topicName, { previewTags: tags }),
+              ],
+            };
+          });
+        },
+
+        getPreviewTags: (topicName: string) => {
+          const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
+          return topic?.previewTags ?? [];
+        },
+
+        setPreviewMultiResultMode: (topicName: string, mode: 'showOnlyFirst' | 'showAll') => {
+          set((state) => {
+            const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
+
+            if (existingIndex >= 0) {
+              const updated = [...state.perTopicSettings];
+              updated[existingIndex] = {
+                ...updated[existingIndex],
+                previewMultiResultMode: mode,
+              };
+              return { perTopicSettings: updated };
+            }
+
+            // Create new topic settings if it doesn't exist
+            return {
+              perTopicSettings: [
+                ...state.perTopicSettings,
+                createDefaultTopicSettings(topicName, { previewMultiResultMode: mode }),
+              ],
+            };
+          });
+        },
+
+        getPreviewMultiResultMode: (topicName: string) => {
+          const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
+          return topic?.previewMultiResultMode ?? 'showAll';
+        },
+
+        setPreviewDisplayMode: (topicName: string, mode: 'single' | 'wrap' | 'rows') => {
+          set((state) => {
+            const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
+
+            if (existingIndex >= 0) {
+              const updated = [...state.perTopicSettings];
+              updated[existingIndex] = {
+                ...updated[existingIndex],
+                previewDisplayMode: mode,
+              };
+              return { perTopicSettings: updated };
+            }
+
+            // Create new topic settings if it doesn't exist
+            return {
+              perTopicSettings: [
+                ...state.perTopicSettings,
+                createDefaultTopicSettings(topicName, { previewDisplayMode: mode }),
+              ],
+            };
+          });
+        },
+
+        getPreviewDisplayMode: (topicName: string) => {
+          const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
+          return topic?.previewDisplayMode ?? 'wrap';
+        },
+
+        getTopicSettings: (topicName: string) => get().perTopicSettings.find((t) => t.topicName === topicName),
+
+        setTopicSettings: (topicName: string, settings: Partial<TopicSettings>) => {
+          set((state) => {
+            const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
+
+            if (existingIndex >= 0) {
+              const updated = [...state.perTopicSettings];
+              updated[existingIndex] = {
+                ...updated[existingIndex],
+                ...settings,
+                topicName, // Ensure topicName is not overwritten
+              };
+              return { perTopicSettings: updated };
+            }
+
+            // Create new topic settings if it doesn't exist
+            return { perTopicSettings: [...state.perTopicSettings, createDefaultTopicSettings(topicName, settings)] };
+          });
+        },
+
+        clearTopicSettings: (topicName: string) => {
+          set((state) => ({
+            perTopicSettings: state.perTopicSettings.filter((t) => t.topicName !== topicName),
+          }));
+        },
+
+        clearAllSettings: () => {
+          set({ perTopicSettings: [] });
+        },
+      }),
+      {
+        name: 'uiSettings-v3',
+        version: 1,
+        // Custom storage to read/write only perTopicSettings from the full uiSettings-v3 object
+        storage: {
+          getItem: (name) => {
+            const str = localStorage.getItem(name);
+            if (!str) {
+              return null;
+            }
+
             try {
-              fullSettings = JSON.parse(existingStr);
-            } catch {
-              // If parsing fails, start with empty object
-              fullSettings = {};
+              const fullSettings = JSON.parse(str);
+              // Return only the perTopicSettings part
+              if (fullSettings && Array.isArray(fullSettings.perTopicSettings)) {
+                return {
+                  state: {
+                    perTopicSettings: fullSettings.perTopicSettings,
+                  },
+                  version: 1,
+                };
+              }
+            } catch (error) {
+              // biome-ignore lint/suspicious/noConsole: intentional console usage for debugging
+              console.error('Error parsing uiSettings-v3:', error);
             }
-          }
 
-          // Merge our perTopicSettings into the full settings
-          fullSettings.perTopicSettings = value.state.perTopicSettings;
+            return null;
+          },
+          setItem: (name, value) => {
+            // Read existing settings
+            const existingStr = localStorage.getItem(name);
+            let fullSettings: Record<string, unknown> = {};
 
-          // Save the merged settings
-          localStorage.setItem(name, JSON.stringify(fullSettings));
+            if (existingStr) {
+              try {
+                fullSettings = JSON.parse(existingStr);
+              } catch {
+                // If parsing fails, start with empty object
+                fullSettings = {};
+              }
+            }
+
+            // Merge our perTopicSettings into the full settings
+            fullSettings.perTopicSettings = value.state.perTopicSettings;
+
+            // Save the merged settings
+            localStorage.setItem(name, JSON.stringify(fullSettings));
+          },
+          removeItem: (name) => {
+            localStorage.removeItem(name);
+          },
         },
-        removeItem: (name) => {
-          localStorage.removeItem(name);
-        },
-      },
-    }
+      }
+    )
   )
 );
-
-// Sync Zustand changes back to MobX to prevent MobX's autorun from overwriting Zustand's changes
-// This ensures that when MobX saves to localStorage (after 2 second delay), it has the latest data from Zustand
-useTopicSettingsStore.subscribe((state) => {
-  // Dynamically import uiSettings to avoid circular dependencies
-  import('../state/ui')
-    .then(({ uiSettings }) => {
-      // Update MobX's perTopicSettings with Zustand's data
-      // This keeps them in sync so MobX's autorun doesn't overwrite Zustand's changes
-      uiSettings.perTopicSettings.splice(0, uiSettings.perTopicSettings.length, ...state.perTopicSettings);
-    })
-    .catch((error) => {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage for debugging sync errors
-      console.error('Failed to sync Zustand to MobX:', error);
-    });
-});

@@ -56,7 +56,6 @@ function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
   return elements;
 }
 
-
 export const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () => Promise<void> }) => {
   const { payload, loadLargeMessage } = p;
   const toast = useToast();
