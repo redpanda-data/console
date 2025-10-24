@@ -9,7 +9,7 @@ import { ScrollArea, ScrollBar, ScrollViewport } from './scroll-area';
 import { cn } from '../lib/utils';
 
 const codeBlockVariants = cva(
-  'not-prose group fd-codeblock relative overflow-hidden rounded-xl border border-border text-sm [&.shiki]:!bg-card',
+  'group fd-codeblock relative overflow-hidden rounded-xl border border-border text-sm [&.shiki]:!bg-card',
   {
     variants: {
       size: {
@@ -53,7 +53,7 @@ export const Pre = forwardRef<HTMLPreElement, HTMLAttributes<HTMLPreElement>>(({
     <pre
       ref={ref}
       className={cn(
-        'not-prose no-scrollbar min-w-0 overflow-x-auto px-4 py-3.5 outline-none has-[[data-highlighted-line]]:px-0 has-[[data-line-numbers]]:px-0 has-[[data-slot=tabs]]:p-0',
+        'no-scrollbar min-w-0 overflow-x-auto px-4 py-3.5 outline-none has-[[data-highlighted-line]]:px-0 has-[[data-line-numbers]]:px-0 has-[[data-slot=tabs]]:p-0',
         className,
       )}
       {...props}
