@@ -29,7 +29,7 @@ type ToolBlockProps = {
  * Automatically opens if running or is the last block in the message
  */
 export const ToolBlock = ({ toolCallId, toolName, state, input, output, errorText, isLastBlock }: ToolBlockProps) => (
-  <Tool defaultOpen={state === 'input-available' || isLastBlock} key={toolCallId}>
+  <Tool open={state === 'input-available' || isLastBlock} key={toolCallId}>
     <ToolHeader state={state} title={toolName || 'Tool'} type={`tool-${toolName || 'unknown'}`} />
     <ToolContent>
       <ToolInput input={input} />
