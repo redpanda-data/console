@@ -158,3 +158,4 @@ dist
 
 # Gemini CLI
 .gemini/settings.json
+bun.lockb
