@@ -36,13 +36,23 @@ export const handleResponseMetadataEvent = (
   if (potentialTaskId && !state.capturedTaskId) {
     state.capturedTaskId = potentialTaskId;
 
+    // IMPORTANT: Close active text block BEFORE recording task index
+    // This ensures text that arrived before the task event is captured as pre-task content
+    closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+    state.activeTextBlock = null;
+
+    // Record the block index where taskId was captured
+    // This allows splitting pre-task content from task-related content
+    state.taskIdCapturedAtBlockIndex = state.contentBlocks.length;
+
     // Update message with new taskId (don't add content blocks for metadata events)
-    const updatedMessage = buildMessageWithContentBlocks(
-      assistantMessage,
-      state.contentBlocks,
-      state.capturedTaskId,
-      state.capturedTaskState
-    );
+    const updatedMessage = buildMessageWithContentBlocks({
+      baseMessage: assistantMessage,
+      contentBlocks: state.contentBlocks,
+      taskId: state.capturedTaskId,
+      taskState: state.capturedTaskState,
+      taskStartIndex: state.taskIdCapturedAtBlockIndex,
+    });
     onMessageUpdate(updatedMessage);
   }
 };
@@ -59,18 +69,28 @@ export const handleRawTaskEvent = (
   if (event.id && !state.capturedTaskId) {
     state.capturedTaskId = event.id;
 
+    // IMPORTANT: Close active text block BEFORE recording task index
+    // This ensures text that arrived before the task event is captured as pre-task content
+    closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+    state.activeTextBlock = null;
+
+    // Record the block index where taskId was captured
+    // This allows splitting pre-task content from task-related content
+    state.taskIdCapturedAtBlockIndex = state.contentBlocks.length;
+
     // Capture initial task state if present
     if (event.status?.state) {
       state.capturedTaskState = event.status.state as ChatMessage['taskState'];
     }
 
     // Update message with taskId and state (don't add content blocks for metadata events)
-    const updatedMessage = buildMessageWithContentBlocks(
-      assistantMessage,
-      state.contentBlocks,
-      state.capturedTaskId,
-      state.capturedTaskState
-    );
+    const updatedMessage = buildMessageWithContentBlocks({
+      baseMessage: assistantMessage,
+      contentBlocks: state.contentBlocks,
+      taskId: state.capturedTaskId,
+      taskState: state.capturedTaskState,
+      taskStartIndex: state.taskIdCapturedAtBlockIndex,
+    });
     onMessageUpdate(updatedMessage);
   }
 };
@@ -141,8 +161,9 @@ const parseToolCallFromMetadata = (metadata: {
 };
 
 /**
- * Handle status-update event to capture/update task state and tool calls
+ * Handle status-update event to capture/update task state, tool calls, and message text
  * NEW: Updates tool blocks in-place (request → response state transition)
+ * FIXED: Now extracts and displays text messages from status.message.parts
  */
 export const handleStatusUpdateEvent = (
   event: RawStatusUpdateEvent,
@@ -153,6 +174,8 @@ export const handleStatusUpdateEvent = (
   // Capture taskId if not already captured
   if (event.taskId && !state.capturedTaskId) {
     state.capturedTaskId = event.taskId;
+    // Record the block index where taskId was captured
+    state.taskIdCapturedAtBlockIndex = state.contentBlocks.length;
   }
 
   // Parse tool calls from message metadata
@@ -199,16 +222,58 @@ export const handleStatusUpdateEvent = (
     }
   }
 
+  // FIXED: Extract text messages from status.message.parts (messages between artifacts and completion)
+  // These are important messages like "Your bar chart has been created..." that were being lost
+  // BUT: Skip tool request/response messages (already shown in ToolBlock), duplicates, and user-role messages
+  if (message?.parts && message?.role === 'agent' && timestamp) {
+    // IMPORTANT: Only process agent-role messages. User-role messages are task descriptions (internal use only)
+    const eventTimestamp = new Date(timestamp);
+    state.lastEventTimestamp = eventTimestamp;
+
+    // Extract text from message parts, but skip tool-related messages
+    const textParts = message.parts
+      .filter((part) => part.kind === 'text' && part.text)
+      .map((part) => part.text)
+      .filter((text): text is string => !!text);
+
+    if (textParts.length > 0) {
+      const combinedText = textParts.join('');
+
+      // Skip tool request/response messages - they're already displayed by ToolBlock
+      const isToolMessage = combinedText.startsWith('Tool request:') || combinedText.startsWith('Tool response:');
+
+      // Check for exact duplicates to avoid re-adding the same text
+      const textAlreadyExists = state.contentBlocks.some(
+        (block) => block.type === 'text' && block.text === combinedText
+      );
+
+      if (!(isToolMessage || textAlreadyExists) && combinedText.trim().length > 0) {
+        // Close active text block before adding new text from status message
+        closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+        state.activeTextBlock = null;
+
+        // Add new text block
+        const textBlock: ContentBlock = {
+          type: 'text',
+          text: combinedText,
+          timestamp: eventTimestamp,
+        };
+        state.contentBlocks.push(textBlock);
+      }
+    }
+  }
+
   // Always capture the latest task state from status-update events
   if (event.status?.state) {
     state.capturedTaskState = event.status.state as ChatMessage['taskState'];
 
-    const updatedMessage = buildMessageWithContentBlocks(
-      assistantMessage,
-      state.contentBlocks,
-      state.capturedTaskId,
-      state.capturedTaskState
-    );
+    const updatedMessage = buildMessageWithContentBlocks({
+      baseMessage: assistantMessage,
+      contentBlocks: state.contentBlocks,
+      taskId: state.capturedTaskId,
+      taskState: state.capturedTaskState,
+      taskStartIndex: state.taskIdCapturedAtBlockIndex,
+    });
     onMessageUpdate(updatedMessage);
   }
 };
@@ -231,6 +296,8 @@ export const handleArtifactUpdateEvent = (
   // Capture taskId if not already captured
   if (event.taskId && !state.capturedTaskId) {
     state.capturedTaskId = event.taskId;
+    // Record the block index where taskId was captured
+    state.taskIdCapturedAtBlockIndex = state.contentBlocks.length;
   }
 
   const artifact = event.artifact;
@@ -287,12 +354,13 @@ export const handleArtifactUpdateEvent = (
     state.contentBlocks.push(artifactBlock);
   }
 
-  const updatedMessage = buildMessageWithContentBlocks(
-    assistantMessage,
-    state.contentBlocks,
-    state.capturedTaskId,
-    state.capturedTaskState
-  );
+  const updatedMessage = buildMessageWithContentBlocks({
+    baseMessage: assistantMessage,
+    contentBlocks: state.contentBlocks,
+    taskId: state.capturedTaskId,
+    taskState: state.capturedTaskState,
+    taskStartIndex: state.taskIdCapturedAtBlockIndex,
+  });
   onMessageUpdate(updatedMessage);
 };
 
@@ -327,11 +395,12 @@ export const handleTextDeltaEvent = (
     currentBlocks.push(state.activeTextBlock);
   }
 
-  const updatedMessage = buildMessageWithContentBlocks(
-    assistantMessage,
-    currentBlocks,
-    state.capturedTaskId,
-    state.capturedTaskState
-  );
+  const updatedMessage = buildMessageWithContentBlocks({
+    baseMessage: assistantMessage,
+    contentBlocks: currentBlocks,
+    taskId: state.capturedTaskId,
+    taskState: state.capturedTaskState,
+    taskStartIndex: state.taskIdCapturedAtBlockIndex,
+  });
   onMessageUpdate(updatedMessage);
 };

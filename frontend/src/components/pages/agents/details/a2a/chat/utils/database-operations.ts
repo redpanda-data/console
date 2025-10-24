@@ -38,6 +38,26 @@ export const loadMessages = async (agentId: string, contextId: string): Promise<
 };
 
 /**
+ * Serialize contentBlocks for database storage (Date → ISO string)
+ */
+const serializeContentBlocks = (blocks: ContentBlock[]): import('database/chat-db').ContentBlock[] =>
+  blocks.map((block) => {
+    if (block.type === 'text') {
+      return { ...block, timestamp: block.timestamp.toISOString() };
+    }
+    if (block.type === 'tool') {
+      return { ...block, timestamp: block.timestamp.toISOString() };
+    }
+    if (block.type === 'artifact') {
+      return { ...block, timestamp: block.timestamp.toISOString() };
+    }
+    if (block.type === 'status-update') {
+      return { ...block, timestamp: block.timestamp.toISOString() };
+    }
+    return block;
+  });
+
+/**
  * Save a message to the database
  */
 export const saveMessage = async (
@@ -61,6 +81,8 @@ export const saveMessage = async (
       taskId: message.taskId,
       taskState: message.taskState,
       isStreaming: options?.isStreaming,
+      taskStartIndex: message.taskStartIndex,
+      contentBlocks: serializeContentBlocks(message.contentBlocks), // NEW: Store contentBlocks structure
     };
 
     await chatDb.addMessage(dbMessage);
@@ -80,6 +102,7 @@ export const updateMessage = async (
     isStreaming?: boolean;
     taskId?: string;
     taskState?: string;
+    taskStartIndex?: number;
     artifacts?: Array<{
       artifactId: string;
       name?: string;
@@ -106,6 +129,7 @@ export const updateMessage = async (
       isStreaming: updates.isStreaming,
       taskId: updates.taskId,
       taskState: updates.taskState,
+      taskStartIndex: updates.taskStartIndex,
     };
 
     if (updates.artifacts) {
@@ -128,6 +152,11 @@ export const updateMessage = async (
         messageId: tool.messageId,
         timestamp: tool.timestamp,
       }));
+    }
+
+    // NEW: Store contentBlocks if provided (serialize timestamps)
+    if (updates.contentBlocks) {
+      dbUpdates.contentBlocks = serializeContentBlocks(updates.contentBlocks);
     }
 
     await chatDb.updateMessage(messageId, dbUpdates);

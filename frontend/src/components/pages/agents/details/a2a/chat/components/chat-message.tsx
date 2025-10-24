@@ -19,20 +19,17 @@ import { ToolBlock } from './message-blocks/tool-block';
 import { LoadingMessageContent } from './message-content/loading-message-content';
 import { UserMessageContent } from './message-content/user-message-content';
 import { TaskMessageWrapper } from './task-message/task-message-wrapper';
-import type { ChatMessage as ChatMessageType } from '../types';
+import type { ChatMessage as ChatMessageType, ContentBlock } from '../types';
 
 type ChatMessageProps = {
   message: ChatMessageType;
-  isLastMessage: boolean;
   isLoading: boolean;
-  onEdit: (messageId: string) => void;
-  onRetry: () => void;
 };
 
 /**
  * Individual chat message component with Jupyter-style interleaved rendering
  */
-export const ChatMessage = ({ message, isLastMessage, isLoading, onEdit, onRetry }: ChatMessageProps) => {
+export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
   const isTaskMessage = message.taskId && message.role === 'assistant';
 
   // User message rendering (unchanged)
@@ -47,35 +44,15 @@ export const ChatMessage = ({ message, isLastMessage, isLoading, onEdit, onRetry
             <UserMessageContent text={text} timestamp={message.timestamp} />
           </MessageContent>
         </Message>
-        <ChatMessageActions
-          isLastMessage={isLastMessage}
-          onEdit={() => onEdit(message.id)}
-          onRetry={onRetry}
-          role={message.role}
-          text={text}
-        />
+        <ChatMessageActions role={message.role} text={text} />
       </div>
     );
   }
 
   // Assistant message with content blocks (new Jupyter-style rendering)
   if (message.role === 'assistant') {
-    // Loading state
-    if (message.contentBlocks.length === 0 && isLoading) {
-      return (
-        <div>
-          <Message from={message.role}>
-            <SparklesIcon className="size-4" />
-            <MessageContent from={message.role} variant="flat">
-              <LoadingMessageContent />
-            </MessageContent>
-          </Message>
-        </div>
-      );
-    }
-
-    // Render interleaved content blocks
-    const contentBlockElements = message.contentBlocks.map((block, index) => {
+    // Helper function to render a single content block
+    const renderContentBlock = (block: ContentBlock, index: number) => {
       switch (block.type) {
         case 'text':
           return (
@@ -125,19 +102,46 @@ export const ChatMessage = ({ message, isLastMessage, isLoading, onEdit, onRetry
         default:
           return null;
       }
-    });
+    };
+
+    // Split content blocks into pre-task and task-related
+    const taskStartIndex = message.taskStartIndex ?? message.contentBlocks.length;
+    const preTaskBlocks = message.contentBlocks.slice(0, taskStartIndex);
+    const taskBlocks = message.contentBlocks.slice(taskStartIndex);
+
+    // Render pre-task content blocks
+    const preTaskElements = preTaskBlocks.map((block, index) => renderContentBlock(block, index));
+
+    // Render task-related content blocks
+    const taskElements = taskBlocks.map((block, index) => renderContentBlock(block, taskStartIndex + index));
+
+    // Show loading indicator during streaming
+    // For task messages, show loading AFTER pre-task content but BEFORE task wrapper
+    // For non-task messages, show loading AFTER all content
+    const loadingElement = isLoading ? (
+      <div className="mb-4">
+        <Message from={message.role}>
+          <SparklesIcon className="size-4" />
+          <MessageContent from={message.role} variant="flat">
+            <LoadingMessageContent />
+          </MessageContent>
+        </Message>
+      </div>
+    ) : null;
 
     // Wrap in task UI if this is a task message
     if (isTaskMessage && message.taskId) {
       return (
         <div>
+          {/* Always render pre-task content first (messages that arrived before task event) */}
+          {preTaskElements}
+          {/* Show loading indicator after pre-task content but before task wrapper */}
+          {loadingElement}
+          {/* Task wrapper contains task-related content blocks */}
           <TaskMessageWrapper messageId={message.id} taskId={message.taskId} taskState={message.taskState}>
-            {contentBlockElements}
+            {taskElements}
           </TaskMessageWrapper>
           <ChatMessageActions
-            isLastMessage={isLastMessage}
-            onEdit={() => onEdit(message.id)}
-            onRetry={onRetry}
             role={message.role}
             text={(() => {
               const textBlock = message.contentBlocks.find((b) => b.type === 'text');
@@ -151,11 +155,10 @@ export const ChatMessage = ({ message, isLastMessage, isLoading, onEdit, onRetry
     // Non-task assistant message
     return (
       <div>
-        {contentBlockElements}
+        {preTaskElements}
+        {taskElements}
+        {loadingElement}
         <ChatMessageActions
-          isLastMessage={isLastMessage}
-          onEdit={() => onEdit(message.id)}
-          onRetry={onRetry}
           role={message.role}
           text={(() => {
             const textBlock = message.contentBlocks.find((b) => b.type === 'text');

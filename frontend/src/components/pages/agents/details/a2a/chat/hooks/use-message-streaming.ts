@@ -88,6 +88,7 @@ export const streamMessage = async ({
       lastEventTimestamp: new Date(),
       capturedTaskId: undefined,
       capturedTaskState: undefined,
+      taskIdCapturedAtBlockIndex: undefined,
     };
 
     // Consume the full stream and process events
@@ -132,16 +133,21 @@ export const streamMessage = async ({
     // If we didn't capture taskId during streaming, try to get it from response metadata
     if (!state.capturedTaskId) {
       const responseMetadata = await streamResult.response;
-      state.capturedTaskId = responseMetadata?.id;
+      const potentialTaskId = responseMetadata?.id;
+      // ONLY set taskId if it's a valid task (starts with "task-"), not a regular message (starts with "msg-")
+      if (potentialTaskId?.startsWith('task-')) {
+        state.capturedTaskId = potentialTaskId;
+      }
     }
 
     // Build final message with all content blocks
-    const finalMessage = buildMessageWithContentBlocks(
-      assistantMessage,
-      state.contentBlocks,
-      state.capturedTaskId,
-      state.capturedTaskState
-    );
+    const finalMessage = buildMessageWithContentBlocks({
+      baseMessage: assistantMessage,
+      contentBlocks: state.contentBlocks,
+      taskId: state.capturedTaskId,
+      taskState: state.capturedTaskState,
+      taskStartIndex: state.taskIdCapturedAtBlockIndex,
+    });
 
     // Extract artifacts and toolCalls from content blocks for DB compatibility
     const artifacts = state.contentBlocks
@@ -172,6 +178,7 @@ export const streamMessage = async ({
       isStreaming: false,
       taskId: state.capturedTaskId,
       taskState: state.capturedTaskState,
+      taskStartIndex: state.taskIdCapturedAtBlockIndex,
       artifacts,
       toolCalls,
       contentBlocks: state.contentBlocks, // Store new format

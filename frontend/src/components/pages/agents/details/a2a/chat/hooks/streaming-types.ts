@@ -153,6 +153,11 @@ export type StreamingState = {
    */
   capturedTaskState: ChatMessage['taskState'] | undefined;
   /**
+   * Index in contentBlocks where taskId was first captured
+   * Used to split pre-task content from task-related content
+   */
+  taskIdCapturedAtBlockIndex: number | undefined;
+  /**
    * @deprecated Legacy artifact accumulation - use contentBlocks instead
    */
   artifactsMap?: Map<string, ArtifactData>;

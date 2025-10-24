@@ -27,15 +27,27 @@ export const sortContentBlocksByTimestamp = (blocks: ContentBlock[]): ContentBlo
   [...blocks].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
 /**
+ * Parameters for building a message with content blocks
+ */
+export type BuildMessageParams = {
+  baseMessage: ChatMessage;
+  contentBlocks: ContentBlock[];
+  taskId: string | undefined;
+  taskState: ChatMessage['taskState'] | undefined;
+  taskStartIndex?: number | undefined;
+};
+
+/**
  * Build a complete message with ordered content blocks
  * This is the new approach for Jupyter-style interleaved rendering
  */
-export const buildMessageWithContentBlocks = (
-  baseMessage: ChatMessage,
-  contentBlocks: ContentBlock[],
-  taskId: string | undefined,
-  taskState: ChatMessage['taskState'] | undefined
-): ChatMessage => {
+export const buildMessageWithContentBlocks = ({
+  baseMessage,
+  contentBlocks,
+  taskId,
+  taskState,
+  taskStartIndex,
+}: BuildMessageParams): ChatMessage => {
   // Sort blocks by timestamp for strict temporal ordering
   const sortedBlocks = sortContentBlocksByTimestamp(contentBlocks);
 
@@ -44,6 +56,7 @@ export const buildMessageWithContentBlocks = (
     contentBlocks: sortedBlocks,
     taskId,
     taskState,
+    taskStartIndex,
   };
 };
 

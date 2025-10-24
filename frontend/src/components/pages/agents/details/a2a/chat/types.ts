@@ -67,6 +67,11 @@ export type ChatMessage = {
     | 'rejected'
     | 'auth-required'
     | 'unknown';
+  /**
+   * Index in contentBlocks where task-related content starts
+   * Content before this index should be rendered above the Task box
+   */
+  taskStartIndex?: number;
 };
 
 export type AIAgentChatProps = {
