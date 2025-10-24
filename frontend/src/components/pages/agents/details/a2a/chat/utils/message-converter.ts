@@ -15,70 +15,118 @@ import { nanoid } from 'nanoid';
 import type { ChatMessage, ContentBlock } from '../types';
 
 /**
- * Convert database messages to component message format
+ * Deserialize contentBlocks from database (ISO string → Date)
  */
-export const convertDbToComponent = (dbMessages: ChatDbMessage[]): ChatMessage[] => {
-  return dbMessages.map((dbMsg) => {
-    const contentBlocks: ContentBlock[] = [];
-    const now = new Date();
+const deserializeContentBlocks = (dbBlocks: import('database/chat-db').ContentBlock[]): ContentBlock[] =>
+  dbBlocks.map((block) => {
+    if (block.type === 'text') {
+      return { ...block, timestamp: new Date(block.timestamp) };
+    }
+    if (block.type === 'tool') {
+      return { ...block, timestamp: new Date(block.timestamp) };
+    }
+    if (block.type === 'artifact') {
+      return { ...block, timestamp: new Date(block.timestamp) };
+    }
+    if (block.type === 'status-update') {
+      return { ...block, timestamp: new Date(block.timestamp) };
+    }
+    return block;
+  });
 
-    // Add main content as text block
-    if (dbMsg.content) {
+/**
+ * Build chat message from stored contentBlocks
+ */
+const buildMessageFromStoredBlocks = (dbMsg: ChatDbMessage): ChatMessage => ({
+  id: dbMsg.id,
+  role: dbMsg.sender === 'user' ? 'user' : 'assistant',
+  contentBlocks: deserializeContentBlocks(dbMsg.contentBlocks ?? []),
+  timestamp: dbMsg.timestamp,
+  contextId: dbMsg.contextId,
+  taskId: dbMsg.taskId,
+  taskState: dbMsg.taskState as ChatMessage['taskState'],
+  taskStartIndex: dbMsg.taskStartIndex,
+});
+
+/**
+ * Reconstruct contentBlocks from flat fields (backward compatibility)
+ */
+const reconstructContentBlocks = (dbMsg: ChatDbMessage): ContentBlock[] => {
+  const contentBlocks: ContentBlock[] = [];
+  const now = new Date();
+
+  // Add main content as text block
+  if (dbMsg.content) {
+    contentBlocks.push({
+      type: 'text',
+      text: dbMsg.content,
+      timestamp: dbMsg.timestamp || now,
+    });
+  }
+
+  // Add tool calls as blocks
+  if (dbMsg.toolCalls) {
+    const sortedToolCalls = [...dbMsg.toolCalls].sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    for (const tool of sortedToolCalls) {
       contentBlocks.push({
-        type: 'text',
-        text: dbMsg.content,
-        timestamp: dbMsg.timestamp || now,
+        type: 'tool',
+        toolCallId: tool.id,
+        toolName: tool.name,
+        state: tool.state as 'input-available' | 'output-available' | 'output-error',
+        input: tool.input,
+        output: tool.output,
+        errorText: tool.errorText,
+        timestamp: new Date(tool.timestamp),
+        messageId: tool.messageId,
       });
     }
+  }
 
-    // Add tool calls as blocks
-    if (dbMsg.toolCalls) {
-      const sortedToolCalls = [...dbMsg.toolCalls].sort(
-        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      );
-      for (const tool of sortedToolCalls) {
-        contentBlocks.push({
-          type: 'tool',
-          toolCallId: tool.id,
-          toolName: tool.name,
-          state: tool.state as 'input-available' | 'output-available' | 'output-error',
-          input: tool.input,
-          output: tool.output,
-          errorText: tool.errorText,
-          timestamp: new Date(tool.timestamp),
-          messageId: tool.messageId,
-        });
+  // Add artifacts as blocks
+  if (dbMsg.artifacts) {
+    for (const artifact of dbMsg.artifacts) {
+      // Skip artifacts without required fields
+      if (!artifact.id) {
+        continue;
       }
+
+      // Convert old text-only format to parts format for backward compatibility
+      const parts = artifact.parts || (artifact.text ? [{ kind: 'text' as const, text: artifact.text }] : []);
+
+      if (parts.length === 0) {
+        continue;
+      }
+
+      contentBlocks.push({
+        type: 'artifact',
+        artifactId: artifact.id,
+        name: artifact.name,
+        description: artifact.description,
+        parts,
+        timestamp: now,
+      });
+    }
+  }
+
+  // Sort blocks by timestamp
+  contentBlocks.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  return contentBlocks;
+};
+
+/**
+ * Convert database messages to component message format
+ */
+export const convertDbToComponent = (dbMessages: ChatDbMessage[]): ChatMessage[] =>
+  dbMessages.map((dbMsg) => {
+    // NEW: Prefer stored contentBlocks if available (preserves exact temporal structure)
+    if (dbMsg.contentBlocks && dbMsg.contentBlocks.length > 0) {
+      return buildMessageFromStoredBlocks(dbMsg);
     }
 
-    // Add artifacts as blocks
-    if (dbMsg.artifacts) {
-      for (const artifact of dbMsg.artifacts) {
-        // Skip artifacts without required fields
-        if (!artifact.id) {
-          continue;
-        }
-
-        // Convert old text-only format to parts format for backward compatibility
-        const parts = artifact.parts || (artifact.text ? [{ kind: 'text' as const, text: artifact.text }] : []);
-
-        if (parts.length === 0) {
-          continue;
-        }
-
-        contentBlocks.push({
-          type: 'artifact',
-          artifactId: artifact.id,
-          name: artifact.name,
-          description: artifact.description,
-          parts,
-          timestamp: now,
-        });
-      }
-    }
-
-    // Sort blocks by timestamp
-    contentBlocks.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    // FALLBACK: Reconstruct contentBlocks from flat fields (backward compatibility)
+    const contentBlocks = reconstructContentBlocks(dbMsg);
 
     return {
       id: dbMsg.id,
@@ -88,9 +136,9 @@ export const convertDbToComponent = (dbMessages: ChatDbMessage[]): ChatMessage[]
       contextId: dbMsg.contextId,
       taskId: dbMsg.taskId,
       taskState: dbMsg.taskState as ChatMessage['taskState'],
+      taskStartIndex: dbMsg.taskStartIndex,
     };
   });
-};
 
 /**
  * Create a new user message with contentBlocks

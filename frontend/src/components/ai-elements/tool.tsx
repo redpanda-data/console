@@ -6,6 +6,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "components/redpanda-ui/components/collapsible";
+import { CopyButton } from "components/redpanda-ui/components/copy-button";
 import { Text } from "components/redpanda-ui/components/typography";
 import { cn } from "components/redpanda-ui/lib/utils";
 import type { ToolUIPart } from "ai";
@@ -35,6 +36,7 @@ export type ToolHeaderProps = {
   type: ToolUIPart["type"];
   state: ToolUIPart["state"];
   className?: string;
+  toolCallId?: string;
 };
 
 const getStatusBadge = (status: ToolUIPart["state"]) => {
@@ -48,7 +50,7 @@ const getStatusBadge = (status: ToolUIPart["state"]) => {
   if (status === "input-available") {
     return (
       <Badge variant="blue" className="rounded-full">
-        <Text variant="small" className="flex items-center gap-2"><LoaderIcon className="size-4 animate-spin" />Running</Text>
+        <Text variant="small" className="flex items-center gap-2"><LoaderIcon className="size-4 animate-spin" />Working</Text>
       </Badge>
     );
   }
@@ -74,25 +76,46 @@ export const ToolHeader = ({
   title,
   type,
   state,
+  toolCallId,
   ...props
-}: ToolHeaderProps) => (
-  <CollapsibleTrigger
-    className={cn(
-      "flex w-full items-center justify-between gap-4 p-3",
-      className
-    )}
-    {...props}
-  >
-    <div className="flex items-center gap-2">
-      <WrenchIcon className="size-4 text-muted-foreground" />
-      <span className="font-medium text-sm">
-        {title ?? type.split("-").slice(1).join("-")}
-      </span>
-      {getStatusBadge(state)}
-    </div>
-    <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-  </CollapsibleTrigger>
-);
+}: ToolHeaderProps) => {
+  const toolName = title ?? type.split("-").slice(1).join("-");
+  const textToCopy = toolCallId ? `${toolName} (${toolCallId})` : toolName;
+
+  return (
+    <CollapsibleTrigger
+      className={cn(
+        "flex w-full items-center justify-between gap-4 p-3",
+        className
+      )}
+      {...props}
+    >
+      <div className="flex items-center gap-2">
+        <WrenchIcon className="size-4 text-muted-foreground" />
+        <Text as="span" variant="small" className="font-medium">
+          {toolName}
+        </Text>
+        {getStatusBadge(state)}
+      </div>
+      <div className="flex items-center gap-2">
+        {toolCallId && (
+          <Text as="span" className="text-muted-foreground/50 text-[0.75rem] font-mono">
+            {toolCallId}
+          </Text>
+        )}
+        <CopyButton
+          content={textToCopy}
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          onClick={(e) => e.stopPropagation()}
+          title={toolCallId ? `Copy: ${toolName} (${toolCallId})` : `Copy: ${toolName}`}
+        />
+        <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+      </div>
+    </CollapsibleTrigger>
+  );
+};
 
 export type ToolContentProps = ComponentProps<typeof CollapsibleContent>;
 
@@ -140,7 +163,7 @@ export const ToolOutput = ({
   ...props
 }: ToolOutputProps) => {
   // Don't render if there's no output/error or if output is an empty object
-  const hasOutput = output !== undefined && output !== null &&
+  const hasOutput = output !== undefined &&
     !(typeof output === 'object' && !isValidElement(output) && Object.keys(output as object).length === 0);
 
   if (!(hasOutput || errorText)) {

@@ -9,47 +9,30 @@
  * by the Apache License, Version 2.0
  */
 
-import { Action, Actions } from 'components/ai-elements/actions';
-import { CopyIcon, PencilIcon, RefreshCcwIcon } from 'lucide-react';
+import { Actions } from 'components/ai-elements/actions';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 
 type ChatMessageActionsProps = {
   role: 'user' | 'assistant';
   text: string;
-  isLastMessage: boolean;
-  onEdit?: () => void;
-  onRetry?: () => void;
 };
 
 /**
- * Action buttons for chat messages (edit, copy, retry)
+ * Action buttons for chat messages (copy only)
  */
-export const ChatMessageActions = ({ role, text, isLastMessage, onEdit, onRetry }: ChatMessageActionsProps) => {
-  if (role === 'user') {
-    return (
-      <div className="flex justify-end px-4">
-        <Actions>
-          <Action label="Edit" onClick={onEdit}>
-            <PencilIcon className="size-3" />
-          </Action>
-          <Action label="Copy" onClick={() => navigator.clipboard.writeText(text)}>
-            <CopyIcon className="size-3" />
-          </Action>
-        </Actions>
-      </div>
-    );
-  }
+export const ChatMessageActions = ({ role, text }: ChatMessageActionsProps) => {
+  const containerClass = role === 'user' ? 'flex justify-end px-4' : 'px-4';
 
   return (
-    <div className="ml-10 px-4">
+    <div className={containerClass}>
       <Actions>
-        <Action label="Copy" onClick={() => navigator.clipboard.writeText(text)}>
-          <CopyIcon className="size-3" />
-        </Action>
-        {isLastMessage && (
-          <Action label="Retry" onClick={onRetry}>
-            <RefreshCcwIcon className="size-3" />
-          </Action>
-        )}
+        <CopyButton
+          className="size-7 p-1.5 text-muted-foreground hover:text-foreground"
+          content={text}
+          size="icon"
+          title="Copy message"
+          variant="ghost"
+        />
       </Actions>
     </div>
   );

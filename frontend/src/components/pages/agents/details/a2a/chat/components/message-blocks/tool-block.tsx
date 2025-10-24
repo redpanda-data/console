@@ -30,7 +30,12 @@ type ToolBlockProps = {
  */
 export const ToolBlock = ({ toolCallId, toolName, state, input, output, errorText, isLastBlock }: ToolBlockProps) => (
   <Tool open={state === 'input-available' || isLastBlock} key={toolCallId}>
-    <ToolHeader state={state} title={toolName || 'Tool'} type={`tool-${toolName || 'unknown'}`} />
+    <ToolHeader
+      state={state}
+      title={toolName || 'Tool'}
+      toolCallId={toolCallId}
+      type={`tool-${toolName || 'unknown'}`}
+    />
     <ToolContent>
       <ToolInput input={input} />
       {(state === 'output-available' || state === 'output-error') && (

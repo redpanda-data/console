@@ -32,8 +32,6 @@ type UseChatActionsResult = {
   isLoading: boolean;
   editingMessageId: string | null;
   handleSubmit: (message: PromptInputMessage) => Promise<void>;
-  regenerate: () => Promise<void>;
-  editMessage: (messageId: string, textareaRef: React.RefObject<HTMLTextAreaElement>) => void;
   cancelEdit: () => void;
   clearChat: () => Promise<void>;
   setInput: (input: string) => void;
@@ -41,7 +39,7 @@ type UseChatActionsResult = {
 };
 
 /**
- * Hook to manage chat actions (submit, regenerate, edit, clear)
+ * Hook to manage chat actions (submit, clear)
  */
 export const useChatActions = ({
   agentId,
@@ -119,62 +117,6 @@ export const useChatActions = ({
     [agentId, agentCardUrl, contextId, editingMessageId, messages, model, setMessages]
   );
 
-  const regenerate = useCallback(async () => {
-    // Find the last user message
-    const lastUserMessageIndex = messages.findLastIndex((msg) => msg.role === 'user');
-    if (lastUserMessageIndex === -1) {
-      return;
-    }
-
-    const lastUserMessage = messages[lastUserMessageIndex];
-    // Extract text from contentBlocks
-    const textBlock = lastUserMessage.contentBlocks?.find((block) => block.type === 'text');
-    const text = textBlock?.text || '';
-
-    // Get messages to remove (all messages after the last user message)
-    const messagesToRemove = messages.slice(lastUserMessageIndex + 1);
-    const idsToDelete = messagesToRemove.map((msg) => msg.id);
-
-    // Remove all messages after the last user message
-    setMessages((prev) => prev.slice(0, lastUserMessageIndex + 1));
-
-    // Delete from database
-    await deleteMessages(idsToDelete);
-
-    // Resubmit the last user message
-    void handleSubmit({ text });
-  }, [messages, handleSubmit, setMessages]);
-
-  const editMessage = useCallback(
-    (messageId: string, textareaRef: React.RefObject<HTMLTextAreaElement>) => {
-      // Find the message to edit
-      const messageIndex = messages.findIndex((msg) => msg.id === messageId);
-      if (messageIndex === -1) {
-        return;
-      }
-
-      const messageToEdit = messages[messageIndex];
-      // Extract text from contentBlocks
-      const textBlock = messageToEdit.contentBlocks?.find((block) => block.type === 'text');
-      const text = textBlock?.text || '';
-
-      // Set editing state
-      setEditingMessageId(messageId);
-
-      // Populate the input with the message text
-      setInput(text);
-
-      // Focus the textarea
-      setTimeout(() => {
-        textareaRef.current?.focus();
-        // Move cursor to the end of the text
-        const length = text.length;
-        textareaRef.current?.setSelectionRange(length, length);
-      }, 0);
-    },
-    [messages]
-  );
-
   const cancelEdit = useCallback(() => {
     setEditingMessageId(null);
     setInput('');
@@ -195,8 +137,6 @@ export const useChatActions = ({
     isLoading,
     editingMessageId,
     handleSubmit,
-    regenerate,
-    editMessage,
     cancelEdit,
     clearChat,
     setInput,

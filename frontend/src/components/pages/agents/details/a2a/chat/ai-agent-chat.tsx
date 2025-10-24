@@ -32,17 +32,16 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
   // Manage chat messages and context
   const { messages, setMessages, contextId, setContextSeed, isLoadingHistory } = useChatMessages(agent.id);
 
-  // Manage chat actions (submit, regenerate, edit, clear)
-  const { isLoading, editingMessageId, handleSubmit, regenerate, editMessage, cancelEdit, clearChat, setInput, input } =
-    useChatActions({
-      agentId: agent.id,
-      agentCardUrl,
-      model: agent.model,
-      contextId,
-      messages,
-      setMessages,
-      setContextSeed,
-    });
+  // Manage chat actions (submit, clear)
+  const { isLoading, editingMessageId, handleSubmit, cancelEdit, clearChat, setInput, input } = useChatActions({
+    agentId: agent.id,
+    agentCardUrl,
+    model: agent.model,
+    contextId,
+    messages,
+    setMessages,
+    setContextSeed,
+  });
 
   return (
     <div className="flex h-full w-full flex-col">
@@ -58,19 +57,10 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
 
           {!isLoadingHistory &&
             messages.length > 0 &&
-            messages.map((message, messageIndex) => {
-              const isLastMessage = messageIndex === messages.length - 1;
-
-              return (
-                <ChatMessage
-                  isLastMessage={isLastMessage}
-                  isLoading={isLoading}
-                  key={message.id}
-                  message={message}
-                  onEdit={() => editMessage(message.id, textareaRef)}
-                  onRetry={regenerate}
-                />
-              );
+            messages.map((message, index) => {
+              // Only show loading indicator on the last assistant message to avoid duplicates
+              const isLastAssistant = message.role === 'assistant' && index === messages.length - 1;
+              return <ChatMessage isLoading={isLoading && isLastAssistant} key={message.id} message={message} />;
             })}
         </ConversationContent>
         <ConversationScrollButton />
@@ -78,6 +68,7 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
 
       <ChatInput
         editingMessageId={editingMessageId}
+        hasMessages={messages.length > 0}
         input={input}
         isLoading={isLoading}
         model={agent.model}

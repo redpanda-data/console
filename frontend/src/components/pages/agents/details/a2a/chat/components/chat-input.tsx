@@ -35,6 +35,7 @@ type ChatInputProps = {
   isLoading: boolean;
   editingMessageId: string | null;
   model: string | undefined;
+  hasMessages: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   onInputChange: (value: string) => void;
   onSubmit: (message: PromptInputMessage, event: React.FormEvent) => void;
@@ -50,6 +51,7 @@ export const ChatInput = ({
   isLoading,
   editingMessageId,
   model,
+  hasMessages,
   textareaRef,
   onInputChange,
   onSubmit,
@@ -83,7 +85,7 @@ export const ChatInput = ({
               </PromptInputModelSelectContent>
             </PromptInputModelSelect>
           )}
-          <Button onClick={onClearHistory} variant="ghost">
+          <Button disabled={!hasMessages} onClick={onClearHistory} type="button" variant="ghost">
             <HistoryIcon className="size-3" />
             <span>Clear history</span>
           </Button>
