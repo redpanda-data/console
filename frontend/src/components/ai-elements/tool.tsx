@@ -135,7 +135,7 @@ export type ToolInputProps = ComponentProps<"div"> & {
 
 export const ToolInput = ({ className, input, ...props }: ToolInputProps) => {
   // Don't render if input is undefined or an empty object
-  if (!input || (typeof input === 'object' && Object.keys(input).length === 0)) {
+  if (!input || (typeof input === 'object' && input !== null && Object.keys(input).length === 0)) {
     return null;
   }
 
@@ -164,7 +164,7 @@ export const ToolOutput = ({
 }: ToolOutputProps) => {
   // Don't render if there's no output/error or if output is an empty object
   const hasOutput = output !== undefined &&
-    !(typeof output === 'object' && !isValidElement(output) && Object.keys(output as object).length === 0);
+    !(typeof output === 'object' && output !== null && !isValidElement(output) && Object.keys(output as object).length === 0);
 
   if (!(hasOutput || errorText)) {
     return null;
