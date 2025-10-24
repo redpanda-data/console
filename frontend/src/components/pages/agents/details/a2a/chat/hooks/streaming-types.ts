@@ -9,8 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ChatMessage, ContentBlock } from '../types';
 import type { TaskStateProps } from 'components/ai-elements/task';
+
+import type { ChatMessage, ContentBlock } from '../types';
 
 /**
  * Artifact data structure from raw events
