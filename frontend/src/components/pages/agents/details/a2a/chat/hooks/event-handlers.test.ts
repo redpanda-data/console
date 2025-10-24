@@ -245,7 +245,7 @@ describe('artifact duplication - wider integration test', () => {
     handleTextDeltaEvent(legitimateText, state, assistantMessage, onMessageUpdate);
 
     // Simulate artifact content streaming (this will append to activeTextBlock)
-    handleTextDeltaEvent('\n\n' + artifactContent, state, assistantMessage, onMessageUpdate);
+    handleTextDeltaEvent(`\n\n${artifactContent}`, state, assistantMessage, onMessageUpdate);
 
     // Artifact-update arrives
     handleArtifactUpdateEvent(

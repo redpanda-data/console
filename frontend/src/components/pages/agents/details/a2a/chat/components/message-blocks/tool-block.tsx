@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { useEffect, useState } from 'react';
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from 'components/ai-elements/tool';
+import { useEffect, useState } from 'react';
 
 type ToolBlockProps = {
   toolCallId: string;
