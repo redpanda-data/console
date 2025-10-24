@@ -16,6 +16,7 @@ import type { ChatMessage, ContentBlock } from '../types';
  */
 export const closeActiveTextBlock = (contentBlocks: ContentBlock[], activeTextBlock: ContentBlock | null): void => {
   if (activeTextBlock && activeTextBlock.type === 'text' && activeTextBlock.text.length > 0) {
+    console.log('[closeActiveTextBlock] ✅ PUSHING text block to contentBlocks:', activeTextBlock.text.substring(0, 100));
     contentBlocks.push(activeTextBlock);
   }
 };

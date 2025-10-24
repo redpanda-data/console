@@ -170,12 +170,16 @@ const extractAndAddTextFromStatusMessage = (
   timestamp: string,
   state: StreamingState
 ): void => {
+  console.log('[extractAndAddTextFromStatusMessage] called with message.kind:', message?.kind);
+
   if (!message?.parts || message?.role !== 'agent') {
+    console.log('[extractAndAddTextFromStatusMessage] skipping - no parts or not agent role');
     return;
   }
 
   // Skip artifact messages - artifacts are handled by handleArtifactUpdateEvent
   if (message.kind === 'artifact-update') {
+    console.log('[extractAndAddTextFromStatusMessage] skipping - artifact-update');
     return;
   }
 
@@ -193,14 +197,18 @@ const extractAndAddTextFromStatusMessage = (
   }
 
   const combinedText = textParts.join('');
+  console.log('[extractAndAddTextFromStatusMessage] combinedText:', combinedText.substring(0, 100));
 
   // Skip tool request/response messages - they're already displayed by ToolBlock
   const isToolMessage = combinedText.startsWith('Tool request:') || combinedText.startsWith('Tool response:');
+  console.log('[extractAndAddTextFromStatusMessage] isToolMessage:', isToolMessage);
 
   // Check for exact duplicates to avoid re-adding the same text
   const textAlreadyExists = state.contentBlocks.some((block) => block.type === 'text' && block.text === combinedText);
+  console.log('[extractAndAddTextFromStatusMessage] textAlreadyExists:', textAlreadyExists);
 
   if (!(isToolMessage || textAlreadyExists) && combinedText.trim().length > 0) {
+    console.log('[extractAndAddTextFromStatusMessage] ✅ ADDING TEXT BLOCK from status message');
     // Close active text block before adding new text from status message
     closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
     state.activeTextBlock = null;
@@ -212,6 +220,8 @@ const extractAndAddTextFromStatusMessage = (
       timestamp: eventTimestamp,
     };
     state.contentBlocks.push(textBlock);
+  } else {
+    console.log('[extractAndAddTextFromStatusMessage] ❌ SKIPPED - not adding text block');
   }
 };
 
@@ -331,6 +341,8 @@ export const handleArtifactUpdateEvent = (
   assistantMessage: ChatMessage,
   onMessageUpdate: (message: ChatMessage) => void
 ): void => {
+  console.log('[handleArtifactUpdateEvent] artifact:', event.artifact?.artifactId, 'parts:', event.artifact?.parts.length);
+
   if (!event.artifact) {
     return;
   }
@@ -346,6 +358,7 @@ export const handleArtifactUpdateEvent = (
   const eventTimestamp = new Date();
   state.lastEventTimestamp = eventTimestamp;
 
+  console.log('[handleArtifactUpdateEvent] closing active text block before adding artifact');
   // Close active text block before adding/updating artifact
   closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
   state.activeTextBlock = null;
@@ -376,6 +389,7 @@ export const handleArtifactUpdateEvent = (
   );
 
   if (existingIndex >= 0) {
+    console.log('[handleArtifactUpdateEvent] updating existing artifact block');
     // Update existing artifact block (append parts for streaming)
     const existingBlock = state.contentBlocks[existingIndex];
     if (existingBlock.type === 'artifact') {
@@ -384,6 +398,7 @@ export const handleArtifactUpdateEvent = (
       existingBlock.description = artifact.description || existingBlock.description;
     }
   } else {
+    console.log('[handleArtifactUpdateEvent] ✅ ADDING NEW artifact block:', artifact.artifactId);
     // Add new artifact block
     const artifactBlock: ContentBlock = {
       type: 'artifact',
@@ -416,17 +431,21 @@ export const handleTextDeltaEvent = (
   assistantMessage: ChatMessage,
   onMessageUpdate: (message: ChatMessage) => void
 ): void => {
+  console.log('[handleTextDeltaEvent] text delta:', textDelta);
+
   const eventTimestamp = new Date();
   state.lastEventTimestamp = eventTimestamp;
 
   // If no active text block, create one
   if (!state.activeTextBlock || state.activeTextBlock.type !== 'text') {
+    console.log('[handleTextDeltaEvent] ✅ CREATING NEW active text block');
     state.activeTextBlock = {
       type: 'text',
       text: textDelta,
       timestamp: eventTimestamp,
     };
   } else {
+    console.log('[handleTextDeltaEvent] appending to existing active text block');
     // Append to existing active text block
     state.activeTextBlock.text += textDelta;
   }
