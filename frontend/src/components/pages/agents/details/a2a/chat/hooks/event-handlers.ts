@@ -174,6 +174,11 @@ const extractAndAddTextFromStatusMessage = (
     return;
   }
 
+  // Skip artifact messages - artifacts are handled by handleArtifactUpdateEvent
+  if (message.kind === 'artifact-update') {
+    return;
+  }
+
   const eventTimestamp = new Date(timestamp);
   state.lastEventTimestamp = eventTimestamp;
 
