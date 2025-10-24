@@ -81,6 +81,7 @@ export const handleRawTaskEvent = (
     // Capture initial task state if present
     if (event.status?.state) {
       state.capturedTaskState = event.status.state as ChatMessage['taskState'];
+      state.previousTaskState = state.capturedTaskState; // Initialize previousTaskState
     }
 
     // Update message with taskId and state (don't add content blocks for metadata events)
@@ -161,8 +162,63 @@ const parseToolCallFromMetadata = (metadata: {
 };
 
 /**
- * Handle status-update event to capture/update task state, tool calls, and message text
+ * Extract and add text messages from status.message.parts
+ * These are important messages like "Your bar chart has been created..." that appear between artifacts
+ */
+const extractAndAddTextFromStatusMessage = (
+  message: NonNullable<RawStatusUpdateEvent['status']>['message'],
+  timestamp: string,
+  state: StreamingState
+): void => {
+  if (!message?.parts || message?.role !== 'agent') {
+    return;
+  }
+
+  // Skip artifact messages - artifacts are handled by handleArtifactUpdateEvent
+  if (message.kind === 'artifact-update') {
+    return;
+  }
+
+  const eventTimestamp = new Date(timestamp);
+  state.lastEventTimestamp = eventTimestamp;
+
+  // Extract text from message parts, but skip tool-related messages
+  const textParts = message.parts
+    .filter((part: { kind: string; text?: string }) => part.kind === 'text' && part.text)
+    .map((part: { kind: string; text?: string }) => part.text)
+    .filter((text: string | undefined): text is string => !!text);
+
+  if (textParts.length === 0) {
+    return;
+  }
+
+  const combinedText = textParts.join('');
+
+  // Skip tool request/response messages - they're already displayed by ToolBlock
+  const isToolMessage = combinedText.startsWith('Tool request:') || combinedText.startsWith('Tool response:');
+
+  // Check for exact duplicates to avoid re-adding the same text
+  const textAlreadyExists = state.contentBlocks.some((block) => block.type === 'text' && block.text === combinedText);
+
+  if (!(isToolMessage || textAlreadyExists) && combinedText.trim().length > 0) {
+    // Close active text block before adding new text from status message
+    closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+    state.activeTextBlock = null;
+
+    // Add new text block
+    const textBlock: ContentBlock = {
+      type: 'text',
+      text: combinedText,
+      timestamp: eventTimestamp,
+    };
+    state.contentBlocks.push(textBlock);
+  }
+};
+
+/**
+ * Handle status-update event to capture/update task state, tool calls, status updates, and message text
  * NEW: Updates tool blocks in-place (request → response state transition)
+ * NEW: Creates status-update blocks on state transitions
  * FIXED: Now extracts and displays text messages from status.message.parts
  */
 export const handleStatusUpdateEvent = (
@@ -222,50 +278,36 @@ export const handleStatusUpdateEvent = (
     }
   }
 
-  // FIXED: Extract text messages from status.message.parts (messages between artifacts and completion)
-  // These are important messages like "Your bar chart has been created..." that were being lost
-  // BUT: Skip tool request/response messages (already shown in ToolBlock), duplicates, and user-role messages
-  if (message?.parts && message?.role === 'agent' && timestamp) {
-    // IMPORTANT: Only process agent-role messages. User-role messages are task descriptions (internal use only)
-    const eventTimestamp = new Date(timestamp);
-    state.lastEventTimestamp = eventTimestamp;
-
-    // Extract text from message parts, but skip tool-related messages
-    const textParts = message.parts
-      .filter((part) => part.kind === 'text' && part.text)
-      .map((part) => part.text)
-      .filter((text): text is string => !!text);
-
-    if (textParts.length > 0) {
-      const combinedText = textParts.join('');
-
-      // Skip tool request/response messages - they're already displayed by ToolBlock
-      const isToolMessage = combinedText.startsWith('Tool request:') || combinedText.startsWith('Tool response:');
-
-      // Check for exact duplicates to avoid re-adding the same text
-      const textAlreadyExists = state.contentBlocks.some(
-        (block) => block.type === 'text' && block.text === combinedText
-      );
-
-      if (!(isToolMessage || textAlreadyExists) && combinedText.trim().length > 0) {
-        // Close active text block before adding new text from status message
-        closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
-        state.activeTextBlock = null;
-
-        // Add new text block
-        const textBlock: ContentBlock = {
-          type: 'text',
-          text: combinedText,
-          timestamp: eventTimestamp,
-        };
-        state.contentBlocks.push(textBlock);
-      }
-    }
+  // Extract text messages from status.message.parts
+  if (timestamp) {
+    extractAndAddTextFromStatusMessage(message, timestamp, state);
   }
 
   // Always capture the latest task state from status-update events
   if (event.status?.state) {
-    state.capturedTaskState = event.status.state as ChatMessage['taskState'];
+    const newState = event.status.state as ChatMessage['taskState'];
+
+    // Check if state has changed - create status-update block
+    if (newState && state.previousTaskState && state.previousTaskState !== newState) {
+      // Close active text block before adding status update
+      closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+      state.activeTextBlock = null;
+
+      const eventTimestamp = new Date();
+      state.lastEventTimestamp = eventTimestamp;
+
+      // Create status-update content block (newState is guaranteed non-undefined here)
+      const statusUpdateBlock: ContentBlock = {
+        type: 'status-update',
+        taskState: newState as string,
+        timestamp: eventTimestamp,
+      };
+      state.contentBlocks.push(statusUpdateBlock);
+    }
+
+    // Update tracked states
+    state.previousTaskState = newState;
+    state.capturedTaskState = newState;
 
     const updatedMessage = buildMessageWithContentBlocks({
       baseMessage: assistantMessage,
@@ -304,9 +346,32 @@ export const handleArtifactUpdateEvent = (
   const eventTimestamp = new Date();
   state.lastEventTimestamp = eventTimestamp;
 
-  // Close active text block before adding/updating artifact
-  closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
-  state.activeTextBlock = null;
+  // Smart deduplication: artifact content may have arrived via text-delta before artifact-update
+  // We need to remove duplicate artifact content but preserve legitimate pre-artifact text
+  if (state.activeTextBlock?.type === 'text') {
+    const artifactText = artifact.parts
+      .filter((part) => part.kind === 'text')
+      .map((part) => part.text || '')
+      .join('');
+
+    // Check if active text block exactly matches or ends with artifact content
+    if (state.activeTextBlock.text === artifactText) {
+      state.activeTextBlock = null;
+    } else if (state.activeTextBlock.text.endsWith(artifactText)) {
+      // Ends with artifact - strip artifact part, keep legitimate pre-artifact text
+      const legitimateText = state.activeTextBlock.text.slice(0, -artifactText.length);
+      if (legitimateText.trim().length > 0) {
+        state.activeTextBlock.text = legitimateText;
+        closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+      }
+      state.activeTextBlock = null;
+    } else {
+      closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+      state.activeTextBlock = null;
+    }
+  } else {
+    state.activeTextBlock = null;
+  }
 
   // Convert artifact parts from raw event to ContentBlock format
   const parts = artifact.parts.map((part) => {
@@ -367,6 +432,7 @@ export const handleArtifactUpdateEvent = (
 /**
  * Handle text-delta event to accumulate streaming text
  * NEW: Accumulates text in activeTextBlock (closed when non-text event arrives)
+ * DEDUP: Skip if text-delta matches recent artifact content (artifact may arrive before text-delta)
  */
 export const handleTextDeltaEvent = (
   textDelta: string,
@@ -376,6 +442,29 @@ export const handleTextDeltaEvent = (
 ): void => {
   const eventTimestamp = new Date();
   state.lastEventTimestamp = eventTimestamp;
+
+  // Check if this text-delta is duplicate artifact content
+  // (artifact-update may have arrived before text-delta events)
+  const lastArtifact = [...state.contentBlocks].reverse().find((b) => b.type === 'artifact');
+  if (lastArtifact && lastArtifact.type === 'artifact') {
+    const artifactText = lastArtifact.parts
+      .filter((p) => p.kind === 'text')
+      .map((p) => p.text || '')
+      .join('');
+
+    // If we're starting a new text block and it matches artifact content, skip it
+    if (!state.activeTextBlock && textDelta === artifactText) {
+      return;
+    }
+
+    // If appending would create exact artifact match, skip
+    if (state.activeTextBlock?.type === 'text') {
+      const wouldBe = state.activeTextBlock.text + textDelta;
+      if (wouldBe === artifactText) {
+        return;
+      }
+    }
+  }
 
   // If no active text block, create one
   if (!state.activeTextBlock || state.activeTextBlock.type !== 'text') {

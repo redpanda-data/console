@@ -18,6 +18,7 @@ import {
   ArtifactTitle,
 } from 'components/ai-elements/artifact';
 import { Image } from 'components/ai-elements/image';
+import { Response } from 'components/ai-elements/response';
 
 import type { ArtifactPart } from '../../types';
 
@@ -45,11 +46,7 @@ export const ArtifactBlock = ({ artifactId, name, description, parts }: Artifact
     <ArtifactContent>
       {parts.map((part, index) => {
         if (part.kind === 'text') {
-          return (
-            <pre className="whitespace-pre-wrap text-sm" key={index}>
-              {part.text}
-            </pre>
-          );
+          return <Response key={index}>{part.text}</Response>;
         }
 
         if (part.kind === 'file' && part.file.mimeType.startsWith('image/')) {

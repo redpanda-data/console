@@ -10,6 +10,7 @@
  */
 
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from 'components/ai-elements/tool';
+import { useEffect, useState } from 'react';
 
 type ToolBlockProps = {
   toolCallId: string;
@@ -20,25 +21,37 @@ type ToolBlockProps = {
   errorText?: string;
   timestamp: Date;
   messageId?: string;
+  isLastBlock: boolean;
 };
 
 /**
  * Renders a tool block that transitions from request → response state
- * Starts with 'input-available', updates in-place to show output when available
+ * Spawns open initially, then syncs with isLastBlock (open when last, closed when not)
+ * User can manually toggle, but isLastBlock changes override manual state
  */
-export const ToolBlock = ({ toolCallId, toolName, state, input, output, errorText }: ToolBlockProps) => (
-  <Tool defaultOpen={false} key={toolCallId}>
-    <ToolHeader
-      state={state}
-      title={toolName || 'Tool'}
-      toolCallId={toolCallId}
-      type={`tool-${toolName || 'unknown'}`}
-    />
-    <ToolContent>
-      <ToolInput input={input} />
-      {(state === 'output-available' || state === 'output-error') && (
-        <ToolOutput errorText={errorText} output={output} />
-      )}
-    </ToolContent>
-  </Tool>
-);
+export const ToolBlock = ({ toolCallId, toolName, state, input, output, errorText, isLastBlock }: ToolBlockProps) => {
+  // Always spawn open
+  const [isOpen, setIsOpen] = useState(true);
+
+  // Sync with isLastBlock changes
+  useEffect(() => {
+    setIsOpen(isLastBlock);
+  }, [isLastBlock]);
+
+  return (
+    <Tool key={toolCallId} onOpenChange={setIsOpen} open={isOpen}>
+      <ToolHeader
+        state={state}
+        title={toolName || 'Tool'}
+        toolCallId={toolCallId}
+        type={`tool-${toolName || 'unknown'}`}
+      />
+      <ToolContent>
+        <ToolInput input={input} />
+        {(state === 'output-available' || state === 'output-error') && (
+          <ToolOutput errorText={errorText} output={output} />
+        )}
+      </ToolContent>
+    </Tool>
+  );
+};

@@ -14,6 +14,7 @@ import { SparklesIcon } from 'lucide-react';
 
 import { ChatMessageActions } from './chat-message-actions';
 import { ArtifactBlock } from './message-blocks/artifact-block';
+import { StatusUpdateBlock } from './message-blocks/status-update-block';
 import { TextBlock } from './message-blocks/text-block';
 import { ToolBlock } from './message-blocks/tool-block';
 import { LoadingMessageContent } from './message-content/loading-message-content';
@@ -78,6 +79,7 @@ export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
               <ToolBlock
                 errorText={block.errorText}
                 input={block.input}
+                isLastBlock={index === message.contentBlocks.length - 1}
                 messageId={block.messageId}
                 output={block.output}
                 state={block.state}
@@ -97,6 +99,12 @@ export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
                 parts={block.parts}
                 timestamp={block.timestamp}
               />
+            </div>
+          );
+        case 'status-update':
+          return (
+            <div className="mb-4" key={`${message.id}-status-${index}`}>
+              <StatusUpdateBlock taskState={block.taskState} timestamp={block.timestamp} />
             </div>
           );
         default:

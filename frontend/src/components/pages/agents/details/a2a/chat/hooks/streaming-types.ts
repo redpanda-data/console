@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import type { TaskStateProps } from 'components/ai-elements/task';
+
 import type { ChatMessage, ContentBlock } from '../types';
 
 /**
@@ -152,6 +154,10 @@ export type StreamingState = {
    * Latest task state from status updates
    */
   capturedTaskState: ChatMessage['taskState'] | undefined;
+  /**
+   * Previous task state for detecting state transitions
+   */
+  previousTaskState: TaskStateProps['state'] | undefined;
   /**
    * Index in contentBlocks where taskId was first captured
    * Used to split pre-task content from task-related content
