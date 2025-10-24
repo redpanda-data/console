@@ -10,6 +10,7 @@
  */
 
 import type { ChatMessage, ContentBlock } from '../types';
+import type { TaskStateProps } from 'components/ai-elements/task';
 
 /**
  * Artifact data structure from raw events
@@ -155,7 +156,7 @@ export type StreamingState = {
   /**
    * Previous task state for detecting state transitions
    */
-  previousTaskState: string | undefined;
+  previousTaskState: TaskStateProps['state'] | undefined;
   /**
    * Index in contentBlocks where taskId was first captured
    * Used to split pre-task content from task-related content
