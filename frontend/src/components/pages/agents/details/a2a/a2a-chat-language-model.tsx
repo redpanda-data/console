@@ -22,7 +22,6 @@ import {
   LanguageModelV2File,
 } from '@ai-sdk/provider';
 import { convertAsyncIteratorToReadableStream, generateId, IdGenerator } from '@ai-sdk/provider-utils';
-import { config } from 'config';
 
 type A2AStreamEventData = Task | Message | TaskStatusUpdateEvent | TaskArtifactUpdateEvent;
 
@@ -31,6 +30,7 @@ export type A2aChatSettings = object
 export type A2aChatConfig = {
   readonly provider: string;
   readonly generateId?: IdGenerator;
+  readonly jwt?: string;
 }
 
 export function mapFinishReason(event: TaskStatusUpdateEvent): LanguageModelV2FinishReason {
@@ -172,7 +172,9 @@ class A2aChatLanguageModel implements LanguageModelV2 {
 
     const fetchWithCustomHeader: typeof fetch = async (url, init) => {
       const headers = new Headers(init?.headers);
-      headers.set('Authorization', `Bearer ${config.jwt}`);
+      if (this.config.jwt) {
+        headers.set('Authorization', `Bearer ${this.config.jwt}`);
+      }
       headers.set('X-Redpanda-Stream-Tokens', 'true');
 
       const newInit = { ...init, headers };
@@ -238,7 +240,9 @@ class A2aChatLanguageModel implements LanguageModelV2 {
 
     const fetchWithCustomHeader: typeof fetch = async (url, init) => {
       const headers = new Headers(init?.headers);
-      headers.set('Authorization', `Bearer ${config.jwt}`);
+      if (this.config.jwt) {
+        headers.set('Authorization', `Bearer ${this.config.jwt}`);
+      }
 
       const newInit = { ...init, headers };
 

@@ -32,11 +32,17 @@ interface A2aProviderSettings {
 
 // Factory function to create provider instance
 function createA2a(options: A2aProviderSettings = {}): A2aProvider {
-  const createChatModel = (modelId: string, settings: A2aChatSettings = {}) =>
-    new A2aChatLanguageModel(withoutTrailingSlash(modelId) as string, settings, {
+  const createChatModel = (modelId: string, settings: A2aChatSettings = {}) => {
+    // Lazy import to avoid circular dependency during module initialization
+    // biome-ignore lint/performance/noBarrelFile: Needed to avoid circular dependency
+    const { config } = require('config');
+
+    return new A2aChatLanguageModel(withoutTrailingSlash(modelId) as string, settings, {
       provider: 'a2a',
       generateId: options.generateId ?? generateId,
+      jwt: config.jwt,
     });
+  };
 
   const provider = function (modelId: string, settings?: A2aChatSettings) {
     if (new.target) {
