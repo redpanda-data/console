@@ -140,7 +140,7 @@ export const ToolOutput = ({
   ...props
 }: ToolOutputProps) => {
   // Don't render if there's no output/error or if output is an empty object
-  const hasOutput = output !== undefined &&
+  const hasOutput = output !== undefined && output !== null &&
     !(typeof output === 'object' && !isValidElement(output) && Object.keys(output as object).length === 0);
 
   if (!(hasOutput || errorText)) {
