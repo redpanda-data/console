@@ -15,7 +15,7 @@ import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
 import { useParams } from 'react-router-dom';
 
-import { AIAgentChat } from './ai-agent-chat';
+import { AIAgentChat } from './a2a/chat/ai-agent-chat';
 
 /**
  * Main tab component for inspecting AI agent details.
@@ -31,7 +31,6 @@ export const AIAgentInspectorTab = () => {
 
   const agent = aiAgentData?.aiAgent;
   const isAgentRunning = agent?.state === AIAgent_State.RUNNING;
-  const agentUrl = agent?.url;
 
   if (!agent) {
     return (
@@ -63,7 +62,7 @@ export const AIAgentInspectorTab = () => {
     );
   }
 
-  if (!agentUrl) {
+  if (!agent.url) {
     return (
       <Card size="full">
         <CardHeader>
@@ -82,5 +81,5 @@ export const AIAgentInspectorTab = () => {
     );
   }
 
-  return <AIAgentChat agentId={id || ''} agentUrl={agentUrl} />;
+  return <AIAgentChat agent={agent} />;
 };

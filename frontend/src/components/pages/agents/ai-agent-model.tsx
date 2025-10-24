@@ -61,6 +61,9 @@ export const PROVIDER_INFO = {
  */
 export const MODEL_OPTIONS_BY_PROVIDER = {
   openai: {
+    /**
+     * @see https://platform.openai.com/docs/models
+     */
     label: 'OpenAI',
     icon: OpenAILogo,
     models: [
