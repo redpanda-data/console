@@ -20,14 +20,16 @@ type ToolBlockProps = {
   errorText?: string;
   timestamp: Date;
   messageId?: string;
+  isLastBlock: boolean;
 };
 
 /**
  * Renders a tool block that transitions from request → response state
  * Starts with 'input-available', updates in-place to show output when available
+ * Automatically opens if running or is the last block in the message
  */
-export const ToolBlock = ({ toolCallId, toolName, state, input, output, errorText }: ToolBlockProps) => (
-  <Tool defaultOpen={false} key={toolCallId}>
+export const ToolBlock = ({ toolCallId, toolName, state, input, output, errorText, isLastBlock }: ToolBlockProps) => (
+  <Tool defaultOpen={state === 'input-available' || isLastBlock} key={toolCallId}>
     <ToolHeader state={state} title={toolName || 'Tool'} type={`tool-${toolName || 'unknown'}`} />
     <ToolContent>
       <ToolInput input={input} />

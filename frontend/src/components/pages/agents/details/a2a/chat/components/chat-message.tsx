@@ -107,6 +107,7 @@ export const ChatMessage = ({ message, isLastMessage, isLoading, onEdit, onRetry
                 timestamp={block.timestamp}
                 toolCallId={block.toolCallId}
                 toolName={block.toolName}
+                isLastBlock={index === message.contentBlocks.length - 1}
               />
             </div>
           );
