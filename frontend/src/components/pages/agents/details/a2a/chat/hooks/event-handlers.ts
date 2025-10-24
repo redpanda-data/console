@@ -358,10 +358,37 @@ export const handleArtifactUpdateEvent = (
   const eventTimestamp = new Date();
   state.lastEventTimestamp = eventTimestamp;
 
-  console.log('[handleArtifactUpdateEvent] closing active text block before adding artifact');
-  // Close active text block before adding/updating artifact
-  closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
-  state.activeTextBlock = null;
+  // Smart deduplication: artifact content may have arrived via text-delta before artifact-update
+  // We need to remove duplicate artifact content but preserve legitimate pre-artifact text
+  if (state.activeTextBlock?.type === 'text') {
+    const artifactText = artifact.parts
+      .filter((part) => part.kind === 'text')
+      .map((part) => part.text || '')
+      .join('');
+
+    // Check if active text block exactly matches or ends with artifact content
+    if (state.activeTextBlock.text === artifactText) {
+      // Exact match - discard entire block (it's duplicate artifact content)
+      console.log('[handleArtifactUpdateEvent] discarding active text block (exact match with artifact)');
+      state.activeTextBlock = null;
+    } else if (state.activeTextBlock.text.endsWith(artifactText)) {
+      // Ends with artifact - strip artifact part, keep legitimate pre-artifact text
+      const legitimateText = state.activeTextBlock.text.slice(0, -artifactText.length);
+      if (legitimateText.trim().length > 0) {
+        console.log('[handleArtifactUpdateEvent] stripping artifact content, keeping legitimate text');
+        state.activeTextBlock.text = legitimateText;
+        closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+      }
+      state.activeTextBlock = null;
+    } else {
+      // No overlap - keep legitimate text as-is
+      console.log('[handleArtifactUpdateEvent] keeping legitimate text (no artifact overlap)');
+      closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+      state.activeTextBlock = null;
+    }
+  } else {
+    state.activeTextBlock = null;
+  }
 
   // Convert artifact parts from raw event to ContentBlock format
   const parts = artifact.parts.map((part) => {
