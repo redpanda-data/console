@@ -284,4 +284,51 @@ describe('artifact duplication - wider integration test', () => {
     const hasArtifactDuplicate = textBlocks.some((b) => b.text.includes('# Test Markdown Artifact'));
     expect(hasArtifactDuplicate).toBe(false); // Should NOT have duplicate artifact content
   });
+
+  it('should skip text-delta that arrives AFTER artifact-update with same content', async () => {
+    const { handleArtifactUpdateEvent, handleTextDeltaEvent } = await import('./event-handlers');
+    const { closeActiveTextBlock } = await import('./message-builder');
+
+    const state = createMockState();
+    const assistantMessage = createMockMessage();
+    const onMessageUpdate = vi.fn();
+
+    const artifactContent = 'Test content line 1\nTest content line 2\nTimestamp (RFC3339): 2025-10-24T00:00:00Z';
+
+    // Artifact-update arrives FIRST
+    handleArtifactUpdateEvent(
+      {
+        kind: 'artifact-update',
+        taskId: 'task-123',
+        artifact: {
+          artifactId: 'artifact-123',
+          name: 'Test Text Artifact',
+          description: 'A test',
+          parts: [{ kind: 'text', text: artifactContent }],
+        },
+      },
+      state,
+      assistantMessage,
+      onMessageUpdate
+    );
+
+    // THEN text-delta with same content arrives (duplicate from backend)
+    handleTextDeltaEvent(artifactContent, state, assistantMessage, onMessageUpdate);
+
+    // Simulate stream ending
+    closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+
+    const textBlocks = state.contentBlocks.filter((b) => b.type === 'text');
+    const artifactBlocks = state.contentBlocks.filter((b) => b.type === 'artifact');
+
+    console.log('Final state (artifact first, text-delta second):', {
+      textBlocks: textBlocks.length,
+      artifactBlocks: artifactBlocks.length,
+      textContent: textBlocks.map((b) => b.text.substring(0, 50)),
+    });
+
+    // Should have 1 artifact, 0 text blocks (text-delta was skipped as duplicate)
+    expect(artifactBlocks).toHaveLength(1);
+    expect(textBlocks).toHaveLength(0);
+  });
 });

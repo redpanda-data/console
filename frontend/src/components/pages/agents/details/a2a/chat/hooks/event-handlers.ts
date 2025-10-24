@@ -451,6 +451,7 @@ export const handleArtifactUpdateEvent = (
 /**
  * Handle text-delta event to accumulate streaming text
  * NEW: Accumulates text in activeTextBlock (closed when non-text event arrives)
+ * DEDUP: Skip if text-delta matches recent artifact content (artifact may arrive before text-delta)
  */
 export const handleTextDeltaEvent = (
   textDelta: string,
@@ -462,6 +463,31 @@ export const handleTextDeltaEvent = (
 
   const eventTimestamp = new Date();
   state.lastEventTimestamp = eventTimestamp;
+
+  // Check if this text-delta is duplicate artifact content
+  // (artifact-update may have arrived before text-delta events)
+  const lastArtifact = [...state.contentBlocks].reverse().find((b) => b.type === 'artifact');
+  if (lastArtifact && lastArtifact.type === 'artifact') {
+    const artifactText = lastArtifact.parts
+      .filter((p) => p.kind === 'text')
+      .map((p) => p.text || '')
+      .join('');
+
+    // If we're starting a new text block and it matches artifact content, skip it
+    if (!state.activeTextBlock && textDelta === artifactText) {
+      console.log('[handleTextDeltaEvent] ❌ SKIPPING - exact match with recent artifact');
+      return;
+    }
+
+    // If appending would create exact artifact match, skip
+    if (state.activeTextBlock?.type === 'text') {
+      const wouldBe = state.activeTextBlock.text + textDelta;
+      if (wouldBe === artifactText) {
+        console.log('[handleTextDeltaEvent] ❌ SKIPPING - would match artifact content');
+        return;
+      }
+    }
+  }
 
   // If no active text block, create one
   if (!state.activeTextBlock || state.activeTextBlock.type !== 'text') {
