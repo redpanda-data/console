@@ -10,6 +10,7 @@ package consolev1alpha1
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 
@@ -25,149 +26,134 @@ import (
 )
 
 // Suppress "imported and not used" errors
-var _ codes.Code
-var _ io.Reader
-var _ status.Status
-var _ = runtime.String
-var _ = utilities.NewDoubleArray
-var _ = metadata.Join
+var (
+	_ codes.Code
+	_ io.Reader
+	_ status.Status
+	_ = errors.New
+	_ = runtime.String
+	_ = utilities.NewDoubleArray
+	_ = metadata.Join
+)
 
 func request_ShadowLinkService_CreateShadowLink_0(ctx context.Context, marshaler runtime.Marshaler, client ShadowLinkServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq adminv2.CreateShadowLinkRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.ShadowLink); err != nil && err != io.EOF {
+	var (
+		protoReq adminv2.CreateShadowLinkRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.ShadowLink); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	msg, err := client.CreateShadowLink(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_ShadowLinkService_CreateShadowLink_0(ctx context.Context, marshaler runtime.Marshaler, server ShadowLinkServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq adminv2.CreateShadowLinkRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.ShadowLink); err != nil && err != io.EOF {
+	var (
+		protoReq adminv2.CreateShadowLinkRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.ShadowLink); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.CreateShadowLink(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_ShadowLinkService_GetShadowLink_0(ctx context.Context, marshaler runtime.Marshaler, client ShadowLinkServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetShadowLinkRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetShadowLinkRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := client.GetShadowLink(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_ShadowLinkService_GetShadowLink_0(ctx context.Context, marshaler runtime.Marshaler, server ShadowLinkServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetShadowLinkRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetShadowLinkRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := server.GetShadowLink(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_ShadowLinkService_ListShadowLinks_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-)
+var filter_ShadowLinkService_ListShadowLinks_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
 
 func request_ShadowLinkService_ListShadowLinks_0(ctx context.Context, marshaler runtime.Marshaler, client ShadowLinkServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListShadowLinksRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq ListShadowLinksRequest
+		metadata runtime.ServerMetadata
+	)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ShadowLinkService_ListShadowLinks_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.ListShadowLinks(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_ShadowLinkService_ListShadowLinks_0(ctx context.Context, marshaler runtime.Marshaler, server ShadowLinkServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListShadowLinksRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq ListShadowLinksRequest
+		metadata runtime.ServerMetadata
+	)
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ShadowLinkService_ListShadowLinks_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.ListShadowLinks(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_ShadowLinkService_UpdateShadowLink_0 = &utilities.DoubleArray{Encoding: map[string]int{"shadow_link": 0, "shadowLink": 1, "name": 2}, Base: []int{1, 3, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 5, 2, 3, 4}}
-)
+var filter_ShadowLinkService_UpdateShadowLink_0 = &utilities.DoubleArray{Encoding: map[string]int{"shadow_link": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 
 func request_ShadowLinkService_UpdateShadowLink_0(ctx context.Context, marshaler runtime.Marshaler, client ShadowLinkServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq adminv2.UpdateShadowLinkRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq adminv2.UpdateShadowLinkRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
 	newReader, berr := utilities.IOReaderFactory(req.Body)
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.ShadowLink); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.ShadowLink); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
 		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.ShadowLink); err != nil {
@@ -176,45 +162,35 @@ func request_ShadowLinkService_UpdateShadowLink_0(ctx context.Context, marshaler
 			protoReq.UpdateMask = fieldMask
 		}
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["shadow_link.name"]
+	val, ok := pathParams["shadow_link.name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "shadow_link.name")
 	}
-
 	err = runtime.PopulateFieldFromPath(&protoReq, "shadow_link.name", val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "shadow_link.name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ShadowLinkService_UpdateShadowLink_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.UpdateShadowLink(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_ShadowLinkService_UpdateShadowLink_0(ctx context.Context, marshaler runtime.Marshaler, server ShadowLinkServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq adminv2.UpdateShadowLinkRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq adminv2.UpdateShadowLinkRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
 	newReader, berr := utilities.IOReaderFactory(req.Body)
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.ShadowLink); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.ShadowLink); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
@@ -224,263 +200,198 @@ func local_request_ShadowLinkService_UpdateShadowLink_0(ctx context.Context, mar
 			protoReq.UpdateMask = fieldMask
 		}
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["shadow_link.name"]
+	val, ok := pathParams["shadow_link.name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "shadow_link.name")
 	}
-
 	err = runtime.PopulateFieldFromPath(&protoReq, "shadow_link.name", val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "shadow_link.name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ShadowLinkService_UpdateShadowLink_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.UpdateShadowLink(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_ShadowLinkService_DeleteShadowLink_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
-)
+var filter_ShadowLinkService_DeleteShadowLink_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_ShadowLinkService_DeleteShadowLink_0(ctx context.Context, marshaler runtime.Marshaler, client ShadowLinkServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq adminv2.DeleteShadowLinkRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq adminv2.DeleteShadowLinkRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ShadowLinkService_DeleteShadowLink_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.DeleteShadowLink(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_ShadowLinkService_DeleteShadowLink_0(ctx context.Context, marshaler runtime.Marshaler, server ShadowLinkServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq adminv2.DeleteShadowLinkRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq adminv2.DeleteShadowLinkRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ShadowLinkService_DeleteShadowLink_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.DeleteShadowLink(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_ShadowLinkService_ListShadowLinkTopics_0 = &utilities.DoubleArray{Encoding: map[string]int{"shadow_link_name": 0, "shadowLinkName": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
-)
+var filter_ShadowLinkService_ListShadowLinkTopics_0 = &utilities.DoubleArray{Encoding: map[string]int{"shadow_link_name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_ShadowLinkService_ListShadowLinkTopics_0(ctx context.Context, marshaler runtime.Marshaler, client ShadowLinkServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListShadowLinkTopicsRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ListShadowLinkTopicsRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["shadow_link_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["shadow_link_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "shadow_link_name")
 	}
-
 	protoReq.ShadowLinkName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "shadow_link_name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ShadowLinkService_ListShadowLinkTopics_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.ListShadowLinkTopics(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_ShadowLinkService_ListShadowLinkTopics_0(ctx context.Context, marshaler runtime.Marshaler, server ShadowLinkServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListShadowLinkTopicsRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ListShadowLinkTopicsRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["shadow_link_name"]
+	val, ok := pathParams["shadow_link_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "shadow_link_name")
 	}
-
 	protoReq.ShadowLinkName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "shadow_link_name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ShadowLinkService_ListShadowLinkTopics_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.ListShadowLinkTopics(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_ShadowLinkService_GetShadowTopic_0(ctx context.Context, marshaler runtime.Marshaler, client ShadowLinkServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetShadowTopicRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetShadowTopicRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["shadow_link_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["shadow_link_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "shadow_link_name")
 	}
-
 	protoReq.ShadowLinkName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "shadow_link_name", err)
 	}
-
 	val, ok = pathParams["topic_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "topic_name")
 	}
-
 	protoReq.TopicName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "topic_name", err)
 	}
-
 	msg, err := client.GetShadowTopic(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_ShadowLinkService_GetShadowTopic_0(ctx context.Context, marshaler runtime.Marshaler, server ShadowLinkServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetShadowTopicRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetShadowTopicRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["shadow_link_name"]
+	val, ok := pathParams["shadow_link_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "shadow_link_name")
 	}
-
 	protoReq.ShadowLinkName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "shadow_link_name", err)
 	}
-
 	val, ok = pathParams["topic_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "topic_name")
 	}
-
 	protoReq.TopicName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "topic_name", err)
 	}
-
 	msg, err := server.GetShadowTopic(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 // RegisterShadowLinkServiceHandlerServer registers the http handlers for service ShadowLinkService to "mux".
 // UnaryRPC     :call ShadowLinkServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterShadowLinkServiceHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterShadowLinkServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server ShadowLinkServiceServer) error {
-
-	mux.Handle("POST", pattern_ShadowLinkService_CreateShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ShadowLinkService_CreateShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/CreateShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/CreateShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -492,20 +403,15 @@ func RegisterShadowLinkServiceHandlerServer(ctx context.Context, mux *runtime.Se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ShadowLinkService_CreateShadowLink_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_ShadowLinkService_GetShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_ShadowLinkService_GetShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/GetShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{name}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/GetShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -517,20 +423,15 @@ func RegisterShadowLinkServiceHandlerServer(ctx context.Context, mux *runtime.Se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ShadowLinkService_GetShadowLink_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_ShadowLinkService_ListShadowLinks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_ShadowLinkService_ListShadowLinks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/ListShadowLinks", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/ListShadowLinks", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -542,20 +443,15 @@ func RegisterShadowLinkServiceHandlerServer(ctx context.Context, mux *runtime.Se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ShadowLinkService_ListShadowLinks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PATCH", pattern_ShadowLinkService_UpdateShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPatch, pattern_ShadowLinkService_UpdateShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/UpdateShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{shadow_link.name}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/UpdateShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{shadow_link.name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -567,20 +463,15 @@ func RegisterShadowLinkServiceHandlerServer(ctx context.Context, mux *runtime.Se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ShadowLinkService_UpdateShadowLink_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("DELETE", pattern_ShadowLinkService_DeleteShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodDelete, pattern_ShadowLinkService_DeleteShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/DeleteShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{name}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/DeleteShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -592,20 +483,15 @@ func RegisterShadowLinkServiceHandlerServer(ctx context.Context, mux *runtime.Se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ShadowLinkService_DeleteShadowLink_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_ShadowLinkService_ListShadowLinkTopics_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_ShadowLinkService_ListShadowLinkTopics_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/ListShadowLinkTopics", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{shadow_link_name}/topic"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/ListShadowLinkTopics", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{shadow_link_name}/topic"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -617,20 +503,15 @@ func RegisterShadowLinkServiceHandlerServer(ctx context.Context, mux *runtime.Se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ShadowLinkService_ListShadowLinkTopics_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_ShadowLinkService_GetShadowTopic_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_ShadowLinkService_GetShadowTopic_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/GetShadowTopic", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{shadow_link_name}/topic/{topic_name}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/GetShadowTopic", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{shadow_link_name}/topic/{topic_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -642,9 +523,7 @@ func RegisterShadowLinkServiceHandlerServer(ctx context.Context, mux *runtime.Se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ShadowLinkService_GetShadowTopic_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	return nil
@@ -653,25 +532,24 @@ func RegisterShadowLinkServiceHandlerServer(ctx context.Context, mux *runtime.Se
 // RegisterShadowLinkServiceHandlerFromEndpoint is same as RegisterShadowLinkServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterShadowLinkServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.DialContext(ctx, endpoint, opts...)
+	conn, err := grpc.NewClient(endpoint, opts...)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if err != nil {
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Errorf("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 			return
 		}
 		go func() {
 			<-ctx.Done()
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Errorf("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 		}()
 	}()
-
 	return RegisterShadowLinkServiceHandler(ctx, mux, conn)
 }
 
@@ -685,16 +563,13 @@ func RegisterShadowLinkServiceHandler(ctx context.Context, mux *runtime.ServeMux
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "ShadowLinkServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "ShadowLinkServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "ShadowLinkServiceClient" to call the correct interceptors.
+// "ShadowLinkServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterShadowLinkServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client ShadowLinkServiceClient) error {
-
-	mux.Handle("POST", pattern_ShadowLinkService_CreateShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ShadowLinkService_CreateShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/CreateShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/CreateShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -705,18 +580,13 @@ func RegisterShadowLinkServiceHandlerClient(ctx context.Context, mux *runtime.Se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ShadowLinkService_CreateShadowLink_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_ShadowLinkService_GetShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_ShadowLinkService_GetShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/GetShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{name}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/GetShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -727,18 +597,13 @@ func RegisterShadowLinkServiceHandlerClient(ctx context.Context, mux *runtime.Se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ShadowLinkService_GetShadowLink_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_ShadowLinkService_ListShadowLinks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_ShadowLinkService_ListShadowLinks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/ListShadowLinks", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/ListShadowLinks", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -749,18 +614,13 @@ func RegisterShadowLinkServiceHandlerClient(ctx context.Context, mux *runtime.Se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ShadowLinkService_ListShadowLinks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PATCH", pattern_ShadowLinkService_UpdateShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPatch, pattern_ShadowLinkService_UpdateShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/UpdateShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{shadow_link.name}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/UpdateShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{shadow_link.name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -771,18 +631,13 @@ func RegisterShadowLinkServiceHandlerClient(ctx context.Context, mux *runtime.Se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ShadowLinkService_UpdateShadowLink_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("DELETE", pattern_ShadowLinkService_DeleteShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodDelete, pattern_ShadowLinkService_DeleteShadowLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/DeleteShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{name}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/DeleteShadowLink", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -793,18 +648,13 @@ func RegisterShadowLinkServiceHandlerClient(ctx context.Context, mux *runtime.Se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ShadowLinkService_DeleteShadowLink_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_ShadowLinkService_ListShadowLinkTopics_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_ShadowLinkService_ListShadowLinkTopics_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/ListShadowLinkTopics", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{shadow_link_name}/topic"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/ListShadowLinkTopics", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{shadow_link_name}/topic"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -815,18 +665,13 @@ func RegisterShadowLinkServiceHandlerClient(ctx context.Context, mux *runtime.Se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ShadowLinkService_ListShadowLinkTopics_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_ShadowLinkService_GetShadowTopic_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_ShadowLinkService_GetShadowTopic_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/GetShadowTopic", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{shadow_link_name}/topic/{topic_name}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ShadowLinkService/GetShadowTopic", runtime.WithHTTPPathPattern("/v1alpha1/shadowlink/{shadow_link_name}/topic/{topic_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -837,42 +682,27 @@ func RegisterShadowLinkServiceHandlerClient(ctx context.Context, mux *runtime.Se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ShadowLinkService_GetShadowTopic_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
 	return nil
 }
 
 var (
-	pattern_ShadowLinkService_CreateShadowLink_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1alpha1", "shadowlink"}, ""))
-
-	pattern_ShadowLinkService_GetShadowLink_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1alpha1", "shadowlink", "name"}, ""))
-
-	pattern_ShadowLinkService_ListShadowLinks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1alpha1", "shadowlink"}, ""))
-
-	pattern_ShadowLinkService_UpdateShadowLink_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1alpha1", "shadowlink", "shadow_link.name"}, ""))
-
-	pattern_ShadowLinkService_DeleteShadowLink_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1alpha1", "shadowlink", "name"}, ""))
-
+	pattern_ShadowLinkService_CreateShadowLink_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1alpha1", "shadowlink"}, ""))
+	pattern_ShadowLinkService_GetShadowLink_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1alpha1", "shadowlink", "name"}, ""))
+	pattern_ShadowLinkService_ListShadowLinks_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1alpha1", "shadowlink"}, ""))
+	pattern_ShadowLinkService_UpdateShadowLink_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1alpha1", "shadowlink", "shadow_link.name"}, ""))
+	pattern_ShadowLinkService_DeleteShadowLink_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1alpha1", "shadowlink", "name"}, ""))
 	pattern_ShadowLinkService_ListShadowLinkTopics_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1alpha1", "shadowlink", "shadow_link_name", "topic"}, ""))
-
-	pattern_ShadowLinkService_GetShadowTopic_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1alpha1", "shadowlink", "shadow_link_name", "topic", "topic_name"}, ""))
+	pattern_ShadowLinkService_GetShadowTopic_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1alpha1", "shadowlink", "shadow_link_name", "topic", "topic_name"}, ""))
 )
 
 var (
-	forward_ShadowLinkService_CreateShadowLink_0 = runtime.ForwardResponseMessage
-
-	forward_ShadowLinkService_GetShadowLink_0 = runtime.ForwardResponseMessage
-
-	forward_ShadowLinkService_ListShadowLinks_0 = runtime.ForwardResponseMessage
-
-	forward_ShadowLinkService_UpdateShadowLink_0 = runtime.ForwardResponseMessage
-
-	forward_ShadowLinkService_DeleteShadowLink_0 = runtime.ForwardResponseMessage
-
+	forward_ShadowLinkService_CreateShadowLink_0     = runtime.ForwardResponseMessage
+	forward_ShadowLinkService_GetShadowLink_0        = runtime.ForwardResponseMessage
+	forward_ShadowLinkService_ListShadowLinks_0      = runtime.ForwardResponseMessage
+	forward_ShadowLinkService_UpdateShadowLink_0     = runtime.ForwardResponseMessage
+	forward_ShadowLinkService_DeleteShadowLink_0     = runtime.ForwardResponseMessage
 	forward_ShadowLinkService_ListShadowLinkTopics_0 = runtime.ForwardResponseMessage
-
-	forward_ShadowLinkService_GetShadowTopic_0 = runtime.ForwardResponseMessage
+	forward_ShadowLinkService_GetShadowTopic_0       = runtime.ForwardResponseMessage
 )
