@@ -101,13 +101,13 @@ export const ChatMessage = ({ message, isLastMessage, isLoading, onEdit, onRetry
               <ToolBlock
                 errorText={block.errorText}
                 input={block.input}
+                isLastBlock={index === message.contentBlocks.length - 1}
                 messageId={block.messageId}
                 output={block.output}
                 state={block.state}
                 timestamp={block.timestamp}
                 toolCallId={block.toolCallId}
                 toolName={block.toolName}
-                isLastBlock={index === message.contentBlocks.length - 1}
               />
             </div>
           );
