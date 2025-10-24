@@ -10,6 +10,7 @@ package dataplanev1alpha1
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 
@@ -24,1060 +25,804 @@ import (
 )
 
 // Suppress "imported and not used" errors
-var _ codes.Code
-var _ io.Reader
-var _ status.Status
-var _ = runtime.String
-var _ = utilities.NewDoubleArray
-var _ = metadata.Join
+var (
+	_ codes.Code
+	_ io.Reader
+	_ status.Status
+	_ = errors.New
+	_ = runtime.String
+	_ = utilities.NewDoubleArray
+	_ = metadata.Join
+)
 
 func request_KafkaConnectService_ListConnectClusters_0(ctx context.Context, marshaler runtime.Marshaler, client KafkaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListConnectClustersRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq ListConnectClustersRequest
+		metadata runtime.ServerMetadata
+	)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	msg, err := client.ListConnectClusters(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_KafkaConnectService_ListConnectClusters_0(ctx context.Context, marshaler runtime.Marshaler, server KafkaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListConnectClustersRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq ListConnectClustersRequest
+		metadata runtime.ServerMetadata
+	)
 	msg, err := server.ListConnectClusters(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_KafkaConnectService_GetConnectCluster_0(ctx context.Context, marshaler runtime.Marshaler, client KafkaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetConnectClusterRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetConnectClusterRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	msg, err := client.GetConnectCluster(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_KafkaConnectService_GetConnectCluster_0(ctx context.Context, marshaler runtime.Marshaler, server KafkaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetConnectClusterRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetConnectClusterRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	msg, err := server.GetConnectCluster(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_KafkaConnectService_ListConnectors_0 = &utilities.DoubleArray{Encoding: map[string]int{"cluster_name": 0, "clusterName": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
-)
+var filter_KafkaConnectService_ListConnectors_0 = &utilities.DoubleArray{Encoding: map[string]int{"cluster_name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_KafkaConnectService_ListConnectors_0(ctx context.Context, marshaler runtime.Marshaler, client KafkaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListConnectorsRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ListConnectorsRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_KafkaConnectService_ListConnectors_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.ListConnectors(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_KafkaConnectService_ListConnectors_0(ctx context.Context, marshaler runtime.Marshaler, server KafkaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListConnectorsRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ListConnectorsRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_KafkaConnectService_ListConnectors_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.ListConnectors(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_KafkaConnectService_CreateConnector_0(ctx context.Context, marshaler runtime.Marshaler, client KafkaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CreateConnectorRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Connector); err != nil && err != io.EOF {
+	var (
+		protoReq CreateConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Connector); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["cluster_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	msg, err := client.CreateConnector(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_KafkaConnectService_CreateConnector_0(ctx context.Context, marshaler runtime.Marshaler, server KafkaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CreateConnectorRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Connector); err != nil && err != io.EOF {
+	var (
+		protoReq CreateConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Connector); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["cluster_name"]
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	msg, err := server.CreateConnector(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_KafkaConnectService_RestartConnector_0(ctx context.Context, marshaler runtime.Marshaler, client KafkaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RestartConnectorRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Options); err != nil && err != io.EOF {
+	var (
+		protoReq RestartConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Options); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["cluster_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := client.RestartConnector(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_KafkaConnectService_RestartConnector_0(ctx context.Context, marshaler runtime.Marshaler, server KafkaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RestartConnectorRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Options); err != nil && err != io.EOF {
+	var (
+		protoReq RestartConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Options); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["cluster_name"]
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := server.RestartConnector(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_KafkaConnectService_GetConnector_0(ctx context.Context, marshaler runtime.Marshaler, client KafkaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetConnectorRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := client.GetConnector(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_KafkaConnectService_GetConnector_0(ctx context.Context, marshaler runtime.Marshaler, server KafkaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetConnectorRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := server.GetConnector(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_KafkaConnectService_GetConnectorStatus_0(ctx context.Context, marshaler runtime.Marshaler, client KafkaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetConnectorStatusRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetConnectorStatusRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := client.GetConnectorStatus(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_KafkaConnectService_GetConnectorStatus_0(ctx context.Context, marshaler runtime.Marshaler, server KafkaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetConnectorStatusRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetConnectorStatusRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := server.GetConnectorStatus(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_KafkaConnectService_PauseConnector_0(ctx context.Context, marshaler runtime.Marshaler, client KafkaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PauseConnectorRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq PauseConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := client.PauseConnector(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_KafkaConnectService_PauseConnector_0(ctx context.Context, marshaler runtime.Marshaler, server KafkaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PauseConnectorRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq PauseConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := server.PauseConnector(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_KafkaConnectService_ResumeConnector_0(ctx context.Context, marshaler runtime.Marshaler, client KafkaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ResumeConnectorRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ResumeConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := client.ResumeConnector(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_KafkaConnectService_ResumeConnector_0(ctx context.Context, marshaler runtime.Marshaler, server KafkaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ResumeConnectorRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ResumeConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := server.ResumeConnector(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_KafkaConnectService_StopConnector_0(ctx context.Context, marshaler runtime.Marshaler, client KafkaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq StopConnectorRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq StopConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := client.StopConnector(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_KafkaConnectService_StopConnector_0(ctx context.Context, marshaler runtime.Marshaler, server KafkaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq StopConnectorRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq StopConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := server.StopConnector(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_KafkaConnectService_DeleteConnector_0(ctx context.Context, marshaler runtime.Marshaler, client KafkaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DeleteConnectorRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq DeleteConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := client.DeleteConnector(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_KafkaConnectService_DeleteConnector_0(ctx context.Context, marshaler runtime.Marshaler, server KafkaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DeleteConnectorRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq DeleteConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := server.DeleteConnector(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_KafkaConnectService_UpsertConnector_0(ctx context.Context, marshaler runtime.Marshaler, client KafkaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpsertConnectorRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Config); err != nil && err != io.EOF {
+	var (
+		protoReq UpsertConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Config); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["cluster_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := client.UpsertConnector(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_KafkaConnectService_UpsertConnector_0(ctx context.Context, marshaler runtime.Marshaler, server KafkaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpsertConnectorRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Config); err != nil && err != io.EOF {
+	var (
+		protoReq UpsertConnectorRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Config); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["cluster_name"]
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := server.UpsertConnector(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_KafkaConnectService_GetConnectorConfig_0(ctx context.Context, marshaler runtime.Marshaler, client KafkaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetConnectorConfigRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetConnectorConfigRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := client.GetConnectorConfig(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_KafkaConnectService_GetConnectorConfig_0(ctx context.Context, marshaler runtime.Marshaler, server KafkaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetConnectorConfigRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetConnectorConfigRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := server.GetConnectorConfig(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_KafkaConnectService_ListConnectorTopics_0(ctx context.Context, marshaler runtime.Marshaler, client KafkaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListConnectorTopicsRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ListConnectorTopicsRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := client.ListConnectorTopics(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_KafkaConnectService_ListConnectorTopics_0(ctx context.Context, marshaler runtime.Marshaler, server KafkaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListConnectorTopicsRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ListConnectorTopicsRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := server.ListConnectorTopics(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_KafkaConnectService_ResetConnectorTopics_0(ctx context.Context, marshaler runtime.Marshaler, client KafkaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ResetConnectorTopicsRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ResetConnectorTopicsRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := client.ResetConnectorTopics(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_KafkaConnectService_ResetConnectorTopics_0(ctx context.Context, marshaler runtime.Marshaler, server KafkaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ResetConnectorTopicsRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ResetConnectorTopicsRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["cluster_name"]
+	val, ok := pathParams["cluster_name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cluster_name")
 	}
-
 	protoReq.ClusterName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
-
 	val, ok = pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := server.ResetConnectorTopics(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 // RegisterKafkaConnectServiceHandlerServer registers the http handlers for service KafkaConnectService to "mux".
 // UnaryRPC     :call KafkaConnectServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterKafkaConnectServiceHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server KafkaConnectServiceServer) error {
-
-	mux.Handle("GET", pattern_KafkaConnectService_ListConnectClusters_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KafkaConnectService_ListConnectClusters_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectClusters", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectClusters", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1089,20 +834,15 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_ListConnectClusters_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_KafkaConnectService_GetConnectCluster_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KafkaConnectService_GetConnectCluster_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectCluster", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectCluster", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1114,20 +854,15 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
-		forward_KafkaConnectService_GetConnectCluster_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectCluster_0{resp}, mux.GetForwardResponseOptions()...)
-
+		forward_KafkaConnectService_GetConnectCluster_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectCluster_0{resp.(*GetConnectClusterResponse)}, mux.GetForwardResponseOptions()...)
 	})
-
-	mux.Handle("GET", pattern_KafkaConnectService_ListConnectors_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KafkaConnectService_ListConnectors_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectors", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectors", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1139,20 +874,15 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_ListConnectors_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_KafkaConnectService_CreateConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_KafkaConnectService_CreateConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/CreateConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/CreateConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1164,20 +894,15 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
-		forward_KafkaConnectService_CreateConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_CreateConnector_0{resp}, mux.GetForwardResponseOptions()...)
-
+		forward_KafkaConnectService_CreateConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_CreateConnector_0{resp.(*CreateConnectorResponse)}, mux.GetForwardResponseOptions()...)
 	})
-
-	mux.Handle("POST", pattern_KafkaConnectService_RestartConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_KafkaConnectService_RestartConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/RestartConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/restart"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/RestartConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/restart"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1189,20 +914,15 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_RestartConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_KafkaConnectService_GetConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KafkaConnectService_GetConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1214,20 +934,15 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
-		forward_KafkaConnectService_GetConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnector_0{resp}, mux.GetForwardResponseOptions()...)
-
+		forward_KafkaConnectService_GetConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnector_0{resp.(*GetConnectorResponse)}, mux.GetForwardResponseOptions()...)
 	})
-
-	mux.Handle("GET", pattern_KafkaConnectService_GetConnectorStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KafkaConnectService_GetConnectorStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorStatus", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/status"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorStatus", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/status"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1239,20 +954,15 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
-		forward_KafkaConnectService_GetConnectorStatus_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectorStatus_0{resp}, mux.GetForwardResponseOptions()...)
-
+		forward_KafkaConnectService_GetConnectorStatus_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectorStatus_0{resp.(*GetConnectorStatusResponse)}, mux.GetForwardResponseOptions()...)
 	})
-
-	mux.Handle("PUT", pattern_KafkaConnectService_PauseConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPut, pattern_KafkaConnectService_PauseConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/PauseConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/pause"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/PauseConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/pause"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1264,20 +974,15 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_PauseConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PUT", pattern_KafkaConnectService_ResumeConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPut, pattern_KafkaConnectService_ResumeConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResumeConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/resume"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResumeConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/resume"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1289,20 +994,15 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_ResumeConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PUT", pattern_KafkaConnectService_StopConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPut, pattern_KafkaConnectService_StopConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/StopConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/stop"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/StopConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/stop"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1314,20 +1014,15 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_StopConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("DELETE", pattern_KafkaConnectService_DeleteConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodDelete, pattern_KafkaConnectService_DeleteConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/DeleteConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/DeleteConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1339,20 +1034,15 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_DeleteConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PUT", pattern_KafkaConnectService_UpsertConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPut, pattern_KafkaConnectService_UpsertConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/UpsertConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/config"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/UpsertConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/config"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1364,20 +1054,15 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
-		forward_KafkaConnectService_UpsertConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_UpsertConnector_0{resp}, mux.GetForwardResponseOptions()...)
-
+		forward_KafkaConnectService_UpsertConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_UpsertConnector_0{resp.(*UpsertConnectorResponse)}, mux.GetForwardResponseOptions()...)
 	})
-
-	mux.Handle("GET", pattern_KafkaConnectService_GetConnectorConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KafkaConnectService_GetConnectorConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorConfig", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/config"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorConfig", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/config"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1389,20 +1074,15 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
-		forward_KafkaConnectService_GetConnectorConfig_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectorConfig_0{resp}, mux.GetForwardResponseOptions()...)
-
+		forward_KafkaConnectService_GetConnectorConfig_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectorConfig_0{resp.(*GetConnectorConfigResponse)}, mux.GetForwardResponseOptions()...)
 	})
-
-	mux.Handle("GET", pattern_KafkaConnectService_ListConnectorTopics_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KafkaConnectService_ListConnectorTopics_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1414,20 +1094,15 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_ListConnectorTopics_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PUT", pattern_KafkaConnectService_ResetConnectorTopics_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPut, pattern_KafkaConnectService_ResetConnectorTopics_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResetConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics/reset"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResetConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics/reset"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1439,9 +1114,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_ResetConnectorTopics_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	return nil
@@ -1450,25 +1123,24 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 // RegisterKafkaConnectServiceHandlerFromEndpoint is same as RegisterKafkaConnectServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterKafkaConnectServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.DialContext(ctx, endpoint, opts...)
+	conn, err := grpc.NewClient(endpoint, opts...)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if err != nil {
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Errorf("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 			return
 		}
 		go func() {
 			<-ctx.Done()
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Errorf("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 		}()
 	}()
-
 	return RegisterKafkaConnectServiceHandler(ctx, mux, conn)
 }
 
@@ -1482,16 +1154,13 @@ func RegisterKafkaConnectServiceHandler(ctx context.Context, mux *runtime.ServeM
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "KafkaConnectServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "KafkaConnectServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "KafkaConnectServiceClient" to call the correct interceptors.
+// "KafkaConnectServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client KafkaConnectServiceClient) error {
-
-	mux.Handle("GET", pattern_KafkaConnectService_ListConnectClusters_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KafkaConnectService_ListConnectClusters_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectClusters", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectClusters", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1502,18 +1171,13 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_ListConnectClusters_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_KafkaConnectService_GetConnectCluster_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KafkaConnectService_GetConnectCluster_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectCluster", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectCluster", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1524,18 +1188,13 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
-		forward_KafkaConnectService_GetConnectCluster_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectCluster_0{resp}, mux.GetForwardResponseOptions()...)
-
+		forward_KafkaConnectService_GetConnectCluster_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectCluster_0{resp.(*GetConnectClusterResponse)}, mux.GetForwardResponseOptions()...)
 	})
-
-	mux.Handle("GET", pattern_KafkaConnectService_ListConnectors_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KafkaConnectService_ListConnectors_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectors", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectors", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1546,18 +1205,13 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_ListConnectors_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_KafkaConnectService_CreateConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_KafkaConnectService_CreateConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/CreateConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/CreateConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1568,18 +1222,13 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
-		forward_KafkaConnectService_CreateConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_CreateConnector_0{resp}, mux.GetForwardResponseOptions()...)
-
+		forward_KafkaConnectService_CreateConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_CreateConnector_0{resp.(*CreateConnectorResponse)}, mux.GetForwardResponseOptions()...)
 	})
-
-	mux.Handle("POST", pattern_KafkaConnectService_RestartConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_KafkaConnectService_RestartConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/RestartConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/restart"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/RestartConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/restart"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1590,18 +1239,13 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_RestartConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_KafkaConnectService_GetConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KafkaConnectService_GetConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1612,18 +1256,13 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
-		forward_KafkaConnectService_GetConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnector_0{resp}, mux.GetForwardResponseOptions()...)
-
+		forward_KafkaConnectService_GetConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnector_0{resp.(*GetConnectorResponse)}, mux.GetForwardResponseOptions()...)
 	})
-
-	mux.Handle("GET", pattern_KafkaConnectService_GetConnectorStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KafkaConnectService_GetConnectorStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorStatus", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/status"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorStatus", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/status"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1634,18 +1273,13 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
-		forward_KafkaConnectService_GetConnectorStatus_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectorStatus_0{resp}, mux.GetForwardResponseOptions()...)
-
+		forward_KafkaConnectService_GetConnectorStatus_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectorStatus_0{resp.(*GetConnectorStatusResponse)}, mux.GetForwardResponseOptions()...)
 	})
-
-	mux.Handle("PUT", pattern_KafkaConnectService_PauseConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPut, pattern_KafkaConnectService_PauseConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/PauseConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/pause"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/PauseConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/pause"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1656,18 +1290,13 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_PauseConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PUT", pattern_KafkaConnectService_ResumeConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPut, pattern_KafkaConnectService_ResumeConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResumeConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/resume"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResumeConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/resume"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1678,18 +1307,13 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_ResumeConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PUT", pattern_KafkaConnectService_StopConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPut, pattern_KafkaConnectService_StopConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/StopConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/stop"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/StopConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/stop"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1700,18 +1324,13 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_StopConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("DELETE", pattern_KafkaConnectService_DeleteConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodDelete, pattern_KafkaConnectService_DeleteConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/DeleteConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/DeleteConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1722,18 +1341,13 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_DeleteConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PUT", pattern_KafkaConnectService_UpsertConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPut, pattern_KafkaConnectService_UpsertConnector_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/UpsertConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/config"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/UpsertConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/config"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1744,18 +1358,13 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
-		forward_KafkaConnectService_UpsertConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_UpsertConnector_0{resp}, mux.GetForwardResponseOptions()...)
-
+		forward_KafkaConnectService_UpsertConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_UpsertConnector_0{resp.(*UpsertConnectorResponse)}, mux.GetForwardResponseOptions()...)
 	})
-
-	mux.Handle("GET", pattern_KafkaConnectService_GetConnectorConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KafkaConnectService_GetConnectorConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorConfig", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/config"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorConfig", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/config"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1766,18 +1375,13 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
-		forward_KafkaConnectService_GetConnectorConfig_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectorConfig_0{resp}, mux.GetForwardResponseOptions()...)
-
+		forward_KafkaConnectService_GetConnectorConfig_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectorConfig_0{resp.(*GetConnectorConfigResponse)}, mux.GetForwardResponseOptions()...)
 	})
-
-	mux.Handle("GET", pattern_KafkaConnectService_ListConnectorTopics_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KafkaConnectService_ListConnectorTopics_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1788,18 +1392,13 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_ListConnectorTopics_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PUT", pattern_KafkaConnectService_ResetConnectorTopics_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPut, pattern_KafkaConnectService_ResetConnectorTopics_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResetConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics/reset"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResetConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics/reset"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1810,128 +1409,97 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_KafkaConnectService_ResetConnectorTopics_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
 	return nil
 }
 
 type response_KafkaConnectService_GetConnectCluster_0 struct {
-	proto.Message
+	*GetConnectClusterResponse
 }
 
 func (m response_KafkaConnectService_GetConnectCluster_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*GetConnectClusterResponse)
+	response := m.GetConnectClusterResponse
 	return response.Cluster
 }
 
 type response_KafkaConnectService_CreateConnector_0 struct {
-	proto.Message
+	*CreateConnectorResponse
 }
 
 func (m response_KafkaConnectService_CreateConnector_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*CreateConnectorResponse)
+	response := m.CreateConnectorResponse
 	return response.Connector
 }
 
 type response_KafkaConnectService_GetConnector_0 struct {
-	proto.Message
+	*GetConnectorResponse
 }
 
 func (m response_KafkaConnectService_GetConnector_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*GetConnectorResponse)
+	response := m.GetConnectorResponse
 	return response.Connector
 }
 
 type response_KafkaConnectService_GetConnectorStatus_0 struct {
-	proto.Message
+	*GetConnectorStatusResponse
 }
 
 func (m response_KafkaConnectService_GetConnectorStatus_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*GetConnectorStatusResponse)
+	response := m.GetConnectorStatusResponse
 	return response.Status
 }
 
 type response_KafkaConnectService_UpsertConnector_0 struct {
-	proto.Message
+	*UpsertConnectorResponse
 }
 
 func (m response_KafkaConnectService_UpsertConnector_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*UpsertConnectorResponse)
+	response := m.UpsertConnectorResponse
 	return response.Connector
 }
 
 type response_KafkaConnectService_GetConnectorConfig_0 struct {
-	proto.Message
+	*GetConnectorConfigResponse
 }
 
 func (m response_KafkaConnectService_GetConnectorConfig_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*GetConnectorConfigResponse)
+	response := m.GetConnectorConfigResponse
 	return response.Config
 }
 
 var (
-	pattern_KafkaConnectService_ListConnectClusters_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha1", "connect", "clusters"}, ""))
-
-	pattern_KafkaConnectService_GetConnectCluster_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1alpha1", "connect", "clusters", "cluster_name"}, ""))
-
-	pattern_KafkaConnectService_ListConnectors_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors"}, ""))
-
-	pattern_KafkaConnectService_CreateConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors"}, ""))
-
-	pattern_KafkaConnectService_RestartConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "restart"}, ""))
-
-	pattern_KafkaConnectService_GetConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name"}, ""))
-
-	pattern_KafkaConnectService_GetConnectorStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "status"}, ""))
-
-	pattern_KafkaConnectService_PauseConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "pause"}, ""))
-
-	pattern_KafkaConnectService_ResumeConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "resume"}, ""))
-
-	pattern_KafkaConnectService_StopConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "stop"}, ""))
-
-	pattern_KafkaConnectService_DeleteConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name"}, ""))
-
-	pattern_KafkaConnectService_UpsertConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "config"}, ""))
-
-	pattern_KafkaConnectService_GetConnectorConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "config"}, ""))
-
-	pattern_KafkaConnectService_ListConnectorTopics_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "topics"}, ""))
-
+	pattern_KafkaConnectService_ListConnectClusters_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha1", "connect", "clusters"}, ""))
+	pattern_KafkaConnectService_GetConnectCluster_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1alpha1", "connect", "clusters", "cluster_name"}, ""))
+	pattern_KafkaConnectService_ListConnectors_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors"}, ""))
+	pattern_KafkaConnectService_CreateConnector_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors"}, ""))
+	pattern_KafkaConnectService_RestartConnector_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "restart"}, ""))
+	pattern_KafkaConnectService_GetConnector_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name"}, ""))
+	pattern_KafkaConnectService_GetConnectorStatus_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "status"}, ""))
+	pattern_KafkaConnectService_PauseConnector_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "pause"}, ""))
+	pattern_KafkaConnectService_ResumeConnector_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "resume"}, ""))
+	pattern_KafkaConnectService_StopConnector_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "stop"}, ""))
+	pattern_KafkaConnectService_DeleteConnector_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name"}, ""))
+	pattern_KafkaConnectService_UpsertConnector_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "config"}, ""))
+	pattern_KafkaConnectService_GetConnectorConfig_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "config"}, ""))
+	pattern_KafkaConnectService_ListConnectorTopics_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "topics"}, ""))
 	pattern_KafkaConnectService_ResetConnectorTopics_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6, 2, 7}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "topics", "reset"}, ""))
 )
 
 var (
-	forward_KafkaConnectService_ListConnectClusters_0 = runtime.ForwardResponseMessage
-
-	forward_KafkaConnectService_GetConnectCluster_0 = runtime.ForwardResponseMessage
-
-	forward_KafkaConnectService_ListConnectors_0 = runtime.ForwardResponseMessage
-
-	forward_KafkaConnectService_CreateConnector_0 = runtime.ForwardResponseMessage
-
-	forward_KafkaConnectService_RestartConnector_0 = runtime.ForwardResponseMessage
-
-	forward_KafkaConnectService_GetConnector_0 = runtime.ForwardResponseMessage
-
-	forward_KafkaConnectService_GetConnectorStatus_0 = runtime.ForwardResponseMessage
-
-	forward_KafkaConnectService_PauseConnector_0 = runtime.ForwardResponseMessage
-
-	forward_KafkaConnectService_ResumeConnector_0 = runtime.ForwardResponseMessage
-
-	forward_KafkaConnectService_StopConnector_0 = runtime.ForwardResponseMessage
-
-	forward_KafkaConnectService_DeleteConnector_0 = runtime.ForwardResponseMessage
-
-	forward_KafkaConnectService_UpsertConnector_0 = runtime.ForwardResponseMessage
-
-	forward_KafkaConnectService_GetConnectorConfig_0 = runtime.ForwardResponseMessage
-
-	forward_KafkaConnectService_ListConnectorTopics_0 = runtime.ForwardResponseMessage
-
+	forward_KafkaConnectService_ListConnectClusters_0  = runtime.ForwardResponseMessage
+	forward_KafkaConnectService_GetConnectCluster_0    = runtime.ForwardResponseMessage
+	forward_KafkaConnectService_ListConnectors_0       = runtime.ForwardResponseMessage
+	forward_KafkaConnectService_CreateConnector_0      = runtime.ForwardResponseMessage
+	forward_KafkaConnectService_RestartConnector_0     = runtime.ForwardResponseMessage
+	forward_KafkaConnectService_GetConnector_0         = runtime.ForwardResponseMessage
+	forward_KafkaConnectService_GetConnectorStatus_0   = runtime.ForwardResponseMessage
+	forward_KafkaConnectService_PauseConnector_0       = runtime.ForwardResponseMessage
+	forward_KafkaConnectService_ResumeConnector_0      = runtime.ForwardResponseMessage
+	forward_KafkaConnectService_StopConnector_0        = runtime.ForwardResponseMessage
+	forward_KafkaConnectService_DeleteConnector_0      = runtime.ForwardResponseMessage
+	forward_KafkaConnectService_UpsertConnector_0      = runtime.ForwardResponseMessage
+	forward_KafkaConnectService_GetConnectorConfig_0   = runtime.ForwardResponseMessage
+	forward_KafkaConnectService_ListConnectorTopics_0  = runtime.ForwardResponseMessage
 	forward_KafkaConnectService_ResetConnectorTopics_0 = runtime.ForwardResponseMessage
 )

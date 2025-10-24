@@ -33,7 +33,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/core/admin/v2/shadow_link.proto.
  */
 export const file_redpanda_core_admin_v2_shadow_link: GenFile = /*@__PURE__*/
-  fileDesc("CihyZWRwYW5kYS9jb3JlL2FkbWluL3YyL3NoYWRvd19saW5rLnByb3RvEhZyZWRwYW5kYS5jb3JlLmFkbWluLnYyIsIBCgpTaGFkb3dMaW5rEhEKBG5hbWUYASABKAlCA+BBAhIYCgN1aWQYAiABKAlCC+BBA+KMz9cIAggBEkgKDmNvbmZpZ3VyYXRpb25zGAMgASgLMjAucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TaGFkb3dMaW5rQ29uZmlndXJhdGlvbnMSPQoGc3RhdHVzGAQgASgLMigucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TaGFkb3dMaW5rU3RhdHVzQgPgQQMiwAEKC1NoYWRvd1RvcGljEhEKBG5hbWUYASABKAlCA+BBAxIdCgh0b3BpY19pZBgCIAEoCUIL4EED4ozP1wgCCAESGQoRc291cmNlX3RvcGljX25hbWUYAyABKAkSJAoPc291cmNlX3RvcGljX2lkGAQgASgJQgvgQQPijM/XCAIIARI+CgZzdGF0dXMYBSABKAsyKS5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNoYWRvd1RvcGljU3RhdHVzQgPgQQMiUgoXQ3JlYXRlU2hhZG93TGlua1JlcXVlc3QSNwoLc2hhZG93X2xpbmsYASABKAsyIi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNoYWRvd0xpbmsiUwoYQ3JlYXRlU2hhZG93TGlua1Jlc3BvbnNlEjcKC3NoYWRvd19saW5rGAEgASgLMiIucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TaGFkb3dMaW5rInAKF0RlbGV0ZVNoYWRvd0xpbmtSZXF1ZXN0EkYKBG5hbWUYASABKAlCOOBBAvpBMgowcmVkcGFuZGEuY29yZS5hZG1pbi5TaGFkb3dMaW5rU2VydmljZS9TaGFkb3dMaW5rEg0KBWZvcmNlGAIgASgIIhoKGERlbGV0ZVNoYWRvd0xpbmtSZXNwb25zZSJeChRHZXRTaGFkb3dMaW5rUmVxdWVzdBJGCgRuYW1lGAEgASgJQjjgQQL6QTIKMHJlZHBhbmRhLmNvcmUuYWRtaW4uU2hhZG93TGlua1NlcnZpY2UvU2hhZG93TGluayJQChVHZXRTaGFkb3dMaW5rUmVzcG9uc2USNwoLc2hhZG93X2xpbmsYASABKAsyIi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNoYWRvd0xpbmsiGAoWTGlzdFNoYWRvd0xpbmtzUmVxdWVzdCJTChdMaXN0U2hhZG93TGlua3NSZXNwb25zZRI4CgxzaGFkb3dfbGlua3MYASADKAsyIi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNoYWRvd0xpbmsigwEKF1VwZGF0ZVNoYWRvd0xpbmtSZXF1ZXN0EjcKC3NoYWRvd19saW5rGAEgASgLMiIucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TaGFkb3dMaW5rEi8KC3VwZGF0ZV9tYXNrGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFzayJTChhVcGRhdGVTaGFkb3dMaW5rUmVzcG9uc2USNwoLc2hhZG93X2xpbmsYASABKAsyIi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNoYWRvd0xpbmsieQoPRmFpbE92ZXJSZXF1ZXN0EkYKBG5hbWUYASABKAlCOOBBAvpBMgowcmVkcGFuZGEuY29yZS5hZG1pbi5TaGFkb3dMaW5rU2VydmljZS9TaGFkb3dMaW5rEh4KEXNoYWRvd190b3BpY19uYW1lGAIgASgJQgPgQQEiSwoQRmFpbE92ZXJSZXNwb25zZRI3CgtzaGFkb3dfbGluaxgBIAEoCzIiLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2hhZG93TGluayJJChVHZXRTaGFkb3dUb3BpY1JlcXVlc3QSHQoQc2hhZG93X2xpbmtfbmFtZRgBIAEoCUID4EECEhEKBG5hbWUYAiABKAlCA+BBAiJTChZHZXRTaGFkb3dUb3BpY1Jlc3BvbnNlEjkKDHNoYWRvd190b3BpYxgBIAEoCzIjLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2hhZG93VG9waWMiOAoXTGlzdFNoYWRvd1RvcGljc1JlcXVlc3QSHQoQc2hhZG93X2xpbmtfbmFtZRgBIAEoCUID4EECIlYKGExpc3RTaGFkb3dUb3BpY3NSZXNwb25zZRI6Cg1zaGFkb3dfdG9waWNzGAEgAygLMiMucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TaGFkb3dUb3BpYyLnAgoYU2hhZG93TGlua0NvbmZpZ3VyYXRpb25zEkcKDmNsaWVudF9vcHRpb25zGAEgASgLMi8ucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TaGFkb3dMaW5rQ2xpZW50T3B0aW9ucxJVCht0b3BpY19tZXRhZGF0YV9zeW5jX29wdGlvbnMYAiABKAsyMC5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlRvcGljTWV0YWRhdGFTeW5jT3B0aW9ucxJXChxjb25zdW1lcl9vZmZzZXRfc3luY19vcHRpb25zGAMgASgLMjEucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5Db25zdW1lck9mZnNldFN5bmNPcHRpb25zElIKFXNlY3VyaXR5X3N5bmNfb3B0aW9ucxgEIAEoCzIzLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2VjdXJpdHlTZXR0aW5nc1N5bmNPcHRpb25zIoQEChdTaGFkb3dMaW5rQ2xpZW50T3B0aW9ucxIeChFib290c3RyYXBfc2VydmVycxgBIAMoCUID4EECEhYKCWNsaWVudF9pZBgCIAEoCUID4EEDEhkKEXNvdXJjZV9jbHVzdGVyX2lkGAMgASgJEj4KDHRsc19zZXR0aW5ncxgEIAEoCzIjLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuVExTU2V0dGluZ3NIAIgBARJeChxhdXRoZW50aWNhdGlvbl9jb25maWd1cmF0aW9uGAUgASgLMjMucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5BdXRoZW50aWNhdGlvbkNvbmZpZ3VyYXRpb25IAYgBARIbChNtZXRhZGF0YV9tYXhfYWdlX21zGAYgASgFEh0KFWNvbm5lY3Rpb25fdGltZW91dF9tcxgHIAEoBRIYChByZXRyeV9iYWNrb2ZmX21zGAggASgFEhkKEWZldGNoX3dhaXRfbWF4X21zGAkgASgFEhcKD2ZldGNoX21pbl9ieXRlcxgKIAEoBRIXCg9mZXRjaF9tYXhfYnl0ZXMYCyABKAUSIQoZZmV0Y2hfcGFydGl0aW9uX21heF9ieXRlcxgMIAEoBUIPCg1fdGxzX3NldHRpbmdzQh8KHV9hdXRoZW50aWNhdGlvbl9jb25maWd1cmF0aW9uItYBChhUb3BpY01ldGFkYXRhU3luY09wdGlvbnMSKwoIaW50ZXJ2YWwYASABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24STAogYXV0b19jcmVhdGVfc2hhZG93X3RvcGljX2ZpbHRlcnMYAiADKAsyIi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLk5hbWVGaWx0ZXISJgoec3luY2VkX3NoYWRvd190b3BpY19wcm9wZXJ0aWVzGAMgAygJEhcKD2V4Y2x1ZGVfZGVmYXVsdBgEIAEoCCKUAQoZQ29uc3VtZXJPZmZzZXRTeW5jT3B0aW9ucxIrCghpbnRlcnZhbBgBIAEoCzIZLmdvb2dsZS5wcm90b2J1Zi5EdXJhdGlvbhIPCgdlbmFibGVkGAIgASgIEjkKDWdyb3VwX2ZpbHRlcnMYAyADKAsyIi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLk5hbWVGaWx0ZXIikwEKG1NlY3VyaXR5U2V0dGluZ3NTeW5jT3B0aW9ucxIrCghpbnRlcnZhbBgBIAEoCzIZLmdvb2dsZS5wcm90b2J1Zi5EdXJhdGlvbhIPCgdlbmFibGVkGAIgASgIEjYKC2FjbF9maWx0ZXJzGAUgAygLMiEucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5BQ0xGaWx0ZXIiuAEKC1RMU1NldHRpbmdzEg8KB2VuYWJsZWQYAyABKAgSRAoRdGxzX2ZpbGVfc2V0dGluZ3MYASABKAsyJy5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlRMU0ZpbGVTZXR0aW5nc0gAEkIKEHRsc19wZW1fc2V0dGluZ3MYAiABKAsyJi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlRMU1BFTVNldHRpbmdzSABCDgoMdGxzX3NldHRpbmdzInMKG0F1dGhlbnRpY2F0aW9uQ29uZmlndXJhdGlvbhJCChNzY3JhbV9jb25maWd1cmF0aW9uGAEgASgLMiMucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TY3JhbUNvbmZpZ0gAQhAKDmF1dGhlbnRpY2F0aW9uIkcKD1RMU0ZpbGVTZXR0aW5ncxIPCgdjYV9wYXRoGAEgASgJEhAKCGtleV9wYXRoGAIgASgJEhEKCWNlcnRfcGF0aBgDIAEoCSJaCg5UTFNQRU1TZXR0aW5ncxIKCgJjYRgBIAEoCRIQCgNrZXkYAiABKAlCA+BBBBIcCg9rZXlfZmluZ2VycHJpbnQYAyABKAlCA+BBAxIMCgRjZXJ0GAQgASgJIswBCgtTY3JhbUNvbmZpZxIQCgh1c2VybmFtZRgBIAEoCRIVCghwYXNzd29yZBgCIAEoCUID4EEEEhkKDHBhc3N3b3JkX3NldBgDIAEoCEID4EEDEjgKD3Bhc3N3b3JkX3NldF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCA+BBAxI/Cg9zY3JhbV9tZWNoYW5pc20YBSABKA4yJi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNjcmFtTWVjaGFuaXNtIo4BCgpOYW1lRmlsdGVyEjkKDHBhdHRlcm5fdHlwZRgBIAEoDjIjLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuUGF0dGVyblR5cGUSNwoLZmlsdGVyX3R5cGUYAiABKA4yIi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkZpbHRlclR5cGUSDAoEbmFtZRgDIAEoCSKPAQoJQUNMRmlsdGVyEkIKD3Jlc291cmNlX2ZpbHRlchgBIAEoCzIpLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuQUNMUmVzb3VyY2VGaWx0ZXISPgoNYWNjZXNzX2ZpbHRlchgCIAEoCzInLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuQUNMQWNjZXNzRmlsdGVyIpMBChFBQ0xSZXNvdXJjZUZpbHRlchI4Cg1yZXNvdXJjZV90eXBlGAEgASgOMiEucmVkcGFuZGEuY29yZS5jb21tb24uQUNMUmVzb3VyY2USNgoMcGF0dGVybl90eXBlGAIgASgOMiAucmVkcGFuZGEuY29yZS5jb21tb24uQUNMUGF0dGVybhIMCgRuYW1lGAMgASgJIqsBCg9BQ0xBY2Nlc3NGaWx0ZXISEQoJcHJpbmNpcGFsGAEgASgJEjUKCW9wZXJhdGlvbhgCIAEoDjIiLnJlZHBhbmRhLmNvcmUuY29tbW9uLkFDTE9wZXJhdGlvbhJACg9wZXJtaXNzaW9uX3R5cGUYAyABKA4yJy5yZWRwYW5kYS5jb3JlLmNvbW1vbi5BQ0xQZXJtaXNzaW9uVHlwZRIMCgRob3N0GAQgASgJIvMBChBTaGFkb3dMaW5rU3RhdHVzEjYKBXN0YXRlGAEgASgOMicucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TaGFkb3dMaW5rU3RhdGUSQwoNdGFza19zdGF0dXNlcxgCIAMoCzIsLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2hhZG93TGlua1Rhc2tTdGF0dXMSOgoNc2hhZG93X3RvcGljcxgDIAMoCzIjLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2hhZG93VG9waWMSJgoec3luY2VkX3NoYWRvd190b3BpY19wcm9wZXJ0aWVzGAQgAygJInkKFFNoYWRvd0xpbmtUYXNrU3RhdHVzEgwKBG5hbWUYASABKAkSMAoFc3RhdGUYAiABKA4yIS5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlRhc2tTdGF0ZRIOCgZyZWFzb24YAyABKAkSEQoJYnJva2VyX2lkGAQgASgFIp4BChFTaGFkb3dUb3BpY1N0YXR1cxI3CgVzdGF0ZRgBIAEoDjIoLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2hhZG93VG9waWNTdGF0ZRJQChVwYXJ0aXRpb25faW5mb3JtYXRpb24YAiADKAsyMS5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlRvcGljUGFydGl0aW9uSW5mb3JtYXRpb24izgEKGVRvcGljUGFydGl0aW9uSW5mb3JtYXRpb24SFAoMcGFydGl0aW9uX2lkGAEgASgDEiEKGXNvdXJjZV9sYXN0X3N0YWJsZV9vZmZzZXQYAiABKAMSHQoVc291cmNlX2hpZ2hfd2F0ZXJtYXJrGAMgASgDEhYKDmhpZ2hfd2F0ZXJtYXJrGAQgASgDEkEKHXNvdXJjZV9sYXN0X3VwZGF0ZWRfdGltZXN0YW1wGAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCpwCg9TaGFkb3dMaW5rU3RhdGUSIQodU0hBRE9XX0xJTktfU1RBVEVfVU5TUEVDSUZJRUQQABIcChhTSEFET1dfTElOS19TVEFURV9BQ1RJVkUQARIcChhTSEFET1dfTElOS19TVEFURV9QQVVTRUQQAip3Cg5TY3JhbU1lY2hhbmlzbRIfChtTQ1JBTV9NRUNIQU5JU01fVU5TUEVDSUZJRUQQABIhCh1TQ1JBTV9NRUNIQU5JU01fU0NSQU1fU0hBXzI1NhABEiEKHVNDUkFNX01FQ0hBTklTTV9TQ1JBTV9TSEFfNTEyEAIqXgoLUGF0dGVyblR5cGUSHAoYUEFUVEVSTl9UWVBFX1VOU1BFQ0lGSUVEEAASGAoUUEFUVEVSTl9UWVBFX0xJVEVSQUwQARIXChNQQVRURVJOX1RZUEVfUFJFRklYEAIqWwoKRmlsdGVyVHlwZRIbChdGSUxURVJfVFlQRV9VTlNQRUNJRklFRBAAEhcKE0ZJTFRFUl9UWVBFX0lOQ0xVREUQARIXChNGSUxURVJfVFlQRV9FWENMVURFEAIqqgEKCVRhc2tTdGF0ZRIaChZUQVNLX1NUQVRFX1VOU1BFQ0lGSUVEEAASFQoRVEFTS19TVEFURV9BQ1RJVkUQARIVChFUQVNLX1NUQVRFX1BBVVNFRBACEh8KG1RBU0tfU1RBVEVfTElOS19VTkFWQUlMQUJMRRADEhoKFlRBU0tfU1RBVEVfTk9UX1JVTk5JTkcQBBIWChJUQVNLX1NUQVRFX0ZBVUxURUQQBSqgAgoQU2hhZG93VG9waWNTdGF0ZRIiCh5TSEFET1dfVE9QSUNfU1RBVEVfVU5TUEVDSUZJRUQQABIdChlTSEFET1dfVE9QSUNfU1RBVEVfQUNUSVZFEAESHgoaU0hBRE9XX1RPUElDX1NUQVRFX0ZBVUxURUQQAhIdChlTSEFET1dfVE9QSUNfU1RBVEVfUEFVU0VEEAMSIwofU0hBRE9XX1RPUElDX1NUQVRFX0ZBSUxJTkdfT1ZFUhAEEiIKHlNIQURPV19UT1BJQ19TVEFURV9GQUlMRURfT1ZFUhAFEiAKHFNIQURPV19UT1BJQ19TVEFURV9QUk9NT1RJTkcQBhIfChtTSEFET1dfVE9QSUNfU1RBVEVfUFJPTU9URUQQBzLhBwoRU2hhZG93TGlua1NlcnZpY2USfQoQQ3JlYXRlU2hhZG93TGluaxIvLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuQ3JlYXRlU2hhZG93TGlua1JlcXVlc3QaMC5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkNyZWF0ZVNoYWRvd0xpbmtSZXNwb25zZSIG6pIZAhADEn0KEERlbGV0ZVNoYWRvd0xpbmsSLy5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkRlbGV0ZVNoYWRvd0xpbmtSZXF1ZXN0GjAucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5EZWxldGVTaGFkb3dMaW5rUmVzcG9uc2UiBuqSGQIQAxJ0Cg1HZXRTaGFkb3dMaW5rEiwucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5HZXRTaGFkb3dMaW5rUmVxdWVzdBotLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuR2V0U2hhZG93TGlua1Jlc3BvbnNlIgbqkhkCEAMSegoPTGlzdFNoYWRvd0xpbmtzEi4ucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5MaXN0U2hhZG93TGlua3NSZXF1ZXN0Gi8ucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5MaXN0U2hhZG93TGlua3NSZXNwb25zZSIG6pIZAhADEn0KEFVwZGF0ZVNoYWRvd0xpbmsSLy5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlVwZGF0ZVNoYWRvd0xpbmtSZXF1ZXN0GjAucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5VcGRhdGVTaGFkb3dMaW5rUmVzcG9uc2UiBuqSGQIQAxJlCghGYWlsT3ZlchInLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuRmFpbE92ZXJSZXF1ZXN0GigucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5GYWlsT3ZlclJlc3BvbnNlIgbqkhkCEAMSdwoOR2V0U2hhZG93VG9waWMSLS5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkdldFNoYWRvd1RvcGljUmVxdWVzdBouLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuR2V0U2hhZG93VG9waWNSZXNwb25zZSIG6pIZAhADEn0KEExpc3RTaGFkb3dUb3BpY3MSLy5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkxpc3RTaGFkb3dUb3BpY3NSZXF1ZXN0GjAucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5MaXN0U2hhZG93VG9waWNzUmVzcG9uc2UiBuqSGQIQA0KOAgoaY29tLnJlZHBhbmRhLmNvcmUuYWRtaW4udjJCD1NoYWRvd0xpbmtQcm90b1ABWlRidWYuYnVpbGQvZ2VuL2dvL3JlZHBhbmRhZGF0YS9jb3JlL3Byb3RvY29sYnVmZmVycy9nby9yZWRwYW5kYS9jb3JlL2FkbWluL3YyO2FkbWludjKiAgNSQ0GqAhZSZWRwYW5kYS5Db3JlLkFkbWluLlYyygIWUmVkcGFuZGFcQ29yZVxBZG1pblxWMuICIlJlZHBhbmRhXENvcmVcQWRtaW5cVjJcR1BCTWV0YWRhdGHqAhlSZWRwYW5kYTo6Q29yZTo6QWRtaW46OlYy6pIZDHByb3RvOjphZG1pbmIGcHJvdG8z", [file_redpanda_core_pbgen_options, file_redpanda_core_pbgen_rpc, file_redpanda_core_common_acl, file_google_api_field_behavior, file_google_api_field_info, file_google_api_resource, file_google_protobuf_duration, file_google_protobuf_timestamp, file_google_protobuf_field_mask]);
+  fileDesc("CihyZWRwYW5kYS9jb3JlL2FkbWluL3YyL3NoYWRvd19saW5rLnByb3RvEhZyZWRwYW5kYS5jb3JlLmFkbWluLnYyIsIBCgpTaGFkb3dMaW5rEhEKBG5hbWUYASABKAlCA+BBAhIYCgN1aWQYAiABKAlCC+BBA+KMz9cIAggBEkgKDmNvbmZpZ3VyYXRpb25zGAMgASgLMjAucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TaGFkb3dMaW5rQ29uZmlndXJhdGlvbnMSPQoGc3RhdHVzGAQgASgLMigucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TaGFkb3dMaW5rU3RhdHVzQgPgQQMiwAEKC1NoYWRvd1RvcGljEhEKBG5hbWUYASABKAlCA+BBAxIdCgh0b3BpY19pZBgCIAEoCUIL4EED4ozP1wgCCAESGQoRc291cmNlX3RvcGljX25hbWUYAyABKAkSJAoPc291cmNlX3RvcGljX2lkGAQgASgJQgvgQQPijM/XCAIIARI+CgZzdGF0dXMYBSABKAsyKS5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNoYWRvd1RvcGljU3RhdHVzQgPgQQMiUgoXQ3JlYXRlU2hhZG93TGlua1JlcXVlc3QSNwoLc2hhZG93X2xpbmsYASABKAsyIi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNoYWRvd0xpbmsiUwoYQ3JlYXRlU2hhZG93TGlua1Jlc3BvbnNlEjcKC3NoYWRvd19saW5rGAEgASgLMiIucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TaGFkb3dMaW5rInAKF0RlbGV0ZVNoYWRvd0xpbmtSZXF1ZXN0EkYKBG5hbWUYASABKAlCOOBBAvpBMgowcmVkcGFuZGEuY29yZS5hZG1pbi5TaGFkb3dMaW5rU2VydmljZS9TaGFkb3dMaW5rEg0KBWZvcmNlGAIgASgIIhoKGERlbGV0ZVNoYWRvd0xpbmtSZXNwb25zZSJeChRHZXRTaGFkb3dMaW5rUmVxdWVzdBJGCgRuYW1lGAEgASgJQjjgQQL6QTIKMHJlZHBhbmRhLmNvcmUuYWRtaW4uU2hhZG93TGlua1NlcnZpY2UvU2hhZG93TGluayJQChVHZXRTaGFkb3dMaW5rUmVzcG9uc2USNwoLc2hhZG93X2xpbmsYASABKAsyIi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNoYWRvd0xpbmsiGAoWTGlzdFNoYWRvd0xpbmtzUmVxdWVzdCJTChdMaXN0U2hhZG93TGlua3NSZXNwb25zZRI4CgxzaGFkb3dfbGlua3MYASADKAsyIi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNoYWRvd0xpbmsigwEKF1VwZGF0ZVNoYWRvd0xpbmtSZXF1ZXN0EjcKC3NoYWRvd19saW5rGAEgASgLMiIucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TaGFkb3dMaW5rEi8KC3VwZGF0ZV9tYXNrGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFzayJTChhVcGRhdGVTaGFkb3dMaW5rUmVzcG9uc2USNwoLc2hhZG93X2xpbmsYASABKAsyIi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNoYWRvd0xpbmsieQoPRmFpbE92ZXJSZXF1ZXN0EkYKBG5hbWUYASABKAlCOOBBAvpBMgowcmVkcGFuZGEuY29yZS5hZG1pbi5TaGFkb3dMaW5rU2VydmljZS9TaGFkb3dMaW5rEh4KEXNoYWRvd190b3BpY19uYW1lGAIgASgJQgPgQQEiSwoQRmFpbE92ZXJSZXNwb25zZRI3CgtzaGFkb3dfbGluaxgBIAEoCzIiLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2hhZG93TGluayJJChVHZXRTaGFkb3dUb3BpY1JlcXVlc3QSHQoQc2hhZG93X2xpbmtfbmFtZRgBIAEoCUID4EECEhEKBG5hbWUYAiABKAlCA+BBAiJTChZHZXRTaGFkb3dUb3BpY1Jlc3BvbnNlEjkKDHNoYWRvd190b3BpYxgBIAEoCzIjLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2hhZG93VG9waWMiOAoXTGlzdFNoYWRvd1RvcGljc1JlcXVlc3QSHQoQc2hhZG93X2xpbmtfbmFtZRgBIAEoCUID4EECIlYKGExpc3RTaGFkb3dUb3BpY3NSZXNwb25zZRI6Cg1zaGFkb3dfdG9waWNzGAEgAygLMiMucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TaGFkb3dUb3BpYyLAAwoYU2hhZG93TGlua0NvbmZpZ3VyYXRpb25zEkcKDmNsaWVudF9vcHRpb25zGAEgASgLMi8ucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TaGFkb3dMaW5rQ2xpZW50T3B0aW9ucxJVCht0b3BpY19tZXRhZGF0YV9zeW5jX29wdGlvbnMYAiABKAsyMC5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlRvcGljTWV0YWRhdGFTeW5jT3B0aW9ucxJXChxjb25zdW1lcl9vZmZzZXRfc3luY19vcHRpb25zGAMgASgLMjEucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5Db25zdW1lck9mZnNldFN5bmNPcHRpb25zElIKFXNlY3VyaXR5X3N5bmNfb3B0aW9ucxgEIAEoCzIzLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2VjdXJpdHlTZXR0aW5nc1N5bmNPcHRpb25zElcKHHNjaGVtYV9yZWdpc3RyeV9zeW5jX29wdGlvbnMYBSABKAsyMS5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNjaGVtYVJlZ2lzdHJ5U3luY09wdGlvbnMiswYKF1NoYWRvd0xpbmtDbGllbnRPcHRpb25zEh4KEWJvb3RzdHJhcF9zZXJ2ZXJzGAEgAygJQgPgQQISFgoJY2xpZW50X2lkGAIgASgJQgPgQQMSGQoRc291cmNlX2NsdXN0ZXJfaWQYAyABKAkSPgoMdGxzX3NldHRpbmdzGAQgASgLMiMucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5UTFNTZXR0aW5nc0gAiAEBEl4KHGF1dGhlbnRpY2F0aW9uX2NvbmZpZ3VyYXRpb24YBSABKAsyMy5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkF1dGhlbnRpY2F0aW9uQ29uZmlndXJhdGlvbkgBiAEBEhsKE21ldGFkYXRhX21heF9hZ2VfbXMYBiABKAUSKgodZWZmZWN0aXZlX21ldGFkYXRhX21heF9hZ2VfbXMYByABKAVCA+BBAxIdChVjb25uZWN0aW9uX3RpbWVvdXRfbXMYCCABKAUSLAofZWZmZWN0aXZlX2Nvbm5lY3Rpb25fdGltZW91dF9tcxgJIAEoBUID4EEDEhgKEHJldHJ5X2JhY2tvZmZfbXMYCiABKAUSJwoaZWZmZWN0aXZlX3JldHJ5X2JhY2tvZmZfbXMYCyABKAVCA+BBAxIZChFmZXRjaF93YWl0X21heF9tcxgMIAEoBRIoChtlZmZlY3RpdmVfZmV0Y2hfd2FpdF9tYXhfbXMYDSABKAVCA+BBAxIXCg9mZXRjaF9taW5fYnl0ZXMYDiABKAUSJgoZZWZmZWN0aXZlX2ZldGNoX21pbl9ieXRlcxgPIAEoBUID4EEDEhcKD2ZldGNoX21heF9ieXRlcxgQIAEoBRImChllZmZlY3RpdmVfZmV0Y2hfbWF4X2J5dGVzGBEgASgFQgPgQQMSIQoZZmV0Y2hfcGFydGl0aW9uX21heF9ieXRlcxgSIAEoBRIwCiNlZmZlY3RpdmVfZmV0Y2hfcGFydGl0aW9uX21heF9ieXRlcxgTIAEoBUID4EEDQg8KDV90bHNfc2V0dGluZ3NCHwodX2F1dGhlbnRpY2F0aW9uX2NvbmZpZ3VyYXRpb24imwQKGFRvcGljTWV0YWRhdGFTeW5jT3B0aW9ucxIrCghpbnRlcnZhbBgBIAEoCzIZLmdvb2dsZS5wcm90b2J1Zi5EdXJhdGlvbhI6ChJlZmZlY3RpdmVfaW50ZXJ2YWwYAiABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb25CA+BBAxJMCiBhdXRvX2NyZWF0ZV9zaGFkb3dfdG9waWNfZmlsdGVycxgDIAMoCzIiLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuTmFtZUZpbHRlchImCh5zeW5jZWRfc2hhZG93X3RvcGljX3Byb3BlcnRpZXMYBCADKAkSFwoPZXhjbHVkZV9kZWZhdWx0GAUgASgIElMKCGVhcmxpZXN0GAYgASgLMj8ucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5Ub3BpY01ldGFkYXRhU3luY09wdGlvbnMuRWFybGllc3RPZmZzZXRIABJPCgZsYXRlc3QYByABKAsyPS5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlRvcGljTWV0YWRhdGFTeW5jT3B0aW9ucy5MYXRlc3RPZmZzZXRIABIvCgl0aW1lc3RhbXAYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAAaEAoORWFybGllc3RPZmZzZXQaDgoMTGF0ZXN0T2Zmc2V0Qg4KDHN0YXJ0X29mZnNldCLPAQoZU2NoZW1hUmVnaXN0cnlTeW5jT3B0aW9ucxJzChxzaGFkb3dfc2NoZW1hX3JlZ2lzdHJ5X3RvcGljGAEgASgLMksucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TY2hlbWFSZWdpc3RyeVN5bmNPcHRpb25zLlNoYWRvd1NjaGVtYVJlZ2lzdHJ5VG9waWNIABobChlTaGFkb3dTY2hlbWFSZWdpc3RyeVRvcGljQiAKHnNjaGVtYV9yZWdpc3RyeV9zaGFkb3dpbmdfbW9kZSLQAQoZQ29uc3VtZXJPZmZzZXRTeW5jT3B0aW9ucxIrCghpbnRlcnZhbBgBIAEoCzIZLmdvb2dsZS5wcm90b2J1Zi5EdXJhdGlvbhI6ChJlZmZlY3RpdmVfaW50ZXJ2YWwYAiABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb25CA+BBAxIPCgdlbmFibGVkGAMgASgIEjkKDWdyb3VwX2ZpbHRlcnMYBCADKAsyIi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLk5hbWVGaWx0ZXIizwEKG1NlY3VyaXR5U2V0dGluZ3NTeW5jT3B0aW9ucxIrCghpbnRlcnZhbBgBIAEoCzIZLmdvb2dsZS5wcm90b2J1Zi5EdXJhdGlvbhI6ChJlZmZlY3RpdmVfaW50ZXJ2YWwYAiABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb25CA+BBAxIPCgdlbmFibGVkGAMgASgIEjYKC2FjbF9maWx0ZXJzGAQgAygLMiEucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5BQ0xGaWx0ZXIi2QEKC1RMU1NldHRpbmdzEg8KB2VuYWJsZWQYAyABKAgSRAoRdGxzX2ZpbGVfc2V0dGluZ3MYASABKAsyJy5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlRMU0ZpbGVTZXR0aW5nc0gAEkIKEHRsc19wZW1fc2V0dGluZ3MYAiABKAsyJi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlRMU1BFTVNldHRpbmdzSAASHwoXZG9fbm90X3NldF9zbmlfaG9zdG5hbWUYBCABKAhCDgoMdGxzX3NldHRpbmdzInMKG0F1dGhlbnRpY2F0aW9uQ29uZmlndXJhdGlvbhJCChNzY3JhbV9jb25maWd1cmF0aW9uGAEgASgLMiMucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TY3JhbUNvbmZpZ0gAQhAKDmF1dGhlbnRpY2F0aW9uIkcKD1RMU0ZpbGVTZXR0aW5ncxIPCgdjYV9wYXRoGAEgASgJEhAKCGtleV9wYXRoGAIgASgJEhEKCWNlcnRfcGF0aBgDIAEoCSJaCg5UTFNQRU1TZXR0aW5ncxIKCgJjYRgBIAEoCRIQCgNrZXkYAiABKAlCA+BBBBIcCg9rZXlfZmluZ2VycHJpbnQYAyABKAlCA+BBAxIMCgRjZXJ0GAQgASgJIswBCgtTY3JhbUNvbmZpZxIQCgh1c2VybmFtZRgBIAEoCRIVCghwYXNzd29yZBgCIAEoCUID4EEEEhkKDHBhc3N3b3JkX3NldBgDIAEoCEID4EEDEjgKD3Bhc3N3b3JkX3NldF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCA+BBAxI/Cg9zY3JhbV9tZWNoYW5pc20YBSABKA4yJi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNjcmFtTWVjaGFuaXNtIo4BCgpOYW1lRmlsdGVyEjkKDHBhdHRlcm5fdHlwZRgBIAEoDjIjLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuUGF0dGVyblR5cGUSNwoLZmlsdGVyX3R5cGUYAiABKA4yIi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkZpbHRlclR5cGUSDAoEbmFtZRgDIAEoCSKPAQoJQUNMRmlsdGVyEkIKD3Jlc291cmNlX2ZpbHRlchgBIAEoCzIpLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuQUNMUmVzb3VyY2VGaWx0ZXISPgoNYWNjZXNzX2ZpbHRlchgCIAEoCzInLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuQUNMQWNjZXNzRmlsdGVyIpMBChFBQ0xSZXNvdXJjZUZpbHRlchI4Cg1yZXNvdXJjZV90eXBlGAEgASgOMiEucmVkcGFuZGEuY29yZS5jb21tb24uQUNMUmVzb3VyY2USNgoMcGF0dGVybl90eXBlGAIgASgOMiAucmVkcGFuZGEuY29yZS5jb21tb24uQUNMUGF0dGVybhIMCgRuYW1lGAMgASgJIqsBCg9BQ0xBY2Nlc3NGaWx0ZXISEQoJcHJpbmNpcGFsGAEgASgJEjUKCW9wZXJhdGlvbhgCIAEoDjIiLnJlZHBhbmRhLmNvcmUuY29tbW9uLkFDTE9wZXJhdGlvbhJACg9wZXJtaXNzaW9uX3R5cGUYAyABKA4yJy5yZWRwYW5kYS5jb3JlLmNvbW1vbi5BQ0xQZXJtaXNzaW9uVHlwZRIMCgRob3N0GAQgASgJIvMBChBTaGFkb3dMaW5rU3RhdHVzEjYKBXN0YXRlGAEgASgOMicucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5TaGFkb3dMaW5rU3RhdGUSQwoNdGFza19zdGF0dXNlcxgCIAMoCzIsLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2hhZG93TGlua1Rhc2tTdGF0dXMSOgoNc2hhZG93X3RvcGljcxgDIAMoCzIjLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2hhZG93VG9waWMSJgoec3luY2VkX3NoYWRvd190b3BpY19wcm9wZXJ0aWVzGAQgAygJInkKFFNoYWRvd0xpbmtUYXNrU3RhdHVzEgwKBG5hbWUYASABKAkSMAoFc3RhdGUYAiABKA4yIS5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlRhc2tTdGF0ZRIOCgZyZWFzb24YAyABKAkSEQoJYnJva2VyX2lkGAQgASgFIp4BChFTaGFkb3dUb3BpY1N0YXR1cxI3CgVzdGF0ZRgBIAEoDjIoLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2hhZG93VG9waWNTdGF0ZRJQChVwYXJ0aXRpb25faW5mb3JtYXRpb24YAiADKAsyMS5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlRvcGljUGFydGl0aW9uSW5mb3JtYXRpb24izgEKGVRvcGljUGFydGl0aW9uSW5mb3JtYXRpb24SFAoMcGFydGl0aW9uX2lkGAEgASgDEiEKGXNvdXJjZV9sYXN0X3N0YWJsZV9vZmZzZXQYAiABKAMSHQoVc291cmNlX2hpZ2hfd2F0ZXJtYXJrGAMgASgDEhYKDmhpZ2hfd2F0ZXJtYXJrGAQgASgDEkEKHXNvdXJjZV9sYXN0X3VwZGF0ZWRfdGltZXN0YW1wGAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCpwCg9TaGFkb3dMaW5rU3RhdGUSIQodU0hBRE9XX0xJTktfU1RBVEVfVU5TUEVDSUZJRUQQABIcChhTSEFET1dfTElOS19TVEFURV9BQ1RJVkUQARIcChhTSEFET1dfTElOS19TVEFURV9QQVVTRUQQAip3Cg5TY3JhbU1lY2hhbmlzbRIfChtTQ1JBTV9NRUNIQU5JU01fVU5TUEVDSUZJRUQQABIhCh1TQ1JBTV9NRUNIQU5JU01fU0NSQU1fU0hBXzI1NhABEiEKHVNDUkFNX01FQ0hBTklTTV9TQ1JBTV9TSEFfNTEyEAIqXgoLUGF0dGVyblR5cGUSHAoYUEFUVEVSTl9UWVBFX1VOU1BFQ0lGSUVEEAASGAoUUEFUVEVSTl9UWVBFX0xJVEVSQUwQARIXChNQQVRURVJOX1RZUEVfUFJFRklYEAIqWwoKRmlsdGVyVHlwZRIbChdGSUxURVJfVFlQRV9VTlNQRUNJRklFRBAAEhcKE0ZJTFRFUl9UWVBFX0lOQ0xVREUQARIXChNGSUxURVJfVFlQRV9FWENMVURFEAIqqgEKCVRhc2tTdGF0ZRIaChZUQVNLX1NUQVRFX1VOU1BFQ0lGSUVEEAASFQoRVEFTS19TVEFURV9BQ1RJVkUQARIVChFUQVNLX1NUQVRFX1BBVVNFRBACEh8KG1RBU0tfU1RBVEVfTElOS19VTkFWQUlMQUJMRRADEhoKFlRBU0tfU1RBVEVfTk9UX1JVTk5JTkcQBBIWChJUQVNLX1NUQVRFX0ZBVUxURUQQBSqgAgoQU2hhZG93VG9waWNTdGF0ZRIiCh5TSEFET1dfVE9QSUNfU1RBVEVfVU5TUEVDSUZJRUQQABIdChlTSEFET1dfVE9QSUNfU1RBVEVfQUNUSVZFEAESHgoaU0hBRE9XX1RPUElDX1NUQVRFX0ZBVUxURUQQAhIdChlTSEFET1dfVE9QSUNfU1RBVEVfUEFVU0VEEAMSIwofU0hBRE9XX1RPUElDX1NUQVRFX0ZBSUxJTkdfT1ZFUhAEEiIKHlNIQURPV19UT1BJQ19TVEFURV9GQUlMRURfT1ZFUhAFEiAKHFNIQURPV19UT1BJQ19TVEFURV9QUk9NT1RJTkcQBhIfChtTSEFET1dfVE9QSUNfU1RBVEVfUFJPTU9URUQQBzLhBwoRU2hhZG93TGlua1NlcnZpY2USfQoQQ3JlYXRlU2hhZG93TGluaxIvLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuQ3JlYXRlU2hhZG93TGlua1JlcXVlc3QaMC5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkNyZWF0ZVNoYWRvd0xpbmtSZXNwb25zZSIG6pIZAhADEn0KEERlbGV0ZVNoYWRvd0xpbmsSLy5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkRlbGV0ZVNoYWRvd0xpbmtSZXF1ZXN0GjAucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5EZWxldGVTaGFkb3dMaW5rUmVzcG9uc2UiBuqSGQIQAxJ0Cg1HZXRTaGFkb3dMaW5rEiwucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5HZXRTaGFkb3dMaW5rUmVxdWVzdBotLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuR2V0U2hhZG93TGlua1Jlc3BvbnNlIgbqkhkCEAMSegoPTGlzdFNoYWRvd0xpbmtzEi4ucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5MaXN0U2hhZG93TGlua3NSZXF1ZXN0Gi8ucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5MaXN0U2hhZG93TGlua3NSZXNwb25zZSIG6pIZAhADEn0KEFVwZGF0ZVNoYWRvd0xpbmsSLy5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlVwZGF0ZVNoYWRvd0xpbmtSZXF1ZXN0GjAucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5VcGRhdGVTaGFkb3dMaW5rUmVzcG9uc2UiBuqSGQIQAxJlCghGYWlsT3ZlchInLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuRmFpbE92ZXJSZXF1ZXN0GigucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5GYWlsT3ZlclJlc3BvbnNlIgbqkhkCEAMSdwoOR2V0U2hhZG93VG9waWMSLS5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkdldFNoYWRvd1RvcGljUmVxdWVzdBouLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuR2V0U2hhZG93VG9waWNSZXNwb25zZSIG6pIZAhADEn0KEExpc3RTaGFkb3dUb3BpY3MSLy5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkxpc3RTaGFkb3dUb3BpY3NSZXF1ZXN0GjAucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5MaXN0U2hhZG93VG9waWNzUmVzcG9uc2UiBuqSGQIQA0KOAgoaY29tLnJlZHBhbmRhLmNvcmUuYWRtaW4udjJCD1NoYWRvd0xpbmtQcm90b1ABWlRidWYuYnVpbGQvZ2VuL2dvL3JlZHBhbmRhZGF0YS9jb3JlL3Byb3RvY29sYnVmZmVycy9nby9yZWRwYW5kYS9jb3JlL2FkbWluL3YyO2FkbWludjKiAgNSQ0GqAhZSZWRwYW5kYS5Db3JlLkFkbWluLlYyygIWUmVkcGFuZGFcQ29yZVxBZG1pblxWMuICIlJlZHBhbmRhXENvcmVcQWRtaW5cVjJcR1BCTWV0YWRhdGHqAhlSZWRwYW5kYTo6Q29yZTo6QWRtaW46OlYy6pIZDHByb3RvOjphZG1pbmIGcHJvdG8z", [file_redpanda_core_pbgen_options, file_redpanda_core_pbgen_rpc, file_redpanda_core_common_acl, file_google_api_field_behavior, file_google_api_field_info, file_google_api_resource, file_google_protobuf_duration, file_google_protobuf_timestamp, file_google_protobuf_field_mask]);
 
 /**
  * A ShadowLink resource
@@ -509,6 +509,13 @@ export type ShadowLinkConfigurations = Message<"redpanda.core.admin.v2.ShadowLin
    * @generated from field: redpanda.core.admin.v2.SecuritySettingsSyncOptions security_sync_options = 4;
    */
   securitySyncOptions?: SecuritySettingsSyncOptions;
+
+  /**
+   * Schema Registry sync options
+   *
+   * @generated from field: redpanda.core.admin.v2.SchemaRegistrySyncOptions schema_registry_sync_options = 5;
+   */
+  schemaRegistrySyncOptions?: SchemaRegistrySyncOptions;
 };
 
 /**
@@ -572,52 +579,101 @@ export type ShadowLinkClientOptions = Message<"redpanda.core.admin.v2.ShadowLink
   metadataMaxAgeMs: number;
 
   /**
+   * The effective metadata max age in milliseconds
+   *
+   * @generated from field: int32 effective_metadata_max_age_ms = 7;
+   */
+  effectiveMetadataMaxAgeMs: number;
+
+  /**
    * Connection timeout.
    * If 0 is provided, defaults to 1 second
    *
-   * @generated from field: int32 connection_timeout_ms = 7;
+   * @generated from field: int32 connection_timeout_ms = 8;
    */
   connectionTimeoutMs: number;
+
+  /**
+   * The effective connection timeout in milliseconds
+   *
+   * @generated from field: int32 effective_connection_timeout_ms = 9;
+   */
+  effectiveConnectionTimeoutMs: number;
 
   /**
    * Retry base backoff.
    * If 0 is provided, defaults to 100ms
    *
-   * @generated from field: int32 retry_backoff_ms = 8;
+   * @generated from field: int32 retry_backoff_ms = 10;
    */
   retryBackoffMs: number;
+
+  /**
+   * The effective retry backoff in milliseconds
+   *
+   * @generated from field: int32 effective_retry_backoff_ms = 11;
+   */
+  effectiveRetryBackoffMs: number;
 
   /**
    * Fetch request timeout.
    * If 0 is provided, defaults to 500ms
    *
-   * @generated from field: int32 fetch_wait_max_ms = 9;
+   * @generated from field: int32 fetch_wait_max_ms = 12;
    */
   fetchWaitMaxMs: number;
+
+  /**
+   * The effective fetch wait max in milliseconds
+   *
+   * @generated from field: int32 effective_fetch_wait_max_ms = 13;
+   */
+  effectiveFetchWaitMaxMs: number;
 
   /**
    * Fetch min bytes.
    * If 0 is provided, defaults to 5 MiB
    *
-   * @generated from field: int32 fetch_min_bytes = 10;
+   * @generated from field: int32 fetch_min_bytes = 14;
    */
   fetchMinBytes: number;
+
+  /**
+   * The effective fetch min bytes
+   *
+   * @generated from field: int32 effective_fetch_min_bytes = 15;
+   */
+  effectiveFetchMinBytes: number;
 
   /**
    * Fetch max bytes.
    * If 0 is provided, defaults to 20 MiB
    *
-   * @generated from field: int32 fetch_max_bytes = 11;
+   * @generated from field: int32 fetch_max_bytes = 16;
    */
   fetchMaxBytes: number;
+
+  /**
+   * The effective fetch max bytes
+   *
+   * @generated from field: int32 effective_fetch_max_bytes = 17;
+   */
+  effectiveFetchMaxBytes: number;
 
   /**
    * Fetch partition max bytes.
    * If 0 is provided, defaults to 1 MiB
    *
-   * @generated from field: int32 fetch_partition_max_bytes = 12;
+   * @generated from field: int32 fetch_partition_max_bytes = 18;
    */
   fetchPartitionMaxBytes: number;
+
+  /**
+   * The effective fetch partition max bytes
+   *
+   * @generated from field: int32 effective_fetch_partition_max_bytes = 19;
+   */
+  effectiveFetchPartitionMaxBytes: number;
 };
 
 /**
@@ -642,19 +698,26 @@ export type TopicMetadataSyncOptions = Message<"redpanda.core.admin.v2.TopicMeta
   interval?: Duration;
 
   /**
+   * The effective interval for the task
+   *
+   * @generated from field: google.protobuf.Duration effective_interval = 2;
+   */
+  effectiveInterval?: Duration;
+
+  /**
    * List of filters that indicate which topics should be automatically
    * created as shadow topics on the shadow cluster.  This only controls
    * automatic creation of shadow topics and does not effect the state of the
    * mirror topic once it is created.
-   * Literal filters for __consumer_offsets and _redpanda.audit_log will be
-   * rejected as well as prefix filters to match topics prefixed with
+   * Literal filters for __consumer_offsets, _redpanda.audit_log and _schemas
+   * will be rejected as well as prefix filters to match topics prefixed with
    * _redpanda or __redpanda.
    * Wildcard `*` is permitted only for literal filters and will _not_ match
    * any topics that start with _redpanda or __redpanda.  If users wish to
    * shadow topics that start with _redpanda or __redpanda, they should
    * provide a literal filter for those topics.
    *
-   * @generated from field: repeated redpanda.core.admin.v2.NameFilter auto_create_shadow_topic_filters = 2;
+   * @generated from field: repeated redpanda.core.admin.v2.NameFilter auto_create_shadow_topic_filters = 3;
    */
   autoCreateShadowTopicFilters: NameFilter[];
 
@@ -678,7 +741,7 @@ export type TopicMetadataSyncOptions = Message<"redpanda.core.admin.v2.TopicMeta
    * This list is a list of properties in addition to the default properties
    * that will be synced.  See `exclude_default`.
    *
-   * @generated from field: repeated string synced_shadow_topic_properties = 3;
+   * @generated from field: repeated string synced_shadow_topic_properties = 4;
    */
   syncedShadowTopicProperties: string[];
 
@@ -695,9 +758,46 @@ export type TopicMetadataSyncOptions = Message<"redpanda.core.admin.v2.TopicMeta
    * If this is true, then only the properties listed in
    * `synced_shadow_topic_properties` will be synced.
    *
-   * @generated from field: bool exclude_default = 4;
+   * @generated from field: bool exclude_default = 5;
    */
   excludeDefault: boolean;
+
+  /**
+   * The starting offset for new shadow topic partitions.
+   * Defaults to earliest.
+   * Only applies if the shadow partition is empty.
+   *
+   * @generated from oneof redpanda.core.admin.v2.TopicMetadataSyncOptions.start_offset
+   */
+  startOffset: {
+    /**
+     * Enables data replication from the earliest offset
+     * on the source topic/partition.
+     *
+     * @generated from field: redpanda.core.admin.v2.TopicMetadataSyncOptions.EarliestOffset earliest = 6;
+     */
+    value: TopicMetadataSyncOptions_EarliestOffset;
+    case: "earliest";
+  } | {
+    /**
+     * Enables data replication from the latest offset
+     * on the source topic/partition.
+     *
+     * @generated from field: redpanda.core.admin.v2.TopicMetadataSyncOptions.LatestOffset latest = 7;
+     */
+    value: TopicMetadataSyncOptions_LatestOffset;
+    case: "latest";
+  } | {
+    /**
+     * Enables data replication from the first offset on the
+     * source topic/partition where the record's timestamp is
+     * at or after the specified timestamp.
+     *
+     * @generated from field: google.protobuf.Timestamp timestamp = 8;
+     */
+    value: Timestamp;
+    case: "timestamp";
+  } | { case: undefined; value?: undefined };
 };
 
 /**
@@ -706,6 +806,90 @@ export type TopicMetadataSyncOptions = Message<"redpanda.core.admin.v2.TopicMeta
  */
 export const TopicMetadataSyncOptionsSchema: GenMessage<TopicMetadataSyncOptions> = /*@__PURE__*/
   messageDesc(file_redpanda_core_admin_v2_shadow_link, 20);
+
+/**
+ * Start at the earliest offset in the partition.
+ *
+ * @generated from message redpanda.core.admin.v2.TopicMetadataSyncOptions.EarliestOffset
+ */
+export type TopicMetadataSyncOptions_EarliestOffset = Message<"redpanda.core.admin.v2.TopicMetadataSyncOptions.EarliestOffset"> & {
+};
+
+/**
+ * Describes the message redpanda.core.admin.v2.TopicMetadataSyncOptions.EarliestOffset.
+ * Use `create(TopicMetadataSyncOptions_EarliestOffsetSchema)` to create a new message.
+ */
+export const TopicMetadataSyncOptions_EarliestOffsetSchema: GenMessage<TopicMetadataSyncOptions_EarliestOffset> = /*@__PURE__*/
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 20, 0);
+
+/**
+ * Start at the latest offset in the partition.
+ *
+ * @generated from message redpanda.core.admin.v2.TopicMetadataSyncOptions.LatestOffset
+ */
+export type TopicMetadataSyncOptions_LatestOffset = Message<"redpanda.core.admin.v2.TopicMetadataSyncOptions.LatestOffset"> & {
+};
+
+/**
+ * Describes the message redpanda.core.admin.v2.TopicMetadataSyncOptions.LatestOffset.
+ * Use `create(TopicMetadataSyncOptions_LatestOffsetSchema)` to create a new message.
+ */
+export const TopicMetadataSyncOptions_LatestOffsetSchema: GenMessage<TopicMetadataSyncOptions_LatestOffset> = /*@__PURE__*/
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 20, 1);
+
+/**
+ * Options for how the Schema Registry is synced.
+ *
+ * @generated from message redpanda.core.admin.v2.SchemaRegistrySyncOptions
+ */
+export type SchemaRegistrySyncOptions = Message<"redpanda.core.admin.v2.SchemaRegistrySyncOptions"> & {
+  /**
+   * Schema Registry shadowing mode.
+   *
+   * @generated from oneof redpanda.core.admin.v2.SchemaRegistrySyncOptions.schema_registry_shadowing_mode
+   */
+  schemaRegistryShadowingMode: {
+    /**
+     * @generated from field: redpanda.core.admin.v2.SchemaRegistrySyncOptions.ShadowSchemaRegistryTopic shadow_schema_registry_topic = 1;
+     */
+    value: SchemaRegistrySyncOptions_ShadowSchemaRegistryTopic;
+    case: "shadowSchemaRegistryTopic";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message redpanda.core.admin.v2.SchemaRegistrySyncOptions.
+ * Use `create(SchemaRegistrySyncOptionsSchema)` to create a new message.
+ */
+export const SchemaRegistrySyncOptionsSchema: GenMessage<SchemaRegistrySyncOptions> = /*@__PURE__*/
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 21);
+
+/**
+ * Shadow the entire source cluster's Schema Registry byte-for-byte.
+ * If set, the Shadow Link will attempt to add the `_schemas`
+ * topic to the list of Shadow Topics as long as:
+ * 1. The `_schemas` topic exists on the source cluster
+ * 2. The `_schemas` topic does not exist on the shadow cluster, or it is
+ * empty.
+ * If either of the above conditions are _not_ met, then the `_schemas`
+ * topic will _not_ be shadowed by this cluster. Unsetting this flag will
+ * _not_ remove the `_schemas` topic from shadowing if it has already been
+ * added.  Once made a shadow topic, the
+ * `_schemas` topic will be replicated byte-for-byte.  To stop shadowing the
+ * `_schemas` topic, unset this field, then either fail-over the topic or
+ * delete it.
+ *
+ * @generated from message redpanda.core.admin.v2.SchemaRegistrySyncOptions.ShadowSchemaRegistryTopic
+ */
+export type SchemaRegistrySyncOptions_ShadowSchemaRegistryTopic = Message<"redpanda.core.admin.v2.SchemaRegistrySyncOptions.ShadowSchemaRegistryTopic"> & {
+};
+
+/**
+ * Describes the message redpanda.core.admin.v2.SchemaRegistrySyncOptions.ShadowSchemaRegistryTopic.
+ * Use `create(SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema)` to create a new message.
+ */
+export const SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema: GenMessage<SchemaRegistrySyncOptions_ShadowSchemaRegistryTopic> = /*@__PURE__*/
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 21, 0);
 
 /**
  * Options for syncing consumer offsets
@@ -722,16 +906,23 @@ export type ConsumerOffsetSyncOptions = Message<"redpanda.core.admin.v2.Consumer
   interval?: Duration;
 
   /**
+   * The effective interval for the task
+   *
+   * @generated from field: google.protobuf.Duration effective_interval = 2;
+   */
+  effectiveInterval?: Duration;
+
+  /**
    * Whether it's enabled
    *
-   * @generated from field: bool enabled = 2;
+   * @generated from field: bool enabled = 3;
    */
   enabled: boolean;
 
   /**
    * The filters
    *
-   * @generated from field: repeated redpanda.core.admin.v2.NameFilter group_filters = 3;
+   * @generated from field: repeated redpanda.core.admin.v2.NameFilter group_filters = 4;
    */
   groupFilters: NameFilter[];
 };
@@ -741,7 +932,7 @@ export type ConsumerOffsetSyncOptions = Message<"redpanda.core.admin.v2.Consumer
  * Use `create(ConsumerOffsetSyncOptionsSchema)` to create a new message.
  */
 export const ConsumerOffsetSyncOptionsSchema: GenMessage<ConsumerOffsetSyncOptions> = /*@__PURE__*/
-  messageDesc(file_redpanda_core_admin_v2_shadow_link, 21);
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 22);
 
 /**
  * Options for syncing security settings
@@ -758,16 +949,23 @@ export type SecuritySettingsSyncOptions = Message<"redpanda.core.admin.v2.Securi
   interval?: Duration;
 
   /**
+   * The effective interval for the task
+   *
+   * @generated from field: google.protobuf.Duration effective_interval = 2;
+   */
+  effectiveInterval?: Duration;
+
+  /**
    * Whether or not it's enabled
    *
-   * @generated from field: bool enabled = 2;
+   * @generated from field: bool enabled = 3;
    */
   enabled: boolean;
 
   /**
    * ACL filters
    *
-   * @generated from field: repeated redpanda.core.admin.v2.ACLFilter acl_filters = 5;
+   * @generated from field: repeated redpanda.core.admin.v2.ACLFilter acl_filters = 4;
    */
   aclFilters: ACLFilter[];
 };
@@ -777,7 +975,7 @@ export type SecuritySettingsSyncOptions = Message<"redpanda.core.admin.v2.Securi
  * Use `create(SecuritySettingsSyncOptionsSchema)` to create a new message.
  */
 export const SecuritySettingsSyncOptionsSchema: GenMessage<SecuritySettingsSyncOptions> = /*@__PURE__*/
-  messageDesc(file_redpanda_core_admin_v2_shadow_link, 22);
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 23);
 
 /**
  * TLS settings
@@ -814,6 +1012,13 @@ export type TLSSettings = Message<"redpanda.core.admin.v2.TLSSettings"> & {
     value: TLSPEMSettings;
     case: "tlsPemSettings";
   } | { case: undefined; value?: undefined };
+
+  /**
+   * If true, the SNI hostname will not be provided when TLS is used
+   *
+   * @generated from field: bool do_not_set_sni_hostname = 4;
+   */
+  doNotSetSniHostname: boolean;
 };
 
 /**
@@ -821,7 +1026,7 @@ export type TLSSettings = Message<"redpanda.core.admin.v2.TLSSettings"> & {
  * Use `create(TLSSettingsSchema)` to create a new message.
  */
 export const TLSSettingsSchema: GenMessage<TLSSettings> = /*@__PURE__*/
-  messageDesc(file_redpanda_core_admin_v2_shadow_link, 23);
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 24);
 
 /**
  * Authentication config.  Currently only supporting SASL/SCRAM,
@@ -849,7 +1054,7 @@ export type AuthenticationConfiguration = Message<"redpanda.core.admin.v2.Authen
  * Use `create(AuthenticationConfigurationSchema)` to create a new message.
  */
 export const AuthenticationConfigurationSchema: GenMessage<AuthenticationConfiguration> = /*@__PURE__*/
-  messageDesc(file_redpanda_core_admin_v2_shadow_link, 24);
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 25);
 
 /**
  * TLS file settings
@@ -885,7 +1090,7 @@ export type TLSFileSettings = Message<"redpanda.core.admin.v2.TLSFileSettings"> 
  * Use `create(TLSFileSettingsSchema)` to create a new message.
  */
 export const TLSFileSettingsSchema: GenMessage<TLSFileSettings> = /*@__PURE__*/
-  messageDesc(file_redpanda_core_admin_v2_shadow_link, 25);
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 26);
 
 /**
  * Used when providing the TLS information in PEM format
@@ -928,7 +1133,7 @@ export type TLSPEMSettings = Message<"redpanda.core.admin.v2.TLSPEMSettings"> & 
  * Use `create(TLSPEMSettingsSchema)` to create a new message.
  */
 export const TLSPEMSettingsSchema: GenMessage<TLSPEMSettings> = /*@__PURE__*/
-  messageDesc(file_redpanda_core_admin_v2_shadow_link, 26);
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 27);
 
 /**
  * SCRAM settings
@@ -978,7 +1183,7 @@ export type ScramConfig = Message<"redpanda.core.admin.v2.ScramConfig"> & {
  * Use `create(ScramConfigSchema)` to create a new message.
  */
 export const ScramConfigSchema: GenMessage<ScramConfig> = /*@__PURE__*/
-  messageDesc(file_redpanda_core_admin_v2_shadow_link, 27);
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 28);
 
 /**
  * A filter based on the name of a resource
@@ -1015,7 +1220,7 @@ export type NameFilter = Message<"redpanda.core.admin.v2.NameFilter"> & {
  * Use `create(NameFilterSchema)` to create a new message.
  */
 export const NameFilterSchema: GenMessage<NameFilter> = /*@__PURE__*/
-  messageDesc(file_redpanda_core_admin_v2_shadow_link, 28);
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 29);
 
 /**
  * A filter for ACLs
@@ -1043,7 +1248,7 @@ export type ACLFilter = Message<"redpanda.core.admin.v2.ACLFilter"> & {
  * Use `create(ACLFilterSchema)` to create a new message.
  */
 export const ACLFilterSchema: GenMessage<ACLFilter> = /*@__PURE__*/
-  messageDesc(file_redpanda_core_admin_v2_shadow_link, 29);
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 30);
 
 /**
  * A filter to match ACLs for resources
@@ -1080,7 +1285,7 @@ export type ACLResourceFilter = Message<"redpanda.core.admin.v2.ACLResourceFilte
  * Use `create(ACLResourceFilterSchema)` to create a new message.
  */
 export const ACLResourceFilterSchema: GenMessage<ACLResourceFilter> = /*@__PURE__*/
-  messageDesc(file_redpanda_core_admin_v2_shadow_link, 30);
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 31);
 
 /**
  * Filter an ACL based on its access
@@ -1125,7 +1330,7 @@ export type ACLAccessFilter = Message<"redpanda.core.admin.v2.ACLAccessFilter"> 
  * Use `create(ACLAccessFilterSchema)` to create a new message.
  */
 export const ACLAccessFilterSchema: GenMessage<ACLAccessFilter> = /*@__PURE__*/
-  messageDesc(file_redpanda_core_admin_v2_shadow_link, 31);
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 32);
 
 /**
  * Status of the shadow link
@@ -1165,7 +1370,7 @@ export type ShadowLinkStatus = Message<"redpanda.core.admin.v2.ShadowLinkStatus"
  * Use `create(ShadowLinkStatusSchema)` to create a new message.
  */
 export const ShadowLinkStatusSchema: GenMessage<ShadowLinkStatus> = /*@__PURE__*/
-  messageDesc(file_redpanda_core_admin_v2_shadow_link, 32);
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 33);
 
 /**
  * Status of a task
@@ -1207,7 +1412,7 @@ export type ShadowLinkTaskStatus = Message<"redpanda.core.admin.v2.ShadowLinkTas
  * Use `create(ShadowLinkTaskStatusSchema)` to create a new message.
  */
 export const ShadowLinkTaskStatusSchema: GenMessage<ShadowLinkTaskStatus> = /*@__PURE__*/
-  messageDesc(file_redpanda_core_admin_v2_shadow_link, 33);
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 34);
 
 /**
  * Status of a ShadowTopic
@@ -1235,7 +1440,7 @@ export type ShadowTopicStatus = Message<"redpanda.core.admin.v2.ShadowTopicStatu
  * Use `create(ShadowTopicStatusSchema)` to create a new message.
  */
 export const ShadowTopicStatusSchema: GenMessage<ShadowTopicStatus> = /*@__PURE__*/
-  messageDesc(file_redpanda_core_admin_v2_shadow_link, 34);
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 35);
 
 /**
  * Topic partition information
@@ -1284,7 +1489,7 @@ export type TopicPartitionInformation = Message<"redpanda.core.admin.v2.TopicPar
  * Use `create(TopicPartitionInformationSchema)` to create a new message.
  */
 export const TopicPartitionInformationSchema: GenMessage<TopicPartitionInformation> = /*@__PURE__*/
-  messageDesc(file_redpanda_core_admin_v2_shadow_link, 35);
+  messageDesc(file_redpanda_core_admin_v2_shadow_link, 36);
 
 /**
  * State of the shadow link
