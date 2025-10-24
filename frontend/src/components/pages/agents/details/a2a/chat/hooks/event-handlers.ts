@@ -166,7 +166,7 @@ const parseToolCallFromMetadata = (metadata: {
  * These are important messages like "Your bar chart has been created..." that appear between artifacts
  */
 const extractAndAddTextFromStatusMessage = (
-  message: RawStatusUpdateEvent['status']['message'],
+  message: NonNullable<RawStatusUpdateEvent['status']>['message'],
   timestamp: string,
   state: StreamingState
 ): void => {
@@ -179,9 +179,9 @@ const extractAndAddTextFromStatusMessage = (
 
   // Extract text from message parts, but skip tool-related messages
   const textParts = message.parts
-    .filter((part) => part.kind === 'text' && part.text)
-    .map((part) => part.text)
-    .filter((text): text is string => !!text);
+    .filter((part: { kind: string; text?: string }) => part.kind === 'text' && part.text)
+    .map((part: { kind: string; text?: string }) => part.text)
+    .filter((text: string | undefined): text is string => !!text);
 
   if (textParts.length === 0) {
     return;
