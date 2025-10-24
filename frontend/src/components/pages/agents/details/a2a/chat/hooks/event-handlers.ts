@@ -162,6 +162,55 @@ const parseToolCallFromMetadata = (metadata: {
 };
 
 /**
+ * Extract and add text messages from status.message.parts
+ * These are important messages like "Your bar chart has been created..." that appear between artifacts
+ */
+const extractAndAddTextFromStatusMessage = (
+  message: RawStatusUpdateEvent['status']['message'],
+  timestamp: string,
+  state: StreamingState
+): void => {
+  if (!message?.parts || message?.role !== 'agent') {
+    return;
+  }
+
+  const eventTimestamp = new Date(timestamp);
+  state.lastEventTimestamp = eventTimestamp;
+
+  // Extract text from message parts, but skip tool-related messages
+  const textParts = message.parts
+    .filter((part) => part.kind === 'text' && part.text)
+    .map((part) => part.text)
+    .filter((text): text is string => !!text);
+
+  if (textParts.length === 0) {
+    return;
+  }
+
+  const combinedText = textParts.join('');
+
+  // Skip tool request/response messages - they're already displayed by ToolBlock
+  const isToolMessage = combinedText.startsWith('Tool request:') || combinedText.startsWith('Tool response:');
+
+  // Check for exact duplicates to avoid re-adding the same text
+  const textAlreadyExists = state.contentBlocks.some((block) => block.type === 'text' && block.text === combinedText);
+
+  if (!(isToolMessage || textAlreadyExists) && combinedText.trim().length > 0) {
+    // Close active text block before adding new text from status message
+    closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+    state.activeTextBlock = null;
+
+    // Add new text block
+    const textBlock: ContentBlock = {
+      type: 'text',
+      text: combinedText,
+      timestamp: eventTimestamp,
+    };
+    state.contentBlocks.push(textBlock);
+  }
+};
+
+/**
  * Handle status-update event to capture/update task state, tool calls, status updates, and message text
  * NEW: Updates tool blocks in-place (request → response state transition)
  * NEW: Creates status-update blocks on state transitions
@@ -224,45 +273,9 @@ export const handleStatusUpdateEvent = (
     }
   }
 
-  // FIXED: Extract text messages from status.message.parts (messages between artifacts and completion)
-  // These are important messages like "Your bar chart has been created..." that were being lost
-  // BUT: Skip tool request/response messages (already shown in ToolBlock), duplicates, and user-role messages
-  if (message?.parts && message?.role === 'agent' && timestamp) {
-    // IMPORTANT: Only process agent-role messages. User-role messages are task descriptions (internal use only)
-    const eventTimestamp = new Date(timestamp);
-    state.lastEventTimestamp = eventTimestamp;
-
-    // Extract text from message parts, but skip tool-related messages
-    const textParts = message.parts
-      .filter((part) => part.kind === 'text' && part.text)
-      .map((part) => part.text)
-      .filter((text): text is string => !!text);
-
-    if (textParts.length > 0) {
-      const combinedText = textParts.join('');
-
-      // Skip tool request/response messages - they're already displayed by ToolBlock
-      const isToolMessage = combinedText.startsWith('Tool request:') || combinedText.startsWith('Tool response:');
-
-      // Check for exact duplicates to avoid re-adding the same text
-      const textAlreadyExists = state.contentBlocks.some(
-        (block) => block.type === 'text' && block.text === combinedText
-      );
-
-      if (!(isToolMessage || textAlreadyExists) && combinedText.trim().length > 0) {
-        // Close active text block before adding new text from status message
-        closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
-        state.activeTextBlock = null;
-
-        // Add new text block
-        const textBlock: ContentBlock = {
-          type: 'text',
-          text: combinedText,
-          timestamp: eventTimestamp,
-        };
-        state.contentBlocks.push(textBlock);
-      }
-    }
+  // Extract text messages from status.message.parts
+  if (timestamp) {
+    extractAndAddTextFromStatusMessage(message, timestamp, state);
   }
 
   // Always capture the latest task state from status-update events
