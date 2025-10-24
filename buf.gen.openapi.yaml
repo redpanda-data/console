@@ -5,7 +5,13 @@ managed:
     - file_option: go_package
       module: buf.build/googleapis/googleapis
     - file_option: go_package
+      module: buf.build/grpc-ecosystem/grpc-gateway
+    - file_option: go_package
       module: buf.build/bufbuild/protovalidate
+    - file_option: go_package
+      module: buf.build/envoyproxy/protoc-gen-validate
+    - file_option: go_package
+      module: buf.build/redpandadata/common
   override:
     - file_option: go_package_prefix
       value: github.com/redpanda-data/console/backend/pkg/protogen

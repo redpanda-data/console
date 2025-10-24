@@ -10,6 +10,7 @@ package consolev1alpha1
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 
@@ -24,266 +25,218 @@ import (
 )
 
 // Suppress "imported and not used" errors
-var _ codes.Code
-var _ io.Reader
-var _ status.Status
-var _ = runtime.String
-var _ = utilities.NewDoubleArray
-var _ = metadata.Join
+var (
+	_ codes.Code
+	_ io.Reader
+	_ status.Status
+	_ = errors.New
+	_ = runtime.String
+	_ = utilities.NewDoubleArray
+	_ = metadata.Join
+)
 
 func request_ClusterStatusService_GetKafkaInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ClusterStatusServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetKafkaInfoRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq GetKafkaInfoRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	msg, err := client.GetKafkaInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_ClusterStatusService_GetKafkaInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ClusterStatusServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetKafkaInfoRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq GetKafkaInfoRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.GetKafkaInfo(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_ClusterStatusService_GetKafkaAuthorizerInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ClusterStatusServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetKafkaAuthorizerInfoRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq GetKafkaAuthorizerInfoRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	msg, err := client.GetKafkaAuthorizerInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_ClusterStatusService_GetKafkaAuthorizerInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ClusterStatusServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetKafkaAuthorizerInfoRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq GetKafkaAuthorizerInfoRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.GetKafkaAuthorizerInfo(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_ClusterStatusService_GetRedpandaInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ClusterStatusServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetRedpandaInfoRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq GetRedpandaInfoRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	msg, err := client.GetRedpandaInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_ClusterStatusService_GetRedpandaInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ClusterStatusServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetRedpandaInfoRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq GetRedpandaInfoRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.GetRedpandaInfo(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_ClusterStatusService_GetRedpandaPartitionBalancerStatus_0(ctx context.Context, marshaler runtime.Marshaler, client ClusterStatusServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetRedpandaPartitionBalancerStatusRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq GetRedpandaPartitionBalancerStatusRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	msg, err := client.GetRedpandaPartitionBalancerStatus(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_ClusterStatusService_GetRedpandaPartitionBalancerStatus_0(ctx context.Context, marshaler runtime.Marshaler, server ClusterStatusServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetRedpandaPartitionBalancerStatusRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq GetRedpandaPartitionBalancerStatusRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.GetRedpandaPartitionBalancerStatus(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_ClusterStatusService_GetConsoleInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ClusterStatusServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetConsoleInfoRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq GetConsoleInfoRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	msg, err := client.GetConsoleInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_ClusterStatusService_GetConsoleInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ClusterStatusServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetConsoleInfoRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq GetConsoleInfoRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.GetConsoleInfo(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_ClusterStatusService_GetKafkaConnectInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ClusterStatusServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetKafkaConnectInfoRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq GetKafkaConnectInfoRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	msg, err := client.GetKafkaConnectInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_ClusterStatusService_GetKafkaConnectInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ClusterStatusServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetKafkaConnectInfoRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq GetKafkaConnectInfoRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.GetKafkaConnectInfo(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_ClusterStatusService_GetSchemaRegistryInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ClusterStatusServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetSchemaRegistryInfoRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq GetSchemaRegistryInfoRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	msg, err := client.GetSchemaRegistryInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_ClusterStatusService_GetSchemaRegistryInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ClusterStatusServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetSchemaRegistryInfoRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq GetSchemaRegistryInfoRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.GetSchemaRegistryInfo(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 // RegisterClusterStatusServiceHandlerServer registers the http handlers for service ClusterStatusService to "mux".
 // UnaryRPC     :call ClusterStatusServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterClusterStatusServiceHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterClusterStatusServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server ClusterStatusServiceServer) error {
-
-	mux.Handle("POST", pattern_ClusterStatusService_GetKafkaInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ClusterStatusService_GetKafkaInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaInfo"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -295,20 +248,15 @@ func RegisterClusterStatusServiceHandlerServer(ctx context.Context, mux *runtime
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ClusterStatusService_GetKafkaInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_ClusterStatusService_GetKafkaAuthorizerInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ClusterStatusService_GetKafkaAuthorizerInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaAuthorizerInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaAuthorizerInfo"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaAuthorizerInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaAuthorizerInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -320,20 +268,15 @@ func RegisterClusterStatusServiceHandlerServer(ctx context.Context, mux *runtime
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ClusterStatusService_GetKafkaAuthorizerInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_ClusterStatusService_GetRedpandaInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ClusterStatusService_GetRedpandaInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaInfo"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -345,20 +288,15 @@ func RegisterClusterStatusServiceHandlerServer(ctx context.Context, mux *runtime
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ClusterStatusService_GetRedpandaInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_ClusterStatusService_GetRedpandaPartitionBalancerStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ClusterStatusService_GetRedpandaPartitionBalancerStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaPartitionBalancerStatus", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaPartitionBalancerStatus"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaPartitionBalancerStatus", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaPartitionBalancerStatus"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -370,20 +308,15 @@ func RegisterClusterStatusServiceHandlerServer(ctx context.Context, mux *runtime
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ClusterStatusService_GetRedpandaPartitionBalancerStatus_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_ClusterStatusService_GetConsoleInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ClusterStatusService_GetConsoleInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetConsoleInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetConsoleInfo"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetConsoleInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetConsoleInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -395,20 +328,15 @@ func RegisterClusterStatusServiceHandlerServer(ctx context.Context, mux *runtime
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ClusterStatusService_GetConsoleInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_ClusterStatusService_GetKafkaConnectInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ClusterStatusService_GetKafkaConnectInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaConnectInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaConnectInfo"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaConnectInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaConnectInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -420,20 +348,15 @@ func RegisterClusterStatusServiceHandlerServer(ctx context.Context, mux *runtime
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ClusterStatusService_GetKafkaConnectInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_ClusterStatusService_GetSchemaRegistryInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ClusterStatusService_GetSchemaRegistryInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetSchemaRegistryInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetSchemaRegistryInfo"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetSchemaRegistryInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetSchemaRegistryInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -445,9 +368,7 @@ func RegisterClusterStatusServiceHandlerServer(ctx context.Context, mux *runtime
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ClusterStatusService_GetSchemaRegistryInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	return nil
@@ -456,25 +377,24 @@ func RegisterClusterStatusServiceHandlerServer(ctx context.Context, mux *runtime
 // RegisterClusterStatusServiceHandlerFromEndpoint is same as RegisterClusterStatusServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterClusterStatusServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.DialContext(ctx, endpoint, opts...)
+	conn, err := grpc.NewClient(endpoint, opts...)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if err != nil {
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Errorf("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 			return
 		}
 		go func() {
 			<-ctx.Done()
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Errorf("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 		}()
 	}()
-
 	return RegisterClusterStatusServiceHandler(ctx, mux, conn)
 }
 
@@ -488,16 +408,13 @@ func RegisterClusterStatusServiceHandler(ctx context.Context, mux *runtime.Serve
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "ClusterStatusServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "ClusterStatusServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "ClusterStatusServiceClient" to call the correct interceptors.
+// "ClusterStatusServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterClusterStatusServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client ClusterStatusServiceClient) error {
-
-	mux.Handle("POST", pattern_ClusterStatusService_GetKafkaInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ClusterStatusService_GetKafkaInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaInfo"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -508,18 +425,13 @@ func RegisterClusterStatusServiceHandlerClient(ctx context.Context, mux *runtime
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ClusterStatusService_GetKafkaInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_ClusterStatusService_GetKafkaAuthorizerInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ClusterStatusService_GetKafkaAuthorizerInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaAuthorizerInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaAuthorizerInfo"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaAuthorizerInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaAuthorizerInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -530,18 +442,13 @@ func RegisterClusterStatusServiceHandlerClient(ctx context.Context, mux *runtime
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ClusterStatusService_GetKafkaAuthorizerInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_ClusterStatusService_GetRedpandaInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ClusterStatusService_GetRedpandaInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaInfo"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -552,18 +459,13 @@ func RegisterClusterStatusServiceHandlerClient(ctx context.Context, mux *runtime
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ClusterStatusService_GetRedpandaInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_ClusterStatusService_GetRedpandaPartitionBalancerStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ClusterStatusService_GetRedpandaPartitionBalancerStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaPartitionBalancerStatus", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaPartitionBalancerStatus"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaPartitionBalancerStatus", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetRedpandaPartitionBalancerStatus"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -574,18 +476,13 @@ func RegisterClusterStatusServiceHandlerClient(ctx context.Context, mux *runtime
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ClusterStatusService_GetRedpandaPartitionBalancerStatus_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_ClusterStatusService_GetConsoleInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ClusterStatusService_GetConsoleInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetConsoleInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetConsoleInfo"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetConsoleInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetConsoleInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -596,18 +493,13 @@ func RegisterClusterStatusServiceHandlerClient(ctx context.Context, mux *runtime
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ClusterStatusService_GetConsoleInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_ClusterStatusService_GetKafkaConnectInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ClusterStatusService_GetKafkaConnectInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaConnectInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaConnectInfo"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaConnectInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetKafkaConnectInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -618,18 +510,13 @@ func RegisterClusterStatusServiceHandlerClient(ctx context.Context, mux *runtime
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ClusterStatusService_GetKafkaConnectInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_ClusterStatusService_GetSchemaRegistryInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_ClusterStatusService_GetSchemaRegistryInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetSchemaRegistryInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetSchemaRegistryInfo"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.ClusterStatusService/GetSchemaRegistryInfo", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.ClusterStatusService/GetSchemaRegistryInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -640,42 +527,27 @@ func RegisterClusterStatusServiceHandlerClient(ctx context.Context, mux *runtime
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_ClusterStatusService_GetSchemaRegistryInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
 	return nil
 }
 
 var (
-	pattern_ClusterStatusService_GetKafkaInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.ClusterStatusService", "GetKafkaInfo"}, ""))
-
-	pattern_ClusterStatusService_GetKafkaAuthorizerInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.ClusterStatusService", "GetKafkaAuthorizerInfo"}, ""))
-
-	pattern_ClusterStatusService_GetRedpandaInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.ClusterStatusService", "GetRedpandaInfo"}, ""))
-
+	pattern_ClusterStatusService_GetKafkaInfo_0                       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.ClusterStatusService", "GetKafkaInfo"}, ""))
+	pattern_ClusterStatusService_GetKafkaAuthorizerInfo_0             = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.ClusterStatusService", "GetKafkaAuthorizerInfo"}, ""))
+	pattern_ClusterStatusService_GetRedpandaInfo_0                    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.ClusterStatusService", "GetRedpandaInfo"}, ""))
 	pattern_ClusterStatusService_GetRedpandaPartitionBalancerStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.ClusterStatusService", "GetRedpandaPartitionBalancerStatus"}, ""))
-
-	pattern_ClusterStatusService_GetConsoleInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.ClusterStatusService", "GetConsoleInfo"}, ""))
-
-	pattern_ClusterStatusService_GetKafkaConnectInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.ClusterStatusService", "GetKafkaConnectInfo"}, ""))
-
-	pattern_ClusterStatusService_GetSchemaRegistryInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.ClusterStatusService", "GetSchemaRegistryInfo"}, ""))
+	pattern_ClusterStatusService_GetConsoleInfo_0                     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.ClusterStatusService", "GetConsoleInfo"}, ""))
+	pattern_ClusterStatusService_GetKafkaConnectInfo_0                = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.ClusterStatusService", "GetKafkaConnectInfo"}, ""))
+	pattern_ClusterStatusService_GetSchemaRegistryInfo_0              = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.ClusterStatusService", "GetSchemaRegistryInfo"}, ""))
 )
 
 var (
-	forward_ClusterStatusService_GetKafkaInfo_0 = runtime.ForwardResponseMessage
-
-	forward_ClusterStatusService_GetKafkaAuthorizerInfo_0 = runtime.ForwardResponseMessage
-
-	forward_ClusterStatusService_GetRedpandaInfo_0 = runtime.ForwardResponseMessage
-
+	forward_ClusterStatusService_GetKafkaInfo_0                       = runtime.ForwardResponseMessage
+	forward_ClusterStatusService_GetKafkaAuthorizerInfo_0             = runtime.ForwardResponseMessage
+	forward_ClusterStatusService_GetRedpandaInfo_0                    = runtime.ForwardResponseMessage
 	forward_ClusterStatusService_GetRedpandaPartitionBalancerStatus_0 = runtime.ForwardResponseMessage
-
-	forward_ClusterStatusService_GetConsoleInfo_0 = runtime.ForwardResponseMessage
-
-	forward_ClusterStatusService_GetKafkaConnectInfo_0 = runtime.ForwardResponseMessage
-
-	forward_ClusterStatusService_GetSchemaRegistryInfo_0 = runtime.ForwardResponseMessage
+	forward_ClusterStatusService_GetConsoleInfo_0                     = runtime.ForwardResponseMessage
+	forward_ClusterStatusService_GetKafkaConnectInfo_0                = runtime.ForwardResponseMessage
+	forward_ClusterStatusService_GetSchemaRegistryInfo_0              = runtime.ForwardResponseMessage
 )
