@@ -201,7 +201,29 @@ export const handleStatusUpdateEvent = (
 
   // Always capture the latest task state from status-update events
   if (event.status?.state) {
-    state.capturedTaskState = event.status.state as ChatMessage['taskState'];
+    const newState = event.status.state as ChatMessage['taskState'];
+
+    // Check if state has changed - create status-update block
+    if (newState && state.previousTaskState && state.previousTaskState !== newState) {
+      // Close active text block before adding status update
+      closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+      state.activeTextBlock = null;
+
+      const eventTimestamp = new Date();
+      state.lastEventTimestamp = eventTimestamp;
+
+      // Create status-update content block (newState is guaranteed non-undefined here)
+      const statusUpdateBlock: ContentBlock = {
+        type: 'status-update',
+        taskState: newState as string,
+        timestamp: eventTimestamp,
+      };
+      state.contentBlocks.push(statusUpdateBlock);
+    }
+
+    // Update tracked states
+    state.previousTaskState = newState;
+    state.capturedTaskState = newState;
 
     const updatedMessage = buildMessageWithContentBlocks(
       assistantMessage,

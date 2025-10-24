@@ -153,6 +153,10 @@ export type StreamingState = {
    */
   capturedTaskState: ChatMessage['taskState'] | undefined;
   /**
+   * Previous task state for detecting state transitions
+   */
+  previousTaskState: string | undefined;
+  /**
    * @deprecated Legacy artifact accumulation - use contentBlocks instead
    */
   artifactsMap?: Map<string, ArtifactData>;

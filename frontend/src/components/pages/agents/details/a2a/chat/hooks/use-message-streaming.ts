@@ -88,6 +88,7 @@ export const streamMessage = async ({
       lastEventTimestamp: new Date(),
       capturedTaskId: undefined,
       capturedTaskState: undefined,
+      previousTaskState: undefined,
     };
 
     // Consume the full stream and process events
