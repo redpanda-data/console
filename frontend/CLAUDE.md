@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+When creating user interfaces, refer to @.claude/UI.md
+
 ## Project Overview
 
 This is the frontend for Redpanda Console, a web application for managing Kafka/Redpanda clusters. Built with React 18.3 + TypeScript using Rsbuild (Rspack-based bundler).
