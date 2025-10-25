@@ -64,7 +64,8 @@ import { sanitizeString } from '../../../utils/filter-helper';
 import { delay, encodeBase64, titleCase } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
-import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
+import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded-message';
+import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
 
 const LOGS_TOPIC_NAME = '__redpanda.connectors_logs';
 

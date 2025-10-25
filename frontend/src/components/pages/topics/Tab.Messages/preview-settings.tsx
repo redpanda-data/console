@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Redpanda Data, Inc.
+ * Copyright 2025 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -9,27 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { GearIcon, InfoIcon, ThreeBarsIcon, XIcon } from '@primer/octicons-react';
-import {
-  Box,
-  Button,
-  Checkbox,
-  Drawer,
-  DrawerBody,
-  DrawerCloseButton,
-  DrawerContent,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerOverlay,
-  Flex,
-  Input,
-  Popover,
-  useDisclosure,
-} from '@redpanda-data/ui';
+import { GearIcon, ThreeBarsIcon, XIcon } from '@primer/octicons-react';
+import { Box, Button, Checkbox, Flex, Input, Popover } from '@redpanda-data/ui';
 import { arrayMoveMutable } from 'array-move';
-import { computed, makeObservable } from 'mobx';
-import { observer } from 'mobx-react';
-import React, { Component } from 'react';
+import React from 'react';
 import {
   DragDropContext,
   Draggable,
@@ -39,279 +22,141 @@ import {
   type ResponderProvided,
 } from 'react-beautiful-dnd';
 
-import globExampleImg from '../../../../assets/globExample.png';
-import type { MessageSearch } from '../../../../state/backend-api';
+import { globHelp, PatternHelpDrawer } from './preview-settings/pattern-help-drawer';
+import { usePreviewDisplayMode } from '../../../../hooks/use-preview-display-mode';
+import { usePreviewMultiResultMode } from '../../../../hooks/use-preview-multi-result-mode';
+import { usePreviewTagsCaseSensitive } from '../../../../hooks/use-preview-tags-case-sensitive';
+import type { TopicMessage } from '../../../../state/rest-interfaces';
 import type { PreviewTagV2 } from '../../../../state/ui';
-import { uiState } from '../../../../state/ui-state';
+import { useTopicSettingsStore } from '../../../../stores/topic-settings-store';
 import { IsDev } from '../../../../utils/env';
-import { Code, Label, OptionGroup, toSafeString } from '../../../../utils/tsx-utils';
+import { Label, OptionGroup, toSafeString } from '../../../../utils/tsx-utils';
 import { type CollectedProperty, collectElements2, getAllMessageKeys, randomId } from '../../../../utils/utils';
 import { SingleSelect } from '../../../misc/select';
 
-const PatternHelpDrawer = () => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessage[]; topicName: string }) => {
+  const [caseSensitive, setCaseSensitive] = usePreviewTagsCaseSensitive(topicName);
+  const [multiResultMode, setMultiResultMode] = usePreviewMultiResultMode(topicName);
+  const [displayMode, setDisplayMode] = usePreviewDisplayMode(topicName);
+  const { setPreviewTags: setStoredPreviewTags, perTopicSettings } = useTopicSettingsStore();
 
-  return (
+  const currentKeys = getAllMessageKeys(messages)
+    .map((p) => p.propertyName)
+    .distinct();
+
+  // Access perTopicSettings to trigger re-render when it changes
+  const tags = perTopicSettings.find((t) => t.topicName === topicName)?.previewTags ?? [];
+
+  // add ids to elements that don't have any
+  const getFreeId = (): string => {
+    let i = 1;
+    while (tags.any((t) => t.id === String(i))) {
+      i++;
+    }
+    return String(i);
+  };
+
+  const filteredTags = tags.filter((t) => t.id);
+  for (const tag of filteredTags) {
+    tag.id = getFreeId();
+  }
+
+  const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
+    if (!result.destination) {
+      return;
+    }
+    const newTags = [...tags];
+    arrayMoveMutable(newTags, result.source.index, result.destination.index);
+    setStoredPreviewTags(topicName, newTags);
+  };
+
+  const content = (
     <>
-      <button
-        onClick={onOpen}
-        style={{
-          margin: '0 2px',
-          color: 'hsl(205deg, 100%, 50%)',
-          textDecoration: 'underline dotted',
-        }}
-        type="button"
-      >
-        <InfoIcon size={15} />
-        &nbsp;glob patterns
-      </button>
-      <Drawer isOpen={isOpen} onClose={onClose} placement="right" size="xl">
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerCloseButton />
-          <DrawerHeader>Glob Pattern Examples</DrawerHeader>
+      <div>
+        <span>
+          When viewing large messages we're often only interested in a few specific fields. Add <PatternHelpDrawer />
+          <Popover content={globHelp} hideCloseButton placement="bottom" size="auto" trigger={'click'} /> to this list
+          to show found values as previews.
+        </span>
+      </div>
 
-          <DrawerBody>{globHelp}</DrawerBody>
+      <div className="previewTagsList">
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="droppable">
+            {(droppableProvided, _droppableSnapshot) => (
+              <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
+                {tags.map((tag, index) => (
+                  <Draggable draggableId={tag.id} index={index} key={tag.id}>
+                    {(draggableProvided, _draggableSnapshot) => (
+                      <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
+                        <PreviewTagSettings
+                          allCurrentKeys={currentKeys}
+                          draggableProvided={draggableProvided}
+                          index={index}
+                          onRemove={() => {
+                            const newTags = tags.filter((t) => t.id !== tag.id);
+                            setStoredPreviewTags(topicName, newTags);
+                          }}
+                          tag={tag}
+                          topicName={topicName}
+                        />
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {droppableProvided.placeholder}
+                <Button
+                  onClick={() => {
+                    const newTag: PreviewTagV2 = {
+                      id: getFreeId(),
+                      isActive: true,
+                      pattern: '',
+                      searchInMessageHeaders: false,
+                      searchInMessageKey: false,
+                      searchInMessageValue: true,
+                    };
+                    const newTags = [...tags, newTag];
+                    setStoredPreviewTags(topicName, newTags);
+                  }}
+                  variant="outline"
+                >
+                  Add entry...
+                </Button>
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      </div>
 
-          <DrawerFooter>
-            <Button mr={3} onClick={onClose} variant="outline">
-              Close
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+      <div style={{ marginTop: '1em' }}>
+        <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
+        <div className="previewTagsSettings">
+          <OptionGroup<'caseSensitive' | 'ignoreCase'>
+            label="Matching"
+            onChange={(e) => setCaseSensitive(e)}
+            options={{ 'Ignore Case': 'ignoreCase', 'Case Sensitive': 'caseSensitive' }}
+            value={caseSensitive}
+          />
+          <OptionGroup<'showOnlyFirst' | 'showAll'>
+            label="Multiple Results"
+            onChange={(e) => setMultiResultMode(e)}
+            options={{ 'First result': 'showOnlyFirst', 'Show All': 'showAll' }}
+            value={multiResultMode}
+          />
+
+          <OptionGroup<'single' | 'wrap' | 'rows'>
+            label="Wrapping"
+            onChange={(e) => setDisplayMode(e)}
+            options={{ 'Single Line': 'single', Wrap: 'wrap', Rows: 'rows' }}
+            value={displayMode}
+          />
+        </div>
+      </div>
     </>
   );
+
+  return <Box>{content}</Box>;
 };
-
-const globHelp = (
-  <div>
-    {/* Examples + Image */}
-    <Flex gap={2}>
-      <Flex grow={1}>
-        <div className="globHelpGrid">
-          <div className="h">Pattern</div>
-          <div className="h">Result</div>
-          <div className="h">Reason / Explanation</div>
-
-          <div className="titleRowSeparator" />
-
-          {/* Example */}
-          <div className="c1">
-            <Code>id</Code>
-          </div>
-          <div className="c2">id: 1111</div>
-          <div className="c3">There is only one 'id' property at the root of the object</div>
-          <div className="rowSeparator" />
-
-          {/* Example */}
-          <div className="c1">
-            <Code>*.id</Code>
-          </div>
-          <div className="c2">
-            <div>customer.id: 2222</div>
-            <div>key.with.dots.id: 3333</div>
-          </div>
-          <div className="c3">Star only seraches in direct children. Here, only 2 children contain an 'id' prop</div>
-          <div className="rowSeparator" />
-
-          {/* Example */}
-          <div className="c1">
-            <Code>**.id</Code>
-          </div>
-          <div className="c2">(all ID properties)</div>
-          <div className="c3">Double-star searches everywhere</div>
-          <div className="rowSeparator" />
-
-          {/* Example */}
-          <div className="c1">
-            <Code>customer.*Na*</Code>
-          </div>
-          <div className="c2">
-            <div>customer.firstName: John</div>
-            <div>customer.lastName: Example</div>
-          </div>
-          <div className="c3">In the direct child named 'customer', find all properties that contain 'Na'</div>
-          <div className="rowSeparator" />
-
-          {/* Example */}
-          <div className="c1">
-            <Code>key.with.dots.id</Code>
-          </div>
-          <div className="c2">(no results!)</div>
-          <div className="c3">There is no property named 'key'!</div>
-          <div className="rowSeparator" />
-
-          {/* Example */}
-          <div className="c1">
-            <Code>"key.with.dots".id</Code>
-          </div>
-          <div className="c2">key.with.dots.id: 3333</div>
-          <div className="c3">
-            To find properties with special characters in their name, use single or double-quotes
-          </div>
-          <div className="rowSeparator" />
-        </div>
-      </Flex>
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-        <div style={{ opacity: 0.5, fontSize: 'smaller', textAlign: 'center' }}>Example Data</div>
-        <img alt="Examples for glob patterns" src={globExampleImg} />
-      </div>
-    </Flex>
-
-    {/* Details */}
-    <div>
-      <h3>Details</h3>
-      <div>
-        A glob pattern is just a list of property names seperated by dots. In addition to simple property names you can
-        use:
-      </div>
-      <ul style={{ paddingLeft: '2em', marginTop: '.5em' }}>
-        <li>
-          <Code>*</Code> Star to match all current properties
-        </li>
-        <li>
-          <Code>**</Code> Double-Star to matches all current and nested properties
-        </li>
-        <li>
-          <Code>"</Code>/<Code>'</Code> Quotes for when a property-name contains dots
-        </li>
-        <li>
-          <Code>abc*</Code> One or more stars within a name. Depending on where you place the star, you can check if a
-          name starts with, ends with, or contains some string.
-        </li>
-      </ul>
-    </div>
-  </div>
-);
-
-@observer
-export class PreviewSettings extends Component<{
-  messageSearch: MessageSearch;
-}> {
-  @computed.struct get allCurrentKeys() {
-    // @ts-expect-error perhaps we still need this due to MobX behavior?
-    const _unused = this.props.messageSearch.messages.length;
-    return getAllMessageKeys(this.props.messageSearch.messages)
-      .map((p) => p.propertyName)
-      .distinct();
-  }
-
-  constructor(p: { messageSearch: MessageSearch }) {
-    super(p);
-    makeObservable(this);
-  }
-
-  render() {
-    // const currentKeys = this.props.getShowDialog() ? this.allCurrentKeys : [];
-    const currentKeys = this.allCurrentKeys;
-
-    const tags = uiState.topicSettings.previewTags;
-    // add ids to elements that don't have any
-    const getFreeId = (): string => {
-      let i = 1;
-      while (tags.any((t) => t.id === String(i))) {
-        i++;
-      }
-      return String(i);
-    };
-    const filteredTags = tags.filter((t) => t.id);
-    for (const tag of filteredTags) {
-      tag.id = getFreeId();
-    }
-
-    const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
-      if (!result.destination) {
-        return;
-      }
-      arrayMoveMutable(tags, result.source.index, result.destination.index);
-    };
-
-    const content = (
-      <>
-        <div>
-          <span>
-            When viewing large messages we're often only interested in a few specific fields. Add <PatternHelpDrawer />
-            <Popover content={globHelp} hideCloseButton placement="bottom" size="auto" trigger={'click'} /> to this list
-            to show found values as previews.
-          </span>
-        </div>
-
-        <div className="previewTagsList">
-          <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="droppable">
-              {(droppableProvided, _droppableSnapshot) => (
-                <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
-                  {tags.map((tag, index) => (
-                    <Draggable draggableId={tag.id} index={index} key={tag.id}>
-                      {(draggableProvided, _draggableSnapshot) => (
-                        <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
-                          <PreviewTagSettings
-                            allCurrentKeys={currentKeys}
-                            draggableProvided={draggableProvided}
-                            index={index}
-                            onRemove={() => tags.removeAll((t) => t.id === tag.id)}
-                            tag={tag}
-                          />
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {droppableProvided.placeholder}
-                  <Button
-                    onClick={() => {
-                      const newTag: PreviewTagV2 = {
-                        id: getFreeId(),
-                        isActive: true,
-                        pattern: '',
-                        searchInMessageHeaders: false,
-                        searchInMessageKey: false,
-                        searchInMessageValue: true,
-                      };
-                      tags.push(newTag);
-                    }}
-                    variant="outline"
-                  >
-                    Add entry...
-                  </Button>
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
-
-          {/* <CustomTagList tags={uiState.topicSettings.previewTags} allCurrentKeys={this.props.allCurrentKeys} /> */}
-        </div>
-
-        <div style={{ marginTop: '1em' }}>
-          <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
-          <div className="previewTagsSettings">
-            <OptionGroup<'caseSensitive' | 'ignoreCase'>
-              label="Matching"
-              onChange={(e) => (uiState.topicSettings.previewTagsCaseSensitive = e)}
-              options={{ 'Ignore Case': 'ignoreCase', 'Case Sensitive': 'caseSensitive' }}
-              value={uiState.topicSettings.previewTagsCaseSensitive}
-            />
-            <OptionGroup
-              label="Multiple Results"
-              onChange={(e) => (uiState.topicSettings.previewMultiResultMode = e)}
-              options={{ 'First result': 'showOnlyFirst', 'Show All': 'showAll' }}
-              value={uiState.topicSettings.previewMultiResultMode}
-            />
-
-            <OptionGroup
-              label="Wrapping"
-              onChange={(e) => (uiState.topicSettings.previewDisplayMode = e)}
-              options={{ 'Single Line': 'single', Wrap: 'wrap', Rows: 'rows' }}
-              value={uiState.topicSettings.previewDisplayMode}
-            />
-          </div>
-        </div>
-      </>
-    );
-
-    return <Box>{content}</Box>;
-  }
-}
 
 /*
 todo:
@@ -319,92 +164,100 @@ todo:
 - better auto-complete: get suggestions from current pattern (except for last segment)
 -
  */
-@observer
-class PreviewTagSettings extends Component<{
+const PreviewTagSettings = ({
+  tag,
+  onRemove,
+  allCurrentKeys,
+  draggableProvided,
+  topicName,
+}: {
   tag: PreviewTagV2;
   index: number;
   onRemove: () => void;
   allCurrentKeys: string[];
   draggableProvided: DraggableProvided;
-}> {
-  render() {
-    const { tag, onRemove, allCurrentKeys, draggableProvided } = this.props;
+  topicName: string;
+}) => {
+  const { getPreviewTags: getStoredTags, setPreviewTags: setStoredTags } = useTopicSettingsStore();
 
-    return (
-      <Flex borderRadius={1} gap={1} mb={1.5} p={1} placeItems="center">
-        {/* Move Handle */}
-        <span className="moveHandle" {...draggableProvided.dragHandleProps}>
-          <ThreeBarsIcon />
+  const updateTag = (updates: Partial<PreviewTagV2>) => {
+    const allTags = getStoredTags(topicName);
+    const newTags = allTags.map((t) => (t.id === tag.id ? { ...t, ...updates } : t));
+    setStoredTags(topicName, newTags);
+  };
+
+  return (
+    <Flex borderRadius={1} gap={1} mb={1.5} p={1} placeItems="center">
+      {/* Move Handle */}
+      <span className="moveHandle" {...draggableProvided.dragHandleProps}>
+        <ThreeBarsIcon />
+      </span>
+
+      {/* Enabled */}
+      <Checkbox isChecked={tag.isActive} onChange={(e) => updateTag({ isActive: e.target.checked })} />
+
+      {/* Settings */}
+      <Popover
+        content={
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.3em' }}>
+            <Label style={{ marginBottom: '.5em' }} text="Display Name">
+              <Input
+                autoComplete={randomId()}
+                flexBasis={50}
+                flexGrow={1}
+                onChange={(e) => updateTag({ customName: e.target.value })}
+                placeholder="Enter a display name..."
+                size="sm"
+                spellCheck={false}
+                value={tag.customName}
+              />
+            </Label>
+
+            <span>
+              <Checkbox
+                isChecked={tag.searchInMessageKey}
+                onChange={(e) => updateTag({ searchInMessageKey: e.target.checked })}
+              >
+                Search in message key
+              </Checkbox>
+            </span>
+            <span>
+              <Checkbox
+                isChecked={tag.searchInMessageValue}
+                onChange={(e) => updateTag({ searchInMessageValue: e.target.checked })}
+              >
+                Search in message value
+              </Checkbox>
+            </span>
+          </div>
+        }
+        hideCloseButton
+        placement="bottom-start"
+        size="auto"
+        trigger={'click'}
+      >
+        <span className="inlineButton">
+          <GearIcon />
         </span>
+      </Popover>
 
-        {/* Enabled */}
-        <Checkbox isChecked={tag.isActive} onChange={(e) => (tag.isActive = e.target.checked)} />
+      <Box w="full">
+        <SingleSelect<string>
+          creatable
+          onChange={(value) => updateTag({ pattern: value })}
+          options={allCurrentKeys.map((t) => ({ label: t, value: t }))}
+          placeholder="Pattern..."
+          value={tag.pattern}
+        />
+      </Box>
 
-        {/* Settings */}
-        <Popover
-          content={
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '.3em' }}>
-              <Label style={{ marginBottom: '.5em' }} text="Display Name">
-                <Input
-                  autoComplete={randomId()}
-                  flexBasis={50}
-                  flexGrow={1}
-                  onChange={(e) => (tag.customName = e.target.value)}
-                  placeholder="Enter a display name..."
-                  size="sm"
-                  spellCheck={false}
-                  value={tag.customName}
-                />
-              </Label>
-
-              <span>
-                <Checkbox
-                  isChecked={tag.searchInMessageKey}
-                  onChange={(e) => (tag.searchInMessageKey = e.target.checked)}
-                >
-                  Search in message key
-                </Checkbox>
-              </span>
-              <span>
-                <Checkbox
-                  isChecked={tag.searchInMessageValue}
-                  onChange={(e) => (tag.searchInMessageValue = e.target.checked)}
-                >
-                  Search in message value
-                </Checkbox>
-              </span>
-            </div>
-          }
-          hideCloseButton
-          placement="bottom-start"
-          size="auto"
-          trigger={'click'}
-        >
-          <span className="inlineButton">
-            <GearIcon />
-          </span>
-        </Popover>
-
-        <Box w="full">
-          <SingleSelect<string>
-            creatable
-            onChange={(value) => {
-              tag.pattern = value;
-            }}
-            options={allCurrentKeys.map((t) => ({ label: t, value: t }))}
-            placeholder="Pattern..."
-            value={tag.pattern}
-          />
-        </Box>
-
-        {/* Remove */}
-        <button className="inlineButton" onClick={onRemove} type="button">
-          <XIcon />
-        </button>
-      </Flex>
-    );
-  }
-}
+      {/* Remove */}
+      <button className="inlineButton" onClick={onRemove} type="button">
+        <XIcon />
+      </button>
+    </Flex>
+  );
+};
 
 /*
 todo:
@@ -413,11 +266,13 @@ todo:
     - in order to match `/pattern/` our 'parseJsonPath' must support escaping forward slashes: "\/"
 
 */
-export function getPreviewTags(targetObject: Record<string, unknown>, tags: PreviewTagV2[]): React.ReactNode[] {
+export function getPreviewTags(
+  targetObject: Record<string, unknown>,
+  tags: PreviewTagV2[],
+  caseSensitive: boolean
+): React.ReactNode[] {
   const ar: React.ReactNode[] = [];
-
   const results: { prop: CollectedProperty; tag: PreviewTagV2; fullPath: string }[] = [];
-  const caseSensitive = uiState.topicSettings.previewTagsCaseSensitive === 'caseSensitive';
 
   for (const t of tags) {
     if (t.pattern.length === 0) {

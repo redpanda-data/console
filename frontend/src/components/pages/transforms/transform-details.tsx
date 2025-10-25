@@ -42,7 +42,8 @@ import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 import Tabs from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper, type PageProps } from '../page';
-import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
+import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded-message';
+import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
