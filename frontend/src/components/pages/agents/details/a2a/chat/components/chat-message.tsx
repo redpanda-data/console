@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Message, MessageContent, MessageMetadata } from 'components/ai-elements/message';
+import { Message, MessageBody, MessageContent, MessageMetadata } from 'components/ai-elements/message';
 import { SparklesIcon } from 'lucide-react';
 
 import { ChatMessageActions } from './chat-message-actions';
@@ -33,7 +33,7 @@ type ChatMessageProps = {
 export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
   const isTaskMessage = message.taskId && message.role === 'assistant';
 
-  // User message rendering (unchanged)
+  // User message rendering
   if (message.role === 'user') {
     const firstBlock = message.contentBlocks[0];
     const text = firstBlock?.type === 'text' ? firstBlock.text : '';
@@ -42,7 +42,10 @@ export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
       <div>
         <Message from={message.role}>
           <MessageContent from={message.role} variant="flat">
-            <UserMessageContent text={text} timestamp={message.timestamp} />
+            <MessageBody>
+              <UserMessageContent text={text} timestamp={message.timestamp} />
+            </MessageBody>
+            <MessageMetadata from="user" messageId={message.id} timestamp={message.timestamp} />
           </MessageContent>
         </Message>
         <ChatMessageActions role={message.role} text={text} />
@@ -61,7 +64,9 @@ export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
               <Message from={message.role}>
                 <SparklesIcon className="size-4" />
                 <MessageContent from={message.role} variant="flat">
-                  <TextBlock text={block.text} timestamp={block.timestamp} />
+                  <MessageBody>
+                    <TextBlock text={block.text} timestamp={block.timestamp} />
+                  </MessageBody>
                   <MessageMetadata
                     contextId={message.contextId}
                     from="assistant"
@@ -131,7 +136,9 @@ export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
         <Message from={message.role}>
           <SparklesIcon className="size-4" />
           <MessageContent from={message.role} variant="flat">
-            <LoadingMessageContent />
+            <MessageBody>
+              <LoadingMessageContent />
+            </MessageBody>
           </MessageContent>
         </Message>
       </div>

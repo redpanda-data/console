@@ -24,7 +24,7 @@ export const Message = ({ className, from, ...props }: MessageProps) => (
 );
 
 const messageContentVariants = cva(
-  "max-w-[85%] rounded-xl p-4 shadow-sm",
+  "max-w-[85%] rounded-xl shadow-sm overflow-hidden flex flex-col",
   {
     variants: {
       variant: {
@@ -60,10 +60,20 @@ export const MessageContent = ({
     className={cn(messageContentVariants({ variant, from, className }))}
     {...props}
   >
-    <div className="space-y-4 text-sm leading-relaxed">
-      {children}
-    </div>
+    {children}
   </article>
+);
+
+export type MessageBodyProps = HTMLAttributes<HTMLDivElement>;
+
+export const MessageBody = ({
+  children,
+  className,
+  ...props
+}: MessageBodyProps) => (
+  <div className={cn("p-4 space-y-4 text-sm leading-relaxed", className)} {...props}>
+    {children}
+  </div>
 );
 
 export type MessageAvatarProps = ComponentProps<typeof Avatar> & {
@@ -135,45 +145,57 @@ export const MessageMetadata = ({
     ? timestamp.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     : timestamp;
 
+  // Don't render if no metadata to show
+  const hasMetadata = contextId || taskId || messageId || time;
+  if (!hasMetadata) return null;
+
   return (
     <div
       className={cn(
-        "mt-2 flex flex-col gap-0.5 text-xs",
+        "border-t px-3 py-1.5 text-[11px]",
         from === "user"
-          ? "text-blue-100 dark:text-blue-200"
-          : "text-slate-500 dark:text-slate-400",
+          ? "bg-blue-600/10 text-blue-100/80 dark:bg-blue-700/20 dark:text-blue-200/80"
+          : "bg-muted/20 text-muted-foreground/80",
         className
       )}
       {...props}
     >
-      {from === "assistant" && (
-        <>
-          {contextId && (
-            <div className="flex gap-2">
-              <span className="font-medium">Context ID:</span>
-              <span className="font-mono">{contextId}</span>
-            </div>
-          )}
-          {taskId && (
-            <div className="flex gap-2">
-              <span className="font-medium">Task ID:</span>
-              <span className="font-mono">{taskId}</span>
-            </div>
-          )}
-          {messageId && (
-            <div className="flex gap-2">
-              <span className="font-medium">Message ID:</span>
-              <span className="font-mono">{messageId}</span>
-            </div>
-          )}
-        </>
-      )}
-      {time && (
-        <div className="flex gap-2">
-          <span className="font-medium">Time:</span>
-          <span>{time}</span>
-        </div>
-      )}
+      <div className="flex flex-col gap-0.5">
+        {from === "assistant" && (
+          <>
+            {contextId && (
+              <div className="flex gap-1.5">
+                <span className="font-medium">ctx:</span>
+                <span className="font-mono">{contextId}</span>
+              </div>
+            )}
+            {taskId && (
+              <div className="flex gap-1.5">
+                <span className="font-medium">task:</span>
+                <span className="font-mono">{taskId}</span>
+              </div>
+            )}
+            {messageId && (
+              <div className="flex gap-1.5">
+                <span className="font-medium">msg:</span>
+                <span className="font-mono">{messageId}</span>
+              </div>
+            )}
+          </>
+        )}
+        {from === "user" && messageId && (
+          <div className="flex gap-1.5">
+            <span className="font-medium">msg:</span>
+            <span className="font-mono">{messageId}</span>
+          </div>
+        )}
+        {time && (
+          <div className="flex gap-1.5">
+            <span className="font-medium">time:</span>
+            <span>{time}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

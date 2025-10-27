@@ -9,19 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import { MessageMetadata } from 'components/ai-elements/message';
-
 type UserMessageContentProps = {
   text: string;
   timestamp: Date;
 };
 
 /**
- * Renders user message content with timestamp
+ * Renders user message content
  */
-export const UserMessageContent = ({ text, timestamp }: UserMessageContentProps) => (
-  <>
-    <div className="whitespace-pre-wrap">{text}</div>
-    <MessageMetadata from="user" timestamp={timestamp} />
-  </>
+export const UserMessageContent = ({ text }: UserMessageContentProps) => (
+  <div className="whitespace-pre-wrap">{text}</div>
 );
