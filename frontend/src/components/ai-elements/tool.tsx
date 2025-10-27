@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
+import { deepParseJson } from "utils/json-utils";
 import { CodeBlock } from "./code-block";
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
@@ -141,13 +142,16 @@ export const ToolInput = ({ className, input, ...props }: ToolInputProps) => {
     return null;
   }
 
+  // Parse nested JSON strings before displaying
+  const parsedInput = deepParseJson(input);
+
   return (
     <div className={cn("space-y-2 p-4", className)} {...props}>
       <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
         Parameters
       </h4>
       <div className="rounded-md bg-muted/50">
-        <CodeBlock code={JSON.stringify(input, null, 2)} language="json" />
+        <CodeBlock code={JSON.stringify(parsedInput, null, 2)} language="json" />
       </div>
     </div>
   );
@@ -172,14 +176,17 @@ export const ToolOutput = ({
     return null;
   }
 
-  let Output = <div>{output as ReactNode}</div>;
+  // Parse nested JSON strings before displaying
+  const parsedOutput = deepParseJson(output);
 
-  if (typeof output === "object" && !isValidElement(output)) {
+  let Output = <div>{parsedOutput as ReactNode}</div>;
+
+  if (typeof parsedOutput === "object" && !isValidElement(parsedOutput)) {
     Output = (
-      <CodeBlock code={JSON.stringify(output, null, 2)} language="json" />
+      <CodeBlock code={JSON.stringify(parsedOutput, null, 2)} language="json" />
     );
-  } else if (typeof output === "string") {
-    Output = <CodeBlock code={output} language="json" />;
+  } else if (typeof parsedOutput === "string") {
+    Output = <CodeBlock code={parsedOutput} language="json" />;
   }
 
   return (

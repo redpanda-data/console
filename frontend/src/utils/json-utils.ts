@@ -237,3 +237,61 @@ export function getValueAtPath(obj: JsonValue, path: string[], defaultValue: Jso
 
   return defaultValue;
 }
+
+/**
+ * Recursively parses JSON strings within objects and arrays
+ * Attempts to parse string values as JSON, replacing them with parsed values if successful
+ * Falls back to original string if parsing fails
+ *
+ * @param value The value to deep parse (can be any type)
+ * @param depth Current recursion depth (internal, used to prevent infinite loops)
+ * @param maxDepth Maximum recursion depth (default: 10)
+ * @returns The value with nested JSON strings parsed
+ *
+ * @example
+ * // Input: { text: '{"city":"Singapore","temp":28}' }
+ * // Output: { text: { city: "Singapore", temp: 28 } }
+ *
+ * @example
+ * // Input: [{ type: "text", text: '{"data":"value"}' }]
+ * // Output: [{ type: "text", text: { data: "value" } }]
+ */
+export function deepParseJson(value: unknown, depth = 0, maxDepth = 10): unknown {
+  // Prevent infinite recursion
+  if (depth > maxDepth) {
+    return value;
+  }
+
+  // Handle null and undefined
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  // Handle arrays - recursively parse each element
+  if (Array.isArray(value)) {
+    return value.map((item) => deepParseJson(item, depth + 1, maxDepth));
+  }
+
+  // Handle objects - recursively parse each property
+  if (typeof value === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value)) {
+      result[key] = deepParseJson(val, depth + 1, maxDepth);
+    }
+    return result;
+  }
+
+  // Handle strings - attempt to parse as JSON
+  if (typeof value === 'string') {
+    const parseResult = tryParseJson(value);
+    if (parseResult.success) {
+      // Recursively parse the parsed result (in case it contains nested JSON strings)
+      return deepParseJson(parseResult.data, depth + 1, maxDepth);
+    }
+    // If parsing fails, return original string
+    return value;
+  }
+
+  // For all other types (number, boolean, etc.), return as-is
+  return value;
+}
