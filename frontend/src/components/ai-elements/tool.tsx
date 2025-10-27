@@ -83,35 +83,37 @@ export const ToolHeader = ({
   const textToCopy = toolCallId ? `${toolName} (${toolCallId})` : toolName;
 
   return (
-    <CollapsibleTrigger
-      className={cn(
-        "flex w-full items-center justify-between gap-4 p-3",
-        className
-      )}
-      {...props}
-    >
-      <div className="flex items-center gap-2">
-        <WrenchIcon className="size-4 text-muted-foreground" />
-        <Text as="span" variant="small" className="font-medium">
-          {toolName}
-        </Text>
-        {getStatusBadge(state)}
-      </div>
-      <div className="flex items-center gap-2">
-        {toolCallId && (
-          <Text as="span" className="text-muted-foreground/50 text-[0.75rem] font-mono">
-            {toolCallId}
-          </Text>
+    <CollapsibleTrigger asChild>
+      <div
+        className={cn(
+          "flex w-full cursor-pointer items-center justify-between gap-4 p-3",
+          className
         )}
-        <CopyButton
-          content={textToCopy}
-          variant="ghost"
-          size="icon"
-          className="size-7"
-          onClick={(e) => e.stopPropagation()}
-          title={toolCallId ? `Copy: ${toolName} (${toolCallId})` : `Copy: ${toolName}`}
-        />
-        <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+        {...props}
+      >
+        <div className="flex items-center gap-2">
+          <WrenchIcon className="size-4 text-muted-foreground" />
+          <Text as="span" variant="small" className="font-medium">
+            {toolName}
+          </Text>
+          {getStatusBadge(state)}
+        </div>
+        <div className="flex items-center gap-2">
+          {toolCallId && (
+            <Text as="span" className="text-muted-foreground/50 text-[0.75rem] font-mono">
+              {toolCallId}
+            </Text>
+          )}
+          <CopyButton
+            content={textToCopy}
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            onClick={(e) => e.stopPropagation()}
+            title={toolCallId ? `Copy: ${toolName} (${toolCallId})` : `Copy: ${toolName}`}
+          />
+          <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+        </div>
       </div>
     </CollapsibleTrigger>
   );
