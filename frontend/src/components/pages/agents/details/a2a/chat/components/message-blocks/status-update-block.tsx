@@ -32,6 +32,10 @@ export const StatusUpdateBlock = ({ taskState, timestamp }: StatusUpdateBlockPro
     | 'auth-required'
     | 'unknown';
 
+  if (!validState) {
+    return null;
+  }
+
   return (
     <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-4 py-3">
       <span className="font-medium text-muted-foreground text-sm">Task State:</span>
