@@ -19,7 +19,11 @@
       "!**/.nyc_output/**/*",
       "!**/*.css",
       "!**/components/redpanda-ui",
-      "!**/assets/rp-connect-schema-full.json"
+      "!**/assets/rp-connect-schema-full.json",
+      "!**/components/ai-elements",
+      "!**/components/ui",
+      "!**/components/pages/agents/details/a2a/a2a-provider.ts",
+      "!**/components/pages/agents/details/a2a/a2a-chat-language-model.tsx"
     ]
   },
   "formatter": {
