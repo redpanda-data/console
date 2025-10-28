@@ -18,15 +18,19 @@ type ScrollFlag = ScrollBehavior | false;
 type ScrollState = {
   isAtBottom: boolean;
   scrollBehavior: ScrollFlag;
+  autoScrollPaused: boolean;
   setIsAtBottom: (value: boolean) => void;
   setScrollBehavior: (value: ScrollFlag) => void;
+  setAutoScrollPaused: (value: boolean) => void;
 };
 
 const useScrollStore = create<ScrollState>((set) => ({
   isAtBottom: false,
   scrollBehavior: false,
+  autoScrollPaused: false,
   setIsAtBottom: (value) => set({ isAtBottom: value }),
   setScrollBehavior: (value) => set({ scrollBehavior: value }),
+  setAutoScrollPaused: (value) => set({ autoScrollPaused: value }),
 }));
 
 /**
@@ -38,8 +42,10 @@ export function useScrollToBottom() {
 
   const isAtBottom = useScrollStore((state) => state.isAtBottom);
   const scrollBehavior = useScrollStore((state) => state.scrollBehavior);
+  const autoScrollPaused = useScrollStore((state) => state.autoScrollPaused);
   const setIsAtBottom = useScrollStore((state) => state.setIsAtBottom);
   const setScrollBehavior = useScrollStore((state) => state.setScrollBehavior);
+  const setAutoScrollPaused = useScrollStore((state) => state.setAutoScrollPaused);
 
   // Effect watches for scroll trigger and executes
   useEffect(() => {
@@ -67,7 +73,9 @@ export function useScrollToBottom() {
   return {
     endRef,
     isAtBottom,
+    autoScrollPaused,
     scrollToBottom,
+    setAutoScrollPaused,
     onViewportEnter,
     onViewportLeave,
   };

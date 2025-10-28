@@ -20,13 +20,23 @@ import { useScrollToBottom } from './use-scroll-to-bottom';
 export function useChatScroll({
   agentId,
   isLoading,
+  isStreaming,
   messages,
 }: {
   agentId: string;
   isLoading: boolean;
+  isStreaming: boolean;
   messages: unknown[];
 }) {
-  const { endRef, isAtBottom, scrollToBottom, onViewportEnter, onViewportLeave } = useScrollToBottom();
+  const {
+    endRef,
+    isAtBottom,
+    autoScrollPaused,
+    scrollToBottom,
+    setAutoScrollPaused,
+    onViewportEnter,
+    onViewportLeave,
+  } = useScrollToBottom();
 
   // Auto-scroll to bottom when agent changes (instant, no animation)
   useEffect(() => {
@@ -36,17 +46,26 @@ export function useChatScroll({
   }, [agentId, scrollToBottom]);
 
   // Auto-scroll on message updates during streaming
-  // Ensures scroll follows content as it's added incrementally
+  // When streaming is active and auto-scroll is enabled, always scroll to bottom
+  // When not streaming, only scroll if user is already at bottom
   useEffect(() => {
-    if (isLoading && isAtBottom && messages.length > 0) {
-      scrollToBottom('smooth');
+    if (messages.length > 0) {
+      if (isStreaming && !autoScrollPaused) {
+        // Force scroll during streaming when auto-scroll is enabled
+        scrollToBottom('smooth');
+      } else if (isLoading && isAtBottom) {
+        // Original behavior for non-streaming updates
+        scrollToBottom('smooth');
+      }
     }
-  }, [messages, isLoading, isAtBottom, scrollToBottom]);
+  }, [messages, isLoading, isStreaming, isAtBottom, autoScrollPaused, scrollToBottom]);
 
   return {
     endRef,
     isAtBottom,
+    autoScrollPaused,
     scrollToBottom,
+    setAutoScrollPaused,
     onViewportEnter,
     onViewportLeave,
   };

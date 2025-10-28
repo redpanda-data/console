@@ -26,6 +26,8 @@ import {
   PromptInputTools,
 } from 'components/ai-elements/prompt-input';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Switch } from 'components/redpanda-ui/components/switch';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useScrollToBottom } from 'hooks/use-scroll-to-bottom';
 import { ArrowDownIcon, HistoryIcon } from 'lucide-react';
@@ -39,11 +41,13 @@ type ChatInputProps = {
   editingMessageId: string | null;
   model: string | undefined;
   hasMessages: boolean;
+  autoScrollEnabled: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   onInputChange: (value: string) => void;
   onSubmit: (message: PromptInputMessage, event: React.FormEvent) => void;
   onClearHistory: () => void;
   onCancelEdit: () => void;
+  onAutoScrollChange: (enabled: boolean) => void;
 };
 
 /**
@@ -55,11 +59,13 @@ export const ChatInput = ({
   editingMessageId,
   model,
   hasMessages,
+  autoScrollEnabled,
   textareaRef,
   onInputChange,
   onSubmit,
   onClearHistory,
   onCancelEdit,
+  onAutoScrollChange,
 }: ChatInputProps) => {
   const { isAtBottom, scrollToBottom } = useScrollToBottom();
 
@@ -125,21 +131,31 @@ export const ChatInput = ({
             )}
             <Button disabled={!hasMessages} onClick={onClearHistory} type="button" variant="ghost">
               <HistoryIcon className="size-3" />
-              <span>Clear history</span>
+              <Text as="span" className="text-sm">
+                Clear history
+              </Text>
             </Button>
           </PromptInputTools>
-          {editingMessageId ? (
-            <div className="flex gap-2">
-              <Button onClick={onCancelEdit} type="button" variant="outline">
-                Cancel
-              </Button>
-              <PromptInputSubmit disabled={!input} size="sm" status={isLoading ? 'streaming' : 'ready'}>
-                Send
-              </PromptInputSubmit>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
+              <Switch checked={autoScrollEnabled} onCheckedChange={onAutoScrollChange} testId="auto-scroll-switch" />
+              <Text as="span" className="text-sm">
+                Auto scroll
+              </Text>
             </div>
-          ) : (
-            <PromptInputSubmit disabled={!(input || isLoading)} status={isLoading ? 'streaming' : 'ready'} />
-          )}
+            {editingMessageId ? (
+              <div className="flex gap-2">
+                <Button onClick={onCancelEdit} type="button" variant="outline">
+                  Cancel
+                </Button>
+                <PromptInputSubmit disabled={!input} size="sm" status={isLoading ? 'streaming' : 'ready'}>
+                  Send
+                </PromptInputSubmit>
+              </div>
+            ) : (
+              <PromptInputSubmit disabled={!(input || isLoading)} status={isLoading ? 'streaming' : 'ready'} />
+            )}
+          </div>
         </PromptInputFooter>
       </PromptInput>
     </div>

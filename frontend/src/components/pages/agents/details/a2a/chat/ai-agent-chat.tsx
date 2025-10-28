@@ -45,9 +45,10 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
   });
 
   // Manage scroll behavior
-  const { endRef, onViewportEnter, onViewportLeave } = useChatScroll({
+  const { endRef, autoScrollPaused, setAutoScrollPaused, onViewportEnter, onViewportLeave } = useChatScroll({
     agentId: agent.id,
     isLoading,
+    isStreaming: isLoading, // Use isLoading as streaming indicator
     messages,
   });
 
@@ -83,11 +84,13 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
       </Conversation>
 
       <ChatInput
+        autoScrollEnabled={!autoScrollPaused}
         editingMessageId={editingMessageId}
         hasMessages={messages.length > 0}
         input={input}
         isLoading={isLoading}
         model={agent.model}
+        onAutoScrollChange={(enabled) => setAutoScrollPaused(!enabled)}
         onCancelEdit={cancelEdit}
         onClearHistory={clearChat}
         onInputChange={setInput}
