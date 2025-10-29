@@ -22,11 +22,16 @@ export type APIConnectWizardFormData = {
 export const useAPIWizardStore = create<
   Partial<APIConnectWizardFormData> & {
     setApiWizardData: (data: Partial<APIConnectWizardFormData>) => void;
+    reset: () => void;
   }
 >()(
   persist(
     (set) => ({
       setApiWizardData: (data) => set(data),
+      reset: () => {
+        set({ connectionName: undefined });
+        sessionStorage.removeItem(API_WIZARD_CONNECTOR_NAME_KEY);
+      },
     }),
     {
       name: API_WIZARD_CONNECTOR_NAME_KEY,

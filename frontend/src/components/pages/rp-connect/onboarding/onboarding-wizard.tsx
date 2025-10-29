@@ -13,6 +13,7 @@ import { useListUsersQuery } from 'react-query/api/user';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  onboardingWizardStore,
   useOnboardingTopicDataStore,
   useOnboardingUserDataStore,
   useOnboardingWizardDataStore,
@@ -76,8 +77,16 @@ export const ConnectOnboardingWizard = ({
     [persistedInputConnectionName]
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: shouldn't need to be re-run for any dependency changes
   useEffect(() => {
-    useOnboardingWizardDataStore.persist.rehydrate();
+    onboardingWizardStore.rehydrate();
+    return () => {
+      // Only clear if we're navigating away from the wizard
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('/rp-connect/wizard')) {
+        resetOnboardingWizardStore();
+      }
+    };
   }, []);
 
   const [searchParams] = useSearchParams();

@@ -73,15 +73,16 @@ export const useOnboardingUserDataStore = create<
 );
 
 export const useResetOnboardingWizardStore = () => {
-  const { setWizardData } = useOnboardingWizardDataStore();
-  const { setTopicData } = useOnboardingTopicDataStore();
-  const { setUserData } = useOnboardingUserDataStore();
-
   return useCallback(() => {
-    setWizardData({});
-    setTopicData({});
-    setUserData({});
-  }, [setWizardData, setTopicData, setUserData]);
+    useOnboardingWizardDataStore.getState().setWizardData({});
+    useOnboardingTopicDataStore.getState().setTopicData({});
+    useOnboardingUserDataStore.getState().setUserData({});
+
+    // Explicitly remove from session storage
+    sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
+    sessionStorage.removeItem(CONNECT_WIZARD_TOPIC_KEY);
+    sessionStorage.removeItem(CONNECT_WIZARD_USER_KEY);
+  }, []);
 };
 
 // Imperative API for non-hook contexts (class components, utility functions)
@@ -106,5 +107,14 @@ export const onboardingWizardStore = {
     useOnboardingWizardDataStore.getState().setWizardData({});
     useOnboardingTopicDataStore.getState().setTopicData({});
     useOnboardingUserDataStore.getState().setUserData({});
+
+    sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
+    sessionStorage.removeItem(CONNECT_WIZARD_TOPIC_KEY);
+    sessionStorage.removeItem(CONNECT_WIZARD_USER_KEY);
+  },
+  rehydrate: () => {
+    useOnboardingWizardDataStore.persist.rehydrate();
+    useOnboardingTopicDataStore.persist.rehydrate();
+    useOnboardingUserDataStore.persist.rehydrate();
   },
 };
