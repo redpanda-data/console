@@ -1,6 +1,8 @@
+import { toast } from 'sonner';
 import { Document, parseDocument, stringify as yamlStringify } from 'yaml';
 
 import { getBuiltInComponents, schemaToConfig } from './schema';
+import { HANDLED_ARRAY_MERGE_PATHS } from '../types/constants';
 import type { ConnectConfigObject } from '../types/schema';
 
 const mergeProcessor = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
@@ -152,6 +154,76 @@ const detectComponentType = (
   return 'unknown';
 };
 
+const findUnhandledArrayMergePaths = (
+  newConfigObject: Partial<ConnectConfigObject>,
+  doc: Document.Parsed
+): string[] => {
+  const unhandled: string[] = [];
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Nested traversal needed to surface unsupported array merges.
+  const visit = (node: unknown, path: string[]) => {
+    if (!node || typeof node !== 'object' || Array.isArray(node)) {
+      return;
+    }
+
+    for (const [key, value] of Object.entries(node)) {
+      const nextPath = [...path, key];
+
+      if (Array.isArray(value)) {
+        const normalizedPath = nextPath.join('.');
+        if (!HANDLED_ARRAY_MERGE_PATHS.includes(normalizedPath)) {
+          const existingValue = doc.getIn(nextPath);
+          if (existingValue !== undefined) {
+            unhandled.push(normalizedPath);
+          }
+        }
+
+        for (const item of value) {
+          if (item && typeof item === 'object') {
+            visit(item, nextPath);
+          }
+        }
+        continue;
+      }
+
+      if (value && typeof value === 'object') {
+        visit(value, nextPath);
+      }
+    }
+  };
+
+  visit(newConfigObject, []);
+
+  return [...new Set(unhandled)];
+};
+
+const mergeByComponentType = (
+  componentType: DetectedComponentType,
+  doc: Document.Parsed,
+  newConfigObject: Partial<ConnectConfigObject>
+) => {
+  switch (componentType) {
+    case 'processor':
+      mergeProcessor(doc, newConfigObject);
+      break;
+    case 'cache':
+      mergeCacheResource(doc, newConfigObject);
+      break;
+    case 'rate_limit':
+      mergeRateLimitResource(doc, newConfigObject);
+      break;
+    case 'root':
+      mergeRootComponent(doc, newConfigObject);
+      break;
+    case 'scanner':
+      mergeScanner(doc, newConfigObject);
+      break;
+    default:
+      mergeRootComponent(doc, newConfigObject);
+      break;
+  }
+};
+
 const keyMatchRegex = /^([^:#\n]+):/;
 
 const addRootSpacing = (yamlString: string): string => {
@@ -197,35 +269,24 @@ export const mergeConnectConfigs = (
   let doc: Document.Parsed;
   try {
     doc = parseDocument(existingYaml);
-  } catch (_error) {
+  } catch (error) {
+    const description = error instanceof Error ? error.message : String(error);
+    toast.error('Failed to parse YAML', {
+      description,
+    });
     return newConfigObject;
   }
 
   const componentType = detectComponentType(newConfigObject, doc);
+  const unhandledArrayPaths = findUnhandledArrayMergePaths(newConfigObject, doc);
 
-  switch (componentType) {
-    case 'processor':
-      mergeProcessor(doc, newConfigObject);
-      break;
-    case 'cache':
-      mergeCacheResource(doc, newConfigObject);
-      break;
-    case 'rate_limit':
-      mergeRateLimitResource(doc, newConfigObject);
-      break;
-    case 'root':
-      mergeRootComponent(doc, newConfigObject);
-      break;
-    case 'scanner':
-      mergeScanner(doc, newConfigObject);
-      break;
-    case 'unknown':
-      mergeRootComponent(doc, newConfigObject);
-      break;
-    default:
-      mergeRootComponent(doc, newConfigObject);
-      break;
+  if (unhandledArrayPaths.length > 0) {
+    toast.error('Unable to merge array fields', {
+      description: `Existing YAML arrays at ${unhandledArrayPaths.join(', ')} will be replaced by generated values.`,
+    });
   }
+
+  mergeByComponentType(componentType, doc, newConfigObject);
 
   return doc;
 };

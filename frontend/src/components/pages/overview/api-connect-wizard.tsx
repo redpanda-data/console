@@ -61,10 +61,6 @@ const HowToConnectComponent = ({ topicName, username, saslMechanism }: HowToConn
     id: config.clusterId,
   });
 
-  useEffect(() => {
-    useAPIWizardStore.persist.rehydrate();
-  }, []);
-
   const bootstrapServerUrl = cluster?.serverlessCluster?.kafkaApi?.seedBrokers.join(',') as string;
 
   const formattedCodeSnippet = useMemo(() => {
@@ -133,7 +129,7 @@ const HowToConnectStep = ({ topicName, username, saslMechanism }: HowToConnectPr
 
 export const APIConnectWizard = () => {
   const navigate = useNavigate();
-  const { setApiWizardData } = useAPIWizardStore();
+  const { reset: resetApiWizardStore } = useAPIWizardStore();
   const [topicName, setTopicName] = useState<string | undefined>(undefined);
   const [username, setUsername] = useState<string | undefined>(undefined);
   const [saslMechanism, setSaslMechanism] = useState<string | undefined>(undefined);
@@ -192,9 +188,9 @@ export const APIConnectWizard = () => {
 
   const handleCancel = useCallback(() => {
     navigate('/overview');
-    setApiWizardData({});
+    resetApiWizardStore();
     window.location.reload();
-  }, [navigate, setApiWizardData]);
+  }, [navigate, resetApiWizardStore]);
 
   useEffect(() => {
     runInAction(() => {
@@ -206,10 +202,22 @@ export const APIConnectWizard = () => {
     });
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: shouldn't need to be re-run for any dependency changes
+  useEffect(() => {
+    useAPIWizardStore.persist.rehydrate();
+    return () => {
+      // Only clear if we're not on the get-started/api route (user navigated away)
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('/get-started/api')) {
+        resetApiWizardStore();
+      }
+    };
+  }, []);
+
   const handleFinish = useCallback(() => {
-    setApiWizardData({});
+    resetApiWizardStore();
     navigate('/overview');
-  }, [navigate, setApiWizardData]);
+  }, [navigate, resetApiWizardStore]);
 
   return (
     <PageContent>

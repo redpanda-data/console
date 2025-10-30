@@ -160,3 +160,5 @@ export const stepMotionProps: MotionProps = {
   exit: { opacity: 0, x: -20 },
   transition: { duration: 0.3, ease: 'easeInOut' },
 };
+
+export const HANDLED_ARRAY_MERGE_PATHS = ['pipeline.processors', 'cache_resources', 'rate_limit_resources'];

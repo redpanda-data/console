@@ -27,7 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'compo
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
-import { isFeatureFlagEnabled, isServerless } from 'config';
+import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -90,10 +90,6 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     pipelinesApi.refreshPipelines(_force);
   }
 
-  handleWizardClick = () => {
-    onboardingWizardStore.reset();
-  };
-
   render() {
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
@@ -107,18 +103,16 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
     const CreateButton = () => {
       const toast = useToast();
-      const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles') && isServerless();
+      const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
       return (
-        <Button
-          isDisabled={alreadyExists || isNameEmpty || this.isCreating}
-          isLoading={this.isCreating}
-          loadingText="Creating..."
+        <NewButton
+          disabled={alreadyExists || isNameEmpty || this.isCreating}
           onClick={action(() => this.createPipeline(enableRpcnTiles ? undefined : toast))}
-          variant="solid"
+          variant="secondary"
         >
-          Create
-        </Button>
+          {this.isCreating ? 'Creating...' : 'Create'}
+        </NewButton>
       );
     };
 
@@ -183,18 +177,18 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           <PipelineEditor onChange={(x) => (this.editorContent = x)} secrets={this.secrets} yaml={this.editorContent} />
         </div>
 
-        {isFeatureFlagEnabled('enableRpcnTiles') &&
-          isServerless() &&
-          this.lintResults &&
-          Object.keys(this.lintResults).length > 0 && (
-            <div className="mt-4">
-              <LintHintList lintHints={this.lintResults} />
-            </div>
-          )}
+        {isFeatureFlagEnabled('enableRpcnTiles') && this.lintResults && Object.keys(this.lintResults).length > 0 && (
+          <div className="mt-4">
+            <LintHintList lintHints={this.lintResults} />
+          </div>
+        )}
 
         <Flex alignItems="center" gap="4">
           <CreateButton />
-          <Link onClick={() => onboardingWizardStore.reset()} to="/connect-clusters">
+          <Link
+            onClick={() => (isFeatureFlagEnabled('enableRpcnTiles') ? onboardingWizardStore.reset() : undefined)}
+            to="/connect-clusters"
+          >
             <Button variant="link">Cancel</Button>
           </Link>
         </Flex>
@@ -394,7 +388,7 @@ export const PipelineEditor = observer(
     const persistedInputConnectionType = useOnboardingWizardDataStore((state) => state.input?.connectionType);
     const persistedOutputConnectionName = useOnboardingWizardDataStore((state) => state.output?.connectionName);
     const persistedOutputConnectionType = useOnboardingWizardDataStore((state) => state.output?.connectionType);
-    const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles') && isServerless();
+    const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
     // Track actual editor content to keep sidebar in sync with editor's real state
     const [actualEditorContent, setActualEditorContent] = useState<string>('');

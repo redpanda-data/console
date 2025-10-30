@@ -273,7 +273,7 @@ export const schemaToConfig = (
   return { config, spec: componentSpec };
 };
 
-function populateWizardFields(spec: RawFieldSpec, componentName?: string): unknown | undefined {
+function populateWizardFields(spec: RawFieldSpec, componentName?: string): string | string[] | undefined {
   if (!spec.name) {
     return undefined;
   }
@@ -315,7 +315,7 @@ function populateContextualVariables(
   spec: RawFieldSpec,
   componentName?: string,
   parentName?: string
-): unknown | undefined {
+): string | string[] | undefined {
   if (!(spec.name && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
     return undefined;
   }
@@ -354,7 +354,7 @@ function populateConnectionDefaults(
   spec: RawFieldSpec,
   componentName?: string,
   parentName?: string
-): unknown | undefined {
+): string | boolean | string[] | undefined {
   if (!(spec.name && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
     return undefined;
   }

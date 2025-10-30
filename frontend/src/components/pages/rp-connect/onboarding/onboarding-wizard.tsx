@@ -76,8 +76,15 @@ export const ConnectOnboardingWizard = ({
     [persistedInputConnectionName]
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: shouldn't need to be re-run for any dependency changes
   useEffect(() => {
-    useOnboardingWizardDataStore.persist.rehydrate();
+    return () => {
+      // Only clear if we're navigating away from the wizard
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('/rp-connect/wizard')) {
+        resetOnboardingWizardStore();
+      }
+    };
   }, []);
 
   const [searchParams] = useSearchParams();

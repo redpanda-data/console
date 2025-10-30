@@ -21,17 +21,22 @@ import type {
 } from '../components/pages/rp-connect/types/wizard';
 
 export const CONNECT_WIZARD_CONNECTOR_KEY = 'connect-wizard-connections';
-export const CONNECT_WIZARD_TOPIC_KEY = 'connect-wizard-topic';
-export const CONNECT_WIZARD_USER_KEY = 'connect-wizard-user';
+
+const initialWizardData: Partial<OnboardingWizardFormData> = {};
+const initialTopicData: Partial<MinimalTopicData> = {};
+const initialUserData: Partial<MinimalUserData> = {};
 
 export const useOnboardingWizardDataStore = create<
   Partial<OnboardingWizardFormData> & {
     setWizardData: (data: Partial<OnboardingWizardFormData>) => void;
+    reset: () => void;
   }
 >()(
   persist(
-    (set) => ({
+    (set, get) => ({
+      ...initialWizardData,
       setWizardData: (data) => set(data),
+      reset: () => set({ ...initialWizardData, setWizardData: get().setWizardData, reset: get().reset }, true),
     }),
     {
       name: CONNECT_WIZARD_CONNECTOR_KEY,
@@ -43,59 +48,44 @@ export const useOnboardingWizardDataStore = create<
 export const useOnboardingTopicDataStore = create<
   Partial<MinimalTopicData> & {
     setTopicData: (data: Partial<MinimalTopicData>) => void;
+    reset: () => void;
   }
->()(
-  persist(
-    (set) => ({
-      setTopicData: (data) => set(data),
-    }),
-    {
-      name: CONNECT_WIZARD_TOPIC_KEY,
-      storage: createFlatStorage<Partial<MinimalTopicData>>(),
-    }
-  )
-);
+>()((set, get) => ({
+  ...initialTopicData,
+  setTopicData: (data) => set(data),
+  reset: () => set({ ...initialTopicData, setTopicData: get().setTopicData, reset: get().reset }, true),
+}));
 
 export const useOnboardingUserDataStore = create<
   Partial<MinimalUserData> & {
     setUserData: (data: Partial<MinimalUserData>) => void;
+    reset: () => void;
   }
->()(
-  persist(
-    (set) => ({
-      setUserData: (data) => set(data),
-    }),
-    {
-      name: CONNECT_WIZARD_USER_KEY,
-      storage: createFlatStorage<Partial<MinimalUserData>>(),
-    }
-  )
-);
+>()((set, get) => ({
+  ...initialUserData,
+  setUserData: (data) => set(data),
+  reset: () => set({ ...initialUserData, setUserData: get().setUserData, reset: get().reset }, true),
+}));
 
-export const useResetOnboardingWizardStore = () => {
-  const { setWizardData } = useOnboardingWizardDataStore();
-  const { setTopicData } = useOnboardingTopicDataStore();
-  const { setUserData } = useOnboardingUserDataStore();
-
-  return useCallback(() => {
-    setWizardData({});
-    setTopicData({});
-    setUserData({});
-  }, [setWizardData, setTopicData, setUserData]);
-};
+export const useResetOnboardingWizardStore = () =>
+  useCallback(() => {
+    useOnboardingWizardDataStore.getState().reset();
+    useOnboardingTopicDataStore.getState().reset();
+    useOnboardingUserDataStore.getState().reset();
+  }, []);
 
 // Imperative API for non-hook contexts (class components, utility functions)
 export const onboardingWizardStore = {
   getWizardData: () => {
-    const { setWizardData: _, ...data } = useOnboardingWizardDataStore.getState();
+    const { setWizardData: _, reset: __, ...data } = useOnboardingWizardDataStore.getState();
     return data;
   },
   getTopicData: () => {
-    const { setTopicData: _, ...data } = useOnboardingTopicDataStore.getState();
+    const { setTopicData: _, reset: __, ...data } = useOnboardingTopicDataStore.getState();
     return data;
   },
   getUserData: () => {
-    const { setUserData: _, ...data } = useOnboardingUserDataStore.getState();
+    const { setUserData: _, reset: __, ...data } = useOnboardingUserDataStore.getState();
     return data;
   },
   setWizardData: (data: Partial<OnboardingWizardFormData>) =>
@@ -103,8 +93,8 @@ export const onboardingWizardStore = {
   setTopicData: (data: Partial<MinimalTopicData>) => useOnboardingTopicDataStore.getState().setTopicData(data),
   setUserData: (data: Partial<MinimalUserData>) => useOnboardingUserDataStore.getState().setUserData(data),
   reset: () => {
-    useOnboardingWizardDataStore.getState().setWizardData({});
-    useOnboardingTopicDataStore.getState().setTopicData({});
-    useOnboardingUserDataStore.getState().setUserData({});
+    useOnboardingWizardDataStore.getState().reset();
+    useOnboardingTopicDataStore.getState().reset();
+    useOnboardingUserDataStore.getState().reset();
   },
 };
