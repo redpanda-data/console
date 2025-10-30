@@ -90,6 +90,26 @@ export const getACLOperationName = (operation: ACL_Operation): string => {
   }
 };
 
+/**
+ * Helper function to check if an ACL resource pattern matches a given topic name
+ */
+const doesPatternMatchTopic = (
+  resourceName: string,
+  patternType: ACL_ResourcePatternType,
+  topicName: string
+): boolean => {
+  switch (patternType) {
+    case ACL_ResourcePatternType.LITERAL:
+      return resourceName === topicName;
+    case ACL_ResourcePatternType.PREFIXED:
+      return topicName.startsWith(resourceName);
+    case ACL_ResourcePatternType.ANY:
+      return true;
+    default:
+      return false;
+  }
+};
+
 export const checkUserHasTopicReadWritePermissions = (
   aclResources: ListACLsResponse_Resource[],
   topicName: string,
@@ -97,12 +117,11 @@ export const checkUserHasTopicReadWritePermissions = (
 ): TopicPermissionCheck => {
   const requiredOps = [ACL_Operation.READ, ACL_Operation.WRITE];
 
-  // Filter ACLs for this specific topic
+  // Filter ACLs for this specific topic (including LITERAL, PREFIXED, and ANY patterns)
   const topicACLs = aclResources.filter(
     (resource) =>
       resource.resourceType === ACL_ResourceType.TOPIC &&
-      resource.resourceName === topicName &&
-      resource.resourcePatternType === ACL_ResourcePatternType.LITERAL
+      doesPatternMatchTopic(resource.resourceName, resource.resourcePatternType, topicName)
   );
 
   // Get all operations that the user has ALLOW permissions for
@@ -112,7 +131,13 @@ export const checkUserHasTopicReadWritePermissions = (
   for (const resource of topicACLs) {
     for (const acl of resource.acls) {
       if (acl.principal === principal && acl.permissionType === ACL_PermissionType.ALLOW) {
-        userAllowedOps.add(acl.operation);
+        // If user has ALL or ANY operation, they have all permissions including READ and WRITE
+        if (acl.operation === ACL_Operation.ALL || acl.operation === ACL_Operation.ANY) {
+          userAllowedOps.add(ACL_Operation.READ);
+          userAllowedOps.add(ACL_Operation.WRITE);
+        } else {
+          userAllowedOps.add(acl.operation);
+        }
       }
     }
   }

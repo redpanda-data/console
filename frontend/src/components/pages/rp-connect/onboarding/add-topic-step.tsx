@@ -20,7 +20,6 @@ import { ChevronDown, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { NO_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { isFalsy } from 'utils/falsy';
 
 import { AdvancedTopicSettings } from './advanced-topic-settings';
@@ -54,10 +53,8 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
   ({ defaultTopicName, ...motionProps }, ref) => {
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
-    const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
+    const { data: topicList, refetch: refetchTopics } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
       hideInternalTopics: true,
-      staleTime: NO_LIVED_CACHE_STALE_TIME,
-      refetchOnWindowFocus: true,
     });
 
     const initialTopicOptions = useMemo(
@@ -266,6 +263,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                                 {...field}
                                 className="w-[300px]"
                                 disabled={isLoading}
+                                onOpen={() => refetchTopics()}
                                 options={topicOptions}
                                 placeholder="Select a topic"
                               />

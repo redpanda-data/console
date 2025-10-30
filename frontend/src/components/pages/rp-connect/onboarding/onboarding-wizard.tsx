@@ -296,7 +296,7 @@ export const ConnectOnboardingWizard = ({
       onCancelProp();
     } else if (searchParams.get('serverless') === 'true') {
       navigate('/overview');
-      window.location.reload();
+      window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
     } else {
       navigate('/connect-clusters');
     }

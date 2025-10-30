@@ -31,7 +31,6 @@ import { CircleAlert, RefreshCcw, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { NO_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { SASL_MECHANISMS } from 'utils/user';
 
@@ -58,11 +57,7 @@ interface AddUserStepProps {
 
 export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepProps & MotionProps>(
   ({ defaultUsername, defaultSaslMechanism, topicName, ...motionProps }, ref) => {
-    const { data: usersList } = useListUsersQuery(undefined, {
-      refetchOnMount: 'always',
-      staleTime: NO_LIVED_CACHE_STALE_TIME,
-      refetchOnWindowFocus: true,
-    });
+    const { data: usersList, refetch: refetchUsers } = useListUsersQuery();
 
     const initialUserOptions = useMemo(
       () =>
@@ -241,6 +236,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                                 {...field}
                                 className="w-[300px]"
                                 disabled={isLoading}
+                                onOpen={() => refetchUsers()}
                                 options={userOptions}
                                 placeholder="Select a user"
                               />

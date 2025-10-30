@@ -23,6 +23,8 @@ export const Combobox = memo(({
   autocomplete = true,
   onCreateOption,
   className,
+  onOpen,
+  onClose,
 }: {
   options: ComboboxOption[];
   value?: string;
@@ -36,6 +38,8 @@ export const Combobox = memo(({
   /** Callback function to create a new option */
   onCreateOption?: (value: string) => void;
   className?: string;
+  onOpen?: () => void;
+  onClose?: () => void;
 }) => {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState(controlledValue);
@@ -162,6 +166,8 @@ export const Combobox = memo(({
     (newOpen: boolean) => {
       if (disabled) return;
       setOpen(newOpen);
+      if (newOpen) onOpen?.();
+      else onClose?.();
     },
     [disabled],
   );

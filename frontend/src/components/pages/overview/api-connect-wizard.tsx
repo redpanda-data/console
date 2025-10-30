@@ -174,9 +174,9 @@ export const APIConnectWizard = () => {
   };
 
   const handleCancel = useCallback(() => {
-    navigate('/overview');
     resetApiWizardStore();
-    window.location.reload();
+    navigate('/overview');
+    window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
   }, [navigate, resetApiWizardStore]);
 
   useEffect(() => {
@@ -203,7 +203,7 @@ export const APIConnectWizard = () => {
   const handleFinish = useCallback(() => {
     resetApiWizardStore();
     navigate('/overview');
-    window.location.reload();
+    window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
   }, [navigate, resetApiWizardStore]);
 
   return (
@@ -224,7 +224,7 @@ export const APIConnectWizard = () => {
                         onClick={() => {
                           if (step.id === APIWizardStep.ADD_DATA) {
                             navigate('/get-started?type=input');
-                            window.location.reload();
+                            window.location.reload(); // Required because we want to load Cloud UI's get-started page.
                           } else {
                             methods.goTo(step.id);
                           }
@@ -253,7 +253,7 @@ export const APIConnectWizard = () => {
                         methods.current.id === APIWizardStep.ADD_TOPIC
                           ? () => {
                               navigate('/get-started?type=input');
-                              window.location.reload();
+                              window.location.reload(); // Required because we want to load Cloud UI's get-started page.
                             }
                           : methods.prev
                       }

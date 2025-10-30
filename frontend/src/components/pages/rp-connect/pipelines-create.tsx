@@ -29,6 +29,7 @@ import { Link as UILink, Text as UIText } from 'components/redpanda-ui/component
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { isFeatureFlagEnabled } from 'config';
+import { useDebounce } from 'hooks/use-debounce';
 import { AlertCircle, PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -394,10 +395,14 @@ export const PipelineEditor = observer(
     const hasHydrated = useOnboardingWizardDataStore((state) => state._hasHydrated);
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
-    // Track actual editor content to keep sidebar in sync with editor's real state
     const [actualEditorContent, setActualEditorContent] = useState<string>('');
-    const debouncedSyncTimerRef = useRef<NodeJS.Timeout | null>(null);
     const hasInitializedServerless = useRef(false);
+
+    const debouncedSyncToStore = useDebounce((yamlContent: string) => {
+      useOnboardingYamlContentStore.getState().setYamlContent({
+        yamlContent,
+      });
+    }, 500);
 
     const yaml = useMemo(() => {
       // If wizard is enabled and we have persisted yaml content, use that
@@ -516,50 +521,31 @@ export const PipelineEditor = observer(
     }, [secretAutocomplete, contextualVarsAutocomplete]);
 
     // Sync actual editor content with editor instance
-    // This ensures sidebar always sees what's actually in the editor
     useEffect(() => {
       if (!editorInstance) {
         return;
       }
 
-      // Read actual content from editor after mount
       const currentValue = editorInstance.getValue();
       setActualEditorContent(currentValue);
 
-      // Also sync to parent if different
       if (currentValue !== p.yaml) {
         p.onChange?.(currentValue);
       }
 
-      // Listen for content changes
       const disposable = editorInstance.onDidChangeModelContent(() => {
         const newValue = editorInstance.getValue();
         setActualEditorContent(newValue);
 
-        // Debounced sync to store (only if wizard is enabled)
         if (enableRpcnTiles) {
-          // Clear existing timer
-          if (debouncedSyncTimerRef.current) {
-            clearTimeout(debouncedSyncTimerRef.current);
-          }
-
-          // Set new timer for 500ms debounce
-          debouncedSyncTimerRef.current = setTimeout(() => {
-            useOnboardingYamlContentStore.getState().setYamlContent({
-              yamlContent: newValue,
-            });
-          }, 500);
+          debouncedSyncToStore(newValue);
         }
       });
 
       return () => {
         disposable.dispose();
-        // Clear timer on cleanup
-        if (debouncedSyncTimerRef.current) {
-          clearTimeout(debouncedSyncTimerRef.current);
-        }
       };
-    }, [editorInstance, enableRpcnTiles, p.onChange, p.yaml]);
+    }, [editorInstance, enableRpcnTiles, debouncedSyncToStore, p.onChange, p.yaml]);
 
     return (
       <Tabs
