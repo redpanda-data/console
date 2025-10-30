@@ -21,8 +21,6 @@ import type {
 } from '../components/pages/rp-connect/types/wizard';
 
 export const CONNECT_WIZARD_CONNECTOR_KEY = 'connect-wizard-connections';
-export const CONNECT_WIZARD_TOPIC_KEY = 'connect-wizard-topic';
-export const CONNECT_WIZARD_USER_KEY = 'connect-wizard-user';
 
 export const useOnboardingWizardDataStore = create<
   Partial<OnboardingWizardFormData> & {
@@ -43,45 +41,31 @@ export const useOnboardingWizardDataStore = create<
 export const useOnboardingTopicDataStore = create<
   Partial<MinimalTopicData> & {
     setTopicData: (data: Partial<MinimalTopicData>) => void;
+    reset: () => void;
   }
->()(
-  persist(
-    (set) => ({
-      setTopicData: (data) => set(data),
-    }),
-    {
-      name: CONNECT_WIZARD_TOPIC_KEY,
-      storage: createFlatStorage<Partial<MinimalTopicData>>(),
-    }
-  )
-);
+>()((set) => ({
+  setTopicData: (data) => set(data),
+  reset: () => set({}),
+}));
 
 export const useOnboardingUserDataStore = create<
   Partial<MinimalUserData> & {
     setUserData: (data: Partial<MinimalUserData>) => void;
+    reset: () => void;
   }
->()(
-  persist(
-    (set) => ({
-      setUserData: (data) => set(data),
-    }),
-    {
-      name: CONNECT_WIZARD_USER_KEY,
-      storage: createFlatStorage<Partial<MinimalUserData>>(),
-    }
-  )
-);
+>()((set) => ({
+  setUserData: (data) => set(data),
+  reset: () => set({}),
+}));
 
 export const useResetOnboardingWizardStore = () => {
   return useCallback(() => {
     useOnboardingWizardDataStore.getState().setWizardData({});
-    useOnboardingTopicDataStore.getState().setTopicData({});
-    useOnboardingUserDataStore.getState().setUserData({});
+    useOnboardingTopicDataStore.getState().reset();
+    useOnboardingUserDataStore.getState().reset();
 
-    // Explicitly remove from session storage
+    // Only remove persisted wizard data
     sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
-    sessionStorage.removeItem(CONNECT_WIZARD_TOPIC_KEY);
-    sessionStorage.removeItem(CONNECT_WIZARD_USER_KEY);
   }, []);
 };
 
@@ -92,11 +76,11 @@ export const onboardingWizardStore = {
     return data;
   },
   getTopicData: () => {
-    const { setTopicData: _, ...data } = useOnboardingTopicDataStore.getState();
+    const { setTopicData: _, reset: __, ...data } = useOnboardingTopicDataStore.getState();
     return data;
   },
   getUserData: () => {
-    const { setUserData: _, ...data } = useOnboardingUserDataStore.getState();
+    const { setUserData: _, reset: __, ...data } = useOnboardingUserDataStore.getState();
     return data;
   },
   setWizardData: (data: Partial<OnboardingWizardFormData>) =>
@@ -105,16 +89,9 @@ export const onboardingWizardStore = {
   setUserData: (data: Partial<MinimalUserData>) => useOnboardingUserDataStore.getState().setUserData(data),
   reset: () => {
     useOnboardingWizardDataStore.getState().setWizardData({});
-    useOnboardingTopicDataStore.getState().setTopicData({});
-    useOnboardingUserDataStore.getState().setUserData({});
+    useOnboardingTopicDataStore.getState().reset();
+    useOnboardingUserDataStore.getState().reset();
 
     sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
-    sessionStorage.removeItem(CONNECT_WIZARD_TOPIC_KEY);
-    sessionStorage.removeItem(CONNECT_WIZARD_USER_KEY);
-  },
-  rehydrate: () => {
-    useOnboardingWizardDataStore.persist.rehydrate();
-    useOnboardingTopicDataStore.persist.rehydrate();
-    useOnboardingUserDataStore.persist.rehydrate();
   },
 };
