@@ -76,7 +76,6 @@ export const ConnectOnboardingWizard = ({
     [persistedInputConnectionName]
   );
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: shouldn't need to be re-run for any dependency changes
   useEffect(() => {
     return () => {
       // Only clear if we're navigating away from the wizard
@@ -85,7 +84,7 @@ export const ConnectOnboardingWizard = ({
         resetOnboardingWizardStore();
       }
     };
-  }, []);
+  }, [resetOnboardingWizardStore]);
 
   const [searchParams] = useSearchParams();
 

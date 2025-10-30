@@ -202,7 +202,6 @@ export const APIConnectWizard = () => {
     });
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: shouldn't need to be re-run for any dependency changes
   useEffect(() => {
     useAPIWizardStore.persist.rehydrate();
     return () => {
@@ -212,7 +211,7 @@ export const APIConnectWizard = () => {
         resetApiWizardStore();
       }
     };
-  }, []);
+  }, [resetApiWizardStore]);
 
   const handleFinish = useCallback(() => {
     resetApiWizardStore();
