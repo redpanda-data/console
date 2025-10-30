@@ -65,7 +65,7 @@ export const ConnectTile = ({
       {/* padding right to compensate for the absolute position of the logo */}
       <div className="relative flex h-full w-full items-center gap-2 pr-8">
         <div className="flex flex-col gap-1">
-          <InlineCode className="truncate bg-background font-semibold text-md">{component.name}</InlineCode>
+          <InlineCode className="truncate bg-background px-0 py-0 font-semibold text-md">{component.name}</InlineCode>
           <span>
             {component.status && component.status !== 'stable' && component.name !== 'redpanda' && (
               <Badge size="sm" variant="gray">
