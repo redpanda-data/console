@@ -14,8 +14,7 @@ import {
   FormMessage,
 } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Label } from 'components/redpanda-ui/components/label';
-import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
+import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
@@ -225,78 +224,81 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                 <FormDescription>
                   Choose an existing topic to read or write data from, or create a new topic.
                 </FormDescription>
-                <div className="flex gap-2">
-                  <RadioGroup
-                    className="max-h-8 min-w-[220px]"
+                <div className="flex flex-col items-start gap-2">
+                  <ToggleGroup
                     defaultValue={topicSelectionType}
                     disabled={isLoading}
-                    onValueChange={handleTopicSelectionTypeChange}
-                    orientation="horizontal"
+                    onValueChange={(value) => handleTopicSelectionTypeChange(value as CreatableSelectionType)}
+                    type="single"
+                    variant="outline"
                   >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        id={CreatableSelectionOptions.EXISTING}
-                        value={CreatableSelectionOptions.EXISTING}
-                      />
-                      <Label htmlFor={CreatableSelectionOptions.EXISTING}>Existing topic</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem id={CreatableSelectionOptions.CREATE} value={CreatableSelectionOptions.CREATE} />
-                      <Label htmlFor={CreatableSelectionOptions.CREATE}>New topic</Label>
-                    </div>
-                  </RadioGroup>
+                    <ToggleGroupItem
+                      disabled={topicOptions.length === 0}
+                      id={CreatableSelectionOptions.EXISTING}
+                      value={CreatableSelectionOptions.EXISTING}
+                    >
+                      Existing
+                    </ToggleGroupItem>
+                    <ToggleGroupItem id={CreatableSelectionOptions.CREATE} value={CreatableSelectionOptions.CREATE}>
+                      New
+                    </ToggleGroupItem>
+                  </ToggleGroup>
 
-                  <FormField
-                    control={form.control}
-                    name="topicName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          {topicSelectionType === CreatableSelectionOptions.EXISTING ? (
-                            <Combobox
-                              {...field}
-                              className="w-[300px]"
-                              disabled={isLoading}
-                              options={topicOptions}
-                              placeholder="Select a topic"
-                            />
-                          ) : (
-                            <Input
-                              {...field}
-                              className="w-[300px]"
-                              disabled={isLoading}
-                              placeholder="Enter a topic name"
-                            />
-                          )}
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                  <div className="flex gap-2">
+                    <FormField
+                      control={form.control}
+                      name="topicName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            {topicSelectionType === CreatableSelectionOptions.EXISTING ? (
+                              <Combobox
+                                {...field}
+                                className="w-[300px]"
+                                disabled={isLoading}
+                                options={topicOptions}
+                                placeholder="Select a topic"
+                              />
+                            ) : (
+                              <Input
+                                {...field}
+                                className="w-[300px]"
+                                disabled={isLoading}
+                                placeholder="Enter a topic name"
+                              />
+                            )}
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {watchedTopicName !== '' && watchedTopicName.length > 0 && (
+                      <Button onClick={handleClearTopicName} size="icon" variant="ghost">
+                        <XIcon size={16} />
+                      </Button>
                     )}
-                  />
-
-                  {watchedTopicName !== '' && watchedTopicName.length > 0 && (
-                    <Button onClick={handleClearTopicName} size="icon" variant="ghost">
-                      <XIcon size={16} />
-                    </Button>
-                  )}
+                  </div>
                 </div>
               </div>
 
-              <Collapsible onOpenChange={setShowAdvancedSettings} open={showAdvancedSettings}>
-                <CollapsibleTrigger asChild>
-                  <Button className="w-fit p-0" disabled={isLoading} size="sm" variant="ghost">
-                    <ChevronDown className="h-4 w-4" />
-                    Show advanced settings
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="mt-4 space-y-6">
-                  <AdvancedTopicSettings
-                    disabled={isLoading}
-                    form={form}
-                    isExistingTopic={Boolean(existingTopicSelected)}
-                  />
-                </CollapsibleContent>
-              </Collapsible>
+              {topicSelectionType === CreatableSelectionOptions.EXISTING && !existingTopicSelected ? null : (
+                <Collapsible onOpenChange={setShowAdvancedSettings} open={showAdvancedSettings}>
+                  <CollapsibleTrigger asChild>
+                    <Button className="w-fit p-0" disabled={isLoading} size="sm" variant="ghost">
+                      <ChevronDown className="h-4 w-4" />
+                      Show advanced settings
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-4 space-y-6">
+                    <AdvancedTopicSettings
+                      disabled={isLoading}
+                      form={form}
+                      isExistingTopic={Boolean(existingTopicSelected)}
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
             </div>
           </Form>
         </CardContent>

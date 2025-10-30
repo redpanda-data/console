@@ -43,7 +43,7 @@ export const AppContent = observer(() => (
       {renderErrorModals()}
 
       {/* Toaster for notifications */}
-      <Toaster expand />
+      <Toaster />
     </TooltipProvider>
   </div>
 ));

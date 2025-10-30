@@ -1,6 +1,11 @@
 import { toast } from 'sonner';
-import { onboardingWizardStore } from 'state/onboarding-wizard-store';
+import {
+  onboardingWizardStore,
+  useOnboardingWizardDataStore,
+  useOnboardingYamlContentStore,
+} from 'state/onboarding-wizard-store';
 
+import { getConnectTemplate } from './yaml';
 import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
 import type { RawFieldSpec } from '../types/schema';
 import type { StepSubmissionResult } from '../types/wizard';
@@ -37,6 +42,45 @@ export const handleStepResult = <T>(result: StepSubmissionResult<T> | undefined,
   }
 
   return false;
+};
+
+/**
+ * Regenerates YAML templates for components that require topic/user data
+ * Used at ADD_TOPIC and ADD_USER steps to update YAML with new context
+ */
+export const regenerateYamlForTopicUserComponents = (): void => {
+  const { setWizardData: _, ...wizardData } = useOnboardingWizardDataStore.getState();
+
+  const inputNeedsTopicUser =
+    wizardData.input?.connectionName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(wizardData.input.connectionName);
+  const outputNeedsTopicUser =
+    wizardData.output?.connectionName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(wizardData.output.connectionName);
+
+  if (inputNeedsTopicUser || outputNeedsTopicUser) {
+    let yamlContent = useOnboardingYamlContentStore.getState().yamlContent || '';
+
+    if (inputNeedsTopicUser && wizardData.input?.connectionName && wizardData.input?.connectionType) {
+      yamlContent =
+        getConnectTemplate({
+          connectionName: wizardData.input.connectionName,
+          connectionType: wizardData.input.connectionType,
+          showOptionalFields: false,
+          existingYaml: yamlContent,
+        }) || yamlContent;
+    }
+
+    if (outputNeedsTopicUser && wizardData.output?.connectionName && wizardData.output?.connectionType) {
+      yamlContent =
+        getConnectTemplate({
+          connectionName: wizardData.output.connectionName,
+          connectionType: wizardData.output.connectionType,
+          showOptionalFields: false,
+          existingYaml: yamlContent,
+        }) || yamlContent;
+    }
+
+    useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent });
+  }
 };
 
 /**

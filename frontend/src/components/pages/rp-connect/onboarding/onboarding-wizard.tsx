@@ -3,7 +3,7 @@ import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Heading } from 'components/redpanda-ui/components/typography';
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { AnimatePresence } from 'motion/react';
 import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
@@ -16,6 +16,7 @@ import {
   useOnboardingTopicDataStore,
   useOnboardingUserDataStore,
   useOnboardingWizardDataStore,
+  useOnboardingYamlContentStore,
   useResetOnboardingWizardStore,
 } from 'state/onboarding-wizard-store';
 import { uiState } from 'state/ui-state';
@@ -36,7 +37,8 @@ import {
 } from '../types/constants';
 import type { ExtendedConnectComponentSpec } from '../types/schema';
 import type { AddTopicFormData, AddUserFormData, BaseStepRef, ConnectTilesListFormData } from '../types/wizard';
-import { handleStepResult } from '../utils/wizard';
+import { handleStepResult, regenerateYamlForTopicUserComponents } from '../utils/wizard';
+import { getConnectTemplate } from '../utils/yaml';
 
 export type ConnectOnboardingWizardProps = {
   className?: string;
@@ -159,6 +161,17 @@ export const ConnectOnboardingWizard = ({
           return;
         }
         if (result?.success && connectionName && connectionType) {
+          const yamlContent = getConnectTemplate({
+            connectionName,
+            connectionType,
+            showOptionalFields: false,
+            existingYaml: useOnboardingYamlContentStore.getState().yamlContent,
+          });
+
+          if (yamlContent) {
+            useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent });
+          }
+
           if (connectionName === 'redpanda_common') {
             setWizardData({
               input: {
@@ -197,6 +210,17 @@ export const ConnectOnboardingWizard = ({
         }
 
         if (result?.success && connectionName && connectionType) {
+          const yamlContent = getConnectTemplate({
+            connectionName,
+            connectionType,
+            showOptionalFields: false,
+            existingYaml: useOnboardingYamlContentStore.getState().yamlContent,
+          });
+
+          if (yamlContent) {
+            useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent });
+          }
+
           if (connectionName === 'redpanda_common') {
             setWizardData({
               input: {
@@ -232,6 +256,7 @@ export const ConnectOnboardingWizard = ({
         const result = await addTopicStepRef.current?.triggerSubmit();
         if (result?.success && result.data) {
           setTopicData({ topicName: result.data.topicName });
+          regenerateYamlForTopicUserComponents();
         }
         handleStepResult(result, methods.next);
         break;
@@ -243,6 +268,7 @@ export const ConnectOnboardingWizard = ({
             username: result.data.username,
             saslMechanism: result.data.saslMechanism,
           });
+          regenerateYamlForTopicUserComponents();
         }
         handleStepResult(result, methods.next);
         break;
@@ -290,7 +316,17 @@ export const ConnectOnboardingWizard = ({
                 <div className="flex flex-col space-y-2 text-center">
                   <WizardStepper.Navigation>
                     {wizardStepDefinitions.map((step) => (
-                      <WizardStepper.Step key={step.id} of={step.id} onClick={() => methods.goTo(step.id)}>
+                      <WizardStepper.Step
+                        icon={
+                          wizardStepDefinitions.findIndex((s) => s.id === step.id) <
+                          wizardStepDefinitions.findIndex((s) => s.id === methods.current.id) ? (
+                            <CheckIcon className="text-white" size={16} />
+                          ) : undefined
+                        }
+                        key={step.id}
+                        of={step.id}
+                        onClick={() => methods.goTo(step.id)}
+                      >
                         <WizardStepper.Title>{step.title}</WizardStepper.Title>
                       </WizardStepper.Step>
                     ))}

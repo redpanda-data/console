@@ -20,7 +20,6 @@ import {
 import { Group } from 'components/redpanda-ui/components/group';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
-import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
 import {
   Select,
   SelectContent,
@@ -28,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
+import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Heading, Link, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { CircleAlert, RefreshCcw, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
@@ -292,60 +292,61 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                     ? `Choose an existing user that has permissions for ${topicName}, or create a new one with full permissions.`
                     : 'Select an existing user or create a new one.'}
                 </FormDescription>
-                <div className="flex gap-2">
-                  <RadioGroup
-                    className="max-h-8 min-w-[220px]"
+                <div className="flex flex-col items-start gap-2">
+                  <ToggleGroup
                     defaultValue={userSelectionType}
                     disabled={isLoading}
-                    onValueChange={handleUserSelectionTypeChange}
-                    orientation="horizontal"
+                    onValueChange={(value) => handleUserSelectionTypeChange(value as CreatableSelectionType)}
+                    type="single"
+                    variant="outline"
                   >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        id={CreatableSelectionOptions.EXISTING}
-                        value={CreatableSelectionOptions.EXISTING}
-                      />
-                      <Label htmlFor={CreatableSelectionOptions.EXISTING}>Existing user</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem id={CreatableSelectionOptions.CREATE} value={CreatableSelectionOptions.CREATE} />
-                      <Label htmlFor={CreatableSelectionOptions.CREATE}>New user</Label>
-                    </div>
-                  </RadioGroup>
+                    <ToggleGroupItem
+                      disabled={userOptions.length === 0}
+                      id={CreatableSelectionOptions.EXISTING}
+                      value={CreatableSelectionOptions.EXISTING}
+                    >
+                      Existing
+                    </ToggleGroupItem>
+                    <ToggleGroupItem id={CreatableSelectionOptions.CREATE} value={CreatableSelectionOptions.CREATE}>
+                      New
+                    </ToggleGroupItem>
+                  </ToggleGroup>
 
-                  <FormField
-                    control={form.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          {userSelectionType === CreatableSelectionOptions.EXISTING ? (
-                            <Combobox
-                              {...field}
-                              className="w-[300px]"
-                              disabled={isLoading}
-                              options={userOptions}
-                              placeholder="Select a user"
-                            />
-                          ) : (
-                            <Input
-                              {...field}
-                              className="w-[300px]"
-                              disabled={isLoading}
-                              placeholder="Enter a username"
-                            />
-                          )}
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                  <div className="flex gap-2">
+                    <FormField
+                      control={form.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            {userSelectionType === CreatableSelectionOptions.EXISTING ? (
+                              <Combobox
+                                {...field}
+                                className="w-[300px]"
+                                disabled={isLoading}
+                                options={userOptions}
+                                placeholder="Select a user"
+                              />
+                            ) : (
+                              <Input
+                                {...field}
+                                className="w-[300px]"
+                                disabled={isLoading}
+                                placeholder="Enter a username"
+                              />
+                            )}
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {watchedUsername !== '' && watchedUsername.length > 0 && (
+                      <Button onClick={handleClearUsername} size="icon" variant="ghost">
+                        <XIcon size={16} />
+                      </Button>
                     )}
-                  />
-
-                  {watchedUsername !== '' && watchedUsername.length > 0 && (
-                    <Button onClick={handleClearUsername} size="icon" variant="ghost">
-                      <XIcon size={16} />
-                    </Button>
-                  )}
+                  </div>
                 </div>
               </div>
 

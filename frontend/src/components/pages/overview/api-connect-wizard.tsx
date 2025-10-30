@@ -29,6 +29,7 @@ import type { AddTopicFormData, AddUserFormData, BaseStepRef } from '../rp-conne
 import { handleStepResult } from '../rp-connect/utils/wizard';
 
 const APIWizardStep = {
+  ADD_DATA: 'add-data-step',
   ADD_TOPIC: 'add-topic-step',
   ADD_USER: 'add-user-step',
   CONNECT_CLUSTER: 'connect-cluster-step',
@@ -36,6 +37,7 @@ const APIWizardStep = {
 type APIWizardStepType = (typeof APIWizardStep)[keyof typeof APIWizardStep];
 
 const apiWizardStepDefinitions = [
+  { id: APIWizardStep.ADD_DATA, title: 'Add data' },
   { id: APIWizardStep.ADD_TOPIC, title: 'Add a topic' },
   { id: APIWizardStep.ADD_USER, title: 'Add a user' },
   { id: APIWizardStep.CONNECT_CLUSTER, title: 'Connect cluster' },
@@ -220,7 +222,7 @@ export const APIConnectWizard = () => {
 
   return (
     <PageContent>
-      <APIWizardStepper.Provider className="space-y-2">
+      <APIWizardStepper.Provider className="space-y-2" initialStep={APIWizardStep.ADD_TOPIC}>
         {({ methods }) => {
           const isCurrentStepLoading = getCurrentStepLoading(methods.current.id);
 
@@ -230,7 +232,12 @@ export const APIConnectWizard = () => {
                 <div className="flex flex-col space-y-2 text-center">
                   <APIWizardStepper.Navigation>
                     {apiWizardStepDefinitions.map((step) => (
-                      <APIWizardStepper.Step key={step.id} of={step.id} onClick={() => methods.goTo(step.id)}>
+                      <APIWizardStepper.Step
+                        disabled={step.id === APIWizardStep.ADD_DATA}
+                        key={step.id}
+                        of={step.id}
+                        onClick={() => methods.goTo(step.id)}
+                      >
                         <APIWizardStepper.Title>{step.title}</APIWizardStepper.Title>
                       </APIWizardStepper.Step>
                     ))}

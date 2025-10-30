@@ -67,11 +67,31 @@ export const useOnboardingUserDataStore = create<
   reset: () => set({ ...initialUserData, setUserData: get().setUserData, reset: get().reset }, true),
 }));
 
+type OnboardingYamlContent = {
+  yamlContent: undefined | string;
+};
+
+const initialYamlContent: OnboardingYamlContent = {
+  yamlContent: undefined,
+};
+
+export const useOnboardingYamlContentStore = create<
+  OnboardingYamlContent & {
+    setYamlContent: (data: OnboardingYamlContent) => void;
+    reset: () => void;
+  }
+>()((set, get) => ({
+  ...initialYamlContent,
+  setYamlContent: (data) => set(data),
+  reset: () => set({ ...initialYamlContent, setYamlContent: get().setYamlContent, reset: get().reset }, true),
+}));
+
 export const useResetOnboardingWizardStore = () =>
   useCallback(() => {
     useOnboardingWizardDataStore.getState().reset();
     useOnboardingTopicDataStore.getState().reset();
     useOnboardingUserDataStore.getState().reset();
+    useOnboardingYamlContentStore.getState().reset();
   }, []);
 
 // Imperative API for non-hook contexts (class components, utility functions)
@@ -88,13 +108,19 @@ export const onboardingWizardStore = {
     const { setUserData: _, reset: __, ...data } = useOnboardingUserDataStore.getState();
     return data;
   },
+  getYamlContent: () => {
+    const { setYamlContent: _, reset: __, ...data } = useOnboardingYamlContentStore.getState();
+    return data;
+  },
   setWizardData: (data: Partial<OnboardingWizardFormData>) =>
     useOnboardingWizardDataStore.getState().setWizardData(data),
   setTopicData: (data: Partial<MinimalTopicData>) => useOnboardingTopicDataStore.getState().setTopicData(data),
   setUserData: (data: Partial<MinimalUserData>) => useOnboardingUserDataStore.getState().setUserData(data),
+  setYamlContent: (data: OnboardingYamlContent) => useOnboardingYamlContentStore.getState().setYamlContent(data),
   reset: () => {
     useOnboardingWizardDataStore.getState().reset();
     useOnboardingTopicDataStore.getState().reset();
     useOnboardingUserDataStore.getState().reset();
+    useOnboardingYamlContentStore.getState().reset();
   },
 };
