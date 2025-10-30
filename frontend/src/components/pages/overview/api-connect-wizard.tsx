@@ -1,4 +1,3 @@
-import { create } from '@bufbuild/protobuf';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { Markdown } from '@redpanda-data/ui';
 import PageContent from 'components/misc/page-content';
@@ -10,13 +9,9 @@ import { config } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { ChevronLeftIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
-import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetOnboardingCodeSnippetQuery } from 'react-query/api/onboarding';
 import { useGetServerlessClusterQuery } from 'react-query/api/serverless';
-import { useLegacyListTopicsQuery } from 'react-query/api/topic';
-import { useListUsersQuery } from 'react-query/api/user';
-import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { useNavigate } from 'react-router-dom';
 import { useAPIWizardStore } from 'state/api-wizard-store';
 import { uiState } from 'state/ui-state';
@@ -29,6 +24,7 @@ import type { AddTopicFormData, AddUserFormData, BaseStepRef } from '../rp-conne
 import { handleStepResult } from '../rp-connect/utils/wizard';
 
 const APIWizardStep = {
+  ADD_DATA: 'add-data-step',
   ADD_TOPIC: 'add-topic-step',
   ADD_USER: 'add-user-step',
   CONNECT_CLUSTER: 'connect-cluster-step',
@@ -36,6 +32,7 @@ const APIWizardStep = {
 type APIWizardStepType = (typeof APIWizardStep)[keyof typeof APIWizardStep];
 
 const apiWizardStepDefinitions = [
+  { id: APIWizardStep.ADD_DATA, title: 'Add data' },
   { id: APIWizardStep.ADD_TOPIC, title: 'Add a topic' },
   { id: APIWizardStep.ADD_USER, title: 'Add a user' },
   { id: APIWizardStep.CONNECT_CLUSTER, title: 'Connect cluster' },
@@ -137,16 +134,6 @@ export const APIConnectWizard = () => {
   const addTopicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const addUserStepRef = useRef<BaseStepRef<AddUserFormData>>(null);
 
-  const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
-    hideInternalTopics: true,
-    staleTime: LONG_LIVED_CACHE_STALE_TIME,
-    refetchOnWindowFocus: false,
-  });
-  const { data: usersList } = useListUsersQuery(undefined, {
-    staleTime: LONG_LIVED_CACHE_STALE_TIME,
-    refetchOnWindowFocus: false,
-  });
-
   const handleNext = async (methods: APIWizardStepperSteps) => {
     switch (methods.current.id) {
       case APIWizardStep.ADD_TOPIC: {
@@ -187,9 +174,9 @@ export const APIConnectWizard = () => {
   };
 
   const handleCancel = useCallback(() => {
-    navigate('/overview');
     resetApiWizardStore();
-    window.location.reload();
+    navigate('/overview');
+    window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
   }, [navigate, resetApiWizardStore]);
 
   useEffect(() => {
@@ -202,7 +189,6 @@ export const APIConnectWizard = () => {
     });
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: shouldn't need to be re-run for any dependency changes
   useEffect(() => {
     useAPIWizardStore.persist.rehydrate();
     return () => {
@@ -212,16 +198,17 @@ export const APIConnectWizard = () => {
         resetApiWizardStore();
       }
     };
-  }, []);
+  }, [resetApiWizardStore]);
 
-  const handleFinish = useCallback(() => {
+  const handleCreate = useCallback(() => {
     resetApiWizardStore();
     navigate('/overview');
+    window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
   }, [navigate, resetApiWizardStore]);
 
   return (
     <PageContent>
-      <APIWizardStepper.Provider className="space-y-2">
+      <APIWizardStepper.Provider className="space-y-2" initialStep={APIWizardStep.ADD_TOPIC}>
         {({ methods }) => {
           const isCurrentStepLoading = getCurrentStepLoading(methods.current.id);
 
@@ -231,23 +218,27 @@ export const APIConnectWizard = () => {
                 <div className="flex flex-col space-y-2 text-center">
                   <APIWizardStepper.Navigation>
                     {apiWizardStepDefinitions.map((step) => (
-                      <APIWizardStepper.Step key={step.id} of={step.id} onClick={() => methods.goTo(step.id)}>
+                      <APIWizardStepper.Step
+                        key={step.id}
+                        of={step.id}
+                        onClick={() => {
+                          if (step.id === APIWizardStep.ADD_DATA) {
+                            navigate('/get-started?type=input');
+                            window.location.reload(); // Required because we want to load Cloud UI's get-started page.
+                          } else {
+                            methods.goTo(step.id);
+                          }
+                        }}
+                      >
                         <APIWizardStepper.Title>{step.title}</APIWizardStepper.Title>
                       </APIWizardStepper.Step>
                     ))}
                   </APIWizardStepper.Navigation>
                 </div>
                 {methods.switch({
-                  [APIWizardStep.ADD_TOPIC]: () => (
-                    <AddTopicStep defaultTopicName={topicName} ref={addTopicStepRef} topicList={topicList.topics} />
-                  ),
+                  [APIWizardStep.ADD_TOPIC]: () => <AddTopicStep defaultTopicName={topicName} ref={addTopicStepRef} />,
                   [APIWizardStep.ADD_USER]: () => (
-                    <AddUserStep
-                      defaultUsername={username}
-                      ref={addUserStepRef}
-                      topicName={topicName}
-                      usersList={usersList?.users ?? []}
-                    />
+                    <AddUserStep defaultUsername={username} ref={addUserStepRef} topicName={topicName} />
                   ),
                   [APIWizardStep.CONNECT_CLUSTER]: () => (
                     <HowToConnectStep saslMechanism={saslMechanism} topicName={topicName} username={username} />
@@ -257,7 +248,18 @@ export const APIConnectWizard = () => {
               <APIWizardStepper.Controls className="justify-between">
                 <div className="flex gap-2">
                   {!(methods.isFirst || methods.isLast) && (
-                    <Button onClick={methods.prev} type="button" variant="secondary">
+                    <Button
+                      onClick={
+                        methods.current.id === APIWizardStep.ADD_TOPIC
+                          ? () => {
+                              navigate('/get-started?type=input');
+                              window.location.reload(); // Required because we want to load Cloud UI's get-started page.
+                            }
+                          : methods.prev
+                      }
+                      type="button"
+                      variant="secondary"
+                    >
                       <ChevronLeftIcon />
                       Previous
                     </Button>
@@ -274,8 +276,8 @@ export const APIConnectWizard = () => {
                   )}
 
                   {methods.isLast ? (
-                    <Button onClick={handleFinish} type="button">
-                      Finish
+                    <Button onClick={handleCreate} type="button">
+                      Create
                     </Button>
                   ) : (
                     <Button disabled={isCurrentStepLoading} onClick={() => handleNext(methods)}>

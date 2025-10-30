@@ -119,7 +119,7 @@ export const AddContextualVariablesCard = ({
           {allVariables.length > 0 && (
             <Collapsible onOpenChange={setIsOpen} open={isOpen}>
               <div className="flex flex-col gap-2">
-                <Text className="font-medium text-sm">Available Variables:</Text>
+                <Text className="font-medium text-sm">Available variables:</Text>
                 <div className="flex flex-wrap gap-2">
                   {visibleVariables.used.map((variable) => (
                     <Badge

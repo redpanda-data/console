@@ -2,7 +2,7 @@ import { type ComponentName, componentLogoMap } from 'assets/connectors/componen
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { ChoiceboxItem } from 'components/redpanda-ui/components/choicebox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { CheckIcon, Waypoints } from 'lucide-react';
 import { AnimatePresence, type MotionProps, motion } from 'motion/react';
@@ -65,7 +65,7 @@ export const ConnectTile = ({
       {/* padding right to compensate for the absolute position of the logo */}
       <div className="relative flex h-full w-full items-center gap-2 pr-8">
         <div className="flex flex-col gap-1">
-          <Text className="truncate font-medium">{component.name}</Text>
+          <InlineCode className="truncate bg-background px-0 py-0 font-semibold text-md">{component.name}</InlineCode>
           <span>
             {component.status && component.status !== 'stable' && component.name !== 'redpanda' && (
               <Badge size="sm" variant="gray">

@@ -30,17 +30,40 @@ export const useOnboardingWizardDataStore = create<
   Partial<OnboardingWizardFormData> & {
     setWizardData: (data: Partial<OnboardingWizardFormData>) => void;
     reset: () => void;
+    _hasHydrated: boolean;
+    setHasHydrated: (state: boolean) => void;
   }
 >()(
   persist(
     (set, get) => ({
       ...initialWizardData,
+      _hasHydrated: false,
       setWizardData: (data) => set(data),
-      reset: () => set({ ...initialWizardData, setWizardData: get().setWizardData, reset: get().reset }, true),
+      reset: () => {
+        sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
+        return set(
+          {
+            ...initialWizardData,
+            setWizardData: get().setWizardData,
+            reset: get().reset,
+            _hasHydrated: false,
+            setHasHydrated: get().setHasHydrated,
+          },
+          true
+        );
+      },
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
     }),
     {
       name: CONNECT_WIZARD_CONNECTOR_KEY,
       storage: createFlatStorage<Partial<OnboardingWizardFormData>>(),
+      partialize: (state) => ({
+        input: state.input,
+        output: state.output,
+      }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
@@ -67,17 +90,43 @@ export const useOnboardingUserDataStore = create<
   reset: () => set({ ...initialUserData, setUserData: get().setUserData, reset: get().reset }, true),
 }));
 
+type OnboardingYamlContent = {
+  yamlContent: undefined | string;
+};
+
+const initialYamlContent: OnboardingYamlContent = {
+  yamlContent: undefined,
+};
+
+export const useOnboardingYamlContentStore = create<
+  OnboardingYamlContent & {
+    setYamlContent: (data: OnboardingYamlContent) => void;
+    reset: () => void;
+  }
+>()((set, get) => ({
+  ...initialYamlContent,
+  setYamlContent: (data) => set(data),
+  reset: () => set({ ...initialYamlContent, setYamlContent: get().setYamlContent, reset: get().reset }, true),
+}));
+
 export const useResetOnboardingWizardStore = () =>
   useCallback(() => {
     useOnboardingWizardDataStore.getState().reset();
     useOnboardingTopicDataStore.getState().reset();
     useOnboardingUserDataStore.getState().reset();
+    useOnboardingYamlContentStore.getState().reset();
   }, []);
 
 // Imperative API for non-hook contexts (class components, utility functions)
 export const onboardingWizardStore = {
   getWizardData: () => {
-    const { setWizardData: _, reset: __, ...data } = useOnboardingWizardDataStore.getState();
+    const {
+      setWizardData: _,
+      reset: __,
+      _hasHydrated: ___,
+      setHasHydrated: ____,
+      ...data
+    } = useOnboardingWizardDataStore.getState();
     return data;
   },
   getTopicData: () => {
@@ -88,13 +137,20 @@ export const onboardingWizardStore = {
     const { setUserData: _, reset: __, ...data } = useOnboardingUserDataStore.getState();
     return data;
   },
+  getYamlContent: () => {
+    const { setYamlContent: _, reset: __, ...data } = useOnboardingYamlContentStore.getState();
+    return data;
+  },
+  hasHydrated: () => useOnboardingWizardDataStore.getState()._hasHydrated,
   setWizardData: (data: Partial<OnboardingWizardFormData>) =>
     useOnboardingWizardDataStore.getState().setWizardData(data),
   setTopicData: (data: Partial<MinimalTopicData>) => useOnboardingTopicDataStore.getState().setTopicData(data),
   setUserData: (data: Partial<MinimalUserData>) => useOnboardingUserDataStore.getState().setUserData(data),
+  setYamlContent: (data: OnboardingYamlContent) => useOnboardingYamlContentStore.getState().setYamlContent(data),
   reset: () => {
     useOnboardingWizardDataStore.getState().reset();
     useOnboardingTopicDataStore.getState().reset();
     useOnboardingUserDataStore.getState().reset();
+    useOnboardingYamlContentStore.getState().reset();
   },
 };

@@ -24,19 +24,25 @@ import {
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { isFeatureFlagEnabled } from 'config';
+import { useDebounce } from 'hooks/use-debounce';
 import { AlertCircle, PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
+import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { Link } from 'react-router-dom';
-import { onboardingWizardStore, useOnboardingWizardDataStore } from 'state/onboarding-wizard-store';
+import { Link, useSearchParams } from 'react-router-dom';
+import {
+  onboardingWizardStore,
+  useOnboardingWizardDataStore,
+  useOnboardingYamlContentStore,
+} from 'state/onboarding-wizard-store';
 
 import { extractLintHintsFromError, formatPipelineError } from './errors';
 import { CreatePipelineSidebar } from './onboarding/create-pipeline-sidebar';
@@ -111,6 +117,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           onClick={action(() => this.createPipeline(enableRpcnTiles ? undefined : toast))}
           variant="secondary"
         >
+          {this.isCreating && <Spinner />}
           {this.isCreating ? 'Creating...' : 'Create'}
         </NewButton>
       );
@@ -122,13 +129,13 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           <UIText>
             For help creating your pipeline, see our{' '}
             <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" target="_blank">
-              quickstart documentation
+              quickstart
             </UILink>
-            , our{' '}
+            ,{' '}
             <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" target="_blank">
               library of examples
             </UILink>
-            , or our{' '}
+            , and{' '}
             <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" target="_blank">
               connector catalog
             </UILink>
@@ -160,7 +167,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           </FormField>
           <FormField
             description="One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines."
-            label="Compute Units"
+            label="Compute units"
             w={500}
           >
             <NumberInput
@@ -384,46 +391,30 @@ export const PipelineEditor = observer(
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [contextualVarsAutocomplete, setContextualVarsAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
-    const persistedInputConnectionName = useOnboardingWizardDataStore((state) => state.input?.connectionName);
-    const persistedInputConnectionType = useOnboardingWizardDataStore((state) => state.input?.connectionType);
-    const persistedOutputConnectionName = useOnboardingWizardDataStore((state) => state.output?.connectionName);
-    const persistedOutputConnectionType = useOnboardingWizardDataStore((state) => state.output?.connectionType);
+    const persistedYamlContent = useOnboardingYamlContentStore((state) => state.yamlContent);
+    const hasHydrated = useOnboardingWizardDataStore((state) => state._hasHydrated);
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
-    // Track actual editor content to keep sidebar in sync with editor's real state
     const [actualEditorContent, setActualEditorContent] = useState<string>('');
+    const hasInitializedServerless = useRef(false);
 
-    const persistedConnectComponentTemplate = useMemo(() => {
-      if (!(persistedInputConnectionName && persistedInputConnectionType)) {
-        return undefined;
-      }
-      const inputTemplate = getConnectTemplate({
-        connectionName: persistedInputConnectionName,
-        connectionType: persistedInputConnectionType,
-        showOptionalFields: false,
+    const debouncedSyncToStore = useDebounce((yamlContent: string) => {
+      useOnboardingYamlContentStore.getState().setYamlContent({
+        yamlContent,
       });
-      if (persistedOutputConnectionName && persistedOutputConnectionType) {
-        // Merge output into the existing input template to avoid duplicate top-level blocks
-        const outputTemplate = getConnectTemplate({
-          connectionName: persistedOutputConnectionName,
-          connectionType: persistedOutputConnectionType,
-          showOptionalFields: false,
-          existingYaml: inputTemplate,
-        });
-        return outputTemplate;
-      }
-      return inputTemplate;
-    }, [
-      persistedInputConnectionName,
-      persistedInputConnectionType,
-      persistedOutputConnectionName,
-      persistedOutputConnectionType,
-    ]);
+    }, 500);
 
-    const yaml = useMemo(
-      () => (enableRpcnTiles && persistedConnectComponentTemplate ? persistedConnectComponentTemplate : p.yaml),
-      [enableRpcnTiles, persistedConnectComponentTemplate, p.yaml]
-    );
+    const yaml = useMemo(() => {
+      // If wizard is enabled and we have persisted yaml content, use that
+      if (enableRpcnTiles && persistedYamlContent) {
+        return persistedYamlContent;
+      }
+      // Otherwise fall back to prop
+      return p.yaml;
+    }, [enableRpcnTiles, persistedYamlContent, p.yaml]);
+
+    const [searchParams] = useSearchParams();
+    const isServerlessMode = searchParams.get('serverless') === 'true';
 
     const { data: secretsData, refetch: refetchSecrets } = useListSecretsQuery();
     const existingSecrets = useMemo(() => {
@@ -447,7 +438,9 @@ export const PipelineEditor = observer(
         return;
       }
 
+      // Always get current YAML from editor instance (not store)
       const currentValue = editorInstance.getValue();
+
       const mergedYaml = getConnectTemplate({
         connectionName,
         connectionType,
@@ -460,7 +453,59 @@ export const PipelineEditor = observer(
       }
 
       editorInstance.setValue(mergedYaml);
+
+      // Immediately sync to store (bypass debounce for user-initiated actions)
+      if (enableRpcnTiles) {
+        useOnboardingYamlContentStore.getState().setYamlContent({
+          yamlContent: mergedYaml,
+        });
+      }
     };
+
+    // On initial mount in serverless mode, generate YAML from persisted connectors
+    // Wait for hydration to complete before initializing
+    // biome-ignore lint/correctness/useExhaustiveDependencies: Only runs once after hydration, ref prevents re-initialization
+    useEffect(() => {
+      const shouldInitialize = enableRpcnTiles && isServerlessMode && hasHydrated && !hasInitializedServerless.current;
+
+      if (!shouldInitialize) {
+        return;
+      }
+
+      const wizardData = useOnboardingWizardDataStore.getState();
+      const inputData = wizardData.input;
+      const outputData = wizardData.output;
+
+      if (inputData?.connectionName && inputData?.connectionType) {
+        let yamlContent = '';
+
+        // Generate input template
+        yamlContent =
+          getConnectTemplate({
+            connectionName: inputData.connectionName,
+            connectionType: inputData.connectionType,
+            showOptionalFields: false,
+            existingYaml: yamlContent,
+          }) || yamlContent;
+
+        // Generate output template if exists
+        if (outputData?.connectionName && outputData?.connectionType) {
+          yamlContent =
+            getConnectTemplate({
+              connectionName: outputData.connectionName,
+              connectionType: outputData.connectionType,
+              showOptionalFields: false,
+              existingYaml: yamlContent,
+            }) || yamlContent;
+        }
+
+        if (yamlContent) {
+          useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent });
+        }
+      }
+
+      hasInitializedServerless.current = true;
+    }, [hasHydrated]);
 
     useEffect(() => {
       return () => {
@@ -476,29 +521,31 @@ export const PipelineEditor = observer(
     }, [secretAutocomplete, contextualVarsAutocomplete]);
 
     // Sync actual editor content with editor instance
-    // This ensures sidebar always sees what's actually in the editor
     useEffect(() => {
       if (!editorInstance) {
         return;
       }
 
-      // Read actual content from editor after mount
       const currentValue = editorInstance.getValue();
       setActualEditorContent(currentValue);
 
-      // Also sync to parent if different
       if (currentValue !== p.yaml) {
         p.onChange?.(currentValue);
       }
 
-      // Listen for content changes
       const disposable = editorInstance.onDidChangeModelContent(() => {
         const newValue = editorInstance.getValue();
         setActualEditorContent(newValue);
+
+        if (enableRpcnTiles) {
+          debouncedSyncToStore(newValue);
+        }
       });
 
-      return () => disposable.dispose();
-    }, [editorInstance, p.onChange, p.yaml]);
+      return () => {
+        disposable.dispose();
+      };
+    }, [editorInstance, enableRpcnTiles, debouncedSyncToStore, p.onChange, p.yaml]);
 
     return (
       <Tabs

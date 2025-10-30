@@ -250,7 +250,7 @@ export const ConnectTiles = memo(
                     hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable
                     pipelines.{' '}
                     <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
-                      Learn more.
+                      Learn more
                     </Link>
                   </Text>
                 )}
@@ -261,7 +261,7 @@ export const ConnectTiles = memo(
             <Form {...form}>
               {!hideFilters && (
                 <div className="sticky top-0 z-10 mb-0 flex flex-col gap-4 border-b-2 bg-background pt-2 pb-4">
-                  <div className="flex justify-between gap-4">
+                  <div className="flex gap-4">
                     <Label className="w-[240px]">
                       Search connectors
                       <Input
@@ -286,7 +286,7 @@ export const ConnectTiles = memo(
                           value: category.id,
                           label: category.name,
                         }))}
-                        placeholder="Databases, Social..."
+                        placeholder="All"
                         value={selectedCategories}
                         width="full"
                       />
