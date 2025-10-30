@@ -1,16 +1,12 @@
-import { create } from '@bufbuild/protobuf';
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { AnimatePresence } from 'motion/react';
-import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useLegacyListTopicsQuery } from 'react-query/api/topic';
-import { useListUsersQuery } from 'react-query/api/user';
-import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useOnboardingTopicDataStore,
@@ -78,6 +74,17 @@ export const ConnectOnboardingWizard = ({
     [persistedInputConnectionName]
   );
 
+  // Manually trigger rehydration if store hasn't hydrated yet
+  // This handles the case where we navigate back to the wizard after reset
+  useEffect(() => {
+    const store = useOnboardingWizardDataStore;
+    const hasHydrated = store.getState()._hasHydrated;
+
+    if (!hasHydrated) {
+      store.persist.rehydrate();
+    }
+  }, []);
+
   useEffect(() => {
     return () => {
       // Only clear if we're navigating away from the wizard
@@ -112,16 +119,6 @@ export const ConnectOnboardingWizard = ({
   const addOutputStepRef = useRef<BaseStepRef<ConnectTilesListFormData>>(null);
   const addTopicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const addUserStepRef = useRef<BaseStepRef<AddUserFormData>>(null);
-
-  const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
-    hideInternalTopics: true,
-    staleTime: LONG_LIVED_CACHE_STALE_TIME,
-    refetchOnWindowFocus: false,
-  });
-  const { data: usersList } = useListUsersQuery(undefined, {
-    staleTime: LONG_LIVED_CACHE_STALE_TIME,
-    refetchOnWindowFocus: false,
-  });
 
   useEffect(() => {
     runInAction(() => {
@@ -299,6 +296,7 @@ export const ConnectOnboardingWizard = ({
       onCancelProp();
     } else if (searchParams.get('serverless') === 'true') {
       navigate('/overview');
+      window.location.reload();
     } else {
       navigate('/connect-clusters');
     }
@@ -366,7 +364,6 @@ export const ConnectOnboardingWizard = ({
                         defaultTopicName={persistedTopicName}
                         key="add-topic-step"
                         ref={addTopicStepRef}
-                        topicList={topicList.topics}
                       />
                     ),
                     [WizardStep.ADD_USER]: () => (
@@ -377,7 +374,6 @@ export const ConnectOnboardingWizard = ({
                         key="add-user-step"
                         ref={addUserStepRef}
                         topicName={persistedTopicName}
-                        usersList={usersList?.users ?? []}
                       />
                     ),
                     [WizardStep.CREATE_CONFIG]: () => (
@@ -417,7 +413,7 @@ export const ConnectOnboardingWizard = ({
                   )}
                   {!methods.isLast && (
                     <Button disabled={isCurrentStepLoading} onClick={() => handleNext(methods)}>
-                      {isCurrentStepLoading ? 'Loading...' : 'Next'} <ChevronRightIcon />
+                      {isCurrentStepLoading ? <Spinner /> : 'Next'} <ChevronRightIcon />
                     </Button>
                   )}
                 </div>

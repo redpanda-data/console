@@ -24,6 +24,7 @@ import {
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
@@ -33,10 +34,14 @@ import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
+import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { Link } from 'react-router-dom';
-import { onboardingWizardStore, useOnboardingWizardDataStore } from 'state/onboarding-wizard-store';
+import { Link, useSearchParams } from 'react-router-dom';
+import {
+  onboardingWizardStore,
+  useOnboardingWizardDataStore,
+  useOnboardingYamlContentStore,
+} from 'state/onboarding-wizard-store';
 
 import { extractLintHintsFromError, formatPipelineError } from './errors';
 import { CreatePipelineSidebar } from './onboarding/create-pipeline-sidebar';
@@ -111,6 +116,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           onClick={action(() => this.createPipeline(enableRpcnTiles ? undefined : toast))}
           variant="secondary"
         >
+          {this.isCreating && <Spinner />}
           {this.isCreating ? 'Creating...' : 'Create'}
         </NewButton>
       );
@@ -384,46 +390,26 @@ export const PipelineEditor = observer(
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [contextualVarsAutocomplete, setContextualVarsAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
-    const persistedInputConnectionName = useOnboardingWizardDataStore((state) => state.input?.connectionName);
-    const persistedInputConnectionType = useOnboardingWizardDataStore((state) => state.input?.connectionType);
-    const persistedOutputConnectionName = useOnboardingWizardDataStore((state) => state.output?.connectionName);
-    const persistedOutputConnectionType = useOnboardingWizardDataStore((state) => state.output?.connectionType);
+    const persistedYamlContent = useOnboardingYamlContentStore((state) => state.yamlContent);
+    const hasHydrated = useOnboardingWizardDataStore((state) => state._hasHydrated);
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
     // Track actual editor content to keep sidebar in sync with editor's real state
     const [actualEditorContent, setActualEditorContent] = useState<string>('');
+    const debouncedSyncTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const hasInitializedServerless = useRef(false);
 
-    const persistedConnectComponentTemplate = useMemo(() => {
-      if (!(persistedInputConnectionName && persistedInputConnectionType)) {
-        return undefined;
+    const yaml = useMemo(() => {
+      // If wizard is enabled and we have persisted yaml content, use that
+      if (enableRpcnTiles && persistedYamlContent) {
+        return persistedYamlContent;
       }
-      const inputTemplate = getConnectTemplate({
-        connectionName: persistedInputConnectionName,
-        connectionType: persistedInputConnectionType,
-        showOptionalFields: false,
-      });
-      if (persistedOutputConnectionName && persistedOutputConnectionType) {
-        // Merge output into the existing input template to avoid duplicate top-level blocks
-        const outputTemplate = getConnectTemplate({
-          connectionName: persistedOutputConnectionName,
-          connectionType: persistedOutputConnectionType,
-          showOptionalFields: false,
-          existingYaml: inputTemplate,
-        });
-        return outputTemplate;
-      }
-      return inputTemplate;
-    }, [
-      persistedInputConnectionName,
-      persistedInputConnectionType,
-      persistedOutputConnectionName,
-      persistedOutputConnectionType,
-    ]);
+      // Otherwise fall back to prop
+      return p.yaml;
+    }, [enableRpcnTiles, persistedYamlContent, p.yaml]);
 
-    const yaml = useMemo(
-      () => (enableRpcnTiles && persistedConnectComponentTemplate ? persistedConnectComponentTemplate : p.yaml),
-      [enableRpcnTiles, persistedConnectComponentTemplate, p.yaml]
-    );
+    const [searchParams] = useSearchParams();
+    const isServerlessMode = searchParams.get('serverless') === 'true';
 
     const { data: secretsData, refetch: refetchSecrets } = useListSecretsQuery();
     const existingSecrets = useMemo(() => {
@@ -447,7 +433,9 @@ export const PipelineEditor = observer(
         return;
       }
 
+      // Always get current YAML from editor instance (not store)
       const currentValue = editorInstance.getValue();
+
       const mergedYaml = getConnectTemplate({
         connectionName,
         connectionType,
@@ -460,7 +448,59 @@ export const PipelineEditor = observer(
       }
 
       editorInstance.setValue(mergedYaml);
+
+      // Immediately sync to store (bypass debounce for user-initiated actions)
+      if (enableRpcnTiles) {
+        useOnboardingYamlContentStore.getState().setYamlContent({
+          yamlContent: mergedYaml,
+        });
+      }
     };
+
+    // On initial mount in serverless mode, generate YAML from persisted connectors
+    // Wait for hydration to complete before initializing
+    // biome-ignore lint/correctness/useExhaustiveDependencies: Only runs once after hydration, ref prevents re-initialization
+    useEffect(() => {
+      const shouldInitialize = enableRpcnTiles && isServerlessMode && hasHydrated && !hasInitializedServerless.current;
+
+      if (!shouldInitialize) {
+        return;
+      }
+
+      const wizardData = useOnboardingWizardDataStore.getState();
+      const inputData = wizardData.input;
+      const outputData = wizardData.output;
+
+      if (inputData?.connectionName && inputData?.connectionType) {
+        let yamlContent = '';
+
+        // Generate input template
+        yamlContent =
+          getConnectTemplate({
+            connectionName: inputData.connectionName,
+            connectionType: inputData.connectionType,
+            showOptionalFields: false,
+            existingYaml: yamlContent,
+          }) || yamlContent;
+
+        // Generate output template if exists
+        if (outputData?.connectionName && outputData?.connectionType) {
+          yamlContent =
+            getConnectTemplate({
+              connectionName: outputData.connectionName,
+              connectionType: outputData.connectionType,
+              showOptionalFields: false,
+              existingYaml: yamlContent,
+            }) || yamlContent;
+        }
+
+        if (yamlContent) {
+          useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent });
+        }
+      }
+
+      hasInitializedServerless.current = true;
+    }, [hasHydrated]);
 
     useEffect(() => {
       return () => {
@@ -495,10 +535,31 @@ export const PipelineEditor = observer(
       const disposable = editorInstance.onDidChangeModelContent(() => {
         const newValue = editorInstance.getValue();
         setActualEditorContent(newValue);
+
+        // Debounced sync to store (only if wizard is enabled)
+        if (enableRpcnTiles) {
+          // Clear existing timer
+          if (debouncedSyncTimerRef.current) {
+            clearTimeout(debouncedSyncTimerRef.current);
+          }
+
+          // Set new timer for 500ms debounce
+          debouncedSyncTimerRef.current = setTimeout(() => {
+            useOnboardingYamlContentStore.getState().setYamlContent({
+              yamlContent: newValue,
+            });
+          }, 500);
+        }
       });
 
-      return () => disposable.dispose();
-    }, [editorInstance, p.onChange, p.yaml]);
+      return () => {
+        disposable.dispose();
+        // Clear timer on cleanup
+        if (debouncedSyncTimerRef.current) {
+          clearTimeout(debouncedSyncTimerRef.current);
+        }
+      };
+    }, [editorInstance, enableRpcnTiles, p.onChange, p.yaml]);
 
     return (
       <Tabs

@@ -1,6 +1,4 @@
-import { createConnectQueryKey } from '@connectrpc/connect-query';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
 import { generatePassword } from 'components/pages/acls/user-create';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -33,15 +31,13 @@ import { CircleAlert, RefreshCcw, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { NO_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { SASL_MECHANISMS } from 'utils/user';
 
-import { listACLs } from '../../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
-import type { ListUsersResponse_User } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
-import { useCreateACLMutation, useListACLsQuery } from '../../../../react-query/api/acl';
-import { useCreateSecretMutation } from '../../../../react-query/api/secret';
-import { useCreateUserMutation } from '../../../../react-query/api/user';
-import type { BaseStepRef, OperationResult, StepSubmissionResult } from '../types/wizard';
+import { useListACLsQuery } from '../../../../react-query/api/acl';
+import { useListUsersQuery } from '../../../../react-query/api/user';
+import type { BaseStepRef, StepSubmissionResult } from '../types/wizard';
 import {
   type AddUserFormData,
   addUserFormSchema,
@@ -50,25 +46,27 @@ import {
 } from '../types/wizard';
 import {
   checkUserHasTopicReadWritePermissions,
-  configureUserPermissions,
-  createKafkaUser,
-  createPasswordSecret,
-  createUsernameSecret,
   getACLOperationName,
+  useCreateUserWithSecretsMutation,
 } from '../utils/user';
 
 interface AddUserStepProps {
-  usersList: ListUsersResponse_User[];
   defaultUsername?: string;
   defaultSaslMechanism?: (typeof SASL_MECHANISMS)[number];
   topicName?: string;
 }
 
 export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepProps & MotionProps>(
-  ({ usersList, defaultUsername, defaultSaslMechanism, topicName, ...motionProps }, ref) => {
+  ({ defaultUsername, defaultSaslMechanism, topicName, ...motionProps }, ref) => {
+    const { data: usersList } = useListUsersQuery(undefined, {
+      refetchOnMount: 'always',
+      staleTime: NO_LIVED_CACHE_STALE_TIME,
+      refetchOnWindowFocus: true,
+    });
+
     const initialUserOptions = useMemo(
       () =>
-        usersList.map((user) => ({
+        (usersList?.users ?? []).map((user) => ({
           value: user.name || '',
           label: user.name || '',
         })),
@@ -78,10 +76,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
     const [userSelectionType, setUserSelectionType] = useState<CreatableSelectionType>(
       userOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
     );
-    const queryClient = useQueryClient();
-    const createUserMutation = useCreateUserMutation();
-    const createACLMutation = useCreateACLMutation();
-    const createSecretMutation = useCreateSecretMutation({ skipInvalidation: true });
+    const createUserWithSecretsMutation = useCreateUserWithSecretsMutation();
 
     const form = useForm<AddUserFormData>({
       resolver: zodResolver(addUserFormSchema),
@@ -106,7 +101,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
       if (!watchedUsername) {
         return undefined;
       }
-      return usersList?.find((user) => user.name === watchedUsername);
+      return usersList?.users?.find((user) => user.name === watchedUsername);
     }, [watchedUsername, usersList]);
 
     const { data: aclData, refetch: refetchACLs } = useListACLsQuery(undefined, {
@@ -130,7 +125,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
       return checkUserHasTopicReadWritePermissions(aclData.aclResources, topicName, existingUserSelected.name);
     }, [existingUserSelected, topicName, aclData]);
 
-    const isLoading = createUserMutation.isPending || createACLMutation.isPending || createSecretMutation.isPending;
+    const isLoading = createUserWithSecretsMutation.isPending;
     const isReadOnly = Boolean(existingUserSelected) || userSelectionType === CreatableSelectionOptions.EXISTING;
 
     const generateNewPassword = useCallback(() => {
@@ -153,93 +148,15 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
 
     const handleSubmit = useCallback(
       async (userData: AddUserFormData): Promise<StepSubmissionResult<AddUserFormData>> => {
-        const operations: OperationResult[] = [];
+        const result = await createUserWithSecretsMutation.mutateAsync({
+          userData,
+          topicName,
+          existingUserSelected: Boolean(existingUserSelected),
+        });
 
-        if (existingUserSelected) {
-          return {
-            success: true,
-            message: `Using existing user "${userData.username}"`,
-            data: userData,
-            operations: [
-              {
-                operation: 'Select existing user',
-                success: true,
-                message: `Using existing user "${userData.username}"`,
-              },
-            ],
-          };
-        }
-
-        const userResult = await createKafkaUser(userData, createUserMutation);
-        operations.push(userResult);
-
-        if (!userResult.success) {
-          return {
-            success: false,
-            message: 'Failed to create user',
-            error: userResult.error,
-            data: userData,
-            operations,
-          };
-        }
-
-        if (topicName && userData.superuser) {
-          const aclResult = await configureUserPermissions(topicName, userData.username, createACLMutation);
-          operations.push(aclResult);
-
-          if (!aclResult.success) {
-            return {
-              success: false,
-              message: 'User created but failed to configure permissions',
-              error: aclResult.error,
-              data: userData,
-              operations,
-            };
-          }
-
-          // Invalidate ACL cache to ensure fresh data on next query
-          await queryClient.invalidateQueries({
-            queryKey: createConnectQueryKey({
-              schema: listACLs,
-              cardinality: 'finite',
-            }),
-            exact: false,
-          });
-        }
-
-        const usernameSecretResult = await createUsernameSecret(userData.username, createSecretMutation);
-        operations.push(usernameSecretResult);
-
-        const passwordSecretResult = await createPasswordSecret(
-          userData.username,
-          userData.password,
-          createSecretMutation
-        );
-        operations.push(passwordSecretResult);
-
-        const allSucceeded = operations.every((op) => op.success);
-        const criticalOps = operations.filter(
-          (op) => op.operation.includes('user') || op.operation.includes('permissions')
-        );
-        const criticalSucceeded = criticalOps.length === 0 || criticalOps.every((op) => op.success);
-
-        let message: string;
-        if (allSucceeded) {
-          message = `Created user "${userData.username}" successfully!`;
-        } else if (criticalSucceeded) {
-          message = `User "${userData.username}" created but some non-critical operations failed`;
-        } else {
-          message = 'Failed to complete user creation';
-        }
-
-        return {
-          success: allSucceeded,
-          message,
-          data: userData,
-          operations,
-        };
+        return result;
       },
-      [existingUserSelected, createUserMutation, topicName, createACLMutation, createSecretMutation, queryClient]
+      [createUserWithSecretsMutation, topicName, existingUserSelected]
     );
 
     const handleUserSelectionTypeChange = useCallback(
@@ -342,7 +259,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                     />
 
                     {watchedUsername !== '' && watchedUsername.length > 0 && (
-                      <Button onClick={handleClearUsername} size="icon" variant="ghost">
+                      <Button disabled={isLoading} onClick={handleClearUsername} size="icon" variant="ghost">
                         <XIcon size={16} />
                       </Button>
                     )}

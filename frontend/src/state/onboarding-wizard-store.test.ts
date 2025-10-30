@@ -154,6 +154,66 @@ describe('Onboarding Wizard Store', () => {
       expect(parsed.input).toBeUndefined();
       expect(parsed.output).toBeUndefined();
     });
+
+    test('should initialize with _hasHydrated as false', () => {
+      const { result } = renderHook(() => useOnboardingWizardDataStore());
+
+      expect(result.current._hasHydrated).toBe(false);
+    });
+
+    test('should reset _hasHydrated to false on reset', () => {
+      const { result } = renderHook(() => useOnboardingWizardDataStore());
+
+      // Simulate hydration complete
+      act(() => {
+        result.current.setHasHydrated(true);
+      });
+
+      expect(result.current._hasHydrated).toBe(true);
+
+      // Add some data
+      act(() => {
+        result.current.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
+      });
+
+      // Reset should clear data AND reset hydration flag
+      act(() => {
+        result.current.reset();
+      });
+
+      expect(result.current.input).toBeUndefined();
+      expect(result.current._hasHydrated).toBe(false);
+    });
+
+    test('should NOT persist _hasHydrated to sessionStorage', () => {
+      const { result } = renderHook(() => useOnboardingWizardDataStore());
+
+      act(() => {
+        result.current.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
+        result.current.setHasHydrated(true);
+      });
+
+      const stored = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
+      expect(stored).toBeTruthy();
+
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        expect(parsed.input).toBeDefined();
+        expect(parsed._hasHydrated).toBeUndefined(); // Should NOT be persisted
+      }
+    });
+
+    test('should allow setting _hasHydrated', () => {
+      const { result } = renderHook(() => useOnboardingWizardDataStore());
+
+      expect(result.current._hasHydrated).toBe(false);
+
+      act(() => {
+        result.current.setHasHydrated(true);
+      });
+
+      expect(result.current._hasHydrated).toBe(true);
+    });
   });
 
   describe('useOnboardingTopicDataStore', () => {
@@ -410,6 +470,31 @@ describe('Onboarding Wizard Store', () => {
       expect(onboardingWizardStore.getWizardData().input).toBeUndefined();
       expect(onboardingWizardStore.getTopicData().topicName).toBeUndefined();
       expect(onboardingWizardStore.getUserData().username).toBeUndefined();
+    });
+
+    test('hasHydrated should return hydration status', () => {
+      // Initially false
+      expect(onboardingWizardStore.hasHydrated()).toBe(false);
+
+      // Set to true
+      act(() => {
+        useOnboardingWizardDataStore.getState().setHasHydrated(true);
+      });
+
+      expect(onboardingWizardStore.hasHydrated()).toBe(true);
+    });
+
+    test('getWizardData should NOT include _hasHydrated in returned data', () => {
+      act(() => {
+        onboardingWizardStore.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
+        useOnboardingWizardDataStore.getState().setHasHydrated(true);
+      });
+
+      const data = onboardingWizardStore.getWizardData();
+
+      expect(data.input).toBeDefined();
+      expect(Object.hasOwn(data, '_hasHydrated')).toBe(false);
+      expect(Object.hasOwn(data, 'setHasHydrated')).toBe(false);
     });
   });
 });

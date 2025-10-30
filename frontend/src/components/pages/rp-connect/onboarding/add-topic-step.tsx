@@ -20,7 +20,7 @@ import { ChevronDown, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type { Topic } from 'state/rest-interfaces';
+import { NO_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { isFalsy } from 'utils/falsy';
 
 import { AdvancedTopicSettings } from './advanced-topic-settings';
@@ -28,8 +28,13 @@ import {
   CreateTopicRequest_Topic_ConfigSchema,
   CreateTopicRequest_TopicSchema,
   CreateTopicRequestSchema,
+  ListTopicsRequestSchema,
 } from '../../../../protogen/redpanda/api/dataplane/v1/topic_pb';
-import { useCreateTopicMutation, useTopicConfigQuery } from '../../../../react-query/api/topic';
+import {
+  useCreateTopicMutation,
+  useLegacyListTopicsQuery,
+  useTopicConfigQuery,
+} from '../../../../react-query/api/topic';
 import { convertRetentionSizeToBytes, convertRetentionTimeToMs } from '../../../../utils/topic-utils';
 import {
   type AddTopicFormData,
@@ -42,17 +47,22 @@ import {
 import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FORM_DEFAULTS } from '../utils/topic';
 
 interface AddTopicStepProps {
-  topicList: Topic[] | undefined;
   defaultTopicName?: string;
 }
 
 export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps & MotionProps>(
-  ({ topicList, defaultTopicName, ...motionProps }, ref) => {
+  ({ defaultTopicName, ...motionProps }, ref) => {
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+
+    const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
+      hideInternalTopics: true,
+      staleTime: NO_LIVED_CACHE_STALE_TIME,
+      refetchOnWindowFocus: true,
+    });
 
     const initialTopicOptions = useMemo(
       () =>
-        topicList?.map((topic) => ({
+        topicList?.topics?.map((topic) => ({
           value: topic.topicName,
           label: topic.topicName,
         })) ?? [],
@@ -94,7 +104,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       if (!watchedTopicName) {
         return undefined;
       }
-      return topicList?.find((topic) => topic.topicName === watchedTopicName);
+      return topicList?.topics?.find((topic) => topic.topicName === watchedTopicName);
     }, [watchedTopicName, topicList]);
 
     const { data: topicConfig } = useTopicConfigQuery(
@@ -274,7 +284,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                     />
 
                     {watchedTopicName !== '' && watchedTopicName.length > 0 && (
-                      <Button onClick={handleClearTopicName} size="icon" variant="ghost">
+                      <Button disabled={isLoading} onClick={handleClearTopicName} size="icon" variant="ghost">
                         <XIcon size={16} />
                       </Button>
                     )}
