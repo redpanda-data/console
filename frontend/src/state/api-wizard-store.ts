@@ -19,6 +19,8 @@ export type APIConnectWizardFormData = {
   connectionName?: string;
 };
 
+const initialAPIWizardData: Partial<APIConnectWizardFormData> = {};
+
 export const useAPIWizardStore = create<
   Partial<APIConnectWizardFormData> & {
     setApiWizardData: (data: Partial<APIConnectWizardFormData>) => void;
@@ -26,12 +28,10 @@ export const useAPIWizardStore = create<
   }
 >()(
   persist(
-    (set) => ({
+    (set, get) => ({
+      ...initialAPIWizardData,
       setApiWizardData: (data) => set(data),
-      reset: () => {
-        set({ connectionName: undefined });
-        sessionStorage.removeItem(API_WIZARD_CONNECTOR_NAME_KEY);
-      },
+      reset: () => set({ ...initialAPIWizardData, setApiWizardData: get().setApiWizardData, reset: get().reset }, true),
     }),
     {
       name: API_WIZARD_CONNECTOR_NAME_KEY,

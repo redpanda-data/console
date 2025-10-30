@@ -22,14 +22,21 @@ import type {
 
 export const CONNECT_WIZARD_CONNECTOR_KEY = 'connect-wizard-connections';
 
+const initialWizardData: Partial<OnboardingWizardFormData> = {};
+const initialTopicData: Partial<MinimalTopicData> = {};
+const initialUserData: Partial<MinimalUserData> = {};
+
 export const useOnboardingWizardDataStore = create<
   Partial<OnboardingWizardFormData> & {
     setWizardData: (data: Partial<OnboardingWizardFormData>) => void;
+    reset: () => void;
   }
 >()(
   persist(
-    (set) => ({
+    (set, get) => ({
+      ...initialWizardData,
       setWizardData: (data) => set(data),
+      reset: () => set({ ...initialWizardData, setWizardData: get().setWizardData, reset: get().reset }, true),
     }),
     {
       name: CONNECT_WIZARD_CONNECTOR_KEY,
@@ -43,9 +50,10 @@ export const useOnboardingTopicDataStore = create<
     setTopicData: (data: Partial<MinimalTopicData>) => void;
     reset: () => void;
   }
->()((set) => ({
+>()((set, get) => ({
+  ...initialTopicData,
   setTopicData: (data) => set(data),
-  reset: () => set({}),
+  reset: () => set({ ...initialTopicData, setTopicData: get().setTopicData, reset: get().reset }, true),
 }));
 
 export const useOnboardingUserDataStore = create<
@@ -53,26 +61,23 @@ export const useOnboardingUserDataStore = create<
     setUserData: (data: Partial<MinimalUserData>) => void;
     reset: () => void;
   }
->()((set) => ({
+>()((set, get) => ({
+  ...initialUserData,
   setUserData: (data) => set(data),
-  reset: () => set({}),
+  reset: () => set({ ...initialUserData, setUserData: get().setUserData, reset: get().reset }, true),
 }));
 
-export const useResetOnboardingWizardStore = () => {
-  return useCallback(() => {
-    useOnboardingWizardDataStore.getState().setWizardData({});
+export const useResetOnboardingWizardStore = () =>
+  useCallback(() => {
+    useOnboardingWizardDataStore.getState().reset();
     useOnboardingTopicDataStore.getState().reset();
     useOnboardingUserDataStore.getState().reset();
-
-    // Only remove persisted wizard data
-    sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
   }, []);
-};
 
 // Imperative API for non-hook contexts (class components, utility functions)
 export const onboardingWizardStore = {
   getWizardData: () => {
-    const { setWizardData: _, ...data } = useOnboardingWizardDataStore.getState();
+    const { setWizardData: _, reset: __, ...data } = useOnboardingWizardDataStore.getState();
     return data;
   },
   getTopicData: () => {
@@ -88,10 +93,8 @@ export const onboardingWizardStore = {
   setTopicData: (data: Partial<MinimalTopicData>) => useOnboardingTopicDataStore.getState().setTopicData(data),
   setUserData: (data: Partial<MinimalUserData>) => useOnboardingUserDataStore.getState().setUserData(data),
   reset: () => {
-    useOnboardingWizardDataStore.getState().setWizardData({});
+    useOnboardingWizardDataStore.getState().reset();
     useOnboardingTopicDataStore.getState().reset();
     useOnboardingUserDataStore.getState().reset();
-
-    sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
   },
 };
