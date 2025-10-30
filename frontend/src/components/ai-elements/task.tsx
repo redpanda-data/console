@@ -93,36 +93,89 @@ export type TaskStateProps = {
 };
 
 export const TaskState = ({ state }: TaskStateProps) => {
-  if (state === 'completed') {
-    return (
-      <Badge variant="green" className="rounded-full">
+  switch (state) {
+    case 'completed':
+      return (
+        <Badge variant="green" className="rounded-full">
+          <Text variant="small" className="flex items-center gap-2">
+            <CheckIcon className="size-4" />
+            Completed
+          </Text>
+        </Badge>
+      );
 
-        <Text variant="small" className="flex items-center gap-2"><CheckIcon className="size-4" />Completed</Text>
-      </Badge>
-    );
-  }
-  if (state === 'working') {
-    return (
-      <Badge variant="blue" className="rounded-full">
+    case 'working':
+      return (
+        <Badge variant="blue" className="rounded-full">
+          <Text variant="small" className="flex items-center gap-2">
+            <LoaderIcon className="size-4 animate-spin" />
+            Working
+          </Text>
+        </Badge>
+      );
 
-        <Text variant="small" className="flex items-center gap-2"><LoaderIcon className="size-4 animate-spin" />Working</Text>
-      </Badge>
-    );
-  }
-  if (state === 'failed' || state === 'rejected') {
-    return (
-      <Badge variant="red" className="rounded-full">
+    case 'failed':
+    case 'rejected':
+      return (
+        <Badge variant="red" className="rounded-full">
+          <Text variant="small" className="flex items-center gap-2">
+            <XIcon className="size-4" />
+            Failed
+          </Text>
+        </Badge>
+      );
 
-        <Text variant="small" className="flex items-center gap-2"><XIcon className="size-4" />Failed</Text>
-      </Badge>
-    );
+    case 'submitted':
+      return (
+        <Badge variant="gray" className="rounded-full">
+          <Text variant="small" className="flex items-center gap-2">
+            <ClockIcon className="size-4" />
+            Pending
+          </Text>
+        </Badge>
+      );
+
+    case 'input-required':
+      return (
+        <Badge variant="yellow" className="rounded-full">
+          <Text variant="small" className="flex items-center gap-2">
+            <ClockIcon className="size-4" />
+            Input Required
+          </Text>
+        </Badge>
+      );
+
+    case 'canceled':
+      return (
+        <Badge variant="gray" className="rounded-full">
+          <Text variant="small" className="flex items-center gap-2">
+            <XIcon className="size-4" />
+            Canceled
+          </Text>
+        </Badge>
+      );
+
+    case 'auth-required':
+      return (
+        <Badge variant="yellow" className="rounded-full">
+          <Text variant="small" className="flex items-center gap-2">
+            <ClockIcon className="size-4" />
+            Auth Required
+          </Text>
+        </Badge>
+      );
+
+    case 'unknown':
+      return (
+        <Badge variant="gray" className="rounded-full">
+          <Text variant="small" className="flex items-center gap-2">
+            <ClockIcon className="size-4" />
+            Unknown
+          </Text>
+        </Badge>
+      );
+
+    default:
+      return null;
   }
-  if (state === 'submitted') {
-    return (
-      <Badge variant="gray" className="rounded-full">
-        <Text variant="small" className="flex items-center gap-2"><ClockIcon className="size-4" />Pending</Text>
-      </Badge>
-    );
-  }
-  return null;
 };

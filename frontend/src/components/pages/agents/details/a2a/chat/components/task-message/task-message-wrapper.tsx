@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Loader } from 'components/ai-elements/loader';
 import { Task, TaskContent, TaskTrigger } from 'components/ai-elements/task';
 import type { ReactNode } from 'react';
 
@@ -36,13 +37,21 @@ type TaskMessageWrapperProps = {
  */
 export const TaskMessageWrapper = ({ taskId, taskState, children }: TaskMessageWrapperProps) => {
   const messagePreview = `Task ${taskId}`;
+  const isWorking = taskState === 'working' || taskState === 'submitted';
 
   return (
     <Task defaultOpen={true}>
       <TaskTrigger title={messagePreview}>
         <TaskTriggerContent taskState={taskState} title={messagePreview} />
       </TaskTrigger>
-      <TaskContent>{children}</TaskContent>
+      <TaskContent>
+        {children}
+        {isWorking && (
+          <div className="my-4 flex items-center">
+            <Loader size={24} />
+          </div>
+        )}
+      </TaskContent>
     </Task>
   );
 };

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
+import { deepParseJson } from "utils/json-utils";
 import { CodeBlock } from "./code-block";
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
@@ -83,35 +84,37 @@ export const ToolHeader = ({
   const textToCopy = toolCallId ? `${toolName} (${toolCallId})` : toolName;
 
   return (
-    <CollapsibleTrigger
-      className={cn(
-        "flex w-full items-center justify-between gap-4 p-3",
-        className
-      )}
-      {...props}
-    >
-      <div className="flex items-center gap-2">
-        <WrenchIcon className="size-4 text-muted-foreground" />
-        <Text as="span" variant="small" className="font-medium">
-          {toolName}
-        </Text>
-        {getStatusBadge(state)}
-      </div>
-      <div className="flex items-center gap-2">
-        {toolCallId && (
-          <Text as="span" className="text-muted-foreground/50 text-[0.75rem] font-mono">
-            {toolCallId}
-          </Text>
+    <CollapsibleTrigger asChild>
+      <div
+        className={cn(
+          "flex w-full cursor-pointer items-center justify-between gap-4 p-3",
+          className
         )}
-        <CopyButton
-          content={textToCopy}
-          variant="ghost"
-          size="icon"
-          className="size-7"
-          onClick={(e) => e.stopPropagation()}
-          title={toolCallId ? `Copy: ${toolName} (${toolCallId})` : `Copy: ${toolName}`}
-        />
-        <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+        {...props}
+      >
+        <div className="flex items-center gap-2">
+          <WrenchIcon className="size-4 text-muted-foreground" />
+          <Text as="span" variant="small" className="font-medium">
+            {toolName}
+          </Text>
+          {getStatusBadge(state)}
+        </div>
+        <div className="flex items-center gap-2">
+          {toolCallId && (
+            <Text as="span" className="text-muted-foreground/50 text-[0.75rem] font-mono">
+              {toolCallId}
+            </Text>
+          )}
+          <CopyButton
+            content={textToCopy}
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            onClick={(e) => e.stopPropagation()}
+            title={toolCallId ? `Copy: ${toolName} (${toolCallId})` : `Copy: ${toolName}`}
+          />
+          <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+        </div>
       </div>
     </CollapsibleTrigger>
   );
@@ -139,13 +142,16 @@ export const ToolInput = ({ className, input, ...props }: ToolInputProps) => {
     return null;
   }
 
+  // Parse nested JSON strings before displaying
+  const parsedInput = deepParseJson(input);
+
   return (
     <div className={cn("space-y-2 p-4", className)} {...props}>
       <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
         Parameters
       </h4>
       <div className="rounded-md bg-muted/50">
-        <CodeBlock code={JSON.stringify(input, null, 2)} language="json" />
+        <CodeBlock code={JSON.stringify(parsedInput, null, 2)} language="json" />
       </div>
     </div>
   );
@@ -170,14 +176,17 @@ export const ToolOutput = ({
     return null;
   }
 
-  let Output = <div>{output as ReactNode}</div>;
+  // Parse nested JSON strings before displaying
+  const parsedOutput = deepParseJson(output);
 
-  if (typeof output === "object" && !isValidElement(output)) {
+  let Output = <div>{parsedOutput as ReactNode}</div>;
+
+  if (typeof parsedOutput === "object" && !isValidElement(parsedOutput)) {
     Output = (
-      <CodeBlock code={JSON.stringify(output, null, 2)} language="json" />
+      <CodeBlock code={JSON.stringify(parsedOutput, null, 2)} language="json" />
     );
-  } else if (typeof output === "string") {
-    Output = <CodeBlock code={output} language="json" />;
+  } else if (typeof parsedOutput === "string") {
+    Output = <CodeBlock code={parsedOutput} language="json" />;
   }
 
   return (

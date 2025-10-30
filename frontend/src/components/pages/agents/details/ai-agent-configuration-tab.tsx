@@ -32,9 +32,13 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
+import { SecretSelector } from 'components/ui/secret/secret-selector';
 import { Edit, Plus, Save, Settings, Trash2 } from 'lucide-react';
+import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
   AIAgent_MCPServerSchema,
+  AIAgent_Provider_OpenAISchema,
+  AIAgent_ProviderSchema,
   AIAgentUpdateSchema,
   UpdateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
@@ -42,6 +46,7 @@ import type { MCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb'
 import { useCallback, useMemo, useState } from 'react';
 import { useGetAIAgentQuery, useUpdateAIAgentMutation } from 'react-query/api/ai-agent';
 import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
+import { useListSecretsQuery } from 'react-query/api/secret';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -54,12 +59,18 @@ type LocalAIAgent = {
   model: string;
   maxIterations: number;
   systemPrompt: string;
+  apiKeySecret: string;
   resources: {
     tier: string;
   };
   selectedMcpServers: string[];
   tags: Array<{ key: string; value: string }>;
 };
+
+/**
+ * Regex pattern to extract secret name from template string: ${secrets.SECRET_NAME}
+ */
+const SECRET_TEMPLATE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
 
 /**
  * Detects the provider for a given model name using pattern matching
@@ -71,6 +82,14 @@ const detectProvider = (modelName: string): (typeof PROVIDER_INFO)[keyof typeof 
     }
   }
   return null;
+};
+
+/**
+ * Extracts the secret name from the template string format: ${secrets.SECRET_NAME} -> SECRET_NAME
+ */
+const extractSecretName = (apiKeyTemplate: string): string => {
+  const match = apiKeyTemplate.match(SECRET_TEMPLATE_REGEX);
+  return match ? match[1] : '';
 };
 
 /**
@@ -128,6 +147,7 @@ export const AIAgentConfigurationTab = () => {
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
   const { mutateAsync: updateAIAgent, isPending: isUpdateAIAgentPending } = useUpdateAIAgentMutation();
   const { data: mcpServersData } = useListMCPServersQuery();
+  const { data: secretsData } = useListSecretsQuery();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedAgentData, setEditedAgentData] = useState<LocalAIAgent | null>(null);
@@ -139,6 +159,19 @@ export const AIAgentConfigurationTab = () => {
     }
     return mcpServersData.mcpServers;
   }, [mcpServersData]);
+
+  // Get available secrets for API key dropdown
+  const availableSecrets = useMemo(() => {
+    if (!secretsData?.secrets) {
+      return [];
+    }
+    return secretsData.secrets
+      .filter((secret): secret is NonNullable<typeof secret> & { id: string } => !!secret?.id)
+      .map((secret) => ({
+        id: secret.id,
+        name: secret.id,
+      }));
+  }, [secretsData]);
 
   const getResourceTierFromAgent = useCallback((resources?: { cpuShares?: string; memoryShares?: string }) => {
     if (!resources) {
@@ -160,12 +193,20 @@ export const AIAgentConfigurationTab = () => {
     }
 
     if (aiAgentData?.aiAgent) {
+      // Extract the secret name from the provider's apiKey template string
+      const apiKeyTemplate =
+        aiAgentData.aiAgent.provider?.provider.case === 'openai'
+          ? aiAgentData.aiAgent.provider.provider.value.apiKey
+          : '';
+      const apiKeySecret = extractSecretName(apiKeyTemplate);
+
       return {
         displayName: aiAgentData.aiAgent.displayName,
         description: aiAgentData.aiAgent.description,
         model: aiAgentData.aiAgent.model,
         maxIterations: aiAgentData.aiAgent.maxIterations,
         systemPrompt: aiAgentData.aiAgent.systemPrompt,
+        apiKeySecret,
         resources: { tier: getResourceTierFromAgent(aiAgentData.aiAgent.resources) },
         selectedMcpServers: Object.values(aiAgentData.aiAgent.mcpServers).map((server) => server.id),
         tags: Object.entries(aiAgentData.aiAgent.tags)
@@ -253,6 +294,16 @@ export const AIAgentConfigurationTab = () => {
         }
       }
 
+      // Create provider with updated secret
+      const updatedProvider = create(AIAgent_ProviderSchema, {
+        provider: {
+          case: 'openai',
+          value: create(AIAgent_Provider_OpenAISchema, {
+            apiKey: `\${secrets.${currentData.apiKeySecret}}`,
+          }),
+        },
+      });
+
       await updateAIAgent(
         create(UpdateAIAgentRequestSchema, {
           id,
@@ -261,7 +312,7 @@ export const AIAgentConfigurationTab = () => {
             description: currentData.description,
             model: currentData.model,
             maxIterations: currentData.maxIterations,
-            provider: aiAgentData.aiAgent.provider,
+            provider: updatedProvider,
             systemPrompt: currentData.systemPrompt,
             serviceAccount: aiAgentData.aiAgent.serviceAccount,
             resources: {
@@ -324,9 +375,9 @@ export const AIAgentConfigurationTab = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-4">
         {/* Main Configuration - takes 3/4 width on large screens */}
-        <div className="space-y-6 lg:col-span-3">
+        <div className="space-y-6 xl:col-span-3">
           {/* Agent Configuration Card */}
           <Card className="px-0 py-0" size="full">
             <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
@@ -471,7 +522,7 @@ export const AIAgentConfigurationTab = () => {
         </div>
 
         {/* Resources Card */}
-        <div className="lg:col-span-1">
+        <div className="xl:col-span-1">
           <Card className="px-0 py-0" size="full">
             <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
               <CardTitle className="flex items-center gap-2">
@@ -602,6 +653,33 @@ export const AIAgentConfigurationTab = () => {
                       ) : (
                         <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
                           <Text variant="default">{displayData.maxIterations}</Text>
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="apiKeySecret">OpenAI API Token</Label>
+                      {isEditing ? (
+                        <div className="[&>div]:flex-col [&>div]:items-stretch [&>div]:gap-2">
+                          <SecretSelector
+                            availableSecrets={availableSecrets}
+                            onChange={(value) => {
+                              const currentData = getCurrentData();
+                              if (!currentData) {
+                                return;
+                              }
+                              setEditedAgentData({
+                                ...currentData,
+                                apiKeySecret: value,
+                              });
+                            }}
+                            placeholder="Select from secrets store or create new"
+                            scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
+                            value={displayData.apiKeySecret}
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                          <Text variant="default">{displayData.apiKeySecret || 'No secret configured'}</Text>
                         </div>
                       )}
                     </div>

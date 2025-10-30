@@ -98,11 +98,11 @@ export type TextInputContext = {
 export type PromptInputControllerProps = {
   textInput: TextInputContext;
   attachments: AttachmentsContext;
-  /** INTERNAL: Allows PromptInput to register its file textInput + "open" callback */
-  __registerFileInput: (
-    ref: RefObject<HTMLInputElement | null>,
-    open: () => void
-  ) => void;
+    /** INTERNAL: Allows PromptInput to register its file textInput + "open" callback */
+    __registerFileInput: (
+      ref: RefObject<HTMLInputElement | null>,
+      open: () => void
+    ) => void;
 };
 
 const PromptInputController = createContext<PromptInputControllerProps | null>(

@@ -11,12 +11,13 @@
 
 'use client';
 
-import { Conversation, ConversationContent, ConversationScrollButton } from 'components/ai-elements/conversation';
+import { Conversation, ConversationContent, ConversationEmptyState } from 'components/ai-elements/conversation';
 import { Loader } from 'components/ai-elements/loader';
+import { motion } from 'framer-motion';
+import { useChatScroll } from 'hooks/use-chat-scroll';
 import { useMemo, useRef } from 'react';
 import { getAgentCardUrl } from 'utils/ai-agent.utils';
 
-import { ChatEmptyState } from './components/chat-empty-state';
 import { ChatInput } from './components/chat-input';
 import { ChatMessage } from './components/chat-message';
 import { useChatActions } from './hooks/use-chat-actions';
@@ -43,9 +44,17 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
     setContextSeed,
   });
 
+  // Manage scroll behavior
+  const { endRef, autoScrollPaused, setAutoScrollPaused, onViewportEnter, onViewportLeave } = useChatScroll({
+    agentId: agent.id,
+    isLoading,
+    isStreaming: isLoading, // Use isLoading as streaming indicator
+    messages,
+  });
+
   return (
     <div className="flex h-full w-full flex-col">
-      <Conversation className="flex-1">
+      <Conversation className="relative flex flex-1 flex-col">
         <ConversationContent>
           {isLoadingHistory && (
             <div className="flex h-full items-center justify-center">
@@ -53,25 +62,35 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
             </div>
           )}
 
-          {!isLoadingHistory && messages.length === 0 && <ChatEmptyState />}
+          {!isLoadingHistory && messages.length === 0 && <ConversationEmptyState />}
 
           {!isLoadingHistory &&
             messages.length > 0 &&
             messages.map((message, index) => {
               // Only show loading indicator on the last assistant message to avoid duplicates
               const isLastAssistant = message.role === 'assistant' && index === messages.length - 1;
+
               return <ChatMessage isLoading={isLoading && isLastAssistant} key={message.id} message={message} />;
             })}
+
+          {/* Invisible anchor element at bottom with viewport detection */}
+          <motion.div
+            className="min-h-[24px] min-w-[24px] shrink-0"
+            onViewportEnter={onViewportEnter}
+            onViewportLeave={onViewportLeave}
+            ref={endRef}
+          />
         </ConversationContent>
-        <ConversationScrollButton />
       </Conversation>
 
       <ChatInput
+        autoScrollEnabled={!autoScrollPaused}
         editingMessageId={editingMessageId}
         hasMessages={messages.length > 0}
         input={input}
         isLoading={isLoading}
         model={agent.model}
+        onAutoScrollChange={(enabled) => setAutoScrollPaused(!enabled)}
         onCancelEdit={cancelEdit}
         onClearHistory={clearChat}
         onInputChange={setInput}

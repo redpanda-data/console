@@ -19,6 +19,8 @@ export const Conversation = ({ className, ...props }: ConversationProps) => (
   />
 );
 
+Conversation.displayName = "Conversation";
+
 export type ConversationContentProps = ComponentProps<
   typeof StickToBottom.Content
 >;
