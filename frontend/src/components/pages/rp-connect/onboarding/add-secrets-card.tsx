@@ -96,7 +96,7 @@ export const AddSecretsCard = ({
           {existingSecrets.length > 0 && (
             <Collapsible onOpenChange={setIsOpen} open={isOpen}>
               <div className="flex flex-col gap-2">
-                <Text className="font-medium text-sm">Existing Secrets:</Text>
+                <Text className="font-medium text-sm">Existing secrets:</Text>
                 <div className="flex flex-wrap gap-2">
                   {visibleSecrets.used.map((secret) => (
                     <Badge className="font-mono" icon={<Check />} key={secret} variant="green">
@@ -137,7 +137,7 @@ export const AddSecretsCard = ({
                         icon={<ChevronDown className={cn('transition-transform', isOpen && 'rotate-180')} />}
                         variant="outline"
                       >
-                        {isOpen ? 'Hide' : `${existingSecrets.length - 3} More`}
+                        {isOpen ? 'Hide' : `${existingSecrets.length - 3} more`}
                       </Badge>
                     </CollapsibleTrigger>
                   )}
@@ -147,7 +147,7 @@ export const AddSecretsCard = ({
           )}
           {missingSecrets.length > 0 && (
             <div className="flex flex-col gap-2">
-              <Text className="font-medium text-destructive text-sm">Missing Secrets:</Text>
+              <Text className="font-medium text-destructive text-sm">Missing secrets:</Text>
               <div className="flex flex-wrap gap-2">
                 {missingSecrets.map((secret) => (
                   <Button key={secret} onClick={onOpenDialog} size="sm" variant="destructive">
@@ -166,7 +166,7 @@ export const AddSecretsCard = ({
           )}
           <Button onClick={onOpenDialog} size={existingSecrets.length > 0 ? 'sm' : 'default'} variant="outline">
             <PlusIcon className="h-4 w-4" />
-            {existingSecrets.length > 0 ? 'Add More Secrets' : 'Add Secret'}
+            {existingSecrets.length > 0 ? 'Add more secrets' : 'Add secret'}
           </Button>
         </div>
       </CardContent>

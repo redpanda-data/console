@@ -191,7 +191,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
             <Heading level={2}>Configure a user with permissions</Heading>
           </CardTitle>
           <CardDescription className="mt-4">
-            Select or create a SASL-SCRAM user that will interact with this pipeline.
+            Select or create a SASL-SCRAM user that can interact with this topic.
           </CardDescription>
         </CardHeader>
         <CardContent className="min-h-[300px]">
@@ -274,7 +274,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                     </AlertTitle>
                     <AlertDescription>
                       <Text variant="small">
-                        The user <b>{existingUserSelected.name}</b> is missing the following permissions for the{' '}
+                        The user <b>{existingUserSelected.name}</b> requires the following permissions for the{' '}
                         <b>{topicName}</b> topic:
                         <List>
                           {userTopicPermissions.missingPermissions.map((permission) => (
@@ -283,8 +283,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                         </List>
                       </Text>
                       <Text variant="small">
-                        The user will need both READ and WRITE permissions to interact with the <b>{topicName}</b> topic
-                        within a pipeline. Edit the user's{' '}
+                        Edit the user's{' '}
                         <Link
                           as={ReactRouterLink}
                           className="text-blue-800"
@@ -292,7 +291,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                         >
                           ACLs
                         </Link>{' '}
-                        to add the missing permissions.
+                        to add permissions.
                       </Text>
                     </AlertDescription>
                   </Alert>
@@ -424,16 +423,16 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                                   <AlertTitle>
                                     <Text className="flex items-center gap-2" variant="label">
                                       <CircleAlert size={15} />
-                                      Want custom user permissions?
+                                      Set permissions
                                     </Text>
                                   </AlertTitle>
                                   <AlertDescription>
                                     <Text variant="small">
                                       Configure{' '}
                                       <Link as={ReactRouterLink} rel="noopener noreferrer" to="/security/acls">
-                                        access control lists (ACLs)
-                                      </Link>
-                                      .
+                                        ACLs
+                                      </Link>{' '}
+                                      for custom user permissions.
                                     </Text>
                                   </AlertDescription>
                                 </Alert>

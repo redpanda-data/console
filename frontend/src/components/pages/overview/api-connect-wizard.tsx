@@ -200,7 +200,7 @@ export const APIConnectWizard = () => {
     };
   }, [resetApiWizardStore]);
 
-  const handleFinish = useCallback(() => {
+  const handleCreate = useCallback(() => {
     resetApiWizardStore();
     navigate('/overview');
     window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
@@ -276,8 +276,8 @@ export const APIConnectWizard = () => {
                   )}
 
                   {methods.isLast ? (
-                    <Button onClick={handleFinish} type="button">
-                      Finish
+                    <Button onClick={handleCreate} type="button">
+                      Create
                     </Button>
                   ) : (
                     <Button disabled={isCurrentStepLoading} onClick={() => handleNext(methods)}>

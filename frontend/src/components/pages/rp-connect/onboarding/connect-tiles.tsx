@@ -250,7 +250,7 @@ export const ConnectTiles = memo(
                     hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable
                     pipelines.{' '}
                     <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
-                      Learn more.
+                      Learn more
                     </Link>
                   </Text>
                 )}

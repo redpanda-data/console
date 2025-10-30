@@ -129,13 +129,13 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           <UIText>
             For help creating your pipeline, see our{' '}
             <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" target="_blank">
-              quickstart documentation
+              quickstart
             </UILink>
-            , our{' '}
+            ,{' '}
             <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" target="_blank">
               library of examples
             </UILink>
-            , or our{' '}
+            , and{' '}
             <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" target="_blank">
               connector catalog
             </UILink>
@@ -167,7 +167,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           </FormField>
           <FormField
             description="One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines."
-            label="Compute Units"
+            label="Compute units"
             w={500}
           >
             <NumberInput

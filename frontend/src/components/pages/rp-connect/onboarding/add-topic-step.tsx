@@ -220,7 +220,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
           </CardTitle>
           <CardDescription className="mt-4">
             Select or create a topic to store data for this streaming pipeline. A topic can have multiple clients
-            writing data to it (producers) and reading data from it (consumers)
+            writing data to it (producers) and reading data from it (consumers).
           </CardDescription>
         </CardHeader>
         <CardContent className="min-h-[300px]">
