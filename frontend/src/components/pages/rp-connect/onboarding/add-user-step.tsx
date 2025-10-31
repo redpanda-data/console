@@ -4,7 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/comp
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
-import { Combobox, type ComboboxOption } from 'components/redpanda-ui/components/combobox';
+import { Combobox } from 'components/redpanda-ui/components/combobox';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
   Form,
@@ -29,13 +29,15 @@ import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/
 import { Heading, Link, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { CircleAlert, RefreshCcw, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
+import { ACL_ResourceType } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
+import type { ListUsersResponse_User } from 'protogen/redpanda/api/dataplane/v1/user_pb';
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { SHORT_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { SASL_MECHANISMS } from 'utils/user';
 
 import { useListACLsQuery } from '../../../../react-query/api/acl';
-import { useListUsersQuery } from '../../../../react-query/api/user';
 import type { BaseStepRef, StepSubmissionResult } from '../types/wizard';
 import {
   type AddUserFormData,
@@ -53,21 +55,20 @@ interface AddUserStepProps {
   defaultUsername?: string;
   defaultSaslMechanism?: (typeof SASL_MECHANISMS)[number];
   topicName?: string;
+  usersList?: ListUsersResponse_User[];
+  refetchUsers: () => void;
 }
 
 export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepProps & MotionProps>(
-  ({ defaultUsername, defaultSaslMechanism, topicName, ...motionProps }, ref) => {
-    const { data: usersList, refetch: refetchUsers } = useListUsersQuery();
-
-    const initialUserOptions = useMemo(
+  ({ defaultUsername, defaultSaslMechanism, topicName, usersList, refetchUsers, ...motionProps }, ref) => {
+    const userOptions = useMemo(
       () =>
-        (usersList?.users ?? []).map((user) => ({
+        (usersList ?? []).map((user) => ({
           value: user.name || '',
           label: user.name || '',
         })),
       [usersList]
     );
-    const [userOptions, setUserOptions] = useState<ComboboxOption[]>(initialUserOptions);
     const [userSelectionType, setUserSelectionType] = useState<CreatableSelectionType>(
       userOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
     );
@@ -96,21 +97,21 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
       if (!watchedUsername) {
         return undefined;
       }
-      return usersList?.users?.find((user) => user.name === watchedUsername);
+      return usersList?.find((user) => user.name === watchedUsername);
     }, [watchedUsername, usersList]);
 
-    const { data: aclData, refetch: refetchACLs } = useListACLsQuery(undefined, {
-      enabled: Boolean(existingUserSelected && topicName),
-      refetchOnMount: 'always',
-      staleTime: 0,
-    });
-
-    // Refetch ACLs whenever the selected user changes
-    useEffect(() => {
-      if (existingUserSelected && topicName) {
-        refetchACLs();
+    const { data: aclData, refetch: refetchACLs } = useListACLsQuery(
+      {
+        filter: {
+          resourceType: ACL_ResourceType.TOPIC,
+          resourceName: topicName,
+        },
+      },
+      {
+        enabled: Boolean(existingUserSelected && topicName),
+        staleTime: SHORT_LIVED_CACHE_STALE_TIME,
       }
-    }, [existingUserSelected, topicName, refetchACLs]);
+    );
 
     const userTopicPermissions = useMemo(() => {
       if (!(existingUserSelected && topicName && aclData?.aclResources)) {
@@ -136,10 +137,6 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
       },
       [generateNewPassword]
     );
-
-    useEffect(() => {
-      setUserOptions(initialUserOptions);
-    }, [initialUserOptions]);
 
     const handleSubmit = useCallback(
       async (userData: AddUserFormData): Promise<StepSubmissionResult<AddUserFormData>> => {
@@ -236,6 +233,10 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                                 {...field}
                                 className="w-[300px]"
                                 disabled={isLoading}
+                                onChange={(value) => {
+                                  field.onChange(value);
+                                  refetchACLs();
+                                }}
                                 onOpen={() => refetchUsers()}
                                 options={userOptions}
                                 placeholder="Select a user"

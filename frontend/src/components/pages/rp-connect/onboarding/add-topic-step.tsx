@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
-import { Combobox, type ComboboxOption } from 'components/redpanda-ui/components/combobox';
+import { Combobox } from 'components/redpanda-ui/components/combobox';
 import {
   Form,
   FormControl,
@@ -20,6 +20,7 @@ import { ChevronDown, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import type { Topic } from 'state/rest-interfaces';
 import { isFalsy } from 'utils/falsy';
 
 import { AdvancedTopicSettings } from './advanced-topic-settings';
@@ -27,13 +28,8 @@ import {
   CreateTopicRequest_Topic_ConfigSchema,
   CreateTopicRequest_TopicSchema,
   CreateTopicRequestSchema,
-  ListTopicsRequestSchema,
 } from '../../../../protogen/redpanda/api/dataplane/v1/topic_pb';
-import {
-  useCreateTopicMutation,
-  useLegacyListTopicsQuery,
-  useTopicConfigQuery,
-} from '../../../../react-query/api/topic';
+import { useCreateTopicMutation, useTopicConfigQuery } from '../../../../react-query/api/topic';
 import { convertRetentionSizeToBytes, convertRetentionTimeToMs } from '../../../../utils/topic-utils';
 import {
   type AddTopicFormData,
@@ -47,38 +43,30 @@ import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FO
 
 interface AddTopicStepProps {
   defaultTopicName?: string;
+  topicList?: Topic[];
+  refetchTopics: () => void;
 }
 
 export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps & MotionProps>(
-  ({ defaultTopicName, ...motionProps }, ref) => {
+  ({ defaultTopicName, topicList, refetchTopics, ...motionProps }, ref) => {
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
-    const { data: topicList, refetch: refetchTopics } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
-      hideInternalTopics: true,
-    });
-
-    const initialTopicOptions = useMemo(
+    const topicOptions = useMemo(
       () =>
-        topicList?.topics?.map((topic) => ({
+        topicList?.map((topic) => ({
           value: topic.topicName,
           label: topic.topicName,
         })) ?? [],
       [topicList]
     );
 
-    const [topicOptions, setTopicOptions] = useState<ComboboxOption[]>(initialTopicOptions);
     const [topicSelectionType, setTopicSelectionType] = useState<CreatableSelectionType>(
-      topicOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
+      topicList?.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
     );
 
     const createTopicMutation = useCreateTopicMutation();
 
     const isLoading = createTopicMutation.isPending;
-
-    // Sync topicOptions when topicList updates
-    useEffect(() => {
-      setTopicOptions(initialTopicOptions);
-    }, [initialTopicOptions]);
 
     const defaultValues = useMemo(
       () => ({
@@ -101,7 +89,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       if (!watchedTopicName) {
         return undefined;
       }
-      return topicList?.topics?.find((topic) => topic.topicName === watchedTopicName);
+      return topicList?.find((topic) => topic.topicName === watchedTopicName);
     }, [watchedTopicName, topicList]);
 
     const { data: topicConfig } = useTopicConfigQuery(
@@ -240,7 +228,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                     variant="outline"
                   >
                     <ToggleGroupItem
-                      disabled={topicOptions.length === 0}
+                      disabled={topicList?.length === 0}
                       id={CreatableSelectionOptions.EXISTING}
                       value={CreatableSelectionOptions.EXISTING}
                     >
