@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { Markdown } from '@redpanda-data/ui';
 import PageContent from 'components/misc/page-content';
@@ -9,9 +10,13 @@ import { config } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { ChevronLeftIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
+import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetOnboardingCodeSnippetQuery } from 'react-query/api/onboarding';
 import { useGetServerlessClusterQuery } from 'react-query/api/serverless';
+import { useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { useListUsersQuery } from 'react-query/api/user';
+import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { useNavigate } from 'react-router-dom';
 import { useAPIWizardStore } from 'state/api-wizard-store';
 import { uiState } from 'state/ui-state';
@@ -134,6 +139,17 @@ export const APIConnectWizard = () => {
   const addTopicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const addUserStepRef = useRef<BaseStepRef<AddUserFormData>>(null);
 
+  const { data: usersList, refetch: refetchUsers } = useListUsersQuery(undefined, {
+    staleTime: LONG_LIVED_CACHE_STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: topicList, refetch: refetchTopics } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
+    hideInternalTopics: true,
+    staleTime: LONG_LIVED_CACHE_STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+
   const handleNext = async (methods: APIWizardStepperSteps) => {
     switch (methods.current.id) {
       case APIWizardStep.ADD_TOPIC: {
@@ -236,9 +252,22 @@ export const APIConnectWizard = () => {
                   </APIWizardStepper.Navigation>
                 </div>
                 {methods.switch({
-                  [APIWizardStep.ADD_TOPIC]: () => <AddTopicStep defaultTopicName={topicName} ref={addTopicStepRef} />,
+                  [APIWizardStep.ADD_TOPIC]: () => (
+                    <AddTopicStep
+                      defaultTopicName={topicName}
+                      ref={addTopicStepRef}
+                      refetchTopics={refetchTopics}
+                      topicList={topicList?.topics}
+                    />
+                  ),
                   [APIWizardStep.ADD_USER]: () => (
-                    <AddUserStep defaultUsername={username} ref={addUserStepRef} topicName={topicName} />
+                    <AddUserStep
+                      defaultUsername={username}
+                      ref={addUserStepRef}
+                      refetchUsers={refetchUsers}
+                      topicName={topicName}
+                      usersList={usersList?.users}
+                    />
                   ),
                   [APIWizardStep.CONNECT_CLUSTER]: () => (
                     <HowToConnectStep saslMechanism={saslMechanism} topicName={topicName} username={username} />

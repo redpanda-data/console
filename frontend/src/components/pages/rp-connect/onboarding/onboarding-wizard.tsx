@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -6,7 +7,11 @@ import { Heading } from 'components/redpanda-ui/components/typography';
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { AnimatePresence } from 'motion/react';
+import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { useListUsersQuery } from 'react-query/api/user';
+import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useOnboardingTopicDataStore,
@@ -73,6 +78,17 @@ export const ConnectOnboardingWizard = ({
     () => persistedInputConnectionName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(persistedInputConnectionName),
     [persistedInputConnectionName]
   );
+
+  const { data: usersList, refetch: refetchUsers } = useListUsersQuery(undefined, {
+    staleTime: LONG_LIVED_CACHE_STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: topicList, refetch: refetchTopics } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
+    hideInternalTopics: true,
+    staleTime: LONG_LIVED_CACHE_STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
 
   // Manually trigger rehydration if store hasn't hydrated yet
   // This handles the case where we navigate back to the wizard after reset
@@ -364,6 +380,8 @@ export const ConnectOnboardingWizard = ({
                         defaultTopicName={persistedTopicName}
                         key="add-topic-step"
                         ref={addTopicStepRef}
+                        refetchTopics={refetchTopics}
+                        topicList={topicList?.topics}
                       />
                     ),
                     [WizardStep.ADD_USER]: () => (
@@ -373,7 +391,9 @@ export const ConnectOnboardingWizard = ({
                         defaultUsername={persistedUsername}
                         key="add-user-step"
                         ref={addUserStepRef}
+                        refetchUsers={refetchUsers}
                         topicName={persistedTopicName}
+                        usersList={usersList?.users}
                       />
                     ),
                     [WizardStep.CREATE_CONFIG]: () => (
