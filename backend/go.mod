@@ -5,8 +5,8 @@ go 1.25.1
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.10-20250912141014-52f32327d4b0.1
 	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.10-20250904135917-9feeb2588236.1
-	buf.build/gen/go/redpandadata/core/connectrpc/go v1.19.1-20251018180253-9bdd967d0bf7.2
-	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.10-20251018180253-9bdd967d0bf7.1
+	buf.build/gen/go/redpandadata/core/connectrpc/go v1.19.1-20251022220717-60accfd0b878.2
+	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.10-20251022220717-60accfd0b878.1
 	buf.build/go/protovalidate v1.0.0
 	connectrpc.com/connect v1.19.1
 	connectrpc.com/grpcreflect v1.3.0
