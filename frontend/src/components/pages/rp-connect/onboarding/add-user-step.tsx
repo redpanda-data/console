@@ -33,7 +33,7 @@ import { ACL_ResourceType } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import type { ListUsersResponse_User } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { SHORT_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
+import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { SASL_MECHANISMS } from 'utils/user';
 
@@ -109,7 +109,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
       },
       {
         enabled: Boolean(existingUserSelected && topicName),
-        staleTime: SHORT_LIVED_CACHE_STALE_TIME,
+        staleTime: LONG_LIVED_CACHE_STALE_TIME,
       }
     );
 
