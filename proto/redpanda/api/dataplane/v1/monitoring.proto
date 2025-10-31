@@ -1,0 +1,145 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_info.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/core/admin/v2/kafka_connections.proto";
+
+message ListConnectionsRequest {
+  core.admin.v2.KafkaConnectionState state = 1;
+  string ip_address = 2;
+  string client_id = 3;
+  string client_software_name = 4;
+  string client_software_version = 5;
+  string group_id = 6;
+  string user = 7;
+  int64 idle_ms = 8 [(buf.validate.field).int64.gte = 0];
+
+  string filter_raw = 9;
+  string order_by = 10;
+  uint32 limit = 11;
+
+  option (buf.validate.message).cel = {
+    id: "filter_raw_excludes_others"
+    message: "filter_raw must not be present alongside other filtering mechanisms"
+    expression:
+      "!(has(this.filter_raw) && ("
+      "has(this.ip_address) || has(this.client_id) || has(this.client_software_name) ||"
+      "has(this.client_software_version) || has(this.group_id) || has(this.user) || has(this.idle_ms)"
+      "))"
+  };
+}
+
+message ConnectionClient {
+  string ip = 1;
+  uint32 port = 2;
+  string id = 3;
+  string software_name = 4;
+  string software_version = 5;
+}
+
+// Everything is up by one (produce is actually 0, fetch -> 1, etc)
+enum KafkaAPI {
+  KAFKA_API_UNSPECIFIED = 0;
+  KAFKA_API_PRODUCE = 1;
+  KAFKA_API_FETCH = 2;
+  KAFKA_API_OFFSETS = 3;
+  KAFKA_API_METADATA = 4;
+  KAFKA_API_LEADER_AND_ISR = 5;
+  KAFKA_API_STOP_REPLICA = 6;
+  KAFKA_API_UPDATE_METADATA = 7;
+  KAFKA_API_CONTROLLED_SHUTDOWN = 8;
+  KAFKA_API_OFFSET_COMMIT = 9;
+  KAFKA_API_OFFSET_FETCH = 10;
+  KAFKA_API_GROUP_COORDINATOR = 11;
+  KAFKA_API_JOIN_GROUP = 12;
+  KAFKA_API_HEARTBEAT = 13;
+  KAFKA_API_LEAVE_GROUP = 14;
+  KAFKA_API_SYNC_GROUP = 15;
+  KAFKA_API_DESCRIBE_GROUPS = 16;
+  KAFKA_API_LIST_GROUPS = 17;
+  KAFKA_API_SASL_HANDSHAKE = 18;
+  KAFKA_API_API_VERSIONS = 19;
+  KAFKA_API_CREATE_TOPICS = 20;
+  KAFKA_API_DELETE_TOPICS = 21;
+}
+
+message APIVersion {
+  KafkaAPI api = 1;
+  int32 version = 2;
+}
+
+message ActiveRequests {
+  message Request {
+    KafkaAPI api = 1;
+    google.protobuf.Duration duration = 2;
+  }
+
+  repeated Request requests = 1;
+  bool has_more_requests = 2;
+}
+
+message GroupInfo {
+  string id = 1;
+  string instance_id = 2;
+  string member_id = 3;
+}
+
+message Connection {
+  int32 node_id = 1;
+  uint32 shard_id = 2;
+  string uid = 3 [(google.api.field_info).format = UUID4];
+  core.admin.v2.KafkaConnectionState state = 4;
+  google.protobuf.Timestamp open_time = 5;
+  google.protobuf.Timestamp close_time = 6;
+  google.protobuf.Duration connection_duration = 7;
+  core.admin.v2.AuthenticationInfo authentication = 8;
+  bool tls_enabled = 9;
+  ConnectionClient client = 10;
+  GroupInfo group = 11;
+  string listener_name = 12;
+  string transactional_id = 13;
+  repeated APIVersion api_versions = 14;
+  google.protobuf.Duration idle_duration = 15;
+  ActiveRequests active_requests = 16;
+  core.admin.v2.RequestStatistics request_statistics_all = 17;
+  core.admin.v2.RequestStatistics request_statistics_1m = 18;
+}
+
+message ListConnectionsResponse {
+  repeated Connection connections = 1;
+}
+
+service MonitoringService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Monitoring"
+    description: "Monitoring operations for Redpanda."
+  };
+
+  rpc ListConnections(ListConnectionsRequest) returns (ListConnectionsResponse) {
+    option (google.api.http) = {get: "/v1/monitoring/connections"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Recent Connections"
+      description: "List information on recent connections to the cluster."
+      responses: {
+        key: "200"
+        value: {
+          description: "Recent connections"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.ListConnectionsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+}

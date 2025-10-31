@@ -49,7 +49,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	})
 
 	redpandaContainer, err := redpanda.Run(ctx,
-		"redpandadata/redpanda:v23.3.18",
+		testutil.IntegrationTestImage,
 		network.WithNetwork([]string{"redpanda"}, testNetwork),
 		redpanda.WithListener("redpanda:29092"),
 	)

@@ -73,7 +73,7 @@ func (s *APISuite) SetupSuite() {
 
 	// 2. Start Redpanda Docker container
 	container, err := redpanda.Run(ctx,
-		"redpandadata/redpanda:v25.2.1",
+		testutil.IntegrationTestImage,
 		redpanda.WithEnableWasmTransform(),
 		network.WithNetwork([]string{"redpanda"}, s.network),
 		redpanda.WithListener("redpanda:29092"),
@@ -86,7 +86,7 @@ func (s *APISuite) SetupSuite() {
 	require.NoError(err)
 	schemaRegistryAddress, err := container.SchemaRegistryAddress(ctx)
 	require.NoError(err)
-	adminApiAddr, err := container.AdminAPIAddress(ctx)
+	adminAPIAddr, err := container.AdminAPIAddress(ctx)
 	require.NoError(err)
 
 	require.NoError(err)
@@ -110,9 +110,9 @@ func (s *APISuite) SetupSuite() {
 	require.NoError(err)
 
 	// 5. Create Redpanda client
-	adminApiClient, err := adminapi.NewAdminAPI([]string{adminApiAddr}, &adminapi.NopAuth{}, nil)
+	adminAPIClient, err := adminapi.NewAdminAPI([]string{adminAPIAddr}, &adminapi.NopAuth{}, nil)
 	require.NoError(err)
-	s.redpandaAdminClient = adminApiClient
+	s.redpandaAdminClient = adminAPIClient
 
 	srCl, err := sr.NewClient(sr.URLs(schemaRegistryAddress))
 	require.NoError(err)
@@ -136,7 +136,7 @@ func (s *APISuite) SetupSuite() {
 	s.cfg.SchemaRegistry.URLs = []string{schemaRegistryAddress}
 
 	s.cfg.Redpanda.AdminAPI.Enabled = true
-	s.cfg.Redpanda.AdminAPI.URLs = []string{adminApiAddr}
+	s.cfg.Redpanda.AdminAPI.URLs = []string{adminAPIAddr}
 	s.cfg.Redpanda.AdminAPI.TLS.Enabled = false
 
 	s.cfg.KafkaConnect = config.KafkaConnect{
