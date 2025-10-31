@@ -221,17 +221,19 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                 </FormDescription>
                 <div className="flex flex-col items-start gap-2">
                   <ToggleGroup
-                    defaultValue={topicSelectionType}
                     disabled={isLoading}
-                    onValueChange={(value) => handleTopicSelectionTypeChange(value as CreatableSelectionType)}
+                    onValueChange={(value) => {
+                      // Prevent deselection - ToggleGroup emits empty string when trying to deselect
+                      if (!value) {
+                        return;
+                      }
+                      handleTopicSelectionTypeChange(value as CreatableSelectionType);
+                    }}
                     type="single"
+                    value={topicSelectionType}
                     variant="outline"
                   >
-                    <ToggleGroupItem
-                      disabled={topicList?.length === 0}
-                      id={CreatableSelectionOptions.EXISTING}
-                      value={CreatableSelectionOptions.EXISTING}
-                    >
+                    <ToggleGroupItem id={CreatableSelectionOptions.EXISTING} value={CreatableSelectionOptions.EXISTING}>
                       Existing
                     </ToggleGroupItem>
                     <ToggleGroupItem id={CreatableSelectionOptions.CREATE} value={CreatableSelectionOptions.CREATE}>

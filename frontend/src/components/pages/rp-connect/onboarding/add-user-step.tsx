@@ -203,17 +203,19 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                 </FormDescription>
                 <div className="flex flex-col items-start gap-2">
                   <ToggleGroup
-                    defaultValue={userSelectionType}
                     disabled={isLoading}
-                    onValueChange={(value) => handleUserSelectionTypeChange(value as CreatableSelectionType)}
+                    onValueChange={(value) => {
+                      // Prevent deselection - ToggleGroup emits empty string when trying to deselect
+                      if (!value) {
+                        return;
+                      }
+                      handleUserSelectionTypeChange(value as CreatableSelectionType);
+                    }}
                     type="single"
+                    value={userSelectionType}
                     variant="outline"
                   >
-                    <ToggleGroupItem
-                      disabled={userOptions.length === 0}
-                      id={CreatableSelectionOptions.EXISTING}
-                      value={CreatableSelectionOptions.EXISTING}
-                    >
+                    <ToggleGroupItem id={CreatableSelectionOptions.EXISTING} value={CreatableSelectionOptions.EXISTING}>
                       Existing
                     </ToggleGroupItem>
                     <ToggleGroupItem id={CreatableSelectionOptions.CREATE} value={CreatableSelectionOptions.CREATE}>

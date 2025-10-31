@@ -12,7 +12,7 @@
 import { useCallback } from 'react';
 import { createFlatStorage } from 'utils/store';
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
 import type {
   MinimalTopicData,
@@ -34,39 +34,37 @@ export const useOnboardingWizardDataStore = create<
     setHasHydrated: (state: boolean) => void;
   }
 >()(
-  devtools(
-    persist(
-      (set, get) => ({
-        ...initialWizardData,
-        _hasHydrated: false,
-        setWizardData: (data) => set(data),
-        reset: () => {
-          sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
-          return set(
-            {
-              ...initialWizardData,
-              setWizardData: get().setWizardData,
-              reset: get().reset,
-              _hasHydrated: false,
-              setHasHydrated: get().setHasHydrated,
-            },
-            true
-          );
-        },
-        setHasHydrated: (state) => set({ _hasHydrated: state }),
+  persist(
+    (set, get) => ({
+      ...initialWizardData,
+      _hasHydrated: false,
+      setWizardData: (data) => set(data),
+      reset: () => {
+        sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
+        return set(
+          {
+            ...initialWizardData,
+            setWizardData: get().setWizardData,
+            reset: get().reset,
+            _hasHydrated: false,
+            setHasHydrated: get().setHasHydrated,
+          },
+          true
+        );
+      },
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
+    }),
+    {
+      name: CONNECT_WIZARD_CONNECTOR_KEY,
+      storage: createFlatStorage<Partial<OnboardingWizardFormData>>(),
+      partialize: (state) => ({
+        input: state.input,
+        output: state.output,
       }),
-      {
-        name: CONNECT_WIZARD_CONNECTOR_KEY,
-        storage: createFlatStorage<Partial<OnboardingWizardFormData>>(),
-        partialize: (state) => ({
-          input: state.input,
-          output: state.output,
-        }),
-        onRehydrateStorage: () => (state) => {
-          state?.setHasHydrated(true);
-        },
-      }
-    )
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
+    }
   )
 );
 
