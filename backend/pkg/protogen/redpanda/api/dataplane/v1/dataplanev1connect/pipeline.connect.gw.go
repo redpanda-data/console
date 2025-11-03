@@ -25,6 +25,7 @@ type PipelineServiceGatewayServer struct {
 	stopPipeline                   connect_gateway.UnaryHandler[v1.StopPipelineRequest, v1.StopPipelineResponse]
 	startPipeline                  connect_gateway.UnaryHandler[v1.StartPipelineRequest, v1.StartPipelineResponse]
 	getPipelineServiceConfigSchema connect_gateway.UnaryHandler[v1.GetPipelineServiceConfigSchemaRequest, v1.GetPipelineServiceConfigSchemaResponse]
+	getComponentList               connect_gateway.UnaryHandler[v1.GetComponentListRequest, v1.GetComponentListResponse]
 	getPipelinesForSecret          connect_gateway.UnaryHandler[v1.GetPipelinesForSecretRequest, v1.GetPipelinesForSecretResponse]
 	getPipelinesBySecrets          connect_gateway.UnaryHandler[v1.GetPipelinesBySecretsRequest, v1.GetPipelinesBySecretsResponse]
 	lintPipelineConfig             connect_gateway.UnaryHandler[v1.LintPipelineConfigRequest, v1.LintPipelineConfigResponse]
@@ -42,6 +43,7 @@ func NewPipelineServiceGatewayServer(svc PipelineServiceHandler, opts ...connect
 		stopPipeline:                   connect_gateway.NewUnaryHandler(PipelineServiceStopPipelineProcedure, svc.StopPipeline, opts...),
 		startPipeline:                  connect_gateway.NewUnaryHandler(PipelineServiceStartPipelineProcedure, svc.StartPipeline, opts...),
 		getPipelineServiceConfigSchema: connect_gateway.NewUnaryHandler(PipelineServiceGetPipelineServiceConfigSchemaProcedure, svc.GetPipelineServiceConfigSchema, opts...),
+		getComponentList:               connect_gateway.NewUnaryHandler(PipelineServiceGetComponentListProcedure, svc.GetComponentList, opts...),
 		getPipelinesForSecret:          connect_gateway.NewUnaryHandler(PipelineServiceGetPipelinesForSecretProcedure, svc.GetPipelinesForSecret, opts...),
 		getPipelinesBySecrets:          connect_gateway.NewUnaryHandler(PipelineServiceGetPipelinesBySecretsProcedure, svc.GetPipelinesBySecrets, opts...),
 		lintPipelineConfig:             connect_gateway.NewUnaryHandler(PipelineServiceLintPipelineConfigProcedure, svc.LintPipelineConfig, opts...),
@@ -78,6 +80,10 @@ func (s *PipelineServiceGatewayServer) StartPipeline(ctx context.Context, req *v
 
 func (s *PipelineServiceGatewayServer) GetPipelineServiceConfigSchema(ctx context.Context, req *v1.GetPipelineServiceConfigSchemaRequest) (*v1.GetPipelineServiceConfigSchemaResponse, error) {
 	return s.getPipelineServiceConfigSchema(ctx, req)
+}
+
+func (s *PipelineServiceGatewayServer) GetComponentList(ctx context.Context, req *v1.GetComponentListRequest) (*v1.GetComponentListResponse, error) {
+	return s.getComponentList(ctx, req)
 }
 
 func (s *PipelineServiceGatewayServer) GetPipelinesForSecret(ctx context.Context, req *v1.GetPipelinesForSecretRequest) (*v1.GetPipelinesForSecretResponse, error) {

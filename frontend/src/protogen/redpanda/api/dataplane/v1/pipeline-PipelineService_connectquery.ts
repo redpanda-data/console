@@ -62,6 +62,13 @@ export const startPipeline = PipelineService.method.startPipeline;
 export const getPipelineServiceConfigSchema = PipelineService.method.getPipelineServiceConfigSchema;
 
 /**
+ * GetComponentList returns a JSON containing lists of allowed components based on component type filter.
+ *
+ * @generated from rpc redpanda.api.dataplane.v1.PipelineService.GetComponentList
+ */
+export const getComponentList = PipelineService.method.getComponentList;
+
+/**
  * GetPipelinesForSecret implements the get pipelines for secret method which lists the pipelines
  * in the Redpanda cluster for the given secret.
  *

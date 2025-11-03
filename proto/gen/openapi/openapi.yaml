@@ -834,6 +834,12 @@ components:
             which represents UPPER_SNAKE_CASE.
           type: string
       type: object
+    GetComponentListResponse:
+      properties:
+        components_json:
+          description: JSON string containing the lists of available components.
+          type: string
+      type: object
     GetConnectClusterResponse:
       properties:
         cluster:
@@ -4361,6 +4367,53 @@ paths:
       summary: Delete a quota
       tags:
         - Quotas
+  /v1/redpanda-connect/components:
+    get:
+      description: Returns a JSON list of available [components](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about), filtered by component type.
+      operationId: PipelineService_GetComponentList
+      parameters:
+        - description: |-
+            Regex pattern to filter component types.
+            Examples: "inputs|outputs", "processors", ".*" (for all)
+          in: query
+          name: component_type_regex
+          schema:
+            type: string
+        - description: List of component fields to skip in the response.
+          in: query
+          name: skip_fields
+          schema:
+            items:
+              type: string
+            type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetComponentListResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Retrieve the list of available components
+      tags:
+        - Redpanda Connect Pipelines
   /v1/redpanda-connect/config-schema:
     get:
       description: The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
