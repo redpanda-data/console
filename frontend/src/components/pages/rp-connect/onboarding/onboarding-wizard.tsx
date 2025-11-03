@@ -77,15 +77,9 @@ export const ConnectOnboardingWizard = ({
     [persistedInputConnectionName]
   );
 
-  // Manually trigger rehydration if store hasn't hydrated yet
-  // This handles the case where we navigate back to the wizard after reset
   useEffect(() => {
     const store = useOnboardingWizardDataStore;
-    const hasHydrated = store.getState()._hasHydrated;
-
-    if (!hasHydrated) {
-      store.persist.rehydrate();
-    }
+    store.persist.rehydrate();
   }, []);
 
   useEffect(() => {

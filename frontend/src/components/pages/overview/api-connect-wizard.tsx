@@ -1,22 +1,18 @@
-import { create } from '@bufbuild/protobuf';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { Markdown } from '@redpanda-data/ui';
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
-import { ChevronLeftIcon } from 'lucide-react';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
-import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetOnboardingCodeSnippetQuery } from 'react-query/api/onboarding';
 import { useGetServerlessClusterQuery } from 'react-query/api/serverless';
-import { useLegacyListTopicsQuery } from 'react-query/api/topic';
-import { useListUsersQuery } from 'react-query/api/user';
-import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { useNavigate } from 'react-router-dom';
 import { useAPIWizardStore } from 'state/api-wizard-store';
 import { uiState } from 'state/ui-state';
@@ -139,17 +135,6 @@ export const APIConnectWizard = () => {
   const addTopicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const addUserStepRef = useRef<BaseStepRef<AddUserFormData>>(null);
 
-  const { data: usersList, refetch: refetchUsers } = useListUsersQuery(undefined, {
-    staleTime: LONG_LIVED_CACHE_STALE_TIME,
-    refetchOnWindowFocus: false,
-  });
-
-  const { data: topicList, refetch: refetchTopics } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
-    hideInternalTopics: true,
-    staleTime: LONG_LIVED_CACHE_STALE_TIME,
-    refetchOnWindowFocus: false,
-  });
-
   const handleNext = async (methods: APIWizardStepperSteps) => {
     switch (methods.current.id) {
       case APIWizardStep.ADD_TOPIC: {
@@ -252,22 +237,9 @@ export const APIConnectWizard = () => {
                   </APIWizardStepper.Navigation>
                 </div>
                 {methods.switch({
-                  [APIWizardStep.ADD_TOPIC]: () => (
-                    <AddTopicStep
-                      defaultTopicName={topicName}
-                      ref={addTopicStepRef}
-                      refetchTopics={refetchTopics}
-                      topicList={topicList?.topics}
-                    />
-                  ),
+                  [APIWizardStep.ADD_TOPIC]: () => <AddTopicStep defaultTopicName={topicName} ref={addTopicStepRef} />,
                   [APIWizardStep.ADD_USER]: () => (
-                    <AddUserStep
-                      defaultUsername={username}
-                      ref={addUserStepRef}
-                      refetchUsers={refetchUsers}
-                      topicName={topicName}
-                      usersList={usersList?.users}
-                    />
+                    <AddUserStep defaultUsername={username} ref={addUserStepRef} topicName={topicName} />
                   ),
                   [APIWizardStep.CONNECT_CLUSTER]: () => (
                     <HowToConnectStep saslMechanism={saslMechanism} topicName={topicName} username={username} />
@@ -309,8 +281,18 @@ export const APIConnectWizard = () => {
                       Create
                     </Button>
                   ) : (
-                    <Button disabled={isCurrentStepLoading} onClick={() => handleNext(methods)}>
-                      {isCurrentStepLoading ? 'Loading...' : 'Next'}
+                    <Button
+                      className="min-w-[70px]"
+                      disabled={isCurrentStepLoading}
+                      onClick={() => handleNext(methods)}
+                    >
+                      {isCurrentStepLoading ? (
+                        <Spinner />
+                      ) : (
+                        <>
+                          Next <ChevronRightIcon />
+                        </>
+                      )}
                     </Button>
                   )}
                 </div>
