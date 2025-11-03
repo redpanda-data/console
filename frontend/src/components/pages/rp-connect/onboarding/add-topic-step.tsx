@@ -1,9 +1,11 @@
 import { create } from '@bufbuild/protobuf';
+import { createConnectQueryKey } from '@connectrpc/connect-query';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
-import { Combobox, type ComboboxOption } from 'components/redpanda-ui/components/combobox';
+import { Combobox } from 'components/redpanda-ui/components/combobox';
 import {
   Form,
   FormControl,
@@ -18,8 +20,12 @@ import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
+import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
+import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { isFalsy } from 'utils/falsy';
 
 import { AdvancedTopicSettings } from './advanced-topic-settings';
@@ -27,13 +33,8 @@ import {
   CreateTopicRequest_Topic_ConfigSchema,
   CreateTopicRequest_TopicSchema,
   CreateTopicRequestSchema,
-  ListTopicsRequestSchema,
 } from '../../../../protogen/redpanda/api/dataplane/v1/topic_pb';
-import {
-  useCreateTopicMutation,
-  useLegacyListTopicsQuery,
-  useTopicConfigQuery,
-} from '../../../../react-query/api/topic';
+import { useCreateTopicMutation, useTopicConfigQuery } from '../../../../react-query/api/topic';
 import { convertRetentionSizeToBytes, convertRetentionTimeToMs } from '../../../../utils/topic-utils';
 import {
   type AddTopicFormData,
@@ -51,13 +52,17 @@ interface AddTopicStepProps {
 
 export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps & MotionProps>(
   ({ defaultTopicName, ...motionProps }, ref) => {
-    const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+    const queryClient = useQueryClient();
 
-    const { data: topicList, refetch: refetchTopics } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
+    const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
       hideInternalTopics: true,
+      staleTime: LONG_LIVED_CACHE_STALE_TIME,
+      refetchOnWindowFocus: false,
     });
 
-    const initialTopicOptions = useMemo(
+    const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+
+    const topicOptions = useMemo(
       () =>
         topicList?.topics?.map((topic) => ({
           value: topic.topicName,
@@ -66,19 +71,13 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       [topicList]
     );
 
-    const [topicOptions, setTopicOptions] = useState<ComboboxOption[]>(initialTopicOptions);
     const [topicSelectionType, setTopicSelectionType] = useState<CreatableSelectionType>(
-      topicOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
+      topicList?.topics?.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
     );
 
     const createTopicMutation = useCreateTopicMutation();
 
     const isLoading = createTopicMutation.isPending;
-
-    // Sync topicOptions when topicList updates
-    useEffect(() => {
-      setTopicOptions(initialTopicOptions);
-    }, [initialTopicOptions]);
 
     const defaultValues = useMemo(
       () => ({
@@ -168,6 +167,13 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
 
           await createTopicMutation.mutateAsync(request);
 
+          await queryClient.invalidateQueries({
+            queryKey: createConnectQueryKey({
+              schema: listTopics,
+              cardinality: 'finite',
+            }),
+          });
+
           return {
             success: true,
             message: `Created topic "${data.topicName}" successfully!`,
@@ -181,7 +187,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
           };
         }
       },
-      [existingTopicSelected, createTopicMutation]
+      [existingTopicSelected, createTopicMutation, queryClient]
     );
 
     const handleTopicSelectionTypeChange = useCallback(
@@ -233,17 +239,19 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                 </FormDescription>
                 <div className="flex flex-col items-start gap-2">
                   <ToggleGroup
-                    defaultValue={topicSelectionType}
                     disabled={isLoading}
-                    onValueChange={(value) => handleTopicSelectionTypeChange(value as CreatableSelectionType)}
+                    onValueChange={(value) => {
+                      // Prevent deselection - ToggleGroup emits empty string when trying to deselect
+                      if (!value) {
+                        return;
+                      }
+                      handleTopicSelectionTypeChange(value as CreatableSelectionType);
+                    }}
                     type="single"
+                    value={topicSelectionType}
                     variant="outline"
                   >
-                    <ToggleGroupItem
-                      disabled={topicOptions.length === 0}
-                      id={CreatableSelectionOptions.EXISTING}
-                      value={CreatableSelectionOptions.EXISTING}
-                    >
+                    <ToggleGroupItem id={CreatableSelectionOptions.EXISTING} value={CreatableSelectionOptions.EXISTING}>
                       Existing
                     </ToggleGroupItem>
                     <ToggleGroupItem id={CreatableSelectionOptions.CREATE} value={CreatableSelectionOptions.CREATE}>
@@ -263,7 +271,14 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                                 {...field}
                                 className="w-[300px]"
                                 disabled={isLoading}
-                                onOpen={() => refetchTopics()}
+                                onOpen={() => {
+                                  queryClient.invalidateQueries({
+                                    queryKey: createConnectQueryKey({
+                                      schema: listTopics,
+                                      cardinality: 'finite',
+                                    }),
+                                  });
+                                }}
                                 options={topicOptions}
                                 placeholder="Select a topic"
                               />

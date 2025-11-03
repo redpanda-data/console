@@ -75,6 +75,7 @@ export const addUserFormSchema = z.object({
   superuser: z.boolean().default(true),
   specialCharactersEnabled: z.boolean().default(false),
   passwordLength: z.number().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH).default(30),
+  consumerGroup: z.string().optional(),
 });
 
 export type AddUserFormData = z.infer<typeof addUserFormSchema>;
@@ -95,6 +96,7 @@ export type MinimalTopicData = {
 export type MinimalUserData = {
   username: string;
   saslMechanism: (typeof SASL_MECHANISMS)[number];
+  consumerGroup: string;
 };
 
 export const CreatableSelectionOptions = {

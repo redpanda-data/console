@@ -64,25 +64,22 @@ export const ConnectOnboardingWizard = ({
   const persistedTopicName = useOnboardingTopicDataStore(useShallow((state) => state.topicName));
   const persistedUserSaslMechanism = useOnboardingUserDataStore(useShallow((state) => state.saslMechanism));
   const persistedUsername = useOnboardingUserDataStore(useShallow((state) => state.username));
+  const persistedConsumerGroup = useOnboardingUserDataStore(useShallow((state) => state.consumerGroup));
   const resetOnboardingWizardStore = useResetOnboardingWizardStore();
   const setWizardData = useOnboardingWizardDataStore(useShallow((state) => state.setWizardData));
   const setTopicData = useOnboardingTopicDataStore(useShallow((state) => state.setTopicData));
   const setUserData = useOnboardingUserDataStore(useShallow((state) => state.setUserData));
 
-  const persistedInputHasTopicAndUser = useMemo(
-    () => persistedInputConnectionName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(persistedInputConnectionName),
+  const persistedInputIsRedpandaComponent = useMemo<boolean>(
+    () =>
+      Boolean(persistedInputConnectionName) &&
+      REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(persistedInputConnectionName ?? ''),
     [persistedInputConnectionName]
   );
 
-  // Manually trigger rehydration if store hasn't hydrated yet
-  // This handles the case where we navigate back to the wizard after reset
   useEffect(() => {
     const store = useOnboardingWizardDataStore;
-    const hasHydrated = store.getState()._hasHydrated;
-
-    if (!hasHydrated) {
-      store.persist.rehydrate();
-    }
+    store.persist.rehydrate();
   }, []);
 
   useEffect(() => {
@@ -241,7 +238,7 @@ export const ConnectOnboardingWizard = ({
           }
           onChange?.(connectionName, connectionType);
           const outputNeedsTopicAndUser = REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(connectionName);
-          if (persistedInputHasTopicAndUser || outputNeedsTopicAndUser) {
+          if (persistedInputIsRedpandaComponent || outputNeedsTopicAndUser) {
             methods.next();
           } else {
             methods.goTo(WizardStep.CREATE_CONFIG);
@@ -264,6 +261,7 @@ export const ConnectOnboardingWizard = ({
           setUserData({
             username: result.data.username,
             saslMechanism: result.data.saslMechanism,
+            consumerGroup: result.data.consumerGroup || '',
           });
           regenerateYamlForTopicUserComponents();
         }
@@ -369,10 +367,12 @@ export const ConnectOnboardingWizard = ({
                     [WizardStep.ADD_USER]: () => (
                       <AddUserStep
                         {...stepMotionProps}
+                        defaultConsumerGroup={persistedConsumerGroup}
                         defaultSaslMechanism={persistedUserSaslMechanism}
                         defaultUsername={persistedUsername}
                         key="add-user-step"
                         ref={addUserStepRef}
+                        showConsumerGroupFields={persistedInputIsRedpandaComponent}
                         topicName={persistedTopicName}
                       />
                     ),
@@ -412,8 +412,18 @@ export const ConnectOnboardingWizard = ({
                     </Button>
                   )}
                   {!methods.isLast && (
-                    <Button disabled={isCurrentStepLoading} onClick={() => handleNext(methods)}>
-                      {isCurrentStepLoading ? <Spinner /> : 'Next'} <ChevronRightIcon />
+                    <Button
+                      className="min-w-[70px]"
+                      disabled={isCurrentStepLoading}
+                      onClick={() => handleNext(methods)}
+                    >
+                      {isCurrentStepLoading ? (
+                        <Spinner />
+                      ) : (
+                        <>
+                          Next <ChevronRightIcon />
+                        </>
+                      )}
                     </Button>
                   )}
                 </div>

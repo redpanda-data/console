@@ -4,6 +4,7 @@ import { isFalsy } from 'utils/falsy';
 import {
   hasWizardRelevantFields,
   isBrokerField,
+  isConsumerGroupField,
   isPasswordField,
   isSchemaRegistryUrlField,
   isTopicField,
@@ -286,6 +287,11 @@ function populateWizardFields(spec: RawFieldSpec, componentName?: string): strin
     return spec.kind === 'array' ? [topicData.topicName] : topicData.topicName;
   }
 
+  // Populate consumer group fields (only for input components)
+  if (isConsumerGroupField(spec.name) && userData?.consumerGroup) {
+    return userData.consumerGroup;
+  }
+
   // For Redpanda components with username in session storage, inject secret references
   if (componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName) && userData?.username) {
     // Username field: use secret reference instead of plain text
@@ -473,6 +479,9 @@ function generateObjectValue(
         return true;
       }
       if (child.name && isPasswordField(child.name) && userData?.username) {
+        return true;
+      }
+      if (child.name && isConsumerGroupField(child.name) && userData?.consumerGroup) {
         return true;
       }
       return false;

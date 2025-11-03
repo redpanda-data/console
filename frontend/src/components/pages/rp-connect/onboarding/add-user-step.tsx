@@ -1,10 +1,12 @@
+import { createConnectQueryKey } from '@connectrpc/connect-query';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { generatePassword } from 'components/pages/acls/user-create';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
-import { Combobox, type ComboboxOption } from 'components/redpanda-ui/components/combobox';
+import { Combobox } from 'components/redpanda-ui/components/combobox';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
   Form,
@@ -29,13 +31,18 @@ import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/
 import { Heading, Link, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { CircleAlert, RefreshCcw, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
+import { ACL_ResourceType } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
+import { listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
+import { listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useListUsersQuery } from 'react-query/api/user';
+import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { SASL_MECHANISMS } from 'utils/user';
 
 import { useListACLsQuery } from '../../../../react-query/api/acl';
-import { useListUsersQuery } from '../../../../react-query/api/user';
+import { useLegacyListConsumerGroupsQuery } from '../../../../react-query/api/consumer-group';
 import type { BaseStepRef, StepSubmissionResult } from '../types/wizard';
 import {
   type AddUserFormData,
@@ -44,6 +51,7 @@ import {
   type CreatableSelectionType,
 } from '../types/wizard';
 import {
+  checkUserHasConsumerGroupPermissions,
   checkUserHasTopicReadWritePermissions,
   getACLOperationName,
   useCreateUserWithSecretsMutation,
@@ -53,25 +61,44 @@ interface AddUserStepProps {
   defaultUsername?: string;
   defaultSaslMechanism?: (typeof SASL_MECHANISMS)[number];
   topicName?: string;
+  defaultConsumerGroup?: string;
+  showConsumerGroupFields?: boolean;
 }
 
 export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepProps & MotionProps>(
-  ({ defaultUsername, defaultSaslMechanism, topicName, ...motionProps }, ref) => {
-    const { data: usersList, refetch: refetchUsers } = useListUsersQuery();
+  (
+    {
+      defaultUsername,
+      defaultSaslMechanism,
+      topicName,
+      defaultConsumerGroup,
+      showConsumerGroupFields = false,
+      ...motionProps
+    },
+    ref
+  ) => {
+    const queryClient = useQueryClient();
 
-    const initialUserOptions = useMemo(
-      () =>
-        (usersList?.users ?? []).map((user) => ({
-          value: user.name || '',
-          label: user.name || '',
-        })),
-      [usersList]
+    const { data: usersList } = useListUsersQuery(undefined, {
+      staleTime: LONG_LIVED_CACHE_STALE_TIME,
+      refetchOnWindowFocus: false,
+    });
+
+    const { data: consumerGroupsData } = useLegacyListConsumerGroupsQuery({
+      enabled: showConsumerGroupFields,
+    });
+
+    const { data: consumerGroupACLData } = useListACLsQuery(
+      {
+        filter: {
+          resourceType: ACL_ResourceType.GROUP,
+        },
+      },
+      {
+        enabled: showConsumerGroupFields,
+        staleTime: LONG_LIVED_CACHE_STALE_TIME,
+      }
     );
-    const [userOptions, setUserOptions] = useState<ComboboxOption[]>(initialUserOptions);
-    const [userSelectionType, setUserSelectionType] = useState<CreatableSelectionType>(
-      userOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
-    );
-    const createUserWithSecretsMutation = useCreateUserWithSecretsMutation();
 
     const form = useForm<AddUserFormData>({
       resolver: zodResolver(addUserFormSchema),
@@ -83,12 +110,14 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
         superuser: true,
         specialCharactersEnabled: false,
         passwordLength: 30,
+        consumerGroup: defaultConsumerGroup || '',
       },
     });
 
     const watchedUsername = form.watch('username');
     const watchedSpecialCharacters = form.watch('specialCharactersEnabled');
     const watchedPasswordLength = form.watch('passwordLength');
+    const watchedConsumerGroup = form.watch('consumerGroup');
 
     const existingUserSelected = useMemo(() => {
       // Only check if the CURRENT form username matches an existing user
@@ -97,20 +126,47 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
         return undefined;
       }
       return usersList?.users?.find((user) => user.name === watchedUsername);
-    }, [watchedUsername, usersList]);
+    }, [watchedUsername, usersList?.users]);
 
-    const { data: aclData, refetch: refetchACLs } = useListACLsQuery(undefined, {
-      enabled: Boolean(existingUserSelected && topicName),
-      refetchOnMount: 'always',
-      staleTime: 0,
-    });
-
-    // Refetch ACLs whenever the selected user changes
-    useEffect(() => {
-      if (existingUserSelected && topicName) {
-        refetchACLs();
+    const { data: aclData } = useListACLsQuery(
+      {
+        filter: {
+          resourceType: ACL_ResourceType.TOPIC,
+          resourceName: topicName,
+        },
+      },
+      {
+        enabled: Boolean(existingUserSelected && topicName),
+        staleTime: LONG_LIVED_CACHE_STALE_TIME,
       }
-    }, [existingUserSelected, topicName, refetchACLs]);
+    );
+
+    const createUserWithSecretsMutation = useCreateUserWithSecretsMutation();
+
+    const userOptions = useMemo(
+      () =>
+        (usersList?.users ?? []).map((user) => ({
+          value: user.name || '',
+          label: user.name || '',
+        })),
+      [usersList]
+    );
+
+    const [userSelectionType, setUserSelectionType] = useState<CreatableSelectionType>(
+      userOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
+    );
+
+    const consumerGroupOptions = useMemo(
+      () =>
+        (consumerGroupsData?.consumerGroups ?? []).map((group) => ({
+          value: group.groupId,
+          label: group.groupId,
+        })),
+      [consumerGroupsData?.consumerGroups]
+    );
+    const [consumerGroupSelectionType, setConsumerGroupSelectionType] = useState<CreatableSelectionType>(
+      consumerGroupOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
+    );
 
     const userTopicPermissions = useMemo(() => {
       if (!(existingUserSelected && topicName && aclData?.aclResources)) {
@@ -119,6 +175,20 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
 
       return checkUserHasTopicReadWritePermissions(aclData.aclResources, topicName, existingUserSelected.name);
     }, [existingUserSelected, topicName, aclData]);
+
+    const userConsumerGroupPermissions = useMemo(() => {
+      if (
+        !(showConsumerGroupFields && existingUserSelected && watchedConsumerGroup && consumerGroupACLData?.aclResources)
+      ) {
+        return null;
+      }
+
+      return checkUserHasConsumerGroupPermissions(
+        consumerGroupACLData.aclResources,
+        watchedConsumerGroup,
+        existingUserSelected.name
+      );
+    }, [showConsumerGroupFields, existingUserSelected, watchedConsumerGroup, consumerGroupACLData]);
 
     const isLoading = createUserWithSecretsMutation.isPending;
     const isReadOnly = Boolean(existingUserSelected) || userSelectionType === CreatableSelectionOptions.EXISTING;
@@ -137,21 +207,38 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
       [generateNewPassword]
     );
 
-    useEffect(() => {
-      setUserOptions(initialUserOptions);
-    }, [initialUserOptions]);
-
     const handleSubmit = useCallback(
       async (userData: AddUserFormData): Promise<StepSubmissionResult<AddUserFormData>> => {
         const result = await createUserWithSecretsMutation.mutateAsync({
           userData,
           topicName,
+          consumerGroup: showConsumerGroupFields ? form.getValues('consumerGroup') : undefined,
           existingUserSelected: Boolean(existingUserSelected),
         });
 
+        if (result.success) {
+          await Promise.all([
+            queryClient.invalidateQueries({
+              queryKey: createConnectQueryKey({
+                schema: listUsers,
+                cardinality: 'infinite',
+              }),
+            }),
+            queryClient.invalidateQueries({
+              queryKey: createConnectQueryKey({
+                schema: listACLs,
+                cardinality: 'finite',
+              }),
+            }),
+            queryClient.invalidateQueries({
+              queryKey: ['consumer-groups'],
+            }),
+          ]);
+        }
+
         return result;
       },
-      [createUserWithSecretsMutation, topicName, existingUserSelected]
+      [createUserWithSecretsMutation, topicName, existingUserSelected, showConsumerGroupFields, form, queryClient]
     );
 
     const handleUserSelectionTypeChange = useCallback(
@@ -165,6 +252,19 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
 
     const handleClearUsername = useCallback(() => {
       form.setValue('username', '', { shouldDirty: true });
+    }, [form]);
+
+    const handleConsumerGroupSelectionTypeChange = useCallback(
+      (value: string) => {
+        setConsumerGroupSelectionType(value as CreatableSelectionType);
+
+        form.setValue('consumerGroup', '', { shouldDirty: true });
+      },
+      [form]
+    );
+
+    const handleClearConsumerGroup = useCallback(() => {
+      form.setValue('consumerGroup', '', { shouldDirty: true });
     }, [form]);
 
     useImperativeHandle(ref, () => ({
@@ -206,20 +306,30 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                 </FormDescription>
                 <div className="flex flex-col items-start gap-2">
                   <ToggleGroup
-                    defaultValue={userSelectionType}
                     disabled={isLoading}
-                    onValueChange={(value) => handleUserSelectionTypeChange(value as CreatableSelectionType)}
+                    onValueChange={(value) => {
+                      // Prevent deselection - ToggleGroup emits empty string when trying to deselect
+                      if (!value) {
+                        return;
+                      }
+                      handleUserSelectionTypeChange(value as CreatableSelectionType);
+                    }}
                     type="single"
+                    value={userSelectionType}
                     variant="outline"
                   >
                     <ToggleGroupItem
-                      disabled={userOptions.length === 0}
+                      disabled={isLoading}
                       id={CreatableSelectionOptions.EXISTING}
                       value={CreatableSelectionOptions.EXISTING}
                     >
                       Existing
                     </ToggleGroupItem>
-                    <ToggleGroupItem id={CreatableSelectionOptions.CREATE} value={CreatableSelectionOptions.CREATE}>
+                    <ToggleGroupItem
+                      disabled={isLoading}
+                      id={CreatableSelectionOptions.CREATE}
+                      value={CreatableSelectionOptions.CREATE}
+                    >
                       New
                     </ToggleGroupItem>
                   </ToggleGroup>
@@ -236,7 +346,17 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                                 {...field}
                                 className="w-[300px]"
                                 disabled={isLoading}
-                                onOpen={() => refetchUsers()}
+                                onChange={(value) => {
+                                  field.onChange(value);
+                                }}
+                                onOpen={() => {
+                                  queryClient.invalidateQueries({
+                                    queryKey: createConnectQueryKey({
+                                      schema: listUsers,
+                                      cardinality: 'infinite',
+                                    }),
+                                  });
+                                }}
                                 options={userOptions}
                                 placeholder="Select a user"
                               />
@@ -260,66 +380,65 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                       </Button>
                     )}
                   </div>
+
+                  {existingUserSelected &&
+                    userSelectionType === CreatableSelectionOptions.EXISTING &&
+                    topicName &&
+                    userTopicPermissions &&
+                    userTopicPermissions.missingPermissions.length > 0 && (
+                      <Alert variant="destructive">
+                        <AlertTitle>
+                          <CircleAlert className="h-4 w-4" /> User does not have required permissions
+                        </AlertTitle>
+                        <AlertDescription>
+                          <Text variant="small">
+                            The user <b>{existingUserSelected.name}</b> requires the following permissions for the{' '}
+                            <b>{topicName}</b> topic:
+                            <List>
+                              {userTopicPermissions.missingPermissions.map((permission) => (
+                                <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
+                              ))}
+                            </List>
+                          </Text>
+                          <Text variant="small">
+                            Edit the user's{' '}
+                            <Link
+                              as={ReactRouterLink}
+                              className="text-blue-800"
+                              to={`/security/users/${existingUserSelected.name}/details`}
+                            >
+                              ACLs
+                            </Link>{' '}
+                            to add permissions.
+                          </Text>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  {existingUserSelected &&
+                    topicName &&
+                    userSelectionType === CreatableSelectionOptions.EXISTING &&
+                    userTopicPermissions &&
+                    userTopicPermissions.hasPermissions.length > 0 && (
+                      <Alert variant="success">
+                        <AlertTitle>
+                          <CircleAlert className="h-4 w-4" /> User has required permissions
+                        </AlertTitle>
+                        <AlertDescription>
+                          <Text variant="small">
+                            The user <b>{existingUserSelected.name}</b> has the following permissions for the{' '}
+                            <b>{topicName}</b> topic:
+                            <List>
+                              {userTopicPermissions.hasPermissions.map((permission) => (
+                                <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
+                              ))}
+                            </List>
+                          </Text>
+                        </AlertDescription>
+                      </Alert>
+                    )}
                 </div>
               </div>
-
-              {existingUserSelected &&
-                topicName &&
-                !isLoading &&
-                userTopicPermissions &&
-                userTopicPermissions.missingPermissions.length > 0 && (
-                  <Alert variant="destructive">
-                    <AlertTitle>
-                      <CircleAlert className="h-4 w-4" /> User does not have required permissions
-                    </AlertTitle>
-                    <AlertDescription>
-                      <Text variant="small">
-                        The user <b>{existingUserSelected.name}</b> requires the following permissions for the{' '}
-                        <b>{topicName}</b> topic:
-                        <List>
-                          {userTopicPermissions.missingPermissions.map((permission) => (
-                            <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
-                          ))}
-                        </List>
-                      </Text>
-                      <Text variant="small">
-                        Edit the user's{' '}
-                        <Link
-                          as={ReactRouterLink}
-                          className="text-blue-800"
-                          to={`/security/users/${existingUserSelected.name}/details`}
-                        >
-                          ACLs
-                        </Link>{' '}
-                        to add permissions.
-                      </Text>
-                    </AlertDescription>
-                  </Alert>
-                )}
-              {existingUserSelected &&
-                topicName &&
-                !isLoading &&
-                userTopicPermissions &&
-                userTopicPermissions.hasPermissions.length > 0 && (
-                  <Alert variant="success">
-                    <AlertTitle>
-                      <CircleAlert className="h-4 w-4" /> User has required permissions
-                    </AlertTitle>
-                    <AlertDescription>
-                      <Text variant="small">
-                        The user <b>{existingUserSelected.name}</b> has the following permissions for the{' '}
-                        <b>{topicName}</b> topic:
-                        <List>
-                          {userTopicPermissions.hasPermissions.map((permission) => (
-                            <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
-                          ))}
-                        </List>
-                      </Text>
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-              {!(existingUserSelected || isLoading) && userSelectionType === CreatableSelectionOptions.CREATE && (
+              {userSelectionType === CreatableSelectionOptions.CREATE && (
                 <>
                   <FormField
                     control={form.control}
@@ -333,7 +452,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                         </FormDescription>
                         <FormControl>
                           <Group>
-                            <Input type="password" {...field} />
+                            <Input type="password" {...field} className="w-[300px]" />
                             <CopyButton content={field.value} disabled={isReadOnly} size="icon" variant="outline" />
                             <Button
                               disabled={isReadOnly}
@@ -375,7 +494,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                         <FormLabel>SASL mechanism</FormLabel>
                         <FormControl>
                           <Select {...field}>
-                            <SelectTrigger>
+                            <SelectTrigger className="w-[300px]">
                               <SelectValue placeholder="Select a SASL Mechanism" />
                             </SelectTrigger>
                             <SelectContent>
@@ -423,16 +542,17 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                                   <AlertTitle>
                                     <Text className="flex items-center gap-2" variant="label">
                                       <CircleAlert size={15} />
-                                      Set permissions
+                                      User will not be able to read from topic
                                     </Text>
                                   </AlertTitle>
                                   <AlertDescription>
                                     <Text variant="small">
-                                      Configure{' '}
+                                      You will need to configure{' '}
                                       <Link as={ReactRouterLink} rel="noopener noreferrer" to="/security/acls">
                                         ACLs
                                       </Link>{' '}
-                                      for custom user permissions.
+                                      for custom user permissions if you want the user to be able to read from the
+                                      topic.
                                     </Text>
                                   </AlertDescription>
                                 </Alert>
@@ -446,6 +566,134 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                     />
                   )}
                 </>
+              )}
+
+              {showConsumerGroupFields && (
+                <div className="flex flex-col gap-2">
+                  <FormLabel>Consumer Group (Optional)</FormLabel>
+                  <FormDescription>
+                    Associate a consumer group with this user to persist consumer offset position. Or when creating your
+                    pipeline specify a partition on the topic instead.
+                  </FormDescription>
+                  <div className="flex flex-col items-start gap-2">
+                    <ToggleGroup
+                      disabled={isLoading}
+                      onValueChange={(value) => {
+                        if (!value) {
+                          return;
+                        }
+                        handleConsumerGroupSelectionTypeChange(value as CreatableSelectionType);
+                      }}
+                      type="single"
+                      value={consumerGroupSelectionType}
+                      variant="outline"
+                    >
+                      <ToggleGroupItem
+                        disabled={isLoading}
+                        id={CreatableSelectionOptions.EXISTING}
+                        value={CreatableSelectionOptions.EXISTING}
+                      >
+                        Existing
+                      </ToggleGroupItem>
+                      <ToggleGroupItem
+                        disabled={isLoading}
+                        id={CreatableSelectionOptions.CREATE}
+                        value={CreatableSelectionOptions.CREATE}
+                      >
+                        New
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+
+                    <div className="flex gap-2">
+                      <FormField
+                        control={form.control}
+                        name="consumerGroup"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              {consumerGroupSelectionType === CreatableSelectionOptions.EXISTING ? (
+                                <Combobox
+                                  {...field}
+                                  className="w-[300px]"
+                                  disabled={isLoading}
+                                  onChange={(value) => {
+                                    field.onChange(value);
+                                  }}
+                                  onOpen={() => {
+                                    queryClient.invalidateQueries({
+                                      queryKey: ['consumer-groups'],
+                                    });
+                                  }}
+                                  options={consumerGroupOptions}
+                                  placeholder="Select a consumer group"
+                                />
+                              ) : (
+                                <Input
+                                  {...field}
+                                  className="w-[300px]"
+                                  disabled={isLoading}
+                                  placeholder="Enter a consumer group name"
+                                />
+                              )}
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {watchedConsumerGroup !== '' && watchedConsumerGroup && watchedConsumerGroup.length > 0 && (
+                        <Button disabled={isLoading} onClick={handleClearConsumerGroup} size="icon" variant="ghost">
+                          <XIcon size={16} />
+                        </Button>
+                      )}
+                    </div>
+
+                    {existingUserSelected &&
+                      watchedConsumerGroup &&
+                      consumerGroupSelectionType === CreatableSelectionOptions.EXISTING &&
+                      userConsumerGroupPermissions &&
+                      userConsumerGroupPermissions.hasPermissions.length > 0 && (
+                        <Alert variant="success">
+                          <AlertTitle>
+                            <CircleAlert className="h-4 w-4" /> User has required consumer group permissions
+                          </AlertTitle>
+                          <AlertDescription>
+                            <Text variant="small">
+                              The user <b>{existingUserSelected?.name}</b> has the following permissions for the{' '}
+                              <b>{watchedConsumerGroup}</b> consumer group:
+                              <List>
+                                {userConsumerGroupPermissions?.hasPermissions.map((permission) => (
+                                  <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
+                                ))}
+                              </List>
+                            </Text>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                    {(watchedConsumerGroup &&
+                      watchedConsumerGroup.length > 0 &&
+                      userSelectionType === CreatableSelectionOptions.EXISTING &&
+                      userConsumerGroupPermissions &&
+                      userConsumerGroupPermissions.missingPermissions.length > 0) ||
+                      (userSelectionType === CreatableSelectionOptions.CREATE && (
+                        <Alert variant="warning">
+                          <AlertTitle>
+                            <Text className="flex items-center gap-2" variant="label">
+                              <CircleAlert size={15} />
+                              Enable consumer group permissions
+                            </Text>
+                          </AlertTitle>
+                          <AlertDescription>
+                            <Text variant="small">
+                              This user will be able to consume messages from the <b>{watchedConsumerGroup}</b> consumer
+                              group.
+                            </Text>
+                          </AlertDescription>
+                        </Alert>
+                      ))}
+                  </div>
+                </div>
               )}
             </div>
           </Form>

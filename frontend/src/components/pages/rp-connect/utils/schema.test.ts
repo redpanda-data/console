@@ -90,7 +90,24 @@ describe('generateDefaultValue', () => {
   describe('Wizard data population', () => {
     beforeEach(() => {
       onboardingWizardStore.setTopicData({ topicName: 'example' });
-      onboardingWizardStore.setUserData({ username: 'admin', saslMechanism: 'SCRAM-SHA-256' });
+      onboardingWizardStore.setUserData({
+        username: 'admin',
+        saslMechanism: 'SCRAM-SHA-256',
+        consumerGroup: 'my-consumer-group',
+      });
+    });
+
+    test('should populate consumer_group field for redpanda input components', () => {
+      const spec: RawFieldSpec = {
+        name: 'consumer_group',
+        type: 'string',
+        kind: 'scalar',
+        default: '',
+      };
+
+      const result = generateDefaultValue(spec, { showOptionalFields: false, componentName: 'kafka_franz' });
+
+      expect(result).toBe('my-consumer-group');
     });
 
     test('should populate topic field for redpanda components', () => {
@@ -364,7 +381,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('should use wizard SASL mechanism when available', () => {
-      onboardingWizardStore.setUserData({ username: 'admin', saslMechanism: 'SCRAM-SHA-512' });
+      onboardingWizardStore.setUserData({ username: 'admin', saslMechanism: 'SCRAM-SHA-512', consumerGroup: '' });
 
       const spec: RawFieldSpec = {
         name: 'mechanism',
@@ -402,7 +419,7 @@ describe('generateDefaultValue', () => {
 
   describe('Secrets syntax with wizard data', () => {
     beforeEach(() => {
-      onboardingWizardStore.setUserData({ username: 'test-user', saslMechanism: 'SCRAM-SHA-256' });
+      onboardingWizardStore.setUserData({ username: 'test-user', saslMechanism: 'SCRAM-SHA-256', consumerGroup: '' });
     });
 
     test('should use secret syntax for user field with wizard data', () => {
@@ -462,7 +479,11 @@ describe('generateDefaultValue', () => {
     });
 
     test('should convert username to screaming snake case in secret key', () => {
-      onboardingWizardStore.setUserData({ username: 'my-kafka-user', saslMechanism: 'SCRAM-SHA-256' });
+      onboardingWizardStore.setUserData({
+        username: 'my-kafka-user',
+        saslMechanism: 'SCRAM-SHA-256',
+        consumerGroup: '',
+      });
 
       const spec: RawFieldSpec = {
         name: 'user',
@@ -480,7 +501,7 @@ describe('generateDefaultValue', () => {
 
   describe('SASL object generation', () => {
     beforeEach(() => {
-      onboardingWizardStore.setUserData({ username: 'admin', saslMechanism: 'SCRAM-SHA-256' });
+      onboardingWizardStore.setUserData({ username: 'admin', saslMechanism: 'SCRAM-SHA-256', consumerGroup: '' });
     });
 
     test('should populate sasl object with mechanism, user, and password when user exists', () => {
@@ -727,7 +748,7 @@ describe('generateDefaultValue', () => {
   describe('Full integration with real schema components', () => {
     beforeEach(() => {
       onboardingWizardStore.setTopicData({ topicName: 'example' });
-      onboardingWizardStore.setUserData({ username: 'admin' });
+      onboardingWizardStore.setUserData({ username: 'admin', saslMechanism: 'SCRAM-SHA-256', consumerGroup: '' });
     });
 
     test('TLS field should be shown for Redpanda components even when advanced', () => {

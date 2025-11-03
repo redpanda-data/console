@@ -127,7 +127,7 @@ type ToggleGroupItemProps = React.ComponentProps<typeof ToggleGroupPrimitive.Ite
   };
 
 const ToggleGroupItem = React.forwardRef<HTMLButtonElement, ToggleGroupItemProps>(
-  ({ className, children, variant, size, buttonProps, spanProps, testId, ...props }, ref) => {
+  ({ className, children, variant, size, buttonProps, spanProps, testId, disabled, ...props }, ref) => {
     const {
       activeClassName,
       transition,
@@ -157,12 +157,13 @@ const ToggleGroupItem = React.forwardRef<HTMLButtonElement, ToggleGroupItemProps
     }, []);
 
     return (
-      <ToggleGroupPrimitive.Item ref={itemRef} {...props} asChild>
+      <ToggleGroupPrimitive.Item ref={itemRef} disabled={disabled} {...props} asChild>
         <motion.button
           data-slot="toggle-group-item"
           data-testid={testId}
           initial={{ scale: 1 }}
           whileTap={{ scale: 0.9 }}
+          disabled={disabled}
           {...buttonProps}
           className={cn('relative', buttonProps?.className)}
         >

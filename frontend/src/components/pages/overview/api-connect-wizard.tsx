@@ -3,11 +3,12 @@ import { Markdown } from '@redpanda-data/ui';
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
-import { ChevronLeftIcon } from 'lucide-react';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetOnboardingCodeSnippetQuery } from 'react-query/api/onboarding';
@@ -280,8 +281,18 @@ export const APIConnectWizard = () => {
                       Create
                     </Button>
                   ) : (
-                    <Button disabled={isCurrentStepLoading} onClick={() => handleNext(methods)}>
-                      {isCurrentStepLoading ? 'Loading...' : 'Next'}
+                    <Button
+                      className="min-w-[70px]"
+                      disabled={isCurrentStepLoading}
+                      onClick={() => handleNext(methods)}
+                    >
+                      {isCurrentStepLoading ? (
+                        <Spinner />
+                      ) : (
+                        <>
+                          Next <ChevronRightIcon />
+                        </>
+                      )}
                     </Button>
                   )}
                 </div>

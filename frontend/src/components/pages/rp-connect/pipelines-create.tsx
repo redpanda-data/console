@@ -392,7 +392,6 @@ export const PipelineEditor = observer(
     const [contextualVarsAutocomplete, setContextualVarsAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
     const persistedYamlContent = useOnboardingYamlContentStore((state) => state.yamlContent);
-    const hasHydrated = useOnboardingWizardDataStore((state) => state._hasHydrated);
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
     const [actualEditorContent, setActualEditorContent] = useState<string>('');
@@ -466,7 +465,7 @@ export const PipelineEditor = observer(
     // Wait for hydration to complete before initializing
     // biome-ignore lint/correctness/useExhaustiveDependencies: Only runs once after hydration, ref prevents re-initialization
     useEffect(() => {
-      const shouldInitialize = enableRpcnTiles && isServerlessMode && hasHydrated && !hasInitializedServerless.current;
+      const shouldInitialize = enableRpcnTiles && isServerlessMode && !hasInitializedServerless.current;
 
       if (!shouldInitialize) {
         return;
@@ -505,7 +504,7 @@ export const PipelineEditor = observer(
       }
 
       hasInitializedServerless.current = true;
-    }, [hasHydrated]);
+    }, []);
 
     useEffect(() => {
       return () => {
