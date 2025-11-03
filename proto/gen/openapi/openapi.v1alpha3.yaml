@@ -6,9 +6,6 @@ components:
         description:
           description: Optional AI agent description.
           type: string
-        dimensions:
-          format: int32
-          type: integer
         display_name:
           description: User-friendly AI agent name.
           type: string
@@ -31,7 +28,7 @@ components:
         resources:
           $ref: '#/components/schemas/Resources'
         service_account:
-          $ref: '#/components/schemas/ServiceAccount'
+          $ref: '#/components/schemas/AIAgent.ServiceAccount'
         state:
           $ref: '#/components/schemas/AIAgent.State'
         system_prompt:
@@ -52,8 +49,8 @@ components:
         - display_name
         - system_prompt
         - provider
-        - dimensions
         - model
+        - service_account
       type: object
     AIAgent.MCPServer:
       description: MCP server configuration.
@@ -73,6 +70,16 @@ components:
           type: string
       required:
         - api_key
+      type: object
+    AIAgent.ServiceAccount:
+      properties:
+        client_id:
+          type: string
+        client_secret:
+          type: string
+      required:
+        - client_id
+        - client_secret
       type: object
     AIAgent.State:
       description: |-
@@ -96,9 +103,6 @@ components:
         description:
           description: AI agent description.
           type: string
-        dimensions:
-          format: int32
-          type: integer
         display_name:
           description: User-friendly AI agent name.
           type: string
@@ -117,7 +121,7 @@ components:
         resources:
           $ref: '#/components/schemas/Resources'
         service_account:
-          $ref: '#/components/schemas/ServiceAccount'
+          $ref: '#/components/schemas/AIAgent.ServiceAccount'
         system_prompt:
           description: System instructions that define how the AI agent should behave and respond.
           type: string
@@ -130,17 +134,14 @@ components:
         - display_name
         - system_prompt
         - provider
-        - dimensions
         - model
+        - service_account
       type: object
     AIAgentUpdate:
       properties:
         description:
           description: AI agent description.
           type: string
-        dimensions:
-          format: int32
-          type: integer
         display_name:
           description: User-friendly AI agent name.
           type: string
@@ -159,7 +160,7 @@ components:
         resources:
           $ref: '#/components/schemas/Resources'
         service_account:
-          $ref: '#/components/schemas/ServiceAccount'
+          $ref: '#/components/schemas/AIAgent.ServiceAccount'
         system_prompt:
           description: System instructions that define how the AI agent should behave and respond.
           type: string
@@ -170,10 +171,6 @@ components:
             A map of tags to add, update or delete.
             If a tag's value is empty, the server interprets that as a deletion.
           type: object
-      required:
-        - provider
-        - dimensions
-        - model
       type: object
     Any:
       additionalProperties: {}
@@ -217,6 +214,15 @@ components:
     DeleteKnowledgeBaseResponse:
       type: object
     DeleteMCPServerResponse:
+      type: object
+    FailOverBody:
+      properties:
+        shadow_topic_name:
+          title: |-
+            The name of the shadow topic to fail over, if not set will fail over
+            the entire shadow link
+          type: string
+      title: Request to fail over a shadow link or a single shadow topic
       type: object
     GetAIAgentResponse:
       properties:
@@ -871,16 +877,6 @@ components:
         - SASL_MECHANISM_SCRAM_SHA_256
         - SASL_MECHANISM_SCRAM_SHA_512
       type: string
-    ServiceAccount:
-      properties:
-        client_id:
-          type: string
-        client_secret:
-          type: string
-      required:
-        - client_id
-        - client_secret
-      type: object
     StartAIAgentResponse:
       properties:
         ai_agent:
@@ -938,6 +934,8 @@ components:
           type: array
         message:
           type: string
+      type: object
+    v1alpha3.FailOverResponse:
       type: object
     v1alpha3.MCPServer:
       description: Defines the MCP server resource.
@@ -1638,6 +1636,40 @@ paths:
       summary: Lint a Redpanda Connect MCP tools configuration
       tags:
         - Redpanda Connect MCP servers
+  /v1alpha3/shadowlink/{name}/failover:
+    post:
+      description: Fail over a shadow link or a specific shadow topic within a link.
+      operationId: ShadowLinkService_FailOver
+      parameters:
+        - description: The name of the shadow link to fail over
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailOverBody'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alpha3.FailOverResponse'
+          description: Failover completed
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Fail Over Shadow Link
+      tags:
+        - Shadow Links (Dataplane)
 security:
   - auth0: []
 servers:
@@ -1657,3 +1689,5 @@ tags:
     name: Redpanda AI KnowledgeBase
   - description: Create and manage Redpanda Connect MCP servers and their configurations.
     name: Redpanda Connect MCP servers
+  - description: Dataplane operations for Redpanda shadow links.
+    name: Shadow Links (Dataplane)

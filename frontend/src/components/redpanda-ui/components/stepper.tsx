@@ -51,11 +51,12 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(...steps: Steps): 
         children,
         className,
         testId,
+        initialStep,
         ...props
       }) => {
         return (
           <StepperContext.Provider value={{ variant, labelOrientation, tracking }}>
-            <Scoped initialStep={props.initialStep} initialMetadata={props.initialMetadata}>
+            <Scoped initialStep={initialStep} initialMetadata={props.initialMetadata}>
               <StepperContainer className={className} testId={testId} {...props}>
                 {children}
               </StepperContainer>
@@ -135,8 +136,11 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(...steps: Steps): 
                 type="button"
                 role="tab"
                 tabIndex={dataState !== 'inactive' ? 0 : -1}
-                className="rounded-full"
-                variant={dataState !== 'inactive' ? 'default' : 'secondary'}
+                className={cn(
+                  "rounded-full",
+                  isActive && 'ring-3 ring-secondary/20'
+                )}
+                variant={dataState !== 'inactive' ? 'secondary' : 'secondaryOutline'}
                 size="icon"
                 aria-controls={`step-panel-${props.of}`}
                 aria-current={isActive ? 'step' : undefined}
@@ -307,7 +311,7 @@ const CircleStepIndicator = ({
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={dashOffset}
-          className="text-primary transition-all duration-300 ease-in-out"
+          className="text-secondary transition-all duration-300 ease-in-out"
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
       </svg>
@@ -336,7 +340,7 @@ const classForNavigationList = cva('flex gap-2', {
 const classForSeparator = cva(
   [
     'bg-muted',
-    'data-[state=completed]:bg-primary data-[disabled]:opacity-50',
+    'data-[state=completed]:bg-secondary data-[disabled]:opacity-50',
     'transition-all duration-300 ease-in-out',
   ],
   {

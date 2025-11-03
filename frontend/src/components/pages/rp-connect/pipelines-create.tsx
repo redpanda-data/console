@@ -24,27 +24,32 @@ import {
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { isFeatureFlagEnabled } from 'config';
-import { useSessionStorage } from 'hooks/use-session-storage';
+import { useDebounce } from 'hooks/use-debounce';
 import { AlertCircle, PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
+import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { Link } from 'react-router-dom';
-import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
+import { Link, useSearchParams } from 'react-router-dom';
+import {
+  onboardingWizardStore,
+  useOnboardingWizardDataStore,
+  useOnboardingYamlContentStore,
+} from 'state/onboarding-wizard-store';
 
 import { extractLintHintsFromError, formatPipelineError } from './errors';
 import { CreatePipelineSidebar } from './onboarding/create-pipeline-sidebar';
 import { SecretsQuickAdd } from './secrets/secrets-quick-add';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+import { getContextualVariableSyntax, REDPANDA_CONTEXTUAL_VARIABLES } from './types/constants';
 import type { ConnectComponentType } from './types/schema';
-import type { AddUserFormData, WizardFormData } from './types/wizard';
 import { getConnectTemplate } from './utils/yaml';
 import type { LintHint } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
 import { appGlobal } from '../../../state/app-global';
@@ -91,12 +96,6 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     pipelinesApi.refreshPipelines(_force);
   }
 
-  handleWizardClick = () => {
-    sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
-    sessionStorage.removeItem(CONNECT_WIZARD_TOPIC_KEY);
-    sessionStorage.removeItem(CONNECT_WIZARD_USER_KEY);
-  };
-
   render() {
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
@@ -113,15 +112,14 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
       const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
       return (
-        <Button
-          isDisabled={alreadyExists || isNameEmpty || this.isCreating}
-          isLoading={this.isCreating}
-          loadingText="Creating..."
+        <NewButton
+          disabled={alreadyExists || isNameEmpty || this.isCreating}
           onClick={action(() => this.createPipeline(enableRpcnTiles ? undefined : toast))}
-          variant="solid"
+          variant="secondary"
         >
-          Create
-        </Button>
+          {this.isCreating && <Spinner />}
+          {this.isCreating ? 'Creating...' : 'Create'}
+        </NewButton>
       );
     };
 
@@ -131,13 +129,13 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           <UIText>
             For help creating your pipeline, see our{' '}
             <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" target="_blank">
-              quickstart documentation
+              quickstart
             </UILink>
-            , our{' '}
+            ,{' '}
             <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" target="_blank">
               library of examples
             </UILink>
-            , or our{' '}
+            , and{' '}
             <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" target="_blank">
               connector catalog
             </UILink>
@@ -169,7 +167,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           </FormField>
           <FormField
             description="One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines."
-            label="Compute Units"
+            label="Compute units"
             w={500}
           >
             <NumberInput
@@ -194,7 +192,10 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
         <Flex alignItems="center" gap="4">
           <CreateButton />
-          <Link to="/connect-clusters">
+          <Link
+            onClick={() => (isFeatureFlagEnabled('enableRpcnTiles') ? onboardingWizardStore.reset() : undefined)}
+            to="/connect-clusters"
+          >
             <Button variant="link">Cancel</Button>
           </Link>
         </Flex>
@@ -242,9 +243,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
             }
           } else {
             this.lintResults = {};
-            sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
-            sessionStorage.removeItem(CONNECT_WIZARD_TOPIC_KEY);
-            sessionStorage.removeItem(CONNECT_WIZARD_USER_KEY);
+            onboardingWizardStore.reset();
           }
 
           await pipelinesApi.refreshPipelines(true);
@@ -308,7 +307,7 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
         <CardContent>
           <NewButton onClick={openAddSecret} variant="secondary">
             <PlusIcon className="size-4" color="white" />
-            Add Secrets
+            Add secrets
           </NewButton>
         </CardContent>
       </Card>
@@ -347,6 +346,39 @@ const registerSecretsAutocomplete = async (
   setSecretAutocomplete(autocomplete);
 };
 
+const registerContextualVariablesAutocomplete = (
+  monaco: Monaco,
+  setContextualVarsAutocomplete: Dispatch<SetStateAction<IDisposable | undefined>>
+) => {
+  const contextualVars = Object.values(REDPANDA_CONTEXTUAL_VARIABLES);
+
+  const autocomplete = monaco.languages.registerCompletionItemProvider('yaml', {
+    triggerCharacters: ['$', '{'],
+    provideCompletionItems: (model, position) => {
+      const word = model.getWordUntilPosition(position);
+      const range = {
+        startLineNumber: position.lineNumber,
+        endLineNumber: position.lineNumber,
+        startColumn: word.startColumn,
+        endColumn: word.endColumn,
+      };
+
+      const suggestions = contextualVars.map<languages.CompletionItem>((cv) => ({
+        label: getContextualVariableSyntax(cv.name),
+        kind: monaco.languages.CompletionItemKind.Variable,
+        detail: cv.description,
+        documentation: `Contextual variable: ${cv.description}`,
+        insertText: getContextualVariableSyntax(cv.name),
+        range,
+      }));
+
+      return { suggestions };
+    },
+  });
+
+  setContextualVarsAutocomplete(autocomplete);
+};
+
 export const PipelineEditor = observer(
   (p: {
     yaml: string;
@@ -357,39 +389,32 @@ export const PipelineEditor = observer(
   }) => {
     const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
+    const [contextualVarsAutocomplete, setContextualVarsAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
-    const [persistedFormData] = useSessionStorage<Partial<WizardFormData>>(CONNECT_WIZARD_CONNECTOR_KEY, {});
+    const persistedYamlContent = useOnboardingYamlContentStore((state) => state.yamlContent);
+    const hasHydrated = useOnboardingWizardDataStore((state) => state._hasHydrated);
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
-    // Track actual editor content to keep sidebar in sync with editor's real state
     const [actualEditorContent, setActualEditorContent] = useState<string>('');
+    const hasInitializedServerless = useRef(false);
 
-    const persistedConnectComponentTemplate = useMemo(() => {
-      const persistedInput = persistedFormData?.input;
-      const persistedOutput = persistedFormData?.output;
-      if (!(persistedInput?.connectionName && persistedInput?.connectionType)) {
-        return undefined;
-      }
-      const inputTemplate = getConnectTemplate({
-        connectionName: persistedInput.connectionName,
-        connectionType: persistedInput.connectionType,
-        showOptionalFields: false,
+    const debouncedSyncToStore = useDebounce((yamlContent: string) => {
+      useOnboardingYamlContentStore.getState().setYamlContent({
+        yamlContent,
       });
-      if (persistedOutput?.connectionName && persistedOutput?.connectionType) {
-        const outputTemplate = getConnectTemplate({
-          connectionName: persistedOutput.connectionName,
-          connectionType: persistedOutput.connectionType,
-          showOptionalFields: false,
-        });
-        return `${inputTemplate}\n${outputTemplate}`;
-      }
-      return inputTemplate;
-    }, [persistedFormData]);
+    }, 500);
 
-    const yaml = useMemo(
-      () => (enableRpcnTiles && persistedConnectComponentTemplate ? persistedConnectComponentTemplate : p.yaml),
-      [enableRpcnTiles, persistedConnectComponentTemplate, p.yaml]
-    );
+    const yaml = useMemo(() => {
+      // If wizard is enabled and we have persisted yaml content, use that
+      if (enableRpcnTiles && persistedYamlContent) {
+        return persistedYamlContent;
+      }
+      // Otherwise fall back to prop
+      return p.yaml;
+    }, [enableRpcnTiles, persistedYamlContent, p.yaml]);
+
+    const [searchParams] = useSearchParams();
+    const isServerlessMode = searchParams.get('serverless') === 'true';
 
     const { data: secretsData, refetch: refetchSecrets } = useListSecretsQuery();
     const existingSecrets = useMemo(() => {
@@ -408,35 +433,18 @@ export const PipelineEditor = observer(
       }
     }, [yaml]);
 
-    const [wizardUserData] = useSessionStorage<AddUserFormData>(CONNECT_WIZARD_USER_KEY);
-
-    const secretDefaultValues = useMemo(() => {
-      if (!wizardUserData) {
-        return {};
-      }
-      const values: Record<string, string> = {};
-      if (wizardUserData.username) {
-        values.REDPANDA_USERNAME = wizardUserData.username;
-      }
-      if (wizardUserData.password) {
-        values.REDPANDA_PASSWORD = wizardUserData.password;
-      }
-      return values;
-    }, [wizardUserData]);
-
     const handleAddConnector = (connectionName: string, connectionType: ConnectComponentType) => {
       if (!editorInstance) {
         return;
       }
 
+      // Always get current YAML from editor instance (not store)
       const currentValue = editorInstance.getValue();
-      // For explicitly-added components (scanner, processor, cache, buffer),
-      // we want to show all fields since users are adding them to customize behavior.
-      const showAllFields = ['scanner', 'processor', 'cache', 'buffer'].includes(connectionType);
+
       const mergedYaml = getConnectTemplate({
         connectionName,
         connectionType,
-        showOptionalFields: showAllFields,
+        showOptionalFields: false,
         existingYaml: currentValue,
       });
 
@@ -445,7 +453,59 @@ export const PipelineEditor = observer(
       }
 
       editorInstance.setValue(mergedYaml);
+
+      // Immediately sync to store (bypass debounce for user-initiated actions)
+      if (enableRpcnTiles) {
+        useOnboardingYamlContentStore.getState().setYamlContent({
+          yamlContent: mergedYaml,
+        });
+      }
     };
+
+    // On initial mount in serverless mode, generate YAML from persisted connectors
+    // Wait for hydration to complete before initializing
+    // biome-ignore lint/correctness/useExhaustiveDependencies: Only runs once after hydration, ref prevents re-initialization
+    useEffect(() => {
+      const shouldInitialize = enableRpcnTiles && isServerlessMode && hasHydrated && !hasInitializedServerless.current;
+
+      if (!shouldInitialize) {
+        return;
+      }
+
+      const wizardData = useOnboardingWizardDataStore.getState();
+      const inputData = wizardData.input;
+      const outputData = wizardData.output;
+
+      if (inputData?.connectionName && inputData?.connectionType) {
+        let yamlContent = '';
+
+        // Generate input template
+        yamlContent =
+          getConnectTemplate({
+            connectionName: inputData.connectionName,
+            connectionType: inputData.connectionType,
+            showOptionalFields: false,
+            existingYaml: yamlContent,
+          }) || yamlContent;
+
+        // Generate output template if exists
+        if (outputData?.connectionName && outputData?.connectionType) {
+          yamlContent =
+            getConnectTemplate({
+              connectionName: outputData.connectionName,
+              connectionType: outputData.connectionType,
+              showOptionalFields: false,
+              existingYaml: yamlContent,
+            }) || yamlContent;
+        }
+
+        if (yamlContent) {
+          useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent });
+        }
+      }
+
+      hasInitializedServerless.current = true;
+    }, [hasHydrated]);
 
     useEffect(() => {
       return () => {
@@ -453,33 +513,39 @@ export const PipelineEditor = observer(
           // avoid duplicate secret autocomplete registration
           secretAutocomplete.dispose();
         }
+        if (contextualVarsAutocomplete) {
+          // avoid duplicate contextual variables autocomplete registration
+          contextualVarsAutocomplete.dispose();
+        }
       };
-    }, [secretAutocomplete]);
+    }, [secretAutocomplete, contextualVarsAutocomplete]);
 
     // Sync actual editor content with editor instance
-    // This ensures sidebar always sees what's actually in the editor
     useEffect(() => {
       if (!editorInstance) {
         return;
       }
 
-      // Read actual content from editor after mount
       const currentValue = editorInstance.getValue();
       setActualEditorContent(currentValue);
 
-      // Also sync to parent if different
       if (currentValue !== p.yaml) {
         p.onChange?.(currentValue);
       }
 
-      // Listen for content changes
       const disposable = editorInstance.onDidChangeModelContent(() => {
         const newValue = editorInstance.getValue();
         setActualEditorContent(newValue);
+
+        if (enableRpcnTiles) {
+          debouncedSyncToStore(newValue);
+        }
       });
 
-      return () => disposable.dispose();
-    }, [editorInstance, p.onChange, p.yaml]);
+      return () => {
+        disposable.dispose();
+      };
+    }, [editorInstance, enableRpcnTiles, debouncedSyncToStore, p.onChange, p.yaml]);
 
     return (
       <Tabs
@@ -504,6 +570,7 @@ export const PipelineEditor = observer(
                       setEditorInstance(editorRef);
                       setMonaco(monacoInst);
                       await registerSecretsAutocomplete(monacoInst, setSecretAutocomplete);
+                      registerContextualVariablesAutocomplete(monacoInst, setContextualVarsAutocomplete);
                     }}
                     options={{
                       readOnly: p.isDisabled,
@@ -520,7 +587,6 @@ export const PipelineEditor = observer(
                         existingSecrets={existingSecrets}
                         onAddConnector={handleAddConnector}
                         onSecretsCreated={refetchSecrets}
-                        secretDefaultValues={secretDefaultValues}
                       />
                     ) : (
                       <QuickActions

@@ -54,7 +54,7 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
         name="replicationFactor"
         render={({ field }) => (
           <FormItem className={isExistingTopic ? '' : 'opacity-70'}>
-            <FormLabel>Replication Factor</FormLabel>
+            <FormLabel>Replication factor</FormLabel>
             <FormControl>
               <Input
                 {...field}
@@ -73,7 +73,7 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
         disabled={disabled}
         form={form}
         isExistingTopic={isExistingTopic}
-        label="Retention Time"
+        label="Retention time"
         onChange={createFloatChangeHandler}
         unitField="retentionTimeUnit"
         units={retentionTimeUnits}
@@ -84,7 +84,7 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
         disabled={disabled}
         form={form}
         isExistingTopic={isExistingTopic}
-        label="Retention Size"
+        label="Retention size"
         onChange={createFloatChangeHandler}
         unitField="retentionSizeUnit"
         units={retentionSizeUnits}
@@ -137,18 +137,18 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
           />
           <FormField
             control={form.control}
-            disabled={isExistingTopic || disabled}
+            disabled={isRetentionDisabled}
             name={unitField as 'retentionTimeUnit' | 'retentionSizeUnit'}
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className="w-32 bg-gray-200">
+                  <Select disabled={field.disabled} onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger className="w-32 bg-gray-200" disabled={field.disabled}>
                       <SelectValue defaultValue={field.value} />
                     </SelectTrigger>
                     <SelectContent>
                       {units.map(({ value, label: unitLabel }) => (
-                        <SelectItem key={value} value={value}>
+                        <SelectItem disabled={field.disabled} key={value} value={value}>
                           {unitLabel}
                         </SelectItem>
                       ))}

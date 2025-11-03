@@ -1140,6 +1140,8 @@ components:
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/ServiceAccount'
         state:
           $ref: '#/components/schemas/Pipeline.State'
         status:
@@ -1187,6 +1189,8 @@ components:
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/ServiceAccount'
       required:
         - display_name
         - config_yaml
@@ -1204,6 +1208,8 @@ components:
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/ServiceAccount'
       required:
         - display_name
         - config_yaml
@@ -1457,6 +1463,13 @@ components:
             $ref: '#/components/schemas/Scope'
           title: Secret scopes
           type: array
+      type: object
+    ServiceAccount:
+      properties:
+        client_id:
+          type: string
+        client_secret:
+          type: string
       type: object
     SetConfiguration:
       properties:
@@ -4362,7 +4375,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

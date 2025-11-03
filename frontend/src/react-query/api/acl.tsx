@@ -528,9 +528,7 @@ export const useGetAclsByPrincipal = <T = AclDetail[]>(
   principal: string,
   host?: string,
   transformFn?: (aclList: ListACLsResponse) => T,
-  options?: {
-    enabled?: boolean;
-  }
+  options?: QueryOptions<GenMessage<ListACLsResponse>, T>
 ) =>
   useQuery(
     listACLs,

@@ -1,3 +1,5 @@
+@source "../node_modules/streamdown/dist/index.js";
+
 @import "./components/redpanda-ui/style/theme.css";
 @import "tailwindcss";
 @import "tw-animate-css";

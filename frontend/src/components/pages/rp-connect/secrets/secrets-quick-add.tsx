@@ -60,7 +60,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
           create(CreateSecretRequestSchema, {
             id: normalizedId,
             secretData: base64ToUInt8Array(encodeBase64(secret)),
-            scopes: [Scope.REDPANDA_CONNECT],
+            scopes: [Scope.REDPANDA_CONNECT, Scope.MCP_SERVER],
           })
         )
         .then(async () => {

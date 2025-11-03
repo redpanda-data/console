@@ -44,10 +44,12 @@ export const FormSchema = z.object({
   individualTools: z.array(z.string()).default([]),
   selectedMcpServers: z.array(z.string()),
   resourcesTier: z.string().default('Small'),
-  systemPrompt: z
+  systemPrompt: z.string().min(10, 'System prompt must be at least 10 characters'),
+  serviceAccountName: z
     .string()
-    .min(10, 'System prompt must be at least 10 characters')
-    .max(16_384, 'System prompt must be at most 16,384 characters'),
+    .min(3, 'Service account name must be at least 3 characters')
+    .max(128, 'Service account name must be at most 128 characters')
+    .regex(/^[^<>]+$/, 'Service account name cannot contain < or > characters'),
 });
 
 export type FormValues = z.infer<typeof FormSchema>;
@@ -65,4 +67,5 @@ export const initialValues: FormValues = {
   selectedMcpServers: [],
   resourcesTier: 'XSmall',
   systemPrompt: '',
+  serviceAccountName: '',
 };

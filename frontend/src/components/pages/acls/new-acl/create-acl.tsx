@@ -75,6 +75,11 @@ export const formatLabel = (text: string): string => {
     .replace('id', 'ID'); // transactional ids => transactional IDs
 };
 
+// Helper function to format summary labels, keeping certain words capitalized
+export const formatSummaryLabel = (text: string): string => {
+  return text.replace('id', 'ID'); // transactional ids => transactional IDs
+};
+
 // Helper function to get resource name for selector label
 const getResourceName = (resourceType: ResourceType): string => {
   const resourceNames: Record<string, string> = {
@@ -240,7 +245,10 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
                 key={rule.id}
               >
                 {/* Combined Resource and Selector */}
-                <p className="text-gray-600 text-xs" data-testid={`${getRuleDataTestId(rule)}-title`}>
+                <p
+                  className="text-gray-600 text-xs first-letter:uppercase"
+                  data-testid={`${getRuleDataTestId(rule)}-title`}
+                >
                   {(() => {
                     let text: string;
                     if (rule.resourceType === ResourceTypeCluster || rule.resourceType === ResourceTypeSchemaRegistry) {
@@ -251,7 +259,7 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
                       const matchType = rule.selectorType === ResourcePatternTypeLiteral ? 'matching' : 'starting with';
                       text = `${getPluralResourceName(rule.resourceType)} ${matchType}: "${rule.selectorValue}"`;
                     }
-                    return formatLabel(text);
+                    return formatSummaryLabel(text);
                   })()}
                 </p>
 

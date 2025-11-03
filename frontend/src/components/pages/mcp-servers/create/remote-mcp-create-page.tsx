@@ -366,6 +366,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
                 isLintConfigPending={isLintConfigPending}
                 isOpen={expandedTool.isOpen}
                 lintHints={lintHints[expandedTool.index] || {}}
+                mode="form"
                 onClose={() => setExpandedTool(null)}
                 onLint={() => handleLintTool(expandedTool.index)}
                 toolIndex={expandedTool.index}

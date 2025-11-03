@@ -11,6 +11,7 @@ export const FEATURE_FLAGS = {
   enableRemoteMcpInspectorInConsole: false,
   enableRemoteMcpConnectClientInConsoleServerless: false,
   enableRpcnTiles: false,
+  enableServerlessOnboardingWizard: false,
   enableAiAgentsInConsole: false,
   enableAiAgentsInspectorInConsole: false,
   enableAiAgentsInConsoleServerless: false,

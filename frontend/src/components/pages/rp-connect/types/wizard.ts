@@ -11,29 +11,30 @@ import { z } from 'zod';
 
 import { CONNECT_COMPONENT_TYPE } from './schema';
 
-export const connectTilesFormSchema = z.object({
+export const connectTilesListFormSchema = z.object({
   connectionName: z.optional(z.string().min(1, { message: 'Please select a connection method.' })),
   connectionType: z.optional(z.enum(CONNECT_COMPONENT_TYPE)),
 });
 
-const wizardFormSchema = z.object({
-  input: connectTilesFormSchema,
-  output: connectTilesFormSchema,
-});
+export type ConnectTilesListFormData = z.infer<typeof connectTilesListFormSchema>;
 
-export type WizardFormData = z.infer<typeof wizardFormSchema>;
-
-export type ConnectTilesFormData = z.infer<typeof connectTilesFormSchema>;
-
-export type StepSubmissionResult = {
+export type OperationResult = {
+  operation: string; // e.g., "Create user", "Create ACL", "Create secret"
   success: boolean;
   message?: string;
   error?: string;
-  data?: ConnectTilesFormData;
 };
 
-export type BaseStepRef = {
-  triggerSubmit: () => Promise<StepSubmissionResult>;
+export type StepSubmissionResult<T> = {
+  success: boolean; // Overall success (all operations succeeded)
+  message?: string; // Overall summary message
+  error?: string; // Overall error message
+  data?: T; // Form data
+  operations?: OperationResult[]; // Detailed results for each operation
+};
+
+export type BaseStepRef<T> = {
+  triggerSubmit: () => Promise<StepSubmissionResult<T>>;
   isLoading: boolean;
 };
 
@@ -77,3 +78,28 @@ export const addUserFormSchema = z.object({
 });
 
 export type AddUserFormData = z.infer<typeof addUserFormSchema>;
+
+const onboardingWizardFormSchema = z.object({
+  input: connectTilesListFormSchema,
+  output: connectTilesListFormSchema,
+  topicName: z.optional(addTopicFormSchema.shape.topicName),
+  username: z.optional(addUserFormSchema.shape.username),
+});
+
+export type OnboardingWizardFormData = z.infer<typeof onboardingWizardFormSchema>;
+
+export type MinimalTopicData = {
+  topicName: string;
+};
+
+export type MinimalUserData = {
+  username: string;
+  saslMechanism: (typeof SASL_MECHANISMS)[number];
+};
+
+export const CreatableSelectionOptions = {
+  EXISTING: 'existing',
+  CREATE: 'create',
+} as const;
+
+export type CreatableSelectionType = (typeof CreatableSelectionOptions)[keyof typeof CreatableSelectionOptions];

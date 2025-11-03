@@ -11,10 +11,12 @@
 
 import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import type { ColumnDef } from '@tanstack/react-table';
+import { isFeatureFlagEnabled } from 'config';
 import { makeObservable, observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { onboardingWizardStore } from 'state/onboarding-wizard-store';
 
 import { openDeleteModal } from './modals';
 import { PipelineStatus } from './pipelines-list';
@@ -110,7 +112,12 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
 
         <Flex gap="4" mb="4">
           <Link to={`/rp-connect/${pipelineId}/edit`}>
-            <Button variant="solid">Edit</Button>
+            <Button
+              onClick={() => (isFeatureFlagEnabled('enableRpcnTiles') ? onboardingWizardStore.reset() : undefined)}
+              variant="solid"
+            >
+              Edit
+            </Button>
           </Link>
 
           <Button

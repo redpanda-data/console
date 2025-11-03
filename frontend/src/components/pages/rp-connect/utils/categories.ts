@@ -1,4 +1,4 @@
-import type { ExtendedConnectComponentSpec, RawComponentSpec } from '../types/schema';
+import type { ConnectComponentType, ExtendedConnectComponentSpec, RawComponentSpec } from '../types/schema';
 
 export interface ConnectNodeCategory {
   id: string;
@@ -47,13 +47,17 @@ export const getCategoryDisplayName = (category: string): string =>
   displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' ');
 
 export const getAllCategories = (
-  components: (RawComponentSpec | ExtendedConnectComponentSpec)[]
+  components: (RawComponentSpec | ExtendedConnectComponentSpec)[],
+  componentType?: ConnectComponentType[]
 ): ConnectNodeCategory[] => {
   const categorySet = new Set<string>();
 
   // Collect categories from built-in components
   for (const component of components) {
-    if (component.categories) {
+    if (
+      component.categories &&
+      (componentType ? componentType?.includes(component.type as ConnectComponentType) : true)
+    ) {
       for (const categoryId of component.categories) {
         categorySet.add(categoryId);
       }
@@ -68,3 +72,8 @@ export const getAllCategories = (
       name: getCategoryDisplayName(categoryId),
     }));
 };
+
+const PRIORITY_CATEGORIES = ['api', 'AWS'];
+
+export const getFilterableCategories = (categories: ConnectNodeCategory[]): ConnectNodeCategory[] =>
+  categories.filter((category) => !PRIORITY_CATEGORIES.includes(category.id));

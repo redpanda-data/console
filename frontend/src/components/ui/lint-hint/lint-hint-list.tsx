@@ -26,7 +26,7 @@ export const LintHintList: React.FC<LintHintListProps> = ({ lintHints }) => {
       <div className="flex items-center gap-2">
         <PencilRuler className="h-4 w-4" />
         <Text className="font-medium" variant="label">
-          Linting Issues
+          Linting issues
         </Text>
       </div>
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">

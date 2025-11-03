@@ -90,6 +90,16 @@ test.describe('ACL Creation', () => {
             DESCRIBE: OperationTypeAllow,
           },
         } as Rule,
+        {
+          id: 4,
+          resourceType: ResourceTypeTransactionalId,
+          mode: ModeCustom,
+          selectorType: ResourcePatternTypePrefix,
+          selectorValue: '__test',
+          operations: {
+            DESCRIBE: OperationTypeAllow,
+          },
+        } as Rule,
       ],
     },
   ].map(({ testName, principal, host, operation }) => {
@@ -953,7 +963,7 @@ test.describe('Allow all operations', () => {
           selectorValue: '',
           operations: {},
           resourceType: type,
-        }) as Rule,
+        }) as Rule
     );
 
     aclPages.map(({ createPage, type }) => {
@@ -1165,7 +1175,7 @@ test.describe('Multiples ACLs to same principal', () => {
 
         // Verify URL contains host query parameter
         await page.waitForURL(
-          `**/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(firstHost)}`,
+          `**/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(firstHost)}`
         );
 
         // Validate all rules from first ACL are present
@@ -1188,7 +1198,7 @@ test.describe('Multiples ACLs to same principal', () => {
 
         // Verify URL contains host query parameter
         await page.waitForURL(
-          `**/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(secondHost)}`,
+          `**/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(secondHost)}`
         );
 
         // Validate all rules from second ACL are present
@@ -1223,7 +1233,7 @@ test.describe('Multiples ACLs to same principal', () => {
 
       // Verify navigation to detail page with host parameter
       await page.waitForURL(
-        `**/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(firstHost)}`,
+        `**/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(firstHost)}`
       );
 
       // Verify ACL details are shown (not the host selector anymore)
@@ -1244,7 +1254,7 @@ test.describe('Multiples ACLs to same principal', () => {
 
       // Verify navigation to detail page with second host parameter
       await page.waitForURL(
-        `**/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(secondHost)}`,
+        `**/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(secondHost)}`
       );
 
       // Verify ACL details for second host are shown

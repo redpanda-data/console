@@ -1,4 +1,3 @@
-import { create } from '@bufbuild/protobuf';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { generatePassword } from 'components/pages/acls/user-create';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
@@ -7,7 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'compo
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import { Combobox, type ComboboxOption } from 'components/redpanda-ui/components/combobox';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from 'components/redpanda-ui/components/form';
 import { Group } from 'components/redpanda-ui/components/group';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
@@ -18,342 +25,432 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
-import { useSessionStorage } from 'hooks/use-session-storage';
-import { CircleAlert, RefreshCcw } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
+import { Heading, Link, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { CircleAlert, RefreshCcw, XIcon } from 'lucide-react';
+import type { MotionProps } from 'motion/react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
+import { Link as ReactRouterLink } from 'react-router-dom';
 import { SASL_MECHANISMS } from 'utils/user';
 
-import { CreateACLRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
+import { useListACLsQuery } from '../../../../react-query/api/acl';
+import { useListUsersQuery } from '../../../../react-query/api/user';
+import type { BaseStepRef, StepSubmissionResult } from '../types/wizard';
 import {
-  CreateUserRequestSchema,
-  type ListUsersResponse_User,
-} from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
-import { useLegacyCreateACLMutation } from '../../../../react-query/api/acl';
-import { useCreateUserMutation } from '../../../../react-query/api/user';
-import type { AddTopicFormData, BaseStepRef, StepSubmissionResult } from '../types/wizard';
-import { type AddUserFormData, addUserFormSchema } from '../types/wizard';
-import { createTopicSuperuserACLs, saslMechanismToProto } from '../utils/user';
+  type AddUserFormData,
+  addUserFormSchema,
+  CreatableSelectionOptions,
+  type CreatableSelectionType,
+} from '../types/wizard';
+import {
+  checkUserHasTopicReadWritePermissions,
+  getACLOperationName,
+  useCreateUserWithSecretsMutation,
+} from '../utils/user';
 
 interface AddUserStepProps {
-  usersList: ListUsersResponse_User[];
+  defaultUsername?: string;
+  defaultSaslMechanism?: (typeof SASL_MECHANISMS)[number];
+  topicName?: string;
 }
 
-export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersList }, ref) => {
-  const [persistedUserData, setUserFormData] =
-    useSessionStorage<Omit<AddUserFormData, 'password'>>(CONNECT_WIZARD_USER_KEY);
-  const [topicData] = useSessionStorage<AddTopicFormData>(CONNECT_WIZARD_TOPIC_KEY);
+export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepProps & MotionProps>(
+  ({ defaultUsername, defaultSaslMechanism, topicName, ...motionProps }, ref) => {
+    const { data: usersList, refetch: refetchUsers } = useListUsersQuery();
 
-  const initialUserOptions = useMemo(
-    () =>
-      usersList.map((user) => ({
-        value: user.name || '',
-        label: user.name || '',
-      })),
-    [usersList]
-  );
-  const [userOptions, setUserOptions] = useState<ComboboxOption[]>(initialUserOptions);
-  const createUserMutation = useCreateUserMutation();
-  const createACLMutation = useLegacyCreateACLMutation();
+    const initialUserOptions = useMemo(
+      () =>
+        (usersList?.users ?? []).map((user) => ({
+          value: user.name || '',
+          label: user.name || '',
+        })),
+      [usersList]
+    );
+    const [userOptions, setUserOptions] = useState<ComboboxOption[]>(initialUserOptions);
+    const [userSelectionType, setUserSelectionType] = useState<CreatableSelectionType>(
+      userOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
+    );
+    const createUserWithSecretsMutation = useCreateUserWithSecretsMutation();
 
-  const isLoading = createUserMutation.isPending || createACLMutation.isPending;
+    const form = useForm<AddUserFormData>({
+      resolver: zodResolver(addUserFormSchema),
+      mode: 'onChange',
+      defaultValues: {
+        username: defaultUsername || '',
+        password: generatePassword(30, false),
+        saslMechanism: defaultSaslMechanism || 'SCRAM-SHA-256',
+        superuser: true,
+        specialCharactersEnabled: false,
+        passwordLength: 30,
+      },
+    });
 
-  // Initialize password generation settings from persisted data or defaults
-  // Note: We don't persist the actual password (it's write-only in the API)
-  const initialSpecialChars = useMemo(
-    () => persistedUserData?.specialCharactersEnabled ?? false,
-    [persistedUserData?.specialCharactersEnabled]
-  );
-  const initialPasswordLength = useMemo(
-    () => persistedUserData?.passwordLength ?? 30,
-    [persistedUserData?.passwordLength]
-  );
-  const initialPassword = useMemo(
-    () => generatePassword(initialPasswordLength, initialSpecialChars),
-    [initialPasswordLength, initialSpecialChars]
-  );
+    const watchedUsername = form.watch('username');
+    const watchedSpecialCharacters = form.watch('specialCharactersEnabled');
+    const watchedPasswordLength = form.watch('passwordLength');
 
-  const form = useForm<AddUserFormData>({
-    resolver: zodResolver(addUserFormSchema),
-    mode: 'onChange',
-    defaultValues: {
-      username: persistedUserData?.username || '',
-      password: initialPassword,
-      saslMechanism: persistedUserData?.saslMechanism || 'SCRAM-SHA-256',
-      superuser: persistedUserData?.superuser ?? true,
-      specialCharactersEnabled: initialSpecialChars,
-      passwordLength: initialPasswordLength,
-    },
-  });
+    const existingUserSelected = useMemo(() => {
+      // Only check if the CURRENT form username matches an existing user
+      // Don't use persisted username to avoid showing existing user state when creating a new one
+      if (!watchedUsername) {
+        return undefined;
+      }
+      return usersList?.users?.find((user) => user.name === watchedUsername);
+    }, [watchedUsername, usersList]);
 
-  const watchedUsername = form.watch('username');
-  const watchedSpecialCharacters = form.watch('specialCharactersEnabled');
-  const watchedPasswordLength = form.watch('passwordLength');
+    const { data: aclData, refetch: refetchACLs } = useListACLsQuery(undefined, {
+      enabled: Boolean(existingUserSelected && topicName),
+      refetchOnMount: 'always',
+      staleTime: 0,
+    });
 
-  const existingUserBeingEdited = useMemo(() => {
-    // Only check if the CURRENT form username matches an existing user
-    // Don't use persisted username to avoid showing existing user state when creating a new one
-    if (!watchedUsername) {
-      return undefined;
-    }
-    return usersList?.find((user) => user.name === watchedUsername);
-  }, [watchedUsername, usersList]);
+    // Refetch ACLs whenever the selected user changes
+    useEffect(() => {
+      if (existingUserSelected && topicName) {
+        refetchACLs();
+      }
+    }, [existingUserSelected, topicName, refetchACLs]);
 
-  const generateNewPassword = useCallback(() => {
-    const newPassword = generatePassword(watchedPasswordLength, watchedSpecialCharacters);
-    form.setValue('password', newPassword, { shouldDirty: true });
-  }, [watchedPasswordLength, watchedSpecialCharacters, form]);
+    const userTopicPermissions = useMemo(() => {
+      if (!(existingUserSelected && topicName && aclData?.aclResources)) {
+        return null;
+      }
 
-  const handleCreateUserOption = useCallback((value: string) => {
-    setUserOptions((prev) => [...prev, { value, label: value }]);
-  }, []);
+      return checkUserHasTopicReadWritePermissions(aclData.aclResources, topicName, existingUserSelected.name);
+    }, [existingUserSelected, topicName, aclData]);
 
-  const handleSpecialCharsChange = useCallback(
-    (val: boolean | 'indeterminate', onChange: (value: boolean) => void) => {
-      const newValue = val === 'indeterminate' ? false : val;
-      onChange(newValue);
-      generateNewPassword();
-    },
-    [generateNewPassword]
-  );
+    const isLoading = createUserWithSecretsMutation.isPending;
+    const isReadOnly = Boolean(existingUserSelected) || userSelectionType === CreatableSelectionOptions.EXISTING;
 
-  useEffect(() => {
-    setUserOptions(initialUserOptions);
-  }, [initialUserOptions]);
+    const generateNewPassword = useCallback(() => {
+      const newPassword = generatePassword(watchedPasswordLength, watchedSpecialCharacters);
+      form.setValue('password', newPassword, { shouldDirty: true });
+    }, [watchedPasswordLength, watchedSpecialCharacters, form]);
 
-  const handleSubmit = useCallback(
-    async (userData: AddUserFormData): Promise<StepSubmissionResult> => {
-      try {
-        // Persist user data WITHOUT password (passwords are write-only in the API)
-        const { password: _password, ...userDataWithoutPassword } = userData;
-        setUserFormData(userDataWithoutPassword);
+    const handleSpecialCharsChange = useCallback(
+      (val: boolean | 'indeterminate', onChange: (value: boolean) => void) => {
+        const newValue = val === 'indeterminate' ? false : val;
+        onChange(newValue);
+        generateNewPassword();
+      },
+      [generateNewPassword]
+    );
 
-        if (existingUserBeingEdited) {
-          return {
-            success: true,
-            message: `Using existing user "${userData.username}"`,
-          };
-        }
+    useEffect(() => {
+      setUserOptions(initialUserOptions);
+    }, [initialUserOptions]);
 
-        const createUserRequest = create(CreateUserRequestSchema, {
-          user: {
-            name: userData.username,
-            password: userData.password,
-            mechanism: saslMechanismToProto(userData.saslMechanism),
-          },
+    const handleSubmit = useCallback(
+      async (userData: AddUserFormData): Promise<StepSubmissionResult<AddUserFormData>> => {
+        const result = await createUserWithSecretsMutation.mutateAsync({
+          userData,
+          topicName,
+          existingUserSelected: Boolean(existingUserSelected),
         });
 
-        await createUserMutation.mutateAsync(createUserRequest);
+        return result;
+      },
+      [createUserWithSecretsMutation, topicName, existingUserSelected]
+    );
 
-        if (topicData?.topicName && userData.superuser) {
-          const aclConfigs = createTopicSuperuserACLs(topicData.topicName, userData.username);
+    const handleUserSelectionTypeChange = useCallback(
+      (value: string) => {
+        setUserSelectionType(value as CreatableSelectionType);
 
-          for (const config of aclConfigs) {
-            const aclRequest = create(CreateACLRequestSchema, config);
-            await createACLMutation.mutateAsync(aclRequest);
-          }
+        form.setValue('username', '', { shouldDirty: true });
+      },
+      [form]
+    );
+
+    const handleClearUsername = useCallback(() => {
+      form.setValue('username', '', { shouldDirty: true });
+    }, [form]);
+
+    useImperativeHandle(ref, () => ({
+      triggerSubmit: async () => {
+        const isUserFormValid = await form.trigger();
+
+        if (isUserFormValid) {
+          const userData = form.getValues();
+          return handleSubmit(userData);
         }
-
-        return {
-          success: true,
-          message: `Created user "${userData.username}" successfully!${
-            topicData?.topicName && userData.superuser ? ` with permissions for topic "${topicData.topicName}"` : ''
-          }`,
-        };
-      } catch (error) {
         return {
           success: false,
-          message: 'Failed to create user or configure permissions',
-          error: error instanceof Error ? error.message : 'Unknown error',
+          message: 'Please fix the form errors before proceeding',
+          error: 'Form validation failed',
         };
-      }
-    },
-    [existingUserBeingEdited, setUserFormData, createUserMutation, topicData?.topicName, createACLMutation]
-  );
+      },
+      isLoading,
+    }));
 
-  useImperativeHandle(ref, () => ({
-    triggerSubmit: async () => {
-      const isUserFormValid = await form.trigger();
+    return (
+      <Card size="full" {...motionProps} animated>
+        <CardHeader className="max-w-2xl">
+          <CardTitle>
+            <Heading level={2}>Configure a user with permissions</Heading>
+          </CardTitle>
+          <CardDescription className="mt-4">
+            Select or create a SASL-SCRAM user that can interact with this topic.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="min-h-[300px]">
+          <Form {...form}>
+            <div className="mt-4 max-w-2xl space-y-8">
+              <div className="flex flex-col gap-2">
+                <FormLabel>Username</FormLabel>
+                <FormDescription>
+                  {topicName
+                    ? `Choose an existing user that has permissions for ${topicName}, or create a new one with full permissions.`
+                    : 'Select an existing user or create a new one.'}
+                </FormDescription>
+                <div className="flex flex-col items-start gap-2">
+                  <ToggleGroup
+                    defaultValue={userSelectionType}
+                    disabled={isLoading}
+                    onValueChange={(value) => handleUserSelectionTypeChange(value as CreatableSelectionType)}
+                    type="single"
+                    variant="outline"
+                  >
+                    <ToggleGroupItem
+                      disabled={userOptions.length === 0}
+                      id={CreatableSelectionOptions.EXISTING}
+                      value={CreatableSelectionOptions.EXISTING}
+                    >
+                      Existing
+                    </ToggleGroupItem>
+                    <ToggleGroupItem id={CreatableSelectionOptions.CREATE} value={CreatableSelectionOptions.CREATE}>
+                      New
+                    </ToggleGroupItem>
+                  </ToggleGroup>
 
-      if (isUserFormValid) {
-        const userData = form.getValues();
-        return handleSubmit(userData);
-      }
-      return {
-        success: false,
-        message: 'Please fix the form errors before proceeding',
-        error: 'Form validation failed',
-      };
-    },
-    isLoading,
-  }));
-
-  return (
-    <Card size="full">
-      <CardHeader className="max-w-2xl">
-        <CardTitle>
-          <Heading level={2}>Select a user</Heading>
-        </CardTitle>
-        <CardDescription className="mt-4">
-          A Kafka user represents an application, service, or human identity that interacts with a cluster, either to
-          produce data, consume data, or perform administrative tasks. Kafka uses Access Control Lists (ACLs) to manage
-          what each user is allowed to do, providing fine-grained security and preventing unauthorized access.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="max-h-[50vh] min-h-[400px] overflow-y-auto">
-        <Form {...form}>
-          <div className="max-w-2xl space-y-8">
-            <FormField
-              control={form.control}
-              disabled={isLoading}
-              name="username"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Username</FormLabel>
-                  <FormControl>
-                    <Combobox
-                      {...field}
-                      creatable
-                      onCreateOption={handleCreateUserOption}
-                      options={userOptions}
-                      placeholder="Select or create a user..."
+                  <div className="flex gap-2">
+                    <FormField
+                      control={form.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            {userSelectionType === CreatableSelectionOptions.EXISTING ? (
+                              <Combobox
+                                {...field}
+                                className="w-[300px]"
+                                disabled={isLoading}
+                                onOpen={() => refetchUsers()}
+                                options={userOptions}
+                                placeholder="Select a user"
+                              />
+                            ) : (
+                              <Input
+                                {...field}
+                                className="w-[300px]"
+                                disabled={isLoading}
+                                placeholder="Enter a username"
+                              />
+                            )}
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
-            {existingUserBeingEdited && !isLoading && (
-              <Alert>
-                <CircleAlert className="h-4 w-4" />
-                <AlertTitle>Existing User Selected</AlertTitle>
-                <AlertDescription>
-                  <Text>
-                    This user already exists. To enable topic-specific permissions automatically, please create a new
-                    user. You can see if this existing user already has permissions{' '}
-                    <Link href={`/security/users/${existingUserBeingEdited.name}/details`}>here</Link>.
-                  </Text>
-                </AlertDescription>
-              </Alert>
-            )}
+                    {watchedUsername !== '' && watchedUsername.length > 0 && (
+                      <Button disabled={isLoading} onClick={handleClearUsername} size="icon" variant="ghost">
+                        <XIcon size={16} />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-            {!existingUserBeingEdited && (
-              <>
-                <FormField
-                  control={form.control}
-                  disabled={isLoading}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Group>
-                          <Input type="password" {...field} />
-                          <CopyButton content={field.value} size="icon" variant="outline" />
-                          <Button onClick={generateNewPassword} size="icon" type="button" variant="outline">
-                            <RefreshCcw size={15} />
-                          </Button>
-                        </Group>
-                      </FormControl>
-                      <FormMessage />
-                      <FormField
-                        {...field}
-                        control={form.control}
-                        name="specialCharactersEnabled"
-                        render={({ field: specialCharsField }) => (
-                          <Label className="flex-row items-center font-normal text-muted-foreground">
-                            <Checkbox
-                              checked={specialCharsField.value}
-                              onCheckedChange={(val) => handleSpecialCharsChange(val, specialCharsField.onChange)}
-                            />
-                            Generate with special characters
-                          </Label>
-                        )}
-                      />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  disabled={isLoading}
-                  name="saslMechanism"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>SASL Mechanism</FormLabel>
-                      <FormControl>
-                        <Select {...field}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a SASL Mechanism" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {SASL_MECHANISMS.map((mechanism) => (
-                              <SelectItem key={mechanism} value={mechanism}>
-                                {mechanism}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              {existingUserSelected &&
+                topicName &&
+                !isLoading &&
+                userTopicPermissions &&
+                userTopicPermissions.missingPermissions.length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertTitle>
+                      <CircleAlert className="h-4 w-4" /> User does not have required permissions
+                    </AlertTitle>
+                    <AlertDescription>
+                      <Text variant="small">
+                        The user <b>{existingUserSelected.name}</b> requires the following permissions for the{' '}
+                        <b>{topicName}</b> topic:
+                        <List>
+                          {userTopicPermissions.missingPermissions.map((permission) => (
+                            <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
+                          ))}
+                        </List>
+                      </Text>
+                      <Text variant="small">
+                        Edit the user's{' '}
+                        <Link
+                          as={ReactRouterLink}
+                          className="text-blue-800"
+                          to={`/security/users/${existingUserSelected.name}/details`}
+                        >
+                          ACLs
+                        </Link>{' '}
+                        to add permissions.
+                      </Text>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              {existingUserSelected &&
+                topicName &&
+                !isLoading &&
+                userTopicPermissions &&
+                userTopicPermissions.hasPermissions.length > 0 && (
+                  <Alert variant="success">
+                    <AlertTitle>
+                      <CircleAlert className="h-4 w-4" /> User has required permissions
+                    </AlertTitle>
+                    <AlertDescription>
+                      <Text variant="small">
+                        The user <b>{existingUserSelected.name}</b> has the following permissions for the{' '}
+                        <b>{topicName}</b> topic:
+                        <List>
+                          {userTopicPermissions.hasPermissions.map((permission) => (
+                            <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
+                          ))}
+                        </List>
+                      </Text>
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-                {topicData?.topicName && (
+              {!(existingUserSelected || isLoading) && userSelectionType === CreatableSelectionOptions.CREATE && (
+                <>
                   <FormField
                     control={form.control}
-                    disabled={isLoading}
-                    name="superuser"
+                    disabled={isLoading || isReadOnly}
+                    name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-center space-x-3">
-                            <FormControl>
+                        <FormLabel>Password</FormLabel>
+                        <FormDescription>
+                          Make sure to save the password somewhere safe. It cannot be retrieved after creation.
+                        </FormDescription>
+                        <FormControl>
+                          <Group>
+                            <Input type="password" {...field} />
+                            <CopyButton content={field.value} disabled={isReadOnly} size="icon" variant="outline" />
+                            <Button
+                              disabled={isReadOnly}
+                              onClick={generateNewPassword}
+                              size="icon"
+                              type="button"
+                              variant="outline"
+                            >
+                              <RefreshCcw size={15} />
+                            </Button>
+                          </Group>
+                        </FormControl>
+                        <FormMessage />
+                        <FormField
+                          disabled={isReadOnly}
+                          {...field}
+                          control={form.control}
+                          name="specialCharactersEnabled"
+                          render={({ field: specialCharsField }) => (
+                            <Label className="flex-row items-center font-normal text-muted-foreground">
                               <Checkbox
-                                checked={field.value}
-                                disabled={field.disabled}
-                                onCheckedChange={field.onChange}
+                                checked={specialCharsField.value}
+                                onCheckedChange={(val) => handleSpecialCharsChange(val, specialCharsField.onChange)}
+                                {...field}
                               />
-                            </FormControl>
-                            <FormLabel className="font-medium text-sm">
-                              Enable topic-specific permissions for this user for "{topicData.topicName}"
-                            </FormLabel>
-                          </div>
-                          <p className="text-muted-foreground text-sm">
-                            {field.value ? (
-                              `This user will have full permissions (read, write, create, delete, describe, alter) on the selected topic "${topicData.topicName}".`
-                            ) : (
-                              <Alert variant="destructive">
-                                <AlertTitle className="flex items-center gap-2">
-                                  <CircleAlert size={15} />
-                                  Want custom User Permissions?
-                                </AlertTitle>
-                                <AlertDescription>
-                                  <Text>
-                                    You can configure custom ACLs to connect your data to Redpanda{' '}
-                                    <Link href="/security/acls" rel="noopener noreferrer" target="_blank">
-                                      here
-                                    </Link>
-                                  </Text>
-                                </AlertDescription>
-                              </Alert>
-                            )}
-                          </p>
-
-                          <FormMessage />
-                        </div>
+                              Generate with special characters
+                            </Label>
+                          )}
+                        />
                       </FormItem>
                     )}
                   />
-                )}
-              </>
-            )}
-          </div>
-        </Form>
-      </CardContent>
-    </Card>
-  );
-});
+                  <FormField
+                    control={form.control}
+                    disabled={isLoading || isReadOnly}
+                    name="saslMechanism"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>SASL mechanism</FormLabel>
+                        <FormControl>
+                          <Select {...field}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a SASL Mechanism" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SASL_MECHANISMS.map((mechanism) => (
+                                <SelectItem key={mechanism} value={mechanism}>
+                                  {mechanism}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {topicName && (
+                    <FormField
+                      control={form.control}
+                      disabled={isLoading || isReadOnly}
+                      name="superuser"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center space-x-3">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  disabled={field.disabled}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-medium text-sm">
+                                Enable topic-specific permissions for this user for "{topicName}"
+                              </FormLabel>
+                            </div>
+                            <p className="text-muted-foreground text-sm">
+                              {field.value && topicName ? (
+                                <span>
+                                  This user will have full permissions (read, write, create, delete, describe, alter) on
+                                  for the <b>{topicName}</b> topic.
+                                </span>
+                              ) : (
+                                <Alert variant="destructive">
+                                  <AlertTitle>
+                                    <Text className="flex items-center gap-2" variant="label">
+                                      <CircleAlert size={15} />
+                                      Set permissions
+                                    </Text>
+                                  </AlertTitle>
+                                  <AlertDescription>
+                                    <Text variant="small">
+                                      Configure{' '}
+                                      <Link as={ReactRouterLink} rel="noopener noreferrer" to="/security/acls">
+                                        ACLs
+                                      </Link>{' '}
+                                      for custom user permissions.
+                                    </Text>
+                                  </AlertDescription>
+                                </Alert>
+                              )}
+                            </p>
+
+                            <FormMessage />
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          </Form>
+        </CardContent>
+      </Card>
+    );
+  }
+);

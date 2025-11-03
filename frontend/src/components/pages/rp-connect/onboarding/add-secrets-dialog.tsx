@@ -17,14 +17,12 @@ export const AddSecretsDialog = ({
   onClose,
   missingSecrets,
   existingSecrets,
-  defaultValues,
   onSecretsCreated,
 }: {
   isOpen: boolean;
   onClose: () => void;
   missingSecrets: string[];
   existingSecrets: string[];
-  defaultValues: Record<string, string>;
   onSecretsCreated: () => void;
 }) => {
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
@@ -42,7 +40,7 @@ export const AddSecretsDialog = ({
     <Dialog onOpenChange={onClose} open={isOpen}>
       <DialogContent size="xl">
         <DialogHeader>
-          <DialogTitle>Add Secrets</DialogTitle>
+          <DialogTitle>Add secrets</DialogTitle>
           <DialogDescription>Add secrets to your pipeline.</DialogDescription>
         </DialogHeader>
         <DialogBody>
@@ -59,7 +57,6 @@ export const AddSecretsDialog = ({
             </Alert>
           )}
           <QuickAddSecrets
-            defaultValues={defaultValues}
             enableNewSecrets
             existingSecrets={existingSecrets}
             onError={handleError}

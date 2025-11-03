@@ -15,6 +15,7 @@ import {
 import { listRoleBindings } from '@buf/redpandadata_cloud.connectrpc_query-es/redpanda/api/iam/v1/role_binding-RoleBindingService_connectquery';
 import {
   createServiceAccount,
+  deleteServiceAccount,
   getServiceAccount,
   getServiceAccountCredentials,
   listServiceAccounts,
@@ -100,18 +101,30 @@ export const useGetServiceAccountCredentialsQuery = (
     retry: 1, // Provide quick feedback to the user in case of an error
   });
 
-export const useCreateServiceAccountMutation = () => {
+const useInvalidateServiceAccountsList = () => {
   const queryClient = useQueryClient();
+
+  const invalidate = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: createConnectQueryKey({
+        schema: ServiceAccountService.method.listServiceAccounts,
+        cardinality: 'finite',
+      }),
+      exact: false,
+    });
+  };
+
+  return { invalidate };
+};
+
+export const useCreateServiceAccountMutation = (options?: { skipInvalidation?: boolean }) => {
+  const { invalidate } = useInvalidateServiceAccountsList();
 
   return useMutation(createServiceAccount, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: ServiceAccountService.method.listServiceAccounts,
-          cardinality: 'finite',
-        }),
-        exact: false,
-      });
+      if (!options?.skipInvalidation) {
+        await invalidate();
+      }
     },
     onError: (error) => {
       if (error.code === Code.PermissionDenied) {
@@ -129,16 +142,11 @@ export const useCreateServiceAccountMutation = () => {
 
 export const useUpdateServiceAccountMutation = () => {
   const queryClient = useQueryClient();
+  const { invalidate } = useInvalidateServiceAccountsList();
 
   return useMutation(updateServiceAccount, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: ServiceAccountService.method.listServiceAccounts,
-          cardinality: 'finite',
-        }),
-        exact: false,
-      });
+      await invalidate();
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: ServiceAccountService.method.getServiceAccount,
@@ -183,6 +191,29 @@ export const useRotateServiceAccountSecretMutation = () => {
         error,
         action: 'rotate',
         entity: 'service account secret',
+      });
+    },
+  });
+};
+
+export const useDeleteServiceAccountMutation = (options?: { skipInvalidation?: boolean }) => {
+  const { invalidate } = useInvalidateServiceAccountsList();
+
+  return useMutation(deleteServiceAccount, {
+    onSuccess: async () => {
+      if (!options?.skipInvalidation) {
+        await invalidate();
+      }
+    },
+    onError: (error) => {
+      if (error.code === Code.PermissionDenied) {
+        return;
+      }
+
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'delete',
+        entity: 'service account',
       });
     },
   });

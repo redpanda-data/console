@@ -1,24 +1,30 @@
-import { create } from '@bufbuild/protobuf';
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Heading } from 'components/redpanda-ui/components/typography';
-import { useSessionStorage } from 'hooks/use-session-storage';
-import { ChevronLeftIcon } from 'lucide-react';
+import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
-import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
+import { AnimatePresence } from 'motion/react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useLegacyListTopicsQuery } from 'react-query/api/topic';
-import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CONNECT_WIZARD_CONNECTOR_KEY } from 'state/connect/state';
+import {
+  useOnboardingTopicDataStore,
+  useOnboardingUserDataStore,
+  useOnboardingWizardDataStore,
+  useOnboardingYamlContentStore,
+  useResetOnboardingWizardStore,
+} from 'state/onboarding-wizard-store';
 import { uiState } from 'state/ui-state';
+import { useShallow } from 'zustand/react/shallow';
 
 import { AddTopicStep } from './add-topic-step';
 import { AddUserStep } from './add-user-step';
 import { ConnectTiles } from './connect-tiles';
 import RpConnectPipelinesCreate from '../pipelines-create';
 import {
+  REDPANDA_TOPIC_AND_USER_COMPONENTS,
+  stepMotionProps,
   WizardStep,
   WizardStepper,
   type WizardStepperSteps,
@@ -26,8 +32,9 @@ import {
   wizardStepDefinitions,
 } from '../types/constants';
 import type { ExtendedConnectComponentSpec } from '../types/schema';
-import type { BaseStepRef, WizardFormData } from '../types/wizard';
-import { handleStepResult } from '../utils/wizard';
+import type { AddTopicFormData, AddUserFormData, BaseStepRef, ConnectTilesListFormData } from '../types/wizard';
+import { handleStepResult, regenerateYamlForTopicUserComponents } from '../utils/wizard';
+import { getConnectTemplate } from '../utils/yaml';
 
 export type ConnectOnboardingWizardProps = {
   className?: string;
@@ -38,24 +45,55 @@ export type ConnectOnboardingWizardProps = {
 
 export const ConnectOnboardingWizard = ({
   className,
-  additionalComponents,
+  additionalComponents = [
+    {
+      name: 'custom',
+      type: 'custom',
+      plugin: false,
+    },
+  ],
   onChange,
   onCancel: onCancelProp,
 }: ConnectOnboardingWizardProps = {}) => {
-  const [persistedConnector, setPersistedConnector] = useSessionStorage<Partial<WizardFormData>>(
-    CONNECT_WIZARD_CONNECTOR_KEY,
-    {}
-  );
   const navigate = useNavigate();
 
-  const persistedInputConnectionName = useMemo(
-    () => persistedConnector.input?.connectionName,
-    [persistedConnector.input?.connectionName]
+  const persistedInputConnectionName = useOnboardingWizardDataStore(useShallow((state) => state.input?.connectionName));
+  const persistedOutputConnectionName = useOnboardingWizardDataStore(
+    useShallow((state) => state.output?.connectionName)
   );
-  const persistedInputConnectionType = useMemo(
-    () => persistedConnector.input?.connectionType,
-    [persistedConnector.input?.connectionType]
+  const persistedTopicName = useOnboardingTopicDataStore(useShallow((state) => state.topicName));
+  const persistedUserSaslMechanism = useOnboardingUserDataStore(useShallow((state) => state.saslMechanism));
+  const persistedUsername = useOnboardingUserDataStore(useShallow((state) => state.username));
+  const resetOnboardingWizardStore = useResetOnboardingWizardStore();
+  const setWizardData = useOnboardingWizardDataStore(useShallow((state) => state.setWizardData));
+  const setTopicData = useOnboardingTopicDataStore(useShallow((state) => state.setTopicData));
+  const setUserData = useOnboardingUserDataStore(useShallow((state) => state.setUserData));
+
+  const persistedInputHasTopicAndUser = useMemo(
+    () => persistedInputConnectionName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(persistedInputConnectionName),
+    [persistedInputConnectionName]
   );
+
+  // Manually trigger rehydration if store hasn't hydrated yet
+  // This handles the case where we navigate back to the wizard after reset
+  useEffect(() => {
+    const store = useOnboardingWizardDataStore;
+    const hasHydrated = store.getState()._hasHydrated;
+
+    if (!hasHydrated) {
+      store.persist.rehydrate();
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      // Only clear if we're navigating away from the wizard
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('/rp-connect/wizard')) {
+        resetOnboardingWizardStore();
+      }
+    };
+  }, [resetOnboardingWizardStore]);
 
   const [searchParams] = useSearchParams();
 
@@ -77,15 +115,10 @@ export const ConnectOnboardingWizard = ({
     }
   }, [searchParams]);
 
-  const addInputStepRef = useRef<BaseStepRef>(null);
-  const addOutputStepRef = useRef<BaseStepRef>(null);
-  const addTopicStepRef = useRef<BaseStepRef>(null);
-  const addUserStepRef = useRef<BaseStepRef>(null);
-
-  const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
-    hideInternalTopics: true,
-  });
-  const { data: usersList } = useLegacyListUsersQuery();
+  const addInputStepRef = useRef<BaseStepRef<ConnectTilesListFormData>>(null);
+  const addOutputStepRef = useRef<BaseStepRef<ConnectTilesListFormData>>(null);
+  const addTopicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
+  const addUserStepRef = useRef<BaseStepRef<AddUserFormData>>(null);
 
   useEffect(() => {
     runInAction(() => {
@@ -97,63 +130,149 @@ export const ConnectOnboardingWizard = ({
     });
   }, []);
 
+  const handleSkipToCreatePipeline = (methods: WizardStepperSteps) => {
+    if (methods.current.id === WizardStep.ADD_INPUT) {
+      resetOnboardingWizardStore();
+    } else if (methods.current.id === WizardStep.ADD_OUTPUT) {
+      const { setWizardData: _, ...currentWizardData } = useOnboardingWizardDataStore.getState();
+      setWizardData({
+        input: currentWizardData.input,
+        output: {},
+      });
+      setTopicData({});
+      setUserData({});
+    }
+    methods.goTo(WizardStep.CREATE_CONFIG);
+  };
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: helpers to reduce complexity wouldn't apply here
   const handleNext = async (methods: WizardStepperSteps) => {
     switch (methods.current.id) {
       case WizardStep.ADD_INPUT: {
         const result = await addInputStepRef.current?.triggerSubmit();
-        if (result?.success) {
-          // Save to session storage only after validation passes
-          if (result.data?.connectionName && result.data?.connectionType) {
-            setPersistedConnector({
-              input: {
-                connectionName: result.data.connectionName,
-                connectionType: result.data.connectionType,
-              },
-              ...(persistedConnector.output && { output: persistedConnector.output }),
-            });
-            // Notify parent of connector selection
-            onChange?.(result.data.connectionName, result.data.connectionType as string);
+        const connectionName = result?.data?.connectionName;
+        const connectionType = result?.data?.connectionType;
+
+        if (connectionType === 'custom') {
+          handleSkipToCreatePipeline(methods);
+          return;
+        }
+        if (result?.success && connectionName && connectionType) {
+          const yamlContent = getConnectTemplate({
+            connectionName,
+            connectionType,
+            showOptionalFields: false,
+            existingYaml: useOnboardingYamlContentStore.getState().yamlContent,
+          });
+
+          if (yamlContent) {
+            useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent });
           }
-          methods.next();
+
+          if (connectionName === 'redpanda_common') {
+            setWizardData({
+              input: {
+                connectionName,
+                connectionType,
+              },
+              output: {
+                connectionName,
+                connectionType: 'output',
+              },
+            });
+            methods.goTo(WizardStep.ADD_TOPIC);
+          } else {
+            const { setWizardData: _, ...currentWizardData } = useOnboardingWizardDataStore.getState();
+            setWizardData({
+              input: {
+                connectionName,
+                connectionType,
+              },
+              ...(currentWizardData.output && { output: currentWizardData.output }),
+            });
+            methods.next();
+          }
+          onChange?.(connectionName, connectionType);
         }
         break;
       }
       case WizardStep.ADD_OUTPUT: {
         const result = await addOutputStepRef.current?.triggerSubmit();
-        if (result?.success) {
-          // Save to session storage only after validation passes
-          if (result.data?.connectionName && result.data?.connectionType) {
-            setPersistedConnector({
-              output: {
-                connectionName: result.data.connectionName,
-                connectionType: result.data.connectionType,
-              },
-              ...(persistedConnector.input && { input: persistedConnector.input }),
-            });
-            // Notify parent of connector selection
-            onChange?.(result.data.connectionName, result.data.connectionType as string);
+        const connectionName = result?.data?.connectionName;
+        const connectionType = result?.data?.connectionType;
+
+        if (connectionType === 'custom') {
+          handleSkipToCreatePipeline(methods);
+          return;
+        }
+
+        if (result?.success && connectionName && connectionType) {
+          const yamlContent = getConnectTemplate({
+            connectionName,
+            connectionType,
+            showOptionalFields: false,
+            existingYaml: useOnboardingYamlContentStore.getState().yamlContent,
+          });
+
+          if (yamlContent) {
+            useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent });
           }
-          methods.next();
+
+          if (connectionName === 'redpanda_common') {
+            setWizardData({
+              input: {
+                connectionName,
+                connectionType: 'input',
+              },
+              output: {
+                connectionName,
+                connectionType,
+              },
+            });
+          } else {
+            const { setWizardData: _, ...currentWizardData } = useOnboardingWizardDataStore.getState();
+            setWizardData({
+              output: {
+                connectionName,
+                connectionType,
+              },
+              ...(currentWizardData.input && { input: currentWizardData.input }),
+            });
+          }
+          onChange?.(connectionName, connectionType);
+          const outputNeedsTopicAndUser = REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(connectionName);
+          if (persistedInputHasTopicAndUser || outputNeedsTopicAndUser) {
+            methods.next();
+          } else {
+            methods.goTo(WizardStep.CREATE_CONFIG);
+          }
         }
         break;
       }
       case WizardStep.ADD_TOPIC: {
         const result = await addTopicStepRef.current?.triggerSubmit();
+        if (result?.success && result.data) {
+          setTopicData({ topicName: result.data.topicName });
+          regenerateYamlForTopicUserComponents();
+        }
         handleStepResult(result, methods.next);
         break;
       }
       case WizardStep.ADD_USER: {
         const result = await addUserStepRef.current?.triggerSubmit();
+        if (result?.success && result.data) {
+          setUserData({
+            username: result.data.username,
+            saslMechanism: result.data.saslMechanism,
+          });
+          regenerateYamlForTopicUserComponents();
+        }
         handleStepResult(result, methods.next);
         break;
       }
       default:
         methods.next();
     }
-  };
-
-  const handleSkip = (methods: WizardStepperSteps) => {
-    methods.goTo(WizardStep.CREATE_CONFIG);
   };
 
   const getCurrentStepLoading = (currentStepId: WizardStepType): boolean => {
@@ -172,12 +291,16 @@ export const ConnectOnboardingWizard = ({
   };
 
   const handleCancel = useCallback(() => {
+    resetOnboardingWizardStore();
     if (onCancelProp) {
       onCancelProp();
+    } else if (searchParams.get('serverless') === 'true') {
+      navigate('/overview');
+      window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
     } else {
       navigate('/connect-clusters');
     }
-  }, [onCancelProp, navigate]);
+  }, [onCancelProp, navigate, resetOnboardingWizardStore, searchParams]);
 
   return (
     <PageContent className={className}>
@@ -191,55 +314,82 @@ export const ConnectOnboardingWizard = ({
                 <div className="flex flex-col space-y-2 text-center">
                   <WizardStepper.Navigation>
                     {wizardStepDefinitions.map((step) => (
-                      <WizardStepper.Step key={step.id} of={step.id} onClick={() => methods.goTo(step.id)}>
+                      <WizardStepper.Step
+                        icon={
+                          wizardStepDefinitions.findIndex((s) => s.id === step.id) <
+                          wizardStepDefinitions.findIndex((s) => s.id === methods.current.id) ? (
+                            <CheckIcon className="text-white" size={16} />
+                          ) : undefined
+                        }
+                        key={step.id}
+                        of={step.id}
+                        onClick={() => methods.goTo(step.id)}
+                      >
                         <WizardStepper.Title>{step.title}</WizardStepper.Title>
                       </WizardStepper.Step>
                     ))}
                   </WizardStepper.Navigation>
                 </div>
-                {methods.switch({
-                  [WizardStep.ADD_INPUT]: () => (
-                    <ConnectTiles
-                      additionalComponents={additionalComponents}
-                      componentTypeFilter={['input']}
-                      defaultConnectionName={persistedInputConnectionName}
-                      defaultConnectionType={persistedInputConnectionType}
-                      handleSkip={() => handleSkip(methods)}
-                      key="input-connector-tiles"
-                      ref={addInputStepRef}
-                      tileWrapperClassName="min-h-[300px] max-h-[40vh]"
-                      title="Send data to your pipeline"
-                    />
-                  ),
-                  [WizardStep.ADD_OUTPUT]: () => (
-                    <ConnectTiles
-                      additionalComponents={additionalComponents}
-                      componentTypeFilter={['output']}
-                      defaultConnectionName={persistedConnector.output?.connectionName}
-                      defaultConnectionType={persistedConnector.output?.connectionType}
-                      handleSkip={() => handleSkip(methods)}
-                      key="output-connector-tiles"
-                      ref={addOutputStepRef}
-                      tileWrapperClassName="min-h-[300px] max-h-[40vh]"
-                      title="Read data from your pipeline"
-                    />
-                  ),
-                  // TODO add persisted data to both steps
-                  [WizardStep.ADD_TOPIC]: () => <AddTopicStep ref={addTopicStepRef} topicList={topicList.topics} />,
-                  [WizardStep.ADD_USER]: () => <AddUserStep ref={addUserStepRef} usersList={usersList?.users} />,
-                  [WizardStep.CREATE_CONFIG]: () => (
-                    <Card size="full">
-                      <CardHeader>
-                        <CardTitle>
-                          <Heading level={2}>Create pipeline</Heading>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <RpConnectPipelinesCreate matchedPath="/rp-connect/wizard" />
-                      </CardContent>
-                    </Card>
-                  ),
-                })}
+                <AnimatePresence mode="wait">
+                  {methods.switch({
+                    [WizardStep.ADD_INPUT]: () => (
+                      <ConnectTiles
+                        {...stepMotionProps}
+                        additionalComponents={additionalComponents}
+                        componentTypeFilter={['input', 'custom']}
+                        defaultConnectionName={persistedInputConnectionName}
+                        defaultConnectionType="input"
+                        key={`input-connector-tiles-${persistedInputConnectionName || 'empty'}`}
+                        ref={addInputStepRef}
+                        tileWrapperClassName="min-h-[300px] max-h-[35vh]"
+                        title="Stream data to your pipeline"
+                      />
+                    ),
+                    [WizardStep.ADD_OUTPUT]: () => (
+                      <ConnectTiles
+                        {...stepMotionProps}
+                        additionalComponents={additionalComponents}
+                        componentTypeFilter={['output', 'custom']}
+                        defaultConnectionName={persistedOutputConnectionName}
+                        defaultConnectionType="output"
+                        key={`output-connector-tiles-${persistedOutputConnectionName || 'empty'}`}
+                        ref={addOutputStepRef}
+                        tileWrapperClassName="min-h-[300px] max-h-[35vh]"
+                        title="Stream data from your pipeline"
+                      />
+                    ),
+                    [WizardStep.ADD_TOPIC]: () => (
+                      <AddTopicStep
+                        {...stepMotionProps}
+                        defaultTopicName={persistedTopicName}
+                        key="add-topic-step"
+                        ref={addTopicStepRef}
+                      />
+                    ),
+                    [WizardStep.ADD_USER]: () => (
+                      <AddUserStep
+                        {...stepMotionProps}
+                        defaultSaslMechanism={persistedUserSaslMechanism}
+                        defaultUsername={persistedUsername}
+                        key="add-user-step"
+                        ref={addUserStepRef}
+                        topicName={persistedTopicName}
+                      />
+                    ),
+                    [WizardStep.CREATE_CONFIG]: () => (
+                      <Card key="create-config-step" size="full" {...stepMotionProps} animated>
+                        <CardHeader>
+                          <CardTitle>
+                            <Heading level={2}>Create pipeline</Heading>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <RpConnectPipelinesCreate matchedPath="/rp-connect/wizard" />
+                        </CardContent>
+                      </Card>
+                    ),
+                  })}
+                </AnimatePresence>
               </div>
               <WizardStepper.Controls className="justify-between">
                 <div className="flex gap-2">
@@ -249,19 +399,21 @@ export const ConnectOnboardingWizard = ({
                       Previous
                     </Button>
                   )}
-                  <Button onClick={handleCancel} type="button" variant="outline">
-                    Cancel
-                  </Button>
+                  {!methods.isLast && (
+                    <Button onClick={handleCancel} type="button" variant="outline">
+                      Cancel
+                    </Button>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   {!methods.isLast && (
-                    <Button onClick={() => handleNext(methods)} type="button" variant="outline">
+                    <Button onClick={() => methods.next()} type="button" variant="outline">
                       Skip
                     </Button>
                   )}
                   {!methods.isLast && (
                     <Button disabled={isCurrentStepLoading} onClick={() => handleNext(methods)}>
-                      {isCurrentStepLoading ? 'Loading...' : 'Next'}
+                      {isCurrentStepLoading ? <Spinner /> : 'Next'} <ChevronRightIcon />
                     </Button>
                   )}
                 </div>

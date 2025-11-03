@@ -17,7 +17,7 @@ import {
   Text,
   useToast,
 } from '@redpanda-data/ui';
-import { autorun, computed } from 'mobx';
+import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { type FC, useEffect, useState } from 'react';
 import { Controller, type SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
@@ -37,7 +37,6 @@ import {
 } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
-import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
 import { Label } from '../../../utils/tsx-utils';
 import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
@@ -229,29 +228,18 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
   });
 
   useEffect(() => {
-    return autorun(() => {
-      const filteredSoftDeletedSchemaSubjects =
-        api.schemaSubjects?.filter(
-          (x) => uiSettings.schemaList.showSoftDeleted || !(uiSettings.schemaList.showSoftDeleted || x.isSoftDeleted)
-        ) ?? [];
-
-      const formattedSchemaSubjects = filteredSoftDeletedSchemaSubjects?.filter((x) =>
-        x.name.toLowerCase().includes(uiSettings.schemaList.quickSearch.toLowerCase())
-      );
-
-      for (const schemaSubject of formattedSchemaSubjects) {
-        api.refreshSchemaDetails(schemaSubject.name).catch(() => {
-          // Error handling managed by API layer
-        });
-      }
-    });
+    // Fetch schema subjects list if not already loaded
+    if (!api.schemaSubjects) {
+      api.refreshSchemaSubjects();
+    }
   }, []);
 
-  const availableValues = Array.from(api.schemaDetails.values());
+  const availableValues = api.schemaSubjects?.filter((x) => !x.isSoftDeleted) ?? [];
 
   const keySchemaName = watch('key.schemaName');
   const valueSchemaName = watch('value.schemaName');
 
+  // biome-ignore lint/complexity: This will be refactored anyway as part of MobX removal
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     const req = create(PublishMessageRequestSchema);
     req.topic = topicName;
@@ -295,7 +283,24 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
       }
       req.key.data = encodeData(data.key.data, data.key.encoding);
       req.key.encoding = data.key.encoding;
-      req.key.schemaId = data.key.schemaId;
+
+      // Determine schemaId from schemaVersion if schema is selected and encoding is Avro or Protobuf
+      if (
+        (data.key.encoding === PayloadEncoding.AVRO || data.key.encoding === PayloadEncoding.PROTOBUF) &&
+        data.key.schemaName &&
+        data.key.schemaVersion
+      ) {
+        const schemaDetail = api.schemaDetails.get(data.key.schemaName);
+        if (schemaDetail) {
+          const selectedSchema = schemaDetail.schemas.find(
+            (schema) => schema.version === data.key.schemaVersion && !schema.isSoftDeleted
+          );
+          if (selectedSchema) {
+            req.key.schemaId = selectedSchema.id;
+          }
+        }
+      }
+
       req.key.index = data.key.protobufIndex;
     }
 
@@ -311,7 +316,24 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
         return;
       }
       req.value.encoding = data.value.encoding;
-      req.value.schemaId = data.value.schemaId;
+
+      // Determine schemaId from schemaVersion if schema is selected and encoding is Avro or Protobuf
+      if (
+        (data.value.encoding === PayloadEncoding.AVRO || data.value.encoding === PayloadEncoding.PROTOBUF) &&
+        data.value.schemaName &&
+        data.value.schemaVersion
+      ) {
+        const schemaDetail = api.schemaDetails.get(data.value.schemaName);
+        if (schemaDetail) {
+          const selectedSchema = schemaDetail.schemas.find(
+            (schema) => schema.version === data.value.schemaVersion && !schema.isSoftDeleted
+          );
+          if (selectedSchema) {
+            req.value.schemaId = selectedSchema.id;
+          }
+        }
+      }
+
       req.value.index = data.value.protobufIndex;
     }
 
@@ -426,8 +448,20 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                         onChange={(newVal) => {
                           onChange(newVal);
 
-                          const detail = availableValues.filter((schema) => schema.name === newVal).first();
-                          setValue('key.schemaVersion', detail?.latestActiveVersion);
+                          if (newVal) {
+                            // Fetch schema details to get available versions
+                            api
+                              .refreshSchemaDetails(newVal)
+                              .then(() => {
+                                const detail = api.schemaDetails.get(newVal);
+                                if (detail?.latestActiveVersion) {
+                                  setValue('key.schemaVersion', detail.latestActiveVersion);
+                                }
+                              })
+                              .catch(() => {
+                                // Error handling managed by API layer
+                              });
+                          }
                         }}
                         options={availableValues.map((schema) => ({
                           key: schema.name,
@@ -446,20 +480,24 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                   <Controller
                     control={control}
                     name="key.schemaVersion"
-                    render={({ field: { onChange, value } }) => (
-                      <SingleSelect<number | undefined>
-                        onChange={onChange}
-                        options={availableValues
-                          .filter((schema) => schema.name === keySchemaName)
-                          .flatMap((schema) => schema.versions)
-                          .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
-                          .map(({ version }) => ({
-                            label: version,
-                            value: version,
-                          }))}
-                        value={value}
-                      />
-                    )}
+                    render={({ field: { onChange, value } }) => {
+                      const schemaDetail = keySchemaName ? api.schemaDetails.get(keySchemaName) : undefined;
+                      return (
+                        <SingleSelect<number | undefined>
+                          onChange={onChange}
+                          options={
+                            schemaDetail?.versions
+                              .slice()
+                              .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
+                              .map(({ version }) => ({
+                                label: version,
+                                value: version,
+                              })) ?? []
+                          }
+                          value={value}
+                        />
+                      );
+                    }}
                   />
                 </Label>
               )}
@@ -538,8 +576,15 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                           onChange={(newVal) => {
                             onChange(newVal);
 
-                            const detail = availableValues.filter((schema) => schema.name === newVal).first();
-                            setValue('value.schemaVersion', detail?.latestActiveVersion);
+                            if (newVal) {
+                              // Fetch schema details to get available versions
+                              api.refreshSchemaDetails(newVal).then(() => {
+                                const detail = api.schemaDetails.get(newVal);
+                                if (detail?.latestActiveVersion) {
+                                  setValue('value.schemaVersion', detail.latestActiveVersion);
+                                }
+                              });
+                            }
                           }}
                           options={availableValues.map((schema) => ({
                             key: schema.name,
@@ -558,20 +603,24 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     <Controller
                       control={control}
                       name="value.schemaVersion"
-                      render={({ field: { onChange, value } }) => (
-                        <SingleSelect<number | undefined>
-                          onChange={onChange}
-                          options={availableValues
-                            .filter((schema) => schema.name === valueSchemaName)
-                            .flatMap((schema) => schema.versions)
-                            .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
-                            .map(({ version }) => ({
-                              label: version,
-                              value: version,
-                            }))}
-                          value={value}
-                        />
-                      )}
+                      render={({ field: { onChange, value } }) => {
+                        const schemaDetail = valueSchemaName ? api.schemaDetails.get(valueSchemaName) : undefined;
+                        return (
+                          <SingleSelect<number | undefined>
+                            onChange={onChange}
+                            options={
+                              schemaDetail?.versions
+                                .slice()
+                                .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
+                                .map(({ version }) => ({
+                                  label: version,
+                                  value: version,
+                                })) ?? []
+                            }
+                            value={value}
+                          />
+                        );
+                      }}
                     />
                   </Label>
                 )}

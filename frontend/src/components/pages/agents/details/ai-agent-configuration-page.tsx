@@ -118,7 +118,9 @@ export const AIAgentConfigurationPage = () => {
         systemPrompt: aiAgentData.aiAgent.systemPrompt,
         resources: { tier: getResourceTierFromAgent(aiAgentData.aiAgent.resources) },
         selectedMcpServers: Object.values(aiAgentData.aiAgent.mcpServers).map((server) => server.id),
-        tags: Object.entries(aiAgentData.aiAgent.tags).map(([key, value]) => ({ key, value })),
+        tags: Object.entries(aiAgentData.aiAgent.tags)
+          .filter(([key]) => key !== 'secret_id' && key !== 'service_account_id')
+          .map(([key, value]) => ({ key, value })),
       };
     }
 
@@ -194,8 +196,18 @@ export const AIAgentConfigurationPage = () => {
         mcpServersMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
       }
 
-      // Build tags map
+      // Build tags map and preserve internal tags
       const tagsMap: { [key: string]: string } = {};
+
+      // First, preserve the internal tags from the original agent data
+      if (aiAgentData.aiAgent.tags.service_account_id) {
+        tagsMap.service_account_id = aiAgentData.aiAgent.tags.service_account_id;
+      }
+      if (aiAgentData.aiAgent.tags.secret_id) {
+        tagsMap.secret_id = aiAgentData.aiAgent.tags.secret_id;
+      }
+
+      // Then add user-defined tags
       for (const tag of currentData.tags) {
         if (tag.key.trim() && tag.value.trim()) {
           tagsMap[tag.key.trim()] = tag.value.trim();
@@ -210,7 +222,6 @@ export const AIAgentConfigurationPage = () => {
             description: currentData.description,
             model: currentData.model,
             maxIterations: currentData.maxIterations,
-            dimensions: aiAgentData.aiAgent.dimensions,
             provider: aiAgentData.aiAgent.provider,
             systemPrompt: currentData.systemPrompt,
             serviceAccount: aiAgentData.aiAgent.serviceAccount,
@@ -227,7 +238,6 @@ export const AIAgentConfigurationPage = () => {
               'description',
               'model',
               'max_iterations',
-              'dimensions',
               'provider',
               'system_prompt',
               'service_account',

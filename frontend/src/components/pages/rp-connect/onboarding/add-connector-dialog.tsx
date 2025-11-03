@@ -24,7 +24,7 @@ export const AddConnectorDialog = ({
   <Dialog onOpenChange={onCloseAddConnector} open={isOpen}>
     <DialogContent size="xl">
       <DialogHeader>
-        <DialogTitle>Add a Connector</DialogTitle>
+        <DialogTitle>Add a connector</DialogTitle>
         <DialogDescription>Add a connector to your pipeline.</DialogDescription>
       </DialogHeader>
       <DialogBody>

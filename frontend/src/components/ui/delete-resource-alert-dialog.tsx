@@ -26,7 +26,7 @@ import { DropdownMenuItem } from 'components/redpanda-ui/components/dropdown-men
 import { Input } from 'components/redpanda-ui/components/input';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { Loader2, Trash2 } from 'lucide-react';
-import React from 'react';
+import React, { type ReactNode } from 'react';
 
 export type DeleteResourceAlertDialogProps = {
   resourceId: string;
@@ -35,6 +35,8 @@ export type DeleteResourceAlertDialogProps = {
   onDelete: (id: string) => void;
   onOpenChange?: (open: boolean) => void;
   isDeleting?: boolean;
+  // Optional: Additional content to show in the dialog
+  children?: ReactNode;
 };
 
 export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps> = ({
@@ -44,6 +46,7 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
   onDelete,
   onOpenChange,
   isDeleting,
+  children,
 }) => {
   const [confirmationText, setConfirmationText] = React.useState('');
   const isDeleteConfirmed = confirmationText.toLowerCase() === 'delete';
@@ -84,6 +87,7 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
               placeholder='Type "delete" to confirm'
               value={confirmationText}
             />
+            {children}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

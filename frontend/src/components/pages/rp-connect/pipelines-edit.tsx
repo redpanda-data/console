@@ -16,8 +16,9 @@ import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { isFeatureFlagEnabled } from 'config';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { PipelineUpdateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { type Pipeline_ServiceAccount, PipelineUpdateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Link } from 'react-router-dom';
+import { onboardingWizardStore } from 'state/onboarding-wizard-store';
 
 import { extractLintHintsFromError, formatPipelineError } from './errors';
 import { PipelineEditor } from './pipelines-create';
@@ -40,6 +41,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   @observable lintResults: Record<string, LintHint> = {};
   // TODO: Actually show this within the pipeline edit page
   @observable tags = {} as Record<string, string>;
+  @observable serviceAccount = undefined as unknown as Pipeline_ServiceAccount | undefined;
 
   constructor(p: Readonly<PageProps<{ pipelineId: string }>>) {
     super(p);
@@ -83,6 +85,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
       this.tasks = cpuToTasks(pipeline?.resources?.cpuShares) || MIN_TASKS;
       this.editorContent = pipeline.configYaml;
       this.tags = pipeline.tags;
+      this.serviceAccount = pipeline.serviceAccount;
     }
 
     const isNameEmpty = !this.displayName;
@@ -197,12 +200,14 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
           tags: {
             ...this.tags,
           },
+          serviceAccount: this.serviceAccount,
         })
       )
       .then(
         action(async (r) => {
           if (enableRpcnTiles) {
             this.lintResults = {};
+            onboardingWizardStore.reset();
           } else {
             toast({
               status: 'success',
