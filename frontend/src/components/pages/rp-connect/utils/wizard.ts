@@ -108,6 +108,12 @@ export const isUserField = (fieldName: string): boolean => {
 export const isPasswordField = (fieldName: string): boolean => fieldName.toLowerCase() === 'password';
 
 /**
+ * Checks if a field name is consumer group-related
+ * Matches: 'consumer_group' (kafka_franz input)
+ */
+export const isConsumerGroupField = (fieldName: string): boolean => fieldName.toLowerCase() === 'consumer_group';
+
+/**
  * Checks if a field should be prepopulated with REDPANDA_BROKERS contextual variable
  * Matches: 'seed_brokers', 'addresses', 'brokers'
  */
@@ -145,6 +151,9 @@ export const hasWizardRelevantFields = (spec: RawFieldSpec, componentName?: stri
     return true;
   }
   if (spec.name && isPasswordField(spec.name) && userData?.username) {
+    return true;
+  }
+  if (spec.name && isConsumerGroupField(spec.name) && userData?.consumerGroup) {
     return true;
   }
 

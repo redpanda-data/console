@@ -56,6 +56,20 @@ export const createTopicSuperuserACLs = (topicName: string, username: string) =>
   }));
 };
 
+export const createConsumerGroupACLs = (consumerGroupName: string, username: string) => {
+  const operations = [ACL_Operation.READ, ACL_Operation.DESCRIBE];
+
+  return operations.map((operation) => ({
+    resourceType: ACL_ResourceType.GROUP,
+    resourceName: consumerGroupName,
+    resourcePatternType: ACL_ResourcePatternType.LITERAL,
+    principal: `User:${username}`,
+    host: '*',
+    operation,
+    permissionType: ACL_PermissionType.ALLOW,
+  }));
+};
+
 export interface TopicPermissionCheck {
   hasPermissions: ACL_Operation[];
   missingPermissions: ACL_Operation[];
@@ -152,6 +166,48 @@ export const checkUserHasTopicReadWritePermissions = (
   };
 };
 
+export const checkUserHasConsumerGroupPermissions = (
+  aclResources: ListACLsResponse_Resource[],
+  consumerGroupName: string,
+  username: string
+): TopicPermissionCheck => {
+  const requiredOps = [ACL_Operation.READ, ACL_Operation.DESCRIBE];
+
+  // Filter ACLs for this specific consumer group (including LITERAL, PREFIXED, and ANY patterns)
+  const groupACLs = aclResources.filter(
+    (resource) =>
+      resource.resourceType === ACL_ResourceType.GROUP &&
+      doesPatternMatchTopic(resource.resourceName, resource.resourcePatternType, consumerGroupName)
+  );
+
+  // Get all operations that the user has ALLOW permissions for
+  const userAllowedOps = new Set<ACL_Operation>();
+  const principal = `User:${username}`;
+
+  for (const resource of groupACLs) {
+    for (const acl of resource.acls) {
+      if (acl.principal === principal && acl.permissionType === ACL_PermissionType.ALLOW) {
+        // If user has ALL or ANY operation, they have all permissions
+        if (acl.operation === ACL_Operation.ALL || acl.operation === ACL_Operation.ANY) {
+          userAllowedOps.add(ACL_Operation.READ);
+          userAllowedOps.add(ACL_Operation.DESCRIBE);
+        } else {
+          userAllowedOps.add(acl.operation);
+        }
+      }
+    }
+  }
+
+  // Determine which permissions the user has and which are missing
+  const hasPermissions = requiredOps.filter((op) => userAllowedOps.has(op));
+  const missingPermissions = requiredOps.filter((op) => !userAllowedOps.has(op));
+
+  return {
+    hasPermissions,
+    missingPermissions,
+  };
+};
+
 export const configureUserPermissions = async (
   topicName: string,
   username: string,
@@ -179,6 +235,38 @@ export const configureUserPermissions = async (
         error: connectError,
         action: 'configure',
         entity: 'permissions',
+      }),
+    };
+  }
+};
+
+export const configureConsumerGroupPermissions = async (
+  consumerGroupName: string,
+  username: string,
+  createACLMutation: ReturnType<typeof useCreateACLMutation>
+): Promise<OperationResult> => {
+  try {
+    const aclConfigs = createConsumerGroupACLs(consumerGroupName, username);
+
+    for (const config of aclConfigs) {
+      const aclRequest = create(CreateACLRequestSchema, config);
+      await createACLMutation.mutateAsync(aclRequest);
+    }
+
+    return {
+      operation: 'Configure consumer group permissions',
+      success: true,
+      message: `Granted consumer group permissions for "${consumerGroupName}"`,
+    };
+  } catch (error) {
+    const connectError = ConnectError.from(error);
+    return {
+      operation: 'Configure consumer group permissions',
+      success: false,
+      error: formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'configure',
+        entity: 'consumer group permissions',
       }),
     };
   }
@@ -295,6 +383,7 @@ export const createKafkaUser = async (
 export interface CreateUserWithSecretsParams {
   userData: AddUserFormData;
   topicName?: string;
+  consumerGroup?: string;
   existingUserSelected: boolean;
 }
 
@@ -314,11 +403,11 @@ export const useCreateUserWithSecretsMutation = () => {
 
   return useMutation({
     mutationFn: async (params: CreateUserWithSecretsParams): Promise<CreateUserWithSecretsResult> => {
-      const { userData, topicName, existingUserSelected } = params;
+      const { userData, topicName, consumerGroup, existingUserSelected } = params;
       const operations: OperationResult[] = [];
 
-      // If existing user is selected, return early
-      if (existingUserSelected) {
+      // If existing user is selected without consumer group, return early
+      if (existingUserSelected && !consumerGroup) {
         return {
           success: true,
           message: `Using existing user "${userData.username}"`,
@@ -330,6 +419,49 @@ export const useCreateUserWithSecretsMutation = () => {
               message: `Using existing user "${userData.username}"`,
             },
           ],
+        };
+      }
+
+      // If existing user with consumer group, skip user creation but configure consumer group ACLs
+      if (existingUserSelected && consumerGroup) {
+        operations.push({
+          operation: 'Select existing user',
+          success: true,
+          message: `Using existing user "${userData.username}"`,
+        });
+
+        // Configure consumer group ACL permissions
+        const consumerGroupACLResult = await configureConsumerGroupPermissions(
+          consumerGroup,
+          userData.username,
+          createACLMutation
+        );
+        operations.push(consumerGroupACLResult);
+
+        if (!consumerGroupACLResult.success) {
+          return {
+            success: false,
+            message: 'Failed to configure consumer group permissions for existing user',
+            error: consumerGroupACLResult.error,
+            data: userData,
+            operations,
+          };
+        }
+
+        // Invalidate ACL cache
+        await queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({
+            schema: listACLs,
+            cardinality: 'finite',
+          }),
+          exact: false,
+        });
+
+        return {
+          success: true,
+          message: `Configured consumer group permissions for existing user "${userData.username}"`,
+          data: userData,
+          operations,
         };
       }
 
@@ -357,6 +489,35 @@ export const useCreateUserWithSecretsMutation = () => {
             success: false,
             message: 'User created but failed to configure permissions',
             error: aclResult.error,
+            data: userData,
+            operations,
+          };
+        }
+
+        // Invalidate ACL cache to ensure fresh data on next query
+        await queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({
+            schema: listACLs,
+            cardinality: 'finite',
+          }),
+          exact: false,
+        });
+      }
+
+      // Step 2b: Configure consumer group ACL permissions if consumer group is provided
+      if (consumerGroup) {
+        const consumerGroupACLResult = await configureConsumerGroupPermissions(
+          consumerGroup,
+          userData.username,
+          createACLMutation
+        );
+        operations.push(consumerGroupACLResult);
+
+        if (!consumerGroupACLResult.success) {
+          return {
+            success: false,
+            message: 'User created but failed to configure consumer group permissions',
+            error: consumerGroupACLResult.error,
             data: userData,
             operations,
           };

@@ -1,5 +1,7 @@
 import { create } from '@bufbuild/protobuf';
+import { createConnectQueryKey } from '@connectrpc/connect-query';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
@@ -18,9 +20,12 @@ import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
+import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
+import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type { Topic } from 'state/rest-interfaces';
+import { useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { isFalsy } from 'utils/falsy';
 
 import { AdvancedTopicSettings } from './advanced-topic-settings';
@@ -43,17 +48,23 @@ import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FO
 
 interface AddTopicStepProps {
   defaultTopicName?: string;
-  topicList?: Topic[];
-  refetchTopics: () => void;
 }
 
 export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps & MotionProps>(
-  ({ defaultTopicName, topicList, refetchTopics, ...motionProps }, ref) => {
+  ({ defaultTopicName, ...motionProps }, ref) => {
+    const queryClient = useQueryClient();
+
+    const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
+      hideInternalTopics: true,
+      staleTime: LONG_LIVED_CACHE_STALE_TIME,
+      refetchOnWindowFocus: false,
+    });
+
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
     const topicOptions = useMemo(
       () =>
-        topicList?.map((topic) => ({
+        topicList?.topics?.map((topic) => ({
           value: topic.topicName,
           label: topic.topicName,
         })) ?? [],
@@ -61,7 +72,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
     );
 
     const [topicSelectionType, setTopicSelectionType] = useState<CreatableSelectionType>(
-      topicList?.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
+      topicList?.topics?.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
     );
 
     const createTopicMutation = useCreateTopicMutation();
@@ -89,7 +100,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       if (!watchedTopicName) {
         return undefined;
       }
-      return topicList?.find((topic) => topic.topicName === watchedTopicName);
+      return topicList?.topics?.find((topic) => topic.topicName === watchedTopicName);
     }, [watchedTopicName, topicList]);
 
     const { data: topicConfig } = useTopicConfigQuery(
@@ -156,6 +167,13 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
 
           await createTopicMutation.mutateAsync(request);
 
+          await queryClient.invalidateQueries({
+            queryKey: createConnectQueryKey({
+              schema: listTopics,
+              cardinality: 'finite',
+            }),
+          });
+
           return {
             success: true,
             message: `Created topic "${data.topicName}" successfully!`,
@@ -169,7 +187,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
           };
         }
       },
-      [existingTopicSelected, createTopicMutation]
+      [existingTopicSelected, createTopicMutation, queryClient]
     );
 
     const handleTopicSelectionTypeChange = useCallback(
@@ -253,7 +271,14 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                                 {...field}
                                 className="w-[300px]"
                                 disabled={isLoading}
-                                onOpen={() => refetchTopics()}
+                                onOpen={() => {
+                                  queryClient.invalidateQueries({
+                                    queryKey: createConnectQueryKey({
+                                      schema: listTopics,
+                                      cardinality: 'finite',
+                                    }),
+                                  });
+                                }}
                                 options={topicOptions}
                                 placeholder="Select a topic"
                               />
