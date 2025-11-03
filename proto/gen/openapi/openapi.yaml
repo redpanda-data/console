@@ -3968,6 +3968,19 @@ paths:
       description: List information on recent connections to the cluster.
       operationId: MonitoringService_ListConnections
       parameters:
+        - in: query
+          name: filter_raw
+          schema:
+            type: string
+        - in: query
+          name: order_by
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            format: int64
+            type: integer
         - description: |2-
              - KAFKA_CONNECTION_STATE_OPEN: The connection is accepting requests.
              - KAFKA_CONNECTION_STATE_ABORTING: The connection is aborting ongoing requests and about to be closed.
@@ -4011,19 +4024,6 @@ paths:
           schema:
             format: int64
             type: string
-        - in: query
-          name: filter_raw
-          schema:
-            type: string
-        - in: query
-          name: order_by
-          schema:
-            type: string
-        - in: query
-          name: limit
-          schema:
-            format: int64
-            type: integer
       responses:
         "200":
           content:

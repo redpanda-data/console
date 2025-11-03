@@ -19,66 +19,66 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/api/dataplane/v1/monitoring.proto.
  */
 export const file_redpanda_api_dataplane_v1_monitoring: GenFile = /*@__PURE__*/
-  fileDesc("CipyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxL21vbml0b3JpbmcucHJvdG8SGXJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEi4wQKFkxpc3RDb25uZWN0aW9uc1JlcXVlc3QSOwoFc3RhdGUYASABKA4yLC5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkthZmthQ29ubmVjdGlvblN0YXRlEhIKCmlwX2FkZHJlc3MYAiABKAkSEQoJY2xpZW50X2lkGAMgASgJEhwKFGNsaWVudF9zb2Z0d2FyZV9uYW1lGAQgASgJEh8KF2NsaWVudF9zb2Z0d2FyZV92ZXJzaW9uGAUgASgJEhAKCGdyb3VwX2lkGAYgASgJEgwKBHVzZXIYByABKAkSGAoHaWRsZV9tcxgIIAEoA0IHukgEIgIoABISCgpmaWx0ZXJfcmF3GAkgASgJEhAKCG9yZGVyX2J5GAogASgJEg0KBWxpbWl0GAsgASgNOrYCukiyAhqvAgoaZmlsdGVyX3Jhd19leGNsdWRlc19vdGhlcnMSQ2ZpbHRlcl9yYXcgbXVzdCBub3QgYmUgcHJlc2VudCBhbG9uZ3NpZGUgb3RoZXIgZmlsdGVyaW5nIG1lY2hhbmlzbXMaywEhKGhhcyh0aGlzLmZpbHRlcl9yYXcpICYmIChoYXModGhpcy5pcF9hZGRyZXNzKSB8fCBoYXModGhpcy5jbGllbnRfaWQpIHx8IGhhcyh0aGlzLmNsaWVudF9zb2Z0d2FyZV9uYW1lKSB8fGhhcyh0aGlzLmNsaWVudF9zb2Z0d2FyZV92ZXJzaW9uKSB8fCBoYXModGhpcy5ncm91cF9pZCkgfHwgaGFzKHRoaXMudXNlcikgfHwgaGFzKHRoaXMuaWRsZV9tcykpKSJpChBDb25uZWN0aW9uQ2xpZW50EgoKAmlwGAEgASgJEgwKBHBvcnQYAiABKA0SCgoCaWQYAyABKAkSFQoNc29mdHdhcmVfbmFtZRgEIAEoCRIYChBzb2Z0d2FyZV92ZXJzaW9uGAUgASgJIk8KCkFQSVZlcnNpb24SMAoDYXBpGAEgASgOMiMucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5LYWZrYUFQSRIPCgd2ZXJzaW9uGAIgASgFItoBCg5BY3RpdmVSZXF1ZXN0cxJDCghyZXF1ZXN0cxgBIAMoCzIxLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQWN0aXZlUmVxdWVzdHMuUmVxdWVzdBIZChFoYXNfbW9yZV9yZXF1ZXN0cxgCIAEoCBpoCgdSZXF1ZXN0EjAKA2FwaRgBIAEoDjIjLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuS2Fma2FBUEkSKwoIZHVyYXRpb24YAiABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24iPwoJR3JvdXBJbmZvEgoKAmlkGAEgASgJEhMKC2luc3RhbmNlX2lkGAIgASgJEhEKCW1lbWJlcl9pZBgDIAEoCSLeBgoKQ29ubmVjdGlvbhIPCgdub2RlX2lkGAEgASgFEhAKCHNoYXJkX2lkGAIgASgNEhUKA3VpZBgDIAEoCUII4ozP1wgCCAESOwoFc3RhdGUYBCABKA4yLC5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkthZmthQ29ubmVjdGlvblN0YXRlEi0KCW9wZW5fdGltZRgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKY2xvc2VfdGltZRgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASNgoTY29ubmVjdGlvbl9kdXJhdGlvbhgHIAEoCzIZLmdvb2dsZS5wcm90b2J1Zi5EdXJhdGlvbhJCCg5hdXRoZW50aWNhdGlvbhgIIAEoCzIqLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuQXV0aGVudGljYXRpb25JbmZvEhMKC3Rsc19lbmFibGVkGAkgASgIEjsKBmNsaWVudBgKIAEoCzIrLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQ29ubmVjdGlvbkNsaWVudBIzCgVncm91cBgLIAEoCzIkLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuR3JvdXBJbmZvEhUKDWxpc3RlbmVyX25hbWUYDCABKAkSGAoQdHJhbnNhY3Rpb25hbF9pZBgNIAEoCRI7CgxhcGlfdmVyc2lvbnMYDiADKAsyJS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFQSVZlcnNpb24SMAoNaWRsZV9kdXJhdGlvbhgPIAEoCzIZLmdvb2dsZS5wcm90b2J1Zi5EdXJhdGlvbhJCCg9hY3RpdmVfcmVxdWVzdHMYECABKAsyKS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFjdGl2ZVJlcXVlc3RzEkkKFnJlcXVlc3Rfc3RhdGlzdGljc19hbGwYESABKAsyKS5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlJlcXVlc3RTdGF0aXN0aWNzEkgKFXJlcXVlc3Rfc3RhdGlzdGljc18xbRgSIAEoCzIpLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuUmVxdWVzdFN0YXRpc3RpY3MiVQoXTGlzdENvbm5lY3Rpb25zUmVzcG9uc2USOgoLY29ubmVjdGlvbnMYASADKAsyJS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNvbm5lY3Rpb24q7AQKCEthZmthQVBJEhkKFUtBRktBX0FQSV9VTlNQRUNJRklFRBAAEhUKEUtBRktBX0FQSV9QUk9EVUNFEAESEwoPS0FGS0FfQVBJX0ZFVENIEAISFQoRS0FGS0FfQVBJX09GRlNFVFMQAxIWChJLQUZLQV9BUElfTUVUQURBVEEQBBIcChhLQUZLQV9BUElfTEVBREVSX0FORF9JU1IQBRIaChZLQUZLQV9BUElfU1RPUF9SRVBMSUNBEAYSHQoZS0FGS0FfQVBJX1VQREFURV9NRVRBREFUQRAHEiEKHUtBRktBX0FQSV9DT05UUk9MTEVEX1NIVVRET1dOEAgSGwoXS0FGS0FfQVBJX09GRlNFVF9DT01NSVQQCRIaChZLQUZLQV9BUElfT0ZGU0VUX0ZFVENIEAoSHwobS0FGS0FfQVBJX0dST1VQX0NPT1JESU5BVE9SEAsSGAoUS0FGS0FfQVBJX0pPSU5fR1JPVVAQDBIXChNLQUZLQV9BUElfSEVBUlRCRUFUEA0SGQoVS0FGS0FfQVBJX0xFQVZFX0dST1VQEA4SGAoUS0FGS0FfQVBJX1NZTkNfR1JPVVAQDxIdChlLQUZLQV9BUElfREVTQ1JJQkVfR1JPVVBTEBASGQoVS0FGS0FfQVBJX0xJU1RfR1JPVVBTEBESHAoYS0FGS0FfQVBJX1NBU0xfSEFORFNIQUtFEBISGgoWS0FGS0FfQVBJX0FQSV9WRVJTSU9OUxATEhsKF0tBRktBX0FQSV9DUkVBVEVfVE9QSUNTEBQSGwoXS0FGS0FfQVBJX0RFTEVURV9UT1BJQ1MQFTKbAwoRTW9uaXRvcmluZ1NlcnZpY2USzwIKD0xpc3RDb25uZWN0aW9ucxIxLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdENvbm5lY3Rpb25zUmVxdWVzdBoyLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdENvbm5lY3Rpb25zUmVzcG9uc2Ui1AGSQaYBEhdMaXN0IFJlY2VudCBDb25uZWN0aW9ucxo2TGlzdCBpbmZvcm1hdGlvbiBvbiByZWNlbnQgY29ubmVjdGlvbnMgdG8gdGhlIGNsdXN0ZXIuSlMKAzIwMBJMChJSZWNlbnQgY29ubmVjdGlvbnMSNgo0GjIucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXNwb25zZYqmHQQIAxADgtPkkwIcEhovdjEvbW9uaXRvcmluZy9jb25uZWN0aW9ucxo0kkExCgpNb25pdG9yaW5nEiNNb25pdG9yaW5nIG9wZXJhdGlvbnMgZm9yIFJlZHBhbmRhLkKUAgodY29tLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFCD01vbml0b3JpbmdQcm90b1ABWltnaXRodWIuY29tL3JlZHBhbmRhLWRhdGEvY29uc29sZS9iYWNrZW5kL3BrZy9wcm90b2dlbi9yZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxO2RhdGFwbGFuZXYxogIDUkFEqgIZUmVkcGFuZGEuQXBpLkRhdGFwbGFuZS5WMcoCGVJlZHBhbmRhXEFwaVxEYXRhcGxhbmVcVjHiAiVSZWRwYW5kYVxBcGlcRGF0YXBsYW5lXFYxXEdQQk1ldGFkYXRh6gIcUmVkcGFuZGE6OkFwaTo6RGF0YXBsYW5lOjpWMWIGcHJvdG8z", [file_buf_validate_validate, file_google_api_annotations, file_google_api_field_info, file_google_protobuf_duration, file_google_protobuf_timestamp, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization, file_redpanda_core_admin_v2_kafka_connections]);
+  fileDesc("CipyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxL21vbml0b3JpbmcucHJvdG8SGXJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEi4wQKFkxpc3RDb25uZWN0aW9uc1JlcXVlc3QSEgoKZmlsdGVyX3JhdxgBIAEoCRIQCghvcmRlcl9ieRgCIAEoCRINCgVsaW1pdBgDIAEoDRI7CgVzdGF0ZRgEIAEoDjIsLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuS2Fma2FDb25uZWN0aW9uU3RhdGUSEgoKaXBfYWRkcmVzcxgFIAEoCRIRCgljbGllbnRfaWQYBiABKAkSHAoUY2xpZW50X3NvZnR3YXJlX25hbWUYByABKAkSHwoXY2xpZW50X3NvZnR3YXJlX3ZlcnNpb24YCCABKAkSEAoIZ3JvdXBfaWQYCSABKAkSDAoEdXNlchgKIAEoCRIYCgdpZGxlX21zGAsgASgDQge6SAQiAigAOrYCukiyAhqvAgoaZmlsdGVyX3Jhd19leGNsdWRlc19vdGhlcnMSQ2ZpbHRlcl9yYXcgbXVzdCBub3QgYmUgcHJlc2VudCBhbG9uZ3NpZGUgb3RoZXIgZmlsdGVyaW5nIG1lY2hhbmlzbXMaywEhKGhhcyh0aGlzLmZpbHRlcl9yYXcpICYmIChoYXModGhpcy5pcF9hZGRyZXNzKSB8fCBoYXModGhpcy5jbGllbnRfaWQpIHx8IGhhcyh0aGlzLmNsaWVudF9zb2Z0d2FyZV9uYW1lKSB8fGhhcyh0aGlzLmNsaWVudF9zb2Z0d2FyZV92ZXJzaW9uKSB8fCBoYXModGhpcy5ncm91cF9pZCkgfHwgaGFzKHRoaXMudXNlcikgfHwgaGFzKHRoaXMuaWRsZV9tcykpKSKgDAoXTGlzdENvbm5lY3Rpb25zUmVzcG9uc2USUgoLY29ubmVjdGlvbnMYASADKAsyPS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkNvbm5lY3Rpb24aaQoQQ29ubmVjdGlvbkNsaWVudBIKCgJpcBgBIAEoCRIMCgRwb3J0GAIgASgNEgoKAmlkGAMgASgJEhUKDXNvZnR3YXJlX25hbWUYBCABKAkSGAoQc29mdHdhcmVfdmVyc2lvbhgFIAEoCRpPCgpBUElWZXJzaW9uEjAKA2FwaRgBIAEoDjIjLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuS2Fma2FBUEkSDwoHdmVyc2lvbhgCIAEoBRryAQoOQWN0aXZlUmVxdWVzdHMSWwoIcmVxdWVzdHMYASADKAsySS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkFjdGl2ZVJlcXVlc3RzLlJlcXVlc3QSGQoRaGFzX21vcmVfcmVxdWVzdHMYAiABKAgaaAoHUmVxdWVzdBIwCgNhcGkYASABKA4yIy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkthZmthQVBJEisKCGR1cmF0aW9uGAIgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uGj8KCUdyb3VwSW5mbxIKCgJpZBgBIAEoCRITCgtpbnN0YW5jZV9pZBgCIAEoCRIRCgltZW1iZXJfaWQYAyABKAkavgcKCkNvbm5lY3Rpb24SDwoHbm9kZV9pZBgBIAEoBRIQCghzaGFyZF9pZBgCIAEoDRIVCgN1aWQYAyABKAlCCOKMz9cIAggBEjsKBXN0YXRlGAQgASgOMiwucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5LYWZrYUNvbm5lY3Rpb25TdGF0ZRItCglvcGVuX3RpbWUYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCmNsb3NlX3RpbWUYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjYKE2Nvbm5lY3Rpb25fZHVyYXRpb24YByABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SQgoOYXV0aGVudGljYXRpb24YCCABKAsyKi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkF1dGhlbnRpY2F0aW9uSW5mbxITCgt0bHNfZW5hYmxlZBgJIAEoCBJTCgZjbGllbnQYCiABKAsyQy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkNvbm5lY3Rpb25DbGllbnQSSwoFZ3JvdXAYCyABKAsyPC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkdyb3VwSW5mbxIVCg1saXN0ZW5lcl9uYW1lGAwgASgJEhgKEHRyYW5zYWN0aW9uYWxfaWQYDSABKAkSUwoMYXBpX3ZlcnNpb25zGA4gAygLMj0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXNwb25zZS5BUElWZXJzaW9uEjAKDWlkbGVfZHVyYXRpb24YDyABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SWgoPYWN0aXZlX3JlcXVlc3RzGBAgASgLMkEucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXNwb25zZS5BY3RpdmVSZXF1ZXN0cxJJChZyZXF1ZXN0X3N0YXRpc3RpY3NfYWxsGBEgASgLMikucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5SZXF1ZXN0U3RhdGlzdGljcxJIChVyZXF1ZXN0X3N0YXRpc3RpY3NfMW0YEiABKAsyKS5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlJlcXVlc3RTdGF0aXN0aWNzKuwECghLYWZrYUFQSRIZChVLQUZLQV9BUElfVU5TUEVDSUZJRUQQABIVChFLQUZLQV9BUElfUFJPRFVDRRABEhMKD0tBRktBX0FQSV9GRVRDSBACEhUKEUtBRktBX0FQSV9PRkZTRVRTEAMSFgoSS0FGS0FfQVBJX01FVEFEQVRBEAQSHAoYS0FGS0FfQVBJX0xFQURFUl9BTkRfSVNSEAUSGgoWS0FGS0FfQVBJX1NUT1BfUkVQTElDQRAGEh0KGUtBRktBX0FQSV9VUERBVEVfTUVUQURBVEEQBxIhCh1LQUZLQV9BUElfQ09OVFJPTExFRF9TSFVURE9XThAIEhsKF0tBRktBX0FQSV9PRkZTRVRfQ09NTUlUEAkSGgoWS0FGS0FfQVBJX09GRlNFVF9GRVRDSBAKEh8KG0tBRktBX0FQSV9HUk9VUF9DT09SRElOQVRPUhALEhgKFEtBRktBX0FQSV9KT0lOX0dST1VQEAwSFwoTS0FGS0FfQVBJX0hFQVJUQkVBVBANEhkKFUtBRktBX0FQSV9MRUFWRV9HUk9VUBAOEhgKFEtBRktBX0FQSV9TWU5DX0dST1VQEA8SHQoZS0FGS0FfQVBJX0RFU0NSSUJFX0dST1VQUxAQEhkKFUtBRktBX0FQSV9MSVNUX0dST1VQUxAREhwKGEtBRktBX0FQSV9TQVNMX0hBTkRTSEFLRRASEhoKFktBRktBX0FQSV9BUElfVkVSU0lPTlMQExIbChdLQUZLQV9BUElfQ1JFQVRFX1RPUElDUxAUEhsKF0tBRktBX0FQSV9ERUxFVEVfVE9QSUNTEBUymwMKEU1vbml0b3JpbmdTZXJ2aWNlEs8CCg9MaXN0Q29ubmVjdGlvbnMSMS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1JlcXVlc3QaMi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlItQBkkGmARIXTGlzdCBSZWNlbnQgQ29ubmVjdGlvbnMaNkxpc3QgaW5mb3JtYXRpb24gb24gcmVjZW50IGNvbm5lY3Rpb25zIHRvIHRoZSBjbHVzdGVyLkpTCgMyMDASTAoSUmVjZW50IGNvbm5lY3Rpb25zEjYKNBoyLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdENvbm5lY3Rpb25zUmVzcG9uc2WKph0ECAMQA4LT5JMCHBIaL3YxL21vbml0b3JpbmcvY29ubmVjdGlvbnMaNJJBMQoKTW9uaXRvcmluZxIjTW9uaXRvcmluZyBvcGVyYXRpb25zIGZvciBSZWRwYW5kYS5ClAIKHWNvbS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxQg9Nb25pdG9yaW5nUHJvdG9QAVpbZ2l0aHViLmNvbS9yZWRwYW5kYS1kYXRhL2NvbnNvbGUvYmFja2VuZC9wa2cvcHJvdG9nZW4vcmVkcGFuZGEvYXBpL2RhdGFwbGFuZS92MTtkYXRhcGxhbmV2MaICA1JBRKoCGVJlZHBhbmRhLkFwaS5EYXRhcGxhbmUuVjHKAhlSZWRwYW5kYVxBcGlcRGF0YXBsYW5lXFYx4gIlUmVkcGFuZGFcQXBpXERhdGFwbGFuZVxWMVxHUEJNZXRhZGF0YeoCHFJlZHBhbmRhOjpBcGk6OkRhdGFwbGFuZTo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_google_api_annotations, file_google_api_field_info, file_google_protobuf_duration, file_google_protobuf_timestamp, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization, file_redpanda_core_admin_v2_kafka_connections]);
 
 /**
  * @generated from message redpanda.api.dataplane.v1.ListConnectionsRequest
  */
 export type ListConnectionsRequest = Message<"redpanda.api.dataplane.v1.ListConnectionsRequest"> & {
   /**
-   * @generated from field: redpanda.core.admin.v2.KafkaConnectionState state = 1;
-   */
-  state: KafkaConnectionState;
-
-  /**
-   * @generated from field: string ip_address = 2;
-   */
-  ipAddress: string;
-
-  /**
-   * @generated from field: string client_id = 3;
-   */
-  clientId: string;
-
-  /**
-   * @generated from field: string client_software_name = 4;
-   */
-  clientSoftwareName: string;
-
-  /**
-   * @generated from field: string client_software_version = 5;
-   */
-  clientSoftwareVersion: string;
-
-  /**
-   * @generated from field: string group_id = 6;
-   */
-  groupId: string;
-
-  /**
-   * @generated from field: string user = 7;
-   */
-  user: string;
-
-  /**
-   * @generated from field: int64 idle_ms = 8;
-   */
-  idleMs: bigint;
-
-  /**
-   * @generated from field: string filter_raw = 9;
+   * @generated from field: string filter_raw = 1;
    */
   filterRaw: string;
 
   /**
-   * @generated from field: string order_by = 10;
+   * @generated from field: string order_by = 2;
    */
   orderBy: string;
 
   /**
-   * @generated from field: uint32 limit = 11;
+   * @generated from field: uint32 limit = 3;
    */
   limit: number;
+
+  /**
+   * @generated from field: redpanda.core.admin.v2.KafkaConnectionState state = 4;
+   */
+  state: KafkaConnectionState;
+
+  /**
+   * @generated from field: string ip_address = 5;
+   */
+  ipAddress: string;
+
+  /**
+   * @generated from field: string client_id = 6;
+   */
+  clientId: string;
+
+  /**
+   * @generated from field: string client_software_name = 7;
+   */
+  clientSoftwareName: string;
+
+  /**
+   * @generated from field: string client_software_version = 8;
+   */
+  clientSoftwareVersion: string;
+
+  /**
+   * @generated from field: string group_id = 9;
+   */
+  groupId: string;
+
+  /**
+   * @generated from field: string user = 10;
+   */
+  user: string;
+
+  /**
+   * @generated from field: int64 idle_ms = 11;
+   */
+  idleMs: bigint;
 };
 
 /**
@@ -89,9 +89,26 @@ export const ListConnectionsRequestSchema: GenMessage<ListConnectionsRequest> = 
   messageDesc(file_redpanda_api_dataplane_v1_monitoring, 0);
 
 /**
- * @generated from message redpanda.api.dataplane.v1.ConnectionClient
+ * @generated from message redpanda.api.dataplane.v1.ListConnectionsResponse
  */
-export type ConnectionClient = Message<"redpanda.api.dataplane.v1.ConnectionClient"> & {
+export type ListConnectionsResponse = Message<"redpanda.api.dataplane.v1.ListConnectionsResponse"> & {
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1.ListConnectionsResponse.Connection connections = 1;
+   */
+  connections: ListConnectionsResponse_Connection[];
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.ListConnectionsResponse.
+ * Use `create(ListConnectionsResponseSchema)` to create a new message.
+ */
+export const ListConnectionsResponseSchema: GenMessage<ListConnectionsResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 1);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.ListConnectionsResponse.ConnectionClient
+ */
+export type ListConnectionsResponse_ConnectionClient = Message<"redpanda.api.dataplane.v1.ListConnectionsResponse.ConnectionClient"> & {
   /**
    * @generated from field: string ip = 1;
    */
@@ -119,16 +136,16 @@ export type ConnectionClient = Message<"redpanda.api.dataplane.v1.ConnectionClie
 };
 
 /**
- * Describes the message redpanda.api.dataplane.v1.ConnectionClient.
- * Use `create(ConnectionClientSchema)` to create a new message.
+ * Describes the message redpanda.api.dataplane.v1.ListConnectionsResponse.ConnectionClient.
+ * Use `create(ListConnectionsResponse_ConnectionClientSchema)` to create a new message.
  */
-export const ConnectionClientSchema: GenMessage<ConnectionClient> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 1);
+export const ListConnectionsResponse_ConnectionClientSchema: GenMessage<ListConnectionsResponse_ConnectionClient> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 1, 0);
 
 /**
- * @generated from message redpanda.api.dataplane.v1.APIVersion
+ * @generated from message redpanda.api.dataplane.v1.ListConnectionsResponse.APIVersion
  */
-export type APIVersion = Message<"redpanda.api.dataplane.v1.APIVersion"> & {
+export type ListConnectionsResponse_APIVersion = Message<"redpanda.api.dataplane.v1.ListConnectionsResponse.APIVersion"> & {
   /**
    * @generated from field: redpanda.api.dataplane.v1.KafkaAPI api = 1;
    */
@@ -141,20 +158,20 @@ export type APIVersion = Message<"redpanda.api.dataplane.v1.APIVersion"> & {
 };
 
 /**
- * Describes the message redpanda.api.dataplane.v1.APIVersion.
- * Use `create(APIVersionSchema)` to create a new message.
+ * Describes the message redpanda.api.dataplane.v1.ListConnectionsResponse.APIVersion.
+ * Use `create(ListConnectionsResponse_APIVersionSchema)` to create a new message.
  */
-export const APIVersionSchema: GenMessage<APIVersion> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 2);
+export const ListConnectionsResponse_APIVersionSchema: GenMessage<ListConnectionsResponse_APIVersion> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 1, 1);
 
 /**
- * @generated from message redpanda.api.dataplane.v1.ActiveRequests
+ * @generated from message redpanda.api.dataplane.v1.ListConnectionsResponse.ActiveRequests
  */
-export type ActiveRequests = Message<"redpanda.api.dataplane.v1.ActiveRequests"> & {
+export type ListConnectionsResponse_ActiveRequests = Message<"redpanda.api.dataplane.v1.ListConnectionsResponse.ActiveRequests"> & {
   /**
-   * @generated from field: repeated redpanda.api.dataplane.v1.ActiveRequests.Request requests = 1;
+   * @generated from field: repeated redpanda.api.dataplane.v1.ListConnectionsResponse.ActiveRequests.Request requests = 1;
    */
-  requests: ActiveRequests_Request[];
+  requests: ListConnectionsResponse_ActiveRequests_Request[];
 
   /**
    * @generated from field: bool has_more_requests = 2;
@@ -163,16 +180,16 @@ export type ActiveRequests = Message<"redpanda.api.dataplane.v1.ActiveRequests">
 };
 
 /**
- * Describes the message redpanda.api.dataplane.v1.ActiveRequests.
- * Use `create(ActiveRequestsSchema)` to create a new message.
+ * Describes the message redpanda.api.dataplane.v1.ListConnectionsResponse.ActiveRequests.
+ * Use `create(ListConnectionsResponse_ActiveRequestsSchema)` to create a new message.
  */
-export const ActiveRequestsSchema: GenMessage<ActiveRequests> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 3);
+export const ListConnectionsResponse_ActiveRequestsSchema: GenMessage<ListConnectionsResponse_ActiveRequests> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 1, 2);
 
 /**
- * @generated from message redpanda.api.dataplane.v1.ActiveRequests.Request
+ * @generated from message redpanda.api.dataplane.v1.ListConnectionsResponse.ActiveRequests.Request
  */
-export type ActiveRequests_Request = Message<"redpanda.api.dataplane.v1.ActiveRequests.Request"> & {
+export type ListConnectionsResponse_ActiveRequests_Request = Message<"redpanda.api.dataplane.v1.ListConnectionsResponse.ActiveRequests.Request"> & {
   /**
    * @generated from field: redpanda.api.dataplane.v1.KafkaAPI api = 1;
    */
@@ -185,16 +202,16 @@ export type ActiveRequests_Request = Message<"redpanda.api.dataplane.v1.ActiveRe
 };
 
 /**
- * Describes the message redpanda.api.dataplane.v1.ActiveRequests.Request.
- * Use `create(ActiveRequests_RequestSchema)` to create a new message.
+ * Describes the message redpanda.api.dataplane.v1.ListConnectionsResponse.ActiveRequests.Request.
+ * Use `create(ListConnectionsResponse_ActiveRequests_RequestSchema)` to create a new message.
  */
-export const ActiveRequests_RequestSchema: GenMessage<ActiveRequests_Request> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 3, 0);
+export const ListConnectionsResponse_ActiveRequests_RequestSchema: GenMessage<ListConnectionsResponse_ActiveRequests_Request> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 1, 2, 0);
 
 /**
- * @generated from message redpanda.api.dataplane.v1.GroupInfo
+ * @generated from message redpanda.api.dataplane.v1.ListConnectionsResponse.GroupInfo
  */
-export type GroupInfo = Message<"redpanda.api.dataplane.v1.GroupInfo"> & {
+export type ListConnectionsResponse_GroupInfo = Message<"redpanda.api.dataplane.v1.ListConnectionsResponse.GroupInfo"> & {
   /**
    * @generated from field: string id = 1;
    */
@@ -212,16 +229,16 @@ export type GroupInfo = Message<"redpanda.api.dataplane.v1.GroupInfo"> & {
 };
 
 /**
- * Describes the message redpanda.api.dataplane.v1.GroupInfo.
- * Use `create(GroupInfoSchema)` to create a new message.
+ * Describes the message redpanda.api.dataplane.v1.ListConnectionsResponse.GroupInfo.
+ * Use `create(ListConnectionsResponse_GroupInfoSchema)` to create a new message.
  */
-export const GroupInfoSchema: GenMessage<GroupInfo> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 4);
+export const ListConnectionsResponse_GroupInfoSchema: GenMessage<ListConnectionsResponse_GroupInfo> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 1, 3);
 
 /**
- * @generated from message redpanda.api.dataplane.v1.Connection
+ * @generated from message redpanda.api.dataplane.v1.ListConnectionsResponse.Connection
  */
-export type Connection = Message<"redpanda.api.dataplane.v1.Connection"> & {
+export type ListConnectionsResponse_Connection = Message<"redpanda.api.dataplane.v1.ListConnectionsResponse.Connection"> & {
   /**
    * @generated from field: int32 node_id = 1;
    */
@@ -268,14 +285,14 @@ export type Connection = Message<"redpanda.api.dataplane.v1.Connection"> & {
   tlsEnabled: boolean;
 
   /**
-   * @generated from field: redpanda.api.dataplane.v1.ConnectionClient client = 10;
+   * @generated from field: redpanda.api.dataplane.v1.ListConnectionsResponse.ConnectionClient client = 10;
    */
-  client?: ConnectionClient;
+  client?: ListConnectionsResponse_ConnectionClient;
 
   /**
-   * @generated from field: redpanda.api.dataplane.v1.GroupInfo group = 11;
+   * @generated from field: redpanda.api.dataplane.v1.ListConnectionsResponse.GroupInfo group = 11;
    */
-  group?: GroupInfo;
+  group?: ListConnectionsResponse_GroupInfo;
 
   /**
    * @generated from field: string listener_name = 12;
@@ -288,9 +305,9 @@ export type Connection = Message<"redpanda.api.dataplane.v1.Connection"> & {
   transactionalId: string;
 
   /**
-   * @generated from field: repeated redpanda.api.dataplane.v1.APIVersion api_versions = 14;
+   * @generated from field: repeated redpanda.api.dataplane.v1.ListConnectionsResponse.APIVersion api_versions = 14;
    */
-  apiVersions: APIVersion[];
+  apiVersions: ListConnectionsResponse_APIVersion[];
 
   /**
    * @generated from field: google.protobuf.Duration idle_duration = 15;
@@ -298,9 +315,9 @@ export type Connection = Message<"redpanda.api.dataplane.v1.Connection"> & {
   idleDuration?: Duration;
 
   /**
-   * @generated from field: redpanda.api.dataplane.v1.ActiveRequests active_requests = 16;
+   * @generated from field: redpanda.api.dataplane.v1.ListConnectionsResponse.ActiveRequests active_requests = 16;
    */
-  activeRequests?: ActiveRequests;
+  activeRequests?: ListConnectionsResponse_ActiveRequests;
 
   /**
    * @generated from field: redpanda.core.admin.v2.RequestStatistics request_statistics_all = 17;
@@ -314,28 +331,11 @@ export type Connection = Message<"redpanda.api.dataplane.v1.Connection"> & {
 };
 
 /**
- * Describes the message redpanda.api.dataplane.v1.Connection.
- * Use `create(ConnectionSchema)` to create a new message.
+ * Describes the message redpanda.api.dataplane.v1.ListConnectionsResponse.Connection.
+ * Use `create(ListConnectionsResponse_ConnectionSchema)` to create a new message.
  */
-export const ConnectionSchema: GenMessage<Connection> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 5);
-
-/**
- * @generated from message redpanda.api.dataplane.v1.ListConnectionsResponse
- */
-export type ListConnectionsResponse = Message<"redpanda.api.dataplane.v1.ListConnectionsResponse"> & {
-  /**
-   * @generated from field: repeated redpanda.api.dataplane.v1.Connection connections = 1;
-   */
-  connections: Connection[];
-};
-
-/**
- * Describes the message redpanda.api.dataplane.v1.ListConnectionsResponse.
- * Use `create(ListConnectionsResponseSchema)` to create a new message.
- */
-export const ListConnectionsResponseSchema: GenMessage<ListConnectionsResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 6);
+export const ListConnectionsResponse_ConnectionSchema: GenMessage<ListConnectionsResponse_Connection> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 1, 4);
 
 /**
  * Everything is up by one (produce is actually 0, fetch -> 1, etc)

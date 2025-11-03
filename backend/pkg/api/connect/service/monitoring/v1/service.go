@@ -75,19 +75,22 @@ func kafkaAPIFromKey(key int32) v1.KafkaAPI {
 	return val
 }
 
-func adminConnectionToConnect(conn *adminv2.KafkaConnection) *v1.Connection {
+func adminConnectionToConnect(conn *adminv2.KafkaConnection) *v1.ListConnectionsResponse_Connection {
 	// Convert the current requests into our format
-	currentRequests := make([]*v1.ActiveRequests_Request, len(conn.InFlightRequests.SampledInFlightRequests))
-	for i, req := range conn.InFlightRequests.SampledInFlightRequests {
-		currentRequests[i] = &v1.ActiveRequests_Request{
-			Api:      kafkaAPIFromKey(req.ApiKey),
-			Duration: req.InFlightDuration,
+	var currentRequests []*v1.ListConnectionsResponse_ActiveRequests_Request
+	if conn.InFlightRequests != nil && conn.InFlightRequests.SampledInFlightRequests != nil {
+		currentRequests = make([]*v1.ListConnectionsResponse_ActiveRequests_Request, len(conn.InFlightRequests.SampledInFlightRequests))
+		for i, req := range conn.InFlightRequests.SampledInFlightRequests {
+			currentRequests[i] = &v1.ListConnectionsResponse_ActiveRequests_Request{
+				Api:      kafkaAPIFromKey(req.ApiKey),
+				Duration: req.InFlightDuration,
+			}
 		}
 	}
 
-	apiVersions := []*v1.APIVersion{}
+	apiVersions := []*v1.ListConnectionsResponse_APIVersion{}
 	for key, ver := range conn.ApiVersions {
-		apiVersions = append(apiVersions, &v1.APIVersion{
+		apiVersions = append(apiVersions, &v1.ListConnectionsResponse_APIVersion{
 			Api:     kafkaAPIFromKey(key),
 			Version: ver,
 		})
@@ -101,7 +104,18 @@ func adminConnectionToConnect(conn *adminv2.KafkaConnection) *v1.Connection {
 		duration = time.Since(opened)
 	}
 
-	return &v1.Connection{
+	client := &v1.ListConnectionsResponse_ConnectionClient{
+		Id:              conn.ClientId,
+		SoftwareName:    conn.ClientSoftwareName,
+		SoftwareVersion: conn.ClientSoftwareVersion,
+	}
+
+	if conn.Source != nil {
+		client.Ip = conn.Source.IpAddress
+		client.Port = conn.Source.Port
+	}
+
+	return &v1.ListConnectionsResponse_Connection{
 		NodeId:             conn.NodeId,
 		ShardId:            conn.ShardId,
 		Uid:                conn.Uid,
@@ -111,15 +125,9 @@ func adminConnectionToConnect(conn *adminv2.KafkaConnection) *v1.Connection {
 		CloseTime:          conn.CloseTime,
 		ConnectionDuration: durationpb.New(duration),
 		IdleDuration:       conn.IdleDuration,
-		TlsEnabled:         conn.TlsInfo.Enabled,
-		Client: &v1.ConnectionClient{
-			Ip:              conn.Source.IpAddress,
-			Port:            conn.Source.Port,
-			Id:              conn.ClientId,
-			SoftwareName:    conn.ClientSoftwareName,
-			SoftwareVersion: conn.ClientSoftwareVersion,
-		},
-		Group: &v1.GroupInfo{
+		TlsEnabled:         conn.TlsInfo != nil && conn.TlsInfo.Enabled,
+		Client:             client,
+		Group: &v1.ListConnectionsResponse_GroupInfo{
 			Id:         conn.GroupId,
 			InstanceId: conn.GroupInstanceId,
 			MemberId:   conn.GroupMemberId,
@@ -127,16 +135,16 @@ func adminConnectionToConnect(conn *adminv2.KafkaConnection) *v1.Connection {
 		ListenerName:    conn.ListenerName,
 		TransactionalId: conn.TransactionalId,
 		ApiVersions:     apiVersions,
-		ActiveRequests: &v1.ActiveRequests{
+		ActiveRequests: &v1.ListConnectionsResponse_ActiveRequests{
 			Requests:        currentRequests,
-			HasMoreRequests: conn.InFlightRequests.HasMoreRequests,
+			HasMoreRequests: conn.InFlightRequests != nil && conn.InFlightRequests.HasMoreRequests,
 		},
 		RequestStatisticsAll: conn.TotalRequestStatistics,
 		RequestStatistics_1M: conn.RecentRequestStatistics,
 	}
 }
 
-func buildFilterClauses(req *v1.ListConnectionsRequest) []string {
+func buildFilter(req *v1.ListConnectionsRequest) string {
 	clauses := []string{}
 	if req.State != adminv2.KafkaConnectionState_KAFKA_CONNECTION_STATE_UNSPECIFIED {
 		clauses = append(clauses, fmt.Sprintf("state = %s", req.State.String()))
@@ -159,7 +167,7 @@ func buildFilterClauses(req *v1.ListConnectionsRequest) []string {
 		}
 	}
 
-	return clauses
+	return strings.Join(clauses, " AND ")
 }
 
 // ListConnections returns active and recently closed connections across the cluster
@@ -171,11 +179,7 @@ func (s *Service) ListConnections(ctx context.Context, req *connect.Request[v1.L
 
 	adminClient, err := s.redpandaClientFactory.GetRedpandaAPIClient(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			fmt.Errorf("failed to get admin API client: %w", err),
-			apierrors.NewErrorInfo("REASON_REDPANDA_ADMIN_API_ERROR"),
-		)
+		return nil, err
 	}
 
 	limit := defaultLimit
@@ -185,20 +189,16 @@ func (s *Service) ListConnections(ctx context.Context, req *connect.Request[v1.L
 
 	resp, err := adminClient.ClusterService().ListKafkaConnections(ctx, &connect.Request[adminv2.ListKafkaConnectionsRequest]{
 		Msg: &adminv2.ListKafkaConnectionsRequest{
-			Filter:   strings.Join(buildFilterClauses(req.Msg), " AND "),
+			Filter:   buildFilter(req.Msg),
 			OrderBy:  req.Msg.OrderBy,
 			PageSize: int32(limit),
 		},
 	})
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			fmt.Errorf("failed to fetch connections: %w", err),
-			apierrors.NewErrorInfo("REASON_REDPANDA_ADMIN_API_ERROR"),
-		)
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
 
-	conns := make([]*v1.Connection, len(resp.Msg.Connections))
+	conns := make([]*v1.ListConnectionsResponse_Connection, len(resp.Msg.Connections))
 	for i, conn := range resp.Msg.Connections {
 		conns[i] = adminConnectionToConnect(conn)
 	}

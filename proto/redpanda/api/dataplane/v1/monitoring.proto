@@ -12,18 +12,18 @@ import "redpanda/api/auth/v1/authorization.proto";
 import "redpanda/core/admin/v2/kafka_connections.proto";
 
 message ListConnectionsRequest {
-  core.admin.v2.KafkaConnectionState state = 1;
-  string ip_address = 2;
-  string client_id = 3;
-  string client_software_name = 4;
-  string client_software_version = 5;
-  string group_id = 6;
-  string user = 7;
-  int64 idle_ms = 8 [(buf.validate.field).int64.gte = 0];
+  string filter_raw = 1;
+  string order_by = 2;
+  uint32 limit = 3;
 
-  string filter_raw = 9;
-  string order_by = 10;
-  uint32 limit = 11;
+  core.admin.v2.KafkaConnectionState state = 4;
+  string ip_address = 5;
+  string client_id = 6;
+  string client_software_name = 7;
+  string client_software_version = 8;
+  string group_id = 9;
+  string user = 10;
+  int64 idle_ms = 11 [(buf.validate.field).int64.gte = 0];
 
   option (buf.validate.message).cel = {
     id: "filter_raw_excludes_others"
@@ -34,14 +34,6 @@ message ListConnectionsRequest {
       "has(this.client_software_version) || has(this.group_id) || has(this.user) || has(this.idle_ms)"
       "))"
   };
-}
-
-message ConnectionClient {
-  string ip = 1;
-  uint32 port = 2;
-  string id = 3;
-  string software_name = 4;
-  string software_version = 5;
 }
 
 // Everything is up by one (produce is actually 0, fetch -> 1, etc)
@@ -70,49 +62,57 @@ enum KafkaAPI {
   KAFKA_API_DELETE_TOPICS = 21;
 }
 
-message APIVersion {
-  KafkaAPI api = 1;
-  int32 version = 2;
-}
-
-message ActiveRequests {
-  message Request {
-    KafkaAPI api = 1;
-    google.protobuf.Duration duration = 2;
+message ListConnectionsResponse {
+  message ConnectionClient {
+    string ip = 1;
+    uint32 port = 2;
+    string id = 3;
+    string software_name = 4;
+    string software_version = 5;
   }
 
-  repeated Request requests = 1;
-  bool has_more_requests = 2;
-}
+  message APIVersion {
+    KafkaAPI api = 1;
+    int32 version = 2;
+  }
 
-message GroupInfo {
-  string id = 1;
-  string instance_id = 2;
-  string member_id = 3;
-}
+  message ActiveRequests {
+    message Request {
+      KafkaAPI api = 1;
+      google.protobuf.Duration duration = 2;
+    }
 
-message Connection {
-  int32 node_id = 1;
-  uint32 shard_id = 2;
-  string uid = 3 [(google.api.field_info).format = UUID4];
-  core.admin.v2.KafkaConnectionState state = 4;
-  google.protobuf.Timestamp open_time = 5;
-  google.protobuf.Timestamp close_time = 6;
-  google.protobuf.Duration connection_duration = 7;
-  core.admin.v2.AuthenticationInfo authentication = 8;
-  bool tls_enabled = 9;
-  ConnectionClient client = 10;
-  GroupInfo group = 11;
-  string listener_name = 12;
-  string transactional_id = 13;
-  repeated APIVersion api_versions = 14;
-  google.protobuf.Duration idle_duration = 15;
-  ActiveRequests active_requests = 16;
-  core.admin.v2.RequestStatistics request_statistics_all = 17;
-  core.admin.v2.RequestStatistics request_statistics_1m = 18;
-}
+    repeated Request requests = 1;
+    bool has_more_requests = 2;
+  }
 
-message ListConnectionsResponse {
+  message GroupInfo {
+    string id = 1;
+    string instance_id = 2;
+    string member_id = 3;
+  }
+
+  message Connection {
+    int32 node_id = 1;
+    uint32 shard_id = 2;
+    string uid = 3 [(google.api.field_info).format = UUID4];
+    core.admin.v2.KafkaConnectionState state = 4;
+    google.protobuf.Timestamp open_time = 5;
+    google.protobuf.Timestamp close_time = 6;
+    google.protobuf.Duration connection_duration = 7;
+    core.admin.v2.AuthenticationInfo authentication = 8;
+    bool tls_enabled = 9;
+    ConnectionClient client = 10;
+    GroupInfo group = 11;
+    string listener_name = 12;
+    string transactional_id = 13;
+    repeated APIVersion api_versions = 14;
+    google.protobuf.Duration idle_duration = 15;
+    ActiveRequests active_requests = 16;
+    core.admin.v2.RequestStatistics request_statistics_all = 17;
+    core.admin.v2.RequestStatistics request_statistics_1m = 18;
+  }
+
   repeated Connection connections = 1;
 }
 
