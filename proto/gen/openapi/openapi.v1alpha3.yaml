@@ -22,6 +22,9 @@ components:
           description: Map of MCP servers that this AI agent can use.
           type: object
         model:
+          description: |-
+            Deprecated: Use provider.openai.model instead. This field is kept for backward compatibility.
+            If both are set, provider.openai.model takes precedence.
           type: string
         provider:
           $ref: '#/components/schemas/AIAgent.Provider'
@@ -49,7 +52,6 @@ components:
         - display_name
         - system_prompt
         - provider
-        - model
         - service_account
       type: object
     AIAgent.MCPServer:
@@ -67,6 +69,13 @@ components:
     AIAgent.Provider.OpenAI:
       properties:
         api_key:
+          type: string
+        base_url:
+          type: string
+        model:
+          description: |-
+            Model to use for this AI agent. If not set, falls back to the deprecated top-level model field.
+            Preferred over the top-level model field when both are set.
           type: string
       required:
         - api_key
@@ -115,6 +124,9 @@ components:
           description: Map of MCP servers that this AI agent can use.
           type: object
         model:
+          description: |-
+            Deprecated: Use provider.openai.model instead. This field is kept for backward compatibility.
+            If both are set, provider.openai.model takes precedence.
           type: string
         provider:
           $ref: '#/components/schemas/AIAgent.Provider'
@@ -134,7 +146,6 @@ components:
         - display_name
         - system_prompt
         - provider
-        - model
         - service_account
       type: object
     AIAgentUpdate:
@@ -154,6 +165,9 @@ components:
           description: Map of MCP servers that this AI agent can use.
           type: object
         model:
+          description: |-
+            Deprecated: Use provider.openai.model instead. This field is kept for backward compatibility.
+            If both are set, provider.openai.model takes precedence.
           type: string
         provider:
           $ref: '#/components/schemas/AIAgent.Provider'

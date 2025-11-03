@@ -50,11 +50,12 @@ message AIAgent {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
+  // Deprecated: Use provider.openai.model instead. This field is kept for backward compatibility.
+  // If both are set, provider.openai.model takes precedence.
   string model = 7 [
-    (google.api.field_behavior) = REQUIRED,
     (google.api.field_behavior) = IMMUTABLE,
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.max_len = 128
+    (buf.validate.field).string.max_len = 128,
+    deprecated = true
   ];
 
   // Map of MCP servers that this AI agent can use.
@@ -95,6 +96,13 @@ message AIAgent {
         (buf.validate.field).required = true,
         (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"
       ];
+      // Model to use for this AI agent. If not set, falls back to the deprecated top-level model field.
+      // Preferred over the top-level model field when both are set.
+      string model = 2 [
+        (google.api.field_behavior) = IMMUTABLE,
+        (buf.validate.field).string.max_len = 128
+      ];
+      string base_url = 3;
     }
 
     oneof provider {
@@ -374,11 +382,12 @@ message AIAgentCreate {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
+  // Deprecated: Use provider.openai.model instead. This field is kept for backward compatibility.
+  // If both are set, provider.openai.model takes precedence.
   string model = 6 [
-    (google.api.field_behavior) = REQUIRED,
     (google.api.field_behavior) = IMMUTABLE,
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.max_len = 128
+    (buf.validate.field).string.max_len = 128,
+    deprecated = true
   ];
 
   // Map of MCP servers that this AI agent can use.
@@ -502,7 +511,12 @@ message AIAgentUpdate {
   // LLM configuration settings for the AI agent.
   AIAgent.Provider provider = 4;
 
-  string model = 6 [(buf.validate.field).string.max_len = 128];
+  // Deprecated: Use provider.openai.model instead. This field is kept for backward compatibility.
+  // If both are set, provider.openai.model takes precedence.
+  string model = 6 [
+    (buf.validate.field).string.max_len = 128,
+    deprecated = true
+  ];
 
   // Map of MCP servers that this AI agent can use.
   map<string, AIAgent.MCPServer> mcp_servers = 7;
