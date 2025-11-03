@@ -9,7 +9,7 @@ deps:
   - buf.build/googleapis/googleapis
   - buf.build/grpc-ecosystem/grpc-gateway:v2.24.0
   - buf.build/redpandadata/common
-  - buf.build/redpandadata/core:d04cd59f09584464a289e198feb1a0b9
+  - buf.build/redpandadata/core:15e1d027dabd4fd6839b55fd67a8e1a3
 lint:
   use:
     - STANDARD
