@@ -398,7 +398,7 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
               }
             } catch (error) {
               // biome-ignore lint/suspicious/noConsole: intentional console usage for debugging
-              console.error('Error parsing uiSettings-v3:', error);
+              console.warn('Error parsing uiSettings-v3:', error);
             }
 
             return null;
