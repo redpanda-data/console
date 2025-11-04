@@ -203,3 +203,30 @@ func TestBuildOrderByString(t *testing.T) {
 		}))
 	})
 }
+
+// Ensure all admin enum values have mappings to Connect API enums
+func TestEnumMappingsComplete(t *testing.T) {
+	for adminState := range adminv2.KafkaConnectionState_name {
+		if adminState == 0 { // UNSPECIFIED intentionally unmapped
+			continue
+		}
+		_, ok := connectionStateMap[adminv2.KafkaConnectionState(adminState)]
+		require.True(t, ok, "missing mapping for KafkaConnectionState %d", adminState)
+	}
+
+	for adminState := range adminv2.AuthenticationState_name {
+		if adminState == 0 {
+			continue
+		}
+		_, ok := authenticationStateMap[adminv2.AuthenticationState(adminState)]
+		require.True(t, ok, "missing mapping for AuthenticationState %d", adminState)
+	}
+
+	for adminMech := range adminv2.AuthenticationMechanism_name {
+		if adminMech == 0 {
+			continue
+		}
+		_, ok := authenticationMechanismMap[adminv2.AuthenticationMechanism(adminMech)]
+		require.True(t, ok, "missing mapping for AuthenticationMechanism %d", adminMech)
+	}
+}
