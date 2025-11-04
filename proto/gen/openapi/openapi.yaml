@@ -917,6 +917,28 @@ components:
             which represents UPPER_SNAKE_CASE.
           type: string
       type: object
+    Filters:
+      properties:
+        client_id:
+          type: string
+        client_software_name:
+          type: string
+        client_software_version:
+          type: string
+        expression:
+          type: string
+        group_id:
+          type: string
+        idle_ms:
+          format: int64
+          type: string
+        ip_address:
+          type: string
+        state:
+          $ref: '#/components/schemas/KafkaConnectionState'
+        user:
+          type: string
+      type: object
     GetConnectClusterResponse:
       properties:
         cluster:
@@ -1151,6 +1173,20 @@ components:
           items:
             $ref: '#/components/schemas/ConnectCluster'
           type: array
+      type: object
+    ListConnectionsRequest:
+      properties:
+        filters:
+          $ref: '#/components/schemas/Filters'
+        limit:
+          format: int64
+          type: integer
+        order_by:
+          items:
+            $ref: '#/components/schemas/Ordering'
+          type: array
+        order_by_expression:
+          type: string
       type: object
     ListConnectionsResponse:
       properties:
@@ -1516,6 +1552,25 @@ components:
           description: Restart only connectors that have failed.
           type: boolean
       type: object
+    Ordering:
+      properties:
+        descending:
+          type: boolean
+        option:
+          $ref: '#/components/schemas/OrderingOption'
+      type: object
+    OrderingOption:
+      enum:
+        - ORDERING_OPTION_OPEN_TIME
+        - ORDERING_OPTION_CLOSE_TIME
+        - ORDERING_OPTION_IDLE_DURATION
+        - ORDERING_OPTION_TOTAL_PRODUCE_THROUGHPUT
+        - ORDERING_OPTION_TOTAL_FETCH_THROUGHPUT
+        - ORDERING_OPTION_TOTAL_REQUESTS
+        - ORDERING_OPTION_LAST_MINUTE_PRODUCE_THROUGHPUT
+        - ORDERING_OPTION_LAST_MINUTE_FETCH_THROUGHPUT
+        - ORDERING_OPTION_LAST_MINUTE_REQUESTS
+      type: string
     PartitionStatus:
       enum:
         - PARTITION_STATUS_RUNNING
@@ -3964,66 +4019,16 @@ paths:
       tags:
         - Secrets
   /v1/monitoring/connections:
-    get:
+    post:
       description: List information on recent connections to the cluster.
       operationId: MonitoringService_ListConnections
-      parameters:
-        - in: query
-          name: filter_raw
-          schema:
-            type: string
-        - in: query
-          name: order_by
-          schema:
-            type: string
-        - in: query
-          name: limit
-          schema:
-            format: int64
-            type: integer
-        - description: |2-
-             - KAFKA_CONNECTION_STATE_OPEN: The connection is accepting requests.
-             - KAFKA_CONNECTION_STATE_ABORTING: The connection is aborting ongoing requests and about to be closed.
-            This is a transient state between open and closed that should rarely be
-            observable under normal circumstances.
-             - KAFKA_CONNECTION_STATE_CLOSED: The connection has been closed.
-          in: query
-          name: state
-          schema:
-            enum:
-              - KAFKA_CONNECTION_STATE_OPEN
-              - KAFKA_CONNECTION_STATE_ABORTING
-              - KAFKA_CONNECTION_STATE_CLOSED
-            type: string
-        - in: query
-          name: ip_address
-          schema:
-            type: string
-        - in: query
-          name: client_id
-          schema:
-            type: string
-        - in: query
-          name: client_software_name
-          schema:
-            type: string
-        - in: query
-          name: client_software_version
-          schema:
-            type: string
-        - in: query
-          name: group_id
-          schema:
-            type: string
-        - in: query
-          name: user
-          schema:
-            type: string
-        - in: query
-          name: idle_ms
-          schema:
-            format: int64
-            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListConnectionsRequest'
+        required: true
+        x-originalParamName: body
       responses:
         "200":
           content:

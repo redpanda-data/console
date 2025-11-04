@@ -140,25 +140,14 @@ func TestAdminConnectionToConnect(t *testing.T) {
 // Make sure we correctly validate the incoming request (actually handled in middleware)
 func TestValidateListConnectionsRequest(t *testing.T) {
 	// IdleMs must be positive
-	require.Error(t, protovalidate.GlobalValidator.Validate(&v1.ListConnectionsRequest{IdleMs: -1}))
-
-	// We can't have any of the common filters alongside filter_raw
 	require.Error(t, protovalidate.GlobalValidator.Validate(&v1.ListConnectionsRequest{
-		IpAddress: "127.0.0.1",
-		FilterRaw: "client.ip = '127.0.0.2'",
-	}))
-
-	// But combining other filters is fine
-	require.NoError(t, protovalidate.GlobalValidator.Validate(&v1.ListConnectionsRequest{
-		IpAddress: "127.0.0.1",
-		ClientId:  "some-client",
-		User:      "whoever",
+		Filters: &v1.ListConnectionsRequest_Filters{IdleMs: -1},
 	}))
 }
 
 // Make sure we're adequately constructing the right filters
-func TestBuildFilter(t *testing.T) {
-	req := &v1.ListConnectionsRequest{
+func TestBuildFilterString(t *testing.T) {
+	filters := &v1.ListConnectionsRequest_Filters{
 		IpAddress:             "127.0.0.1",
 		ClientId:              "client-id",
 		ClientSoftwareName:    "software-name",
@@ -167,6 +156,7 @@ func TestBuildFilter(t *testing.T) {
 		User:                  "principal",
 		IdleMs:                100,
 		State:                 adminv2.KafkaConnectionState_KAFKA_CONNECTION_STATE_OPEN,
+		Expression:            `beep = "boop" OR 1`,
 	}
 
 	require.ElementsMatch(t, []string{
@@ -178,5 +168,38 @@ func TestBuildFilter(t *testing.T) {
 		`authentication_info.user_principal = "principal"`,
 		`idle_duration > 100ms`,
 		`state = KAFKA_CONNECTION_STATE_OPEN`,
-	}, strings.Split(buildFilter(req), " AND "))
+		`beep = "boop" OR 1`,
+	}, strings.Split(buildFilterString(filters), " AND "))
+}
+
+func TestBuildOrderByString(t *testing.T) {
+	t.Run("default", func(t *testing.T) {
+		require.Equal(t, "open_time desc", buildOrderByString(&v1.ListConnectionsRequest{}))
+	})
+
+	t.Run("single option", func(t *testing.T) {
+		require.Equal(t, "close_time asc", buildOrderByString(&v1.ListConnectionsRequest{
+			OrderBy: []*v1.ListConnectionsRequest_Ordering{
+				{Option: v1.ListConnectionsRequest_ORDERING_OPTION_CLOSE_TIME},
+			},
+		}))
+	})
+
+	t.Run("expression", func(t *testing.T) {
+		require.Equal(t, "expr, close_time desc", buildOrderByString(&v1.ListConnectionsRequest{
+			OrderBy: []*v1.ListConnectionsRequest_Ordering{
+				{Option: v1.ListConnectionsRequest_ORDERING_OPTION_CLOSE_TIME, Descending: true},
+			},
+			OrderByExpression: "expr",
+		}))
+	})
+
+	t.Run("invalid option", func(t *testing.T) {
+		require.Equal(t, "recent_request_statistics.request_count asc", buildOrderByString(&v1.ListConnectionsRequest{
+			OrderBy: []*v1.ListConnectionsRequest_Ordering{
+				{Option: 100000},
+				{Option: v1.ListConnectionsRequest_ORDERING_OPTION_LAST_MINUTE_REQUESTS},
+			},
+		}))
+	})
 }

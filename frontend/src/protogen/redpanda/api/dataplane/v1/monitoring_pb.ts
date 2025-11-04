@@ -19,66 +19,31 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/api/dataplane/v1/monitoring.proto.
  */
 export const file_redpanda_api_dataplane_v1_monitoring: GenFile = /*@__PURE__*/
-  fileDesc("CipyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxL21vbml0b3JpbmcucHJvdG8SGXJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEi4wQKFkxpc3RDb25uZWN0aW9uc1JlcXVlc3QSEgoKZmlsdGVyX3JhdxgBIAEoCRIQCghvcmRlcl9ieRgCIAEoCRINCgVsaW1pdBgDIAEoDRI7CgVzdGF0ZRgEIAEoDjIsLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuS2Fma2FDb25uZWN0aW9uU3RhdGUSEgoKaXBfYWRkcmVzcxgFIAEoCRIRCgljbGllbnRfaWQYBiABKAkSHAoUY2xpZW50X3NvZnR3YXJlX25hbWUYByABKAkSHwoXY2xpZW50X3NvZnR3YXJlX3ZlcnNpb24YCCABKAkSEAoIZ3JvdXBfaWQYCSABKAkSDAoEdXNlchgKIAEoCRIYCgdpZGxlX21zGAsgASgDQge6SAQiAigAOrYCukiyAhqvAgoaZmlsdGVyX3Jhd19leGNsdWRlc19vdGhlcnMSQ2ZpbHRlcl9yYXcgbXVzdCBub3QgYmUgcHJlc2VudCBhbG9uZ3NpZGUgb3RoZXIgZmlsdGVyaW5nIG1lY2hhbmlzbXMaywEhKGhhcyh0aGlzLmZpbHRlcl9yYXcpICYmIChoYXModGhpcy5pcF9hZGRyZXNzKSB8fCBoYXModGhpcy5jbGllbnRfaWQpIHx8IGhhcyh0aGlzLmNsaWVudF9zb2Z0d2FyZV9uYW1lKSB8fGhhcyh0aGlzLmNsaWVudF9zb2Z0d2FyZV92ZXJzaW9uKSB8fCBoYXModGhpcy5ncm91cF9pZCkgfHwgaGFzKHRoaXMudXNlcikgfHwgaGFzKHRoaXMuaWRsZV9tcykpKSKgDAoXTGlzdENvbm5lY3Rpb25zUmVzcG9uc2USUgoLY29ubmVjdGlvbnMYASADKAsyPS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkNvbm5lY3Rpb24aaQoQQ29ubmVjdGlvbkNsaWVudBIKCgJpcBgBIAEoCRIMCgRwb3J0GAIgASgNEgoKAmlkGAMgASgJEhUKDXNvZnR3YXJlX25hbWUYBCABKAkSGAoQc29mdHdhcmVfdmVyc2lvbhgFIAEoCRpPCgpBUElWZXJzaW9uEjAKA2FwaRgBIAEoDjIjLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuS2Fma2FBUEkSDwoHdmVyc2lvbhgCIAEoBRryAQoOQWN0aXZlUmVxdWVzdHMSWwoIcmVxdWVzdHMYASADKAsySS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkFjdGl2ZVJlcXVlc3RzLlJlcXVlc3QSGQoRaGFzX21vcmVfcmVxdWVzdHMYAiABKAgaaAoHUmVxdWVzdBIwCgNhcGkYASABKA4yIy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkthZmthQVBJEisKCGR1cmF0aW9uGAIgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uGj8KCUdyb3VwSW5mbxIKCgJpZBgBIAEoCRITCgtpbnN0YW5jZV9pZBgCIAEoCRIRCgltZW1iZXJfaWQYAyABKAkavgcKCkNvbm5lY3Rpb24SDwoHbm9kZV9pZBgBIAEoBRIQCghzaGFyZF9pZBgCIAEoDRIVCgN1aWQYAyABKAlCCOKMz9cIAggBEjsKBXN0YXRlGAQgASgOMiwucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5LYWZrYUNvbm5lY3Rpb25TdGF0ZRItCglvcGVuX3RpbWUYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCmNsb3NlX3RpbWUYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjYKE2Nvbm5lY3Rpb25fZHVyYXRpb24YByABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SQgoOYXV0aGVudGljYXRpb24YCCABKAsyKi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkF1dGhlbnRpY2F0aW9uSW5mbxITCgt0bHNfZW5hYmxlZBgJIAEoCBJTCgZjbGllbnQYCiABKAsyQy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkNvbm5lY3Rpb25DbGllbnQSSwoFZ3JvdXAYCyABKAsyPC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkdyb3VwSW5mbxIVCg1saXN0ZW5lcl9uYW1lGAwgASgJEhgKEHRyYW5zYWN0aW9uYWxfaWQYDSABKAkSUwoMYXBpX3ZlcnNpb25zGA4gAygLMj0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXNwb25zZS5BUElWZXJzaW9uEjAKDWlkbGVfZHVyYXRpb24YDyABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SWgoPYWN0aXZlX3JlcXVlc3RzGBAgASgLMkEucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXNwb25zZS5BY3RpdmVSZXF1ZXN0cxJJChZyZXF1ZXN0X3N0YXRpc3RpY3NfYWxsGBEgASgLMikucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5SZXF1ZXN0U3RhdGlzdGljcxJIChVyZXF1ZXN0X3N0YXRpc3RpY3NfMW0YEiABKAsyKS5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlJlcXVlc3RTdGF0aXN0aWNzKuwECghLYWZrYUFQSRIZChVLQUZLQV9BUElfVU5TUEVDSUZJRUQQABIVChFLQUZLQV9BUElfUFJPRFVDRRABEhMKD0tBRktBX0FQSV9GRVRDSBACEhUKEUtBRktBX0FQSV9PRkZTRVRTEAMSFgoSS0FGS0FfQVBJX01FVEFEQVRBEAQSHAoYS0FGS0FfQVBJX0xFQURFUl9BTkRfSVNSEAUSGgoWS0FGS0FfQVBJX1NUT1BfUkVQTElDQRAGEh0KGUtBRktBX0FQSV9VUERBVEVfTUVUQURBVEEQBxIhCh1LQUZLQV9BUElfQ09OVFJPTExFRF9TSFVURE9XThAIEhsKF0tBRktBX0FQSV9PRkZTRVRfQ09NTUlUEAkSGgoWS0FGS0FfQVBJX09GRlNFVF9GRVRDSBAKEh8KG0tBRktBX0FQSV9HUk9VUF9DT09SRElOQVRPUhALEhgKFEtBRktBX0FQSV9KT0lOX0dST1VQEAwSFwoTS0FGS0FfQVBJX0hFQVJUQkVBVBANEhkKFUtBRktBX0FQSV9MRUFWRV9HUk9VUBAOEhgKFEtBRktBX0FQSV9TWU5DX0dST1VQEA8SHQoZS0FGS0FfQVBJX0RFU0NSSUJFX0dST1VQUxAQEhkKFUtBRktBX0FQSV9MSVNUX0dST1VQUxAREhwKGEtBRktBX0FQSV9TQVNMX0hBTkRTSEFLRRASEhoKFktBRktBX0FQSV9BUElfVkVSU0lPTlMQExIbChdLQUZLQV9BUElfQ1JFQVRFX1RPUElDUxAUEhsKF0tBRktBX0FQSV9ERUxFVEVfVE9QSUNTEBUymwMKEU1vbml0b3JpbmdTZXJ2aWNlEs8CCg9MaXN0Q29ubmVjdGlvbnMSMS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1JlcXVlc3QaMi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlItQBkkGmARIXTGlzdCBSZWNlbnQgQ29ubmVjdGlvbnMaNkxpc3QgaW5mb3JtYXRpb24gb24gcmVjZW50IGNvbm5lY3Rpb25zIHRvIHRoZSBjbHVzdGVyLkpTCgMyMDASTAoSUmVjZW50IGNvbm5lY3Rpb25zEjYKNBoyLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdENvbm5lY3Rpb25zUmVzcG9uc2WKph0ECAMQA4LT5JMCHBIaL3YxL21vbml0b3JpbmcvY29ubmVjdGlvbnMaNJJBMQoKTW9uaXRvcmluZxIjTW9uaXRvcmluZyBvcGVyYXRpb25zIGZvciBSZWRwYW5kYS5ClAIKHWNvbS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxQg9Nb25pdG9yaW5nUHJvdG9QAVpbZ2l0aHViLmNvbS9yZWRwYW5kYS1kYXRhL2NvbnNvbGUvYmFja2VuZC9wa2cvcHJvdG9nZW4vcmVkcGFuZGEvYXBpL2RhdGFwbGFuZS92MTtkYXRhcGxhbmV2MaICA1JBRKoCGVJlZHBhbmRhLkFwaS5EYXRhcGxhbmUuVjHKAhlSZWRwYW5kYVxBcGlcRGF0YXBsYW5lXFYx4gIlUmVkcGFuZGFcQXBpXERhdGFwbGFuZVxWMVxHUEJNZXRhZGF0YeoCHFJlZHBhbmRhOjpBcGk6OkRhdGFwbGFuZTo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_google_api_annotations, file_google_api_field_info, file_google_protobuf_duration, file_google_protobuf_timestamp, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization, file_redpanda_core_admin_v2_kafka_connections]);
+  fileDesc("CipyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxL21vbml0b3JpbmcucHJvdG8SGXJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEi+wcKFkxpc3RDb25uZWN0aW9uc1JlcXVlc3QSSgoHZmlsdGVycxgBIAEoCzI5LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdENvbm5lY3Rpb25zUmVxdWVzdC5GaWx0ZXJzEkwKCG9yZGVyX2J5GAIgAygLMjoucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXF1ZXN0Lk9yZGVyaW5nEhsKE29yZGVyX2J5X2V4cHJlc3Npb24YAyABKAkSDQoFbGltaXQYBCABKA0acAoIT3JkZXJpbmcSUAoGb3B0aW9uGAEgASgOMkAucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXF1ZXN0Lk9yZGVyaW5nT3B0aW9uEhIKCmRlc2NlbmRpbmcYAiABKAgahAIKB0ZpbHRlcnMSRQoFc3RhdGUYASABKA4yLC5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkthZmthQ29ubmVjdGlvblN0YXRlQgi6SAWCAQIQARISCgppcF9hZGRyZXNzGAIgASgJEhEKCWNsaWVudF9pZBgDIAEoCRIcChRjbGllbnRfc29mdHdhcmVfbmFtZRgEIAEoCRIfChdjbGllbnRfc29mdHdhcmVfdmVyc2lvbhgFIAEoCRIQCghncm91cF9pZBgGIAEoCRIMCgR1c2VyGAcgASgJEhgKB2lkbGVfbXMYCCABKANCB7pIBCICKAASEgoKZXhwcmVzc2lvbhgJIAEoCSKhAwoOT3JkZXJpbmdPcHRpb24SHwobT1JERVJJTkdfT1BUSU9OX1VOU1BFQ0lGSUVEEAASHQoZT1JERVJJTkdfT1BUSU9OX09QRU5fVElNRRABEh4KGk9SREVSSU5HX09QVElPTl9DTE9TRV9USU1FEAISIQodT1JERVJJTkdfT1BUSU9OX0lETEVfRFVSQVRJT04QAxIsCihPUkRFUklOR19PUFRJT05fVE9UQUxfUFJPRFVDRV9USFJPVUdIUFVUEAQSKgomT1JERVJJTkdfT1BUSU9OX1RPVEFMX0ZFVENIX1RIUk9VR0hQVVQQBRIiCh5PUkRFUklOR19PUFRJT05fVE9UQUxfUkVRVUVTVFMQBhIyCi5PUkRFUklOR19PUFRJT05fTEFTVF9NSU5VVEVfUFJPRFVDRV9USFJPVUdIUFVUEAcSMAosT1JERVJJTkdfT1BUSU9OX0xBU1RfTUlOVVRFX0ZFVENIX1RIUk9VR0hQVVQQCBIoCiRPUkRFUklOR19PUFRJT05fTEFTVF9NSU5VVEVfUkVRVUVTVFMQCSKgDAoXTGlzdENvbm5lY3Rpb25zUmVzcG9uc2USUgoLY29ubmVjdGlvbnMYASADKAsyPS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkNvbm5lY3Rpb24aaQoQQ29ubmVjdGlvbkNsaWVudBIKCgJpcBgBIAEoCRIMCgRwb3J0GAIgASgNEgoKAmlkGAMgASgJEhUKDXNvZnR3YXJlX25hbWUYBCABKAkSGAoQc29mdHdhcmVfdmVyc2lvbhgFIAEoCRpPCgpBUElWZXJzaW9uEjAKA2FwaRgBIAEoDjIjLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuS2Fma2FBUEkSDwoHdmVyc2lvbhgCIAEoBRryAQoOQWN0aXZlUmVxdWVzdHMSWwoIcmVxdWVzdHMYASADKAsySS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkFjdGl2ZVJlcXVlc3RzLlJlcXVlc3QSGQoRaGFzX21vcmVfcmVxdWVzdHMYAiABKAgaaAoHUmVxdWVzdBIwCgNhcGkYASABKA4yIy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkthZmthQVBJEisKCGR1cmF0aW9uGAIgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uGj8KCUdyb3VwSW5mbxIKCgJpZBgBIAEoCRITCgtpbnN0YW5jZV9pZBgCIAEoCRIRCgltZW1iZXJfaWQYAyABKAkavgcKCkNvbm5lY3Rpb24SDwoHbm9kZV9pZBgBIAEoBRIQCghzaGFyZF9pZBgCIAEoDRIVCgN1aWQYAyABKAlCCOKMz9cIAggBEjsKBXN0YXRlGAQgASgOMiwucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5LYWZrYUNvbm5lY3Rpb25TdGF0ZRItCglvcGVuX3RpbWUYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCmNsb3NlX3RpbWUYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjYKE2Nvbm5lY3Rpb25fZHVyYXRpb24YByABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SQgoOYXV0aGVudGljYXRpb24YCCABKAsyKi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkF1dGhlbnRpY2F0aW9uSW5mbxITCgt0bHNfZW5hYmxlZBgJIAEoCBJTCgZjbGllbnQYCiABKAsyQy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkNvbm5lY3Rpb25DbGllbnQSSwoFZ3JvdXAYCyABKAsyPC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkdyb3VwSW5mbxIVCg1saXN0ZW5lcl9uYW1lGAwgASgJEhgKEHRyYW5zYWN0aW9uYWxfaWQYDSABKAkSUwoMYXBpX3ZlcnNpb25zGA4gAygLMj0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXNwb25zZS5BUElWZXJzaW9uEjAKDWlkbGVfZHVyYXRpb24YDyABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SWgoPYWN0aXZlX3JlcXVlc3RzGBAgASgLMkEucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXNwb25zZS5BY3RpdmVSZXF1ZXN0cxJJChZyZXF1ZXN0X3N0YXRpc3RpY3NfYWxsGBEgASgLMikucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5SZXF1ZXN0U3RhdGlzdGljcxJIChVyZXF1ZXN0X3N0YXRpc3RpY3NfMW0YEiABKAsyKS5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlJlcXVlc3RTdGF0aXN0aWNzKuwECghLYWZrYUFQSRIZChVLQUZLQV9BUElfVU5TUEVDSUZJRUQQABIVChFLQUZLQV9BUElfUFJPRFVDRRABEhMKD0tBRktBX0FQSV9GRVRDSBACEhUKEUtBRktBX0FQSV9PRkZTRVRTEAMSFgoSS0FGS0FfQVBJX01FVEFEQVRBEAQSHAoYS0FGS0FfQVBJX0xFQURFUl9BTkRfSVNSEAUSGgoWS0FGS0FfQVBJX1NUT1BfUkVQTElDQRAGEh0KGUtBRktBX0FQSV9VUERBVEVfTUVUQURBVEEQBxIhCh1LQUZLQV9BUElfQ09OVFJPTExFRF9TSFVURE9XThAIEhsKF0tBRktBX0FQSV9PRkZTRVRfQ09NTUlUEAkSGgoWS0FGS0FfQVBJX09GRlNFVF9GRVRDSBAKEh8KG0tBRktBX0FQSV9HUk9VUF9DT09SRElOQVRPUhALEhgKFEtBRktBX0FQSV9KT0lOX0dST1VQEAwSFwoTS0FGS0FfQVBJX0hFQVJUQkVBVBANEhkKFUtBRktBX0FQSV9MRUFWRV9HUk9VUBAOEhgKFEtBRktBX0FQSV9TWU5DX0dST1VQEA8SHQoZS0FGS0FfQVBJX0RFU0NSSUJFX0dST1VQUxAQEhkKFUtBRktBX0FQSV9MSVNUX0dST1VQUxAREhwKGEtBRktBX0FQSV9TQVNMX0hBTkRTSEFLRRASEhoKFktBRktBX0FQSV9BUElfVkVSU0lPTlMQExIbChdLQUZLQV9BUElfQ1JFQVRFX1RPUElDUxAUEhsKF0tBRktBX0FQSV9ERUxFVEVfVE9QSUNTEBUyngMKEU1vbml0b3JpbmdTZXJ2aWNlEtICCg9MaXN0Q29ubmVjdGlvbnMSMS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1JlcXVlc3QaMi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlItcBkkGmARIXTGlzdCBSZWNlbnQgQ29ubmVjdGlvbnMaNkxpc3QgaW5mb3JtYXRpb24gb24gcmVjZW50IGNvbm5lY3Rpb25zIHRvIHRoZSBjbHVzdGVyLkpTCgMyMDASTAoSUmVjZW50IGNvbm5lY3Rpb25zEjYKNBoyLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdENvbm5lY3Rpb25zUmVzcG9uc2WKph0ECAMQA4LT5JMCHzoBKiIaL3YxL21vbml0b3JpbmcvY29ubmVjdGlvbnMaNJJBMQoKTW9uaXRvcmluZxIjTW9uaXRvcmluZyBvcGVyYXRpb25zIGZvciBSZWRwYW5kYS5ClAIKHWNvbS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxQg9Nb25pdG9yaW5nUHJvdG9QAVpbZ2l0aHViLmNvbS9yZWRwYW5kYS1kYXRhL2NvbnNvbGUvYmFja2VuZC9wa2cvcHJvdG9nZW4vcmVkcGFuZGEvYXBpL2RhdGFwbGFuZS92MTtkYXRhcGxhbmV2MaICA1JBRKoCGVJlZHBhbmRhLkFwaS5EYXRhcGxhbmUuVjHKAhlSZWRwYW5kYVxBcGlcRGF0YXBsYW5lXFYx4gIlUmVkcGFuZGFcQXBpXERhdGFwbGFuZVxWMVxHUEJNZXRhZGF0YeoCHFJlZHBhbmRhOjpBcGk6OkRhdGFwbGFuZTo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_google_api_annotations, file_google_api_field_info, file_google_protobuf_duration, file_google_protobuf_timestamp, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization, file_redpanda_core_admin_v2_kafka_connections]);
 
 /**
  * @generated from message redpanda.api.dataplane.v1.ListConnectionsRequest
  */
 export type ListConnectionsRequest = Message<"redpanda.api.dataplane.v1.ListConnectionsRequest"> & {
   /**
-   * @generated from field: string filter_raw = 1;
+   * @generated from field: redpanda.api.dataplane.v1.ListConnectionsRequest.Filters filters = 1;
    */
-  filterRaw: string;
+  filters?: ListConnectionsRequest_Filters;
 
   /**
-   * @generated from field: string order_by = 2;
+   * @generated from field: repeated redpanda.api.dataplane.v1.ListConnectionsRequest.Ordering order_by = 2;
    */
-  orderBy: string;
+  orderBy: ListConnectionsRequest_Ordering[];
 
   /**
-   * @generated from field: uint32 limit = 3;
+   * @generated from field: string order_by_expression = 3;
+   */
+  orderByExpression: string;
+
+  /**
+   * @generated from field: uint32 limit = 4;
    */
   limit: number;
-
-  /**
-   * @generated from field: redpanda.core.admin.v2.KafkaConnectionState state = 4;
-   */
-  state: KafkaConnectionState;
-
-  /**
-   * @generated from field: string ip_address = 5;
-   */
-  ipAddress: string;
-
-  /**
-   * @generated from field: string client_id = 6;
-   */
-  clientId: string;
-
-  /**
-   * @generated from field: string client_software_name = 7;
-   */
-  clientSoftwareName: string;
-
-  /**
-   * @generated from field: string client_software_version = 8;
-   */
-  clientSoftwareVersion: string;
-
-  /**
-   * @generated from field: string group_id = 9;
-   */
-  groupId: string;
-
-  /**
-   * @generated from field: string user = 10;
-   */
-  user: string;
-
-  /**
-   * @generated from field: int64 idle_ms = 11;
-   */
-  idleMs: bigint;
 };
 
 /**
@@ -87,6 +52,146 @@ export type ListConnectionsRequest = Message<"redpanda.api.dataplane.v1.ListConn
  */
 export const ListConnectionsRequestSchema: GenMessage<ListConnectionsRequest> = /*@__PURE__*/
   messageDesc(file_redpanda_api_dataplane_v1_monitoring, 0);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.ListConnectionsRequest.Ordering
+ */
+export type ListConnectionsRequest_Ordering = Message<"redpanda.api.dataplane.v1.ListConnectionsRequest.Ordering"> & {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.ListConnectionsRequest.OrderingOption option = 1;
+   */
+  option: ListConnectionsRequest_OrderingOption;
+
+  /**
+   * @generated from field: bool descending = 2;
+   */
+  descending: boolean;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.ListConnectionsRequest.Ordering.
+ * Use `create(ListConnectionsRequest_OrderingSchema)` to create a new message.
+ */
+export const ListConnectionsRequest_OrderingSchema: GenMessage<ListConnectionsRequest_Ordering> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 0, 0);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.ListConnectionsRequest.Filters
+ */
+export type ListConnectionsRequest_Filters = Message<"redpanda.api.dataplane.v1.ListConnectionsRequest.Filters"> & {
+  /**
+   * @generated from field: redpanda.core.admin.v2.KafkaConnectionState state = 1;
+   */
+  state: KafkaConnectionState;
+
+  /**
+   * @generated from field: string ip_address = 2;
+   */
+  ipAddress: string;
+
+  /**
+   * @generated from field: string client_id = 3;
+   */
+  clientId: string;
+
+  /**
+   * @generated from field: string client_software_name = 4;
+   */
+  clientSoftwareName: string;
+
+  /**
+   * @generated from field: string client_software_version = 5;
+   */
+  clientSoftwareVersion: string;
+
+  /**
+   * @generated from field: string group_id = 6;
+   */
+  groupId: string;
+
+  /**
+   * @generated from field: string user = 7;
+   */
+  user: string;
+
+  /**
+   * @generated from field: int64 idle_ms = 8;
+   */
+  idleMs: bigint;
+
+  /**
+   * @generated from field: string expression = 9;
+   */
+  expression: string;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.ListConnectionsRequest.Filters.
+ * Use `create(ListConnectionsRequest_FiltersSchema)` to create a new message.
+ */
+export const ListConnectionsRequest_FiltersSchema: GenMessage<ListConnectionsRequest_Filters> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 0, 1);
+
+/**
+ * @generated from enum redpanda.api.dataplane.v1.ListConnectionsRequest.OrderingOption
+ */
+export enum ListConnectionsRequest_OrderingOption {
+  /**
+   * @generated from enum value: ORDERING_OPTION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: ORDERING_OPTION_OPEN_TIME = 1;
+   */
+  OPEN_TIME = 1,
+
+  /**
+   * @generated from enum value: ORDERING_OPTION_CLOSE_TIME = 2;
+   */
+  CLOSE_TIME = 2,
+
+  /**
+   * @generated from enum value: ORDERING_OPTION_IDLE_DURATION = 3;
+   */
+  IDLE_DURATION = 3,
+
+  /**
+   * @generated from enum value: ORDERING_OPTION_TOTAL_PRODUCE_THROUGHPUT = 4;
+   */
+  TOTAL_PRODUCE_THROUGHPUT = 4,
+
+  /**
+   * @generated from enum value: ORDERING_OPTION_TOTAL_FETCH_THROUGHPUT = 5;
+   */
+  TOTAL_FETCH_THROUGHPUT = 5,
+
+  /**
+   * @generated from enum value: ORDERING_OPTION_TOTAL_REQUESTS = 6;
+   */
+  TOTAL_REQUESTS = 6,
+
+  /**
+   * @generated from enum value: ORDERING_OPTION_LAST_MINUTE_PRODUCE_THROUGHPUT = 7;
+   */
+  LAST_MINUTE_PRODUCE_THROUGHPUT = 7,
+
+  /**
+   * @generated from enum value: ORDERING_OPTION_LAST_MINUTE_FETCH_THROUGHPUT = 8;
+   */
+  LAST_MINUTE_FETCH_THROUGHPUT = 8,
+
+  /**
+   * @generated from enum value: ORDERING_OPTION_LAST_MINUTE_REQUESTS = 9;
+   */
+  LAST_MINUTE_REQUESTS = 9,
+}
+
+/**
+ * Describes the enum redpanda.api.dataplane.v1.ListConnectionsRequest.OrderingOption.
+ */
+export const ListConnectionsRequest_OrderingOptionSchema: GenEnum<ListConnectionsRequest_OrderingOption> = /*@__PURE__*/
+  enumDesc(file_redpanda_api_dataplane_v1_monitoring, 0, 0);
 
 /**
  * @generated from message redpanda.api.dataplane.v1.ListConnectionsResponse

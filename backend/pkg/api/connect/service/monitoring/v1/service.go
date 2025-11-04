@@ -32,6 +32,18 @@ const defaultLimit = uint32(30)
 
 var _ dataplanev1connect.MonitoringServiceHandler = (*Service)(nil)
 
+var orderOptionMap = map[v1.ListConnectionsRequest_OrderingOption]string{
+	v1.ListConnectionsRequest_ORDERING_OPTION_OPEN_TIME:                      "open_time",
+	v1.ListConnectionsRequest_ORDERING_OPTION_CLOSE_TIME:                     "close_time",
+	v1.ListConnectionsRequest_ORDERING_OPTION_IDLE_DURATION:                  "idle_duration",
+	v1.ListConnectionsRequest_ORDERING_OPTION_TOTAL_PRODUCE_THROUGHPUT:       "total_request_statistics.produce_bytes",
+	v1.ListConnectionsRequest_ORDERING_OPTION_TOTAL_FETCH_THROUGHPUT:         "total_request_statistics.fetch_bytes",
+	v1.ListConnectionsRequest_ORDERING_OPTION_TOTAL_REQUESTS:                 "total_request_statistics.request_count",
+	v1.ListConnectionsRequest_ORDERING_OPTION_LAST_MINUTE_PRODUCE_THROUGHPUT: "recent_request_statistics.produce_bytes",
+	v1.ListConnectionsRequest_ORDERING_OPTION_LAST_MINUTE_FETCH_THROUGHPUT:   "recent_request_statistics.fetch_bytes",
+	v1.ListConnectionsRequest_ORDERING_OPTION_LAST_MINUTE_REQUESTS:           "recent_request_statistics.request_count",
+}
+
 // Service implements MonitoringServiceHandler
 type Service struct {
 	cfg                   *config.Config
@@ -144,30 +156,68 @@ func adminConnectionToConnect(conn *adminv2.KafkaConnection) *v1.ListConnections
 	}
 }
 
-func buildFilter(req *v1.ListConnectionsRequest) string {
-	clauses := []string{}
-	if req.State != adminv2.KafkaConnectionState_KAFKA_CONNECTION_STATE_UNSPECIFIED {
-		clauses = append(clauses, fmt.Sprintf("state = %s", req.State.String()))
+func buildFilterString(filters *v1.ListConnectionsRequest_Filters) string {
+	if filters == nil {
+		return ""
 	}
 
-	if req.IdleMs > 0 {
-		clauses = append(clauses, fmt.Sprintf("idle_duration > %dms", req.IdleMs))
+	clauses := []string{}
+	if filters.State != adminv2.KafkaConnectionState_KAFKA_CONNECTION_STATE_UNSPECIFIED {
+		clauses = append(clauses, fmt.Sprintf("state = %s", filters.State.String()))
+	}
+
+	if filters.IdleMs > 0 {
+		clauses = append(clauses, fmt.Sprintf("idle_duration > %dms", filters.IdleMs))
 	}
 
 	for key, val := range map[string]string{
-		"source.ip_address":                  req.IpAddress,
-		"client_id":                          req.ClientId,
-		"client_software_name":               req.ClientSoftwareName,
-		"client_software_version":            req.ClientSoftwareVersion,
-		"group_id":                           req.GroupId,
-		"authentication_info.user_principal": req.User,
+		"source.ip_address":                  filters.IpAddress,
+		"client_id":                          filters.ClientId,
+		"client_software_name":               filters.ClientSoftwareName,
+		"client_software_version":            filters.ClientSoftwareVersion,
+		"group_id":                           filters.GroupId,
+		"authentication_info.user_principal": filters.User,
 	} {
 		if val != "" {
 			clauses = append(clauses, fmt.Sprintf("%s = %q", key, val))
 		}
 	}
 
+	// Add the expression clause if present
+	if filters.Expression != "" {
+		clauses = append(clauses, filters.Expression)
+	}
+
 	return strings.Join(clauses, " AND ")
+}
+
+func buildOrderByString(req *v1.ListConnectionsRequest) string {
+	// Default to most recently opened connections
+	if len(req.OrderBy) == 0 && req.OrderByExpression == "" {
+		return "open_time desc"
+	}
+
+	clauses := []string{}
+
+	if req.OrderByExpression != "" {
+		clauses = append(clauses, req.OrderByExpression)
+	}
+
+	for _, clause := range req.OrderBy {
+		direction := "asc"
+		if clause.Descending {
+			direction = "desc"
+		}
+
+		val, ok := orderOptionMap[clause.Option]
+		if !ok {
+			continue
+		}
+
+		clauses = append(clauses, fmt.Sprintf("%s %s", val, direction))
+	}
+
+	return strings.Join(clauses, ", ")
 }
 
 // ListConnections returns active and recently closed connections across the cluster
@@ -187,10 +237,13 @@ func (s *Service) ListConnections(ctx context.Context, req *connect.Request[v1.L
 		limit = req.Msg.Limit
 	}
 
+	fmt.Printf("\n%#v", req.Msg)
+	fmt.Printf("\nfilters=%v", buildFilterString(req.Msg.Filters))
+	fmt.Printf("\norder=%v", buildOrderByString(req.Msg))
 	resp, err := adminClient.ClusterService().ListKafkaConnections(ctx, &connect.Request[adminv2.ListKafkaConnectionsRequest]{
 		Msg: &adminv2.ListKafkaConnectionsRequest{
-			Filter:   buildFilter(req.Msg),
-			OrderBy:  req.Msg.OrderBy,
+			Filter:   buildFilterString(req.Msg.Filters),
+			OrderBy:  buildOrderByString(req.Msg),
 			PageSize: int32(limit),
 		},
 	})

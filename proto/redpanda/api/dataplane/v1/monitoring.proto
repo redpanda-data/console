@@ -12,28 +12,40 @@ import "redpanda/api/auth/v1/authorization.proto";
 import "redpanda/core/admin/v2/kafka_connections.proto";
 
 message ListConnectionsRequest {
-  string filter_raw = 1;
-  string order_by = 2;
-  uint32 limit = 3;
+  enum OrderingOption {
+    ORDERING_OPTION_UNSPECIFIED = 0;
+    ORDERING_OPTION_OPEN_TIME = 1;
+    ORDERING_OPTION_CLOSE_TIME = 2;
+    ORDERING_OPTION_IDLE_DURATION = 3;
+    ORDERING_OPTION_TOTAL_PRODUCE_THROUGHPUT = 4;
+    ORDERING_OPTION_TOTAL_FETCH_THROUGHPUT = 5;
+    ORDERING_OPTION_TOTAL_REQUESTS = 6;
+    ORDERING_OPTION_LAST_MINUTE_PRODUCE_THROUGHPUT = 7;
+    ORDERING_OPTION_LAST_MINUTE_FETCH_THROUGHPUT = 8;
+    ORDERING_OPTION_LAST_MINUTE_REQUESTS = 9;
+  }
 
-  core.admin.v2.KafkaConnectionState state = 4;
-  string ip_address = 5;
-  string client_id = 6;
-  string client_software_name = 7;
-  string client_software_version = 8;
-  string group_id = 9;
-  string user = 10;
-  int64 idle_ms = 11 [(buf.validate.field).int64.gte = 0];
+  message Ordering {
+    OrderingOption option = 1;
+    bool descending = 2;
+  }
 
-  option (buf.validate.message).cel = {
-    id: "filter_raw_excludes_others"
-    message: "filter_raw must not be present alongside other filtering mechanisms"
-    expression:
-      "!(has(this.filter_raw) && ("
-      "has(this.ip_address) || has(this.client_id) || has(this.client_software_name) ||"
-      "has(this.client_software_version) || has(this.group_id) || has(this.user) || has(this.idle_ms)"
-      "))"
-  };
+  message Filters {
+    core.admin.v2.KafkaConnectionState state = 1 [(buf.validate.field).enum.defined_only = true];
+    string ip_address = 2;
+    string client_id = 3;
+    string client_software_name = 4;
+    string client_software_version = 5;
+    string group_id = 6;
+    string user = 7;
+    int64 idle_ms = 8 [(buf.validate.field).int64.gte = 0];
+    string expression = 9;
+  }
+
+  Filters filters = 1;
+  repeated Ordering order_by = 2;
+  string order_by_expression = 3;
+  uint32 limit = 4;
 }
 
 // Everything is up by one (produce is actually 0, fetch -> 1, etc)
@@ -123,7 +135,10 @@ service MonitoringService {
   };
 
   rpc ListConnections(ListConnectionsRequest) returns (ListConnectionsResponse) {
-    option (google.api.http) = {get: "/v1/monitoring/connections"};
+    option (google.api.http) = {
+      post: "/v1/monitoring/connections"
+      body: "*"
+    };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List Recent Connections"
       description: "List information on recent connections to the cluster."
