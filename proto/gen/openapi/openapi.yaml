@@ -154,6 +154,130 @@ components:
             $ref: '#/components/schemas/SuccessfulEntity'
           type: array
       type: object
+    BloblangFunctionSpec:
+      description: BloblangFunctionSpec represents a Bloblang function specification.
+      properties:
+        categories:
+          items:
+            type: string
+          type: array
+        description:
+          type: string
+        examples:
+          items:
+            type: string
+          type: array
+        name:
+          type: string
+        params:
+          $ref: '#/components/schemas/ParamSpec'
+        status:
+          type: string
+        version:
+          type: string
+      type: object
+    BloblangMethodSpec:
+      description: BloblangMethodSpec represents a Bloblang method specification.
+      properties:
+        categories:
+          items:
+            type: string
+          type: array
+        description:
+          type: string
+        examples:
+          items:
+            type: string
+          type: array
+        name:
+          type: string
+        params:
+          $ref: '#/components/schemas/ParamSpec'
+        status:
+          type: string
+        version:
+          type: string
+      type: object
+    ComponentList:
+      description: ComponentList contains the structured component data.
+      properties:
+        bloblang_functions:
+          items:
+            $ref: '#/components/schemas/BloblangFunctionSpec'
+          type: array
+        bloblang_methods:
+          items:
+            $ref: '#/components/schemas/BloblangMethodSpec'
+          type: array
+        buffers:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        caches:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        date:
+          type: string
+        inputs:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        metrics:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        outputs:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        processors:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        rate_limits:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        scanners:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        tracers:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        version:
+          type: string
+      type: object
+    ComponentSpec:
+      description: ComponentSpec represents a component specification.
+      properties:
+        categories:
+          items:
+            type: string
+          type: array
+        config:
+          $ref: '#/components/schemas/FieldSpec'
+        description:
+          type: string
+        examples:
+          items:
+            type: string
+          type: array
+        footnotes:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        summary:
+          type: string
+        type:
+          type: string
+        version:
+          type: string
+      type: object
     Config:
       properties:
         name:
@@ -776,6 +900,44 @@ components:
         error_message:
           type: string
       type: object
+    FieldSpec:
+      description: FieldSpec represents a field specification.
+      properties:
+        advanced:
+          type: boolean
+        annotated_options:
+          additionalProperties:
+            type: string
+          type: object
+        children:
+          items:
+            $ref: '#/components/schemas/FieldSpec'
+          type: array
+        default_value:
+          type: string
+        deprecated:
+          type: boolean
+        description:
+          type: string
+        examples:
+          items:
+            type: string
+          type: array
+        interpolated:
+          items:
+            type: string
+          type: array
+        kind:
+          type: string
+        name:
+          type: string
+        optional:
+          type: boolean
+        type:
+          type: string
+        version:
+          type: string
+      type: object
     FieldViolation:
       description: A message type used to describe a single bad request field.
       properties:
@@ -836,9 +998,8 @@ components:
       type: object
     GetComponentListResponse:
       properties:
-        components_json:
-          description: JSON string containing the lists of available components.
-          type: string
+        components:
+          $ref: '#/components/schemas/ComponentList'
       type: object
     GetConnectClusterResponse:
       properties:
@@ -1595,6 +1756,26 @@ components:
         only_failed:
           description: Restart only connectors that have failed.
           type: boolean
+      type: object
+    ParamDefinition:
+      description: ParamDefinition represents a parameter definition.
+      properties:
+        default_value:
+          type: string
+        description:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+      type: object
+    ParamSpec:
+      description: ParamSpec represents parameter specifications.
+      properties:
+        definitions:
+          items:
+            $ref: '#/components/schemas/ParamDefinition'
+          type: array
       type: object
     PartitionStatus:
       enum:

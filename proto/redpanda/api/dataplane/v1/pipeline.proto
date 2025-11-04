@@ -684,8 +684,91 @@ message GetComponentListRequest {
 }
 
 message GetComponentListResponse {
-  // JSON string containing the lists of available components.
-  string components_json = 1;
+  // Structured component list data instead of JSON string.
+  ComponentList components = 1;
+}
+
+// ComponentList contains the structured component data.
+message ComponentList {
+  string version = 1;
+  string date = 2;
+  repeated ComponentSpec buffers = 3;
+  repeated ComponentSpec caches = 4;
+  repeated ComponentSpec inputs = 5;
+  repeated ComponentSpec outputs = 6;
+  repeated ComponentSpec processors = 7;
+  repeated ComponentSpec rate_limits = 8;
+  repeated ComponentSpec metrics = 9;
+  repeated ComponentSpec tracers = 10;
+  repeated ComponentSpec scanners = 11;
+  repeated BloblangFunctionSpec bloblang_functions = 12;
+  repeated BloblangMethodSpec bloblang_methods = 13;
+}
+
+// ComponentSpec represents a component specification.
+message ComponentSpec {
+  string name = 1;
+  string type = 2;
+  string status = 3;
+  string summary = 4;
+  string description = 5;
+  repeated string categories = 6;
+  string version = 7;
+  FieldSpec config = 8;
+  repeated string examples = 9;
+  string footnotes = 10;
+}
+
+// FieldSpec represents a field specification.
+message FieldSpec {
+  string name = 1;
+  string type = 2;
+  string kind = 3;
+  string description = 4;
+  bool advanced = 5;
+  bool deprecated = 6;
+  bool optional = 7;
+  string default_value = 8;
+  repeated string examples = 9;
+  repeated FieldSpec children = 10;
+  map<string, string> annotated_options = 11;
+  repeated string interpolated = 12;
+  string version = 13;
+}
+
+// BloblangFunctionSpec represents a Bloblang function specification.
+message BloblangFunctionSpec {
+  string name = 1;
+  string description = 2;
+  string status = 3;
+  repeated string categories = 4;
+  ParamSpec params = 5;
+  repeated string examples = 6;
+  string version = 7;
+}
+
+// BloblangMethodSpec represents a Bloblang method specification.
+message BloblangMethodSpec {
+  string name = 1;
+  string description = 2;
+  string status = 3;
+  repeated string categories = 4;
+  ParamSpec params = 5;
+  repeated string examples = 6;
+  string version = 7;
+}
+
+// ParamSpec represents parameter specifications.
+message ParamSpec {
+  repeated ParamDefinition definitions = 1;
+}
+
+// ParamDefinition represents a parameter definition.
+message ParamDefinition {
+  string name = 1;
+  string description = 2;
+  string type = 3;
+  string default_value = 4;
 }
 
 message PipelinesForSecret {
