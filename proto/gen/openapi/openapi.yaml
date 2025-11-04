@@ -39,15 +39,8 @@ components:
           type: boolean
         requests:
           items:
-            $ref: '#/components/schemas/ActiveRequests.Request'
+            $ref: '#/components/schemas/Request'
           type: array
-      type: object
-    ActiveRequests.Request:
-      properties:
-        api:
-          $ref: '#/components/schemas/KafkaAPI'
-        duration:
-          type: string
       type: object
     AddPartitionsToTopicsRequest:
       properties:
@@ -103,9 +96,7 @@ components:
         state:
           $ref: '#/components/schemas/AuthenticationState'
         user_principal:
-          title: Authenticated user principal
           type: string
-      title: Other Messages
       type: object
     AuthenticationMechanism:
       enum:
@@ -114,12 +105,6 @@ components:
         - AUTHENTICATION_MECHANISM_SASL_OAUTHBEARER
         - AUTHENTICATION_MECHANISM_SASL_PLAIN
         - AUTHENTICATION_MECHANISM_SASL_GSSAPI
-      title: |-
-        - AUTHENTICATION_MECHANISM_MTLS: Mutual TLS using client certificates
-         - AUTHENTICATION_MECHANISM_SASL_SCRAM: SASL SCRAM
-         - AUTHENTICATION_MECHANISM_SASL_OAUTHBEARER: SASL OAUTHBEARER (OAuth 2.0 / OpenID Connect)
-         - AUTHENTICATION_MECHANISM_SASL_PLAIN: SASL PLAIN (username/password in plaintext)
-         - AUTHENTICATION_MECHANISM_SASL_GSSAPI: SASL GSSAPI (Kerberos)
       type: string
     AuthenticationState:
       enum:
@@ -1074,17 +1059,10 @@ components:
       title: Everything is up by one (produce is actually 0, fetch -> 1, etc)
       type: string
     KafkaConnectionState:
-      description: |-
-        - KAFKA_CONNECTION_STATE_OPEN: The connection is accepting requests.
-         - KAFKA_CONNECTION_STATE_ABORTING: The connection is aborting ongoing requests and about to be closed.
-        This is a transient state between open and closed that should rarely be
-        observable under normal circumstances.
-         - KAFKA_CONNECTION_STATE_CLOSED: The connection has been closed.
       enum:
         - KAFKA_CONNECTION_STATE_OPEN
         - KAFKA_CONNECTION_STATE_ABORTING
         - KAFKA_CONNECTION_STATE_CLOSED
-      title: Enums
       type: string
     Link:
       description: Describes a URL link.
@@ -1908,6 +1886,13 @@ components:
             type: integer
           type: array
       type: object
+    Request:
+      properties:
+        api:
+          $ref: '#/components/schemas/KafkaAPI'
+        duration:
+          type: string
+      type: object
     RequestQuotaEntity:
       properties:
         entity_name:
@@ -1930,21 +1915,15 @@ components:
     RequestStatistics:
       properties:
         fetch_bytes:
-          description: Sum of bytes fetched.
           format: uint64
           type: string
         produce_batch_count:
           format: uint64
-          title: |-
-            Number of produced batches.
-            Average batch size = produce_bytes / produce_batch_count
           type: string
         produce_bytes:
-          description: Sum of bytes produced.
           format: uint64
           type: string
         request_count:
-          description: Number of requests the client has made.
           format: uint64
           type: string
       type: object
@@ -5891,7 +5870,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

@@ -44,6 +44,26 @@ var orderOptionMap = map[v1.ListConnectionsRequest_OrderingOption]string{
 	v1.ListConnectionsRequest_ORDERING_OPTION_LAST_MINUTE_REQUESTS:           "recent_request_statistics.request_count",
 }
 
+var connectionStateMap = map[adminv2.KafkaConnectionState]v1.KafkaConnectionState{
+	adminv2.KafkaConnectionState_KAFKA_CONNECTION_STATE_OPEN:     v1.KafkaConnectionState_KAFKA_CONNECTION_STATE_OPEN,
+	adminv2.KafkaConnectionState_KAFKA_CONNECTION_STATE_ABORTING: v1.KafkaConnectionState_KAFKA_CONNECTION_STATE_ABORTING,
+	adminv2.KafkaConnectionState_KAFKA_CONNECTION_STATE_CLOSED:   v1.KafkaConnectionState_KAFKA_CONNECTION_STATE_CLOSED,
+}
+
+var authenticationStateMap = map[adminv2.AuthenticationState]v1.AuthenticationState{
+	adminv2.AuthenticationState_AUTHENTICATION_STATE_SUCCESS:         v1.AuthenticationState_AUTHENTICATION_STATE_SUCCESS,
+	adminv2.AuthenticationState_AUTHENTICATION_STATE_FAILURE:         v1.AuthenticationState_AUTHENTICATION_STATE_FAILURE,
+	adminv2.AuthenticationState_AUTHENTICATION_STATE_UNAUTHENTICATED: v1.AuthenticationState_AUTHENTICATION_STATE_UNAUTHENTICATED,
+}
+
+var authenticationMechanismMap = map[adminv2.AuthenticationMechanism]v1.AuthenticationMechanism{
+	adminv2.AuthenticationMechanism_AUTHENTICATION_MECHANISM_MTLS:             v1.AuthenticationMechanism_AUTHENTICATION_MECHANISM_MTLS,
+	adminv2.AuthenticationMechanism_AUTHENTICATION_MECHANISM_SASL_SCRAM:       v1.AuthenticationMechanism_AUTHENTICATION_MECHANISM_SASL_SCRAM,
+	adminv2.AuthenticationMechanism_AUTHENTICATION_MECHANISM_SASL_OAUTHBEARER: v1.AuthenticationMechanism_AUTHENTICATION_MECHANISM_SASL_OAUTHBEARER,
+	adminv2.AuthenticationMechanism_AUTHENTICATION_MECHANISM_SASL_PLAIN:       v1.AuthenticationMechanism_AUTHENTICATION_MECHANISM_SASL_PLAIN,
+	adminv2.AuthenticationMechanism_AUTHENTICATION_MECHANISM_SASL_GSSAPI:      v1.AuthenticationMechanism_AUTHENTICATION_MECHANISM_SASL_GSSAPI,
+}
+
 // Service implements MonitoringServiceHandler
 type Service struct {
 	cfg                   *config.Config
@@ -127,12 +147,48 @@ func adminConnectionToConnect(conn *adminv2.KafkaConnection) *v1.ListConnections
 		client.Port = conn.Source.Port
 	}
 
+	state, ok := connectionStateMap[conn.State]
+	if !ok {
+		state = v1.KafkaConnectionState_KAFKA_CONNECTION_STATE_UNSPECIFIED
+	}
+
+	authInfo := &v1.ListConnectionsResponse_AuthenticationInfo{}
+	if conn.AuthenticationInfo != nil {
+		authInfo.UserPrincipal = conn.AuthenticationInfo.UserPrincipal
+		authInfo.State = v1.AuthenticationState_AUTHENTICATION_STATE_UNSPECIFIED
+		authInfo.Mechanism = v1.AuthenticationMechanism_AUTHENTICATION_MECHANISM_UNSPECIFIED
+
+		if val, ok := authenticationStateMap[conn.AuthenticationInfo.State]; ok {
+			authInfo.State = val
+		}
+
+		if val, ok := authenticationMechanismMap[conn.AuthenticationInfo.Mechanism]; ok {
+			authInfo.Mechanism = val
+		}
+	}
+
+	allRequests := &v1.ListConnectionsResponse_RequestStatistics{}
+	if conn.TotalRequestStatistics != nil {
+		allRequests.ProduceBytes = conn.TotalRequestStatistics.ProduceBytes
+		allRequests.FetchBytes = conn.TotalRequestStatistics.FetchBytes
+		allRequests.RequestCount = conn.TotalRequestStatistics.RequestCount
+		allRequests.ProduceBatchCount = conn.TotalRequestStatistics.ProduceBatchCount
+	}
+
+	recentRequests := &v1.ListConnectionsResponse_RequestStatistics{}
+	if conn.RecentRequestStatistics != nil {
+		recentRequests.ProduceBytes = conn.RecentRequestStatistics.ProduceBytes
+		recentRequests.FetchBytes = conn.RecentRequestStatistics.FetchBytes
+		recentRequests.RequestCount = conn.RecentRequestStatistics.RequestCount
+		recentRequests.ProduceBatchCount = conn.RecentRequestStatistics.ProduceBatchCount
+	}
+
 	return &v1.ListConnectionsResponse_Connection{
 		NodeId:             conn.NodeId,
 		ShardId:            conn.ShardId,
 		Uid:                conn.Uid,
-		State:              conn.State,
-		Authentication:     conn.AuthenticationInfo,
+		State:              state,
+		Authentication:     authInfo,
 		OpenTime:           conn.OpenTime,
 		CloseTime:          conn.CloseTime,
 		ConnectionDuration: durationpb.New(duration),
@@ -151,8 +207,8 @@ func adminConnectionToConnect(conn *adminv2.KafkaConnection) *v1.ListConnections
 			Requests:        currentRequests,
 			HasMoreRequests: conn.InFlightRequests != nil && conn.InFlightRequests.HasMoreRequests,
 		},
-		RequestStatisticsAll: conn.TotalRequestStatistics,
-		RequestStatistics_1M: conn.RecentRequestStatistics,
+		RequestStatisticsAll: allRequests,
+		RequestStatistics_1M: recentRequests,
 	}
 }
 
@@ -162,7 +218,7 @@ func buildFilterString(filters *v1.ListConnectionsRequest_Filters) string {
 	}
 
 	clauses := []string{}
-	if filters.State != adminv2.KafkaConnectionState_KAFKA_CONNECTION_STATE_UNSPECIFIED {
+	if filters.State != v1.KafkaConnectionState_KAFKA_CONNECTION_STATE_UNSPECIFIED {
 		clauses = append(clauses, fmt.Sprintf("state = %s", filters.State.String()))
 	}
 
@@ -237,9 +293,6 @@ func (s *Service) ListConnections(ctx context.Context, req *connect.Request[v1.L
 		limit = req.Msg.Limit
 	}
 
-	fmt.Printf("\n%#v", req.Msg)
-	fmt.Printf("\nfilters=%v", buildFilterString(req.Msg.Filters))
-	fmt.Printf("\norder=%v", buildOrderByString(req.Msg))
 	resp, err := adminClient.ClusterService().ListKafkaConnections(ctx, &connect.Request[adminv2.ListKafkaConnectionsRequest]{
 		Msg: &adminv2.ListKafkaConnectionsRequest{
 			Filter:   buildFilterString(req.Msg.Filters),

@@ -90,13 +90,13 @@ func TestAdminConnectionToConnect(t *testing.T) {
 			NodeId:             2,
 			ShardId:            4,
 			Uid:                "36338ca5-86b7-4478-ad23-32d49cfaef61",
-			State:              adminv2.KafkaConnectionState_KAFKA_CONNECTION_STATE_OPEN,
+			State:              v1.KafkaConnectionState_KAFKA_CONNECTION_STATE_OPEN,
 			OpenTime:           timestamppb.New(time.Date(2025, 10, 23, 1, 2, 3, 0, time.UTC)),
 			CloseTime:          timestamppb.New(time.Date(2025, 10, 23, 1, 2, 5, 0, time.UTC)),
 			ConnectionDuration: durationpb.New(2 * time.Second),
-			Authentication: &adminv2.AuthenticationInfo{
-				State:         adminv2.AuthenticationState_AUTHENTICATION_STATE_SUCCESS,
-				Mechanism:     adminv2.AuthenticationMechanism_AUTHENTICATION_MECHANISM_MTLS,
+			Authentication: &v1.ListConnectionsResponse_AuthenticationInfo{
+				State:         v1.AuthenticationState_AUTHENTICATION_STATE_SUCCESS,
+				Mechanism:     v1.AuthenticationMechanism_AUTHENTICATION_MECHANISM_MTLS,
 				UserPrincipal: "someone",
 			},
 			TlsEnabled:   true,
@@ -121,13 +121,13 @@ func TestAdminConnectionToConnect(t *testing.T) {
 			ActiveRequests: &v1.ListConnectionsResponse_ActiveRequests{Requests: []*v1.ListConnectionsResponse_ActiveRequests_Request{
 				{Api: v1.KafkaAPI_KAFKA_API_PRODUCE, Duration: durationpb.New(40 * time.Millisecond)},
 			}, HasMoreRequests: true},
-			RequestStatisticsAll: &adminv2.RequestStatistics{
+			RequestStatisticsAll: &v1.ListConnectionsResponse_RequestStatistics{
 				ProduceBytes:      10000,
 				FetchBytes:        2000,
 				RequestCount:      200,
 				ProduceBatchCount: 10,
 			},
-			RequestStatistics_1M: &adminv2.RequestStatistics{
+			RequestStatistics_1M: &v1.ListConnectionsResponse_RequestStatistics{
 				ProduceBytes:      1000,
 				FetchBytes:        200,
 				RequestCount:      20,
@@ -155,7 +155,7 @@ func TestBuildFilterString(t *testing.T) {
 		GroupId:               "group-id",
 		User:                  "principal",
 		IdleMs:                100,
-		State:                 adminv2.KafkaConnectionState_KAFKA_CONNECTION_STATE_OPEN,
+		State:                 v1.KafkaConnectionState_KAFKA_CONNECTION_STATE_OPEN,
 		Expression:            `beep = "boop" OR 1`,
 	}
 

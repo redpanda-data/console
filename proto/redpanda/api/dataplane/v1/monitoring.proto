@@ -9,7 +9,29 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
-import "redpanda/core/admin/v2/kafka_connections.proto";
+
+enum KafkaConnectionState {
+  KAFKA_CONNECTION_STATE_UNSPECIFIED = 0;
+  KAFKA_CONNECTION_STATE_OPEN = 1;
+  KAFKA_CONNECTION_STATE_ABORTING = 2;
+  KAFKA_CONNECTION_STATE_CLOSED = 3;
+}
+
+enum AuthenticationState {
+  AUTHENTICATION_STATE_UNSPECIFIED = 0;
+  AUTHENTICATION_STATE_UNAUTHENTICATED = 1;
+  AUTHENTICATION_STATE_SUCCESS = 2;
+  AUTHENTICATION_STATE_FAILURE = 3;
+}
+
+enum AuthenticationMechanism {
+  AUTHENTICATION_MECHANISM_UNSPECIFIED = 0;
+  AUTHENTICATION_MECHANISM_MTLS = 1;
+  AUTHENTICATION_MECHANISM_SASL_SCRAM = 2;
+  AUTHENTICATION_MECHANISM_SASL_OAUTHBEARER = 3;
+  AUTHENTICATION_MECHANISM_SASL_PLAIN = 4;
+  AUTHENTICATION_MECHANISM_SASL_GSSAPI = 5;
+}
 
 message ListConnectionsRequest {
   enum OrderingOption {
@@ -31,7 +53,7 @@ message ListConnectionsRequest {
   }
 
   message Filters {
-    core.admin.v2.KafkaConnectionState state = 1 [(buf.validate.field).enum.defined_only = true];
+    KafkaConnectionState state = 1 [(buf.validate.field).enum.defined_only = true];
     string ip_address = 2;
     string client_id = 3;
     string client_software_name = 4;
@@ -104,15 +126,28 @@ message ListConnectionsResponse {
     string member_id = 3;
   }
 
+  message AuthenticationInfo {
+    AuthenticationState state = 1;
+    AuthenticationMechanism mechanism = 2;
+    string user_principal = 3;
+  }
+
+  message RequestStatistics {
+    uint64 produce_bytes = 1;
+    uint64 fetch_bytes = 2;
+    uint64 request_count = 3;
+    uint64 produce_batch_count = 4;
+  }
+
   message Connection {
     int32 node_id = 1;
     uint32 shard_id = 2;
     string uid = 3 [(google.api.field_info).format = UUID4];
-    core.admin.v2.KafkaConnectionState state = 4;
+    KafkaConnectionState state = 4;
     google.protobuf.Timestamp open_time = 5;
     google.protobuf.Timestamp close_time = 6;
     google.protobuf.Duration connection_duration = 7;
-    core.admin.v2.AuthenticationInfo authentication = 8;
+    AuthenticationInfo authentication = 8;
     bool tls_enabled = 9;
     ConnectionClient client = 10;
     GroupInfo group = 11;
@@ -121,8 +156,8 @@ message ListConnectionsResponse {
     repeated APIVersion api_versions = 14;
     google.protobuf.Duration idle_duration = 15;
     ActiveRequests active_requests = 16;
-    core.admin.v2.RequestStatistics request_statistics_all = 17;
-    core.admin.v2.RequestStatistics request_statistics_1m = 18;
+    RequestStatistics request_statistics_all = 17;
+    RequestStatistics request_statistics_1m = 18;
   }
 
   repeated Connection connections = 1;

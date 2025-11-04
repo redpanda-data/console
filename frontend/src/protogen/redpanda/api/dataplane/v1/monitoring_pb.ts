@@ -11,15 +11,13 @@ import type { Duration, Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_duration, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_protoc_gen_openapiv2_options_annotations } from "../../../../protoc-gen-openapiv2/options/annotations_pb";
 import { file_redpanda_api_auth_v1_authorization } from "../../auth/v1/authorization_pb";
-import type { AuthenticationInfo, KafkaConnectionState, RequestStatistics } from "../../../core/admin/v2/kafka_connections_pb";
-import { file_redpanda_core_admin_v2_kafka_connections } from "../../../core/admin/v2/kafka_connections_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file redpanda/api/dataplane/v1/monitoring.proto.
  */
 export const file_redpanda_api_dataplane_v1_monitoring: GenFile = /*@__PURE__*/
-  fileDesc("CipyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxL21vbml0b3JpbmcucHJvdG8SGXJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEi+wcKFkxpc3RDb25uZWN0aW9uc1JlcXVlc3QSSgoHZmlsdGVycxgBIAEoCzI5LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdENvbm5lY3Rpb25zUmVxdWVzdC5GaWx0ZXJzEkwKCG9yZGVyX2J5GAIgAygLMjoucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXF1ZXN0Lk9yZGVyaW5nEhsKE29yZGVyX2J5X2V4cHJlc3Npb24YAyABKAkSDQoFbGltaXQYBCABKA0acAoIT3JkZXJpbmcSUAoGb3B0aW9uGAEgASgOMkAucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXF1ZXN0Lk9yZGVyaW5nT3B0aW9uEhIKCmRlc2NlbmRpbmcYAiABKAgahAIKB0ZpbHRlcnMSRQoFc3RhdGUYASABKA4yLC5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkthZmthQ29ubmVjdGlvblN0YXRlQgi6SAWCAQIQARISCgppcF9hZGRyZXNzGAIgASgJEhEKCWNsaWVudF9pZBgDIAEoCRIcChRjbGllbnRfc29mdHdhcmVfbmFtZRgEIAEoCRIfChdjbGllbnRfc29mdHdhcmVfdmVyc2lvbhgFIAEoCRIQCghncm91cF9pZBgGIAEoCRIMCgR1c2VyGAcgASgJEhgKB2lkbGVfbXMYCCABKANCB7pIBCICKAASEgoKZXhwcmVzc2lvbhgJIAEoCSKhAwoOT3JkZXJpbmdPcHRpb24SHwobT1JERVJJTkdfT1BUSU9OX1VOU1BFQ0lGSUVEEAASHQoZT1JERVJJTkdfT1BUSU9OX09QRU5fVElNRRABEh4KGk9SREVSSU5HX09QVElPTl9DTE9TRV9USU1FEAISIQodT1JERVJJTkdfT1BUSU9OX0lETEVfRFVSQVRJT04QAxIsCihPUkRFUklOR19PUFRJT05fVE9UQUxfUFJPRFVDRV9USFJPVUdIUFVUEAQSKgomT1JERVJJTkdfT1BUSU9OX1RPVEFMX0ZFVENIX1RIUk9VR0hQVVQQBRIiCh5PUkRFUklOR19PUFRJT05fVE9UQUxfUkVRVUVTVFMQBhIyCi5PUkRFUklOR19PUFRJT05fTEFTVF9NSU5VVEVfUFJPRFVDRV9USFJPVUdIUFVUEAcSMAosT1JERVJJTkdfT1BUSU9OX0xBU1RfTUlOVVRFX0ZFVENIX1RIUk9VR0hQVVQQCBIoCiRPUkRFUklOR19PUFRJT05fTEFTVF9NSU5VVEVfUkVRVUVTVFMQCSKgDAoXTGlzdENvbm5lY3Rpb25zUmVzcG9uc2USUgoLY29ubmVjdGlvbnMYASADKAsyPS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkNvbm5lY3Rpb24aaQoQQ29ubmVjdGlvbkNsaWVudBIKCgJpcBgBIAEoCRIMCgRwb3J0GAIgASgNEgoKAmlkGAMgASgJEhUKDXNvZnR3YXJlX25hbWUYBCABKAkSGAoQc29mdHdhcmVfdmVyc2lvbhgFIAEoCRpPCgpBUElWZXJzaW9uEjAKA2FwaRgBIAEoDjIjLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuS2Fma2FBUEkSDwoHdmVyc2lvbhgCIAEoBRryAQoOQWN0aXZlUmVxdWVzdHMSWwoIcmVxdWVzdHMYASADKAsySS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkFjdGl2ZVJlcXVlc3RzLlJlcXVlc3QSGQoRaGFzX21vcmVfcmVxdWVzdHMYAiABKAgaaAoHUmVxdWVzdBIwCgNhcGkYASABKA4yIy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkthZmthQVBJEisKCGR1cmF0aW9uGAIgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uGj8KCUdyb3VwSW5mbxIKCgJpZBgBIAEoCRITCgtpbnN0YW5jZV9pZBgCIAEoCRIRCgltZW1iZXJfaWQYAyABKAkavgcKCkNvbm5lY3Rpb24SDwoHbm9kZV9pZBgBIAEoBRIQCghzaGFyZF9pZBgCIAEoDRIVCgN1aWQYAyABKAlCCOKMz9cIAggBEjsKBXN0YXRlGAQgASgOMiwucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5LYWZrYUNvbm5lY3Rpb25TdGF0ZRItCglvcGVuX3RpbWUYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCmNsb3NlX3RpbWUYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjYKE2Nvbm5lY3Rpb25fZHVyYXRpb24YByABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SQgoOYXV0aGVudGljYXRpb24YCCABKAsyKi5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLkF1dGhlbnRpY2F0aW9uSW5mbxITCgt0bHNfZW5hYmxlZBgJIAEoCBJTCgZjbGllbnQYCiABKAsyQy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkNvbm5lY3Rpb25DbGllbnQSSwoFZ3JvdXAYCyABKAsyPC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkdyb3VwSW5mbxIVCg1saXN0ZW5lcl9uYW1lGAwgASgJEhgKEHRyYW5zYWN0aW9uYWxfaWQYDSABKAkSUwoMYXBpX3ZlcnNpb25zGA4gAygLMj0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXNwb25zZS5BUElWZXJzaW9uEjAKDWlkbGVfZHVyYXRpb24YDyABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SWgoPYWN0aXZlX3JlcXVlc3RzGBAgASgLMkEucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXNwb25zZS5BY3RpdmVSZXF1ZXN0cxJJChZyZXF1ZXN0X3N0YXRpc3RpY3NfYWxsGBEgASgLMikucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5SZXF1ZXN0U3RhdGlzdGljcxJIChVyZXF1ZXN0X3N0YXRpc3RpY3NfMW0YEiABKAsyKS5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlJlcXVlc3RTdGF0aXN0aWNzKuwECghLYWZrYUFQSRIZChVLQUZLQV9BUElfVU5TUEVDSUZJRUQQABIVChFLQUZLQV9BUElfUFJPRFVDRRABEhMKD0tBRktBX0FQSV9GRVRDSBACEhUKEUtBRktBX0FQSV9PRkZTRVRTEAMSFgoSS0FGS0FfQVBJX01FVEFEQVRBEAQSHAoYS0FGS0FfQVBJX0xFQURFUl9BTkRfSVNSEAUSGgoWS0FGS0FfQVBJX1NUT1BfUkVQTElDQRAGEh0KGUtBRktBX0FQSV9VUERBVEVfTUVUQURBVEEQBxIhCh1LQUZLQV9BUElfQ09OVFJPTExFRF9TSFVURE9XThAIEhsKF0tBRktBX0FQSV9PRkZTRVRfQ09NTUlUEAkSGgoWS0FGS0FfQVBJX09GRlNFVF9GRVRDSBAKEh8KG0tBRktBX0FQSV9HUk9VUF9DT09SRElOQVRPUhALEhgKFEtBRktBX0FQSV9KT0lOX0dST1VQEAwSFwoTS0FGS0FfQVBJX0hFQVJUQkVBVBANEhkKFUtBRktBX0FQSV9MRUFWRV9HUk9VUBAOEhgKFEtBRktBX0FQSV9TWU5DX0dST1VQEA8SHQoZS0FGS0FfQVBJX0RFU0NSSUJFX0dST1VQUxAQEhkKFUtBRktBX0FQSV9MSVNUX0dST1VQUxAREhwKGEtBRktBX0FQSV9TQVNMX0hBTkRTSEFLRRASEhoKFktBRktBX0FQSV9BUElfVkVSU0lPTlMQExIbChdLQUZLQV9BUElfQ1JFQVRFX1RPUElDUxAUEhsKF0tBRktBX0FQSV9ERUxFVEVfVE9QSUNTEBUyngMKEU1vbml0b3JpbmdTZXJ2aWNlEtICCg9MaXN0Q29ubmVjdGlvbnMSMS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1JlcXVlc3QaMi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlItcBkkGmARIXTGlzdCBSZWNlbnQgQ29ubmVjdGlvbnMaNkxpc3QgaW5mb3JtYXRpb24gb24gcmVjZW50IGNvbm5lY3Rpb25zIHRvIHRoZSBjbHVzdGVyLkpTCgMyMDASTAoSUmVjZW50IGNvbm5lY3Rpb25zEjYKNBoyLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdENvbm5lY3Rpb25zUmVzcG9uc2WKph0ECAMQA4LT5JMCHzoBKiIaL3YxL21vbml0b3JpbmcvY29ubmVjdGlvbnMaNJJBMQoKTW9uaXRvcmluZxIjTW9uaXRvcmluZyBvcGVyYXRpb25zIGZvciBSZWRwYW5kYS5ClAIKHWNvbS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxQg9Nb25pdG9yaW5nUHJvdG9QAVpbZ2l0aHViLmNvbS9yZWRwYW5kYS1kYXRhL2NvbnNvbGUvYmFja2VuZC9wa2cvcHJvdG9nZW4vcmVkcGFuZGEvYXBpL2RhdGFwbGFuZS92MTtkYXRhcGxhbmV2MaICA1JBRKoCGVJlZHBhbmRhLkFwaS5EYXRhcGxhbmUuVjHKAhlSZWRwYW5kYVxBcGlcRGF0YXBsYW5lXFYx4gIlUmVkcGFuZGFcQXBpXERhdGFwbGFuZVxWMVxHUEJNZXRhZGF0YeoCHFJlZHBhbmRhOjpBcGk6OkRhdGFwbGFuZTo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_google_api_annotations, file_google_api_field_info, file_google_protobuf_duration, file_google_protobuf_timestamp, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization, file_redpanda_core_admin_v2_kafka_connections]);
+  fileDesc("CipyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxL21vbml0b3JpbmcucHJvdG8SGXJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEi/gcKFkxpc3RDb25uZWN0aW9uc1JlcXVlc3QSSgoHZmlsdGVycxgBIAEoCzI5LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdENvbm5lY3Rpb25zUmVxdWVzdC5GaWx0ZXJzEkwKCG9yZGVyX2J5GAIgAygLMjoucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXF1ZXN0Lk9yZGVyaW5nEhsKE29yZGVyX2J5X2V4cHJlc3Npb24YAyABKAkSDQoFbGltaXQYBCABKA0acAoIT3JkZXJpbmcSUAoGb3B0aW9uGAEgASgOMkAucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXF1ZXN0Lk9yZGVyaW5nT3B0aW9uEhIKCmRlc2NlbmRpbmcYAiABKAgahwIKB0ZpbHRlcnMSSAoFc3RhdGUYASABKA4yLy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkthZmthQ29ubmVjdGlvblN0YXRlQgi6SAWCAQIQARISCgppcF9hZGRyZXNzGAIgASgJEhEKCWNsaWVudF9pZBgDIAEoCRIcChRjbGllbnRfc29mdHdhcmVfbmFtZRgEIAEoCRIfChdjbGllbnRfc29mdHdhcmVfdmVyc2lvbhgFIAEoCRIQCghncm91cF9pZBgGIAEoCRIMCgR1c2VyGAcgASgJEhgKB2lkbGVfbXMYCCABKANCB7pIBCICKAASEgoKZXhwcmVzc2lvbhgJIAEoCSKhAwoOT3JkZXJpbmdPcHRpb24SHwobT1JERVJJTkdfT1BUSU9OX1VOU1BFQ0lGSUVEEAASHQoZT1JERVJJTkdfT1BUSU9OX09QRU5fVElNRRABEh4KGk9SREVSSU5HX09QVElPTl9DTE9TRV9USU1FEAISIQodT1JERVJJTkdfT1BUSU9OX0lETEVfRFVSQVRJT04QAxIsCihPUkRFUklOR19PUFRJT05fVE9UQUxfUFJPRFVDRV9USFJPVUdIUFVUEAQSKgomT1JERVJJTkdfT1BUSU9OX1RPVEFMX0ZFVENIX1RIUk9VR0hQVVQQBRIiCh5PUkRFUklOR19PUFRJT05fVE9UQUxfUkVRVUVTVFMQBhIyCi5PUkRFUklOR19PUFRJT05fTEFTVF9NSU5VVEVfUFJPRFVDRV9USFJPVUdIUFVUEAcSMAosT1JERVJJTkdfT1BUSU9OX0xBU1RfTUlOVVRFX0ZFVENIX1RIUk9VR0hQVVQQCBIoCiRPUkRFUklOR19PUFRJT05fTEFTVF9NSU5VVEVfUkVRVUVTVFMQCSKeDwoXTGlzdENvbm5lY3Rpb25zUmVzcG9uc2USUgoLY29ubmVjdGlvbnMYASADKAsyPS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkNvbm5lY3Rpb24aaQoQQ29ubmVjdGlvbkNsaWVudBIKCgJpcBgBIAEoCRIMCgRwb3J0GAIgASgNEgoKAmlkGAMgASgJEhUKDXNvZnR3YXJlX25hbWUYBCABKAkSGAoQc29mdHdhcmVfdmVyc2lvbhgFIAEoCRpPCgpBUElWZXJzaW9uEjAKA2FwaRgBIAEoDjIjLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuS2Fma2FBUEkSDwoHdmVyc2lvbhgCIAEoBRryAQoOQWN0aXZlUmVxdWVzdHMSWwoIcmVxdWVzdHMYASADKAsySS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNlLkFjdGl2ZVJlcXVlc3RzLlJlcXVlc3QSGQoRaGFzX21vcmVfcmVxdWVzdHMYAiABKAgaaAoHUmVxdWVzdBIwCgNhcGkYASABKA4yIy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkthZmthQVBJEisKCGR1cmF0aW9uGAIgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uGj8KCUdyb3VwSW5mbxIKCgJpZBgBIAEoCRITCgtpbnN0YW5jZV9pZBgCIAEoCRIRCgltZW1iZXJfaWQYAyABKAkasgEKEkF1dGhlbnRpY2F0aW9uSW5mbxI9CgVzdGF0ZRgBIAEoDjIuLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQXV0aGVudGljYXRpb25TdGF0ZRJFCgltZWNoYW5pc20YAiABKA4yMi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkF1dGhlbnRpY2F0aW9uTWVjaGFuaXNtEhYKDnVzZXJfcHJpbmNpcGFsGAMgASgJGnMKEVJlcXVlc3RTdGF0aXN0aWNzEhUKDXByb2R1Y2VfYnl0ZXMYASABKAQSEwoLZmV0Y2hfYnl0ZXMYAiABKAQSFQoNcmVxdWVzdF9jb3VudBgDIAEoBBIbChNwcm9kdWNlX2JhdGNoX2NvdW50GAQgASgEGpIICgpDb25uZWN0aW9uEg8KB25vZGVfaWQYASABKAUSEAoIc2hhcmRfaWQYAiABKA0SFQoDdWlkGAMgASgJQgjijM/XCAIIARI+CgVzdGF0ZRgEIAEoDjIvLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuS2Fma2FDb25uZWN0aW9uU3RhdGUSLQoJb3Blbl90aW1lGAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpjbG9zZV90aW1lGAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBI2ChNjb25uZWN0aW9uX2R1cmF0aW9uGAcgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uEl0KDmF1dGhlbnRpY2F0aW9uGAggASgLMkUucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXNwb25zZS5BdXRoZW50aWNhdGlvbkluZm8SEwoLdGxzX2VuYWJsZWQYCSABKAgSUwoGY2xpZW50GAogASgLMkMucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXNwb25zZS5Db25uZWN0aW9uQ2xpZW50EksKBWdyb3VwGAsgASgLMjwucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXNwb25zZS5Hcm91cEluZm8SFQoNbGlzdGVuZXJfbmFtZRgMIAEoCRIYChB0cmFuc2FjdGlvbmFsX2lkGA0gASgJElMKDGFwaV92ZXJzaW9ucxgOIAMoCzI9LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdENvbm5lY3Rpb25zUmVzcG9uc2UuQVBJVmVyc2lvbhIwCg1pZGxlX2R1cmF0aW9uGA8gASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uEloKD2FjdGl2ZV9yZXF1ZXN0cxgQIAEoCzJBLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdENvbm5lY3Rpb25zUmVzcG9uc2UuQWN0aXZlUmVxdWVzdHMSZAoWcmVxdWVzdF9zdGF0aXN0aWNzX2FsbBgRIAEoCzJELnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdENvbm5lY3Rpb25zUmVzcG9uc2UuUmVxdWVzdFN0YXRpc3RpY3MSYwoVcmVxdWVzdF9zdGF0aXN0aWNzXzFtGBIgASgLMkQucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXNwb25zZS5SZXF1ZXN0U3RhdGlzdGljcyqnAQoUS2Fma2FDb25uZWN0aW9uU3RhdGUSJgoiS0FGS0FfQ09OTkVDVElPTl9TVEFURV9VTlNQRUNJRklFRBAAEh8KG0tBRktBX0NPTk5FQ1RJT05fU1RBVEVfT1BFThABEiMKH0tBRktBX0NPTk5FQ1RJT05fU1RBVEVfQUJPUlRJTkcQAhIhCh1LQUZLQV9DT05ORUNUSU9OX1NUQVRFX0NMT1NFRBADKqkBChNBdXRoZW50aWNhdGlvblN0YXRlEiQKIEFVVEhFTlRJQ0FUSU9OX1NUQVRFX1VOU1BFQ0lGSUVEEAASKAokQVVUSEVOVElDQVRJT05fU1RBVEVfVU5BVVRIRU5USUNBVEVEEAESIAocQVVUSEVOVElDQVRJT05fU1RBVEVfU1VDQ0VTUxACEiAKHEFVVEhFTlRJQ0FUSU9OX1NUQVRFX0ZBSUxVUkUQAyqRAgoXQXV0aGVudGljYXRpb25NZWNoYW5pc20SKAokQVVUSEVOVElDQVRJT05fTUVDSEFOSVNNX1VOU1BFQ0lGSUVEEAASIQodQVVUSEVOVElDQVRJT05fTUVDSEFOSVNNX01UTFMQARInCiNBVVRIRU5USUNBVElPTl9NRUNIQU5JU01fU0FTTF9TQ1JBTRACEi0KKUFVVEhFTlRJQ0FUSU9OX01FQ0hBTklTTV9TQVNMX09BVVRIQkVBUkVSEAMSJwojQVVUSEVOVElDQVRJT05fTUVDSEFOSVNNX1NBU0xfUExBSU4QBBIoCiRBVVRIRU5USUNBVElPTl9NRUNIQU5JU01fU0FTTF9HU1NBUEkQBSrsBAoIS2Fma2FBUEkSGQoVS0FGS0FfQVBJX1VOU1BFQ0lGSUVEEAASFQoRS0FGS0FfQVBJX1BST0RVQ0UQARITCg9LQUZLQV9BUElfRkVUQ0gQAhIVChFLQUZLQV9BUElfT0ZGU0VUUxADEhYKEktBRktBX0FQSV9NRVRBREFUQRAEEhwKGEtBRktBX0FQSV9MRUFERVJfQU5EX0lTUhAFEhoKFktBRktBX0FQSV9TVE9QX1JFUExJQ0EQBhIdChlLQUZLQV9BUElfVVBEQVRFX01FVEFEQVRBEAcSIQodS0FGS0FfQVBJX0NPTlRST0xMRURfU0hVVERPV04QCBIbChdLQUZLQV9BUElfT0ZGU0VUX0NPTU1JVBAJEhoKFktBRktBX0FQSV9PRkZTRVRfRkVUQ0gQChIfChtLQUZLQV9BUElfR1JPVVBfQ09PUkRJTkFUT1IQCxIYChRLQUZLQV9BUElfSk9JTl9HUk9VUBAMEhcKE0tBRktBX0FQSV9IRUFSVEJFQVQQDRIZChVLQUZLQV9BUElfTEVBVkVfR1JPVVAQDhIYChRLQUZLQV9BUElfU1lOQ19HUk9VUBAPEh0KGUtBRktBX0FQSV9ERVNDUklCRV9HUk9VUFMQEBIZChVLQUZLQV9BUElfTElTVF9HUk9VUFMQERIcChhLQUZLQV9BUElfU0FTTF9IQU5EU0hBS0UQEhIaChZLQUZLQV9BUElfQVBJX1ZFUlNJT05TEBMSGwoXS0FGS0FfQVBJX0NSRUFURV9UT1BJQ1MQFBIbChdLQUZLQV9BUElfREVMRVRFX1RPUElDUxAVMp4DChFNb25pdG9yaW5nU2VydmljZRLSAgoPTGlzdENvbm5lY3Rpb25zEjEucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXF1ZXN0GjIucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Q29ubmVjdGlvbnNSZXNwb25zZSLXAZJBpgESF0xpc3QgUmVjZW50IENvbm5lY3Rpb25zGjZMaXN0IGluZm9ybWF0aW9uIG9uIHJlY2VudCBjb25uZWN0aW9ucyB0byB0aGUgY2x1c3Rlci5KUwoDMjAwEkwKElJlY2VudCBjb25uZWN0aW9ucxI2CjQaMi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RDb25uZWN0aW9uc1Jlc3BvbnNliqYdBAgDEAOC0+STAh86ASoiGi92MS9tb25pdG9yaW5nL2Nvbm5lY3Rpb25zGjSSQTEKCk1vbml0b3JpbmcSI01vbml0b3Jpbmcgb3BlcmF0aW9ucyBmb3IgUmVkcGFuZGEuQpQCCh1jb20ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MUIPTW9uaXRvcmluZ1Byb3RvUAFaW2dpdGh1Yi5jb20vcmVkcGFuZGEtZGF0YS9jb25zb2xlL2JhY2tlbmQvcGtnL3Byb3RvZ2VuL3JlZHBhbmRhL2FwaS9kYXRhcGxhbmUvdjE7ZGF0YXBsYW5ldjGiAgNSQUSqAhlSZWRwYW5kYS5BcGkuRGF0YXBsYW5lLlYxygIZUmVkcGFuZGFcQXBpXERhdGFwbGFuZVxWMeICJVJlZHBhbmRhXEFwaVxEYXRhcGxhbmVcVjFcR1BCTWV0YWRhdGHqAhxSZWRwYW5kYTo6QXBpOjpEYXRhcGxhbmU6OlYxYgZwcm90bzM", [file_buf_validate_validate, file_google_api_annotations, file_google_api_field_info, file_google_protobuf_duration, file_google_protobuf_timestamp, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization]);
 
 /**
  * @generated from message redpanda.api.dataplane.v1.ListConnectionsRequest
@@ -80,7 +78,7 @@ export const ListConnectionsRequest_OrderingSchema: GenMessage<ListConnectionsRe
  */
 export type ListConnectionsRequest_Filters = Message<"redpanda.api.dataplane.v1.ListConnectionsRequest.Filters"> & {
   /**
-   * @generated from field: redpanda.core.admin.v2.KafkaConnectionState state = 1;
+   * @generated from field: redpanda.api.dataplane.v1.KafkaConnectionState state = 1;
    */
   state: KafkaConnectionState;
 
@@ -341,6 +339,65 @@ export const ListConnectionsResponse_GroupInfoSchema: GenMessage<ListConnections
   messageDesc(file_redpanda_api_dataplane_v1_monitoring, 1, 3);
 
 /**
+ * @generated from message redpanda.api.dataplane.v1.ListConnectionsResponse.AuthenticationInfo
+ */
+export type ListConnectionsResponse_AuthenticationInfo = Message<"redpanda.api.dataplane.v1.ListConnectionsResponse.AuthenticationInfo"> & {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.AuthenticationState state = 1;
+   */
+  state: AuthenticationState;
+
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.AuthenticationMechanism mechanism = 2;
+   */
+  mechanism: AuthenticationMechanism;
+
+  /**
+   * @generated from field: string user_principal = 3;
+   */
+  userPrincipal: string;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.ListConnectionsResponse.AuthenticationInfo.
+ * Use `create(ListConnectionsResponse_AuthenticationInfoSchema)` to create a new message.
+ */
+export const ListConnectionsResponse_AuthenticationInfoSchema: GenMessage<ListConnectionsResponse_AuthenticationInfo> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 1, 4);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.ListConnectionsResponse.RequestStatistics
+ */
+export type ListConnectionsResponse_RequestStatistics = Message<"redpanda.api.dataplane.v1.ListConnectionsResponse.RequestStatistics"> & {
+  /**
+   * @generated from field: uint64 produce_bytes = 1;
+   */
+  produceBytes: bigint;
+
+  /**
+   * @generated from field: uint64 fetch_bytes = 2;
+   */
+  fetchBytes: bigint;
+
+  /**
+   * @generated from field: uint64 request_count = 3;
+   */
+  requestCount: bigint;
+
+  /**
+   * @generated from field: uint64 produce_batch_count = 4;
+   */
+  produceBatchCount: bigint;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.ListConnectionsResponse.RequestStatistics.
+ * Use `create(ListConnectionsResponse_RequestStatisticsSchema)` to create a new message.
+ */
+export const ListConnectionsResponse_RequestStatisticsSchema: GenMessage<ListConnectionsResponse_RequestStatistics> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 1, 5);
+
+/**
  * @generated from message redpanda.api.dataplane.v1.ListConnectionsResponse.Connection
  */
 export type ListConnectionsResponse_Connection = Message<"redpanda.api.dataplane.v1.ListConnectionsResponse.Connection"> & {
@@ -360,7 +417,7 @@ export type ListConnectionsResponse_Connection = Message<"redpanda.api.dataplane
   uid: string;
 
   /**
-   * @generated from field: redpanda.core.admin.v2.KafkaConnectionState state = 4;
+   * @generated from field: redpanda.api.dataplane.v1.KafkaConnectionState state = 4;
    */
   state: KafkaConnectionState;
 
@@ -380,9 +437,9 @@ export type ListConnectionsResponse_Connection = Message<"redpanda.api.dataplane
   connectionDuration?: Duration;
 
   /**
-   * @generated from field: redpanda.core.admin.v2.AuthenticationInfo authentication = 8;
+   * @generated from field: redpanda.api.dataplane.v1.ListConnectionsResponse.AuthenticationInfo authentication = 8;
    */
-  authentication?: AuthenticationInfo;
+  authentication?: ListConnectionsResponse_AuthenticationInfo;
 
   /**
    * @generated from field: bool tls_enabled = 9;
@@ -425,14 +482,14 @@ export type ListConnectionsResponse_Connection = Message<"redpanda.api.dataplane
   activeRequests?: ListConnectionsResponse_ActiveRequests;
 
   /**
-   * @generated from field: redpanda.core.admin.v2.RequestStatistics request_statistics_all = 17;
+   * @generated from field: redpanda.api.dataplane.v1.ListConnectionsResponse.RequestStatistics request_statistics_all = 17;
    */
-  requestStatisticsAll?: RequestStatistics;
+  requestStatisticsAll?: ListConnectionsResponse_RequestStatistics;
 
   /**
-   * @generated from field: redpanda.core.admin.v2.RequestStatistics request_statistics_1m = 18;
+   * @generated from field: redpanda.api.dataplane.v1.ListConnectionsResponse.RequestStatistics request_statistics_1m = 18;
    */
-  requestStatistics1m?: RequestStatistics;
+  requestStatistics1m?: ListConnectionsResponse_RequestStatistics;
 };
 
 /**
@@ -440,7 +497,110 @@ export type ListConnectionsResponse_Connection = Message<"redpanda.api.dataplane
  * Use `create(ListConnectionsResponse_ConnectionSchema)` to create a new message.
  */
 export const ListConnectionsResponse_ConnectionSchema: GenMessage<ListConnectionsResponse_Connection> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 1, 4);
+  messageDesc(file_redpanda_api_dataplane_v1_monitoring, 1, 6);
+
+/**
+ * @generated from enum redpanda.api.dataplane.v1.KafkaConnectionState
+ */
+export enum KafkaConnectionState {
+  /**
+   * @generated from enum value: KAFKA_CONNECTION_STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: KAFKA_CONNECTION_STATE_OPEN = 1;
+   */
+  OPEN = 1,
+
+  /**
+   * @generated from enum value: KAFKA_CONNECTION_STATE_ABORTING = 2;
+   */
+  ABORTING = 2,
+
+  /**
+   * @generated from enum value: KAFKA_CONNECTION_STATE_CLOSED = 3;
+   */
+  CLOSED = 3,
+}
+
+/**
+ * Describes the enum redpanda.api.dataplane.v1.KafkaConnectionState.
+ */
+export const KafkaConnectionStateSchema: GenEnum<KafkaConnectionState> = /*@__PURE__*/
+  enumDesc(file_redpanda_api_dataplane_v1_monitoring, 0);
+
+/**
+ * @generated from enum redpanda.api.dataplane.v1.AuthenticationState
+ */
+export enum AuthenticationState {
+  /**
+   * @generated from enum value: AUTHENTICATION_STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: AUTHENTICATION_STATE_UNAUTHENTICATED = 1;
+   */
+  UNAUTHENTICATED = 1,
+
+  /**
+   * @generated from enum value: AUTHENTICATION_STATE_SUCCESS = 2;
+   */
+  SUCCESS = 2,
+
+  /**
+   * @generated from enum value: AUTHENTICATION_STATE_FAILURE = 3;
+   */
+  FAILURE = 3,
+}
+
+/**
+ * Describes the enum redpanda.api.dataplane.v1.AuthenticationState.
+ */
+export const AuthenticationStateSchema: GenEnum<AuthenticationState> = /*@__PURE__*/
+  enumDesc(file_redpanda_api_dataplane_v1_monitoring, 1);
+
+/**
+ * @generated from enum redpanda.api.dataplane.v1.AuthenticationMechanism
+ */
+export enum AuthenticationMechanism {
+  /**
+   * @generated from enum value: AUTHENTICATION_MECHANISM_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: AUTHENTICATION_MECHANISM_MTLS = 1;
+   */
+  MTLS = 1,
+
+  /**
+   * @generated from enum value: AUTHENTICATION_MECHANISM_SASL_SCRAM = 2;
+   */
+  SASL_SCRAM = 2,
+
+  /**
+   * @generated from enum value: AUTHENTICATION_MECHANISM_SASL_OAUTHBEARER = 3;
+   */
+  SASL_OAUTHBEARER = 3,
+
+  /**
+   * @generated from enum value: AUTHENTICATION_MECHANISM_SASL_PLAIN = 4;
+   */
+  SASL_PLAIN = 4,
+
+  /**
+   * @generated from enum value: AUTHENTICATION_MECHANISM_SASL_GSSAPI = 5;
+   */
+  SASL_GSSAPI = 5,
+}
+
+/**
+ * Describes the enum redpanda.api.dataplane.v1.AuthenticationMechanism.
+ */
+export const AuthenticationMechanismSchema: GenEnum<AuthenticationMechanism> = /*@__PURE__*/
+  enumDesc(file_redpanda_api_dataplane_v1_monitoring, 2);
 
 /**
  * Everything is up by one (produce is actually 0, fetch -> 1, etc)
@@ -563,7 +723,7 @@ export enum KafkaAPI {
  * Describes the enum redpanda.api.dataplane.v1.KafkaAPI.
  */
 export const KafkaAPISchema: GenEnum<KafkaAPI> = /*@__PURE__*/
-  enumDesc(file_redpanda_api_dataplane_v1_monitoring, 0);
+  enumDesc(file_redpanda_api_dataplane_v1_monitoring, 3);
 
 /**
  * @generated from service redpanda.api.dataplane.v1.MonitoringService
