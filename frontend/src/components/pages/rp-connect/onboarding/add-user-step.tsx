@@ -42,8 +42,7 @@ import { Link as ReactRouterLink } from 'react-router-dom';
 import { SASL_MECHANISMS } from 'utils/user';
 
 import { useListACLsQuery } from '../../../../react-query/api/acl';
-import { useLegacyListConsumerGroupsQuery } from '../../../../react-query/api/consumer-group';
-import type { BaseStepRef, StepSubmissionResult } from '../types/wizard';
+import type { UserStepRef, UserStepSubmissionResult } from '../types/wizard';
 import {
   type AddUserFormData,
   addUserFormSchema,
@@ -65,7 +64,7 @@ interface AddUserStepProps {
   showConsumerGroupFields?: boolean;
 }
 
-export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepProps & MotionProps>(
+export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProps>(
   (
     {
       defaultUsername,
@@ -82,10 +81,6 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
     const { data: usersList } = useListUsersQuery(undefined, {
       staleTime: LONG_LIVED_CACHE_STALE_TIME,
       refetchOnWindowFocus: false,
-    });
-
-    const { data: consumerGroupsData } = useLegacyListConsumerGroupsQuery({
-      enabled: showConsumerGroupFields,
     });
 
     const { data: consumerGroupACLData } = useListACLsQuery(
@@ -141,7 +136,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
       }
     );
 
-    const createUserWithSecretsMutation = useCreateUserWithSecretsMutation();
+    const { createUserWithSecrets, isPending } = useCreateUserWithSecretsMutation();
 
     const userOptions = useMemo(
       () =>
@@ -154,18 +149,6 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
 
     const [userSelectionType, setUserSelectionType] = useState<CreatableSelectionType>(
       userOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
-    );
-
-    const consumerGroupOptions = useMemo(
-      () =>
-        (consumerGroupsData?.consumerGroups ?? []).map((group) => ({
-          value: group.groupId,
-          label: group.groupId,
-        })),
-      [consumerGroupsData?.consumerGroups]
-    );
-    const [consumerGroupSelectionType, setConsumerGroupSelectionType] = useState<CreatableSelectionType>(
-      consumerGroupOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
     );
 
     const userTopicPermissions = useMemo(() => {
@@ -190,7 +173,6 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
       );
     }, [showConsumerGroupFields, existingUserSelected, watchedConsumerGroup, consumerGroupACLData]);
 
-    const isLoading = createUserWithSecretsMutation.isPending;
     const isReadOnly = Boolean(existingUserSelected) || userSelectionType === CreatableSelectionOptions.EXISTING;
 
     const generateNewPassword = useCallback(() => {
@@ -208,8 +190,8 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
     );
 
     const handleSubmit = useCallback(
-      async (userData: AddUserFormData): Promise<StepSubmissionResult<AddUserFormData>> => {
-        const result = await createUserWithSecretsMutation.mutateAsync({
+      async (userData: AddUserFormData): Promise<UserStepSubmissionResult> => {
+        const result = await createUserWithSecrets({
           userData,
           topicName,
           consumerGroup: showConsumerGroupFields ? form.getValues('consumerGroup') : undefined,
@@ -238,7 +220,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
 
         return result;
       },
-      [createUserWithSecretsMutation, topicName, existingUserSelected, showConsumerGroupFields, form, queryClient]
+      [createUserWithSecrets, topicName, existingUserSelected, showConsumerGroupFields, form, queryClient]
     );
 
     const handleUserSelectionTypeChange = useCallback(
@@ -254,15 +236,6 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
       form.setValue('username', '', { shouldDirty: true });
     }, [form]);
 
-    const handleConsumerGroupSelectionTypeChange = useCallback(
-      (value: string) => {
-        setConsumerGroupSelectionType(value as CreatableSelectionType);
-
-        form.setValue('consumerGroup', '', { shouldDirty: true });
-      },
-      [form]
-    );
-
     const handleClearConsumerGroup = useCallback(() => {
       form.setValue('consumerGroup', '', { shouldDirty: true });
     }, [form]);
@@ -277,11 +250,9 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
         }
         return {
           success: false,
-          message: 'Please fix the form errors before proceeding',
-          error: 'Form validation failed',
         };
       },
-      isLoading,
+      isPending,
     }));
 
     return (
@@ -306,7 +277,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                 </FormDescription>
                 <div className="flex flex-col items-start gap-2">
                   <ToggleGroup
-                    disabled={isLoading}
+                    disabled={isPending}
                     onValueChange={(value) => {
                       // Prevent deselection - ToggleGroup emits empty string when trying to deselect
                       if (!value) {
@@ -319,14 +290,14 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                     variant="outline"
                   >
                     <ToggleGroupItem
-                      disabled={isLoading}
+                      disabled={isPending}
                       id={CreatableSelectionOptions.EXISTING}
                       value={CreatableSelectionOptions.EXISTING}
                     >
                       Existing
                     </ToggleGroupItem>
                     <ToggleGroupItem
-                      disabled={isLoading}
+                      disabled={isPending}
                       id={CreatableSelectionOptions.CREATE}
                       value={CreatableSelectionOptions.CREATE}
                     >
@@ -345,7 +316,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                               <Combobox
                                 {...field}
                                 className="w-[300px]"
-                                disabled={isLoading}
+                                disabled={isPending}
                                 onChange={(value) => {
                                   field.onChange(value);
                                 }}
@@ -364,7 +335,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                               <Input
                                 {...field}
                                 className="w-[300px]"
-                                disabled={isLoading}
+                                disabled={isPending}
                                 placeholder="Enter a username"
                               />
                             )}
@@ -375,7 +346,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                     />
 
                     {watchedUsername !== '' && watchedUsername.length > 0 && (
-                      <Button disabled={isLoading} onClick={handleClearUsername} size="icon" variant="ghost">
+                      <Button disabled={isPending} onClick={handleClearUsername} size="icon" variant="ghost">
                         <XIcon size={16} />
                       </Button>
                     )}
@@ -442,7 +413,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                 <>
                   <FormField
                     control={form.control}
-                    disabled={isLoading || isReadOnly}
+                    disabled={isPending || isReadOnly}
                     name="password"
                     render={({ field }) => (
                       <FormItem>
@@ -487,13 +458,13 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                   />
                   <FormField
                     control={form.control}
-                    disabled={isLoading || isReadOnly}
+                    disabled={isPending || isReadOnly}
                     name="saslMechanism"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>SASL mechanism</FormLabel>
                         <FormControl>
-                          <Select {...field}>
+                          <Select {...field} onValueChange={field.onChange}>
                             <SelectTrigger className="w-[300px]">
                               <SelectValue placeholder="Select a SASL Mechanism" />
                             </SelectTrigger>
@@ -514,7 +485,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                   {topicName && (
                     <FormField
                       control={form.control}
-                      disabled={isLoading || isReadOnly}
+                      disabled={isPending || isReadOnly}
                       name="superuser"
                       render={({ field }) => (
                         <FormItem>
@@ -576,34 +547,6 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                     pipeline specify a partition on the topic instead.
                   </FormDescription>
                   <div className="flex flex-col items-start gap-2">
-                    <ToggleGroup
-                      disabled={isLoading}
-                      onValueChange={(value) => {
-                        if (!value) {
-                          return;
-                        }
-                        handleConsumerGroupSelectionTypeChange(value as CreatableSelectionType);
-                      }}
-                      type="single"
-                      value={consumerGroupSelectionType}
-                      variant="outline"
-                    >
-                      <ToggleGroupItem
-                        disabled={isLoading}
-                        id={CreatableSelectionOptions.EXISTING}
-                        value={CreatableSelectionOptions.EXISTING}
-                      >
-                        Existing
-                      </ToggleGroupItem>
-                      <ToggleGroupItem
-                        disabled={isLoading}
-                        id={CreatableSelectionOptions.CREATE}
-                        value={CreatableSelectionOptions.CREATE}
-                      >
-                        New
-                      </ToggleGroupItem>
-                    </ToggleGroup>
-
                     <div className="flex gap-2">
                       <FormField
                         control={form.control}
@@ -611,30 +554,12 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>
-                              {consumerGroupSelectionType === CreatableSelectionOptions.EXISTING ? (
-                                <Combobox
-                                  {...field}
-                                  className="w-[300px]"
-                                  disabled={isLoading}
-                                  onChange={(value) => {
-                                    field.onChange(value);
-                                  }}
-                                  onOpen={() => {
-                                    queryClient.invalidateQueries({
-                                      queryKey: ['consumer-groups'],
-                                    });
-                                  }}
-                                  options={consumerGroupOptions}
-                                  placeholder="Select a consumer group"
-                                />
-                              ) : (
-                                <Input
-                                  {...field}
-                                  className="w-[300px]"
-                                  disabled={isLoading}
-                                  placeholder="Enter a consumer group name"
-                                />
-                              )}
+                              <Input
+                                {...field}
+                                className="w-[300px]"
+                                disabled={isPending}
+                                placeholder="Enter a consumer group name"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -642,7 +567,7 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                       />
 
                       {watchedConsumerGroup !== '' && watchedConsumerGroup && watchedConsumerGroup.length > 0 && (
-                        <Button disabled={isLoading} onClick={handleClearConsumerGroup} size="icon" variant="ghost">
+                        <Button disabled={isPending} onClick={handleClearConsumerGroup} size="icon" variant="ghost">
                           <XIcon size={16} />
                         </Button>
                       )}
@@ -650,8 +575,8 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
 
                     {existingUserSelected &&
                       watchedConsumerGroup &&
-                      consumerGroupSelectionType === CreatableSelectionOptions.EXISTING &&
                       userConsumerGroupPermissions &&
+                      userConsumerGroupPermissions.missingPermissions.length === 0 &&
                       userConsumerGroupPermissions.hasPermissions.length > 0 && (
                         <Alert variant="success">
                           <AlertTitle>
@@ -671,27 +596,35 @@ export const AddUserStep = forwardRef<BaseStepRef<AddUserFormData>, AddUserStepP
                         </Alert>
                       )}
 
-                    {(watchedConsumerGroup &&
+                    {watchedConsumerGroup &&
                       watchedConsumerGroup.length > 0 &&
-                      userSelectionType === CreatableSelectionOptions.EXISTING &&
-                      userConsumerGroupPermissions &&
-                      userConsumerGroupPermissions.missingPermissions.length > 0) ||
-                      (userSelectionType === CreatableSelectionOptions.CREATE && (
+                      (!existingUserSelected ||
+                        (userConsumerGroupPermissions &&
+                          userConsumerGroupPermissions.missingPermissions.length > 0)) && (
                         <Alert variant="warning">
                           <AlertTitle>
                             <Text className="flex items-center gap-2" variant="label">
                               <CircleAlert size={15} />
-                              Enable consumer group permissions
+                              Consumer group permissions will be configured
                             </Text>
                           </AlertTitle>
                           <AlertDescription>
                             <Text variant="small">
-                              This user will be able to consume messages from the <b>{watchedConsumerGroup}</b> consumer
-                              group.
+                              {existingUserSelected ? (
+                                <>
+                                  The user <b>{existingUserSelected.name}</b> will be granted READ and DESCRIBE
+                                  permissions for the <b>{watchedConsumerGroup}</b> consumer group.
+                                </>
+                              ) : (
+                                <>
+                                  This user will be able to consume messages from the <b>{watchedConsumerGroup}</b>{' '}
+                                  consumer group.
+                                </>
+                              )}
                             </Text>
                           </AlertDescription>
                         </Alert>
-                      ))}
+                      )}
                   </div>
                 </div>
               )}
