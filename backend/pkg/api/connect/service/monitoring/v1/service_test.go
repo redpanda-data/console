@@ -143,6 +143,29 @@ func TestValidateListConnectionsRequest(t *testing.T) {
 	require.Error(t, protovalidate.GlobalValidator.Validate(&v1.ListConnectionsRequest{
 		Filters: &v1.ListConnectionsRequest_Filters{IdleMs: -1},
 	}))
+
+	// Filters can't be combined with expressions
+	require.Error(t, protovalidate.GlobalValidator.Validate(&v1.ListConnectionsRequest_Filters{
+		IpAddress:  "0.0.0.0",
+		Expression: "true OR 1",
+	}))
+
+	require.NoError(t, protovalidate.GlobalValidator.Validate(&v1.ListConnectionsRequest_Filters{
+		IpAddress:          "0.0.0.0",
+		ClientSoftwareName: "kgo",
+	}))
+
+	// Ordering options can't be combined
+	require.Error(t, protovalidate.GlobalValidator.Validate(&v1.ListConnectionsRequest{
+		OrderBy: []*v1.ListConnectionsRequest_Ordering{
+			{Option: v1.ListConnectionsRequest_ORDERING_OPTION_IDLE_DURATION},
+		},
+		OrderByExpression: "stuff desc",
+	}))
+
+	require.NoError(t, protovalidate.GlobalValidator.Validate(&v1.ListConnectionsRequest{
+		OrderByExpression: "some expr",
+	}))
 }
 
 // Make sure we're adequately constructing the right filters
@@ -156,7 +179,6 @@ func TestBuildFilterString(t *testing.T) {
 		User:                  "principal",
 		IdleMs:                100,
 		State:                 v1.KafkaConnectionState_KAFKA_CONNECTION_STATE_OPEN,
-		Expression:            `beep = "boop" OR 1`,
 	}
 
 	require.ElementsMatch(t, []string{
@@ -168,8 +190,9 @@ func TestBuildFilterString(t *testing.T) {
 		`authentication_info.user_principal = "principal"`,
 		`idle_duration > 100ms`,
 		`state = KAFKA_CONNECTION_STATE_OPEN`,
-		`beep = "boop" OR 1`,
 	}, strings.Split(buildFilterString(filters), " AND "))
+
+	require.Equal(t, "whatever > 42", buildFilterString(&v1.ListConnectionsRequest_Filters{Expression: "whatever > 42"}))
 }
 
 func TestBuildOrderByString(t *testing.T) {
@@ -186,10 +209,7 @@ func TestBuildOrderByString(t *testing.T) {
 	})
 
 	t.Run("expression", func(t *testing.T) {
-		require.Equal(t, "expr, close_time desc", buildOrderByString(&v1.ListConnectionsRequest{
-			OrderBy: []*v1.ListConnectionsRequest_Ordering{
-				{Option: v1.ListConnectionsRequest_ORDERING_OPTION_CLOSE_TIME, Descending: true},
-			},
+		require.Equal(t, "expr", buildOrderByString(&v1.ListConnectionsRequest{
 			OrderByExpression: "expr",
 		}))
 	})

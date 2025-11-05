@@ -53,21 +53,37 @@ message ListConnectionsRequest {
   }
 
   message Filters {
-    KafkaConnectionState state = 1 [(buf.validate.field).enum.defined_only = true];
-    string ip_address = 2;
-    string client_id = 3;
-    string client_software_name = 4;
-    string client_software_version = 5;
-    string group_id = 6;
-    string user = 7;
-    int64 idle_ms = 8 [(buf.validate.field).int64.gte = 0];
-    string expression = 9;
+    string expression = 1;
+    KafkaConnectionState state = 2 [(buf.validate.field).enum.defined_only = true];
+    string ip_address = 3;
+    string client_id = 4;
+    string client_software_name = 5;
+    string client_software_version = 6;
+    string group_id = 7;
+    string user = 8;
+    int64 idle_ms = 9 [(buf.validate.field).int64.gte = 0];
+
+    option (buf.validate.message).cel = {
+      id: "filter_expression_excludes_others"
+      message: "expression must not be present alongside other filtering mechanisms"
+      expression:
+        "!(has(this.expression) && ("
+        "has(this.ip_address) || has(this.client_id) || has(this.client_software_name) ||"
+        "has(this.client_software_version) || has(this.group_id) || has(this.user) || has(this.idle_ms)"
+        "))"
+    };
   }
 
   Filters filters = 1;
   repeated Ordering order_by = 2;
   string order_by_expression = 3;
   uint32 limit = 4;
+
+  option (buf.validate.message).cel = {
+    id: "order_by_expression_excludes_others"
+    message: "order_by_expression must not be present alongside other order_by options"
+    expression: "!(has(this.order_by_expression) && has(this.order_by))"
+  };
 }
 
 // Everything is up by one (produce is actually 0, fetch -> 1, etc)
