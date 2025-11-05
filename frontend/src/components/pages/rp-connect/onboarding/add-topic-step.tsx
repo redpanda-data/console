@@ -77,7 +77,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
 
     const createTopicMutation = useCreateTopicMutation();
 
-    const isLoading = createTopicMutation.isPending;
+    const isPending = createTopicMutation.isPending;
 
     const defaultValues = useMemo(
       () => ({
@@ -215,7 +215,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
           error: 'Form validation failed',
         };
       },
-      isLoading,
+      isPending,
     }));
 
     return (
@@ -239,7 +239,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                 </FormDescription>
                 <div className="flex flex-col items-start gap-2">
                   <ToggleGroup
-                    disabled={isLoading}
+                    disabled={isPending}
                     onValueChange={(value) => {
                       // Prevent deselection - ToggleGroup emits empty string when trying to deselect
                       if (!value) {
@@ -270,7 +270,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                               <Combobox
                                 {...field}
                                 className="w-[300px]"
-                                disabled={isLoading}
+                                disabled={isPending}
                                 onOpen={() => {
                                   queryClient.invalidateQueries({
                                     queryKey: createConnectQueryKey({
@@ -286,7 +286,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                               <Input
                                 {...field}
                                 className="w-[300px]"
-                                disabled={isLoading}
+                                disabled={isPending}
                                 placeholder="Enter a topic name"
                               />
                             )}
@@ -297,7 +297,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                     />
 
                     {watchedTopicName !== '' && watchedTopicName.length > 0 && (
-                      <Button disabled={isLoading} onClick={handleClearTopicName} size="icon" variant="ghost">
+                      <Button disabled={isPending} onClick={handleClearTopicName} size="icon" variant="ghost">
                         <XIcon size={16} />
                       </Button>
                     )}
@@ -308,14 +308,14 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
               {topicSelectionType === CreatableSelectionOptions.EXISTING && !existingTopicSelected ? null : (
                 <Collapsible onOpenChange={setShowAdvancedSettings} open={showAdvancedSettings}>
                   <CollapsibleTrigger asChild>
-                    <Button className="w-fit p-0" disabled={isLoading} size="sm" variant="ghost">
+                    <Button className="w-fit p-0" disabled={isPending} size="sm" variant="ghost">
                       <ChevronDown className="h-4 w-4" />
                       Show advanced settings
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-4 space-y-6">
                     <AdvancedTopicSettings
-                      disabled={isLoading}
+                      disabled={isPending}
                       form={form}
                       isExistingTopic={Boolean(existingTopicSelected)}
                     />

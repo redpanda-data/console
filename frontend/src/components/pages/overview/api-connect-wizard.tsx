@@ -21,7 +21,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { AddTopicStep } from '../rp-connect/onboarding/add-topic-step';
 import { AddUserStep } from '../rp-connect/onboarding/add-user-step';
-import type { AddTopicFormData, AddUserFormData, BaseStepRef } from '../rp-connect/types/wizard';
+import type { AddTopicFormData, BaseStepRef, UserStepRef } from '../rp-connect/types/wizard';
 import { handleStepResult } from '../rp-connect/utils/wizard';
 
 const APIWizardStep = {
@@ -133,7 +133,7 @@ export const APIConnectWizard = () => {
   const [saslMechanism, setSaslMechanism] = useState<string | undefined>(undefined);
 
   const addTopicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
-  const addUserStepRef = useRef<BaseStepRef<AddUserFormData>>(null);
+  const addUserStepRef = useRef<UserStepRef>(null);
 
   const handleNext = async (methods: APIWizardStepperSteps) => {
     switch (methods.current.id) {
@@ -166,9 +166,9 @@ export const APIConnectWizard = () => {
   const getCurrentStepLoading = (currentStepId: APIWizardStepType): boolean => {
     switch (currentStepId) {
       case APIWizardStep.ADD_TOPIC:
-        return addTopicStepRef.current?.isLoading ?? false;
+        return addTopicStepRef.current?.isPending ?? false;
       case APIWizardStep.ADD_USER:
-        return addUserStepRef.current?.isLoading ?? false;
+        return addUserStepRef.current?.isPending ?? false;
       default:
         return false;
     }

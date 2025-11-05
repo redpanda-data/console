@@ -2,7 +2,7 @@ import { toast } from 'sonner';
 import { Document, parseDocument, stringify as yamlStringify } from 'yaml';
 
 import { getBuiltInComponents, schemaToConfig } from './schema';
-import { HANDLED_ARRAY_MERGE_PATHS } from '../types/constants';
+// import { HANDLED_ARRAY_MERGE_PATHS } from '../types/constants';
 import type { ConnectConfigObject } from '../types/schema';
 
 const mergeProcessor = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
@@ -154,48 +154,48 @@ const detectComponentType = (
   return 'unknown';
 };
 
-const findUnhandledArrayMergePaths = (
-  newConfigObject: Partial<ConnectConfigObject>,
-  doc: Document.Parsed
-): string[] => {
-  const unhandled: string[] = [];
+// const findUnhandledArrayMergePaths = (
+//   newConfigObject: Partial<ConnectConfigObject>,
+//   doc: Document.Parsed
+// ): string[] => {
+//   const unhandled: string[] = [];
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Nested traversal needed to surface unsupported array merges.
-  const visit = (node: unknown, path: string[]) => {
-    if (!node || typeof node !== 'object' || Array.isArray(node)) {
-      return;
-    }
+//   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Nested traversal needed to surface unsupported array merges.
+//   const visit = (node: unknown, path: string[]) => {
+//     if (!node || typeof node !== 'object' || Array.isArray(node)) {
+//       return;
+//     }
 
-    for (const [key, value] of Object.entries(node)) {
-      const nextPath = [...path, key];
+//     for (const [key, value] of Object.entries(node)) {
+//       const nextPath = [...path, key];
 
-      if (Array.isArray(value)) {
-        const normalizedPath = nextPath.join('.');
-        if (!HANDLED_ARRAY_MERGE_PATHS.includes(normalizedPath)) {
-          const existingValue = doc.getIn(nextPath);
-          if (existingValue !== undefined) {
-            unhandled.push(normalizedPath);
-          }
-        }
+//       if (Array.isArray(value)) {
+//         const normalizedPath = nextPath.join('.');
+//         if (!HANDLED_ARRAY_MERGE_PATHS.includes(normalizedPath)) {
+//           const existingValue = doc.getIn(nextPath);
+//           if (existingValue !== undefined) {
+//             unhandled.push(normalizedPath);
+//           }
+//         }
 
-        for (const item of value) {
-          if (item && typeof item === 'object') {
-            visit(item, nextPath);
-          }
-        }
-        continue;
-      }
+//         for (const item of value) {
+//           if (item && typeof item === 'object') {
+//             visit(item, nextPath);
+//           }
+//         }
+//         continue;
+//       }
 
-      if (value && typeof value === 'object') {
-        visit(value, nextPath);
-      }
-    }
-  };
+//       if (value && typeof value === 'object') {
+//         visit(value, nextPath);
+//       }
+//     }
+//   };
 
-  visit(newConfigObject, []);
+//   visit(newConfigObject, []);
 
-  return [...new Set(unhandled)];
-};
+//   return [...new Set(unhandled)];
+// };
 
 const mergeByComponentType = (
   componentType: DetectedComponentType,
@@ -278,13 +278,13 @@ export const mergeConnectConfigs = (
   }
 
   const componentType = detectComponentType(newConfigObject, doc);
-  const unhandledArrayPaths = findUnhandledArrayMergePaths(newConfigObject, doc);
+  // const unhandledArrayPaths = findUnhandledArrayMergePaths(newConfigObject, doc);
 
-  if (unhandledArrayPaths.length > 0) {
-    toast.error('Unable to merge array fields', {
-      description: `Existing YAML arrays at ${unhandledArrayPaths.join(', ')} will be replaced by generated values.`,
-    });
-  }
+  // if (unhandledArrayPaths.length > 0) {
+  //   toast.error('Unable to merge array fields', {
+  //     description: `Existing YAML arrays at ${unhandledArrayPaths.join(', ')} will be replaced by generated values.`,
+  //   });
+  // }
 
   mergeByComponentType(componentType, doc, newConfigObject);
 
