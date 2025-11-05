@@ -10,21 +10,24 @@
  */
 
 import { Box, GridItem, Tag, TagCloseButton, TagLabel } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 import type { FC } from 'react';
 import { MdOutlineSettings } from 'react-icons/md';
 
 import type { FilterEntry } from '../../../../../state/ui';
-import { uiState } from '../../../../../state/ui-state';
 
-export const MessageSearchFilterBar: FC<{ onEdit: (filter: FilterEntry) => void }> = observer(({ onEdit }) => {
-  const settings = uiState.topicSettings.searchParams;
+interface MessageSearchFilterBarProps {
+  filters: FilterEntry[];
+  onEdit: (filter: FilterEntry) => void;
+  onToggle: (filterId: string) => void;
+  onRemove: (filterId: string) => void;
+}
 
+export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filters, onEdit, onToggle, onRemove }) => {
   return (
     <GridItem display="flex" gridColumn="-1/1" justifyContent="space-between">
       <Box columnGap="8px" display="inline-flex" flexWrap="wrap" rowGap="2px" width="calc(100% - 200px)">
         {/* Existing Tags List  */}
-        {settings.filters?.map((e) => (
+        {filters?.map((e) => (
           <Tag
             className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
             key={e.id}
@@ -43,16 +46,16 @@ export const MessageSearchFilterBar: FC<{ onEdit: (filter: FilterEntry) => void 
               display="inline-flex"
               height="100%"
               mx="2"
-              onClick={() => (e.isActive = !e.isActive)}
+              onClick={() => onToggle(e.id)}
               px="6px"
               textDecoration={e.isActive ? '' : 'line-through'}
             >
               {e.name || e.code || 'New Filter'}
             </TagLabel>
-            <TagCloseButton m="0" onClick={() => settings.filters.remove(e)} opacity={1} px="1" />
+            <TagCloseButton m="0" onClick={() => onRemove(e.id)} opacity={1} px="1" />
           </Tag>
         ))}
       </Box>
     </GridItem>
   );
-});
+};

@@ -78,6 +78,7 @@ import { appGlobal } from '../../../../state/app-global';
 import { useTopicSettingsStore } from '../../../../stores/topic-settings-store';
 import { IsDev } from '../../../../utils/env';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filter-helper';
+import { parseAsFilters } from '../../../../utils/filter-url-encoding';
 import { onPaginationChange } from '../../../../utils/pagination';
 import { sortingParser } from '../../../../utils/sorting-parser';
 import {
@@ -363,6 +364,18 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
+  // Filters with URL state management (encoded)
+  const [filters, setFilters] = useQueryStateWithCallback<FilterEntry[]>(
+    {
+      onUpdate: (val) => {
+        setSearchParams(props.topic.topicName, { filters: val });
+      },
+      getDefaultValue: () => getSearchParams(props.topic.topicName)?.filters ?? DEFAULT_SEARCH_PARAMS.filters,
+    },
+    'f',
+    parseAsFilters
+  );
+
   // Deserializer settings with URL state management
   const [keyDeserializer, setKeyDeserializer] = useQueryStateWithCallback<PayloadEncoding>(
     {
@@ -485,7 +498,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       const functionNames: string[] = [];
       const functions: string[] = [];
 
-      const filteredSearchParams = (currentSearchParams?.filters ?? []).filter(
+      // Use filters from URL state instead of localStorage
+      const filteredSearchParams = filters.filter(
         (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode
       );
 
@@ -557,6 +571,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     getSearchParams,
     keyDeserializer,
     valueDeserializer,
+    filters.filter,
   ]);
 
   // Convert searchFunc to useCallback
@@ -1080,8 +1095,15 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
         {/* Filter Tags */}
         <MessageSearchFilterBar
+          filters={filters}
           onEdit={(filter) => {
             setCurrentJSFilter(filter);
+          }}
+          onRemove={(filterId) => {
+            setFilters(filters.filter((f) => f.id !== filterId));
+          }}
+          onToggle={(filterId) => {
+            setFilters(filters.map((f) => (f.id === filterId ? { ...f, isActive: !f.isActive } : f)));
           }}
         />
 
@@ -1121,13 +1143,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           onClose={() => setCurrentJSFilter(null)}
           onSave={(filter) => {
             if (filter.isNew) {
-              uiState.topicSettings.searchParams.filters.push(filter);
-              filter.isNew = false;
+              // Add new filter to URL state
+              setFilters([...filters, { ...filter, isNew: false }]);
             } else {
-              const idx = uiState.topicSettings.searchParams.filters.findIndex((x) => x.id === filter.id);
-              if (idx !== -1) {
-                uiState.topicSettings.searchParams.filters.splice(idx, 1, filter);
-              }
+              // Update existing filter in URL state
+              setFilters(filters.map((f) => (f.id === filter.id ? filter : f)));
             }
             searchFunc('manual');
           }}
