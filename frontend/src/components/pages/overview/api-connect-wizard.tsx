@@ -30,7 +30,6 @@ const APIWizardStep = {
   ADD_USER: 'add-user-step',
   CONNECT_CLUSTER: 'connect-cluster-step',
 };
-type APIWizardStepType = (typeof APIWizardStep)[keyof typeof APIWizardStep];
 
 const apiWizardStepDefinitions = [
   { id: APIWizardStep.ADD_DATA, title: 'Add data' },
@@ -135,23 +134,35 @@ export const APIConnectWizard = () => {
   const addTopicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const addUserStepRef = useRef<UserStepRef>(null);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleNext = async (methods: APIWizardStepperSteps) => {
     switch (methods.current.id) {
       case APIWizardStep.ADD_TOPIC: {
-        const result = await addTopicStepRef.current?.triggerSubmit();
-        if (result?.success) {
-          setTopicName(result.data?.topicName);
+        setIsSubmitting(true);
+        try {
+          const result = await addTopicStepRef.current?.triggerSubmit();
+          if (result?.success) {
+            setTopicName(result.data?.topicName);
+          }
+          handleStepResult(result, methods.next);
+        } finally {
+          setIsSubmitting(false);
         }
-        handleStepResult(result, methods.next);
         break;
       }
       case APIWizardStep.ADD_USER: {
-        const result = await addUserStepRef.current?.triggerSubmit();
-        if (result?.success) {
-          setUsername(result.data?.username);
-          setSaslMechanism(result.data?.saslMechanism);
+        setIsSubmitting(true);
+        try {
+          const result = await addUserStepRef.current?.triggerSubmit();
+          if (result?.success) {
+            setUsername(result.data?.username);
+            setSaslMechanism(result.data?.saslMechanism);
+          }
+          handleStepResult(result, methods.next);
+        } finally {
+          setIsSubmitting(false);
         }
-        handleStepResult(result, methods.next);
         break;
       }
       default:
@@ -161,17 +172,6 @@ export const APIConnectWizard = () => {
 
   const handleSkip = (methods: APIWizardStepperSteps) => {
     methods.next();
-  };
-
-  const getCurrentStepLoading = (currentStepId: APIWizardStepType): boolean => {
-    switch (currentStepId) {
-      case APIWizardStep.ADD_TOPIC:
-        return addTopicStepRef.current?.isPending ?? false;
-      case APIWizardStep.ADD_USER:
-        return addUserStepRef.current?.isPending ?? false;
-      default:
-        return false;
-    }
   };
 
   const handleCancel = useCallback(() => {
@@ -210,96 +210,88 @@ export const APIConnectWizard = () => {
   return (
     <PageContent>
       <APIWizardStepper.Provider className="space-y-2" initialStep={APIWizardStep.ADD_TOPIC}>
-        {({ methods }) => {
-          const isCurrentStepLoading = getCurrentStepLoading(methods.current.id);
-
-          return (
-            <div className="relative flex flex-col gap-6">
-              <div className="flex h-full flex-col gap-6 pt-4">
-                <div className="flex flex-col space-y-2 text-center">
-                  <APIWizardStepper.Navigation>
-                    {apiWizardStepDefinitions.map((step) => (
-                      <APIWizardStepper.Step
-                        key={step.id}
-                        of={step.id}
-                        onClick={() => {
-                          if (step.id === APIWizardStep.ADD_DATA) {
+        {({ methods }) => (
+          <div className="relative flex flex-col gap-6">
+            <div className="flex h-full flex-col gap-6 pt-4">
+              <div className="flex flex-col space-y-2 text-center">
+                <APIWizardStepper.Navigation>
+                  {apiWizardStepDefinitions.map((step) => (
+                    <APIWizardStepper.Step
+                      key={step.id}
+                      of={step.id}
+                      onClick={() => {
+                        if (step.id === APIWizardStep.ADD_DATA) {
+                          navigate('/get-started?type=input');
+                          window.location.reload(); // Required because we want to load Cloud UI's get-started page.
+                        } else {
+                          methods.goTo(step.id);
+                        }
+                      }}
+                    >
+                      <APIWizardStepper.Title>{step.title}</APIWizardStepper.Title>
+                    </APIWizardStepper.Step>
+                  ))}
+                </APIWizardStepper.Navigation>
+              </div>
+              {methods.switch({
+                [APIWizardStep.ADD_TOPIC]: () => <AddTopicStep defaultTopicName={topicName} ref={addTopicStepRef} />,
+                [APIWizardStep.ADD_USER]: () => (
+                  <AddUserStep defaultUsername={username} ref={addUserStepRef} topicName={topicName} />
+                ),
+                [APIWizardStep.CONNECT_CLUSTER]: () => (
+                  <HowToConnectStep saslMechanism={saslMechanism} topicName={topicName} username={username} />
+                ),
+              })}
+            </div>
+            <APIWizardStepper.Controls className="justify-between">
+              <div className="flex gap-2">
+                {!(methods.isFirst || methods.isLast) && (
+                  <Button
+                    onClick={
+                      methods.current.id === APIWizardStep.ADD_TOPIC
+                        ? () => {
                             navigate('/get-started?type=input');
                             window.location.reload(); // Required because we want to load Cloud UI's get-started page.
-                          } else {
-                            methods.goTo(step.id);
                           }
-                        }}
-                      >
-                        <APIWizardStepper.Title>{step.title}</APIWizardStepper.Title>
-                      </APIWizardStepper.Step>
-                    ))}
-                  </APIWizardStepper.Navigation>
-                </div>
-                {methods.switch({
-                  [APIWizardStep.ADD_TOPIC]: () => <AddTopicStep defaultTopicName={topicName} ref={addTopicStepRef} />,
-                  [APIWizardStep.ADD_USER]: () => (
-                    <AddUserStep defaultUsername={username} ref={addUserStepRef} topicName={topicName} />
-                  ),
-                  [APIWizardStep.CONNECT_CLUSTER]: () => (
-                    <HowToConnectStep saslMechanism={saslMechanism} topicName={topicName} username={username} />
-                  ),
-                })}
-              </div>
-              <APIWizardStepper.Controls className="justify-between">
-                <div className="flex gap-2">
-                  {!(methods.isFirst || methods.isLast) && (
-                    <Button
-                      onClick={
-                        methods.current.id === APIWizardStep.ADD_TOPIC
-                          ? () => {
-                              navigate('/get-started?type=input');
-                              window.location.reload(); // Required because we want to load Cloud UI's get-started page.
-                            }
-                          : methods.prev
-                      }
-                      type="button"
-                      variant="secondary"
-                    >
-                      <ChevronLeftIcon />
-                      Previous
-                    </Button>
-                  )}
-                  <Button onClick={handleCancel} type="button" variant="outline">
-                    Cancel
+                        : methods.prev
+                    }
+                    type="button"
+                    variant="secondary"
+                  >
+                    <ChevronLeftIcon />
+                    Previous
                   </Button>
-                </div>
-                <div className="flex gap-2">
-                  {!methods.isLast && (
-                    <Button onClick={() => handleSkip(methods)} type="button" variant="outline">
-                      Skip
-                    </Button>
-                  )}
+                )}
+                <Button onClick={handleCancel} type="button" variant="outline">
+                  Cancel
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                {!methods.isLast && (
+                  <Button onClick={() => handleSkip(methods)} type="button" variant="outline">
+                    Skip
+                  </Button>
+                )}
 
-                  {methods.isLast ? (
-                    <Button onClick={handleCreate} type="button">
-                      Create
-                    </Button>
-                  ) : (
-                    <Button
-                      className="min-w-[70px]"
-                      disabled={isCurrentStepLoading}
-                      onClick={() => handleNext(methods)}
-                    >
-                      {isCurrentStepLoading ? (
-                        <Spinner />
-                      ) : (
-                        <>
-                          Next <ChevronRightIcon />
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </div>
-              </APIWizardStepper.Controls>
-            </div>
-          );
-        }}
+                {methods.isLast ? (
+                  <Button onClick={handleCreate} type="button">
+                    Create
+                  </Button>
+                ) : (
+                  <Button className="min-w-[70px]" disabled={isSubmitting} onClick={() => handleNext(methods)}>
+                    {isSubmitting ? (
+                      <Spinner />
+                    ) : (
+                      <>
+                        Next <ChevronRightIcon />
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </APIWizardStepper.Controls>
+          </div>
+        )}
       </APIWizardStepper.Provider>
     </PageContent>
   );
