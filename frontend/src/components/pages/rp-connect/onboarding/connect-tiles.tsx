@@ -232,7 +232,7 @@ export const ConnectTiles = memo(
             error: 'Form validation failed',
           };
         },
-        isLoading: false,
+        isPending: false,
       }));
 
       return (
