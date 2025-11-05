@@ -11,7 +11,7 @@
 
 import { DataTable } from '@redpanda-data/ui';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
-import { ExpandedMessage, MessagePreview } from 'components/pages/topics/Tab.Messages';
+import { ExpandedMessage } from 'components/pages/topics/Tab.Messages/message-display/expanded-message';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Input } from 'components/redpanda-ui/components/input';
@@ -30,6 +30,8 @@ import { uiState } from 'state/ui-state';
 import { sanitizeString } from 'utils/filter-helper';
 import { TimestampDisplay } from 'utils/tsx-utils';
 import { encodeBase64 } from 'utils/utils';
+
+import { MessagePreview } from '../../topics/Tab.Messages/message-display/message-preview';
 
 export const REMOTE_MCP_LOGS_TOPIC = '__redpanda.connect.logs';
 
