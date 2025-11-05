@@ -453,12 +453,18 @@ export const PipelineEditor = observer(
 
       editorInstance.setValue(mergedYaml);
 
-      // Immediately sync to store (bypass debounce for user-initiated actions)
-      if (enableRpcnTiles) {
-        useOnboardingYamlContentStore.getState().setYamlContent({
-          yamlContent: mergedYaml,
-        });
-      }
+      useOnboardingYamlContentStore.getState().setYamlContent({
+        yamlContent: mergedYaml,
+      });
+
+      const wizardData = useOnboardingWizardDataStore.getState();
+      wizardData.setWizardData({
+        ...wizardData,
+        [connectionType]: {
+          connectionName,
+          connectionType,
+        },
+      });
     };
 
     // On initial mount in serverless mode, generate YAML from persisted connectors

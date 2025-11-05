@@ -3,7 +3,7 @@ import { Document, parseDocument, stringify as yamlStringify } from 'yaml';
 
 import { getBuiltInComponents, schemaToConfig } from './schema';
 // import { HANDLED_ARRAY_MERGE_PATHS } from '../types/constants';
-import type { ConnectConfigObject } from '../types/schema';
+import type { ConnectComponentSpec, ConnectConfigObject, RawFieldSpec } from '../types/schema';
 
 const mergeProcessor = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
   const processorsNode = doc.getIn(['pipeline', 'processors']) as { toJSON?: () => unknown } | undefined;
@@ -302,7 +302,7 @@ type YAMLNode = { items?: unknown[]; comment?: string; commentBefore?: string };
 type YAMLKey = { value?: string; comment?: string };
 type YAMLPair = { key?: YAMLKey; value?: YAMLNode };
 
-function addCommentsRecursive(node: YAMLNode, spec: import('../types/schema').RawFieldSpec): void {
+function addCommentsRecursive(node: YAMLNode, spec: RawFieldSpec): void {
   if (!node.items) {
     return;
   }
@@ -344,10 +344,7 @@ function addCommentsRecursive(node: YAMLNode, spec: import('../types/schema').Ra
   }
 }
 
-function addCommentsFromSpec(
-  doc: Document.Parsed | Document,
-  componentSpec: import('../types/schema').ConnectComponentSpec
-): void {
+function addCommentsFromSpec(doc: Document.Parsed | Document, componentSpec: ConnectComponentSpec): void {
   if (!componentSpec.config) {
     return;
   }
@@ -406,7 +403,7 @@ function addCommentsFromSpec(
 
 export const configToYaml = (
   configObject: Document.Parsed | Partial<ConnectConfigObject> | undefined,
-  componentSpec?: import('../types/schema').ConnectComponentSpec
+  componentSpec?: ConnectComponentSpec
 ): string => {
   try {
     if (!configObject) {
@@ -440,11 +437,13 @@ export const getConnectTemplate = ({
   connectionName,
   connectionType,
   showOptionalFields,
+  showAdvancedFields,
   existingYaml,
 }: {
   connectionName: string;
   connectionType: string;
   showOptionalFields?: boolean;
+  showAdvancedFields?: boolean;
   existingYaml?: string;
 }) => {
   // Phase 0: Find the component spec for the selected connectionName and connectionType
@@ -459,7 +458,7 @@ export const getConnectTemplate = ({
   }
 
   // Phase 1: Generate config object for new component
-  const result = schemaToConfig(componentSpec, showOptionalFields);
+  const result = schemaToConfig(componentSpec, showOptionalFields, showAdvancedFields);
   if (!result) {
     return;
   }

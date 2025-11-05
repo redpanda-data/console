@@ -1,15 +1,6 @@
 import { onboardingWizardStore } from 'state/onboarding-wizard-store';
-import { isFalsy } from 'utils/falsy';
 
-import {
-  hasWizardRelevantFields,
-  isBrokerField,
-  isConsumerGroupField,
-  isPasswordField,
-  isSchemaRegistryUrlField,
-  isTopicField,
-  isUserField,
-} from './wizard';
+import { isConsumerGroupField, isPasswordField, isSchemaRegistryUrlField, isTopicField, isUserField } from './wizard';
 import benthosSchemaFull from '../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
 import {
   CRITICAL_CONNECTION_FIELDS,
@@ -161,13 +152,6 @@ const generateRedpandaTopLevelConfig = (): Record<string, unknown> => {
   const userData = onboardingWizardStore.getUserData();
   const redpandaConfig: Record<string, unknown> = {};
 
-  const brokers = getContextualVariableSyntax('REDPANDA_BROKERS');
-  redpandaConfig.seed_brokers = [brokers];
-
-  redpandaConfig.tls = {
-    enabled: true,
-  };
-
   if (userData?.username) {
     const usernameSecretId = `KAFKA_USER_${convertToScreamingSnakeCase(userData.username)}`;
     const passwordSecretId = `KAFKA_PASSWORD_${convertToScreamingSnakeCase(userData.username)}`;
@@ -189,11 +173,13 @@ const generateRedpandaTopLevelConfig = (): Record<string, unknown> => {
  * following the Redpanda Connect YAML schema structure
  * @param componentSpec - the component spec to convert to a config object
  * @param showOptionalFields - whether to show optional fields
+ * @param showAdvancedFields - whether to show advanced fields
  * @returns Object with config and spec, or undefined
  */
 export const schemaToConfig = (
   componentSpec?: ConnectComponentSpec,
-  showOptionalFields?: boolean
+  showOptionalFields?: boolean,
+  showAdvancedFields?: boolean
 ): { config: Partial<ConnectConfigObject>; spec: ConnectComponentSpec } | undefined => {
   if (!componentSpec?.config) {
     return;
@@ -201,6 +187,7 @@ export const schemaToConfig = (
 
   const connectionConfig = generateDefaultValue(componentSpec.config, {
     showOptionalFields,
+    showAdvancedFields,
     componentName: componentSpec.name,
   });
 
@@ -326,17 +313,6 @@ function populateContextualVariables(
     return undefined;
   }
 
-  // Broker fields get REDPANDA_BROKERS
-  if (isBrokerField(spec.name)) {
-    const brokersSyntax = getContextualVariableSyntax('REDPANDA_BROKERS');
-    // Array field (e.g., seed_brokers)
-    if (spec.kind === 'array') {
-      return [brokersSyntax];
-    }
-    // String field (e.g., addresses as comma-separated)
-    return brokersSyntax;
-  }
-
   // Schema Registry URL within schema_registry object
   if (isSchemaRegistryUrlField(spec.name, parentName)) {
     return getContextualVariableSyntax('REDPANDA_SCHEMA_REGISTRY_URL');
@@ -365,12 +341,6 @@ function populateConnectionDefaults(
     return undefined;
   }
 
-  // TLS enabled should be true for Redpanda Cloud connections
-  const isTlsEnabled = spec.name.toLowerCase() === 'enabled' && parentName?.toLowerCase() === 'tls';
-  if (isTlsEnabled) {
-    return true;
-  }
-
   // SASL mechanism from session storage or default to SCRAM-SHA-256
   const isMechanismField = spec.name.toLowerCase() === 'mechanism' && parentName?.toLowerCase() === 'sasl';
   if (isMechanismField) {
@@ -384,83 +354,56 @@ function populateConnectionDefaults(
 function shouldHideField(params: {
   spec: RawFieldSpec;
   showOptionalFields: boolean;
+  showAdvancedFields: boolean;
   componentName: string | undefined;
-  hasWizardData: boolean;
-  isExplicitlyRequired: boolean;
-  isCriticalField: boolean;
-  insideWizardContext: boolean;
 }): boolean {
-  const {
-    spec,
-    showOptionalFields,
-    componentName,
-    hasWizardData,
-    isExplicitlyRequired,
-    isCriticalField,
-    insideWizardContext,
-  } = params;
+  const { spec, showOptionalFields, showAdvancedFields, componentName } = params;
 
-  // never hide critical connection fields for Redpanda components
-  if (
-    componentName &&
-    CRITICAL_CONNECTION_FIELDS.has(spec.name as string) &&
-    REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)
-  ) {
+  const isRedpandaComponent = componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName);
+  const isCriticalRedpandaField = isRedpandaComponent && spec.name && CRITICAL_CONNECTION_FIELDS.has(spec.name);
+  const isExplicitlyRequired = spec.is_optional === false;
+  const isExplicitlyOptional = spec.is_optional === true;
+  const isImplicitlyRequired = spec.is_optional === undefined && spec.default === undefined;
+  const isExplicitlyAdvanced = spec.is_advanced === true;
+  const isNonCriticalRedpandaField = isRedpandaComponent && spec.name && NON_CRITICAL_CONFIG_OBJECTS.has(spec.name);
+
+  if (isCriticalRedpandaField) {
     return false;
   }
 
-  // Hide non-critical config objects for REDPANDA_SECRET_COMPONENTS
-  const isNonCriticalConfigObject =
-    componentName &&
-    spec.name &&
-    REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName) &&
-    NON_CRITICAL_CONFIG_OBJECTS.has(spec.name);
+  // this is a really wierd edge case where the schema doesn't match the docs, and this is the only consistent way to show "common" fields
+  if (isExplicitlyRequired || isImplicitlyRequired || !isExplicitlyAdvanced) {
+    return false;
+  }
 
-  if (isNonCriticalConfigObject && !showOptionalFields && !isExplicitlyRequired) {
+  if (showAdvancedFields && isExplicitlyAdvanced) {
+    return false;
+  }
+
+  if (showOptionalFields && isExplicitlyOptional) {
+    return false;
+  }
+
+  if (isExplicitlyAdvanced) {
     return true;
   }
 
-  const isAdvancedField = spec.is_advanced === true;
-  if (isAdvancedField && !showOptionalFields && !hasWizardData && !isExplicitlyRequired && !isCriticalField) {
-    const hasEmptyDefault = isFalsy(spec.default);
-    const isEffectivelyOptional = spec.is_optional === true || (hasEmptyDefault && spec.is_optional !== false);
-    if (!insideWizardContext || isEffectivelyOptional) {
-      return true;
-    }
-  }
-
-  const isOptionalField = spec.is_optional === true && !isAdvancedField;
-  if (isOptionalField && !showOptionalFields && !hasWizardData) {
+  if (isExplicitlyOptional) {
     return true;
   }
 
-  const hasDefault = spec.default !== undefined;
-  const isScalarDefault = hasDefault && spec.kind === 'scalar' && spec.type !== 'object';
-  const isExplicitlyOptional = spec.is_optional === true;
-
-  if (isScalarDefault && !showOptionalFields && !insideWizardContext && !isExplicitlyRequired) {
-    // Always hide explicitly optional fields with defaults
-    if (isExplicitlyOptional && !hasWizardData) {
-      return true;
-    }
-    // For REDPANDA_SECRET_COMPONENTS, hide non-critical scalar fields with defaults
-    if (
-      componentName &&
-      REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName) &&
-      !(isCriticalField || hasWizardData)
-    ) {
-      return true;
-    }
+  if (isNonCriticalRedpandaField) {
+    return true;
   }
 
-  return false;
+  return true;
 }
 
 function generateObjectValue(
   spec: RawFieldSpec,
   showOptionalFields: boolean | undefined,
-  componentName: string | undefined,
-  insideWizardContext: boolean | undefined
+  showAdvancedFields: boolean | undefined,
+  componentName: string | undefined
 ): Record<string, unknown> | undefined {
   if (!spec.children) {
     return {};
@@ -468,69 +411,16 @@ function generateObjectValue(
 
   const obj = {} as Record<string, unknown>;
 
-  const userData =
-    componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)
-      ? onboardingWizardStore.getUserData()
-      : undefined;
-
-  const hasDirectWizardChildren =
-    spec.children?.some((child) => {
-      if (child.name && isUserField(child.name) && userData?.username) {
-        return true;
-      }
-      if (child.name && isPasswordField(child.name) && userData?.username) {
-        return true;
-      }
-      if (child.name && isConsumerGroupField(child.name) && userData?.consumerGroup) {
-        return true;
-      }
-      return false;
-    }) ?? false;
-
-  const inWizardContext = insideWizardContext || hasDirectWizardChildren;
-
-  const isTlsObject = spec.name?.toLowerCase() === 'tls';
-  const isRedpandaComponent = componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName);
-
   for (const child of spec.children) {
     const childValue = generateDefaultValue(child, {
       showOptionalFields,
+      showAdvancedFields,
       componentName,
-      insideWizardContext: inWizardContext,
       parentName: spec.name,
     });
 
     if (childValue !== undefined && child.name) {
       obj[child.name] = childValue;
-    }
-  }
-
-  if (isTlsObject && isRedpandaComponent && obj.enabled === undefined) {
-    obj.enabled = true;
-  }
-
-  const objKeys = Object.keys(obj);
-  if (objKeys.length === 0) {
-    const isExplicitlyRequired = spec.is_optional === false;
-    const hasWizardData = hasWizardRelevantFields(spec, componentName);
-
-    const shouldHideEmpty =
-      (spec.is_optional === true || spec.is_advanced === true) &&
-      !showOptionalFields &&
-      !hasWizardData &&
-      !isExplicitlyRequired;
-
-    if (shouldHideEmpty) {
-      return undefined;
-    }
-
-    // For REDPANDA_SECRET_COMPONENTS: hide empty objects without wizard-relevant data
-    if (
-      componentName &&
-      REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName) &&
-      !(hasWizardData || showOptionalFields || isExplicitlyRequired)
-    ) {
-      return undefined;
     }
   }
 
@@ -540,51 +430,38 @@ function generateObjectValue(
 function generateArrayValue(params: {
   spec: RawFieldSpec;
   showOptionalFields: boolean;
+  showAdvancedFields: boolean;
   componentName: string | undefined;
-  isExplicitlyRequired: boolean;
-  hasWizardData: boolean;
 }): unknown[] | undefined {
-  const { spec, showOptionalFields, componentName, isExplicitlyRequired, hasWizardData } = params;
+  const { spec, showOptionalFields, showAdvancedFields, componentName } = params;
   // Special case: SASL arrays for redpanda/kafka_franz components
   const isSaslArray = spec.name?.toLowerCase() === 'sasl';
   if (isSaslArray && spec.children && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)) {
-    const userData = onboardingWizardStore.getUserData();
+    const saslObj = {} as Record<string, unknown>;
 
-    if (userData?.username) {
-      const saslObj = {} as Record<string, unknown>;
-
-      for (const child of spec.children) {
-        const childValue = generateDefaultValue(child, {
-          showOptionalFields,
-          componentName,
-          insideWizardContext: true,
-          parentName: spec.name,
-        });
-        if (childValue !== undefined && child.name) {
-          saslObj[child.name] = childValue;
-        }
-      }
-
-      if (Object.keys(saslObj).length > 0) {
-        return [saslObj];
+    for (const child of spec.children) {
+      const childValue = generateDefaultValue(child, {
+        showOptionalFields,
+        showAdvancedFields,
+        componentName,
+        parentName: spec.name,
+      });
+      if (childValue !== undefined && child.name) {
+        saslObj[child.name] = childValue;
       }
     }
-  }
-  const shouldHideArray =
-    (spec.is_optional === true || spec.is_advanced === true) &&
-    !showOptionalFields &&
-    !hasWizardData &&
-    !isExplicitlyRequired;
 
-  if (shouldHideArray) {
-    return undefined;
+    // Always return SASL array if we have any values (mechanism will be populated by populateConnectionDefaults)
+    if (Object.keys(saslObj).length > 0) {
+      return [saslObj];
+    }
   }
 
   return [];
 }
 
 function generateScalarValue(spec: RawFieldSpec, options: GenerateDefaultValueOptions): unknown {
-  const { showOptionalFields, componentName, insideWizardContext } = options;
+  const { showOptionalFields, showAdvancedFields, componentName } = options;
   switch (spec.type) {
     case 'string':
       return '';
@@ -594,7 +471,7 @@ function generateScalarValue(spec: RawFieldSpec, options: GenerateDefaultValueOp
     case 'bool':
       return false;
     case 'object':
-      return generateObjectValue(spec, showOptionalFields, componentName, insideWizardContext) ?? {};
+      return generateObjectValue(spec, showOptionalFields, showAdvancedFields, componentName) ?? {};
     default:
       return '';
   }
@@ -602,8 +479,8 @@ function generateScalarValue(spec: RawFieldSpec, options: GenerateDefaultValueOp
 
 interface GenerateDefaultValueOptions {
   showOptionalFields?: boolean;
+  showAdvancedFields?: boolean;
   componentName?: string;
-  insideWizardContext?: boolean;
   parentName?: string;
 }
 
@@ -611,22 +488,23 @@ export function generateDefaultValue(
   spec: RawFieldSpec,
   options?: GenerateDefaultValueOptions
 ): RawFieldSpec['default'] {
-  const { showOptionalFields, componentName, insideWizardContext, parentName } = options || {};
+  const { showOptionalFields, showAdvancedFields, componentName, parentName } = options || {};
 
   const isCriticalField = spec.name ? CRITICAL_CONNECTION_FIELDS.has(spec.name) : false;
   const isExplicitlyRequired = spec.is_optional === false;
-
-  // Don't add comments for empty string defaults
+  const isExplicitlyOptional = spec.is_optional === true;
+  const isImplicitlyRequired = spec.is_optional === undefined && spec.default === undefined;
   const hasNonEmptyDefault = spec.default !== undefined && spec.default !== '';
 
   if (hasNonEmptyDefault && isExplicitlyRequired) {
     spec.comment = `Required (default: ${JSON.stringify(spec.default)})`;
-  } else if (isExplicitlyRequired) {
+  } else if ((isExplicitlyRequired || isImplicitlyRequired) && spec.name !== 'seed_brokers') {
     spec.comment = 'Required';
-  } else if (hasNonEmptyDefault) {
+  } else if (hasNonEmptyDefault && isExplicitlyOptional) {
     spec.comment = `Optional (default: ${JSON.stringify(spec.default)})`;
-  } else if (isCriticalField) {
-    // Critical fields that are optional with no default
+  } else if (isExplicitlyOptional || isCriticalField) {
+    spec.comment = 'Optional';
+  } else if (spec.name === 'seed_brokers') {
     spec.comment = 'Optional';
   }
 
@@ -650,18 +528,13 @@ export function generateDefaultValue(
     }
   }
 
-  const hasWizardData = hasWizardRelevantFields(spec, componentName);
-
   // Check if field should be hidden
   if (
     shouldHideField({
       spec,
       showOptionalFields: showOptionalFields ?? false,
+      showAdvancedFields: showAdvancedFields ?? false,
       componentName,
-      hasWizardData,
-      isExplicitlyRequired,
-      isCriticalField,
-      insideWizardContext: insideWizardContext ?? false,
     })
   ) {
     return undefined;
@@ -680,9 +553,8 @@ export function generateDefaultValue(
       return generateArrayValue({
         spec,
         showOptionalFields: showOptionalFields ?? false,
+        showAdvancedFields: showAdvancedFields ?? false,
         componentName,
-        isExplicitlyRequired,
-        hasWizardData,
       });
     case '2darray':
       return [];
