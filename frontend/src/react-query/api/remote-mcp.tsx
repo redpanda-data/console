@@ -11,6 +11,7 @@ import { config } from 'config';
 import {
   type GetMCPServerRequest,
   GetMCPServerRequestSchema,
+  type GetMCPServerResponse,
   type ListMCPServersRequest,
   ListMCPServersRequest_FilterSchema,
   ListMCPServersRequestSchema,
@@ -57,13 +58,18 @@ export const useListMCPServersQuery = (
   });
 };
 
-export const useGetMCPServerQuery = (input?: MessageInit<GetMCPServerRequest>, options?: { enabled?: boolean }) => {
+export const useGetMCPServerQuery = (
+  input?: MessageInit<GetMCPServerRequest>,
+  options?: QueryOptions<GenMessage<GetMCPServerResponse>>
+) => {
   const getMCPServerRequest = create(GetMCPServerRequestSchema, { id: input?.id });
 
   return useQuery(getMCPServer, getMCPServerRequest, {
     enabled: options?.enabled,
-    refetchInterval: (query) => (query?.state?.data?.mcpServer?.state === MCPServer_State.STARTING ? 2 * 1000 : false),
-    refetchIntervalInBackground: false,
+    refetchInterval:
+      options?.refetchInterval ??
+      ((query) => (query?.state?.data?.mcpServer?.state === MCPServer_State.STARTING ? 2 * 1000 : false)),
+    refetchIntervalInBackground: options?.refetchIntervalInBackground ?? false,
   });
 };
 
@@ -91,13 +97,6 @@ export const useCreateMCPServerMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: MCPServerService.method.listMCPServers,
-          cardinality: 'finite',
-        }),
-        exact: false,
-      });
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: MCPServerService.method.getMCPServer,
           cardinality: 'finite',
         }),
         exact: false,
@@ -152,13 +151,6 @@ export const useDeleteMCPServerMutation = (options?: {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: MCPServerService.method.listMCPServers,
-          cardinality: 'finite',
-        }),
-        exact: false,
-      });
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: MCPServerService.method.getMCPServer,
           cardinality: 'finite',
         }),
         exact: false,

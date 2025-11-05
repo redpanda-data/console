@@ -69,6 +69,8 @@ message Pipeline {
     }
   }];
 
+  ServiceAccount service_account = 12 [(google.api.field_behavior) = OPTIONAL];
+
   message Resources {
     // `memory_shares` is a string specifying the amount of memory to allocate for
     // the pipeline.
@@ -118,6 +120,11 @@ message Pipeline {
   // Pipeline status may contain an error message.
   message Status {
     string error = 2;
+  }
+
+  message ServiceAccount {
+    string client_id = 1;
+    string client_secret = 2 [(buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"];
   }
 }
 
@@ -458,6 +465,8 @@ message PipelineCreate {
       string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
     }
   }];
+
+  Pipeline.ServiceAccount service_account = 8 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // CreatePipelineRequest is the request of CreatePipeline.
@@ -506,7 +515,7 @@ message ListPipelinesRequest {
   message Filter {
     // Substring match on pipeline name. Case-sensitive.
     string name_contains = 1 [
-      (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
+      (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
       (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
       (buf.validate.field).string.max_len = 128,
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Any pipelines that partially match this name will be returned."}
@@ -550,7 +559,7 @@ message PipelineUpdate {
 
   // Pipeline description.
   string description = 2 [
-    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
     (buf.validate.field).string.max_len = 256
   ];
 
@@ -571,6 +580,8 @@ message PipelineUpdate {
       string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
     }
   }];
+
+  Pipeline.ServiceAccount service_account = 8 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message UpdatePipelineRequest {

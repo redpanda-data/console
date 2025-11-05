@@ -1,3 +1,61 @@
+import benthosSchemaFull from '../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
+
+export type BenthosSchemaFull = typeof benthosSchemaFull;
+
+export type BloblangFunctionSpec = NonNullable<BenthosSchemaFull['bloblang-functions']>[number];
+export type BloblangMethodSpec = NonNullable<BenthosSchemaFull['bloblang-methods']>[number];
+
+// RawFieldSpec needs manual definition since it's a recursive structure with many optional properties
+// that TypeScript infers too narrowly from the JSON data
+export interface RawFieldSpec {
+  name?: string;
+  type?: string;
+  kind?: string;
+  description?: string;
+  is_advanced?: boolean;
+  is_deprecated?: boolean;
+  is_optional?: boolean;
+  is_secret?: boolean;
+  default?: unknown;
+  interpolated?: boolean;
+  bloblang?: boolean;
+  examples?: unknown[];
+  annotated_options?: [string, string][];
+  options?: string[];
+  children?: RawFieldSpec[];
+  version?: string;
+  linter?: string;
+  scrubber?: string;
+  comment?: string; // Schema-derived comment for YAML generation
+}
+
+interface ConnectAnnotatedExample {
+  title: string;
+  summary: string;
+  config: string;
+}
+
+// RawComponentSpec manually defined to include all properties from all component types
+export interface RawComponentSpec {
+  name: string;
+  type: string;
+  status?: string;
+  support_level?: string;
+  plugin: boolean;
+  summary?: string;
+  description?: string;
+  categories?: string[] | null;
+  footnotes?: string;
+  examples?: ConnectAnnotatedExample[];
+  config?: RawFieldSpec;
+  version?: string;
+}
+
+export type BloblangParams = BloblangFunctionSpec['params'];
+export type BloblangParam = NonNullable<BloblangParams['named']>[number];
+export type MethodCatSpec = NonNullable<BloblangMethodSpec['categories']>[number];
+export type ExampleSpec = NonNullable<BloblangFunctionSpec['examples']>[number];
+
 // Represents the stability status of a Benthos component or feature.
 export const CONNECT_COMPONENT_STATUS = [
   // The component/feature is considered stable and recommended for production use.
@@ -17,28 +75,6 @@ export const CONNECT_COMPONENT_STATUS = [
 export type KnownConnectComponentStatus = (typeof CONNECT_COMPONENT_STATUS)[number];
 
 export type ConnectComponentStatus = (typeof CONNECT_COMPONENT_STATUS)[number] | (string & {});
-
-export const COMPONENT_CATEGORIES = {
-  // Infrastructure
-  DATABASES: 'databases',
-  MESSAGING: 'messaging',
-  STORAGE: 'storage',
-  API: 'api',
-
-  // Cloud Providers
-  AWS: 'aws',
-  GCP: 'gcp',
-  AZURE: 'azure',
-  CLOUD: 'cloud',
-
-  // Data Formats
-  EXPORT: 'export',
-  // Other
-  TRANSFORMATION: 'transformation',
-  MONITORING: 'monitoring',
-} as const;
-
-export type ComponentCategory = (typeof COMPONENT_CATEGORIES)[keyof typeof COMPONENT_CATEGORIES]; // Categorizes the primary function of a Benthos component within a pipeline.
 
 export const CONNECT_COMPONENT_TYPE = [
   // Buffers messages, often used between inputs/outputs and processing stages
@@ -74,9 +110,11 @@ export const CONNECT_COMPONENT_TYPE = [
   // should be broken down into individual messages. Often used within input components.
   // Example: `lines`, `csv`, `tar`.
   'scanner',
-] as const;
+  'tracer',
+  // used exclusively for skipping the wizard
+  'custom',
+] as const satisfies readonly RawComponentSpec['type'][];
 
-// Strict type for known component types (used in forms and strict type checking)
 export type ConnectComponentType = (typeof CONNECT_COMPONENT_TYPE)[number];
 
 export const CONNECT_FIELD_TYPE = [
@@ -102,8 +140,9 @@ export const CONNECT_FIELD_TYPE = [
   'scanner',
 ] as const;
 
-export type ConnectFieldType = (typeof CONNECT_FIELD_TYPE)[number] | (string & {}); // FieldKind represents the structural nature of a configuration field.
+export type ConnectFieldType = (typeof CONNECT_FIELD_TYPE)[number] | (string & {});
 
+// FieldKind represents the structural nature of a configuration field.
 export const CONNECT_FIELD_KIND = [
   // A single, scalar value. This could be a simple primitive (string, int, bool)
   // or a single object representing a component configuration.
@@ -120,417 +159,43 @@ export const CONNECT_FIELD_KIND = [
   'map',
 ] as const;
 
-export type ConnectFieldKind = (typeof CONNECT_FIELD_KIND)[number] | (string & {}); // AnnotatedExample provides a documented, illustrative configuration snippet for a component.
+export type ConnectFieldKind = (typeof CONNECT_FIELD_KIND)[number] | (string & {});
 
-export interface ConnectAnnotatedExample {
-  // A concise title for the example, summarizing its purpose.
-  // Example: "Reading JSON from Kafka and Writing to S3"
-  title: string;
-
-  // A brief summary explaining what the example demonstrates or achieves.
-  summary: string;
-
-  // A YAML or JSON configuration snippet showcasing the component's usage in this example.
-  config: string;
-} // FieldSpec describes the specification for a single field within a Benthos component's configuration.
-
-export interface ConnectFieldSpec<T = unknown> {
-  // The name of the field as it appears in the configuration (e.g., `address`, `batch_policy`).
-  name: string;
-
-  // The data type expected for this field's value.
-  type: ConnectFieldType;
-
-  // The structural kind of this field (e.g., a single value, a list, a map).
-  kind: ConnectFieldKind;
-
-  // A detailed explanation of the field's purpose, behavior, and accepted values, in Asciidoc format.
-  // This is the primary documentation for the field.
-  description?: string;
-
-  // If true, this field is considered an advanced option. Advanced fields are typically
-  // optional and used for less common or more fine-grained configurations.
-  // UIs might hide these by default or place them in an "Advanced" section.
-  is_advanced?: boolean;
-
-  // If true, this field is deprecated. It still exists for backward compatibility
-  // but should be avoided in new configurations and may be removed in a future version.
-  is_deprecated?: boolean;
-
-  // If true, this field is optional, even if it doesn't have a `default` value.
-  // This flag helps prevent linting errors when the field is legitimately omitted by the user.
-  // It signifies that Benthos can operate correctly without this field being explicitly set.
-  is_optional?: boolean;
-
-  // If true, this field is expected to contain sensitive information such as passwords, API keys,
-  // or access tokens. UIs might mask or handle this field specially, and values might be scrubbed from logs.
-  is_secret?: boolean;
-
-  // The default value that Benthos will use for this field if it's not specified in the configuration.
-  // The type of this value will match the field's `type` and `kind`.
-  // Example: `true` for a boolean, `[]` for an array, `""` for a string, or an empty object `{}` for a component.
-  default?: T;
-
-  // If true, this field supports Bloblang function interpolation. This allows dynamic values
-  // to be inserted into the field using expressions like `${!timestamp_unix()}` or `${!json("foo.bar")}`.
-  interpolated?: boolean;
-
-  // If true, this field (which must be of type `String`) is expected to contain a Bloblang mapping.
-  // The string content itself will be parsed and executed as a Bloblang script.
-  // Example: `root = this.uppercase()`
-  bloblang?: boolean;
-
-  // A list of optional example values for this field, illustrating valid inputs.
-  // The type of elements in this array depends on the field's `type` and `kind`.
-  // Example: For a string field, `["example_value1", "another_example"]`.
-  examples?: T[];
-
-  // For string fields that accept a predefined set of values (enum-like), this provides
-  // a list of those options, each with a corresponding summary/description.
-  // Example: `[["option_a", "Enables feature A"], ["option_b", "Enables feature B"]]`.
-  annotated_options?: [string, string][];
-
-  // For string fields that accept a predefined set of values (enum-like), this provides
-  // a list of those possible string values when detailed summaries are not needed.
-  // Example: `["value1", "value2", "value3"]`.
-  options?: string[];
-
-  // For fields of `type: FieldType.Object`, this array describes the specifications
-  // of its nested child fields.
-  children?: ConnectFieldSpec[];
-
-  // The Benthos version (e.g., "3.45.0") in which this specific field was introduced or significantly changed.
-  version?: string;
-
-  // An optional Bloblang mapping used to lint (validate) the value of this field.
-  // The mapping should evaluate to an error message (string or array of strings) if validation fails,
-  // or to `null` or `deleted()` if the value is valid.
-  // This is used by linters to check configuration correctness.
-  linter?: string;
-
-  // An optional Bloblang mapping used to scrub (redact or hide) sensitive information
-  // from this field's value when it's displayed (e.g., in logs, API responses, or UI).
-  // It should transform the value to a redacted form (e.g., "!!!SECRET_SCRUBBED!!!") if it's sensitive.
-  scrubber?: string;
-
-  // Raw JSON Schema reference for on-demand YAML generation
-  // This allows us to avoid complex upfront transformation and generate YAML directly from JSON Schema
-  _jsonSchema?: unknown;
-} // Describes a Bloblang function, which is a named operation that can be called within a Bloblang mapping.
-// Example functions: `batch_index()`, `env("VAR_NAME")`, `uuid_v4()`.
-
-export interface BloblangFunctionSpec {
-  // The release status of the function, indicating its stability and readiness for use.
-  status: ConnectComponentStatus;
-
-  // A high-level grouping for the function, used for organizing documentation or UI elements.
-  // Example: "Message Info", "String Manipulation", "Environment Variables".
-  category: string;
-
-  // Name of the function (as it appears in config), e.g. "count".
-  name: string;
-
-  // Description of the functions purpose (in markdown).
-  description?: string;
-
-  // Params defines the expected arguments of the function. Either:
-  // - { variadic: true } // no named params, unlimited positional
-  // - { named: [ … ] } // an array of named parameter definitions
-  params: BloblangParams;
-
-  // Examples shows general usage for the function.
-  examples?: ExampleSpec[];
-
-  // If true, this function may perform side effects (e.g., reading a file with `file()`,
-  // accessing environment variables with `env()`) or depend on external, mutable state.
-  // If false, the function is pure, meaning its output depends solely on its inputs and it has no side effects.
-  impure: boolean;
-
-  // Version is the Benthos version this component was introduced.
-  version?: string;
-} // ValueType specifies the data type of a Bloblang value, typically for function/method parameters or results.
-
+// ValueType specifies the data type of a Bloblang value, typically for function/method parameters or results.
 export const CONNECT_VALUE_TYPE = [
-  'string', // A textual string.
-  'bytes', // A sequence of raw bytes.
-  'number', // A numeric value, which can be an integer or a float.
-  'bool', // A boolean value (true or false).
-  'timestamp', // A specific point in time, often represented internally as a Go `time.Time`.
-  'array', // An ordered list of Bloblang values.
-  'object', // A collection of key-value pairs, where keys are strings and values are Bloblang values.
-  'null', // Represents a JSON null value.
-  'delete', // A special type indicating that a field should be removed from its parent object during mapping.
-  'nothing', // Represents the absence of a value, distinct from null. Often used to conditionally omit fields or signal a non-match.
-  'query expression', // A Bloblang expression or mapping itself, which can be evaluated.
-  'unknown', // The type is not determined or can vary.
-  'integer', // A whole number (a more specific form of `TNumber`).
-  'float', // A floating-point number (a more specific form of `TNumber`).
+  'String', // A textual string value in Bloblang. Example: `"hello world"`
+  'Number', // A numeric value (can be an integer or floating-point). Example: `42`, `3.14`
+  'Bool', // A boolean value. Example: `true`, `false`
+  'Timestamp', // A timestamp representing a specific moment in time.
+  'Array', // An array (list) of values. Example: `["a", "b", "c"]`
+  'Object', // A structured object (map) of key-value pairs. Example: `{ "key": "value" }`
+  'Null', // The special null value indicating the absence of a value.
+  'Unknown', // The type is not strictly defined or the function/method accepts any type.
+  'Query', // A Bloblang query expression that is evaluated dynamically.
 ] as const;
 
-export type ConnectValueType = (typeof CONNECT_VALUE_TYPE)[number] | (string & {}); // Describes a single named parameter for a Bloblang function or method.
+export type ConnectValueType = (typeof CONNECT_VALUE_TYPE)[number] | (string & {});
 
-export interface BloblangParam {
-  // The identifier for the parameter as used in named parameter calls (e.g., `path`, `min`, `max`).
+export interface ConnectComponentSpec extends Omit<RawComponentSpec, 'type' | 'status' | 'config'> {
   name: string;
-
-  // A description of what the parameter is used for and its expected behavior.
-  description?: string;
-
-  // The expected Bloblang data type for this parameter's value.
-  type: ConnectValueType;
-
-  // If true, the value provided for this parameter must be a literal (static value) and
-  // cannot be a dynamic Bloblang expression that needs to be evaluated.
-  // If false (default), dynamic expressions are allowed.
-  no_dynamic: boolean;
-
-  // If true, any scalar literal (numbers, booleans) passed to this parameter will be
-  // directly converted to its primitive literal type (e.g., a Bloblang number remains a number object).
-  // If false, they might be wrapped in a generic Bloblang "Value" type.
-  scalars_to_literal: boolean;
-
-  // If true, this parameter is optional; callers do not have to specify it.
-  // If false or omitted, it is required.
-  is_optional?: boolean;
-
-  // The default value to use if this optional parameter is not provided by the caller.
-  // The type of this `default` value should be consistent with the parameter's `type`.
-  // If absent, there is no default value.
-  default?: unknown;
-} // BloblangParams defines the expected arguments of a function or method.
-
-export interface BloblangParams {
-  // If true, this function/method accepts an arbitrary number of unnamed arguments (variadic).
-  // Example: `foo(1, "bar", true)` where `foo` is variadic.
-  variadic?: boolean;
-
-  // If `variadic` is false and this list is present, it defines the named, typed parameters
-  // that the function/method accepts. These are typically passed in `key: value` form if multiple
-  // exist, or positionally if only one.
-  // Example: `foo(name: "bar", age: 7)` or `bar("single_arg")`.
-  named?: BloblangParam[];
-} // Describes a Bloblang method (e.g. “map_each”, “join”, “upper_case”).
-// Methods are invoked on a value (e.g. `this.some_field.uppercase()`).
-
-export interface BloblangMethodSpec {
-  // The release status of the function.
-  status: ConnectComponentStatus;
-
-  // Name of the method (as it appears in config), for examples "abs", "all" or "apply".
-  name: string;
-
-  // Description of the method purpose (in markdown).
-  description?: string;
-
-  // Describes this method’s parameters, in the same shape as functions:
-  // either variadic or a list of named params.
-  params: BloblangParams;
-
-  // Examples shows general usage for the method.
-  examples?: ExampleSpec[];
-
-  // Categories that this method fits within.
-  categories?: MethodCatSpec[];
-
-  // When true, this function may perform side effects or depend on external
-  // state (e.g. reading files, environment variables). When false, it’s pure.
-  impure: boolean;
-
-  // Version is the Benthos version this component was introduced.
-  version?: string;
-} // MethodCatSpec describes how a Bloblang method behaves in the context of a specific
-// data type category (e.g., when the method is called on a string, an array, or a number).
-
-export interface MethodCatSpec {
-  // The name of the data type category this specification applies to (e.g., "Strings", "Arrays", "Numbers").
-  category: string;
-  // A description of how the method functions and what it returns when applied to values of this category.
-  description: string;
-  // Examples specific to this method's usage within this particular data type category.
-  examples?: ExampleSpec[];
-} // ExampleSpec provides a general example for a Bloblang function or method,
-// showing input, the mapping/expression, and the expected output.
-
-export interface ExampleSpec {
-  // An example input value that would be provided to the Bloblang mapping, function, or method.
-  input?: unknown;
-
-  // The expected output value that results from applying the `mapping` to the `input`.
-  output?: unknown;
-
-  // The Bloblang mapping, function call, or method invocation being demonstrated.
-  // This is the core of the example.
-  mapping?: string;
-
-  // An optional description of what this specific example aims to illustrate or highlight.
-  description?: string;
-} /**
- * PipelineRoot represents the root structure of the Benthos (Redpanda Connect) documentation manifest.
- * This manifest contains all specifications for components, Bloblang features,
- * and global configuration fields for a specific Benthos version. It serves as a comprehensive
- * schema for understanding and validating Benthos configurations.
- */
-
-export interface PipelineRoot {
-  // The Benthos version this manifest corresponds to. Example: `4.55.1`.
-  version: string;
-  // The UTC date and time when this manifest was generated. Example: `2025-05-19T16:27:47Z`.
-  date: string;
-  /**
-   * Specifications for the top-level Benthos configuration fields. These define the main
-   * sections of a Benthos configuration file, such as `http` (for the HTTP server),
-   * `input`, `buffer`, `pipeline` (containing processors), `output`, `logger`, `metrics`, `tracer`,
-   * and various resource sections (`*_resources`). Each item in the array is a `FieldSpec`
-   * describing one of these global configuration blocks. A typical Benthos configuration
-   * will include a subset of these top-level fields.
-   */
-  config: ConnectFieldSpec[];
-  /**
-   * A list of specifications for all available Buffer components.
-   * Buffers are used in Benthos to store messages temporarily between stages,
-   * providing resilience against backpressure or transient failures. A Benthos pipeline
-   * typically has one main buffer defined under the top-level `buffer` field in the config.
-   * Additional buffers can be defined as resources.
-   * This array lists all types of buffers (e.g., `memory`, `none`, `sqlite`) and their configurations.
-   */
-  buffers?: ConnectComponentSpec[];
-  /**
-   * A list of specifications for all available Cache components.
-   * Caches provide a key-value store that can be used by various Benthos components,
-   * particularly processors (e.g., for deduplication, enrichment) or rate limits.
-   * Caches are typically defined in the `cache_resources` section of the configuration
-   * and then referenced by their label. This array lists all types of caches
-   * (e.g., `redis`, `memory`, `s3`) and their configurations.
-   */
-  caches?: ConnectComponentSpec[];
-  /**
-   * A list of specifications for all available Input components.
-   * Inputs are responsible for consuming data from external sources. A Benthos configuration
-   * typically defines one main input under the top-level `input` field. Multiple inputs
-   * can be combined using a `broker` input or defined as resources in `input_resources`.
-   * This array lists all types of inputs (e.g., `kafka`, `http_server`, `file`, `s3`)
-   * and their configurations.
-   */
-  inputs?: ConnectComponentSpec[];
-  /**
-   * A list of specifications for all available Output components.
-   * Outputs are responsible for sending processed data to external destinations. A Benthos
-   * configuration typically defines one main output under the top-level `output` field.
-   * Multiple outputs can be used via a `broker` output or defined as resources in `output_resources`.
-   * This array lists all types of outputs (e.g., `kafka`, `http_client`, `s3`, `stdout`)
-   * and their configurations.
-   */
-  outputs?: ConnectComponentSpec[];
-  /**
-   * A list of specifications for all available Processor components.
-   * Processors are used to transform, filter, enrich, or route messages as they flow
-   * through the pipeline. They are defined within the `pipeline.processors` array or
-   * as resources in `processor_resources`. This array lists all types of processors
-   * (e.g., `bloblang`, `json`, `log`, `switch`) and their configurations.
-   */
-  processors?: ConnectComponentSpec[];
-  /**
-   * A list of specifications for all available Metrics components.
-   * Metrics components configure how Benthos instance metrics (e.g., message counts,
-   * latencies, component statuses) are exposed or sent to monitoring systems. A Benthos
-   * configuration typically has one main metrics component defined under the top-level
-   * `metrics` field. This array lists all types of metrics components (e.g., `prometheus`,
-   * `statsd`, `aws_cloudwatch`) and their configurations.
-   */
-  metrics?: ConnectComponentSpec[];
-  /**
-   * A list of specifications for all available Tracer components.
-   * Tracers configure distributed tracing, allowing users to monitor the flow of messages
-   * across Benthos and other instrumented services. A Benthos configuration typically
-   * has one main tracer defined under the top-level `tracer` field. This array lists
-   * all types of tracers (e.g., `jaeger`, `open_telemetry_collector`, `none`)
-   * and their configurations.
-   */
-  tracers?: ConnectComponentSpec[];
-  /**
-   * A list of specifications for all available Scanner components.
-   * Scanners define how a raw stream of bytes (e.g., from a file or network connection)
-   * is broken down into individual messages. They are often used within specific input
-   * components that handle unstructured or delimited data. This array lists all types
-   * of scanners (e.g., `lines`, `csv`, `tar`, `decompress`) and their configurations.
-   */
-  scanners?: ConnectComponentSpec[];
-  /**
-   * A list of specifications for all available Rate Limit components.
-   * Rate limits are used to control the frequency of operations, helping to prevent
-   * overloading downstream services or to adhere to API quotas. Rate limits are
-   * typically defined in the `rate_limit_resources` section of the configuration
-   * and then referenced by other components. This array lists all types of rate limits
-   * (e.g., `local`, `redis`) and their configurations.
-   * Note: The key in the source JSON is "rate-limits".
-   */
-  'rate-limits'?: ConnectComponentSpec[];
-  /**
-   * A list of specifications for all available built-in Bloblang functions.
-   * Bloblang is Benthos's powerful data mapping and transformation language. This
-   * array details each standard function, its parameters, and usage.
-   * Note: The key in the source JSON is "bloblang-functions".
-   */
-  'bloblang-functions'?: BloblangFunctionSpec[];
-  /**
-   * A list of specifications for all available built-in Bloblang methods.
-   * Methods in Bloblang are functions that are called on a context value (e.g., `this.field.uppercase()`).
-   * This array details each standard method, its parameters, and usage.
-   * Note: The key in the source JSON is "bloblang-methods".
-   */
-  'bloblang-methods'?: BloblangMethodSpec[];
-} // ComponentSpec describes the full specification of a Benthos component (e.g., an input, processor, output).
-
-export interface ConnectComponentSpec {
-  // The unique, machine-readable name of the component (e.g., `aws_s3`, `kafka`, `json_parser`).
-  // This name is used in the configuration file to specify the component type.
-  name: string;
-
-  // Type of the component (input, output, etc)
   type: ConnectComponentType;
-
-  // Stability status: "stable", "beta", "experimental", or "deprecated".
-  status: ConnectComponentStatus;
-
-  // An abstract representation of the component's support level. This can vary (e.g., "community",
-  // "enterprise", "core") and might influence how it's displayed or prioritized by tooling.
+  status?: ConnectComponentStatus;
   support_level?: string;
-
-  // Always true for components that are dynamically loadable as plugins. False for built-in components
-  // that are not separable as plugins.
   plugin: boolean;
-
-  // A brief, one-sentence summary of the component's purpose, in Asciidoc format.
-  // Should be concise and quickly convey what the component does.
-  // Example: "Reads messages from one or more Kafka topics."
   summary?: string;
-
-  // A more detailed description of the component, its behavior, common use cases, and important
-  // considerations, in Asciidoc format. This forms the main part of the component's documentation.
   description?: string;
-
-  // Optional tags or categories for UI grouping or filtering.
-  // Example: `["Services", "AWS"]` or `["Utility"]`. Can be `null` if not categorized.
-  categories: string[] | null;
-
-  // Additional notes, disclaimers, or important information related to the component that doesn't
-  // fit into the main `description`, in Asciidoc format.
+  categories?: string[] | null;
   footnotes?: string;
-
-  // Examples demonstrating use cases for the component.
   examples?: ConnectAnnotatedExample[];
-
-  // A summary of each field in the component configuration.
-  config: ConnectFieldSpec;
-
-  // Version is the Benthos version this component was introduced.
+  config?: RawFieldSpec;
   version?: string;
-
-  // A URL to the component's logo.
   logoUrl?: string;
 }
 
-export interface ExtendedConnectComponentSpec extends ConnectComponentSpec {
+/**
+ * Extended component spec with additional UI-specific metadata like external docs and logos
+ */
+export type ExtendedConnectComponentSpec = ConnectComponentSpec & {
   // External documentation URLs and metadata for components from external sources
   externalDocs?: {
     primaryUrl?: string;
@@ -538,13 +203,19 @@ export interface ExtendedConnectComponentSpec extends ConnectComponentSpec {
     format?: 'markdown' | 'asciidoc';
     logoUrl?: string;
   };
-}
+};
 
-/**
- * Represents a semantic category for grouping components in the UI
- * Used for the category filter dropdown in connect-tiles.tsx
- */
-export interface ConnectNodeCategory {
-  id: string;
-  name: string;
-}
+export type ConnectConfigKey =
+  | 'input'
+  | 'output'
+  | 'pipeline'
+  | 'cache_resources'
+  | 'buffer'
+  | 'rate_limit_resources'
+  | 'scanner'
+  | 'metrics'
+  | 'tracer'
+  | 'scanner'
+  | 'redpanda'; // Top-level block for redpanda_common components
+
+export type ConnectConfigObject = Record<ConnectConfigKey, unknown>;

@@ -27,7 +27,7 @@ message LicenseSignupRequest {
     }
   ];
   string company_name = 3 [
-    (buf.validate.field).ignore = IGNORE_IF_DEFAULT_VALUE,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
     (buf.validate.field).string = {
       pattern: "^[\\p{L}\\p{M}\\p{N} '_-]+$"
       min_len: 1

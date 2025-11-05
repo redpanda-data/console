@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { McpServerStateBadge } from 'components/ui/mcp-server-state-badge';
+import { McpServerStateBadge } from 'components/ui/mcp/mcp-server-state-badge';
 import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
 

@@ -92,7 +92,7 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
   setup(p);
 
   // This transport handles the grpc requests for the embedded app.
-  const transport = createConnectTransport({
+  const dataplaneTransport = createConnectTransport({
     baseUrl: getGrpcBasePath(p.urlOverride?.grpc),
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
     jsonOptions: {
@@ -109,7 +109,7 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
       <BrowserRouter basename={basePath}>
         <HistorySetter />
         <ChakraProvider resetCSS={false} theme={redpandaTheme} toastOptions={redpandaToastOptions}>
-          <TransportProvider transport={transport}>
+          <TransportProvider transport={dataplaneTransport}>
             <QueryClientProvider client={queryClient}>
               <ErrorBoundary>
                 <AppContent />

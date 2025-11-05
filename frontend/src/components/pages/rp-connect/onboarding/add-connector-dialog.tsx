@@ -24,7 +24,7 @@ export const AddConnectorDialog = ({
   <Dialog onOpenChange={onCloseAddConnector} open={isOpen}>
     <DialogContent size="xl">
       <DialogHeader>
-        <DialogTitle>Add a Connector</DialogTitle>
+        <DialogTitle>Add a connector</DialogTitle>
         <DialogDescription>Add a connector to your pipeline.</DialogDescription>
       </DialogHeader>
       <DialogBody>
@@ -32,7 +32,6 @@ export const AddConnectorDialog = ({
           className="px-0 pt-0"
           componentTypeFilter={connectorType ? [connectorType] : undefined}
           gridCols={3}
-          hideFilters
           hideHeader
           onChange={onAddConnector}
           variant="ghost"

@@ -27,8 +27,8 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { RedpandaConnectComponentTypeBadge } from 'components/ui/connect/redpanda-connect-component-type-badge';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
-import { RedpandaConnectComponentTypeBadge } from 'components/ui/redpanda-connect-component-type-badge';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { Trash2 } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';

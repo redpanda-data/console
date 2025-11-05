@@ -4,6 +4,7 @@ import { memo, useMemo, useState } from 'react';
 
 import { AddConnectorDialog } from './add-connector-dialog';
 import { AddConnectorsCard } from './add-connectors-card';
+import { AddContextualVariablesCard } from './add-contextual-variables-card';
 import { AddSecretsCard } from './add-secrets-card';
 import { AddSecretsDialog } from './add-secrets-dialog';
 import type { ConnectComponentType } from '../types/schema';
@@ -13,7 +14,6 @@ type CreatePipelineSidebarProps = {
   onAddConnector: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
   detectedSecrets: string[];
   existingSecrets: string[];
-  secretDefaultValues: Record<string, string>;
   onSecretsCreated: () => void;
   editorContent: string;
 };
@@ -24,7 +24,6 @@ export const CreatePipelineSidebar = memo(
     onAddConnector,
     detectedSecrets,
     existingSecrets,
-    secretDefaultValues,
     onSecretsCreated,
     editorContent,
   }: CreatePipelineSidebarProps) => {
@@ -49,7 +48,6 @@ export const CreatePipelineSidebar = memo(
       closeAddConnector();
     };
 
-    // Separate existing and missing secrets
     const existingSecretsSet = new Set(existingSecrets);
     const missingSecrets = detectedSecrets.filter((secret) => !existingSecretsSet.has(secret));
 
@@ -59,7 +57,13 @@ export const CreatePipelineSidebar = memo(
     };
 
     return (
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
+        <AddConnectorsCard
+          editorContent={editorContent}
+          hasInput={hasInput}
+          hasOutput={hasOutput}
+          onAddConnector={handleConnectorTypeChange}
+        />
         <AddSecretsCard
           detectedSecrets={detectedSecrets}
           editorInstance={editorInstance}
@@ -67,18 +71,15 @@ export const CreatePipelineSidebar = memo(
           missingSecrets={missingSecrets}
           onOpenDialog={() => setIsSecretsDialogOpen(true)}
         />
+        <AddContextualVariablesCard editorContent={editorContent} editorInstance={editorInstance} />
 
         <AddSecretsDialog
-          defaultValues={secretDefaultValues}
           existingSecrets={existingSecrets}
           isOpen={isSecretsDialogOpen}
           missingSecrets={missingSecrets}
           onClose={() => setIsSecretsDialogOpen(false)}
           onSecretsCreated={handleSecretsCreated}
         />
-
-        <AddConnectorsCard hasInput={hasInput} hasOutput={hasOutput} onAddConnector={handleConnectorTypeChange} />
-
         <AddConnectorDialog
           connectorType={selectedConnector}
           isOpen={isAddConnectorOpen}

@@ -6,10 +6,11 @@ import { PlusIcon } from 'lucide-react';
 import { memo } from 'react';
 
 import { getConnectorTypeBadgeProps } from './connector-badges';
-import { CONNECT_COMPONENT_TYPE, type ConnectComponentType } from '../types/schema';
+import type { ConnectComponentType } from '../types/schema';
 
-// Derive processor types from CONNECT_COMPONENT_TYPE (all types except input/output)
-const processorTypes = CONNECT_COMPONENT_TYPE.filter((t) => t !== 'input' && t !== 'output');
+const allowedConnectorTypes: ConnectComponentType[] = ['processor', 'cache', 'buffer'];
+
+const SCANNER_SUPPORTED_INPUTS = ['aws_s3', 'gcp_cloud_storage', 'azure_blob_storage'];
 
 const AddConnectorButton = ({
   type,
@@ -32,30 +33,43 @@ export const AddConnectorsCard = memo(
     onAddConnector,
     hasInput,
     hasOutput,
+    editorContent,
   }: {
     onAddConnector: (type: ConnectComponentType) => void;
     hasInput?: boolean;
     hasOutput?: boolean;
-  }) => (
-    <Card>
-      <CardHeader>
-        <CardTitle>Connectors</CardTitle>
-        <CardDescription>Add connectors to your pipeline.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4 space-y-0">
-        <div className="flex flex-wrap gap-2">
-          {processorTypes.map((processorType) => (
-            <AddConnectorButton key={processorType} onClick={onAddConnector} type={processorType} />
-          ))}
-        </div>
-        {!(hasInput && hasOutput) && (
-          <div className="flex flex-col gap-2">
-            <Separator className="mb-2" />
-            {!hasInput && <AddConnectorButton onClick={onAddConnector} type="input" />}
-            {!hasOutput && <AddConnectorButton onClick={onAddConnector} type="output" />}
+    editorContent?: string;
+  }) => {
+    const inputSupportsScanner = editorContent
+      ? SCANNER_SUPPORTED_INPUTS.some((inputType) => {
+          // Match input: <inputType>: pattern
+          const regex = new RegExp(`input:\\s*\n\\s*${inputType}:`);
+          return regex.test(editorContent);
+        })
+      : false;
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Connectors</CardTitle>
+          <CardDescription>Add connectors to your pipeline.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 space-y-0">
+          <div className="flex flex-wrap gap-2">
+            {allowedConnectorTypes.map((connectorType) => (
+              <AddConnectorButton key={connectorType} onClick={onAddConnector} type={connectorType} />
+            ))}
+            {inputSupportsScanner && <AddConnectorButton onClick={onAddConnector} type="scanner" />}
           </div>
-        )}
-      </CardContent>
-    </Card>
-  )
+          {!(hasInput && hasOutput) && (
+            <div className="flex flex-col gap-2">
+              <Separator className="mb-2" />
+              {!hasInput && <AddConnectorButton onClick={onAddConnector} type="input" />}
+              {!hasOutput && <AddConnectorButton onClick={onAddConnector} type="output" />}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
 );

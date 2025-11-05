@@ -484,6 +484,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	r.Mount(grpcreflect.NewHandlerV1Alpha(reflector))
 }
 
+// Routes returns the api's mux router
+func (api *API) Routes() *chi.Mux {
+	return api.routes()
+}
+
 // All the routes for the application are defined in one place.
 func (api *API) routes() *chi.Mux {
 	baseRouter := chi.NewRouter()

@@ -4,6 +4,13 @@ import type { ConnectError } from '@connectrpc/connect';
 import type { ConnectQueryKey, UseQueryOptions } from '@connectrpc/connect-query';
 import type { Query } from '@tanstack/react-query';
 
+export const ONE_SECOND = 1000; // ms
+export const ONE_MINUTE = 60 * ONE_SECOND;
+
+export const LONG_LIVED_CACHE_STALE_TIME = 5 * ONE_MINUTE;
+export const MEDIUM_LIVED_CACHE_STALE_TIME = 2 * ONE_MINUTE;
+export const SHORT_LIVED_CACHE_STALE_TIME = 1 * ONE_MINUTE;
+export const NO_LIVED_CACHE_STALE_TIME = 0;
 export const MAX_PAGE_SIZE = 500;
 
 /**

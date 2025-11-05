@@ -1,4 +1,6 @@
 version: v2
+inputs:
+  - directory: proto
 managed:
   enabled: true
   disable:
@@ -15,6 +17,10 @@ managed:
   override:
     - file_option: go_package_prefix
       value: github.com/redpanda-data/console/backend/pkg/protogen
+      module: buf.build/redpandadata/dataplane
+    - file_option: go_package_prefix
+      value: buf.build/gen/go/redpandadata/core/protocolbuffers/go
+      module: buf.build/redpandadata/core
 plugins:
   - remote: buf.build/protocolbuffers/go:v1.36.0
     out: backend/pkg/protogen
@@ -27,7 +33,7 @@ plugins:
     opt:
       - paths=source_relative
       - require_unimplemented_servers=false
-  - remote: buf.build/grpc-ecosystem/gateway:v2.18.0
+  - remote: buf.build/grpc-ecosystem/gateway:v2.27.3
     out: backend/pkg/protogen
     opt:
       - paths=source_relative

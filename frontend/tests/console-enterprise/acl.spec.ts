@@ -1,5 +1,4 @@
-import { type Page, test } from '@playwright/test';
-
+import { expect, type Page, test } from '@playwright/test';
 import {
   ModeAllowAll,
   ModeCustom,
@@ -1223,7 +1222,7 @@ test.describe('Allow all operations', () => {
           selectorValue: '',
           operations: {},
           resourceType: type,
-        }) as Rule
+        }) as Rule,
     );
 
     aclPages.map(({ createPage, type }) => {
@@ -1276,6 +1275,301 @@ test.describe('Allow all operations', () => {
           await aclPage.validateSharedConfig();
         });
       });
+    });
+  });
+});
+
+test.describe('Multiples ACLs, different hosts but same role', () => {
+  const firstHost = '*';
+  const secondHost = '1.1.1.1';
+
+  const firstACLRules: Rule[] = [
+    {
+      id: 0,
+      resourceType: ResourceTypeCluster,
+      mode: ModeCustom,
+      selectorType: ResourcePatternTypeLiteral,
+      selectorValue: 'kafka-cluster',
+      operations: {
+        DESCRIBE: OperationTypeAllow,
+        CREATE: OperationTypeAllow,
+        ALTER: OperationTypeDeny,
+        CLUSTER_ACTION: OperationTypeAllow,
+      },
+    },
+    {
+      id: 1,
+      resourceType: ResourceTypeTopic,
+      mode: ModeCustom,
+      selectorType: ResourcePatternTypeLiteral,
+      selectorValue: 'events-topic',
+      operations: {
+        DESCRIBE: OperationTypeAllow,
+        READ: OperationTypeAllow,
+        WRITE: OperationTypeAllow,
+        CREATE: OperationTypeAllow,
+        DELETE: OperationTypeDeny,
+      },
+    },
+    {
+      id: 2,
+      resourceType: ResourceTypeTransactionalId,
+      mode: ModeCustom,
+      selectorType: ResourcePatternTypeLiteral,
+      selectorValue: '*',
+      operations: {
+        DESCRIBE: OperationTypeAllow,
+      },
+    },
+  ];
+
+  const secondACLRules: Rule[] = [
+    {
+      id: 0,
+      resourceType: ResourceTypeTopic,
+      mode: ModeCustom,
+      selectorType: ResourcePatternTypeLiteral,
+      selectorValue: 'payments-topic',
+      operations: {
+        DESCRIBE: OperationTypeAllow,
+        READ: OperationTypeAllow,
+        WRITE: OperationTypeAllow,
+      },
+    },
+    {
+      id: 1,
+      resourceType: ResourceTypeTopic,
+      mode: ModeCustom,
+      selectorType: ResourcePatternTypePrefix,
+      selectorValue: 'logs-',
+      operations: {
+        DESCRIBE: OperationTypeAllow,
+        READ: OperationTypeAllow,
+      },
+    },
+  ];
+
+  const roleName = generatePrincipalName();
+
+  test('Create 2 ACLs with same role, 1 with host * and 1 with host 1.1.1.1', async ({ page }) => {
+    test.setTimeout(180000); // 3 minutes timeout for this complex multi-step test
+
+    await test.step('Create first ACL host *', async () => {
+      const rolePage = new RolePage(page);
+      await rolePage.goto();
+
+      await test.step('Set role name and host', async () => {
+        await rolePage.setPrincipal(roleName);
+        await rolePage.setHost(firstHost);
+      });
+
+      await test.step('Configure all rules', async () => {
+        await rolePage.configureRules(firstACLRules);
+      });
+
+      await test.step('Verify the summary shows the correct operations', async () => {
+        await rolePage.validateAllSummaryRules(firstACLRules);
+      });
+
+      await test.step('Submit the form', async () => {
+        await rolePage.submitForm();
+      });
+
+      await test.step('Wait for navigation to detail page', async () => {
+        await rolePage.waitForDetailPage();
+      });
+    });
+
+    await test.step('Create second ACL host 1.1.1.1', async () => {
+      const rolePage = new RolePage(page);
+      await rolePage.goto();
+
+      await test.step('Set role name and host', async () => {
+        await rolePage.setPrincipal(roleName);
+        await rolePage.setHost(secondHost);
+      });
+
+      await test.step('Configure topic rules', async () => {
+        await rolePage.configureRules(secondACLRules);
+      });
+
+      await test.step('Verify the summary shows the correct operations', async () => {
+        await rolePage.validateAllSummaryRules(secondACLRules);
+      });
+
+      await test.step('Submit the form', async () => {
+        await rolePage.submitForm();
+      });
+
+      await test.step('Wait for navigation to detail page', async () => {
+        await rolePage.waitForDetailPage();
+      });
+    });
+
+    await test.step('Validate role appears in the list', async () => {
+      const rolePage = new RolePage(page);
+      await rolePage.gotoList();
+
+      await page.getByTestId('search-field-input').fill(roleName);
+
+      // Verify role appears in the list (only one item for the role, regardless of multiple hosts)
+      const roleListItem = page.getByTestId(`role-list-item-${roleName}`);
+      await expect(roleListItem).toBeVisible({ timeout: 1000 });
+    });
+
+    await test.step('Validate SecurityAclRulesTable shows both hosts', async () => {
+      const rolePage = new RolePage(page);
+
+      // Navigate to role detail page without host parameter
+      await page.goto(`/security/roles/${encodeURIComponent(roleName)}/details`);
+      await rolePage.waitForDetailPage();
+
+      // Verify SecurityAclRulesTable is displayed with both hosts
+      const firstHostRow = page.getByTestId(`role-acl-table-row-${firstHost}`);
+      await expect(firstHostRow).toBeVisible();
+
+      const secondHostRow = page.getByTestId(`role-acl-table-row-${secondHost}`);
+      await expect(secondHostRow).toBeVisible();
+
+      // Verify host cells show correct values
+      const firstHostCell = page.getByTestId(`role-acl-host-${firstHost}`);
+      await expect(firstHostCell).toHaveText(firstHost);
+
+      const secondHostCell = page.getByTestId(`role-acl-host-${secondHost}`);
+      await expect(secondHostCell).toHaveText(secondHost);
+
+      // Verify count cells show correct number of rules
+      const firstHostCount = page.getByTestId(`role-acl-count-${firstHost}`);
+      await expect(firstHostCount).toHaveText(firstACLRules.length.toString());
+
+      const secondHostCount = page.getByTestId(`role-acl-count-${secondHost}`);
+      await expect(secondHostCount).toHaveText(secondACLRules.length.toString());
+    });
+
+    await test.step('Click view button for first host and validate rules', async () => {
+      const rolePage = new RolePage(page);
+
+      // Click view button for first host
+      const viewFirstHostButton = page.getByTestId(`view-role-acl-${firstHost}`);
+      await viewFirstHostButton.click();
+
+      await rolePage.waitForDetailPage();
+
+      // Verify URL contains host parameter
+      await page.waitForURL((url) => url.href.includes(`host=${encodeURIComponent(firstHost)}`));
+
+      // Validate all rules from first ACL are present
+      await rolePage.validateAllDetailRules(firstACLRules, `RedpandaRole:${roleName}`, firstHost);
+    });
+
+    await test.step('Navigate back and click view button for second host', async () => {
+      const rolePage = new RolePage(page);
+
+      // Navigate back to detail page without host parameter
+      await page.goto(`/security/roles/${encodeURIComponent(roleName)}/details`);
+      await rolePage.waitForDetailPage();
+
+      // Verify SecurityAclRulesTable is shown again
+      await expect(page.getByTestId(`role-acl-table-row-${firstHost}`)).toBeVisible();
+
+      // Click view button for second host
+      const viewSecondHostButton = page.getByTestId(`view-role-acl-${secondHost}`);
+      await viewSecondHostButton.click();
+
+      await rolePage.waitForDetailPage();
+
+      // Verify URL contains second host parameter
+      await page.waitForURL(
+        `**/security/roles/${encodeURIComponent(roleName)}/details?host=${encodeURIComponent(secondHost)}`,
+      );
+
+      await page.waitForURL((url) => url.href.includes(`host=${encodeURIComponent(secondHost)}`));
+
+      // Validate all rules from second ACL are present
+      await rolePage.validateAllDetailRules(secondACLRules, `RedpandaRole:${roleName}`, secondHost);
+    });
+
+    await test.step('Navigate to update page without host parameter - verify HostSelector', async () => {
+      // Navigate directly to the update page without specifying host
+      await page.goto(`/security/roles/${encodeURIComponent(roleName)}/update`);
+
+      // Verify that HostSelector is displayed
+      const hostSelectorDescription = page.getByTestId('host-selector-description');
+      await expect(hostSelectorDescription).toBeVisible();
+
+      // Verify the title shows "Multiple hosts found"
+      await expect(page.getByText('Multiple hosts found')).toBeVisible();
+
+      // Verify both host options are shown
+      const firstHostRow = page.getByTestId(`host-selector-row-${firstHost}`);
+      await expect(firstHostRow).toBeVisible();
+
+      const secondHostRow = page.getByTestId(`host-selector-row-${secondHost}`);
+      await expect(secondHostRow).toBeVisible();
+    });
+
+    await test.step('choose first host from HostSelector and verify navigation', async () => {
+      const rolePage = new RolePage(page);
+
+      // Click on the first host row
+      const firstHostRow = page.getByTestId(`host-selector-row-${firstHost}`);
+      await firstHostRow.click();
+
+      // Verify navigation to update page with host parameter
+      await page.waitForURL(
+        `**/security/roles/${encodeURIComponent(roleName)}/update?host=${encodeURIComponent(firstHost)}`,
+      );
+
+      await page.waitForURL((url) => url.href.includes(`host=${encodeURIComponent(firstHost)}`));
+
+      // Verify we're on the update page (should show the form)
+      await rolePage.waitForUpdatePage();
+    });
+
+    await test.step('Validate updating one ACL does not affect the other', async () => {
+      const rolePage = new RolePage(page);
+
+      // Navigate to first ACL update page
+      await page.goto(`/security/roles/${encodeURIComponent(roleName)}/update?host=${encodeURIComponent(firstHost)}`);
+      await rolePage.waitForUpdatePage();
+
+      // Create modified rules with one operation changed (DESCRIBE from allow to deny in cluster rule)
+      const modifiedFirstACLRules: Rule[] = [
+        {
+          ...firstACLRules[0],
+          operations: {
+            ...firstACLRules[0].operations,
+            DESCRIBE: OperationTypeDeny, // Changed from allow to deny
+          },
+        },
+        firstACLRules[1], // Topic rule unchanged
+        firstACLRules[2], // TransactionalId rule unchanged
+      ];
+
+      // Apply the update
+      await rolePage.updateRules(modifiedFirstACLRules);
+
+      // Submit the form
+      await rolePage.submitForm();
+
+      // Wait for navigation back to detail page
+      await rolePage.waitForDetailPage();
+
+      // Verify URL contains the correct host parameter
+      await page.waitForURL((url) => url.href.includes(`host=${encodeURIComponent(firstHost)}`));
+
+      // Validate the updated rules
+      await rolePage.validateAllDetailRules(modifiedFirstACLRules, `RedpandaRole:${roleName}`, firstHost);
+
+      // Now verify the second ACL (host 1.1.1.1) was not affected
+      await page.goto(`/security/roles/${encodeURIComponent(roleName)}/details?host=${encodeURIComponent(secondHost)}`);
+      await rolePage.waitForDetailPage();
+
+      // Verify URL contains the second host parameter
+      await page.waitForURL((url) => url.href.includes(`host=${encodeURIComponent(secondHost)}`));
+
+      // Verify second ACL's rules remain unchanged
+      await rolePage.validateAllDetailRules(secondACLRules, `RedpandaRole:${roleName}`, secondHost);
     });
   });
 });

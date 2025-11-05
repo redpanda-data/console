@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Redpanda Data, Inc.
+ * Copyright 2025 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -83,12 +83,22 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
   const handleValueChange: OnChange = async () => {
     const editorValue = (await getEditorValue()) ?? '';
     const formattedEditorUri = editorUri?.toString();
-    if (formattedEditorUri) {
-      const result = await tsWorkerClient?.getEmitOutput(formattedEditorUri);
-      if (result) {
-        setTimeout(() => onValueChange(editorValue, result?.outputFiles[0]?.text));
+
+    let transpiledCode = editorValue; // Fallback to original code if transpilation fails
+
+    if (formattedEditorUri && tsWorkerClient) {
+      try {
+        const result = await tsWorkerClient.getEmitOutput(formattedEditorUri);
+        if (result?.outputFiles?.[0]?.text) {
+          transpiledCode = result.outputFiles[0].text;
+        }
+      } catch (_error) {
+        // Intentionally ignore transpilation errors and fall back to original code
       }
     }
+
+    // Always call onValueChange, even if transpilation failed
+    onValueChange(editorValue, transpiledCode);
   };
 
   return (

@@ -21,6 +21,7 @@ import {
   LinkIcon,
   ScaleIcon,
   ShieldCheckIcon,
+  UserCircleIcon,
 } from '@heroicons/react/outline';
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v6';
@@ -40,6 +41,9 @@ import { AdminDebugBundle } from './pages/admin/admin-debug-bundle';
 import AdminPageDebugBundleProgress from './pages/admin/admin-debug-bundle-progress';
 import LicenseExpiredPage from './pages/admin/license-expired-page';
 import UploadLicensePage from './pages/admin/upload-license-page';
+import { AIAgentCreatePage } from './pages/agents/create/ai-agent-create-page';
+import { AIAgentDetailsPage } from './pages/agents/details/ai-agent-details-page';
+import { AIAgentsListPage } from './pages/agents/list/ai-agent-list-page';
 import KafkaClusterDetails from './pages/connect/cluster-details';
 import KafkaConnectorDetails from './pages/connect/connector-details';
 import CreateConnector from './pages/connect/create-connector';
@@ -52,6 +56,7 @@ import KnowledgeBaseList from './pages/knowledgebase/knowledge-base-list';
 import { RemoteMCPCreatePage } from './pages/mcp-servers/create/remote-mcp-create-page';
 import { RemoteMCPDetailsPage } from './pages/mcp-servers/details/remote-mcp-details-page';
 import { RemoteMCPListPage } from './pages/mcp-servers/list/remote-mcp-list-page';
+import { APIConnectWizard } from './pages/overview/api-connect-wizard';
 import { BrokerDetails } from './pages/overview/broker-details';
 import Overview from './pages/overview/overview';
 import type { PageComponentType, PageProps } from './pages/page';
@@ -129,9 +134,9 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
       }
       const isDisabled = !isEnabled;
 
-      // Handle AI Agents and Knowledge Base routes with beta badge
+      // Handle Knowledge Base, MCP server and AI Agent routes with beta badge
       const title =
-        entry.path === '/agents' || entry.path === '/knowledgebases' || entry.path === '/mcp-servers'
+        entry.path === '/knowledgebases' || entry.path === '/mcp-servers' || entry.path === '/agents'
           ? getSidebarItemTitleWithBetaBadge({ route: entry })
           : entry.title;
 
@@ -258,6 +263,23 @@ const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: strin
       appGlobal.historyPush('/overview');
       window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
     }
+    // enableRpcnTiles /wizard route
+    if (
+      !isFeatureFlagEnabled('enableRpcnTiles') &&
+      path.includes('/rp-connect/wizard') &&
+      location.pathname !== '/overview'
+    ) {
+      appGlobal.historyPush('/overview');
+      window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
+    }
+    if (
+      !isFeatureFlagEnabled('enableServerlessOnboardingWizard') &&
+      path.includes('/get-started/api') &&
+      location.pathname !== '/overview'
+    ) {
+      appGlobal.historyPush('/overview');
+      window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
+    }
   }, [isKnowledgeBaseFeatureEnabled, isRemoteMcpFeatureEnabled, path, location.pathname]);
 
   return children;
@@ -356,6 +378,14 @@ function routeVisibility(
 export const APP_ROUTES: IRouteEntry[] = [
   MakeRoute<{}>('/overview', Overview, 'Overview', HomeIcon),
   MakeRoute<{ brokerId: string }>('/overview/:brokerId', BrokerDetails, 'Broker Details'),
+  MakeRoute<{}>(
+    '/get-started/api',
+    APIConnectWizard,
+    'Getting Started with API',
+    undefined,
+    undefined,
+    routeVisibility(() => isServerless() && isFeatureFlagEnabled('enableServerlessOnboardingWizard'))
+  ),
 
   MakeRoute<{}>('/topics', TopicList, 'Topics', CollectionIcon),
   MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
@@ -496,7 +526,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Connectors',
     undefined,
     undefined,
-    routeVisibility(() => isFeatureFlagEnabled('enableRpcnTiles'))
+    routeVisibility(() => isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded())
   ),
   MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Connectors'),
   MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId/edit', RpConnectPipelinesEdit, 'Connectors'),
@@ -554,4 +584,20 @@ export const APP_ROUTES: IRouteEntry[] = [
   ),
   MakeRoute<{}>('/mcp-servers/create', RemoteMCPCreatePage, 'Create Remote MCP Server'),
   MakeRoute<{ id: string }>('/mcp-servers/:id', RemoteMCPDetailsPage, 'Remote MCP Details'),
+
+  MakeRoute<{}>(
+    '/agents',
+    AIAgentsListPage,
+    'AI Agents',
+    UserCircleIcon,
+    true,
+    routeVisibility(
+      () =>
+        isEmbedded() &&
+        (!isServerless() || isFeatureFlagEnabled('enableAiAgentsInConsoleServerless')) && // we can override the isServerless check with a feature flag
+        isFeatureFlagEnabled('enableAiAgentsInConsole')
+    ) // show only in embedded mode with feature flag
+  ),
+  MakeRoute<{}>('/agents/create', AIAgentCreatePage, 'Create AI Agent'),
+  MakeRoute<{ id: string }>('/agents/:id', AIAgentDetailsPage, 'AI Agent Details'),
 ].filterNull();

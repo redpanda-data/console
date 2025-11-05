@@ -9,20 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
-import { useQuery } from '@connectrpc/connect-query';
 import { Box, DataTable, Text } from '@redpanda-data/ui';
-import { EmbeddedAclDetail } from 'components/pages/acls/new-acl/acl-details';
+import { UserAclsCard } from 'components/pages/roles/user-acls-card';
+import { UserInformationCard } from 'components/pages/roles/user-information-card';
+import { UserRolesCard } from 'components/pages/roles/user-roles-card';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+import type { UpdateRoleMembershipResponse } from 'protogen/redpanda/api/console/v1alpha1/security_pb';
 
 import { DeleteUserConfirmModal } from './delete-user-confirm-modal';
 import type { AclPrincipalGroup } from './models';
 import { ChangePasswordModal, ChangeRolesModal } from './user-edit-modals';
-import { UserRoleTags } from './user-permission-assignments';
-import type { ListACLsRequest } from '../../../protogen/redpanda/api/dataplane/v1/acl_pb';
-import { listACLs } from '../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
+import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
 import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
@@ -55,7 +54,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
 
   initPage(p: PageInitHelper): void {
     p.title = 'Create user';
-    p.addBreadcrumb('Access control', '/security');
+    p.addBreadcrumb('Access Control', '/security');
     p.addBreadcrumb('Users', '/security/users');
     p.addBreadcrumb(this.props.userName, '/security/users/');
 
@@ -87,44 +86,31 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
 
     const isServiceAccount = api.serviceAccounts.users.includes(userName);
 
-    let canEdit = true;
-    // The only thing that can be editted in a user is its roles
-    // If the roles api is not available, then no need for an edit button
-    if (!Features.rolesApi) {
-      canEdit = false;
-    }
-
     return (
       <PageContent>
-        <div className="flex justify-between">
+        <div className="flex flex-col gap-4">
+          <UserInformationCard
+            onEditPassword={api.isAdminApiConfigured ? () => (this.isChangePasswordModalOpen = true) : undefined}
+            saslMechanism={this.mechanism}
+            username={userName}
+          />
+          <UserPermissionDetailsContent
+            onChangeRoles={Features.rolesApi ? () => (this.isChangeRolesModalOpen = true) : undefined}
+            userName={userName}
+          />
           <div>
-            <h3>Permissions</h3>
-            <p className="text-gray-600 text-sm">The following permissions are assigned to this principal.</p>
-          </div>
-          <div className="flex gap-3">
-            {Features.rolesApi && (
-              <Button disabled={!canEdit} onClick={() => (this.isChangeRolesModalOpen = true)} variant="outline">
-                Assign roles
-              </Button>
-            )}
-            {api.isAdminApiConfigured && (
-              <Button disabled={!canEdit} onClick={() => (this.isChangePasswordModalOpen = true)} variant="outline">
-                Change password
-              </Button>
-            )}
-            {/* todo: refactor delete user dialog into a "fire and forget" dialog and use it in the overview list (and here) */}
             {isServiceAccount && (
               <DeleteUserConfirmModal
                 buttonEl={
                   <Button disabled={!isServiceAccount} variant="destructive">
-                    Delete
+                    Delete user
                   </Button>
                 }
                 onConfirm={async () => {
                   await api.deleteServiceAccount(userName);
 
                   // Remove user from all its roles
-                  const promises: Promise<unknown>[] = [];
+                  const promises: Promise<UpdateRoleMembershipResponse>[] = [];
                   for (const [roleName, members] of rolesApi.roleMembers) {
                     if (members.any((m) => m.name === userName)) {
                       // is this user part of this role?
@@ -141,41 +127,24 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
               />
             )}
           </div>
+
+          {/*Modals*/}
+          {api.isAdminApiConfigured && (
+            <ChangePasswordModal
+              isOpen={this.isChangePasswordModalOpen}
+              setIsOpen={(value: boolean) => (this.isChangePasswordModalOpen = value)}
+              userName={userName}
+            />
+          )}
+
+          {Features.rolesApi && (
+            <ChangeRolesModal
+              isOpen={this.isChangeRolesModalOpen}
+              setIsOpen={(value: boolean) => (this.isChangeRolesModalOpen = value)}
+              userName={userName}
+            />
+          )}
         </div>
-
-        <div className="start grid grid-cols-5 gap-3">
-          <div className="sm:col-span-5 md:col-span-3">
-            <UserPermissionDetailsContent userName={userName} />
-          </div>
-
-          <div className="sm:col-span-5 md:col-span-2">
-            <Card size="full">
-              <CardHeader>
-                <CardTitle className="font-medium text-gray-900 text-lg">Assignments</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <UserRoleTags userName={userName} verticalView={false} />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/*Modals*/}
-        {api.isAdminApiConfigured && (
-          <ChangePasswordModal
-            isOpen={this.isChangePasswordModalOpen}
-            setIsOpen={(value: boolean) => (this.isChangePasswordModalOpen = value)}
-            userName={userName}
-          />
-        )}
-
-        {Features.rolesApi && (
-          <ChangeRolesModal
-            isOpen={this.isChangeRolesModalOpen}
-            setIsOpen={(value: boolean) => (this.isChangeRolesModalOpen = value)}
-            userName={userName}
-          />
-        )}
       </PageContent>
     );
   }
@@ -183,7 +152,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
 
 export default UserDetailsPage;
 
-const UserPermissionDetailsContent = observer((p: { userName: string }) => {
+const UserPermissionDetailsContent = observer((p: { userName: string; onChangeRoles?: () => void }) => {
   // Get all roles and ACLs matching this user
   const roles: {
     principalType: string;
@@ -202,41 +171,12 @@ const UserPermissionDetailsContent = observer((p: { userName: string }) => {
     }
   }
 
-  const { data: hasAcls } = useQuery(
-    listACLs,
-    {
-      filter: {
-        principal: `User:${p.userName}`,
-      },
-    } as ListACLsRequest,
-    {
-      enabled: !!p.userName,
-      select: (response) => response.resources.length > 0,
-    }
-  );
-
-  if (hasAcls) {
-    roles.push({
-      principalType: 'User',
-      principalName: p.userName,
-    });
-  }
+  const { data: acls } = useGetAclsByPrincipal(`User:${p.userName}`);
 
   return (
-    <div className="flex flex-col gap-3">
-      {roles.map((g) => (
-        <EmbeddedAclDetail
-          key={`key-${g.principalType}:${g.principalName}`}
-          principal={`${g.principalType}:${g.principalName}`}
-        />
-      ))}
-      {roles.length === 0 && (
-        <Card size="full">
-          <CardContent>
-            <p>No permissions assigned to this user.</p>
-          </CardContent>
-        </Card>
-      )}
+    <div className="flex flex-col gap-4">
+      <UserRolesCard onChangeRoles={p.onChangeRoles} roles={roles} />
+      <UserAclsCard acls={acls} />
     </div>
   );
 });

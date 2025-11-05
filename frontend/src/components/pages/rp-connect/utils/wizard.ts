@@ -1,59 +1,169 @@
 import { toast } from 'sonner';
+import {
+  onboardingWizardStore,
+  useOnboardingWizardDataStore,
+  useOnboardingYamlContentStore,
+} from 'state/onboarding-wizard-store';
 
-interface StepSubmissionResult {
-  success: boolean;
-  message?: string; // Success or error message
-  error?: string; // Detailed error for debugging
-}
+import { getConnectTemplate } from './yaml';
+import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
+import type { RawFieldSpec } from '../types/schema';
+import type { StepSubmissionResult } from '../types/wizard';
 
-export interface BaseStepRef {
-  triggerSubmit: () => Promise<StepSubmissionResult>;
-  isLoading: boolean;
-}
+export const handleStepResult = <T>(result: StepSubmissionResult<T> | undefined, onSuccess: () => void): boolean => {
+  if (!result) {
+    return false;
+  }
 
-/**
- * Handles step submission results with success feedback only
- * @param result - The step submission result
- * @param onSuccess - Callback to execute on successful submission (typically methods.next())
- * @returns boolean indicating if the step should proceed
- */
-export const handleStepResult = (result: StepSubmissionResult | undefined, onSuccess: () => void): boolean => {
-  if (result?.success) {
-    // Show success toast if message provided
-    if (result.message) {
+  if (result.operations && result.operations.length > 0) {
+    for (const operation of result.operations) {
+      if (operation.success && operation.message) {
+        toast.success(operation.message, {
+          description: operation.operation,
+        });
+      } else if (!operation.success && operation.error) {
+        toast.error(operation.error, {
+          description: operation.operation,
+        });
+      }
+    }
+  }
+
+  if (result.success) {
+    if ((!result.operations || result.operations.length === 0) && result.message) {
       toast.success(result.message);
     }
-    // Execute success callback (navigation)
     onSuccess();
     return true;
   }
 
-  // For errors: Forms handle their own errors exclusively
-  // - Field-level errors: React Hook Form handles automatically
-  // - Form-level errors: Each form component displays its own contextual errors
-  // - No global error handling - errors stay within their respective forms
+  if (result.error && (!result.operations || result.operations.length === 0)) {
+    toast.error(result.error);
+  }
+
   return false;
 };
 
 /**
- * Checks if a value is empty (null, undefined, or empty string)
- * @param value - The value to check
- * @returns true if the value is null, undefined, or empty string
+ * Regenerates YAML templates for components that require topic/user data
+ * Used at ADD_TOPIC and ADD_USER steps to update YAML with new context
  */
-export const isEmpty = (value: string | null | undefined): boolean => value == null || value === '';
+export const regenerateYamlForTopicUserComponents = (): void => {
+  const { setWizardData: _, ...wizardData } = useOnboardingWizardDataStore.getState();
+
+  const inputNeedsTopicUser =
+    wizardData.input?.connectionName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(wizardData.input.connectionName);
+  const outputNeedsTopicUser =
+    wizardData.output?.connectionName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(wizardData.output.connectionName);
+
+  if (inputNeedsTopicUser || outputNeedsTopicUser) {
+    let yamlContent = useOnboardingYamlContentStore.getState().yamlContent || '';
+
+    if (inputNeedsTopicUser && wizardData.input?.connectionName && wizardData.input?.connectionType) {
+      yamlContent =
+        getConnectTemplate({
+          connectionName: wizardData.input.connectionName,
+          connectionType: wizardData.input.connectionType,
+          showOptionalFields: false,
+          existingYaml: yamlContent,
+        }) || yamlContent;
+    }
+
+    if (outputNeedsTopicUser && wizardData.output?.connectionName && wizardData.output?.connectionType) {
+      yamlContent =
+        getConnectTemplate({
+          connectionName: wizardData.output.connectionName,
+          connectionType: wizardData.output.connectionType,
+          showOptionalFields: false,
+          existingYaml: yamlContent,
+        }) || yamlContent;
+    }
+
+    useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent });
+  }
+};
 
 /**
- * Checks if a value has content (not null, undefined, or empty string)
- * @param value - The value to check
- * @returns true if the value has content
+ * Checks if a field name is topic-related
+ * Matches: 'topic' (outputs/cache) or 'topics' (inputs)
  */
-export const hasValue = (value: string | null | undefined): boolean => !isEmpty(value);
+export const isTopicField = (fieldName: string): boolean => {
+  const normalizedName = fieldName.toLowerCase();
+  return normalizedName === 'topic' || normalizedName === 'topics';
+};
 
-export const WizardStep = {
-  ADD_INPUT: 'add-input-step',
-  ADD_OUTPUT: 'add-output-step',
-  ADD_TOPIC: 'add-topic-step',
-  ADD_USER: 'add-user-step',
-} as const;
+/**
+ * Checks if a field name is user/authentication-related
+ * Matches: 'user' (kafka sasl) or 'username' (redpanda sasl)
+ */
+export const isUserField = (fieldName: string): boolean => {
+  const normalized = fieldName.toLowerCase();
+  return normalized === 'user' || normalized === 'username';
+};
 
-export type WizardStep = (typeof WizardStep)[keyof typeof WizardStep];
+/**
+ * Checks if a field name is password-related
+ * Matches: 'password' (nested in sasl object)
+ */
+export const isPasswordField = (fieldName: string): boolean => fieldName.toLowerCase() === 'password';
+
+/**
+ * Checks if a field name is consumer group-related
+ * Matches: 'consumer_group' (kafka_franz input)
+ */
+export const isConsumerGroupField = (fieldName: string): boolean => fieldName.toLowerCase() === 'consumer_group';
+
+/**
+ * Checks if a field should be prepopulated with REDPANDA_BROKERS contextual variable
+ * Matches: 'seed_brokers', 'addresses', 'brokers'
+ */
+export const isBrokerField = (fieldName: string): boolean => {
+  const normalized = fieldName.toLowerCase();
+  return normalized === 'seed_brokers' || normalized === 'addresses' || normalized === 'brokers';
+};
+
+/**
+ * Checks if a field is schema_registry.url that should use REDPANDA_SCHEMA_REGISTRY_URL
+ * Requires checking both field name and parent context
+ */
+export const isSchemaRegistryUrlField = (fieldName: string, parentName?: string): boolean => {
+  const isUrl = fieldName.toLowerCase() === 'url';
+  const parentIsSchemaRegistry = parentName?.toLowerCase() === 'schema_registry';
+  return isUrl && !!parentIsSchemaRegistry;
+};
+
+/**
+ * Checks if a RawFieldSpec or its children have wizard-relevant fields
+ * Used to determine if advanced/optional fields should be shown
+ */
+export const hasWizardRelevantFields = (spec: RawFieldSpec, componentName?: string): boolean => {
+  if (!(componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
+    return false;
+  }
+
+  const topicData = onboardingWizardStore.getTopicData();
+  const userData = onboardingWizardStore.getUserData();
+
+  if (spec.name && isTopicField(spec.name) && topicData?.topicName) {
+    return true;
+  }
+  if (spec.name && isUserField(spec.name) && userData?.username) {
+    return true;
+  }
+  if (spec.name && isPasswordField(spec.name) && userData?.username) {
+    return true;
+  }
+  if (spec.name && isConsumerGroupField(spec.name) && userData?.consumerGroup) {
+    return true;
+  }
+
+  if (spec.children && spec.children.length > 0) {
+    for (const child of spec.children) {
+      if (hasWizardRelevantFields(child, componentName)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};

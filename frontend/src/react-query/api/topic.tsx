@@ -32,7 +32,11 @@ type ListTopicsExtraOptions = {
  */
 export const useLegacyListTopicsQuery = (
   input?: MessageInit<ListTopicsRequest>,
-  { hideInternalTopics = false }: ListTopicsExtraOptions = {}
+  {
+    hideInternalTopics = false,
+    staleTime,
+    refetchOnWindowFocus,
+  }: ListTopicsExtraOptions & { staleTime?: number; refetchOnWindowFocus?: boolean } = {}
 ) => {
   const listTopicsRequest = create(ListTopicsRequestSchema, {
     pageSize: MAX_PAGE_SIZE,
@@ -58,6 +62,8 @@ export const useLegacyListTopicsQuery = (
 
       return response.json();
     },
+    staleTime,
+    refetchOnWindowFocus,
   });
 
   const allRetrievedTopics = legacyListTopicsResult?.data?.topics;

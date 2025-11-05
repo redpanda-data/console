@@ -138,7 +138,7 @@ func (c clientHooks) OnBrokerConnect(meta kgo.BrokerMetadata, dialDur time.Durat
 		return
 	}
 	c.openConnections.WithLabelValues(kgo.NodeName(meta.NodeID)).Inc()
-	c.logger.Info("kafka connection succeeded",
+	c.logger.Debug("kafka connection succeeded",
 		slog.String("host", meta.Host),
 		slog.Duration("dial_duration", dialDur),
 		slog.Int("node_id", int(meta.NodeID)))

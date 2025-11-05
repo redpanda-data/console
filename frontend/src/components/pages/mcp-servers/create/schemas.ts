@@ -8,11 +8,10 @@
  * by the Apache License, Version 2.0
  */
 
+import { RESOURCE_TIERS } from 'components/ui/connect/resource-tier-select';
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { parse } from 'yaml';
 import { z } from 'zod';
-
-import { RESOURCE_TIERS } from '../remote-mcp-constants';
 
 // Zod schema for tags
 export const TagSchema = z.object({

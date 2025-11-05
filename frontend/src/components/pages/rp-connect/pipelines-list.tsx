@@ -14,7 +14,6 @@ import { TrashIcon } from '@heroicons/react/outline';
 import { Box, Button, createStandaloneToast, DataTable, Flex, Image, SearchField, Text } from '@redpanda-data/ui';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { isFeatureFlagEnabled } from 'config';
-import { useSessionStorage } from 'hooks/use-session-storage';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { useCallback } from 'react';
@@ -22,12 +21,9 @@ import { FaRegStopCircle } from 'react-icons/fa';
 import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
-import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
+import { useResetOnboardingWizardStore } from 'state/onboarding-wizard-store';
 
 import { openDeleteModal } from './modals';
-import { ConnectTiles } from './onboarding/connect-tiles';
-import type { ConnectComponentType } from './types/schema';
-import type { AddTopicFormData, AddUserFormData, ConnectTilesFormData, WizardFormData } from './types/wizard';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/app-global';
@@ -56,20 +52,13 @@ const LegacyCreatePipelineButton = () => (
  * Navigates to wizard and clears session storage
  */
 const WizardCreatePipelineButton = () => {
-  const [_, setPersistedConnectionName] = useSessionStorage<Partial<ConnectTilesFormData>>(
-    CONNECT_WIZARD_CONNECTOR_KEY,
-    {}
-  );
-  const [, setPersistedTopic] = useSessionStorage<Partial<AddTopicFormData>>(CONNECT_WIZARD_TOPIC_KEY, {});
-  const [, setPersistedUser] = useSessionStorage<Partial<AddUserFormData>>(CONNECT_WIZARD_USER_KEY, {});
+  const resetOnboardingWizardStore = useResetOnboardingWizardStore();
   const navigate = useNavigate();
 
   const handleClick = useCallback(() => {
-    setPersistedConnectionName({});
-    setPersistedTopic({});
-    setPersistedUser({});
+    resetOnboardingWizardStore();
     navigate('/rp-connect/wizard');
-  }, [setPersistedConnectionName, setPersistedTopic, setPersistedUser, navigate]);
+  }, [resetOnboardingWizardStore, navigate]);
 
   return (
     <div>
@@ -88,59 +77,6 @@ const LegacyEmptyState = () => (
     <LegacyCreatePipelineButton />
   </Flex>
 );
-
-/**
- * Shows ConnectTiles and navigates to wizard with connector pre-selected
- */
-const WizardEmptyState = () => {
-  const [persistedConnectionName, setPersistedConnectionName] = useSessionStorage<Partial<WizardFormData>>(
-    CONNECT_WIZARD_CONNECTOR_KEY,
-    {}
-  );
-  const [, setPersistedTopic] = useSessionStorage<Partial<AddTopicFormData>>(CONNECT_WIZARD_TOPIC_KEY, {});
-  const [, setPersistedUser] = useSessionStorage<Partial<AddUserFormData>>(CONNECT_WIZARD_USER_KEY, {});
-  const navigate = useNavigate();
-
-  const handleConnectionChange = useCallback(
-    (connectionName: string, connectionType: ConnectComponentType) => {
-      try {
-        const existingOutput = persistedConnectionName.output;
-        const newConfig = existingOutput
-          ? { input: { connectionName, connectionType }, output: existingOutput }
-          : { input: { connectionName, connectionType } };
-        setPersistedConnectionName(newConfig);
-        setPersistedTopic({});
-        setPersistedUser({});
-        navigate('/rp-connect/wizard?step=add-output');
-      } catch (error) {
-        toast({
-          status: 'error',
-          duration: 4000,
-          isClosable: true,
-          title: 'Failed to select connection',
-          description: error instanceof Error ? error.message : 'Please try again',
-        });
-      }
-    },
-    [setPersistedConnectionName, setPersistedTopic, setPersistedUser, navigate, persistedConnectionName]
-  );
-
-  return (
-    <ConnectTiles
-      className="mt-4"
-      componentTypeFilter={['input']}
-      defaultConnectionName={persistedConnectionName.input?.connectionName}
-      defaultConnectionType={persistedConnectionName.input?.connectionType}
-      onChange={handleConnectionChange}
-      title="Send data to your pipeline"
-    />
-  );
-};
-
-const EmptyPlaceholder = () => {
-  const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
-  return enableRpcnTiles ? <WizardEmptyState /> : <LegacyEmptyState />;
-};
 
 export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
   switch (p.status) {
@@ -299,7 +235,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
           ))}
 
         {(pipelinesApi.pipelines ?? []).length === 0 ? (
-          <EmptyPlaceholder />
+          <LegacyEmptyState />
         ) : (
           <DataTable<Pipeline>
             columns={[

@@ -19,10 +19,10 @@ import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { RedpandaConnectComponentTypeBadge } from 'components/ui/connect/redpanda-connect-component-type-badge';
 import { DynamicJSONForm } from 'components/ui/json/dynamic-json-form';
 import type { JSONSchemaType, JSONValue } from 'components/ui/json/json-utils';
 import JSONView from 'components/ui/json/json-view';
-import { RedpandaConnectComponentTypeBadge } from 'components/ui/redpanda-connect-component-type-badge';
 import { Clock, Hammer, Send, X } from 'lucide-react';
 import {
   CreateTopicRequest_Topic_ConfigSchema,

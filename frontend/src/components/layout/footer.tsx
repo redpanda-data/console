@@ -10,6 +10,7 @@
  */
 
 import { FaGithub, FaLinkedin, FaSlack, FaTwitter } from 'react-icons/fa';
+import { useLocation, useMatch } from 'react-router-dom';
 
 import { isEmbedded } from '../../config';
 import env, { getBuildDate, IsCI, IsDev } from '../../utils/env';
@@ -54,6 +55,17 @@ export const VersionInfo = () => {
 };
 
 export const AppFooter = () => {
+  const location = useLocation();
+  const isAgentPage = useMatch('/agents/:agentId');
+
+  // Hide footer on AI agent inspector tab
+  if (isAgentPage) {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('tab') === 'inspector') {
+      return null;
+    }
+  }
+
   const gitHub = (link: string, title: string) => (
     <>
       <a href={link} rel="noopener noreferrer" target="_blank" title={title}>

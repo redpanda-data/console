@@ -1396,6 +1396,8 @@ components:
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/ServiceAccount'
         state:
           $ref: '#/components/schemas/Pipeline.State'
         status:
@@ -1455,6 +1457,8 @@ components:
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/ServiceAccount'
         tags:
           additionalProperties:
             type: string
@@ -1477,6 +1481,8 @@ components:
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/ServiceAccount'
         tags:
           additionalProperties:
             type: string
@@ -1813,6 +1819,13 @@ components:
           title: Secret scopes
           type: array
       type: object
+    ServiceAccount:
+      properties:
+        client_id:
+          type: string
+        client_secret:
+          type: string
+      type: object
     SetConfiguration:
       properties:
         name:
@@ -2081,8 +2094,6 @@ components:
           description: The secret data. Must be Base64-encoded.
           format: byte
           type: string
-      required:
-        - secret_data
       type: object
     UpdateSecretResponse:
       description: UpdateSecretResponse is the response of UpdateSecret.

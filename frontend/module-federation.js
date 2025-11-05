@@ -47,5 +47,13 @@ module.exports = {
       singleton: false,
       requiredVersion: deps['tailwind-merge'],
     },
+    motion: {
+      singleton: false,
+      requiredVersion: deps.motion,
+    },
+    clsx: {
+      singleton: false,
+      requiredVersion: deps.clsx,
+    },
   },
 };

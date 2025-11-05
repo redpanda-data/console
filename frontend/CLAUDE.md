@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+When creating user interfaces, refer to @.claude/UI.md
+
 ## Project Overview
 
 This is the frontend for Redpanda Console, a web application for managing Kafka/Redpanda clusters. Built with React 18.3 + TypeScript using Rsbuild (Rspack-based bundler).
@@ -39,12 +41,7 @@ bun run install:chromium # Install Chromium for Playwright
 
 **Testing Strategy:**
 
-<<<<<<< HEAD
-
 1. # **Vitest Tests** (Unit + Integration) - Fast, cheap to run
-1. **Bun Tests** (Unit + Integration) - Fast, cheap to run
-
-> > > > > > > 525399b3 (feat: various cleanup)
 
 - Test CRUD operations and business logic
 - Verify gRPC Connect transport endpoints are called correctly
@@ -284,20 +281,9 @@ src/
 
 5. **State Management:**
 
-   ```tsx
-   // ✅ GOOD - Local state
-   const [data, setData] = useState<DataType | null>(null);
+   Prefer local state (`useState`) for component-specific data. Use Zustand only for global or persisted state. Never use MobX for new code.
 
-   // ✅ GOOD - Zustand for global state
-   import { create } from "zustand";
-   const useStore = create<State>((set) => ({
-     data: null,
-     setData: (data) => set({ data }),
-   }));
-
-   // ❌ BAD - MobX
-   import { observable, action } from "mobx";
-   ```
+   See the [State Management](#state-management) section for comprehensive guidance on when and how to use each approach.
 
 6. **Forms:**
 
@@ -340,6 +326,150 @@ src/
 
    // ❌ BAD - Manually managed form state with Chakra
    ```
+
+### State Management
+
+**Philosophy: Local First, Global When Needed**
+
+This codebase is migrating from MobX to modern React patterns. Prefer local state for component-specific data, use Zustand only for truly global or persisted state.
+
+**When to Use Local State (`useState`):**
+
+- Component-specific UI state (dropdowns, modals, form inputs)
+- Temporary data that doesn't need to persist
+- State that only 1-2 components need (use prop drilling or composition)
+
+**When to Use Zustand:**
+
+- Cross-component state that doesn't belong in URL or server
+- User preferences and settings (theme, sidebar state)
+- Multi-step wizard/form data that persists across navigation
+- State that needs to survive component unmounts
+- UI state that needs sessionStorage persistence
+
+**❌ Never Use MobX for New Code:**
+
+- Legacy stores in `src/state/` use MobX decorators (`@observable`, `@action`)
+- Do not expand or create new MobX stores
+- Gradually migrate to Zustand or local state when refactoring
+
+**Basic Zustand Store:**
+
+```typescript
+import { create } from "zustand";
+
+type UserPreferences = {
+  theme: "light" | "dark";
+  sidebarCollapsed: boolean;
+  setTheme: (theme: "light" | "dark") => void;
+  toggleSidebar: () => void;
+};
+
+export const usePreferencesStore = create<UserPreferences>((set) => ({
+  theme: "light",
+  sidebarCollapsed: false,
+  setTheme: (theme) => set({ theme }),
+  toggleSidebar: () =>
+    set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+}));
+
+// Usage in components - use selectors to optimize rerenders
+const theme = usePreferencesStore((state) => state.theme);
+const setTheme = usePreferencesStore((state) => state.setTheme);
+```
+
+**Persisted Store (SessionStorage):**
+
+```typescript
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { createPersistedZustandSessionStorage } from "utils/store";
+
+type WizardState = {
+  step: number;
+  formData: Record<string, unknown>;
+  setStep: (step: number) => void;
+  updateFormData: (data: Record<string, unknown>) => void;
+  reset: () => void;
+};
+
+export const useWizardStore = create<WizardState>()(
+  persist(
+    (set) => ({
+      step: 1,
+      formData: {},
+      setStep: (step) => set({ step }),
+      updateFormData: (formData) => set({ formData }),
+      reset: () => set({ step: 1, formData: {} }),
+    }),
+    {
+      name: "wizard-state",
+      storage:
+        createPersistedZustandSessionStorage<
+          Pick<WizardState, "step" | "formData">
+        >(),
+    }
+  )
+);
+```
+
+**Testing Zustand Stores:**
+
+```typescript
+import { vi } from "vitest";
+
+// Enable automatic store reset between tests
+vi.mock("zustand");
+
+describe("Component using Zustand", () => {
+  beforeEach(() => {
+    sessionStorage.clear(); // Clear persisted state
+  });
+
+  it("should update store state", () => {
+    const { result } = renderHook(() => useWizardStore());
+
+    act(() => {
+      result.current.setStep(2);
+    });
+
+    expect(result.current.step).toBe(2);
+  });
+});
+```
+
+**Best Practices:**
+
+```typescript
+// ✅ GOOD - Use selectors to prevent unnecessary rerenders
+const theme = usePreferencesStore((state) => state.theme);
+
+// ❌ BAD - Subscribing to entire store (rerenders on any state change)
+const store = usePreferencesStore();
+
+// ✅ GOOD - Always include reset functions for testability
+const useStore = create<State>((set) => ({
+  data: null,
+  setData: (data) => set({ data }),
+  reset: () => set({ data: null }),
+}));
+
+// ✅ GOOD - Separate state types from action types for clarity
+type StoreState = {
+  count: number;
+};
+
+type StoreActions = {
+  increment: () => void;
+  reset: () => void;
+};
+
+const useCountStore = create<StoreState & StoreActions>((set) => ({
+  count: 0,
+  increment: () => set((state) => ({ count: state.count + 1 })),
+  reset: () => set({ count: 0 }),
+}));
+```
 
 ### API Communication
 
@@ -431,7 +561,9 @@ export const MCPServerPage = () => {
     <div className="flex flex-col w-full min-h-screen p-8 bg-gray-50">
       <div className="flex items-center justify-between mb-6 pb-4 border-b">
         <h1 className="text-2xl font-semibold">MCP Servers</h1>
-        <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Create</button>
+        <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+          Create
+        </button>
       </div>
       {/* ... lots more inline styling ... */}
     </div>
@@ -532,23 +664,19 @@ const { data, isLoading, error } = useQuery({
 **Testing:**
 
 ```tsx
-<<<<<<< HEAD
 // ✅ GOOD - Integration test for API calls and business logic (Vitest)
-import { describe, test, expect, vi } from 'vitest';
-
-describe('MCP Server CRUD', () => {
-  test('should create MCP server with correct transport call', async () => {
-    const mockTransport = vi.fn(() => Promise.resolve({ id: '123', name: 'test' }));
-=======
-// ✅ GOOD - Integration test for API calls and business logic (Bun test)
-import { describe, test, expect, mock } from "bun:test";
+import { describe, test, expect, vi } from "vitest";
 
 describe("MCP Server CRUD", () => {
   test("should create MCP server with correct transport call", async () => {
-    const mockTransport = mock(() => Promise.resolve({ id: "123", name: "test" }));
->>>>>>> 525399b3 (feat: various cleanup)
+    const mockTransport = vi.fn(() =>
+      Promise.resolve({ id: "123", name: "test" })
+    );
 
-    const result = await createMCPServer({ name: "test", url: "http://example.com" });
+    const result = await createMCPServer({
+      name: "test",
+      url: "http://example.com",
+    });
 
     // Verify gRPC Connect endpoint was called with correct data
     expect(mockTransport).toHaveBeenCalledWith({
@@ -558,15 +686,14 @@ describe("MCP Server CRUD", () => {
     expect(result.id).toBe("123");
   });
 
-<<<<<<< HEAD
-  test('should handle server creation errors', async () => {
-    const mockTransport = vi.fn(() => Promise.reject(new Error('Network error')));
-=======
   test("should handle server creation errors", async () => {
-    const mockTransport = mock(() => Promise.reject(new Error("Network error")));
->>>>>>> 525399b3 (feat: various cleanup)
+    const mockTransport = vi.fn(() =>
+      Promise.reject(new Error("Network error"))
+    );
 
-    await expect(createMCPServer({ name: "test" })).rejects.toThrow("Network error");
+    await expect(createMCPServer({ name: "test" })).rejects.toThrow(
+      "Network error"
+    );
   });
 });
 
@@ -611,7 +738,11 @@ test("dialog opens when button is clicked", () => {
 
 ```tsx
 // ✅ Modern - Redpanda UI Dialog
-import { Dialog, DialogContent, DialogHeader } from "components/redpanda-ui/components/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+} from "components/redpanda-ui/components/dialog";
 
 <Dialog open={isOpen} onOpenChange={setIsOpen}>
   <DialogContent>

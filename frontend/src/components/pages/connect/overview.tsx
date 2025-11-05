@@ -14,7 +14,7 @@ import { Badge, Box, DataTable, Link, Stack, Text, Tooltip } from '@redpanda-dat
 import ErrorResult from 'components/misc/error-result';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FunctionComponent } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
 import {
   ConnectorClass,
@@ -29,7 +29,7 @@ import {
 import { isFeatureFlagEnabled, isServerless } from '../../../config';
 import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/app-global';
-import { api, rpcnSecretManagerApi } from '../../../state/backend-api';
+import { api, pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
 import type { ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo } from '../../../state/rest-interfaces';
 import { Features } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
@@ -110,6 +110,11 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
   }
 
   render() {
+    // Redirect to wizard if enableRpcnTiles is enabled and there are no existing pipelines
+    if (isFeatureFlagEnabled('enableRpcnTiles') && pipelinesApi.pipelines?.length === 0) {
+      return <Navigate replace to="/rp-connect/wizard" />;
+    }
+
     const tabs = [
       {
         key: ConnectView.RedpandaConnect,

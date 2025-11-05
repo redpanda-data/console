@@ -181,5 +181,10 @@ function useShouldHideHeader() {
     end: false,
   });
 
-  return remoteMcpDetailsMatch !== null;
+  const aiAgentDetailsMatch = useMatch({
+    path: '/agents/:id',
+    end: false,
+  });
+
+  return remoteMcpDetailsMatch !== null || aiAgentDetailsMatch !== null;
 }

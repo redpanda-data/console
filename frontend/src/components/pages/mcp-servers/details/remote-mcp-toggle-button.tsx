@@ -13,6 +13,8 @@ import { Loader2, Play, Square } from 'lucide-react';
 import { MCPServer_State } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useGetMCPServerQuery, useStartMCPServerMutation, useStopMCPServerMutation } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const RemoteMCPToggleButton = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,24 +27,28 @@ export const RemoteMCPToggleButton = () => {
     if (!id) {
       return;
     }
-    try {
-      await startMCPServer({ id });
-    } catch (error) {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error('Failed to start MCP server:', error);
-    }
+    await startMCPServer(
+      { id },
+      {
+        onError: (error) => {
+          toast.error(formatToastErrorMessageGRPC({ error, action: 'start', entity: 'MCP server' }));
+        },
+      }
+    );
   };
 
   const handleStopServer = async () => {
     if (!id) {
       return;
     }
-    try {
-      await stopMCPServer({ id });
-    } catch (error) {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error('Failed to stop MCP server:', error);
-    }
+    await stopMCPServer(
+      { id },
+      {
+        onError: (error) => {
+          toast.error(formatToastErrorMessageGRPC({ error, action: 'stop', entity: 'MCP server' }));
+        },
+      }
+    );
   };
 
   if (!mcpServerData?.mcpServer) {
