@@ -125,7 +125,7 @@ export const MessageKeyPreview = observer(
             <code style={{ fontSize: '95%' }}>{text}</code>
           </span>
           <Text color="gray.500">
-            {key.encoding.toUpperCase()} - {prettyBytes(key.size)}
+            {key.encoding?.toUpperCase() || 'UNKNOWN'} - {prettyBytes(key.size)}
           </Text>
         </Flex>
       );
