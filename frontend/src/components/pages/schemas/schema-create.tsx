@@ -219,8 +219,8 @@ const SchemaPageButtons = (p: {
       });
 
       // Fetch the latest version
-      await schemaDetails.refetch();
-      const latestVersion = schemaDetails.data?.latestActiveVersion;
+      const { data: updatedDetails } = await schemaDetails.refetch();
+      const latestVersion = updatedDetails?.latestActiveVersion;
 
       navigate(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=${latestVersion}`);
     } catch (err) {
