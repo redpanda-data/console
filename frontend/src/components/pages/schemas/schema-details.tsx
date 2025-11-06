@@ -38,7 +38,7 @@ import { SchemaRegistryCapability } from '../../../protogen/redpanda/api/console
 import { useGetIdentityQuery } from '../../../react-query/api/authentication';
 import {
   useCreateSchemaMutation,
-  useDeleteSchemaMutation,
+  useDeleteSchemaSubjectMutation,
   useDeleteSchemaVersionMutation,
   useListSchemasQuery,
   useSchemaCompatibilityQuery,
@@ -79,7 +79,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
   useSchemaModeQuery(); // Fetch for other components
   useSchemaTypesQuery(); // Fetch for other components
 
-  const deleteSubjectMutation = useDeleteSchemaMutation();
+  const deleteSubjectMutation = useDeleteSchemaSubjectMutation();
 
   // Update page title and breadcrumbs
   useEffect(() => {

@@ -209,7 +209,7 @@ export const useUpdateSubjectCompatibilityMutation = () => {
   });
 };
 
-export const useDeleteSchemaMutation = () => {
+export const useDeleteSchemaSubjectMutation = () => {
   const queryClient = useQueryClient();
 
   return useTanstackMutation<void, Error, { subjectName: string; permanent: boolean }>({
@@ -226,7 +226,7 @@ export const useDeleteSchemaMutation = () => {
       return formatToastErrorMessageGRPC({
         error: connectError,
         action: 'delete',
-        entity: 'schema',
+        entity: 'schema subject',
       });
     },
   });

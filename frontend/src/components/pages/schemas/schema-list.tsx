@@ -43,7 +43,7 @@ import { openDeleteModal, openPermanentDeleteModal } from './modals';
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 // API hooks
 import {
-  useDeleteSchemaMutation,
+  useDeleteSchemaSubjectMutation,
   useListSchemasQuery,
   useSchemaCompatibilityQuery,
   useSchemaDetailsQuery,
@@ -126,7 +126,7 @@ const SchemaList: FC = () => {
   const { data: schemaSubjects, isLoading, isError, refetch: refetchSchemas } = useListSchemasQuery();
   const { data: schemaMode, refetch: refetchMode } = useSchemaModeQuery();
   const { data: schemaCompatibility, refetch: refetchCompatibility } = useSchemaCompatibilityQuery();
-  const deleteSchemaMutation = useDeleteSchemaMutation();
+  const deleteSchemaMutation = useDeleteSchemaSubjectMutation();
 
   // Parse schema ID from search query
   const schemaIdSearch = useMemo(() => {
