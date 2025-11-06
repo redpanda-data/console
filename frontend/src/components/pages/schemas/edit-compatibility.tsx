@@ -13,7 +13,7 @@ import { Box, CodeBlock, Empty, Flex, Grid, GridItem, RadioGroup, Text, useToast
 import type { FC } from 'react';
 import { useEffect, useState } from 'react';
 
-import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './Schema.Details';
+import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './schema-details';
 import {
   useSchemaCompatibilityQuery,
   useSchemaDetailsQuery,
@@ -21,13 +21,13 @@ import {
   useUpdateGlobalCompatibilityMutation,
   useUpdateSubjectCompatibilityMutation,
 } from '../../../react-query/api/schema';
-import { appGlobal } from '../../../state/appGlobal';
-import { api } from '../../../state/backendApi';
-import type { SchemaRegistryCompatibilityMode } from '../../../state/restInterfaces';
-import { uiState } from '../../../state/uiState';
-import { Button, DefaultSkeleton } from '../../../utils/tsxUtils';
-import PageContent from '../../misc/PageContent';
-import Section from '../../misc/Section';
+import { appGlobal } from '../../../state/app-global';
+import { api } from '../../../state/backend-api';
+import type { SchemaRegistryCompatibilityMode } from '../../../state/rest-interfaces';
+import { uiState } from '../../../state/ui-state';
+import { Button, DefaultSkeleton } from '../../../utils/tsx-utils';
+import PageContent from '../../misc/page-content';
+import Section from '../../misc/section';
 
 const SchemaNotConfiguredPage: FC = () => {
   return (

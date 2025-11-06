@@ -35,14 +35,14 @@ import {
   useValidateSchemaMutation,
 } from '../../../react-query/api/schema';
 import { useLegacyListTopicsQuery } from '../../../react-query/api/topic';
-import { appGlobal } from '../../../state/appGlobal';
-import { api } from '../../../state/backendApi';
-import { SchemaType, type SchemaTypeType } from '../../../state/restInterfaces';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { appGlobal } from '../../../state/app-global';
+import { api } from '../../../state/backend-api';
+import { SchemaType, type SchemaTypeType } from '../../../state/rest-interfaces';
+import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import type { ElementOf } from '../../../utils/utils';
-import KowlEditor from '../../misc/KowlEditor';
-import PageContent from '../../misc/PageContent';
-import { SingleSelect } from '../../misc/Select';
+import KowlEditor from '../../misc/kowl-editor';
+import PageContent from '../../misc/page-content';
+import { SingleSelect } from '../../misc/select';
 
 export const SchemaCreatePage = () => {
   const schemaSubjects = useListSchemasQuery();

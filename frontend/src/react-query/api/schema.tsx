@@ -7,7 +7,7 @@ import type {
   SchemaRegistrySubject,
   SchemaRegistrySubjectDetails,
   SchemaVersion,
-} from 'state/restInterfaces';
+} from 'state/rest-interfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 // Stale time constants for consistent cache behavior
@@ -217,7 +217,7 @@ export const useDeleteSchemaMutation = () => {
 
   return useMutation<void, Error, { subjectName: string; permanent: boolean }>({
     mutationFn: async ({ subjectName, permanent }) => {
-      const { api } = await import('state/backendApi');
+      const { api } = await import('state/backend-api');
       await api.deleteSchemaSubject(subjectName, permanent);
     },
     onSuccess: async () => {

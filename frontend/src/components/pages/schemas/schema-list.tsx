@@ -37,7 +37,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 // Routing and state management
 import { Link } from 'react-router-dom';
 // Custom hooks
-import { useQueryStateWithCallback } from '../../../hooks/useQueryStateWithCallback';
+import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 // API hooks
 import {
   useDeleteSchemaMutation,
@@ -48,18 +48,18 @@ import {
   useSchemaUsagesByIdQuery,
 } from '../../../react-query/api/schema';
 // Global state
-import { appGlobal } from '../../../state/appGlobal';
-import { api } from '../../../state/backendApi';
-import type { SchemaRegistrySubject } from '../../../state/restInterfaces';
+import { appGlobal } from '../../../state/app-global';
+import { api } from '../../../state/backend-api';
+import type { SchemaRegistrySubject } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
-import { uiState } from '../../../state/uiState';
+import { uiState } from '../../../state/ui-state';
 // Utility components and functions
-import { Button, InlineSkeleton } from '../../../utils/tsxUtils';
+import { Button, InlineSkeleton } from '../../../utils/tsx-utils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 // Layout components
-import PageContent from '../../misc/PageContent';
-import Section from '../../misc/Section';
-import { SmallStat } from '../../misc/SmallStat';
+import PageContent from '../../misc/page-content';
+import Section from '../../misc/section';
+import { SmallStat } from '../../misc/small-stat';
 // Redpanda UI Registry components
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '../../redpanda-ui/components/drawer';
 // Local modals

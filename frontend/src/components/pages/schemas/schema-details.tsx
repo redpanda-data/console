@@ -47,14 +47,14 @@ import {
   useSchemaReferencedByQuery,
   useSchemaTypesQuery,
 } from '../../../react-query/api/schema';
-import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/restInterfaces';
-import { uiState } from '../../../state/uiState';
-import { Button, DefaultSkeleton, Label } from '../../../utils/tsxUtils';
+import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/rest-interfaces';
+import { uiState } from '../../../state/ui-state';
+import { Button, DefaultSkeleton, Label } from '../../../utils/tsx-utils';
 import { decodeURIComponentPercents, encodeURIComponentPercents } from '../../../utils/utils';
-import { KowlDiffEditor } from '../../misc/KowlEditor';
-import PageContent from '../../misc/PageContent';
-import { SingleSelect } from '../../misc/Select';
-import { SmallStat } from '../../misc/SmallStat';
+import { KowlDiffEditor } from '../../misc/kowl-editor';
+import PageContent from '../../misc/page-content';
+import { SingleSelect } from '../../misc/select';
+import { SmallStat } from '../../misc/small-stat';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
