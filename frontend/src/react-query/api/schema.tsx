@@ -8,6 +8,7 @@ import type {
   SchemaRegistrySubjectDetails,
   SchemaVersion,
 } from 'state/rest-interfaces';
+import { authenticatedFetch } from 'utils/authenticated-fetch';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 // Stale time constants for consistent cache behavior
@@ -19,11 +20,8 @@ export const useListSchemasQuery = () => {
   return useQuery<SchemaRegistrySubject[]>({
     queryKey: ['schemaRegistry', 'subjects'],
     queryFn: async () => {
-      const response = await fetch(`${config.restBasePath}/schema-registry/subjects`, {
+      const response = await authenticatedFetch(`${config.restBasePath}/schema-registry/subjects`, {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${config.jwt}`,
-        },
       });
 
       if (!response.ok) {
@@ -46,10 +44,9 @@ export const useSchemaModeQuery = () =>
   useQuery<string | null>({
     queryKey: ['schemaRegistry', 'mode'],
     queryFn: async () => {
-      const response = await fetch(`${config.restBasePath}/schema-registry/mode`, {
+      const response = await authenticatedFetch(`${config.restBasePath}/schema-registry/mode`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${config.jwt}`,
           'Content-Type': 'application/json',
         },
       });
@@ -72,10 +69,9 @@ export const useSchemaCompatibilityQuery = () =>
   useQuery<string | null>({
     queryKey: ['schemaRegistry', 'compatibility'],
     queryFn: async () => {
-      const response = await fetch(`${config.restBasePath}/schema-registry/config`, {
+      const response = await authenticatedFetch(`${config.restBasePath}/schema-registry/config`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${config.jwt}`,
           'Content-Type': 'application/json',
         },
       });
@@ -102,9 +98,7 @@ export const useSchemaDetailsQuery = (subjectName: string, options?: { enabled?:
         `${config.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/all`,
         {
           method: 'GET',
-          headers: {
-            Authorization: `Bearer ${config.jwt}`,
-          },
+          headers: {},
         }
       );
 
@@ -124,10 +118,9 @@ export const useUpdateGlobalCompatibilityMutation = () => {
 
   return useMutation<SchemaRegistryConfigResponse, Error, SchemaRegistryCompatibilityMode>({
     mutationFn: async (mode: SchemaRegistryCompatibilityMode) => {
-      const response = await fetch(`${config.restBasePath}/schema-registry/config`, {
+      const response = await authenticatedFetch(`${config.restBasePath}/schema-registry/config`, {
         method: 'PUT',
         headers: {
-          Authorization: `Bearer ${config.jwt}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ compatibility: mode }),
@@ -164,13 +157,11 @@ export const useUpdateSubjectCompatibilityMutation = () => {
   >({
     mutationFn: async ({ subjectName, mode }) => {
       if (mode === 'DEFAULT') {
-        const response = await fetch(
+        const response = await authenticatedFetch(
           `${config.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`,
           {
             method: 'DELETE',
-            headers: {
-              Authorization: `Bearer ${config.jwt}`,
-            },
+            headers: {},
           }
         );
 
@@ -182,14 +173,16 @@ export const useUpdateSubjectCompatibilityMutation = () => {
         return response.json();
       }
 
-      const response = await fetch(`${config.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${config.jwt}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ compatibility: mode }),
-      });
+      const response = await authenticatedFetch(
+        `${config.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ compatibility: mode }),
+        }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -239,11 +232,9 @@ export const useSchemaTypesQuery = () =>
   useQuery<string[]>({
     queryKey: ['schemaRegistry', 'types'],
     queryFn: async () => {
-      const response = await fetch(`${config.restBasePath}/schema-registry/schemas/types`, {
+      const response = await authenticatedFetch(`${config.restBasePath}/schema-registry/schemas/types`, {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${config.jwt}`,
-        },
+        headers: {},
       });
 
       if (!response.ok) {
@@ -279,7 +270,6 @@ export const useCreateSchemaMutation = () => {
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${config.jwt}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -334,7 +324,6 @@ export const useValidateSchemaMutation = () =>
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${config.jwt}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -366,9 +355,7 @@ export const useSchemaReferencedByQuery = (subjectName: string, version: number,
         `${config.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/referencedby`,
         {
           method: 'GET',
-          headers: {
-            Authorization: `Bearer ${config.jwt}`,
-          },
+          headers: {},
         }
       );
 
@@ -402,7 +389,6 @@ export const useDeleteSchemaVersionMutation = () => {
         {
           method: 'DELETE',
           headers: {
-            Authorization: `Bearer ${config.jwt}`,
             'Content-Type': 'application/json',
           },
         }
@@ -439,12 +425,13 @@ export const useSchemaUsagesByIdQuery = (schemaId: number | null) => {
         return [];
       }
 
-      const response = await fetch(`${config.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${config.jwt}`,
-        },
-      });
+      const response = await authenticatedFetch(
+        `${config.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`,
+        {
+          method: 'GET',
+          headers: {},
+        }
+      );
 
       if (!response.ok) {
         // 404 means the schema ID doesn't exist, return empty array

@@ -36,6 +36,9 @@ import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 // Routing and state management
 import { Link } from 'react-router-dom';
+
+// Local modals
+import { openDeleteModal, openPermanentDeleteModal } from './modals';
 // Custom hooks
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 // API hooks
@@ -62,8 +65,6 @@ import Section from '../../misc/section';
 import { SmallStat } from '../../misc/small-stat';
 // Redpanda UI Registry components
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '../../redpanda-ui/components/drawer';
-// Local modals
-import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -119,7 +120,7 @@ const SchemaList: FC = () => {
       getDefaultValue: () => uiSettings.schemaList.showSoftDeleted,
     },
     'showSoftDeleted',
-    parseAsBoolean,
+    parseAsBoolean
   );
 
   const { data: schemaSubjects, isLoading, isError, refetch: refetchSchemas } = useListSchemasQuery();
@@ -232,7 +233,7 @@ const SchemaList: FC = () => {
       <Drawer direction="right" onOpenChange={setIsHelpSidebarOpen} open={isHelpSidebarOpen}>
         <DrawerContent aria-labelledby="schema-help-title" className="w-[600px] sm:max-w-[600px]" role="dialog">
           <DrawerHeader className="border-b">
-            <DrawerTitle id="schema-help-title" data-testid="schema-help-title">
+            <DrawerTitle data-testid="schema-help-title" id="schema-help-title">
               Schema Search Help
             </DrawerTitle>
           </DrawerHeader>
@@ -396,7 +397,7 @@ const SchemaList: FC = () => {
                                     description: String(err),
                                   });
                                 },
-                              },
+                              }
                             );
                           });
                         } else {
@@ -421,7 +422,7 @@ const SchemaList: FC = () => {
                                     description: String(err),
                                   });
                                 },
-                              },
+                              }
                             );
                           });
                         }

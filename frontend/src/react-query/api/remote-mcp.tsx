@@ -7,7 +7,6 @@ import {
   useMutation as useTanstackMutation,
   useQuery as useTanstackQuery,
 } from '@tanstack/react-query';
-import { config } from 'config';
 import {
   type GetMCPServerRequest,
   GetMCPServerRequestSchema,
@@ -32,6 +31,7 @@ import {
   updateMCPServer,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp-MCPServerService_connectquery';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
+import { authenticatedFetch } from 'utils/authenticated-fetch';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 // TODO: Make this dynamic so that pagination can be used properly
@@ -262,12 +262,11 @@ export const createMCPClientWithSession = async (
   // Create StreamableHTTP transport for HTTP endpoints
   const transport = new StreamableHTTPClientTransport(new URL(serverUrl), {
     fetch: async (input, init) => {
-      const response = await fetch(input, {
+      const response = await authenticatedFetch(input, {
         ...init,
         headers: {
           ...init?.headers,
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${config.jwt}`,
           'Mcp-Session-Id': client?.transport?.sessionId ?? '',
         },
       });
