@@ -94,12 +94,12 @@ export const useSchemaCompatibilityQuery = () =>
     refetchOnMount: true,
   });
 
-export const useSchemaDetailsQuery = (subjectName: string, options?: { enabled?: boolean }) =>
+export const useSchemaDetailsQuery = (subjectName?: string, options?: { enabled?: boolean }) =>
   useTanstackQuery<SchemaRegistrySubjectDetails>({
     queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
     queryFn: async () => {
       const response = await fetch(
-        `${config.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/all`,
+        `${config.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName ?? '')}/versions/all`,
         {
           method: 'GET',
           headers: {},
@@ -114,7 +114,7 @@ export const useSchemaDetailsQuery = (subjectName: string, options?: { enabled?:
     },
     staleTime: STALE_TIME_MEDIUM,
     refetchOnMount: true,
-    enabled: options?.enabled !== false,
+    enabled: options?.enabled !== false && subjectName !== '',
   });
 
 export const useUpdateGlobalCompatibilityMutation = () => {

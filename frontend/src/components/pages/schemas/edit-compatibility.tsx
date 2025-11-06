@@ -56,7 +56,7 @@ const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName
 
   const { data: schemaMode, isLoading: isModeLoading } = useSchemaModeQuery();
   const { data: schemaCompatibility, isLoading: isCompatibilityLoading } = useSchemaCompatibilityQuery();
-  const { data: schemaDetails, isLoading: isDetailsLoading } = useSchemaDetailsQuery(subjectName || '', {
+  const { data: schemaDetails, isLoading: isDetailsLoading } = useSchemaDetailsQuery(subjectName, {
     enabled: !!subjectName,
   });
 
