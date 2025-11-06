@@ -1,5 +1,9 @@
 import { ConnectError } from '@connectrpc/connect';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useQueryClient,
+  useMutation as useTanstackMutation,
+  useQuery as useTanstackQuery,
+} from '@tanstack/react-query';
 import { config } from 'config';
 import type {
   SchemaRegistryCompatibilityMode,
@@ -17,7 +21,7 @@ const STALE_TIME_MEDIUM = 30_000; // 30 seconds
 // const STALE_TIME_LONG = 60_000; // 60 seconds
 
 export const useListSchemasQuery = () => {
-  return useQuery<SchemaRegistrySubject[]>({
+  return useTanstackQuery<SchemaRegistrySubject[]>({
     queryKey: ['schemaRegistry', 'subjects'],
     queryFn: async () => {
       const response = await authenticatedFetch(`${config.restBasePath}/schema-registry/subjects`, {
@@ -41,7 +45,7 @@ export const useListSchemasQuery = () => {
 };
 
 export const useSchemaModeQuery = () =>
-  useQuery<string | null>({
+  useTanstackQuery<string | null>({
     queryKey: ['schemaRegistry', 'mode'],
     queryFn: async () => {
       const response = await authenticatedFetch(`${config.restBasePath}/schema-registry/mode`, {
@@ -66,7 +70,7 @@ export const useSchemaModeQuery = () =>
   });
 
 export const useSchemaCompatibilityQuery = () =>
-  useQuery<string | null>({
+  useTanstackQuery<string | null>({
     queryKey: ['schemaRegistry', 'compatibility'],
     queryFn: async () => {
       const response = await authenticatedFetch(`${config.restBasePath}/schema-registry/config`, {
@@ -91,7 +95,7 @@ export const useSchemaCompatibilityQuery = () =>
   });
 
 export const useSchemaDetailsQuery = (subjectName: string, options?: { enabled?: boolean }) =>
-  useQuery<SchemaRegistrySubjectDetails>({
+  useTanstackQuery<SchemaRegistrySubjectDetails>({
     queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
     queryFn: async () => {
       const response = await fetch(
@@ -116,7 +120,7 @@ export const useSchemaDetailsQuery = (subjectName: string, options?: { enabled?:
 export const useUpdateGlobalCompatibilityMutation = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<SchemaRegistryConfigResponse, Error, SchemaRegistryCompatibilityMode>({
+  return useTanstackMutation<SchemaRegistryConfigResponse, Error, SchemaRegistryCompatibilityMode>({
     mutationFn: async (mode: SchemaRegistryCompatibilityMode) => {
       const response = await authenticatedFetch(`${config.restBasePath}/schema-registry/config`, {
         method: 'PUT',
@@ -150,7 +154,7 @@ export const useUpdateGlobalCompatibilityMutation = () => {
 export const useUpdateSubjectCompatibilityMutation = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<
+  return useTanstackMutation<
     SchemaRegistryConfigResponse,
     Error,
     { subjectName: string; mode: 'DEFAULT' | SchemaRegistryCompatibilityMode }
@@ -208,7 +212,7 @@ export const useUpdateSubjectCompatibilityMutation = () => {
 export const useDeleteSchemaMutation = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<void, Error, { subjectName: string; permanent: boolean }>({
+  return useTanstackMutation<void, Error, { subjectName: string; permanent: boolean }>({
     mutationFn: async ({ subjectName, permanent }) => {
       const { api } = await import('state/backend-api');
       await api.deleteSchemaSubject(subjectName, permanent);
@@ -229,7 +233,7 @@ export const useDeleteSchemaMutation = () => {
 };
 
 export const useSchemaTypesQuery = () =>
-  useQuery<string[]>({
+  useTanstackQuery<string[]>({
     queryKey: ['schemaRegistry', 'types'],
     queryFn: async () => {
       const response = await authenticatedFetch(`${config.restBasePath}/schema-registry/schemas/types`, {
@@ -254,7 +258,7 @@ export const useSchemaTypesQuery = () =>
 export const useCreateSchemaMutation = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<
+  return useTanstackMutation<
     { id: number },
     Error,
     {
@@ -303,7 +307,7 @@ export const useCreateSchemaMutation = () => {
 };
 
 export const useValidateSchemaMutation = () =>
-  useMutation<
+  useTanstackMutation<
     {
       isValid: boolean;
       parsingError?: string;
@@ -348,7 +352,7 @@ export const useValidateSchemaMutation = () =>
   });
 
 export const useSchemaReferencedByQuery = (subjectName: string, version: number, options?: { enabled?: boolean }) => {
-  return useQuery<{ schemaId: number; error?: string; usages: { subject: string; version: number }[] }[]>({
+  return useTanstackQuery<{ schemaId: number; error?: string; usages: { subject: string; version: number }[] }[]>({
     queryKey: ['schemaRegistry', 'subjects', subjectName, 'versions', version, 'referencedby'],
     queryFn: async () => {
       const response = await fetch(
@@ -382,7 +386,7 @@ export const useSchemaReferencedByQuery = (subjectName: string, version: number,
 export const useDeleteSchemaVersionMutation = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<void, Error, { subjectName: string; version: 'latest' | number; permanent: boolean }>({
+  return useTanstackMutation<void, Error, { subjectName: string; version: 'latest' | number; permanent: boolean }>({
     mutationFn: async ({ subjectName, version, permanent }) => {
       const response = await fetch(
         `${config.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${encodeURIComponent(version)}?permanent=${permanent ? 'true' : 'false'}`,
@@ -418,7 +422,7 @@ export const useDeleteSchemaVersionMutation = () => {
 };
 
 export const useSchemaUsagesByIdQuery = (schemaId: number | null) => {
-  return useQuery<SchemaVersion[]>({
+  return useTanstackQuery<SchemaVersion[]>({
     queryKey: ['schemaRegistry', 'schemas', 'ids', schemaId, 'versions'],
     queryFn: async () => {
       if (schemaId === null) {
