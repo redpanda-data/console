@@ -675,12 +675,7 @@ message GetPipelineServiceConfigSchemaResponse {
 }
 
 message GetComponentListRequest {
-  // Regex pattern to filter component types.
-  // Examples: "inputs|outputs", "processors", ".*" (for all)
-  string component_type_regex = 1;
-
-  // List of component fields to skip in the response.
-  repeated string skip_fields = 2;
+  google.protobuf.FieldMask read_mask = 1;
 }
 
 message GetComponentListResponse {

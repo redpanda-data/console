@@ -4553,20 +4553,10 @@ paths:
       description: Returns a JSON list of available [components](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about), filtered by component type.
       operationId: PipelineService_GetComponentList
       parameters:
-        - description: |-
-            Regex pattern to filter component types.
-            Examples: "inputs|outputs", "processors", ".*" (for all)
-          in: query
-          name: component_type_regex
+        - in: query
+          name: read_mask
           schema:
             type: string
-        - description: List of component fields to skip in the response.
-          in: query
-          name: skip_fields
-          schema:
-            items:
-              type: string
-            type: array
       responses:
         "200":
           content:
@@ -6258,7 +6248,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
