@@ -23,7 +23,11 @@ import {
 } from '../../../react-query/api/schema';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
-import type { SchemaRegistryCompatibilityMode } from '../../../state/rest-interfaces';
+import type {
+  SchemaRegistryCompatibilityMode,
+  SchemaRegistrySubjectDetails,
+  SchemaRegistryVersionedSchema,
+} from '../../../state/rest-interfaces';
 import { uiState } from '../../../state/ui-state';
 import { Button, DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
@@ -113,7 +117,7 @@ function EditSchemaCompatibility(p: {
   subjectName?: string;
   schemaMode: string | null | undefined;
   schemaCompatibility: string | null | undefined;
-  schemaDetails: any;
+  schemaDetails: SchemaRegistrySubjectDetails | undefined;
   onClose: () => void;
 }) {
   const toast = useToast();
@@ -121,7 +125,9 @@ function EditSchemaCompatibility(p: {
   const updateGlobalMutation = useUpdateGlobalCompatibilityMutation();
   const updateSubjectMutation = useUpdateSubjectCompatibilityMutation();
 
-  const schema = schemaDetails?.schemas.first((x: any) => x.version === schemaDetails.latestActiveVersion);
+  const schema = schemaDetails?.schemas.first(
+    (x: SchemaRegistryVersionedSchema) => x.version === schemaDetails.latestActiveVersion
+  );
 
   const [configMode, setConfigMode] = useState<string>(
     (subjectName ? schemaDetails?.compatibility : schemaCompatibility) ?? 'DEFAULT'
@@ -132,33 +138,56 @@ function EditSchemaCompatibility(p: {
   }
 
   const onSave = () => {
-    const mutation = subjectName ? updateSubjectMutation : updateGlobalMutation;
-    const mutationArgs = subjectName
-      ? { subjectName, mode: configMode as 'DEFAULT' | SchemaRegistryCompatibilityMode }
-      : (configMode as SchemaRegistryCompatibilityMode);
-
-    mutation.mutate(mutationArgs as any, {
-      onSuccess: () => {
-        toast({
-          status: 'success',
-          duration: 4000,
-          isClosable: false,
-          title: `Compatibility mode updated to ${configMode}`,
-          position: 'top-right',
-        });
-        p.onClose();
-      },
-      onError: (err) => {
-        toast({
-          status: 'error',
-          duration: null,
-          isClosable: true,
-          title: 'Failed to update compatibility mode',
-          description: String(err),
-          position: 'top-right',
-        });
-      },
-    });
+    if (subjectName) {
+      updateSubjectMutation.mutate(
+        { subjectName, mode: configMode as 'DEFAULT' | SchemaRegistryCompatibilityMode },
+        {
+          onSuccess: () => {
+            toast({
+              status: 'success',
+              duration: 4000,
+              isClosable: false,
+              title: `Compatibility mode updated to ${configMode}`,
+              position: 'top-right',
+            });
+            p.onClose();
+          },
+          onError: (err) => {
+            toast({
+              status: 'error',
+              duration: null,
+              isClosable: true,
+              title: 'Failed to update compatibility mode',
+              description: String(err),
+              position: 'top-right',
+            });
+          },
+        }
+      );
+    } else {
+      updateGlobalMutation.mutate(configMode as SchemaRegistryCompatibilityMode, {
+        onSuccess: () => {
+          toast({
+            status: 'success',
+            duration: 4000,
+            isClosable: false,
+            title: `Compatibility mode updated to ${configMode}`,
+            position: 'top-right',
+          });
+          p.onClose();
+        },
+        onError: (err) => {
+          toast({
+            status: 'error',
+            duration: null,
+            isClosable: true,
+            title: 'Failed to update compatibility mode',
+            description: String(err),
+            position: 'top-right',
+          });
+        },
+      });
+    }
   };
 
   return (

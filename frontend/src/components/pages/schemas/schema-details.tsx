@@ -56,12 +56,13 @@ import PageContent from '../../misc/page-content';
 import { SingleSelect } from '../../misc/select';
 import { SmallStat } from '../../misc/small-stat';
 
-const { ToastContainer, toast } = createStandaloneToast();
+const { ToastContainer } = createStandaloneToast();
 
 const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: subjectNameProp }) => {
   const { subjectName: subjectNameParam } = useParams<{ subjectName: string }>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const toast = useToast();
 
   // Use prop if provided (for routing), otherwise use URL param
   const subjectNameRaw = decodeURIComponentPercents(subjectNameProp || subjectNameParam || '');
@@ -239,7 +240,7 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
 
-  const subject = p.subject;
+  const subjectData = p.subject;
 
   const { data: userData } = useGetIdentityQuery();
   const deleteVersionMutation = useDeleteSchemaVersionMutation();
@@ -251,14 +252,16 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
 
   // Determine fallback version when no specific version is requested
   const fallbackVersion =
-    subject.latestActiveVersion === -1 ? subject.schemas.last()?.version : subject.latestActiveVersion;
+    subjectData.latestActiveVersion === -1 ? subjectData.schemas.last()?.version : subjectData.latestActiveVersion;
 
   // Check if requested version exists in available schemas
-  const requestedVersionExists = versionNumber ? subject.schemas.some((s) => s.version === versionNumber) : true;
+  const requestedVersionExists = versionNumber ? subjectData.schemas.some((s) => s.version === versionNumber) : true;
 
   // Use URL parameter if provided and exists, otherwise fall back to latest active version
   const defaultVersion =
-    versionNumber && requestedVersionExists ? versionNumber : (fallbackVersion ?? subject.versions[0]?.version ?? 1);
+    versionNumber && requestedVersionExists
+      ? versionNumber
+      : (fallbackVersion ?? subjectData.versions[0]?.version ?? 1);
   const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
 
   // Show notification and update URL if requested version doesn't exist
@@ -275,7 +278,7 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
     }
   }, [versionNumber, requestedVersionExists, fallbackVersion, toast, setSearchParams]);
 
-  const schema = subject.schemas.first((x) => x.version === selectedVersion);
+  const schema = subjectData.schemas.first((x) => x.version === selectedVersion);
 
   useEffect(() => {
     if (!schema && selectedVersion !== defaultVersion) {
@@ -296,9 +299,9 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
   };
 
   const handlePermanentDelete = () => {
-    openPermanentDeleteModal(`${subject.name} version ${schema.version}`, () => {
+    openPermanentDeleteModal(`${subjectData.name} version ${schema.version}`, () => {
       deleteVersionMutation.mutate(
-        { subjectName: subject.name, version: schema.version, permanent: true },
+        { subjectName: subjectData.name, version: schema.version, permanent: true },
         {
           onSuccess: async () => {
             toast({
@@ -309,11 +312,13 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
             });
 
             // Invalidate and refetch to get updated details
-            await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects', subject.name, 'details'] });
+            await queryClient.invalidateQueries({
+              queryKey: ['schemaRegistry', 'subjects', subjectData.name, 'details'],
+            });
             const newDetails = queryClient.getQueryData<SchemaRegistrySubjectDetails>([
               'schemaRegistry',
               'subjects',
-              subject.name,
+              subjectData.name,
               'details',
             ]);
 
@@ -340,7 +345,7 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
   const handleRecover = () => {
     createSchemaMutation.mutate(
       {
-        subjectName: subject.name,
+        subjectName: subjectData.name,
         schemaType: schema.type,
         schema: schema.schema,
         references: schema.references,
@@ -351,19 +356,19 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
             status: 'success',
             duration: 4000,
             isClosable: false,
-            title: `Schema ${subject.name} ${schema.version} has been recovered`,
+            title: `Schema ${subjectData.name} ${schema.version} has been recovered`,
             description: `Schema ID: ${result.id}`,
           });
 
           // Navigate to the latest active version after recovery
-          navigate(`/schema-registry/subjects/${encodeURIComponent(subject.name)}?version=latest`);
+          navigate(`/schema-registry/subjects/${encodeURIComponent(subjectData.name)}?version=latest`);
         },
         onError: (err) => {
           toast({
             status: 'error',
             duration: null,
             isClosable: true,
-            title: `Failed to recover schema ${subject.name} ${schema.version}`,
+            title: `Failed to recover schema ${subjectData.name} ${schema.version}`,
             description: `Error: ${String(err)}`,
           });
         },
@@ -372,9 +377,9 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
   };
 
   const handleSoftDelete = () => {
-    openDeleteModal(`${subject.name} version ${schema.version}`, () => {
+    openDeleteModal(`${subjectData.name} version ${schema.version}`, () => {
       deleteVersionMutation.mutate(
-        { subjectName: subject.name, version: schema.version, permanent: false },
+        { subjectName: subjectData.name, version: schema.version, permanent: false },
         {
           onSuccess: () => {
             toast({
@@ -408,14 +413,14 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
           <Label text="Version">
             <Box width="200px">
               <SingleSelect
-                isDisabled={subject.versions.length === 0}
+                isDisabled={subjectData.versions.length === 0}
                 onChange={handleVersionChange}
-                options={subject.versions.map((v) => ({
+                options={subjectData.versions.map((v) => ({
                   value: v.version,
                   label:
                     String(v.version) +
                     (v.isSoftDeleted ? ' (soft-deleted)' : '') +
-                    (subject.versions.at(-1) === v ? ' (latest)' : ''),
+                    (subjectData.versions.at(-1) === v ? ' (latest)' : ''),
                 }))}
                 value={selectedVersion}
               />
@@ -487,7 +492,7 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
 
       {/* References Box */}
       <Box>
-        <SchemaReferences schema={schema} subject={subject} />
+        <SchemaReferences schema={schema} subject={subjectData} />
       </Box>
     </Flex>
   );

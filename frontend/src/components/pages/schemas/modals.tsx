@@ -150,7 +150,7 @@ export function openValidationErrorsModal(result: {
 }) {
   const { isValid, errorDetails, isCompatible } = result;
 
-  let compatBox = null;
+  let compatBox: JSX.Element | null = null;
   if (isCompatible !== undefined && isValid !== false) {
     if (isCompatible) {
       compatBox = (

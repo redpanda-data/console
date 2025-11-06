@@ -509,7 +509,9 @@ function useSchemaEditorState() {
       try {
         const obj = JSON.parse(schemaText);
         return obj.name;
-      } catch {}
+      } catch {
+        // JSON parsing failed, continue to regex fallback
+      }
 
       // Fallback to regex matching
       const ar = JSON_NAME_REGEX.exec(schemaText);
