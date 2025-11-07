@@ -21,6 +21,7 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues,
+    mode: 'onBlur', // Enable validation on blur
   });
 
   return (
@@ -38,8 +39,8 @@ const getBootstrapInput = (index: number) => {
   return within(formItem).getByRole('textbox');
 };
 
-// Validation error message pattern
-const ERROR_MESSAGE_PATTERN = /Must be in format host:port/i;
+// Validation error message
+const ERROR_MESSAGE = 'Must be in format host:port (e.g., localhost:9092)';
 
 describe('BootstrapServers', () => {
   describe('Rendering', () => {
@@ -100,7 +101,7 @@ describe('BootstrapServers', () => {
 
       await waitFor(() => {
         const formItem = screen.getByTestId('bootstrap-server-input-0');
-        expect(within(formItem).getByText(ERROR_MESSAGE_PATTERN)).toBeInTheDocument();
+        expect(within(formItem).getByText(ERROR_MESSAGE)).toBeInTheDocument();
       });
 
       fireEvent.change(input, { target: { value: 'localhost:9092' } });
@@ -108,7 +109,7 @@ describe('BootstrapServers', () => {
 
       await waitFor(() => {
         const formItem = screen.getByTestId('bootstrap-server-input-0');
-        expect(within(formItem).queryByText(ERROR_MESSAGE_PATTERN)).not.toBeInTheDocument();
+        expect(within(formItem).queryByText(ERROR_MESSAGE)).not.toBeInTheDocument();
       });
     });
   });
