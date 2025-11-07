@@ -159,7 +159,7 @@ export const FilterItem = <TFieldValues extends FieldValues>({
                 return (
                   <FormItem className="flex-1 space-y-3">
                     <Tabs onValueChange={handleTabChange} value={getTabValue()}>
-                      <TabsList data-testid={dataTestId ? `${dataTestId}-filter-type` : undefined} variant="underline">
+                      <TabsList data-testid={dataTestId ? `${dataTestId}-filter-type` : undefined}>
                         <TabsTrigger
                           data-testid={dataTestId ? `${dataTestId}-include-specific` : undefined}
                           value="include-specific"
