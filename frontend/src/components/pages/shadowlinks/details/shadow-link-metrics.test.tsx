@@ -10,9 +10,10 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import { describe, expect, test, vi } from 'vitest';
 import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { describe, expect, test, vi } from 'vitest';
+
 import { ShadowLinkMetrics } from './shadow-link-metrics';
 
 // Mock the useGetShadowMetricsQuery hook
@@ -59,6 +60,6 @@ describe('ShadowLinkMetrics', () => {
     render(<ShadowLinkMetrics shadowLink={mockShadowLink} />);
 
     expect(screen.getByTestId('shadow-link-metrics-error')).toBeInTheDocument();
-    expect(screen.getByText(/Failed to load metrics/)).toBeInTheDocument();
+    expect(screen.getByText('Failed to load metrics: Failed to fetch metrics')).toBeInTheDocument();
   });
 });
