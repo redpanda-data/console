@@ -23,6 +23,8 @@ import {
   type CreateShadowLinkResponseSchema,
   type GetShadowLinkRequest,
   GetShadowLinkRequestSchema,
+  type GetShadowMetricsRequest,
+  GetShadowMetricsRequestSchema,
   type ListShadowLinksRequest,
   ListShadowLinksRequestSchema,
   type ListShadowLinkTopicsRequest,
@@ -32,6 +34,7 @@ import {
   createShadowLink,
   deleteShadowLink,
   getShadowLink,
+  getShadowMetrics,
   listShadowLinks,
   listShadowLinkTopics,
 } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
@@ -54,13 +57,39 @@ export const useGetShadowLinkQuery = (request: MessageInit<GetShadowLinkRequest>
   return useQuery(getShadowLink, getShadowLinkRequest);
 };
 
+export const useGetShadowMetricsQuery = (
+  request: MessageInit<GetShadowMetricsRequest>,
+  options?: {
+    refetchInterval?: number;
+    enabled?: boolean;
+    refetchOnWindowFocus?: boolean;
+    refetchOnReconnect?: boolean;
+    staleTime?: number;
+    gcTime?: number;
+  }
+) => {
+  const getShadowMetricsRequest = create(GetShadowMetricsRequestSchema, request);
+
+  return useQuery(getShadowMetrics, getShadowMetricsRequest, options);
+};
+
 export const useListShadowTopicQuery = (request: MessageInit<ListShadowLinkTopicsRequest>) => {
   const listShadowTopicsRequest = create(ListShadowLinkTopicsRequestSchema, request);
 
   return useQuery(listShadowLinkTopics, listShadowTopicsRequest);
 };
 
-export const useListShadowTopicInfiniteQuery = (request: MessageInit<ListShadowLinkTopicsRequest>) => {
+export const useListShadowTopicInfiniteQuery = (
+  request: MessageInit<ListShadowLinkTopicsRequest>,
+  options?: {
+    refetchInterval?: number;
+    enabled?: boolean;
+    refetchOnWindowFocus?: boolean;
+    refetchOnReconnect?: boolean;
+    staleTime?: number;
+    gcTime?: number;
+  }
+) => {
   const baseRequest = create(ListShadowLinkTopicsRequestSchema, {
     pageToken: '',
     ...request,
@@ -69,6 +98,7 @@ export const useListShadowTopicInfiniteQuery = (request: MessageInit<ListShadowL
   return useInfiniteQuery(listShadowLinkTopics, baseRequest, {
     getNextPageParam: (lastPage) => lastPage?.nextPageToken || undefined,
     pageParamKey: 'pageToken',
+    ...options,
   });
 };
 
