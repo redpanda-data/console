@@ -58,11 +58,11 @@ export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ 
 
 // Functional component to fetch and display shadow link data
 export const ShadowLinkSection: FC = () => {
-  const { data: shadowLinksData, isLoading } = useListShadowLinksQuery({});
+  const { data: shadowLinksData, isLoading, error } = useListShadowLinksQuery({});
 
-  // Don't render if no shadow link exists
+  // Don't render if error, loading, or no shadow link exists
   const shadowLinks = shadowLinksData?.shadowLinks || [];
-  if (isLoading || shadowLinks.length === 0) {
+  if (error || isLoading || shadowLinks.length === 0) {
     return null;
   }
 
