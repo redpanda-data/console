@@ -14,10 +14,7 @@ service MonitoringService {
   };
 
   rpc ListKafkaConnections(core.admin.v2.ListKafkaConnectionsRequest) returns (core.admin.v2.ListKafkaConnectionsResponse) {
-    option (google.api.http) = {
-      post: "/v1/monitoring/connections"
-      body: "*"
-    };
+    option (google.api.http) = {get: "/v1/monitoring/kafka/connections"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List Recent Connections"
       description: "List information on recent connections to the cluster."

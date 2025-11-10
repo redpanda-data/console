@@ -1189,61 +1189,6 @@ components:
             $ref: '#/components/schemas/Secret'
           type: array
       type: object
-    ListKafkaConnectionsRequest:
-      description: |-
-        ListKafkaConnectionsRequest return information about the broker's Kafka
-        connections.
-      properties:
-        filter:
-          description: |-
-            Limitations (not supported):
-            - Logical OR chaining
-            - Parentheses `(` `)` for grouping
-            - Map and repeated types
-            - HAS (:) operator
-            - Negation (-, NOT)
-            - Bare literal matching
-
-            Example filters:
-            - `state = KAFKA_CONNECTION_STATE_OPEN`
-            - `idle_duration > 30s AND total_request_statistics.request_count > 100`
-            - `authentication_info.user_principal = "my-producer"`
-            - `recent_request_statistics.produce_bytes > 1000 AND
-            client_software_name = "kgo"`
-            - `open_time >= 2025-09-01T10:22:54Z`
-
-            Reference: https://google.aip.dev/160
-          title: |-
-            Filter expression to apply to the connection list.
-            Uses a subset of AIP-160 filter syntax supporting:
-            - Field comparisons (`=`, `!=`, `<`, `>`, `<=`, `>=`)
-            - Logical AND chaining: condition1 AND condition2
-            - Nested field access: parent.child = value
-            - Escape sequences: field = "string with \"quotes\""
-            - Enum types
-            - RFC3339 timestamps and ISO-like duration
-          type: string
-        order_by:
-          description: 'Reference: https://google.aip.dev/132#ordering'
-          title: |-
-            Field-based ordering specification following AIP-132 syntax.
-            Supports multiple fields with `asc`/`desc` direction indicators.
-            Examples:
-            - `idle_duration desc` - longest idle connections first
-            - `open_time desc, total_request_statistics.request_count desc` - newest
-            connections first, then most active
-            - `recent_request_statistics.produce_bytes desc` - connections with
-            highest current produce throughput first
-          type: string
-        page_size:
-          description: |-
-            The maximum number of connections to return. If unspecified or 0, a
-            default value may be applied. Note that paging is currently not fully
-            supported, and this field only acts as a limit for the first page of data
-            returned. Subsequent pages of data cannot be requested.
-          format: int32
-          type: integer
-      type: object
     ListKafkaConnectionsResponse:
       description: |-
         ListKafkaConnectionsResponse is the response from the ListKafkaConnections
@@ -4070,20 +4015,67 @@ paths:
       summary: Update Connect cluster secret
       tags:
         - Secrets
-  /v1/monitoring/connections:
-    post:
+  /v1/monitoring/kafka/connections:
+    get:
       description: List information on recent connections to the cluster.
       operationId: MonitoringService_ListKafkaConnections
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ListKafkaConnectionsRequest'
-        description: |-
-          ListKafkaConnectionsRequest return information about the broker's Kafka
-          connections.
-        required: true
-        x-originalParamName: body
+      parameters:
+        - description: |-
+            The maximum number of connections to return. If unspecified or 0, a
+            default value may be applied. Note that paging is currently not fully
+            supported, and this field only acts as a limit for the first page of data
+            returned. Subsequent pages of data cannot be requested.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: |-
+            Filter expression to apply to the connection list.
+            Uses a subset of AIP-160 filter syntax supporting:
+            - Field comparisons (`=`, `!=`, `<`, `>`, `<=`, `>=`)
+            - Logical AND chaining: condition1 AND condition2
+            - Nested field access: parent.child = value
+            - Escape sequences: field = "string with \"quotes\""
+            - Enum types
+            - RFC3339 timestamps and ISO-like duration
+
+            Limitations (not supported):
+            - Logical OR chaining
+            - Parentheses `(` `)` for grouping
+            - Map and repeated types
+            - HAS (:) operator
+            - Negation (-, NOT)
+            - Bare literal matching
+
+            Example filters:
+            - `state = KAFKA_CONNECTION_STATE_OPEN`
+            - `idle_duration > 30s AND total_request_statistics.request_count > 100`
+            - `authentication_info.user_principal = "my-producer"`
+            - `recent_request_statistics.produce_bytes > 1000 AND
+            client_software_name = "kgo"`
+            - `open_time >= 2025-09-01T10:22:54Z`
+
+            Reference: https://google.aip.dev/160
+          in: query
+          name: filter
+          schema:
+            type: string
+        - description: |-
+            Field-based ordering specification following AIP-132 syntax.
+            Supports multiple fields with `asc`/`desc` direction indicators.
+            Examples:
+            - `idle_duration desc` - longest idle connections first
+            - `open_time desc, total_request_statistics.request_count desc` - newest
+            connections first, then most active
+            - `recent_request_statistics.produce_bytes desc` - connections with
+            highest current produce throughput first
+
+            Reference: https://google.aip.dev/132#ordering
+          in: query
+          name: order_by
+          schema:
+            type: string
       responses:
         "200":
           content:
@@ -5946,7 +5938,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
