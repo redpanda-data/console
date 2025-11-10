@@ -25,8 +25,6 @@ import (
 
 var _ dataplanev1connect.MonitoringServiceHandler = (*Service)(nil)
 
-var defaultLimit = int32(30)
-
 // Service implements MonitoringServiceHandler
 type Service struct {
 	cfg                   *config.Config
@@ -48,10 +46,6 @@ func (s *Service) ListKafkaConnections(ctx context.Context, req *connect.Request
 	adminClient, err := s.redpandaClientFactory.GetRedpandaAPIClient(ctx)
 	if err != nil {
 		return nil, err
-	}
-
-	if req.Msg.PageSize == 0 {
-		req.Msg.PageSize = defaultLimit
 	}
 
 	resp, err := adminClient.ClusterService().ListKafkaConnections(ctx, req)
