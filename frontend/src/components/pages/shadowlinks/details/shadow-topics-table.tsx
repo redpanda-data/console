@@ -11,6 +11,7 @@
 
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Input } from 'components/redpanda-ui/components/input';
@@ -25,23 +26,17 @@ import { useNavigate } from 'react-router-dom';
 
 const StatusBadge = ({ state }: { state: ShadowTopicState }) => {
   const stateInfo = {
-    [ShadowTopicState.UNSPECIFIED]: { text: 'Unknown', className: 'bg-gray-100 text-gray-800' },
-    [ShadowTopicState.ACTIVE]: { text: 'Active', className: 'bg-green-100 text-green-800' },
-    [ShadowTopicState.FAULTED]: { text: 'Error', className: 'bg-red-100 text-red-800' },
-    [ShadowTopicState.PAUSED]: { text: 'Paused', className: 'bg-yellow-100 text-yellow-800' },
-    [ShadowTopicState.FAILING_OVER]: { text: 'Failing over', className: 'bg-yellow-100 text-yellow-800' },
-    [ShadowTopicState.FAILED_OVER]: { text: 'Failed over', className: 'bg-blue-100 text-blue-800' },
-    [ShadowTopicState.PROMOTING]: { text: 'Promoting', className: 'bg-purple-100 text-purple-800' },
-    [ShadowTopicState.PROMOTED]: { text: 'Promoted', className: 'bg-purple-100 text-purple-800' },
-  }[state] || { text: 'Unknown', className: 'bg-gray-100 text-gray-800' };
+    [ShadowTopicState.UNSPECIFIED]: { text: 'Unknown', variant: 'gray' as const },
+    [ShadowTopicState.ACTIVE]: { text: 'Active', variant: 'green' as const },
+    [ShadowTopicState.FAULTED]: { text: 'Error', variant: 'red' as const },
+    [ShadowTopicState.PAUSED]: { text: 'Paused', variant: 'yellow' as const },
+    [ShadowTopicState.FAILING_OVER]: { text: 'Failing over', variant: 'orange' as const },
+    [ShadowTopicState.FAILED_OVER]: { text: 'Failed over', variant: 'blue' as const },
+    [ShadowTopicState.PROMOTING]: { text: 'Promoting', variant: 'purple' as const },
+    [ShadowTopicState.PROMOTED]: { text: 'Promoted', variant: 'purple' as const },
+  }[state] || { text: 'Unknown', variant: 'gray' as const };
 
-  return (
-    <span
-      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 font-medium text-xs ${stateInfo.className}`}
-    >
-      {stateInfo.text}
-    </span>
-  );
+  return <Badge variant={stateInfo.variant}>{stateInfo.text}</Badge>;
 };
 
 interface ShadowTopicsTableProps {
