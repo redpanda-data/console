@@ -67,9 +67,9 @@ const (
 	// SecretServiceDeleteKafkaConnectSecretProcedure is the fully-qualified name of the SecretService's
 	// DeleteKafkaConnectSecret RPC.
 	SecretServiceDeleteKafkaConnectSecretProcedure = "/redpanda.api.dataplane.v1.SecretService/DeleteKafkaConnectSecret"
-	// SecretServiceListResourcesBySecretProcedure is the fully-qualified name of the SecretService's
-	// ListResourcesBySecret RPC.
-	SecretServiceListResourcesBySecretProcedure = "/redpanda.api.dataplane.v1.SecretService/ListResourcesBySecret"
+	// SecretServiceListResourcesBySecretsProcedure is the fully-qualified name of the SecretService's
+	// ListResourcesBySecrets RPC.
+	SecretServiceListResourcesBySecretsProcedure = "/redpanda.api.dataplane.v1.SecretService/ListResourcesBySecrets"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -86,7 +86,7 @@ var (
 	secretServiceCreateKafkaConnectSecretMethodDescriptor = secretServiceServiceDescriptor.Methods().ByName("CreateKafkaConnectSecret")
 	secretServiceUpdateKafkaConnectSecretMethodDescriptor = secretServiceServiceDescriptor.Methods().ByName("UpdateKafkaConnectSecret")
 	secretServiceDeleteKafkaConnectSecretMethodDescriptor = secretServiceServiceDescriptor.Methods().ByName("DeleteKafkaConnectSecret")
-	secretServiceListResourcesBySecretMethodDescriptor    = secretServiceServiceDescriptor.Methods().ByName("ListResourcesBySecret")
+	secretServiceListResourcesBySecretsMethodDescriptor   = secretServiceServiceDescriptor.Methods().ByName("ListResourcesBySecrets")
 )
 
 // SecretServiceClient is a client for the redpanda.api.dataplane.v1.SecretService service.
@@ -113,8 +113,8 @@ type SecretServiceClient interface {
 	UpdateKafkaConnectSecret(context.Context, *connect.Request[v1.UpdateKafkaConnectSecretRequest]) (*connect.Response[v1.UpdateKafkaConnectSecretResponse], error)
 	// DeleteKafkaConnectSecret deletes the secret.
 	DeleteKafkaConnectSecret(context.Context, *connect.Request[v1.DeleteKafkaConnectSecretRequest]) (*connect.Response[v1.DeleteKafkaConnectSecretResponse], error)
-	// ListResourcesBySecret returns resources that uses given secret
-	ListResourcesBySecret(context.Context, *connect.Request[v1.ListResourcesBySecretRequest]) (*connect.Response[v1.ListResourcesBySecretResponse], error)
+	// ListResourcesBySecrets returns resources that uses given secret
+	ListResourcesBySecrets(context.Context, *connect.Request[v1.ListResourcesBySecretsRequest]) (*connect.Response[v1.ListResourcesBySecretsResponse], error)
 }
 
 // NewSecretServiceClient constructs a client for the redpanda.api.dataplane.v1.SecretService
@@ -193,10 +193,10 @@ func NewSecretServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(secretServiceDeleteKafkaConnectSecretMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		listResourcesBySecret: connect.NewClient[v1.ListResourcesBySecretRequest, v1.ListResourcesBySecretResponse](
+		listResourcesBySecrets: connect.NewClient[v1.ListResourcesBySecretsRequest, v1.ListResourcesBySecretsResponse](
 			httpClient,
-			baseURL+SecretServiceListResourcesBySecretProcedure,
-			connect.WithSchema(secretServiceListResourcesBySecretMethodDescriptor),
+			baseURL+SecretServiceListResourcesBySecretsProcedure,
+			connect.WithSchema(secretServiceListResourcesBySecretsMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -215,7 +215,7 @@ type secretServiceClient struct {
 	createKafkaConnectSecret *connect.Client[v1.CreateKafkaConnectSecretRequest, v1.CreateKafkaConnectSecretResponse]
 	updateKafkaConnectSecret *connect.Client[v1.UpdateKafkaConnectSecretRequest, v1.UpdateKafkaConnectSecretResponse]
 	deleteKafkaConnectSecret *connect.Client[v1.DeleteKafkaConnectSecretRequest, v1.DeleteKafkaConnectSecretResponse]
-	listResourcesBySecret    *connect.Client[v1.ListResourcesBySecretRequest, v1.ListResourcesBySecretResponse]
+	listResourcesBySecrets   *connect.Client[v1.ListResourcesBySecretsRequest, v1.ListResourcesBySecretsResponse]
 }
 
 // GetSecret calls redpanda.api.dataplane.v1.SecretService.GetSecret.
@@ -273,9 +273,9 @@ func (c *secretServiceClient) DeleteKafkaConnectSecret(ctx context.Context, req 
 	return c.deleteKafkaConnectSecret.CallUnary(ctx, req)
 }
 
-// ListResourcesBySecret calls redpanda.api.dataplane.v1.SecretService.ListResourcesBySecret.
-func (c *secretServiceClient) ListResourcesBySecret(ctx context.Context, req *connect.Request[v1.ListResourcesBySecretRequest]) (*connect.Response[v1.ListResourcesBySecretResponse], error) {
-	return c.listResourcesBySecret.CallUnary(ctx, req)
+// ListResourcesBySecrets calls redpanda.api.dataplane.v1.SecretService.ListResourcesBySecrets.
+func (c *secretServiceClient) ListResourcesBySecrets(ctx context.Context, req *connect.Request[v1.ListResourcesBySecretsRequest]) (*connect.Response[v1.ListResourcesBySecretsResponse], error) {
+	return c.listResourcesBySecrets.CallUnary(ctx, req)
 }
 
 // SecretServiceHandler is an implementation of the redpanda.api.dataplane.v1.SecretService service.
@@ -302,8 +302,8 @@ type SecretServiceHandler interface {
 	UpdateKafkaConnectSecret(context.Context, *connect.Request[v1.UpdateKafkaConnectSecretRequest]) (*connect.Response[v1.UpdateKafkaConnectSecretResponse], error)
 	// DeleteKafkaConnectSecret deletes the secret.
 	DeleteKafkaConnectSecret(context.Context, *connect.Request[v1.DeleteKafkaConnectSecretRequest]) (*connect.Response[v1.DeleteKafkaConnectSecretResponse], error)
-	// ListResourcesBySecret returns resources that uses given secret
-	ListResourcesBySecret(context.Context, *connect.Request[v1.ListResourcesBySecretRequest]) (*connect.Response[v1.ListResourcesBySecretResponse], error)
+	// ListResourcesBySecrets returns resources that uses given secret
+	ListResourcesBySecrets(context.Context, *connect.Request[v1.ListResourcesBySecretsRequest]) (*connect.Response[v1.ListResourcesBySecretsResponse], error)
 }
 
 // NewSecretServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -378,10 +378,10 @@ func NewSecretServiceHandler(svc SecretServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(secretServiceDeleteKafkaConnectSecretMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	secretServiceListResourcesBySecretHandler := connect.NewUnaryHandler(
-		SecretServiceListResourcesBySecretProcedure,
-		svc.ListResourcesBySecret,
-		connect.WithSchema(secretServiceListResourcesBySecretMethodDescriptor),
+	secretServiceListResourcesBySecretsHandler := connect.NewUnaryHandler(
+		SecretServiceListResourcesBySecretsProcedure,
+		svc.ListResourcesBySecrets,
+		connect.WithSchema(secretServiceListResourcesBySecretsMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/redpanda.api.dataplane.v1.SecretService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -408,8 +408,8 @@ func NewSecretServiceHandler(svc SecretServiceHandler, opts ...connect.HandlerOp
 			secretServiceUpdateKafkaConnectSecretHandler.ServeHTTP(w, r)
 		case SecretServiceDeleteKafkaConnectSecretProcedure:
 			secretServiceDeleteKafkaConnectSecretHandler.ServeHTTP(w, r)
-		case SecretServiceListResourcesBySecretProcedure:
-			secretServiceListResourcesBySecretHandler.ServeHTTP(w, r)
+		case SecretServiceListResourcesBySecretsProcedure:
+			secretServiceListResourcesBySecretsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -463,6 +463,6 @@ func (UnimplementedSecretServiceHandler) DeleteKafkaConnectSecret(context.Contex
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.SecretService.DeleteKafkaConnectSecret is not implemented"))
 }
 
-func (UnimplementedSecretServiceHandler) ListResourcesBySecret(context.Context, *connect.Request[v1.ListResourcesBySecretRequest]) (*connect.Response[v1.ListResourcesBySecretResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.SecretService.ListResourcesBySecret is not implemented"))
+func (UnimplementedSecretServiceHandler) ListResourcesBySecrets(context.Context, *connect.Request[v1.ListResourcesBySecretsRequest]) (*connect.Response[v1.ListResourcesBySecretsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.SecretService.ListResourcesBySecrets is not implemented"))
 }

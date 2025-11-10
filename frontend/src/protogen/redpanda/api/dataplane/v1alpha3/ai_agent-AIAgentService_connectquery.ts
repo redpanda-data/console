@@ -53,3 +53,11 @@ export const stopAIAgent = AIAgentService.method.stopAIAgent;
  * @generated from rpc redpanda.api.dataplane.v1alpha3.AIAgentService.StartAIAgent
  */
 export const startAIAgent = AIAgentService.method.startAIAgent;
+
+/**
+ * ListAIAgentsBySecrets implements the get AI agents by secrets method which lists the AI agents
+ * in the Redpanda cluster for all secrets.
+ *
+ * @generated from rpc redpanda.api.dataplane.v1alpha3.AIAgentService.ListAIAgentsBySecrets
+ */
+export const listAIAgentsBySecrets = AIAgentService.method.listAIAgentsBySecrets;

@@ -333,6 +333,41 @@ func local_request_MCPServerService_GetMCPServerServiceConfigSchema_0(ctx contex
 	return msg, metadata, err
 }
 
+var filter_MCPServerService_ListMCPServersBySecrets_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+
+func request_MCPServerService_ListMCPServersBySecrets_0(ctx context.Context, marshaler runtime.Marshaler, client MCPServerServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq ListMCPServersBySecretsRequest
+		metadata runtime.ServerMetadata
+	)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_MCPServerService_ListMCPServersBySecrets_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	msg, err := client.ListMCPServersBySecrets(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_MCPServerService_ListMCPServersBySecrets_0(ctx context.Context, marshaler runtime.Marshaler, server MCPServerServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq ListMCPServersBySecretsRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_MCPServerService_ListMCPServersBySecrets_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	msg, err := server.ListMCPServersBySecrets(ctx, &protoReq)
+	return msg, metadata, err
+}
+
 func request_MCPServerService_LintMCPConfig_0(ctx context.Context, marshaler runtime.Marshaler, client MCPServerServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq LintMCPConfigRequest
@@ -525,6 +560,26 @@ func RegisterMCPServerServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 			return
 		}
 		forward_MCPServerService_GetMCPServerServiceConfigSchema_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodGet, pattern_MCPServerService_ListMCPServersBySecrets_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha3.MCPServerService/ListMCPServersBySecrets", runtime.WithHTTPPathPattern("/v1alpha3/redpanda-connect/mcp-servers-by-secrets"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_MCPServerService_ListMCPServersBySecrets_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_MCPServerService_ListMCPServersBySecrets_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodPost, pattern_MCPServerService_LintMCPConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -722,6 +777,23 @@ func RegisterMCPServerServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 		}
 		forward_MCPServerService_GetMCPServerServiceConfigSchema_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodGet, pattern_MCPServerService_ListMCPServersBySecrets_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha3.MCPServerService/ListMCPServersBySecrets", runtime.WithHTTPPathPattern("/v1alpha3/redpanda-connect/mcp-servers-by-secrets"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_MCPServerService_ListMCPServersBySecrets_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_MCPServerService_ListMCPServersBySecrets_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	mux.Handle(http.MethodPost, pattern_MCPServerService_LintMCPConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -751,6 +823,7 @@ var (
 	pattern_MCPServerService_StopMCPServer_0                   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1alpha3", "redpanda-connect", "mcp-servers", "id"}, "stop"))
 	pattern_MCPServerService_StartMCPServer_0                  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1alpha3", "redpanda-connect", "mcp-servers", "id"}, "start"))
 	pattern_MCPServerService_GetMCPServerServiceConfigSchema_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha3", "redpanda-connect", "mcp-servers"}, "getConfigSchema"))
+	pattern_MCPServerService_ListMCPServersBySecrets_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha3", "redpanda-connect", "mcp-servers-by-secrets"}, ""))
 	pattern_MCPServerService_LintMCPConfig_0                   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha3", "redpanda-connect", "mcp-servers"}, "lint-config"))
 )
 
@@ -763,5 +836,6 @@ var (
 	forward_MCPServerService_StopMCPServer_0                   = runtime.ForwardResponseMessage
 	forward_MCPServerService_StartMCPServer_0                  = runtime.ForwardResponseMessage
 	forward_MCPServerService_GetMCPServerServiceConfigSchema_0 = runtime.ForwardResponseMessage
+	forward_MCPServerService_ListMCPServersBySecrets_0         = runtime.ForwardResponseMessage
 	forward_MCPServerService_LintMCPConfig_0                   = runtime.ForwardResponseMessage
 )

@@ -28,7 +28,7 @@ type SecretServiceGatewayServer struct {
 	createKafkaConnectSecret connect_gateway.UnaryHandler[v1.CreateKafkaConnectSecretRequest, v1.CreateKafkaConnectSecretResponse]
 	updateKafkaConnectSecret connect_gateway.UnaryHandler[v1.UpdateKafkaConnectSecretRequest, v1.UpdateKafkaConnectSecretResponse]
 	deleteKafkaConnectSecret connect_gateway.UnaryHandler[v1.DeleteKafkaConnectSecretRequest, v1.DeleteKafkaConnectSecretResponse]
-	listResourcesBySecret    connect_gateway.UnaryHandler[v1.ListResourcesBySecretRequest, v1.ListResourcesBySecretResponse]
+	listResourcesBySecrets   connect_gateway.UnaryHandler[v1.ListResourcesBySecretsRequest, v1.ListResourcesBySecretsResponse]
 }
 
 // NewSecretServiceGatewayServer constructs a Connect-Gateway gRPC server for the SecretService
@@ -46,7 +46,7 @@ func NewSecretServiceGatewayServer(svc SecretServiceHandler, opts ...connect_gat
 		createKafkaConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceCreateKafkaConnectSecretProcedure, svc.CreateKafkaConnectSecret, opts...),
 		updateKafkaConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceUpdateKafkaConnectSecretProcedure, svc.UpdateKafkaConnectSecret, opts...),
 		deleteKafkaConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceDeleteKafkaConnectSecretProcedure, svc.DeleteKafkaConnectSecret, opts...),
-		listResourcesBySecret:    connect_gateway.NewUnaryHandler(SecretServiceListResourcesBySecretProcedure, svc.ListResourcesBySecret, opts...),
+		listResourcesBySecrets:   connect_gateway.NewUnaryHandler(SecretServiceListResourcesBySecretsProcedure, svc.ListResourcesBySecrets, opts...),
 	}
 }
 
@@ -94,8 +94,8 @@ func (s *SecretServiceGatewayServer) DeleteKafkaConnectSecret(ctx context.Contex
 	return s.deleteKafkaConnectSecret(ctx, req)
 }
 
-func (s *SecretServiceGatewayServer) ListResourcesBySecret(ctx context.Context, req *v1.ListResourcesBySecretRequest) (*v1.ListResourcesBySecretResponse, error) {
-	return s.listResourcesBySecret(ctx, req)
+func (s *SecretServiceGatewayServer) ListResourcesBySecrets(ctx context.Context, req *v1.ListResourcesBySecretsRequest) (*v1.ListResourcesBySecretsResponse, error) {
+	return s.listResourcesBySecrets(ctx, req)
 }
 
 // RegisterSecretServiceHandlerGatewayServer registers the Connect handlers for the SecretService

@@ -56,18 +56,22 @@ const (
 	// AIAgentServiceStartAIAgentProcedure is the fully-qualified name of the AIAgentService's
 	// StartAIAgent RPC.
 	AIAgentServiceStartAIAgentProcedure = "/redpanda.api.dataplane.v1alpha3.AIAgentService/StartAIAgent"
+	// AIAgentServiceListAIAgentsBySecretsProcedure is the fully-qualified name of the AIAgentService's
+	// ListAIAgentsBySecrets RPC.
+	AIAgentServiceListAIAgentsBySecretsProcedure = "/redpanda.api.dataplane.v1alpha3.AIAgentService/ListAIAgentsBySecrets"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	aIAgentServiceServiceDescriptor             = v1alpha3.File_redpanda_api_dataplane_v1alpha3_ai_agent_proto.Services().ByName("AIAgentService")
-	aIAgentServiceCreateAIAgentMethodDescriptor = aIAgentServiceServiceDescriptor.Methods().ByName("CreateAIAgent")
-	aIAgentServiceGetAIAgentMethodDescriptor    = aIAgentServiceServiceDescriptor.Methods().ByName("GetAIAgent")
-	aIAgentServiceListAIAgentsMethodDescriptor  = aIAgentServiceServiceDescriptor.Methods().ByName("ListAIAgents")
-	aIAgentServiceUpdateAIAgentMethodDescriptor = aIAgentServiceServiceDescriptor.Methods().ByName("UpdateAIAgent")
-	aIAgentServiceDeleteAIAgentMethodDescriptor = aIAgentServiceServiceDescriptor.Methods().ByName("DeleteAIAgent")
-	aIAgentServiceStopAIAgentMethodDescriptor   = aIAgentServiceServiceDescriptor.Methods().ByName("StopAIAgent")
-	aIAgentServiceStartAIAgentMethodDescriptor  = aIAgentServiceServiceDescriptor.Methods().ByName("StartAIAgent")
+	aIAgentServiceServiceDescriptor                     = v1alpha3.File_redpanda_api_dataplane_v1alpha3_ai_agent_proto.Services().ByName("AIAgentService")
+	aIAgentServiceCreateAIAgentMethodDescriptor         = aIAgentServiceServiceDescriptor.Methods().ByName("CreateAIAgent")
+	aIAgentServiceGetAIAgentMethodDescriptor            = aIAgentServiceServiceDescriptor.Methods().ByName("GetAIAgent")
+	aIAgentServiceListAIAgentsMethodDescriptor          = aIAgentServiceServiceDescriptor.Methods().ByName("ListAIAgents")
+	aIAgentServiceUpdateAIAgentMethodDescriptor         = aIAgentServiceServiceDescriptor.Methods().ByName("UpdateAIAgent")
+	aIAgentServiceDeleteAIAgentMethodDescriptor         = aIAgentServiceServiceDescriptor.Methods().ByName("DeleteAIAgent")
+	aIAgentServiceStopAIAgentMethodDescriptor           = aIAgentServiceServiceDescriptor.Methods().ByName("StopAIAgent")
+	aIAgentServiceStartAIAgentMethodDescriptor          = aIAgentServiceServiceDescriptor.Methods().ByName("StartAIAgent")
+	aIAgentServiceListAIAgentsBySecretsMethodDescriptor = aIAgentServiceServiceDescriptor.Methods().ByName("ListAIAgentsBySecrets")
 )
 
 // AIAgentServiceClient is a client for the redpanda.api.dataplane.v1alpha3.AIAgentService service.
@@ -87,6 +91,9 @@ type AIAgentServiceClient interface {
 	StopAIAgent(context.Context, *connect.Request[v1alpha3.StopAIAgentRequest]) (*connect.Response[v1alpha3.StopAIAgentResponse], error)
 	// StartAIAgent starts a specific AI agent that has been previously stopped.
 	StartAIAgent(context.Context, *connect.Request[v1alpha3.StartAIAgentRequest]) (*connect.Response[v1alpha3.StartAIAgentResponse], error)
+	// ListAIAgentsBySecrets implements the get AI agents by secrets method which lists the AI agents
+	// in the Redpanda cluster for all secrets.
+	ListAIAgentsBySecrets(context.Context, *connect.Request[v1alpha3.ListAIAgentsBySecretsRequest]) (*connect.Response[v1alpha3.ListAIAgentsBySecretsResponse], error)
 }
 
 // NewAIAgentServiceClient constructs a client for the
@@ -142,18 +149,25 @@ func NewAIAgentServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(aIAgentServiceStartAIAgentMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		listAIAgentsBySecrets: connect.NewClient[v1alpha3.ListAIAgentsBySecretsRequest, v1alpha3.ListAIAgentsBySecretsResponse](
+			httpClient,
+			baseURL+AIAgentServiceListAIAgentsBySecretsProcedure,
+			connect.WithSchema(aIAgentServiceListAIAgentsBySecretsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // aIAgentServiceClient implements AIAgentServiceClient.
 type aIAgentServiceClient struct {
-	createAIAgent *connect.Client[v1alpha3.CreateAIAgentRequest, v1alpha3.CreateAIAgentResponse]
-	getAIAgent    *connect.Client[v1alpha3.GetAIAgentRequest, v1alpha3.GetAIAgentResponse]
-	listAIAgents  *connect.Client[v1alpha3.ListAIAgentsRequest, v1alpha3.ListAIAgentsResponse]
-	updateAIAgent *connect.Client[v1alpha3.UpdateAIAgentRequest, v1alpha3.UpdateAIAgentResponse]
-	deleteAIAgent *connect.Client[v1alpha3.DeleteAIAgentRequest, v1alpha3.DeleteAIAgentResponse]
-	stopAIAgent   *connect.Client[v1alpha3.StopAIAgentRequest, v1alpha3.StopAIAgentResponse]
-	startAIAgent  *connect.Client[v1alpha3.StartAIAgentRequest, v1alpha3.StartAIAgentResponse]
+	createAIAgent         *connect.Client[v1alpha3.CreateAIAgentRequest, v1alpha3.CreateAIAgentResponse]
+	getAIAgent            *connect.Client[v1alpha3.GetAIAgentRequest, v1alpha3.GetAIAgentResponse]
+	listAIAgents          *connect.Client[v1alpha3.ListAIAgentsRequest, v1alpha3.ListAIAgentsResponse]
+	updateAIAgent         *connect.Client[v1alpha3.UpdateAIAgentRequest, v1alpha3.UpdateAIAgentResponse]
+	deleteAIAgent         *connect.Client[v1alpha3.DeleteAIAgentRequest, v1alpha3.DeleteAIAgentResponse]
+	stopAIAgent           *connect.Client[v1alpha3.StopAIAgentRequest, v1alpha3.StopAIAgentResponse]
+	startAIAgent          *connect.Client[v1alpha3.StartAIAgentRequest, v1alpha3.StartAIAgentResponse]
+	listAIAgentsBySecrets *connect.Client[v1alpha3.ListAIAgentsBySecretsRequest, v1alpha3.ListAIAgentsBySecretsResponse]
 }
 
 // CreateAIAgent calls redpanda.api.dataplane.v1alpha3.AIAgentService.CreateAIAgent.
@@ -191,6 +205,11 @@ func (c *aIAgentServiceClient) StartAIAgent(ctx context.Context, req *connect.Re
 	return c.startAIAgent.CallUnary(ctx, req)
 }
 
+// ListAIAgentsBySecrets calls redpanda.api.dataplane.v1alpha3.AIAgentService.ListAIAgentsBySecrets.
+func (c *aIAgentServiceClient) ListAIAgentsBySecrets(ctx context.Context, req *connect.Request[v1alpha3.ListAIAgentsBySecretsRequest]) (*connect.Response[v1alpha3.ListAIAgentsBySecretsResponse], error) {
+	return c.listAIAgentsBySecrets.CallUnary(ctx, req)
+}
+
 // AIAgentServiceHandler is an implementation of the redpanda.api.dataplane.v1alpha3.AIAgentService
 // service.
 type AIAgentServiceHandler interface {
@@ -209,6 +228,9 @@ type AIAgentServiceHandler interface {
 	StopAIAgent(context.Context, *connect.Request[v1alpha3.StopAIAgentRequest]) (*connect.Response[v1alpha3.StopAIAgentResponse], error)
 	// StartAIAgent starts a specific AI agent that has been previously stopped.
 	StartAIAgent(context.Context, *connect.Request[v1alpha3.StartAIAgentRequest]) (*connect.Response[v1alpha3.StartAIAgentResponse], error)
+	// ListAIAgentsBySecrets implements the get AI agents by secrets method which lists the AI agents
+	// in the Redpanda cluster for all secrets.
+	ListAIAgentsBySecrets(context.Context, *connect.Request[v1alpha3.ListAIAgentsBySecretsRequest]) (*connect.Response[v1alpha3.ListAIAgentsBySecretsResponse], error)
 }
 
 // NewAIAgentServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -259,6 +281,12 @@ func NewAIAgentServiceHandler(svc AIAgentServiceHandler, opts ...connect.Handler
 		connect.WithSchema(aIAgentServiceStartAIAgentMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	aIAgentServiceListAIAgentsBySecretsHandler := connect.NewUnaryHandler(
+		AIAgentServiceListAIAgentsBySecretsProcedure,
+		svc.ListAIAgentsBySecrets,
+		connect.WithSchema(aIAgentServiceListAIAgentsBySecretsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.dataplane.v1alpha3.AIAgentService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AIAgentServiceCreateAIAgentProcedure:
@@ -275,6 +303,8 @@ func NewAIAgentServiceHandler(svc AIAgentServiceHandler, opts ...connect.Handler
 			aIAgentServiceStopAIAgentHandler.ServeHTTP(w, r)
 		case AIAgentServiceStartAIAgentProcedure:
 			aIAgentServiceStartAIAgentHandler.ServeHTTP(w, r)
+		case AIAgentServiceListAIAgentsBySecretsProcedure:
+			aIAgentServiceListAIAgentsBySecretsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -310,4 +340,8 @@ func (UnimplementedAIAgentServiceHandler) StopAIAgent(context.Context, *connect.
 
 func (UnimplementedAIAgentServiceHandler) StartAIAgent(context.Context, *connect.Request[v1alpha3.StartAIAgentRequest]) (*connect.Response[v1alpha3.StartAIAgentResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.AIAgentService.StartAIAgent is not implemented"))
+}
+
+func (UnimplementedAIAgentServiceHandler) ListAIAgentsBySecrets(context.Context, *connect.Request[v1alpha3.ListAIAgentsBySecretsRequest]) (*connect.Response[v1alpha3.ListAIAgentsBySecretsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.AIAgentService.ListAIAgentsBySecrets is not implemented"))
 }

@@ -28,6 +28,7 @@ const (
 	MCPServerService_StopMCPServer_FullMethodName                   = "/redpanda.api.dataplane.v1alpha3.MCPServerService/StopMCPServer"
 	MCPServerService_StartMCPServer_FullMethodName                  = "/redpanda.api.dataplane.v1alpha3.MCPServerService/StartMCPServer"
 	MCPServerService_GetMCPServerServiceConfigSchema_FullMethodName = "/redpanda.api.dataplane.v1alpha3.MCPServerService/GetMCPServerServiceConfigSchema"
+	MCPServerService_ListMCPServersBySecrets_FullMethodName         = "/redpanda.api.dataplane.v1alpha3.MCPServerService/ListMCPServersBySecrets"
 	MCPServerService_LintMCPConfig_FullMethodName                   = "/redpanda.api.dataplane.v1alpha3.MCPServerService/LintMCPConfig"
 )
 
@@ -55,8 +56,11 @@ type MCPServerServiceClient interface {
 	StartMCPServer(ctx context.Context, in *StartMCPServerRequest, opts ...grpc.CallOption) (*StartMCPServerResponse, error)
 	// The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
 	GetMCPServerServiceConfigSchema(ctx context.Context, in *GetMCPServerServiceConfigSchemaRequest, opts ...grpc.CallOption) (*GetMCPServerServiceConfigSchemaResponse, error)
+	// ListMCPServersBySecrets implements the get MCP servers by secrets method which lists the MCP servers
+	// in the Redpanda cluster for all secrets.
+	ListMCPServersBySecrets(ctx context.Context, in *ListMCPServersBySecretsRequest, opts ...grpc.CallOption) (*ListMCPServersBySecretsResponse, error)
 	// Lints a Redpanda Connect MCP tools configuration and returns zero or more
-	// issues (“hints”). An empty list means the config passed all lint checks.
+	// issues ("hints"). An empty list means the config passed all lint checks.
 	LintMCPConfig(ctx context.Context, in *LintMCPConfigRequest, opts ...grpc.CallOption) (*LintMCPConfigResponse, error)
 }
 
@@ -148,6 +152,16 @@ func (c *mCPServerServiceClient) GetMCPServerServiceConfigSchema(ctx context.Con
 	return out, nil
 }
 
+func (c *mCPServerServiceClient) ListMCPServersBySecrets(ctx context.Context, in *ListMCPServersBySecretsRequest, opts ...grpc.CallOption) (*ListMCPServersBySecretsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListMCPServersBySecretsResponse)
+	err := c.cc.Invoke(ctx, MCPServerService_ListMCPServersBySecrets_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *mCPServerServiceClient) LintMCPConfig(ctx context.Context, in *LintMCPConfigRequest, opts ...grpc.CallOption) (*LintMCPConfigResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LintMCPConfigResponse)
@@ -182,8 +196,11 @@ type MCPServerServiceServer interface {
 	StartMCPServer(context.Context, *StartMCPServerRequest) (*StartMCPServerResponse, error)
 	// The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
 	GetMCPServerServiceConfigSchema(context.Context, *GetMCPServerServiceConfigSchemaRequest) (*GetMCPServerServiceConfigSchemaResponse, error)
+	// ListMCPServersBySecrets implements the get MCP servers by secrets method which lists the MCP servers
+	// in the Redpanda cluster for all secrets.
+	ListMCPServersBySecrets(context.Context, *ListMCPServersBySecretsRequest) (*ListMCPServersBySecretsResponse, error)
 	// Lints a Redpanda Connect MCP tools configuration and returns zero or more
-	// issues (“hints”). An empty list means the config passed all lint checks.
+	// issues ("hints"). An empty list means the config passed all lint checks.
 	LintMCPConfig(context.Context, *LintMCPConfigRequest) (*LintMCPConfigResponse, error)
 	mustEmbedUnimplementedMCPServerServiceServer()
 }
@@ -218,6 +235,9 @@ func (UnimplementedMCPServerServiceServer) StartMCPServer(context.Context, *Star
 }
 func (UnimplementedMCPServerServiceServer) GetMCPServerServiceConfigSchema(context.Context, *GetMCPServerServiceConfigSchemaRequest) (*GetMCPServerServiceConfigSchemaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMCPServerServiceConfigSchema not implemented")
+}
+func (UnimplementedMCPServerServiceServer) ListMCPServersBySecrets(context.Context, *ListMCPServersBySecretsRequest) (*ListMCPServersBySecretsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListMCPServersBySecrets not implemented")
 }
 func (UnimplementedMCPServerServiceServer) LintMCPConfig(context.Context, *LintMCPConfigRequest) (*LintMCPConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LintMCPConfig not implemented")
@@ -387,6 +407,24 @@ func _MCPServerService_GetMCPServerServiceConfigSchema_Handler(srv interface{}, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MCPServerService_ListMCPServersBySecrets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListMCPServersBySecretsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MCPServerServiceServer).ListMCPServersBySecrets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MCPServerService_ListMCPServersBySecrets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MCPServerServiceServer).ListMCPServersBySecrets(ctx, req.(*ListMCPServersBySecretsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _MCPServerService_LintMCPConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LintMCPConfigRequest)
 	if err := dec(in); err != nil {
@@ -443,6 +481,10 @@ var MCPServerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetMCPServerServiceConfigSchema",
 			Handler:    _MCPServerService_GetMCPServerServiceConfigSchema_Handler,
+		},
+		{
+			MethodName: "ListMCPServersBySecrets",
+			Handler:    _MCPServerService_ListMCPServersBySecrets_Handler,
 		},
 		{
 			MethodName: "LintMCPConfig",

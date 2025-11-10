@@ -878,6 +878,13 @@ components:
           description: JSON schema of the configuration components that are allowed for Connect pipelines.
           type: string
       type: object
+    GetPipelinesBySecretsRequest.Filter:
+      properties:
+        secret_id:
+          items:
+            type: string
+          type: array
+      type: object
     GetPipelinesBySecretsResponse:
       properties:
         pipelines_for_secret:
@@ -1148,8 +1155,22 @@ components:
       properties:
         resources:
           items:
-            $ref: '#/components/schemas/Resource'
+            $ref: '#/components/schemas/ListACLsResponse.Resource'
           type: array
+      type: object
+    ListACLsResponse.Resource:
+      properties:
+        acls:
+          items:
+            $ref: '#/components/schemas/Policy'
+          type: array
+        resource_name:
+          description: The name of the resource this ACL targets.
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
       type: object
     ListConnectClustersResponse:
       properties:
@@ -1269,6 +1290,24 @@ components:
         quotas:
           items:
             $ref: '#/components/schemas/QuotaEntry'
+          type: array
+      type: object
+    ListResourcesBySecretsRequest.Filter:
+      properties:
+        scope:
+          items:
+            $ref: '#/components/schemas/Scope'
+          type: array
+        secret_id:
+          items:
+            type: string
+          type: array
+      type: object
+    ListResourcesBySecretsResponse:
+      properties:
+        resources_for_secret:
+          items:
+            $ref: '#/components/schemas/ResourcesForSecret'
           type: array
       type: object
     ListRoleMembersRequest.Filter:
@@ -1931,20 +1970,6 @@ components:
           format: uint64
           type: string
       type: object
-    Resource:
-      properties:
-        acls:
-          items:
-            $ref: '#/components/schemas/Policy'
-          type: array
-        resource_name:
-          description: The name of the resource this ACL targets.
-          type: string
-        resource_pattern_type:
-          $ref: '#/components/schemas/ResourcePatternType'
-        resource_type:
-          $ref: '#/components/schemas/ResourceType'
-      type: object
     ResourcePatternType:
       description: |-
         The pattern to use for matching the specified resource_name
@@ -2000,6 +2025,38 @@ components:
         - memory_shares
         - cpu_shares
       type: object
+    ResourcesForSecret:
+      properties:
+        resources_for_type:
+          items:
+            $ref: '#/components/schemas/ResourcesForType'
+          type: array
+        secret_id:
+          type: string
+      type: object
+    ResourcesForType:
+      properties:
+        resource:
+          items:
+            $ref: '#/components/schemas/ResourcesForType.Resource'
+          type: array
+        type:
+          $ref: '#/components/schemas/ResourcesForType.Type'
+      type: object
+    ResourcesForType.Resource:
+      properties:
+        display_name:
+          type: string
+        id:
+          type: string
+      type: object
+    ResourcesForType.Type:
+      enum:
+        - TYPE_PIPELINE
+        - TYPE_CLUSTER
+        - TYPE_MCP_SERVER
+        - TYPE_AI_AGENT
+      type: string
     Role:
       description: Role defines a role in the system.
       properties:
@@ -4457,6 +4514,13 @@ paths:
     get:
       description: Get Redpanda Connect pipelines by secrets.
       operationId: PipelineService_GetPipelinesBySecrets
+      parameters:
+        - in: query
+          name: filter.secret_id
+          schema:
+            items:
+              type: string
+            type: array
       responses:
         "200":
           content:
@@ -5231,6 +5295,56 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Create secret
+      tags:
+        - Secrets
+  /v1/secrets/resources:
+    get:
+      description: Get resources by secret.
+      operationId: SecretService_ListResourcesBySecrets
+      parameters:
+        - in: query
+          name: filter.scope
+          schema:
+            items:
+              enum:
+                - SCOPE_REDPANDA_CONNECT
+                - SCOPE_REDPANDA_CLUSTER
+                - SCOPE_MCP_SERVER
+                - SCOPE_AI_AGENT
+              type: string
+            type: array
+        - in: query
+          name: filter.secret_id
+          schema:
+            items:
+              type: string
+            type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResourcesBySecretsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get resources by secret
       tags:
         - Secrets
   /v1/secrets/{id}:

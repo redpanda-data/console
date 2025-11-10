@@ -339,6 +339,29 @@ service AIAgentService {
       api: API_AI_AGENT
     };
   }
+
+  // ListAIAgentsBySecrets implements the get AI agents by secrets method which lists the AI agents
+  // in the Redpanda cluster for all secrets.
+  rpc ListAIAgentsBySecrets(ListAIAgentsBySecretsRequest) returns (ListAIAgentsBySecretsResponse) {
+    option (google.api.http) = {get: "/v1alpha3/ai-agents-by-secrets"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get AI agents by secrets"
+      description: "Get AI agents by secrets."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListAIAgentsBySecretsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_AI_AGENT
+    };
+  }
 }
 
 // AIAgentCreate contains the details for the AI agent creation request.
@@ -586,4 +609,21 @@ message StartAIAgentRequest {
 
 message StartAIAgentResponse {
   AIAgent ai_agent = 1;
+}
+
+message AIAgentsForSecret {
+  string secret_id = 1;
+  repeated AIAgent ai_agents = 2;
+}
+
+message ListAIAgentsBySecretsRequest {
+  Filter filter = 1;
+
+  message Filter {
+    repeated string secret_id = 1;
+  }
+}
+
+message ListAIAgentsBySecretsResponse {
+  repeated AIAgentsForSecret ai_agents_for_secret = 1;
 }
