@@ -45,10 +45,10 @@ import type { MessageInit } from 'react-query/react-query.utils';
 /**
  * Hook to list all shadow links
  */
-export const useListShadowLinksQuery = (request: MessageInit<ListShadowLinksRequest>) => {
+export const useListShadowLinksQuery = (request: MessageInit<ListShadowLinksRequest>, opts?: { enabled: boolean }) => {
   const listShadowLinksRequest = create(ListShadowLinksRequestSchema, request);
 
-  return useQuery(listShadowLinks, listShadowLinksRequest);
+  return useQuery(listShadowLinks, listShadowLinksRequest, opts && { enabled: opts?.enabled });
 };
 
 export const useGetShadowLinkQuery = (request: MessageInit<GetShadowLinkRequest>) => {

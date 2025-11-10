@@ -81,7 +81,15 @@ export class Feature {
 export function isSupported(f: FeatureEntry): boolean {
   const c = api.endpointCompatibility;
   if (!c) {
-    return Feature.SchemaRegistryACLApi.endpoint !== f.endpoint; // not yet checked, allow it by default... except for schema registry ACLs
+    // c could be null, because the call to /api/console/endpoints failed or is not responded yet,
+    // in that case those endpoints should be considered unsupported
+    switch (f.endpoint) {
+      case Feature.SchemaRegistryACLApi.endpoint:
+      case Feature.ShadowLinkService.endpoint:
+        return false;
+      default:
+        return true;
+    }
   }
 
   for (const e of c.endpoints) {
@@ -104,7 +112,7 @@ export function isSupported(f: FeatureEntry): boolean {
 /**
  * A list of features we should hide instead of showing a disabled message.
  */
-const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas];
+const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas, Feature.ShadowLinkService];
 export function shouldHideIfNotSupported(f: FeatureEntry): boolean {
   return HIDE_IF_NOT_SUPPORTED_FEATURES.includes(f);
 }

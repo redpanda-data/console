@@ -16,6 +16,7 @@ import React, { type FC } from 'react';
 import { useGetShadowLinkQuery, useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { useNavigate } from 'react-router-dom';
 
+import { Feature, isSupported } from '../../../state/supported-features';
 import { ShadowLinkDiagram } from '../shadowlinks/details/shadow-link-diagram';
 import { ShadowLinkMetrics } from '../shadowlinks/details/shadow-link-metrics';
 
@@ -58,7 +59,11 @@ export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ 
 
 // Functional component to fetch and display shadow link data
 export const ShadowLinkSection: FC = () => {
-  const { data: shadowLinksData, isLoading, error } = useListShadowLinksQuery({});
+  const {
+    data: shadowLinksData,
+    isLoading,
+    error,
+  } = useListShadowLinksQuery({}, { enabled: isSupported(Feature.ShadowLinkService) });
 
   // Don't render if error, loading, or no shadow link exists
   const shadowLinks = shadowLinksData?.shadowLinks || [];

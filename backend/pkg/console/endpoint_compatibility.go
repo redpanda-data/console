@@ -147,6 +147,11 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			Method:          "POST",
 			RedpandaFeature: redpandaFeatureSchemaRegistryACL,
 		},
+		{
+			URL:            consolev1alpha1connect.ShadowLinkServiceName,
+			Method:         "POST",
+			HasRedpandaAPI: false,
+		},
 	}
 
 	endpoints := make([]EndpointCompatibilityEndpoint, 0, len(endpointRequirements))
