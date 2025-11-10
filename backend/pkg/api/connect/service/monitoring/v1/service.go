@@ -12,6 +12,7 @@ package monitoring
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	adminv2 "buf.build/gen/go/redpandadata/core/protocolbuffers/go/redpanda/core/admin/v2"
@@ -50,7 +51,11 @@ func (s *Service) ListKafkaConnections(ctx context.Context, req *connect.Request
 
 	resp, err := adminClient.ClusterService().ListKafkaConnections(ctx, req)
 	if err != nil {
-		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
+		// If we've got a valid connect-go err, return it
+		if cerr := new(connect.Error); errors.As(err, &cerr) {
+			return nil, cerr
+		}
+		return nil, apierrors.NewConnectError(connect.CodeInternal, err, nil, nil)
 	}
 
 	return &connect.Response[adminv2.ListKafkaConnectionsResponse]{Msg: resp.Msg}, nil
