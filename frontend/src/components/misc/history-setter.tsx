@@ -4,13 +4,17 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { trackHubspotPage } from '../../hubspot/hubspot.helper';
 import { appGlobal } from '../../state/app-global';
+import { api } from '../../state/backend-api';
 
 const HistorySetter = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Track page navigation in HubSpot
+  // Track page navigation in HubSpot and clear errors on route change
   useEffect(() => {
+    // Clear errors when navigating to a new route
+    api.errors = [];
+
     if (location.pathname) {
       trackHubspotPage(location.pathname);
     }
