@@ -9,55 +9,108 @@
  * by the Apache License, Version 2.0
  */
 
+import { Background, type Edge, Handle, type Node, Position, ReactFlow, ReactFlowProvider } from '@xyflow/react';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
+import { Item, ItemContent, ItemTitle } from 'components/redpanda-ui/components/item';
 import { Text } from 'components/redpanda-ui/components/typography';
 import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import type { CSSProperties } from 'react';
 
 interface ShadowLinkDiagramProps {
   shadowLink: ShadowLink;
 }
 
+const SourceClusterNode = ({ data }: { data: { brokers: string[] } }) => (
+  <Item className="min-w-60 bg-background" size="sm" variant="outline">
+    <ItemContent>
+      <ItemTitle>Source cluster</ItemTitle>
+      <div className="flex flex-col gap-1 text-muted-foreground text-xs">
+        {data.brokers.map((broker) => (
+          <Text key={broker} variant={'muted'}>
+            {broker}
+          </Text>
+        ))}
+      </div>
+    </ItemContent>
+    <Handle position={Position.Right} type="source" />
+  </Item>
+);
+
+const ShadowClusterNode = () => (
+  <Item className="min-w-60 bg-background" size="sm" variant="outline">
+    <Handle position={Position.Left} type="target" />
+    <ItemContent>
+      <ItemTitle>Shadow cluster</ItemTitle>
+      <div className="text-muted-foreground text-xs">
+        <Text variant={'muted'}>This cluster </Text>
+      </div>
+    </ItemContent>
+  </Item>
+);
+
+const nodeTypes = {
+  sourceCluster: SourceClusterNode,
+  shadowCluster: ShadowClusterNode,
+};
+
+const edgeStyle: CSSProperties = {
+  stroke: '#9ca3af',
+  strokeWidth: 2,
+  strokeDasharray: '5,5',
+};
+
 export const ShadowLinkDiagram = ({ shadowLink }: ShadowLinkDiagramProps) => {
-  const bootstrapServers = shadowLink.configurations?.clientOptions?.bootstrapServers ?? [];
+  const brokers = shadowLink.configurations?.clientOptions?.bootstrapServers ?? [];
+
+  const nodes: Node[] = [
+    {
+      id: 'source',
+      type: 'sourceCluster',
+      position: { x: 50, y: 50 },
+      data: {
+        brokers,
+      },
+    },
+    {
+      id: 'shadow',
+      type: 'shadowCluster',
+      position: { x: 600, y: 50 },
+      data: {},
+    },
+  ];
+
+  const edges: Edge[] = [
+    {
+      id: 'source-to-shadow',
+      source: 'source',
+      target: 'shadow',
+      type: 'straight',
+      style: edgeStyle,
+      animated: false,
+    },
+  ];
 
   return (
     <Card size="full">
       <CardContent>
-        <div className="flex items-center justify-between">
-          {/* Source Cluster */}
-          <div className="flex min-w-[200px] flex-col gap-2 rounded border border-gray-300 bg-white px-4 py-3">
-            <Text className="font-semibold">Source Cluster</Text>
-            {bootstrapServers.length > 0 ? (
-              <div className="space-y-1">
-                {bootstrapServers.map((server, index) => (
-                  <Text className="font-mono text-muted-foreground text-xs" key={index}>
-                    {server}
-                  </Text>
-                ))}
-              </div>
-            ) : (
-              <Text className="text-muted-foreground text-xs">No bootstrap servers</Text>
-            )}
-          </div>
-
-          {/* Connection arrow */}
-          <div className="flex flex-1 flex-col items-center justify-center px-6">
-            <div className="relative my-2 h-px w-full bg-gray-400">
-              <div className="-translate-y-1/2 absolute top-1/2 right-0 h-0 w-0 border-y-4 border-y-transparent border-l-8 border-l-gray-400" />
-            </div>
-          </div>
-
-          {/* Shadow Cluster */}
-          <div className="flex min-w-[200px] flex-col gap-2 rounded border border-gray-300 bg-white px-4 py-3">
-            <Text className="font-semibold">Shadow cluster</Text>
-            <Text className="text-muted-foreground text-xs">This cluster</Text>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Text className="text-xs">Shadow link:</Text>
-                <Text className="font-mono text-xs">{shadowLink.name}</Text>
-              </div>
-            </div>
-          </div>
+        <div className="relative h-[200px] w-full">
+          <ReactFlowProvider>
+            <ReactFlow
+              edges={edges}
+              elementsSelectable={false}
+              fitView={true}
+              nodes={nodes}
+              nodesConnectable={false}
+              nodesDraggable={false}
+              nodeTypes={nodeTypes}
+              panOnDrag={false}
+              preventScrolling={false}
+              zoomOnPinch={false}
+              zoomOnScroll={false}
+            >
+              <Background />
+            </ReactFlow>
+          </ReactFlowProvider>
         </div>
       </CardContent>
     </Card>

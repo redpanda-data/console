@@ -65,6 +65,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.12",
     "@types/prismjs": "^1.26.5",
+    "@xyflow/react": "^12.9.2",
     "ai": "^5.0.78",
     "array-move": "^4.0.0",
     "chakra-react-select": "5.0.5",
