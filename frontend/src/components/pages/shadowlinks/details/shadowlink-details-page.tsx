@@ -12,6 +12,7 @@
 'use client';
 
 import { Button } from 'components/redpanda-ui/components/button';
+import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Loader2, Trash2 } from 'lucide-react';
 import { runInAction } from 'mobx';
@@ -151,7 +152,6 @@ export const ShadowLinkDetailsPage = () => {
   return (
     <div className="flex flex-col gap-6">
       {/* Action Buttons */}
-
       <div className="flex justify-end gap-3">
         <Button onClick={() => openFailoverDialog()} size="sm" variant="outline">
           Failover All Topics
@@ -172,8 +172,38 @@ export const ShadowLinkDetailsPage = () => {
         </Button>
       </div>
 
-      {/* Shadow Link Details */}
-      <ShadowLinkDetails onFailoverTopic={openFailoverDialog} shadowLink={shadowLink} shadowLinkName={name || ''} />
+      {/* Tabs */}
+      <Tabs defaultValue="overview">
+        <TabsList testId="shadowlink-details-tabs" variant="default">
+          <TabsTrigger testId="overview-tab" value="overview" variant="underline">
+            Overview
+          </TabsTrigger>
+          <TabsTrigger testId="tasks-tab" value="tasks" variant="underline">
+            Tasks
+          </TabsTrigger>
+          <TabsTrigger testId="configuration-tab" value="configuration" variant="underline">
+            Configuration
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContents>
+          <TabsContent testId="overview-content" value="overview">
+            <ShadowLinkDetails
+              onFailoverTopic={openFailoverDialog}
+              shadowLink={shadowLink}
+              shadowLinkName={name || ''}
+            />
+          </TabsContent>
+
+          <TabsContent testId="tasks-content" value="tasks">
+            <Text>Tasks content coming soon</Text>
+          </TabsContent>
+
+          <TabsContent testId="configuration-content" value="configuration">
+            <Text>Configuration content coming soon</Text>
+          </TabsContent>
+        </TabsContents>
+      </Tabs>
 
       {/* Delete Dialog */}
       <DeleteShadowLinkDialog
