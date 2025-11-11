@@ -12,7 +12,7 @@
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardAction, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
+import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { FormField, FormItem, FormMessage } from 'components/redpanda-ui/components/form';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Info, Trash } from 'lucide-react';
@@ -95,19 +95,6 @@ export const FilterItem = <TFieldValues extends FieldValues>({
   // Editable view (full form)
   return (
     <Card className="gap-0" data-testid={dataTestId} size="full" variant="elevated">
-      <CardHeader>
-        <CardAction>
-          <Button
-            data-testid={dataTestId ? `${dataTestId}-delete` : undefined}
-            onClick={onRemove}
-            size="icon"
-            type="button"
-            variant="ghost"
-          >
-            <Trash className="h-3 w-3" />
-          </Button>
-        </CardAction>
-      </CardHeader>
       <CardContent>
         <FormField
           control={control}
@@ -158,35 +145,46 @@ export const FilterItem = <TFieldValues extends FieldValues>({
 
                 return (
                   <FormItem className="flex-1 space-y-3">
-                    <Tabs onValueChange={handleTabChange} value={getTabValue()}>
-                      <TabsList data-testid={dataTestId ? `${dataTestId}-filter-type` : undefined}>
-                        <TabsTrigger
-                          data-testid={dataTestId ? `${dataTestId}-include-specific` : undefined}
-                          value="include-specific"
-                        >
-                          Include specific topics
-                        </TabsTrigger>
-                        <TabsTrigger
-                          data-testid={dataTestId ? `${dataTestId}-include-prefix` : undefined}
-                          value="include-prefix"
-                        >
-                          Include starting with
-                        </TabsTrigger>
-                        <TabsTrigger
-                          data-testid={dataTestId ? `${dataTestId}-exclude-specific` : undefined}
-                          value="exclude-specific"
-                        >
-                          Exclude specific
-                        </TabsTrigger>
-                        <TabsTrigger
-                          data-testid={dataTestId ? `${dataTestId}-exclude-prefix` : undefined}
-                          value="exclude-prefix"
-                        >
-                          Exclude starting with
-                        </TabsTrigger>
-                      </TabsList>
-                      {children}
-                    </Tabs>
+                    <div className="flex items-center justify-between gap-4">
+                      <Tabs onValueChange={handleTabChange} value={getTabValue()}>
+                        <TabsList data-testid={dataTestId ? `${dataTestId}-filter-type` : undefined}>
+                          <TabsTrigger
+                            data-testid={dataTestId ? `${dataTestId}-include-specific` : undefined}
+                            value="include-specific"
+                          >
+                            Include specific topics
+                          </TabsTrigger>
+                          <TabsTrigger
+                            data-testid={dataTestId ? `${dataTestId}-include-prefix` : undefined}
+                            value="include-prefix"
+                          >
+                            Include starting with
+                          </TabsTrigger>
+                          <TabsTrigger
+                            data-testid={dataTestId ? `${dataTestId}-exclude-specific` : undefined}
+                            value="exclude-specific"
+                          >
+                            Exclude specific
+                          </TabsTrigger>
+                          <TabsTrigger
+                            data-testid={dataTestId ? `${dataTestId}-exclude-prefix` : undefined}
+                            value="exclude-prefix"
+                          >
+                            Exclude starting with
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                      <Button
+                        data-testid={dataTestId ? `${dataTestId}-delete` : undefined}
+                        onClick={onRemove}
+                        size="icon"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <Trash className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    {children}
                     <FormMessage />
                     {showMatchAllMessage && (
                       <Alert variant="warning">

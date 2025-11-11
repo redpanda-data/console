@@ -9,6 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import '@xyflow/react/dist/base.css';
+import '@xyflow/react/dist/style.css';
+
 /* start global stylesheets */
 import './globals.scss';
 import './index.scss';

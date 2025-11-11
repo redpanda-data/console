@@ -276,7 +276,7 @@ export const ShadowLinkCreatePage = () => {
               </Stepper.Navigation>
             </div>
 
-            <div className="xl:w-1/2">
+            <div className="xl:w-2/3">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)}>
                   <DevTool control={form.control} />

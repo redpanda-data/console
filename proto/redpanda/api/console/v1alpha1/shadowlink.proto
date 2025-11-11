@@ -154,6 +154,19 @@ message GetShadowTopicResponse {
   repeated PartitionInfo partitions = 5;
 }
 
+message GetShadowMetricsRequest {
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message GetShadowMetricsResponse {
+  uint64 total_topics_replicated = 1;
+  uint64 failed_over_topics = 2;
+  uint64 error_topics = 3;
+}
+
 service ShadowLinkService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
     name: "Shadow Links"
@@ -298,6 +311,27 @@ service ShadowLinkService {
           description: "OK"
           schema: {
             json_schema: {ref: ".redpanda.api.console.v1alpha1.GetShadowTopicResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  rpc GetShadowMetrics(GetShadowMetricsRequest) returns (GetShadowMetricsResponse) {
+    option (google.api.http) = {get: "/v1alpha1/shadowlink/{name}/metrics"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Shadow Link Metrics"
+      description: "Retrieve metrics for a specific shadow link, including total topics replicated, failed over topics, and error topics."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.console.v1alpha1.GetShadowMetricsResponse"}
           }
         }
       }

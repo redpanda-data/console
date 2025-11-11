@@ -10,9 +10,11 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import type { ConnectError } from '@connectrpc/connect';
 import {
   createConnectQueryKey,
+  type UseInfiniteQueryOptions,
   type UseMutationOptions,
   useInfiniteQuery,
   useMutation,
@@ -23,29 +25,34 @@ import {
   type CreateShadowLinkResponseSchema,
   type GetShadowLinkRequest,
   GetShadowLinkRequestSchema,
+  type GetShadowMetricsRequest,
+  GetShadowMetricsRequestSchema,
+  type GetShadowMetricsResponse,
   type ListShadowLinksRequest,
   ListShadowLinksRequestSchema,
   type ListShadowLinkTopicsRequest,
   ListShadowLinkTopicsRequestSchema,
+  type ListShadowLinkTopicsResponseSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import {
   createShadowLink,
   deleteShadowLink,
   getShadowLink,
+  getShadowMetrics,
   listShadowLinks,
   listShadowLinkTopics,
 } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { failOver } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink-ShadowLinkService_connectquery';
 import type { CreateShadowLinkRequestSchema } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import type { MessageInit } from 'react-query/react-query.utils';
+import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 
 /**
  * Hook to list all shadow links
  */
-export const useListShadowLinksQuery = (request: MessageInit<ListShadowLinksRequest>) => {
+export const useListShadowLinksQuery = (request: MessageInit<ListShadowLinksRequest>, opts?: { enabled: boolean }) => {
   const listShadowLinksRequest = create(ListShadowLinksRequestSchema, request);
 
-  return useQuery(listShadowLinks, listShadowLinksRequest);
+  return useQuery(listShadowLinks, listShadowLinksRequest, opts && { enabled: opts?.enabled });
 };
 
 export const useGetShadowLinkQuery = (request: MessageInit<GetShadowLinkRequest>) => {
@@ -54,13 +61,31 @@ export const useGetShadowLinkQuery = (request: MessageInit<GetShadowLinkRequest>
   return useQuery(getShadowLink, getShadowLinkRequest);
 };
 
+export const useGetShadowMetricsQuery = (
+  request: MessageInit<GetShadowMetricsRequest>,
+  options?: QueryOptions<GenMessage<GetShadowMetricsResponse>, GetShadowMetricsResponse>
+) => {
+  const getShadowMetricsRequest = create(GetShadowMetricsRequestSchema, request);
+
+  return useQuery(getShadowMetrics, getShadowMetricsRequest, options);
+};
+
 export const useListShadowTopicQuery = (request: MessageInit<ListShadowLinkTopicsRequest>) => {
   const listShadowTopicsRequest = create(ListShadowLinkTopicsRequestSchema, request);
 
   return useQuery(listShadowLinkTopics, listShadowTopicsRequest);
 };
 
-export const useListShadowTopicInfiniteQuery = (request: MessageInit<ListShadowLinkTopicsRequest>) => {
+export const useListShadowTopicInfiniteQuery = (
+  request: MessageInit<ListShadowLinkTopicsRequest>,
+  options?: Partial<
+    UseInfiniteQueryOptions<
+      typeof ListShadowLinkTopicsRequestSchema,
+      typeof ListShadowLinkTopicsResponseSchema,
+      'pageToken'
+    >
+  >
+) => {
   const baseRequest = create(ListShadowLinkTopicsRequestSchema, {
     pageToken: '',
     ...request,
@@ -69,6 +94,7 @@ export const useListShadowTopicInfiniteQuery = (request: MessageInit<ListShadowL
   return useInfiniteQuery(listShadowLinkTopics, baseRequest, {
     getNextPageParam: (lastPage) => lastPage?.nextPageToken || undefined,
     pageParamKey: 'pageToken',
+    ...options,
   });
 };
 

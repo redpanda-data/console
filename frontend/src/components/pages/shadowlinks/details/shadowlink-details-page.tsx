@@ -1,0 +1,248 @@
+/**
+ * Copyright 2025 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+'use client';
+
+import { Button } from 'components/redpanda-ui/components/button';
+import { Text } from 'components/redpanda-ui/components/typography';
+import { AlertCircle, Loader2, Trash2 } from 'lucide-react';
+import { runInAction } from 'mobx';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  useDeleteShadowLinkMutation,
+  useFailoverShadowLinkMutation,
+  useGetShadowLinkQuery,
+  useListShadowTopicInfiniteQuery,
+} from 'react-query/api/shadowlink';
+import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { uiState } from 'state/ui-state';
+
+import { DeleteShadowLinkDialog } from './delete-shadowlink-dialog';
+import { FailoverDialog } from './failover-dialog';
+import { ShadowLinkDiagram } from './shadow-link-diagram';
+import { ShadowLinkMetrics } from './shadow-link-metrics';
+import { ShadowTopicsTable } from './shadow-topics-table';
+import { MAX_PAGE_SIZE } from '../../../../react-query/react-query.utils';
+import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
+
+// Update page title using uiState pattern
+export const updatePageTitle = (shadowLinkName: string) => {
+  runInAction(() => {
+    uiState.pageTitle = shadowLinkName;
+    uiState.pageBreadcrumbs = [
+      { title: 'Shadow Links', linkTo: '/shadowlinks' },
+      { title: shadowLinkName, linkTo: `/shadowlinks/${shadowLinkName}` },
+    ];
+  });
+};
+
+export const ShadowLinkDetailsPage = () => {
+  const { name } = useParams<{ name: string }>();
+  const navigate = useNavigate();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showFailoverDialog, setShowFailoverDialog] = useState(false);
+  const [failoverTopicName, setFailoverTopicName] = useState<string>('');
+  const [topicNameFilter, setTopicNameFilter] = useState('');
+
+  // Update page title
+  useEffect(() => {
+    if (name) {
+      updatePageTitle(name);
+    }
+  }, [name]);
+
+  // Fetch shadow links data
+  const { data: shadowLinksData, isLoading, error: errorGetShadowLink, refetch } = useGetShadowLinkQuery({ name });
+  const {
+    data: shadowTopicsData,
+    refetch: refetchTopics,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetching: isFetchingTopics,
+  } = useListShadowTopicInfiniteQuery(
+    {
+      shadowLinkName: name,
+      filter: topicNameFilter
+        ? {
+            topicNameContains: topicNameFilter,
+          }
+        : undefined,
+      pageSize: MAX_PAGE_SIZE,
+    },
+    { refetchInterval: 15_000 }
+  );
+
+  // Find the specific shadow link by name
+  const shadowLink = shadowLinksData?.shadowLink;
+
+  // Flatten all pages of topics from infinite query
+  const topics = useMemo(() => shadowTopicsData?.pages?.flatMap((page) => page.shadowTopics) ?? [], [shadowTopicsData]);
+
+  const { mutate: deleteShadowLink, isPending: isDeleting } = useDeleteShadowLinkMutation({
+    onSuccess: () => {
+      toast.success(`Shadowlink ${name} deleted`);
+      navigate('/shadowlinks');
+    },
+    onError: (error) => {
+      toast.error(formatToastErrorMessageGRPC({ error, action: 'delete', entity: 'shadowlink' }));
+    },
+  });
+
+  const { mutate: failoverShadowLink, isPending: isFailingOver } = useFailoverShadowLinkMutation({
+    onSuccess: () => {
+      toast.success(
+        failoverTopicName
+          ? `Topic ${failoverTopicName} failed over successfully`
+          : 'Shadowlink failed over successfully'
+      );
+      setShowFailoverDialog(false);
+      setFailoverTopicName('');
+      void refetchTopics();
+      void refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to failover: ${error.message}`);
+      setShowFailoverDialog(false);
+      setFailoverTopicName('');
+    },
+  });
+
+  const handleDelete = () => {
+    if (name) {
+      deleteShadowLink({ name, force: false } as Parameters<typeof deleteShadowLink>[0]);
+    }
+  };
+
+  const handleFailover = () => {
+    if (name) {
+      failoverShadowLink({
+        name,
+        shadowTopicName: failoverTopicName,
+      } as Parameters<typeof failoverShadowLink>[0]);
+    }
+  };
+
+  const openFailoverDialog = (topicName?: string) => {
+    setFailoverTopicName(topicName || '');
+    setShowFailoverDialog(true);
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <Text>Loading shadow link details...</Text>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (errorGetShadowLink) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="flex items-center gap-2 text-red-600">
+          <AlertCircle className="h-6 w-6" />
+          <Text>Error loading shadow link: {errorGetShadowLink.message}</Text>
+        </div>
+      </div>
+    );
+  }
+
+  // Not found state
+  if (!shadowLink) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <AlertCircle className="h-12 w-12 text-gray-400" />
+          <Text variant="large">Shadow link not found</Text>
+          <Button onClick={() => navigate('/shadowlinks')} variant="secondary">
+            Back to Shadow Links
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Action Buttons */}
+
+      <div className="flex justify-end gap-3">
+        <Button onClick={() => openFailoverDialog()} size="sm" variant="outline">
+          Failover All Topics
+        </Button>
+
+        <Button disabled={isDeleting} onClick={() => setShowDeleteDialog(true)} size="sm" variant="destructive">
+          {isDeleting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Deleting...
+            </>
+          ) : (
+            <>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Shadow Link Diagram */}
+      <ShadowLinkDiagram shadowLink={shadowLink} />
+
+      {/* Shadow Link Metrics */}
+      <ShadowLinkMetrics shadowLink={shadowLink} />
+
+      {/* Topics Section */}
+      <ShadowTopicsTable
+        getNextTopicPage={async () => {
+          await fetchNextPage();
+        }}
+        hasNextPage={hasNextPage}
+        isFetching={isFetchingTopics || isFetchingNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        onFailoverTopic={openFailoverDialog}
+        onRefresh={refetchTopics}
+        onTopicNameFilterChange={setTopicNameFilter}
+        topicNameFilter={topicNameFilter}
+        topics={topics}
+      />
+
+      {/* Delete Dialog */}
+      <DeleteShadowLinkDialog
+        isLoading={isDeleting}
+        onConfirm={handleDelete}
+        onOpenChange={setShowDeleteDialog}
+        open={showDeleteDialog}
+        shadowLinkName={shadowLink.name}
+      />
+
+      {/* Failover Dialog */}
+      <FailoverDialog
+        isLoading={isFailingOver}
+        onConfirm={handleFailover}
+        onOpenChange={(open) => {
+          setShowFailoverDialog(open);
+          if (!open) {
+            setFailoverTopicName('');
+          }
+        }}
+        open={showFailoverDialog}
+        topicName={failoverTopicName}
+      />
+    </div>
+  );
+};

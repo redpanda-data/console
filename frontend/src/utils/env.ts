@@ -42,7 +42,7 @@ export const IsProd = !isDev;
 export const IsDev = isDev;
 export const IsCI = env.REACT_APP_BUILT_FROM_PUSH && env.REACT_APP_BUILT_FROM_PUSH !== 'false';
 
-const appFeatureNames = ['SINGLE_SIGN_ON', 'REASSIGN_PARTITIONS'] as const;
+const appFeatureNames = ['SINGLE_SIGN_ON', 'REASSIGN_PARTITIONS', 'SHADOW_LINKS'] as const;
 export type AppFeature = (typeof appFeatureNames)[number];
 
 if (env.REACT_APP_ENABLED_FEATURES) {

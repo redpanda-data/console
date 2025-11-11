@@ -547,6 +547,11 @@ svg {
   height: 100%;
 }
 
+// Exception for react-flow SVGs to prevent edges from being hidden
+.react-flow svg {
+  height: auto;
+}
+
 .quickTable {
   text-align: initial;
 }

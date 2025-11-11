@@ -38,3 +38,8 @@ export const listShadowLinkTopics = ShadowLinkService.method.listShadowLinkTopic
  * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.GetShadowTopic
  */
 export const getShadowTopic = ShadowLinkService.method.getShadowTopic;
+
+/**
+ * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.GetShadowMetrics
+ */
+export const getShadowMetrics = ShadowLinkService.method.getShadowMetrics;
