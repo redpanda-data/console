@@ -78,9 +78,9 @@ import { appGlobal } from '../../../../state/app-global';
 import { useTopicSettingsStore } from '../../../../stores/topic-settings-store';
 import { IsDev } from '../../../../utils/env';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filter-helper';
-import { parseAsFilters } from '../../../../utils/filter-url-encoding';
 import { onPaginationChange } from '../../../../utils/pagination';
 import { sortingParser } from '../../../../utils/sorting-parser';
+import { getTopicFilters, setTopicFilters } from '../../../../utils/topic-filters-session';
 import {
   Label,
   navigatorClipboardErrorHandler,
@@ -364,17 +364,13 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
-  // Filters with URL state management (encoded)
-  const [filters, setFilters] = useQueryStateWithCallback<FilterEntry[]>(
-    {
-      onUpdate: (val) => {
-        setSearchParams(props.topic.topicName, { filters: val });
-      },
-      getDefaultValue: () => getSearchParams(props.topic.topicName)?.filters ?? DEFAULT_SEARCH_PARAMS.filters,
-    },
-    'f',
-    parseAsFilters
-  );
+  // Filters with session storage (NOT in URL)
+  const [filters, setFilters] = useState<FilterEntry[]>(() => getTopicFilters(props.topic.topicName));
+
+  // Sync filters to session storage whenever they change
+  useEffect(() => {
+    setTopicFilters(props.topic.topicName, filters);
+  }, [filters, props.topic.topicName]);
 
   // Deserializer settings with URL state management
   const [keyDeserializer, setKeyDeserializer] = useQueryStateWithCallback<PayloadEncoding>(
@@ -571,15 +567,16 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     getSearchParams,
     keyDeserializer,
     valueDeserializer,
-    filters.filter,
+    filters,
   ]);
 
   // Convert searchFunc to useCallback
   const searchFunc = useCallback(
     (source: 'auto' | 'manual') => {
-      // Create search params signature
+      // Create search params signature (includes filters to detect changes)
       const currentSearchParams = getSearchParams(props.topic.topicName);
-      const searchParams = `${startOffset} ${maxResults} ${partitionID} ${currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp} ${keyDeserializer} ${valueDeserializer}`;
+      const filtersSignature = filters.map((f) => `${f.id}:${f.isActive}:${f.transpiledCode}`).join('|');
+      const searchParams = `${startOffset} ${maxResults} ${partitionID} ${currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp} ${keyDeserializer} ${valueDeserializer} ${filtersSignature}`;
 
       if (searchParams === currentSearchRunRef.current && source === 'auto') {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -630,6 +627,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       props.topic.topicName,
       keyDeserializer,
       valueDeserializer,
+      filters,
     ]
   );
 
