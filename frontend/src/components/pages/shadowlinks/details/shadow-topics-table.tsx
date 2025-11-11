@@ -11,7 +11,6 @@
 
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Input } from 'components/redpanda-ui/components/input';
@@ -24,20 +23,7 @@ import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const StatusBadge = ({ state }: { state: ShadowTopicState }) => {
-  const stateInfo = {
-    [ShadowTopicState.UNSPECIFIED]: { text: 'Unknown', variant: 'gray' as const },
-    [ShadowTopicState.ACTIVE]: { text: 'Active', variant: 'green' as const },
-    [ShadowTopicState.FAULTED]: { text: 'Error', variant: 'red' as const },
-    [ShadowTopicState.PAUSED]: { text: 'Paused', variant: 'yellow' as const },
-    [ShadowTopicState.FAILING_OVER]: { text: 'Failing over', variant: 'orange' as const },
-    [ShadowTopicState.FAILED_OVER]: { text: 'Failed over', variant: 'blue' as const },
-    [ShadowTopicState.PROMOTING]: { text: 'Promoting', variant: 'purple' as const },
-    [ShadowTopicState.PROMOTED]: { text: 'Promoted', variant: 'purple' as const },
-  }[state] || { text: 'Unknown', variant: 'gray' as const };
-
-  return <Badge variant={stateInfo.variant}>{stateInfo.text}</Badge>;
-};
+import { ShadowTopicStatusBadge } from './shadow-topic-status-badge';
 
 interface ShadowTopicsTableProps {
   topics: ShadowTopic[] | undefined;
@@ -156,7 +142,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
       columnHelper.accessor('state', {
         header: 'Replication state',
         size: 200,
-        cell: (info) => <StatusBadge state={info.getValue()} />,
+        cell: (info) => <ShadowTopicStatusBadge state={info.getValue()} />,
       }),
       columnHelper.display({
         id: 'actions',
