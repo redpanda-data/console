@@ -1010,7 +1010,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                   isDisabled={!canUseFilters}
                   onClick={() => {
                     const filter = new FilterEntry();
-                    filter.isNew = true;
                     setCurrentJSFilter(filter);
                   }}
                 >
@@ -1140,12 +1139,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           currentFilter={currentJSFilter}
           onClose={() => setCurrentJSFilter(null)}
           onSave={(filter) => {
-            if (filter.isNew) {
-              // Add new filter to URL state
-              setFilters([...filters, { ...filter, isNew: false }]);
-            } else {
-              // Update existing filter in URL state
+            // Check if filter exists in the array by ID
+            const existingIndex = filters.findIndex((f) => f.id === filter.id);
+            if (existingIndex >= 0) {
+              // Update existing filter
               setFilters(filters.map((f) => (f.id === filter.id ? filter : f)));
+            } else {
+              // Add new filter
+              setFilters([...filters, filter]);
             }
             searchFunc('manual');
           }}
