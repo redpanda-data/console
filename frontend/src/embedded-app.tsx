@@ -12,6 +12,9 @@
 import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
+import '@xyflow/react/dist/base.css';
+import '@xyflow/react/dist/style.css';
+
 /* start global stylesheets */
 
 import './index.scss';
