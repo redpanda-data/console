@@ -29,6 +29,7 @@ import { uiState } from 'state/ui-state';
 import { DeleteShadowLinkDialog } from './delete-shadowlink-dialog';
 import { FailoverDialog } from './failover-dialog';
 import { ShadowLinkDetails } from './shadow-link-details';
+import { TasksTable } from './tasks-table';
 import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
 
 // Update page title using uiState pattern
@@ -196,7 +197,7 @@ export const ShadowLinkDetailsPage = () => {
           </TabsContent>
 
           <TabsContent testId="tasks-content" value="tasks">
-            <Text>Tasks content coming soon</Text>
+            <TasksTable tasks={shadowLink.tasksStatus} />
           </TabsContent>
 
           <TabsContent testId="configuration-content" value="configuration">
