@@ -34,7 +34,7 @@ export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
     data: metricsData,
     isFetching,
     error,
-  } = useGetShadowMetricsQuery({ name: shadowLink.name }, { refetchInterval: 5000 });
+  } = useGetShadowMetricsQuery({ name: shadowLink.name }, { refetchInterval: 15_000 });
 
   if (error) {
     return (
