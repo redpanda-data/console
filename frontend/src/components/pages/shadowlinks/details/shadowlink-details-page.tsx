@@ -15,12 +15,11 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Loader2, Trash2 } from 'lucide-react';
 import { runInAction } from 'mobx';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   useDeleteShadowLinkMutation,
   useFailoverShadowLinkMutation,
   useGetShadowLinkQuery,
-  useListShadowTopicInfiniteQuery,
 } from 'react-query/api/shadowlink';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -28,10 +27,7 @@ import { uiState } from 'state/ui-state';
 
 import { DeleteShadowLinkDialog } from './delete-shadowlink-dialog';
 import { FailoverDialog } from './failover-dialog';
-import { ShadowLinkDiagram } from './shadow-link-diagram';
-import { ShadowLinkMetrics } from './shadow-link-metrics';
-import { ShadowTopicsTable } from './shadow-topics-table';
-import { MAX_PAGE_SIZE } from '../../../../react-query/react-query.utils';
+import { ShadowLinkDetails } from './shadow-link-details';
 import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
 
 // Update page title using uiState pattern
@@ -51,7 +47,6 @@ export const ShadowLinkDetailsPage = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showFailoverDialog, setShowFailoverDialog] = useState(false);
   const [failoverTopicName, setFailoverTopicName] = useState<string>('');
-  const [topicNameFilter, setTopicNameFilter] = useState('');
 
   // Update page title
   useEffect(() => {
@@ -62,31 +57,9 @@ export const ShadowLinkDetailsPage = () => {
 
   // Fetch shadow links data
   const { data: shadowLinksData, isLoading, error: errorGetShadowLink, refetch } = useGetShadowLinkQuery({ name });
-  const {
-    data: shadowTopicsData,
-    refetch: refetchTopics,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isFetching: isFetchingTopics,
-  } = useListShadowTopicInfiniteQuery(
-    {
-      shadowLinkName: name,
-      filter: topicNameFilter
-        ? {
-            topicNameContains: topicNameFilter,
-          }
-        : undefined,
-      pageSize: MAX_PAGE_SIZE,
-    },
-    { refetchInterval: 15_000 }
-  );
 
   // Find the specific shadow link by name
   const shadowLink = shadowLinksData?.shadowLink;
-
-  // Flatten all pages of topics from infinite query
-  const topics = useMemo(() => shadowTopicsData?.pages?.flatMap((page) => page.shadowTopics) ?? [], [shadowTopicsData]);
 
   const { mutate: deleteShadowLink, isPending: isDeleting } = useDeleteShadowLinkMutation({
     onSuccess: () => {
@@ -107,7 +80,6 @@ export const ShadowLinkDetailsPage = () => {
       );
       setShowFailoverDialog(false);
       setFailoverTopicName('');
-      void refetchTopics();
       void refetch();
     },
     onError: (error) => {
@@ -200,26 +172,8 @@ export const ShadowLinkDetailsPage = () => {
         </Button>
       </div>
 
-      {/* Shadow Link Diagram */}
-      <ShadowLinkDiagram shadowLink={shadowLink} />
-
-      {/* Shadow Link Metrics */}
-      <ShadowLinkMetrics shadowLink={shadowLink} />
-
-      {/* Topics Section */}
-      <ShadowTopicsTable
-        getNextTopicPage={async () => {
-          await fetchNextPage();
-        }}
-        hasNextPage={hasNextPage}
-        isFetching={isFetchingTopics || isFetchingNextPage}
-        isFetchingNextPage={isFetchingNextPage}
-        onFailoverTopic={openFailoverDialog}
-        onRefresh={refetchTopics}
-        onTopicNameFilterChange={setTopicNameFilter}
-        topicNameFilter={topicNameFilter}
-        topics={topics}
-      />
+      {/* Shadow Link Details */}
+      <ShadowLinkDetails onFailoverTopic={openFailoverDialog} shadowLink={shadowLink} shadowLinkName={name || ''} />
 
       {/* Delete Dialog */}
       <DeleteShadowLinkDialog
