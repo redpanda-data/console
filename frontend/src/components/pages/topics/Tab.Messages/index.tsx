@@ -80,6 +80,7 @@ import { IsDev } from '../../../../utils/env';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filter-helper';
 import { onPaginationChange } from '../../../../utils/pagination';
 import { sortingParser } from '../../../../utils/sorting-parser';
+import { getTopicFilters, setTopicFilters } from '../../../../utils/topic-filters-session';
 import {
   Label,
   navigatorClipboardErrorHandler,
@@ -363,6 +364,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
+  // Filters with session storage (NOT in URL)
+  const [filters, setFilters] = useState<FilterEntry[]>(() => getTopicFilters(props.topic.topicName));
+
+  // Sync filters to session storage whenever they change
+  useEffect(() => {
+    setTopicFilters(props.topic.topicName, filters);
+  }, [filters, props.topic.topicName]);
+
   // Deserializer settings with URL state management
   const [keyDeserializer, setKeyDeserializer] = useQueryStateWithCallback<PayloadEncoding>(
     {
@@ -485,7 +494,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       const functionNames: string[] = [];
       const functions: string[] = [];
 
-      const filteredSearchParams = (currentSearchParams?.filters ?? []).filter(
+      // Use filters from URL state instead of localStorage
+      const filteredSearchParams = filters.filter(
         (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode
       );
 
@@ -557,14 +567,16 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     getSearchParams,
     keyDeserializer,
     valueDeserializer,
+    filters,
   ]);
 
   // Convert searchFunc to useCallback
   const searchFunc = useCallback(
     (source: 'auto' | 'manual') => {
-      // Create search params signature
+      // Create search params signature (includes filters to detect changes)
       const currentSearchParams = getSearchParams(props.topic.topicName);
-      const searchParams = `${startOffset} ${maxResults} ${partitionID} ${currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp} ${keyDeserializer} ${valueDeserializer}`;
+      const filtersSignature = filters.map((f) => `${f.id}:${f.isActive}:${f.transpiledCode}`).join('|');
+      const searchParams = `${startOffset} ${maxResults} ${partitionID} ${currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp} ${keyDeserializer} ${valueDeserializer} ${filtersSignature}`;
 
       if (searchParams === currentSearchRunRef.current && source === 'auto') {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -615,6 +627,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       props.topic.topicName,
       keyDeserializer,
       valueDeserializer,
+      filters,
     ]
   );
 
@@ -997,7 +1010,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                   isDisabled={!canUseFilters}
                   onClick={() => {
                     const filter = new FilterEntry();
-                    filter.isNew = true;
                     setCurrentJSFilter(filter);
                   }}
                 >
@@ -1080,8 +1092,15 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
         {/* Filter Tags */}
         <MessageSearchFilterBar
+          filters={filters}
           onEdit={(filter) => {
             setCurrentJSFilter(filter);
+          }}
+          onRemove={(filterId) => {
+            setFilters(filters.filter((f) => f.id !== filterId));
+          }}
+          onToggle={(filterId) => {
+            setFilters(filters.map((f) => (f.id === filterId ? { ...f, isActive: !f.isActive } : f)));
           }}
         />
 
@@ -1120,14 +1139,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           currentFilter={currentJSFilter}
           onClose={() => setCurrentJSFilter(null)}
           onSave={(filter) => {
-            if (filter.isNew) {
-              uiState.topicSettings.searchParams.filters.push(filter);
-              filter.isNew = false;
+            // Check if filter exists in the array by ID
+            const existingIndex = filters.findIndex((f) => f.id === filter.id);
+            if (existingIndex >= 0) {
+              // Update existing filter
+              setFilters(filters.map((f) => (f.id === filter.id ? filter : f)));
             } else {
-              const idx = uiState.topicSettings.searchParams.filters.findIndex((x) => x.id === filter.id);
-              if (idx !== -1) {
-                uiState.topicSettings.searchParams.filters.splice(idx, 1, filter);
-              }
+              // Add new filter
+              setFilters([...filters, filter]);
             }
             searchFunc('manual');
           }}
