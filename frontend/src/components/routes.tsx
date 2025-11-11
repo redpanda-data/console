@@ -594,7 +594,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Shadow Links',
     LinkIcon,
     true,
-    routeVisibility(true, [Feature.ShadowLinkService])
+    routeVisibility(() => !isEmbedded(), [Feature.ShadowLinkService])
   ),
   MakeRoute<{}>('/shadowlinks/create', ShadowLinkCreatePage, 'Create Shadow Link'),
   MakeRoute<{ name: string }>('/shadowlinks/:name', ShadowLinkDetailsPage, 'Shadow Link Details'),
