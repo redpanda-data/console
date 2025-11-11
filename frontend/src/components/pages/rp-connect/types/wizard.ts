@@ -35,7 +35,19 @@ export type StepSubmissionResult<T> = {
 
 export type BaseStepRef<T> = {
   triggerSubmit: () => Promise<StepSubmissionResult<T>>;
-  isLoading: boolean;
+  isPending: boolean;
+};
+
+// User step-specific submission result
+export type UserStepSubmissionResult = {
+  success: boolean;
+  data?: AddUserFormData;
+};
+
+// New ref type for user step
+export type UserStepRef = {
+  triggerSubmit: () => Promise<UserStepSubmissionResult>;
+  isPending: boolean;
 };
 
 export const retentionTimeUnits = enumFromKeys(timeFactors);

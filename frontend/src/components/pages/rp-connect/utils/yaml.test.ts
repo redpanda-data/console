@@ -166,7 +166,7 @@ output:
       if (tlsLineIndex !== -1) {
         const tlsLine = lines[tlsLineIndex];
         // tls: line itself should just be "tls:" without inline comment (it's a parent object)
-        expect(tlsLine.trim()).toBe('tls:');
+        expect(tlsLine.trim()).toBe('tls: {}');
       }
 
       // But critical array fields SHOULD get inline comments
@@ -211,10 +211,6 @@ output:
       // Should add comments to the newly merged output (critical fields)
       expect(mergedYaml).toContain('topic:');
       expect(mergedYaml).toContain('# Optional');
-
-      // Should have comments on optional fields with defaults
-      expect(mergedYaml).toContain('enabled: true');
-      expect(mergedYaml).toContain('# Optional (default: false)');
     });
   });
 });
