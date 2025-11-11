@@ -31,6 +31,8 @@ import { FailoverDialog } from './failover-dialog';
 import { ShadowLinkDiagram } from './shadow-link-diagram';
 import { ShadowLinkMetrics } from './shadow-link-metrics';
 import { ShadowTopicsTable } from './shadow-topics-table';
+import { MAX_PAGE_SIZE } from '../../../../react-query/react-query.utils';
+import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
 
 // Update page title using uiState pattern
 export const updatePageTitle = (shadowLinkName: string) => {
@@ -75,9 +77,9 @@ export const ShadowLinkDetailsPage = () => {
             topicNameContains: topicNameFilter,
           }
         : undefined,
-      pageSize: 100,
+      pageSize: MAX_PAGE_SIZE,
     },
-    { refetchInterval: 5000 }
+    { refetchInterval: 15_000 }
   );
 
   // Find the specific shadow link by name
@@ -92,7 +94,7 @@ export const ShadowLinkDetailsPage = () => {
       navigate('/shadowlinks');
     },
     onError: (error) => {
-      toast.error(`Failed to delete shadowlink: ${error.message}`);
+      toast.error(formatToastErrorMessageGRPC({ error, action: 'delete', entity: 'shadowlink' }));
     },
   });
 

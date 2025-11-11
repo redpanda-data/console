@@ -10,9 +10,11 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import type { ConnectError } from '@connectrpc/connect';
 import {
   createConnectQueryKey,
+  type UseInfiniteQueryOptions,
   type UseMutationOptions,
   useInfiniteQuery,
   useMutation,
@@ -25,10 +27,12 @@ import {
   GetShadowLinkRequestSchema,
   type GetShadowMetricsRequest,
   GetShadowMetricsRequestSchema,
+  type GetShadowMetricsResponse,
   type ListShadowLinksRequest,
   ListShadowLinksRequestSchema,
   type ListShadowLinkTopicsRequest,
   ListShadowLinkTopicsRequestSchema,
+  type ListShadowLinkTopicsResponseSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import {
   createShadowLink,
@@ -40,7 +44,7 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { failOver } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink-ShadowLinkService_connectquery';
 import type { CreateShadowLinkRequestSchema } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import type { MessageInit } from 'react-query/react-query.utils';
+import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 
 /**
  * Hook to list all shadow links
@@ -59,14 +63,7 @@ export const useGetShadowLinkQuery = (request: MessageInit<GetShadowLinkRequest>
 
 export const useGetShadowMetricsQuery = (
   request: MessageInit<GetShadowMetricsRequest>,
-  options?: {
-    refetchInterval?: number;
-    enabled?: boolean;
-    refetchOnWindowFocus?: boolean;
-    refetchOnReconnect?: boolean;
-    staleTime?: number;
-    gcTime?: number;
-  }
+  options?: QueryOptions<GenMessage<GetShadowMetricsResponse>, GetShadowMetricsResponse>
 ) => {
   const getShadowMetricsRequest = create(GetShadowMetricsRequestSchema, request);
 
@@ -81,14 +78,13 @@ export const useListShadowTopicQuery = (request: MessageInit<ListShadowLinkTopic
 
 export const useListShadowTopicInfiniteQuery = (
   request: MessageInit<ListShadowLinkTopicsRequest>,
-  options?: {
-    refetchInterval?: number;
-    enabled?: boolean;
-    refetchOnWindowFocus?: boolean;
-    refetchOnReconnect?: boolean;
-    staleTime?: number;
-    gcTime?: number;
-  }
+  options?: Partial<
+    UseInfiniteQueryOptions<
+      typeof ListShadowLinkTopicsRequestSchema,
+      typeof ListShadowLinkTopicsResponseSchema,
+      'pageToken'
+    >
+  >
 ) => {
   const baseRequest = create(ListShadowLinkTopicsRequestSchema, {
     pageToken: '',
