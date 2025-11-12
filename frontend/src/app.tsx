@@ -32,8 +32,6 @@ import { Content } from '@builder.io/sdk-react';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ChakraProvider, Container, Grid, redpandaTheme, redpandaToastOptions, Sidebar } from '@redpanda-data/ui';
-import { StagewiseToolbar, type ToolbarConfig } from '@stagewise/toolbar-react';
-import { ReactPlugin } from '@stagewise-plugins/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import AnnouncementBar from 'components/builder-io/announcement-bar';
@@ -84,8 +82,6 @@ const App = () => {
     },
   });
 
-  const stagewiseConfig: ToolbarConfig = { plugins: [ReactPlugin] };
-
   // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp
   return (
     <CustomFeatureFlagProvider initialFlags={{}}>
@@ -113,10 +109,6 @@ const App = () => {
                 </RequireAuth>
               </ErrorBoundary>
               <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production' && developerView} />
-              <StagewiseToolbar
-                config={stagewiseConfig}
-                enabled={process.env.NODE_ENV === 'development' && developerView}
-              />
             </QueryClientProvider>
           </TransportProvider>
         </ChakraProvider>
