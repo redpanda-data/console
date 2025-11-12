@@ -15,7 +15,6 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Loader2, Trash2 } from 'lucide-react';
-import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
 import {
   useDeleteShadowLinkMutation,
@@ -26,22 +25,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
+import { ShadowLinkConfiguration } from './config/shadow-link-configuration';
 import { DeleteShadowLinkDialog } from './delete-shadowlink-dialog';
 import { FailoverDialog } from './failover-dialog';
 import { ShadowLinkDetails } from './shadow-link-details';
 import { TasksTable } from './tasks-table';
 import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
-
-// Update page title using uiState pattern
-export const updatePageTitle = (shadowLinkName: string) => {
-  runInAction(() => {
-    uiState.pageTitle = shadowLinkName;
-    uiState.pageBreadcrumbs = [
-      { title: 'Shadow Links', linkTo: '/shadowlinks' },
-      { title: shadowLinkName, linkTo: `/shadowlinks/${shadowLinkName}` },
-    ];
-  });
-};
 
 export const ShadowLinkDetailsPage = () => {
   const { name } = useParams<{ name: string }>();
@@ -50,10 +39,12 @@ export const ShadowLinkDetailsPage = () => {
   const [showFailoverDialog, setShowFailoverDialog] = useState(false);
   const [failoverTopicName, setFailoverTopicName] = useState<string>('');
 
-  // Update page title
   useEffect(() => {
     if (name) {
-      updatePageTitle(name);
+      uiState.pageBreadcrumbs = [
+        { title: 'Shadow Links', linkTo: '/shadowlinks' },
+        { title: name, linkTo: '' },
+      ];
     }
   }, [name]);
 
@@ -201,7 +192,7 @@ export const ShadowLinkDetailsPage = () => {
           </TabsContent>
 
           <TabsContent testId="configuration-content" value="configuration">
-            <Text>Configuration content coming soon</Text>
+            <ShadowLinkConfiguration shadowLink={shadowLink} />
           </TabsContent>
         </TabsContents>
       </Tabs>
