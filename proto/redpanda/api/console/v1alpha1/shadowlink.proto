@@ -61,6 +61,7 @@ message ShadowLink {
   core.admin.v2.ShadowLinkConfigurations configurations = 3;
   core.admin.v2.ShadowLinkState state = 4;
   repeated ShadowLinkTaskStatus tasks_status = 5;
+  repeated string synced_shadow_topic_properties = 6;
 }
 
 message ListShadowLinksRequest {
