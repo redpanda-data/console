@@ -16,11 +16,10 @@ import { Text } from '../../redpanda-ui/components/typography';
 
 interface UserInformationCardProps {
   username: string;
-  saslMechanism: string;
   onEditPassword?: () => void;
 }
 
-export const UserInformationCard = ({ username, saslMechanism, onEditPassword }: UserInformationCardProps) => {
+export const UserInformationCard = ({ username, onEditPassword }: UserInformationCardProps) => {
   return (
     <Card size="full">
       <CardHeader>
@@ -46,14 +45,6 @@ export const UserInformationCard = ({ username, saslMechanism, onEditPassword }:
               </Button>
             )}
           </div>
-        </div>
-
-        <Separator />
-
-        {/* SASL Mechanism Row */}
-        <div className="grid grid-cols-3 items-center gap-4 py-2">
-          <Text variant="label">SASL mechanism</Text>
-          <Text variant="default">{saslMechanism}</Text>
         </div>
       </CardContent>
     </Card>
