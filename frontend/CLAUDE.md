@@ -33,7 +33,15 @@ The dev server proxies API requests to `http://localhost:9090` for `/api`, `/red
 ### Testing
 
 ```bash
-bun run test             # Run unit and integration tests (Vitest)
+# Run all tests (unit + integration)
+bun run test             # Runs both unit and integration tests
+bun run test:ci          # Same as above, for CI environments
+
+# Run specific test suites
+bun run test:unit        # Run only unit tests (*.test.ts files)
+bun run test:integration # Run only integration tests (*.test.tsx files)
+
+# E2E tests with Playwright
 bun run e2e-test         # Run E2E tests with Playwright
 bun run e2e-test:ui      # Run E2E tests with Playwright (UI mode)
 bun run install:chromium # Install Chromium for Playwright
@@ -41,40 +49,172 @@ bun run install:chromium # Install Chromium for Playwright
 
 **Testing Strategy:**
 
-1. # **Vitest Tests** (Unit + Integration) - Fast, cheap to run
+We use a three-tier testing approach with clear separation of concerns:
 
-- Test CRUD operations and business logic
-- Verify gRPC Connect transport endpoints are called correctly
-- Test data fetching, mutations, and state management
-- **DO NOT** extensively test component rendering
-- **DO NOT** test UI components themselves (they're tested in the UI registry repo)
-- Test files: `src/**/*.test.ts`, `src/**/*.test.tsx` (co-located with source files)
+#### 1. **Unit Tests** (`*.test.ts`) - Pure logic, no React
 
-2. **Playwright E2E Tests** - Complex scenarios
-   - Test browser behaviors and interactions
-   - Test sophisticated multi-step workflows
-   - Test real user journeys across multiple pages
-   - Use when you need actual browser rendering and navigation
-   - Test files:
-     - `tests/console/*.spec.ts` - Core console features
-     - `tests/console-enterprise/*.spec.ts` - Enterprise-exclusive features
+**File naming:** `*.test.ts` (TypeScript files only, NO JSX)
 
-**What to Test:**
+**Environment:** Node.js (no jsdom, no DOM APIs)
 
-✅ **Integration Tests (Bun):**
-
-- API calls are made with correct parameters
-- gRPC Connect transport endpoints are invoked
+**What to test:**
+- Pure functions and utility functions
 - Data transformations and business logic
-- State updates after API responses
-- Error handling and edge cases
+- TypeScript types and interfaces
+- Protobuf data structures
+- Non-React code (no components, no hooks)
 
-❌ **Don't Test (Components tested in UI registry):**
+**What NOT to test:**
+- React components or hooks
+- Anything requiring rendering or `renderHook`
+- Browser APIs or DOM manipulation
 
-- Button clicks render correctly
-- Dialog opens/closes
-- Form fields are styled properly
-- Component props work as expected
+**Examples:**
+```typescript
+// ✅ GOOD - Pure utility function test
+describe('formatDate', () => {
+  it('should format ISO date to human readable', () => {
+    expect(formatDate('2025-01-01')).toBe('January 1, 2025');
+  });
+});
+
+// ✅ GOOD - Data transformation test
+describe('transformUserData', () => {
+  it('should map API response to User model', () => {
+    const apiData = { name: 'John', email: 'john@example.com' };
+    expect(transformUserData(apiData)).toEqual({
+      name: 'John',
+      email: 'john@example.com',
+      displayName: 'John (john@example.com)'
+    });
+  });
+});
+
+// ❌ BAD - This belongs in integration tests (*.test.tsx)
+import { renderHook } from '@testing-library/react';
+describe('useCustomHook', () => {
+  it('should return data', () => {
+    const { result } = renderHook(() => useCustomHook());
+    expect(result.current.data).toBeDefined();
+  });
+});
+```
+
+#### 2. **Integration Tests** (`*.test.tsx`) - React components and API integration
+
+**File naming:** `*.test.tsx` (TypeScript + JSX files)
+
+**Environment:** jsdom (browser-like environment)
+
+**What to test:**
+- React component interactions with mocked APIs
+- gRPC Connect transport endpoints are called correctly
+- Component state management and data fetching
+- React hooks (custom hooks, Zustand stores)
+- Form submissions and validation
+- Component integration with API calls
+- Error handling in components
+
+**What NOT to test:**
+- UI component rendering details (Button, Dialog, etc. - tested in UI registry)
+- Extensive visual/style testing
+- Complex multi-page user flows (use E2E tests)
+
+**Examples:**
+```tsx
+// ✅ GOOD - Integration test for API calls
+import { render, waitFor } from 'test-utils';
+import { createRouterTransport } from '@connectrpc/connect';
+
+describe('CreateServerModal', () => {
+  it('should call createServer API with correct data', async () => {
+    const mockCreateServer = vi.fn(() =>
+      Promise.resolve({ id: '123', name: 'test-server' })
+    );
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(createServer, mockCreateServer);
+    });
+
+    const { getByRole, getByLabelText } = render(
+      <CreateServerModal />,
+      { transport }
+    );
+
+    fireEvent.change(getByLabelText('Name'), { target: { value: 'test-server' } });
+    fireEvent.click(getByRole('button', { name: 'Create' }));
+
+    await waitFor(() => {
+      expect(mockCreateServer).toHaveBeenCalledWith({
+        name: 'test-server'
+      });
+    });
+  });
+});
+
+// ✅ GOOD - Testing custom React hooks
+import { renderHook } from '@testing-library/react';
+
+describe('usePaginationParams', () => {
+  it('should parse pagination from URL params', () => {
+    const { result } = renderHook(() => usePaginationParams());
+    expect(result.current.page).toBe(1);
+    expect(result.current.pageSize).toBe(20);
+  });
+});
+
+// ❌ BAD - Testing UI component rendering (belongs in UI registry)
+test('button has correct background color', () => {
+  render(<Button variant="primary">Click me</Button>);
+  expect(screen.getByRole('button')).toHaveClass('bg-blue-500');
+});
+```
+
+#### 3. **E2E Tests** (`*.spec.ts` in `tests/`) - Complex user journeys
+
+**Location:** `tests/console/*.spec.ts`, `tests/console-enterprise/*.spec.ts`
+
+**Tool:** Playwright
+
+**What to test:**
+- Real browser interactions and navigation
+- Multi-step workflows across pages
+- Complex user journeys (create → configure → deploy)
+- Browser-specific behaviors
+- Visual regression (screenshots)
+- Authentication flows
+
+**Examples:**
+```typescript
+// ✅ GOOD - E2E test for complex workflow
+test('user can create and configure MCP server', async ({ page }) => {
+  await page.goto('/remote-mcp');
+  await page.click('text=Create Server');
+  await page.fill('[name="name"]', 'My Server');
+  await page.fill('[name="url"]', 'http://example.com');
+  await page.click('text=Submit');
+
+  // Navigate to configuration page
+  await expect(page.locator('text=My Server')).toBeVisible();
+  await page.click('text=My Server');
+  await page.click('text=Configure');
+
+  // Multi-step configuration
+  await page.selectOption('[name="protocol"]', 'https');
+  await page.click('text=Save Configuration');
+  await expect(page.locator('text=Configuration saved')).toBeVisible();
+});
+```
+
+**File Naming Convention (CRITICAL):**
+
+| Test Type | File Extension | Environment | Example |
+|-----------|----------------|-------------|---------|
+| Unit | `*.test.ts` | Node.js | `utils.test.ts`, `validation.test.ts` |
+| Integration | `*.test.tsx` | jsdom | `create-modal.test.tsx`, `use-data.test.tsx` |
+| E2E | `*.spec.ts` | Playwright | `user-flow.spec.ts` |
+
+**IMPORTANT:** If your test file uses `renderHook`, `render`, or any React/JSX, it MUST use `.test.tsx` extension.
 
 **Writing E2E Tests**
 Recording, Transcript
