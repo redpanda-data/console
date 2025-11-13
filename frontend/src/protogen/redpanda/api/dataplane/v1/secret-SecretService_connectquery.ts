@@ -82,8 +82,8 @@ export const updateKafkaConnectSecret = SecretService.method.updateKafkaConnectS
 export const deleteKafkaConnectSecret = SecretService.method.deleteKafkaConnectSecret;
 
 /**
- * ListResourcesBySecrets returns resources that uses given secret
+ * ListResources returns resources that uses given secret
  *
- * @generated from rpc redpanda.api.dataplane.v1.SecretService.ListResourcesBySecrets
+ * @generated from rpc redpanda.api.dataplane.v1.SecretService.ListResources
  */
-export const listResourcesBySecrets = SecretService.method.listResourcesBySecrets;
+export const listResources = SecretService.method.listResources;

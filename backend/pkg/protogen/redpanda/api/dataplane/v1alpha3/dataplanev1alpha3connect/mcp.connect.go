@@ -59,9 +59,6 @@ const (
 	// MCPServerServiceGetMCPServerServiceConfigSchemaProcedure is the fully-qualified name of the
 	// MCPServerService's GetMCPServerServiceConfigSchema RPC.
 	MCPServerServiceGetMCPServerServiceConfigSchemaProcedure = "/redpanda.api.dataplane.v1alpha3.MCPServerService/GetMCPServerServiceConfigSchema"
-	// MCPServerServiceListMCPServersBySecretsProcedure is the fully-qualified name of the
-	// MCPServerService's ListMCPServersBySecrets RPC.
-	MCPServerServiceListMCPServersBySecretsProcedure = "/redpanda.api.dataplane.v1alpha3.MCPServerService/ListMCPServersBySecrets"
 	// MCPServerServiceLintMCPConfigProcedure is the fully-qualified name of the MCPServerService's
 	// LintMCPConfig RPC.
 	MCPServerServiceLintMCPConfigProcedure = "/redpanda.api.dataplane.v1alpha3.MCPServerService/LintMCPConfig"
@@ -78,7 +75,6 @@ var (
 	mCPServerServiceStopMCPServerMethodDescriptor                   = mCPServerServiceServiceDescriptor.Methods().ByName("StopMCPServer")
 	mCPServerServiceStartMCPServerMethodDescriptor                  = mCPServerServiceServiceDescriptor.Methods().ByName("StartMCPServer")
 	mCPServerServiceGetMCPServerServiceConfigSchemaMethodDescriptor = mCPServerServiceServiceDescriptor.Methods().ByName("GetMCPServerServiceConfigSchema")
-	mCPServerServiceListMCPServersBySecretsMethodDescriptor         = mCPServerServiceServiceDescriptor.Methods().ByName("ListMCPServersBySecrets")
 	mCPServerServiceLintMCPConfigMethodDescriptor                   = mCPServerServiceServiceDescriptor.Methods().ByName("LintMCPConfig")
 )
 
@@ -102,9 +98,6 @@ type MCPServerServiceClient interface {
 	StartMCPServer(context.Context, *connect.Request[v1alpha3.StartMCPServerRequest]) (*connect.Response[v1alpha3.StartMCPServerResponse], error)
 	// The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
 	GetMCPServerServiceConfigSchema(context.Context, *connect.Request[v1alpha3.GetMCPServerServiceConfigSchemaRequest]) (*connect.Response[v1alpha3.GetMCPServerServiceConfigSchemaResponse], error)
-	// ListMCPServersBySecrets implements the get MCP servers by secrets method which lists the MCP servers
-	// in the Redpanda cluster for all secrets.
-	ListMCPServersBySecrets(context.Context, *connect.Request[v1alpha3.ListMCPServersBySecretsRequest]) (*connect.Response[v1alpha3.ListMCPServersBySecretsResponse], error)
 	// Lints a Redpanda Connect MCP tools configuration and returns zero or more
 	// issues ("hints"). An empty list means the config passed all lint checks.
 	LintMCPConfig(context.Context, *connect.Request[v1alpha3.LintMCPConfigRequest]) (*connect.Response[v1alpha3.LintMCPConfigResponse], error)
@@ -169,12 +162,6 @@ func NewMCPServerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(mCPServerServiceGetMCPServerServiceConfigSchemaMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		listMCPServersBySecrets: connect.NewClient[v1alpha3.ListMCPServersBySecretsRequest, v1alpha3.ListMCPServersBySecretsResponse](
-			httpClient,
-			baseURL+MCPServerServiceListMCPServersBySecretsProcedure,
-			connect.WithSchema(mCPServerServiceListMCPServersBySecretsMethodDescriptor),
-			connect.WithClientOptions(opts...),
-		),
 		lintMCPConfig: connect.NewClient[v1alpha3.LintMCPConfigRequest, v1alpha3.LintMCPConfigResponse](
 			httpClient,
 			baseURL+MCPServerServiceLintMCPConfigProcedure,
@@ -194,7 +181,6 @@ type mCPServerServiceClient struct {
 	stopMCPServer                   *connect.Client[v1alpha3.StopMCPServerRequest, v1alpha3.StopMCPServerResponse]
 	startMCPServer                  *connect.Client[v1alpha3.StartMCPServerRequest, v1alpha3.StartMCPServerResponse]
 	getMCPServerServiceConfigSchema *connect.Client[v1alpha3.GetMCPServerServiceConfigSchemaRequest, v1alpha3.GetMCPServerServiceConfigSchemaResponse]
-	listMCPServersBySecrets         *connect.Client[v1alpha3.ListMCPServersBySecretsRequest, v1alpha3.ListMCPServersBySecretsResponse]
 	lintMCPConfig                   *connect.Client[v1alpha3.LintMCPConfigRequest, v1alpha3.LintMCPConfigResponse]
 }
 
@@ -239,12 +225,6 @@ func (c *mCPServerServiceClient) GetMCPServerServiceConfigSchema(ctx context.Con
 	return c.getMCPServerServiceConfigSchema.CallUnary(ctx, req)
 }
 
-// ListMCPServersBySecrets calls
-// redpanda.api.dataplane.v1alpha3.MCPServerService.ListMCPServersBySecrets.
-func (c *mCPServerServiceClient) ListMCPServersBySecrets(ctx context.Context, req *connect.Request[v1alpha3.ListMCPServersBySecretsRequest]) (*connect.Response[v1alpha3.ListMCPServersBySecretsResponse], error) {
-	return c.listMCPServersBySecrets.CallUnary(ctx, req)
-}
-
 // LintMCPConfig calls redpanda.api.dataplane.v1alpha3.MCPServerService.LintMCPConfig.
 func (c *mCPServerServiceClient) LintMCPConfig(ctx context.Context, req *connect.Request[v1alpha3.LintMCPConfigRequest]) (*connect.Response[v1alpha3.LintMCPConfigResponse], error) {
 	return c.lintMCPConfig.CallUnary(ctx, req)
@@ -270,9 +250,6 @@ type MCPServerServiceHandler interface {
 	StartMCPServer(context.Context, *connect.Request[v1alpha3.StartMCPServerRequest]) (*connect.Response[v1alpha3.StartMCPServerResponse], error)
 	// The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
 	GetMCPServerServiceConfigSchema(context.Context, *connect.Request[v1alpha3.GetMCPServerServiceConfigSchemaRequest]) (*connect.Response[v1alpha3.GetMCPServerServiceConfigSchemaResponse], error)
-	// ListMCPServersBySecrets implements the get MCP servers by secrets method which lists the MCP servers
-	// in the Redpanda cluster for all secrets.
-	ListMCPServersBySecrets(context.Context, *connect.Request[v1alpha3.ListMCPServersBySecretsRequest]) (*connect.Response[v1alpha3.ListMCPServersBySecretsResponse], error)
 	// Lints a Redpanda Connect MCP tools configuration and returns zero or more
 	// issues ("hints"). An empty list means the config passed all lint checks.
 	LintMCPConfig(context.Context, *connect.Request[v1alpha3.LintMCPConfigRequest]) (*connect.Response[v1alpha3.LintMCPConfigResponse], error)
@@ -332,12 +309,6 @@ func NewMCPServerServiceHandler(svc MCPServerServiceHandler, opts ...connect.Han
 		connect.WithSchema(mCPServerServiceGetMCPServerServiceConfigSchemaMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	mCPServerServiceListMCPServersBySecretsHandler := connect.NewUnaryHandler(
-		MCPServerServiceListMCPServersBySecretsProcedure,
-		svc.ListMCPServersBySecrets,
-		connect.WithSchema(mCPServerServiceListMCPServersBySecretsMethodDescriptor),
-		connect.WithHandlerOptions(opts...),
-	)
 	mCPServerServiceLintMCPConfigHandler := connect.NewUnaryHandler(
 		MCPServerServiceLintMCPConfigProcedure,
 		svc.LintMCPConfig,
@@ -362,8 +333,6 @@ func NewMCPServerServiceHandler(svc MCPServerServiceHandler, opts ...connect.Han
 			mCPServerServiceStartMCPServerHandler.ServeHTTP(w, r)
 		case MCPServerServiceGetMCPServerServiceConfigSchemaProcedure:
 			mCPServerServiceGetMCPServerServiceConfigSchemaHandler.ServeHTTP(w, r)
-		case MCPServerServiceListMCPServersBySecretsProcedure:
-			mCPServerServiceListMCPServersBySecretsHandler.ServeHTTP(w, r)
 		case MCPServerServiceLintMCPConfigProcedure:
 			mCPServerServiceLintMCPConfigHandler.ServeHTTP(w, r)
 		default:
@@ -405,10 +374,6 @@ func (UnimplementedMCPServerServiceHandler) StartMCPServer(context.Context, *con
 
 func (UnimplementedMCPServerServiceHandler) GetMCPServerServiceConfigSchema(context.Context, *connect.Request[v1alpha3.GetMCPServerServiceConfigSchemaRequest]) (*connect.Response[v1alpha3.GetMCPServerServiceConfigSchemaResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.MCPServerService.GetMCPServerServiceConfigSchema is not implemented"))
-}
-
-func (UnimplementedMCPServerServiceHandler) ListMCPServersBySecrets(context.Context, *connect.Request[v1alpha3.ListMCPServersBySecretsRequest]) (*connect.Response[v1alpha3.ListMCPServersBySecretsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.MCPServerService.ListMCPServersBySecrets is not implemented"))
 }
 
 func (UnimplementedMCPServerServiceHandler) LintMCPConfig(context.Context, *connect.Request[v1alpha3.LintMCPConfigRequest]) (*connect.Response[v1alpha3.LintMCPConfigResponse], error) {

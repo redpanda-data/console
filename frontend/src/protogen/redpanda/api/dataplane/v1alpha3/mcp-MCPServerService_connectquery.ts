@@ -62,14 +62,6 @@ export const startMCPServer = MCPServerService.method.startMCPServer;
 export const getMCPServerServiceConfigSchema = MCPServerService.method.getMCPServerServiceConfigSchema;
 
 /**
- * ListMCPServersBySecrets implements the get MCP servers by secrets method which lists the MCP servers
- * in the Redpanda cluster for all secrets.
- *
- * @generated from rpc redpanda.api.dataplane.v1alpha3.MCPServerService.ListMCPServersBySecrets
- */
-export const listMCPServersBySecrets = MCPServerService.method.listMCPServersBySecrets;
-
-/**
  * Lints a Redpanda Connect MCP tools configuration and returns zero or more
  * issues ("hints"). An empty list means the config passed all lint checks.
  *

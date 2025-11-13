@@ -172,15 +172,6 @@ components:
             If a tag's value is empty, the server interprets that as a deletion.
           type: object
       type: object
-    AIAgentsForSecret:
-      properties:
-        ai_agents:
-          items:
-            $ref: '#/components/schemas/AIAgent'
-          type: array
-        secret_id:
-          type: string
-      type: object
     Any:
       additionalProperties: {}
       properties:
@@ -717,26 +708,14 @@ components:
           description: A list of linting issues.
           type: object
       type: object
-    ListAIAgentsBySecretsRequest.Filter:
-      properties:
-        secret_id:
-          items:
-            type: string
-          type: array
-      type: object
-    ListAIAgentsBySecretsResponse:
-      properties:
-        ai_agents_for_secret:
-          items:
-            $ref: '#/components/schemas/AIAgentsForSecret'
-          type: array
-      type: object
     ListAIAgentsRequest.Filter:
       properties:
         mcp_server_id:
           type: string
         name_contains:
           description: Any AI agents that partially match this name will be returned.
+          type: string
+        secret_id:
           type: string
         tags[string]:
           additionalProperties:
@@ -772,20 +751,6 @@ components:
           type: array
         next_page_token:
           type: string
-      type: object
-    ListMCPServersBySecretsRequest.Filter:
-      properties:
-        secret_id:
-          items:
-            type: string
-          type: array
-      type: object
-    ListMCPServersBySecretsResponse:
-      properties:
-        mcp_servers_for_secret:
-          items:
-            $ref: '#/components/schemas/MCPServersForSecret'
-          type: array
       type: object
     ListMCPServersRequest.Filter:
       properties:
@@ -879,15 +844,6 @@ components:
             $ref: '#/components/schemas/Tool'
           description: The Redpanda Connect MCP server configuration.
           type: object
-      type: object
-    MCPServersForSecret:
-      properties:
-        mcp_servers:
-          items:
-            $ref: '#/components/schemas/v1alpha3.MCPServer'
-          type: array
-        secret_id:
-          type: string
       type: object
     Resources:
       properties:
@@ -1054,6 +1010,10 @@ paths:
           schema:
             type: string
         - in: query
+          name: filter.secret_id
+          schema:
+            type: string
+        - in: query
           name: filter.mcp_server_id
           schema:
             type: string
@@ -1110,33 +1070,6 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Create AI Agent
-      tags:
-        - AI Agents
-  /v1alpha3/ai-agents-by-secrets:
-    get:
-      description: Get AI agents by secrets.
-      operationId: AIAgentService_ListAIAgentsBySecrets
-      parameters:
-        - in: query
-          name: filter.secret_id
-          schema:
-            items:
-              type: string
-            type: array
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ListAIAgentsBySecretsResponse'
-          description: OK
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Get AI agents by secrets
       tags:
         - AI Agents
   /v1alpha3/ai-agents/{id}:
@@ -1496,33 +1429,6 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Create Redpanda Connect MCP Server
-      tags:
-        - Redpanda Connect MCP servers
-  /v1alpha3/redpanda-connect/mcp-servers-by-secrets:
-    get:
-      description: Get Redpanda Connect MCP servers by secrets.
-      operationId: MCPServerService_ListMCPServersBySecrets
-      parameters:
-        - in: query
-          name: filter.secret_id
-          schema:
-            items:
-              type: string
-            type: array
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ListMCPServersBySecretsResponse'
-          description: OK
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Get Redpanda Connect MCP servers by secrets
       tags:
         - Redpanda Connect MCP servers
   /v1alpha3/redpanda-connect/mcp-servers/{id}:

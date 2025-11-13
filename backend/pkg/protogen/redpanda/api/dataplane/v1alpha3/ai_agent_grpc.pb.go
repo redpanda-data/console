@@ -20,14 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AIAgentService_CreateAIAgent_FullMethodName         = "/redpanda.api.dataplane.v1alpha3.AIAgentService/CreateAIAgent"
-	AIAgentService_GetAIAgent_FullMethodName            = "/redpanda.api.dataplane.v1alpha3.AIAgentService/GetAIAgent"
-	AIAgentService_ListAIAgents_FullMethodName          = "/redpanda.api.dataplane.v1alpha3.AIAgentService/ListAIAgents"
-	AIAgentService_UpdateAIAgent_FullMethodName         = "/redpanda.api.dataplane.v1alpha3.AIAgentService/UpdateAIAgent"
-	AIAgentService_DeleteAIAgent_FullMethodName         = "/redpanda.api.dataplane.v1alpha3.AIAgentService/DeleteAIAgent"
-	AIAgentService_StopAIAgent_FullMethodName           = "/redpanda.api.dataplane.v1alpha3.AIAgentService/StopAIAgent"
-	AIAgentService_StartAIAgent_FullMethodName          = "/redpanda.api.dataplane.v1alpha3.AIAgentService/StartAIAgent"
-	AIAgentService_ListAIAgentsBySecrets_FullMethodName = "/redpanda.api.dataplane.v1alpha3.AIAgentService/ListAIAgentsBySecrets"
+	AIAgentService_CreateAIAgent_FullMethodName = "/redpanda.api.dataplane.v1alpha3.AIAgentService/CreateAIAgent"
+	AIAgentService_GetAIAgent_FullMethodName    = "/redpanda.api.dataplane.v1alpha3.AIAgentService/GetAIAgent"
+	AIAgentService_ListAIAgents_FullMethodName  = "/redpanda.api.dataplane.v1alpha3.AIAgentService/ListAIAgents"
+	AIAgentService_UpdateAIAgent_FullMethodName = "/redpanda.api.dataplane.v1alpha3.AIAgentService/UpdateAIAgent"
+	AIAgentService_DeleteAIAgent_FullMethodName = "/redpanda.api.dataplane.v1alpha3.AIAgentService/DeleteAIAgent"
+	AIAgentService_StopAIAgent_FullMethodName   = "/redpanda.api.dataplane.v1alpha3.AIAgentService/StopAIAgent"
+	AIAgentService_StartAIAgent_FullMethodName  = "/redpanda.api.dataplane.v1alpha3.AIAgentService/StartAIAgent"
 )
 
 // AIAgentServiceClient is the client API for AIAgentService service.
@@ -52,9 +51,6 @@ type AIAgentServiceClient interface {
 	StopAIAgent(ctx context.Context, in *StopAIAgentRequest, opts ...grpc.CallOption) (*StopAIAgentResponse, error)
 	// StartAIAgent starts a specific AI agent that has been previously stopped.
 	StartAIAgent(ctx context.Context, in *StartAIAgentRequest, opts ...grpc.CallOption) (*StartAIAgentResponse, error)
-	// ListAIAgentsBySecrets implements the get AI agents by secrets method which lists the AI agents
-	// in the Redpanda cluster for all secrets.
-	ListAIAgentsBySecrets(ctx context.Context, in *ListAIAgentsBySecretsRequest, opts ...grpc.CallOption) (*ListAIAgentsBySecretsResponse, error)
 }
 
 type aIAgentServiceClient struct {
@@ -135,16 +131,6 @@ func (c *aIAgentServiceClient) StartAIAgent(ctx context.Context, in *StartAIAgen
 	return out, nil
 }
 
-func (c *aIAgentServiceClient) ListAIAgentsBySecrets(ctx context.Context, in *ListAIAgentsBySecretsRequest, opts ...grpc.CallOption) (*ListAIAgentsBySecretsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListAIAgentsBySecretsResponse)
-	err := c.cc.Invoke(ctx, AIAgentService_ListAIAgentsBySecrets_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // AIAgentServiceServer is the server API for AIAgentService service.
 // All implementations must embed UnimplementedAIAgentServiceServer
 // for forward compatibility.
@@ -167,9 +153,6 @@ type AIAgentServiceServer interface {
 	StopAIAgent(context.Context, *StopAIAgentRequest) (*StopAIAgentResponse, error)
 	// StartAIAgent starts a specific AI agent that has been previously stopped.
 	StartAIAgent(context.Context, *StartAIAgentRequest) (*StartAIAgentResponse, error)
-	// ListAIAgentsBySecrets implements the get AI agents by secrets method which lists the AI agents
-	// in the Redpanda cluster for all secrets.
-	ListAIAgentsBySecrets(context.Context, *ListAIAgentsBySecretsRequest) (*ListAIAgentsBySecretsResponse, error)
 	mustEmbedUnimplementedAIAgentServiceServer()
 }
 
@@ -200,9 +183,6 @@ func (UnimplementedAIAgentServiceServer) StopAIAgent(context.Context, *StopAIAge
 }
 func (UnimplementedAIAgentServiceServer) StartAIAgent(context.Context, *StartAIAgentRequest) (*StartAIAgentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartAIAgent not implemented")
-}
-func (UnimplementedAIAgentServiceServer) ListAIAgentsBySecrets(context.Context, *ListAIAgentsBySecretsRequest) (*ListAIAgentsBySecretsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListAIAgentsBySecrets not implemented")
 }
 func (UnimplementedAIAgentServiceServer) mustEmbedUnimplementedAIAgentServiceServer() {}
 func (UnimplementedAIAgentServiceServer) testEmbeddedByValue()                        {}
@@ -351,24 +331,6 @@ func _AIAgentService_StartAIAgent_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AIAgentService_ListAIAgentsBySecrets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListAIAgentsBySecretsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AIAgentServiceServer).ListAIAgentsBySecrets(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AIAgentService_ListAIAgentsBySecrets_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AIAgentServiceServer).ListAIAgentsBySecrets(ctx, req.(*ListAIAgentsBySecretsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // AIAgentService_ServiceDesc is the grpc.ServiceDesc for AIAgentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -403,10 +365,6 @@ var AIAgentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StartAIAgent",
 			Handler:    _AIAgentService_StartAIAgent_Handler,
-		},
-		{
-			MethodName: "ListAIAgentsBySecrets",
-			Handler:    _AIAgentService_ListAIAgentsBySecrets_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

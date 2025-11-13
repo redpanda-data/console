@@ -337,29 +337,6 @@ service MCPServerService {
     };
   }
 
-  // ListMCPServersBySecrets implements the get MCP servers by secrets method which lists the MCP servers
-  // in the Redpanda cluster for all secrets.
-  rpc ListMCPServersBySecrets(ListMCPServersBySecretsRequest) returns (ListMCPServersBySecretsResponse) {
-    option (google.api.http) = {get: "/v1alpha3/redpanda-connect/mcp-servers-by-secrets"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Get Redpanda Connect MCP servers by secrets"
-      description: "Get Redpanda Connect MCP servers by secrets."
-      responses: {
-        key: "200"
-        value: {
-          description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListMCPServersBySecretsResponse"}
-          }
-        }
-      }
-    };
-    option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_VIEW
-      api: API_MCP_SERVER
-    };
-  }
-
   // Lints a Redpanda Connect MCP tools configuration and returns zero or more
   // issues ("hints"). An empty list means the config passed all lint checks.
   rpc LintMCPConfig(LintMCPConfigRequest) returns (LintMCPConfigResponse) {
@@ -632,21 +609,4 @@ message LintMCPConfigRequest {
 message LintMCPConfigResponse {
   // A list of linting issues.
   map<string, common.v1.LintHint> lint_hints = 1;
-}
-
-message MCPServersForSecret {
-  string secret_id = 1;
-  repeated MCPServer mcp_servers = 2;
-}
-
-message ListMCPServersBySecretsRequest {
-  Filter filter = 1;
-
-  message Filter {
-    repeated string secret_id = 1;
-  }
-}
-
-message ListMCPServersBySecretsResponse {
-  repeated MCPServersForSecret mcp_servers_for_secret = 1;
 }

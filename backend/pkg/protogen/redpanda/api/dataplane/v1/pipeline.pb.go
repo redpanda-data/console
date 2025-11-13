@@ -1287,8 +1287,7 @@ func (x *GetPipelinesForSecretResponse) GetPipelinesForSecret() *PipelinesForSec
 }
 
 type GetPipelinesBySecretsRequest struct {
-	state         protoimpl.MessageState               `protogen:"open.v1"`
-	Filter        *GetPipelinesBySecretsRequest_Filter `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1321,13 +1320,6 @@ func (x *GetPipelinesBySecretsRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use GetPipelinesBySecretsRequest.ProtoReflect.Descriptor instead.
 func (*GetPipelinesBySecretsRequest) Descriptor() ([]byte, []int) {
 	return file_redpanda_api_dataplane_v1_pipeline_proto_rawDescGZIP(), []int{22}
-}
-
-func (x *GetPipelinesBySecretsRequest) GetFilter() *GetPipelinesBySecretsRequest_Filter {
-	if x != nil {
-		return x.Filter
-	}
-	return nil
 }
 
 type GetPipelinesBySecretsResponse struct {
@@ -1688,50 +1680,6 @@ func (x *ListPipelinesRequest_Filter) GetTags() map[string]string {
 	return nil
 }
 
-type GetPipelinesBySecretsRequest_Filter struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SecretId      []string               `protobuf:"bytes,1,rep,name=secret_id,json=secretId,proto3" json:"secret_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetPipelinesBySecretsRequest_Filter) Reset() {
-	*x = GetPipelinesBySecretsRequest_Filter{}
-	mi := &file_redpanda_api_dataplane_v1_pipeline_proto_msgTypes[34]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetPipelinesBySecretsRequest_Filter) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetPipelinesBySecretsRequest_Filter) ProtoMessage() {}
-
-func (x *GetPipelinesBySecretsRequest_Filter) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1_pipeline_proto_msgTypes[34]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetPipelinesBySecretsRequest_Filter.ProtoReflect.Descriptor instead.
-func (*GetPipelinesBySecretsRequest_Filter) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1_pipeline_proto_rawDescGZIP(), []int{22, 0}
-}
-
-func (x *GetPipelinesBySecretsRequest_Filter) GetSecretId() []string {
-	if x != nil {
-		return x.SecretId
-	}
-	return nil
-}
-
 var File_redpanda_api_dataplane_v1_pipeline_proto protoreflect.FileDescriptor
 
 var file_redpanda_api_dataplane_v1_pipeline_proto_rawDesc = []byte{
@@ -2088,17 +2036,9 @@ var file_redpanda_api_dataplane_v1_pipeline_proto_rawDesc = []byte{
 	0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e,
 	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x69, 0x70, 0x65, 0x6c, 0x69, 0x6e, 0x65, 0x73, 0x46, 0x6f,
 	0x72, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x52, 0x12, 0x70, 0x69, 0x70, 0x65, 0x6c, 0x69, 0x6e,
-	0x65, 0x73, 0x46, 0x6f, 0x72, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x22, 0x9d, 0x01, 0x0a, 0x1c,
-	0x47, 0x65, 0x74, 0x50, 0x69, 0x70, 0x65, 0x6c, 0x69, 0x6e, 0x65, 0x73, 0x42, 0x79, 0x53, 0x65,
-	0x63, 0x72, 0x65, 0x74, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x56, 0x0a, 0x06,
-	0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3e, 0x2e, 0x72,
-	0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61,
-	0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x50, 0x69, 0x70, 0x65,
-	0x6c, 0x69, 0x6e, 0x65, 0x73, 0x42, 0x79, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x73, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x2e, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x52, 0x06, 0x66, 0x69,
-	0x6c, 0x74, 0x65, 0x72, 0x1a, 0x25, 0x0a, 0x06, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12, 0x1b,
-	0x0a, 0x09, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x03, 0x28,
-	0x09, 0x52, 0x08, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x49, 0x64, 0x22, 0x80, 0x01, 0x0a, 0x1d,
+	0x65, 0x73, 0x46, 0x6f, 0x72, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x22, 0x1e, 0x0a, 0x1c, 0x47,
+	0x65, 0x74, 0x50, 0x69, 0x70, 0x65, 0x6c, 0x69, 0x6e, 0x65, 0x73, 0x42, 0x79, 0x53, 0x65, 0x63,
+	0x72, 0x65, 0x74, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x80, 0x01, 0x0a, 0x1d,
 	0x47, 0x65, 0x74, 0x50, 0x69, 0x70, 0x65, 0x6c, 0x69, 0x6e, 0x65, 0x73, 0x42, 0x79, 0x53, 0x65,
 	0x63, 0x72, 0x65, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x5f, 0x0a,
 	0x14, 0x70, 0x69, 0x70, 0x65, 0x6c, 0x69, 0x6e, 0x65, 0x73, 0x5f, 0x66, 0x6f, 0x72, 0x5f, 0x73,
@@ -2429,7 +2369,7 @@ func file_redpanda_api_dataplane_v1_pipeline_proto_rawDescGZIP() []byte {
 }
 
 var file_redpanda_api_dataplane_v1_pipeline_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_redpanda_api_dataplane_v1_pipeline_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
+var file_redpanda_api_dataplane_v1_pipeline_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_redpanda_api_dataplane_v1_pipeline_proto_goTypes = []any{
 	(Pipeline_State)(0),                            // 0: redpanda.api.dataplane.v1.Pipeline.State
 	(*Pipeline)(nil),                               // 1: redpanda.api.dataplane.v1.Pipeline
@@ -2466,9 +2406,8 @@ var file_redpanda_api_dataplane_v1_pipeline_proto_goTypes = []any{
 	(*ListPipelinesRequest_Filter)(nil),            // 32: redpanda.api.dataplane.v1.ListPipelinesRequest.Filter
 	nil,                                            // 33: redpanda.api.dataplane.v1.ListPipelinesRequest.Filter.TagsEntry
 	nil,                                            // 34: redpanda.api.dataplane.v1.PipelineUpdate.TagsEntry
-	(*GetPipelinesBySecretsRequest_Filter)(nil),    // 35: redpanda.api.dataplane.v1.GetPipelinesBySecretsRequest.Filter
-	(*fieldmaskpb.FieldMask)(nil),                  // 36: google.protobuf.FieldMask
-	(*v1.LintHint)(nil),                            // 37: redpanda.api.common.v1.LintHint
+	(*fieldmaskpb.FieldMask)(nil),                  // 35: google.protobuf.FieldMask
+	(*v1.LintHint)(nil),                            // 36: redpanda.api.common.v1.LintHint
 }
 var file_redpanda_api_dataplane_v1_pipeline_proto_depIdxs = []int32{
 	28, // 0: redpanda.api.dataplane.v1.Pipeline.resources:type_name -> redpanda.api.dataplane.v1.Pipeline.Resources
@@ -2488,43 +2427,42 @@ var file_redpanda_api_dataplane_v1_pipeline_proto_depIdxs = []int32{
 	34, // 14: redpanda.api.dataplane.v1.PipelineUpdate.tags:type_name -> redpanda.api.dataplane.v1.PipelineUpdate.TagsEntry
 	30, // 15: redpanda.api.dataplane.v1.PipelineUpdate.service_account:type_name -> redpanda.api.dataplane.v1.Pipeline.ServiceAccount
 	9,  // 16: redpanda.api.dataplane.v1.UpdatePipelineRequest.pipeline:type_name -> redpanda.api.dataplane.v1.PipelineUpdate
-	36, // 17: redpanda.api.dataplane.v1.UpdatePipelineRequest.update_mask:type_name -> google.protobuf.FieldMask
+	35, // 17: redpanda.api.dataplane.v1.UpdatePipelineRequest.update_mask:type_name -> google.protobuf.FieldMask
 	1,  // 18: redpanda.api.dataplane.v1.UpdatePipelineResponse.pipeline:type_name -> redpanda.api.dataplane.v1.Pipeline
 	1,  // 19: redpanda.api.dataplane.v1.StopPipelineResponse.pipeline:type_name -> redpanda.api.dataplane.v1.Pipeline
 	1,  // 20: redpanda.api.dataplane.v1.StartPipelineResponse.pipeline:type_name -> redpanda.api.dataplane.v1.Pipeline
 	1,  // 21: redpanda.api.dataplane.v1.PipelinesForSecret.pipelines:type_name -> redpanda.api.dataplane.v1.Pipeline
 	20, // 22: redpanda.api.dataplane.v1.GetPipelinesForSecretResponse.pipelines_for_secret:type_name -> redpanda.api.dataplane.v1.PipelinesForSecret
-	35, // 23: redpanda.api.dataplane.v1.GetPipelinesBySecretsRequest.filter:type_name -> redpanda.api.dataplane.v1.GetPipelinesBySecretsRequest.Filter
-	20, // 24: redpanda.api.dataplane.v1.GetPipelinesBySecretsResponse.pipelines_for_secret:type_name -> redpanda.api.dataplane.v1.PipelinesForSecret
-	37, // 25: redpanda.api.dataplane.v1.LintPipelineConfigResponse.lint_hints:type_name -> redpanda.api.common.v1.LintHint
-	33, // 26: redpanda.api.dataplane.v1.ListPipelinesRequest.Filter.tags:type_name -> redpanda.api.dataplane.v1.ListPipelinesRequest.Filter.TagsEntry
-	3,  // 27: redpanda.api.dataplane.v1.PipelineService.CreatePipeline:input_type -> redpanda.api.dataplane.v1.CreatePipelineRequest
-	5,  // 28: redpanda.api.dataplane.v1.PipelineService.GetPipeline:input_type -> redpanda.api.dataplane.v1.GetPipelineRequest
-	7,  // 29: redpanda.api.dataplane.v1.PipelineService.ListPipelines:input_type -> redpanda.api.dataplane.v1.ListPipelinesRequest
-	10, // 30: redpanda.api.dataplane.v1.PipelineService.UpdatePipeline:input_type -> redpanda.api.dataplane.v1.UpdatePipelineRequest
-	12, // 31: redpanda.api.dataplane.v1.PipelineService.DeletePipeline:input_type -> redpanda.api.dataplane.v1.DeletePipelineRequest
-	14, // 32: redpanda.api.dataplane.v1.PipelineService.StopPipeline:input_type -> redpanda.api.dataplane.v1.StopPipelineRequest
-	16, // 33: redpanda.api.dataplane.v1.PipelineService.StartPipeline:input_type -> redpanda.api.dataplane.v1.StartPipelineRequest
-	18, // 34: redpanda.api.dataplane.v1.PipelineService.GetPipelineServiceConfigSchema:input_type -> redpanda.api.dataplane.v1.GetPipelineServiceConfigSchemaRequest
-	21, // 35: redpanda.api.dataplane.v1.PipelineService.GetPipelinesForSecret:input_type -> redpanda.api.dataplane.v1.GetPipelinesForSecretRequest
-	23, // 36: redpanda.api.dataplane.v1.PipelineService.GetPipelinesBySecrets:input_type -> redpanda.api.dataplane.v1.GetPipelinesBySecretsRequest
-	25, // 37: redpanda.api.dataplane.v1.PipelineService.LintPipelineConfig:input_type -> redpanda.api.dataplane.v1.LintPipelineConfigRequest
-	4,  // 38: redpanda.api.dataplane.v1.PipelineService.CreatePipeline:output_type -> redpanda.api.dataplane.v1.CreatePipelineResponse
-	6,  // 39: redpanda.api.dataplane.v1.PipelineService.GetPipeline:output_type -> redpanda.api.dataplane.v1.GetPipelineResponse
-	8,  // 40: redpanda.api.dataplane.v1.PipelineService.ListPipelines:output_type -> redpanda.api.dataplane.v1.ListPipelinesResponse
-	11, // 41: redpanda.api.dataplane.v1.PipelineService.UpdatePipeline:output_type -> redpanda.api.dataplane.v1.UpdatePipelineResponse
-	13, // 42: redpanda.api.dataplane.v1.PipelineService.DeletePipeline:output_type -> redpanda.api.dataplane.v1.DeletePipelineResponse
-	15, // 43: redpanda.api.dataplane.v1.PipelineService.StopPipeline:output_type -> redpanda.api.dataplane.v1.StopPipelineResponse
-	17, // 44: redpanda.api.dataplane.v1.PipelineService.StartPipeline:output_type -> redpanda.api.dataplane.v1.StartPipelineResponse
-	19, // 45: redpanda.api.dataplane.v1.PipelineService.GetPipelineServiceConfigSchema:output_type -> redpanda.api.dataplane.v1.GetPipelineServiceConfigSchemaResponse
-	22, // 46: redpanda.api.dataplane.v1.PipelineService.GetPipelinesForSecret:output_type -> redpanda.api.dataplane.v1.GetPipelinesForSecretResponse
-	24, // 47: redpanda.api.dataplane.v1.PipelineService.GetPipelinesBySecrets:output_type -> redpanda.api.dataplane.v1.GetPipelinesBySecretsResponse
-	26, // 48: redpanda.api.dataplane.v1.PipelineService.LintPipelineConfig:output_type -> redpanda.api.dataplane.v1.LintPipelineConfigResponse
-	38, // [38:49] is the sub-list for method output_type
-	27, // [27:38] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	20, // 23: redpanda.api.dataplane.v1.GetPipelinesBySecretsResponse.pipelines_for_secret:type_name -> redpanda.api.dataplane.v1.PipelinesForSecret
+	36, // 24: redpanda.api.dataplane.v1.LintPipelineConfigResponse.lint_hints:type_name -> redpanda.api.common.v1.LintHint
+	33, // 25: redpanda.api.dataplane.v1.ListPipelinesRequest.Filter.tags:type_name -> redpanda.api.dataplane.v1.ListPipelinesRequest.Filter.TagsEntry
+	3,  // 26: redpanda.api.dataplane.v1.PipelineService.CreatePipeline:input_type -> redpanda.api.dataplane.v1.CreatePipelineRequest
+	5,  // 27: redpanda.api.dataplane.v1.PipelineService.GetPipeline:input_type -> redpanda.api.dataplane.v1.GetPipelineRequest
+	7,  // 28: redpanda.api.dataplane.v1.PipelineService.ListPipelines:input_type -> redpanda.api.dataplane.v1.ListPipelinesRequest
+	10, // 29: redpanda.api.dataplane.v1.PipelineService.UpdatePipeline:input_type -> redpanda.api.dataplane.v1.UpdatePipelineRequest
+	12, // 30: redpanda.api.dataplane.v1.PipelineService.DeletePipeline:input_type -> redpanda.api.dataplane.v1.DeletePipelineRequest
+	14, // 31: redpanda.api.dataplane.v1.PipelineService.StopPipeline:input_type -> redpanda.api.dataplane.v1.StopPipelineRequest
+	16, // 32: redpanda.api.dataplane.v1.PipelineService.StartPipeline:input_type -> redpanda.api.dataplane.v1.StartPipelineRequest
+	18, // 33: redpanda.api.dataplane.v1.PipelineService.GetPipelineServiceConfigSchema:input_type -> redpanda.api.dataplane.v1.GetPipelineServiceConfigSchemaRequest
+	21, // 34: redpanda.api.dataplane.v1.PipelineService.GetPipelinesForSecret:input_type -> redpanda.api.dataplane.v1.GetPipelinesForSecretRequest
+	23, // 35: redpanda.api.dataplane.v1.PipelineService.GetPipelinesBySecrets:input_type -> redpanda.api.dataplane.v1.GetPipelinesBySecretsRequest
+	25, // 36: redpanda.api.dataplane.v1.PipelineService.LintPipelineConfig:input_type -> redpanda.api.dataplane.v1.LintPipelineConfigRequest
+	4,  // 37: redpanda.api.dataplane.v1.PipelineService.CreatePipeline:output_type -> redpanda.api.dataplane.v1.CreatePipelineResponse
+	6,  // 38: redpanda.api.dataplane.v1.PipelineService.GetPipeline:output_type -> redpanda.api.dataplane.v1.GetPipelineResponse
+	8,  // 39: redpanda.api.dataplane.v1.PipelineService.ListPipelines:output_type -> redpanda.api.dataplane.v1.ListPipelinesResponse
+	11, // 40: redpanda.api.dataplane.v1.PipelineService.UpdatePipeline:output_type -> redpanda.api.dataplane.v1.UpdatePipelineResponse
+	13, // 41: redpanda.api.dataplane.v1.PipelineService.DeletePipeline:output_type -> redpanda.api.dataplane.v1.DeletePipelineResponse
+	15, // 42: redpanda.api.dataplane.v1.PipelineService.StopPipeline:output_type -> redpanda.api.dataplane.v1.StopPipelineResponse
+	17, // 43: redpanda.api.dataplane.v1.PipelineService.StartPipeline:output_type -> redpanda.api.dataplane.v1.StartPipelineResponse
+	19, // 44: redpanda.api.dataplane.v1.PipelineService.GetPipelineServiceConfigSchema:output_type -> redpanda.api.dataplane.v1.GetPipelineServiceConfigSchemaResponse
+	22, // 45: redpanda.api.dataplane.v1.PipelineService.GetPipelinesForSecret:output_type -> redpanda.api.dataplane.v1.GetPipelinesForSecretResponse
+	24, // 46: redpanda.api.dataplane.v1.PipelineService.GetPipelinesBySecrets:output_type -> redpanda.api.dataplane.v1.GetPipelinesBySecretsResponse
+	26, // 47: redpanda.api.dataplane.v1.PipelineService.LintPipelineConfig:output_type -> redpanda.api.dataplane.v1.LintPipelineConfigResponse
+	37, // [37:48] is the sub-list for method output_type
+	26, // [26:37] is the sub-list for method input_type
+	26, // [26:26] is the sub-list for extension type_name
+	26, // [26:26] is the sub-list for extension extendee
+	0,  // [0:26] is the sub-list for field type_name
 }
 
 func init() { file_redpanda_api_dataplane_v1_pipeline_proto_init() }
@@ -2538,7 +2476,7 @@ func file_redpanda_api_dataplane_v1_pipeline_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_redpanda_api_dataplane_v1_pipeline_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   35,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

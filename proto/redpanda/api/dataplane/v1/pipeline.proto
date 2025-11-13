@@ -668,13 +668,7 @@ message GetPipelinesForSecretResponse {
   PipelinesForSecret pipelines_for_secret = 1;
 }
 
-message GetPipelinesBySecretsRequest {
-  Filter filter = 1;
-
-  message Filter {
-    repeated string secret_id = 1;
-  }
-}
+message GetPipelinesBySecretsRequest {}
 
 message GetPipelinesBySecretsResponse {
   repeated PipelinesForSecret pipelines_for_secret = 1;

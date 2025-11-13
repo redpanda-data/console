@@ -17,28 +17,26 @@ import (
 // AIAgentServiceGatewayServer implements the gRPC server API for the AIAgentService service.
 type AIAgentServiceGatewayServer struct {
 	v1alpha3.UnimplementedAIAgentServiceServer
-	createAIAgent         connect_gateway.UnaryHandler[v1alpha3.CreateAIAgentRequest, v1alpha3.CreateAIAgentResponse]
-	getAIAgent            connect_gateway.UnaryHandler[v1alpha3.GetAIAgentRequest, v1alpha3.GetAIAgentResponse]
-	listAIAgents          connect_gateway.UnaryHandler[v1alpha3.ListAIAgentsRequest, v1alpha3.ListAIAgentsResponse]
-	updateAIAgent         connect_gateway.UnaryHandler[v1alpha3.UpdateAIAgentRequest, v1alpha3.UpdateAIAgentResponse]
-	deleteAIAgent         connect_gateway.UnaryHandler[v1alpha3.DeleteAIAgentRequest, v1alpha3.DeleteAIAgentResponse]
-	stopAIAgent           connect_gateway.UnaryHandler[v1alpha3.StopAIAgentRequest, v1alpha3.StopAIAgentResponse]
-	startAIAgent          connect_gateway.UnaryHandler[v1alpha3.StartAIAgentRequest, v1alpha3.StartAIAgentResponse]
-	listAIAgentsBySecrets connect_gateway.UnaryHandler[v1alpha3.ListAIAgentsBySecretsRequest, v1alpha3.ListAIAgentsBySecretsResponse]
+	createAIAgent connect_gateway.UnaryHandler[v1alpha3.CreateAIAgentRequest, v1alpha3.CreateAIAgentResponse]
+	getAIAgent    connect_gateway.UnaryHandler[v1alpha3.GetAIAgentRequest, v1alpha3.GetAIAgentResponse]
+	listAIAgents  connect_gateway.UnaryHandler[v1alpha3.ListAIAgentsRequest, v1alpha3.ListAIAgentsResponse]
+	updateAIAgent connect_gateway.UnaryHandler[v1alpha3.UpdateAIAgentRequest, v1alpha3.UpdateAIAgentResponse]
+	deleteAIAgent connect_gateway.UnaryHandler[v1alpha3.DeleteAIAgentRequest, v1alpha3.DeleteAIAgentResponse]
+	stopAIAgent   connect_gateway.UnaryHandler[v1alpha3.StopAIAgentRequest, v1alpha3.StopAIAgentResponse]
+	startAIAgent  connect_gateway.UnaryHandler[v1alpha3.StartAIAgentRequest, v1alpha3.StartAIAgentResponse]
 }
 
 // NewAIAgentServiceGatewayServer constructs a Connect-Gateway gRPC server for the AIAgentService
 // service.
 func NewAIAgentServiceGatewayServer(svc AIAgentServiceHandler, opts ...connect_gateway.HandlerOption) *AIAgentServiceGatewayServer {
 	return &AIAgentServiceGatewayServer{
-		createAIAgent:         connect_gateway.NewUnaryHandler(AIAgentServiceCreateAIAgentProcedure, svc.CreateAIAgent, opts...),
-		getAIAgent:            connect_gateway.NewUnaryHandler(AIAgentServiceGetAIAgentProcedure, svc.GetAIAgent, opts...),
-		listAIAgents:          connect_gateway.NewUnaryHandler(AIAgentServiceListAIAgentsProcedure, svc.ListAIAgents, opts...),
-		updateAIAgent:         connect_gateway.NewUnaryHandler(AIAgentServiceUpdateAIAgentProcedure, svc.UpdateAIAgent, opts...),
-		deleteAIAgent:         connect_gateway.NewUnaryHandler(AIAgentServiceDeleteAIAgentProcedure, svc.DeleteAIAgent, opts...),
-		stopAIAgent:           connect_gateway.NewUnaryHandler(AIAgentServiceStopAIAgentProcedure, svc.StopAIAgent, opts...),
-		startAIAgent:          connect_gateway.NewUnaryHandler(AIAgentServiceStartAIAgentProcedure, svc.StartAIAgent, opts...),
-		listAIAgentsBySecrets: connect_gateway.NewUnaryHandler(AIAgentServiceListAIAgentsBySecretsProcedure, svc.ListAIAgentsBySecrets, opts...),
+		createAIAgent: connect_gateway.NewUnaryHandler(AIAgentServiceCreateAIAgentProcedure, svc.CreateAIAgent, opts...),
+		getAIAgent:    connect_gateway.NewUnaryHandler(AIAgentServiceGetAIAgentProcedure, svc.GetAIAgent, opts...),
+		listAIAgents:  connect_gateway.NewUnaryHandler(AIAgentServiceListAIAgentsProcedure, svc.ListAIAgents, opts...),
+		updateAIAgent: connect_gateway.NewUnaryHandler(AIAgentServiceUpdateAIAgentProcedure, svc.UpdateAIAgent, opts...),
+		deleteAIAgent: connect_gateway.NewUnaryHandler(AIAgentServiceDeleteAIAgentProcedure, svc.DeleteAIAgent, opts...),
+		stopAIAgent:   connect_gateway.NewUnaryHandler(AIAgentServiceStopAIAgentProcedure, svc.StopAIAgent, opts...),
+		startAIAgent:  connect_gateway.NewUnaryHandler(AIAgentServiceStartAIAgentProcedure, svc.StartAIAgent, opts...),
 	}
 }
 
@@ -68,10 +66,6 @@ func (s *AIAgentServiceGatewayServer) StopAIAgent(ctx context.Context, req *v1al
 
 func (s *AIAgentServiceGatewayServer) StartAIAgent(ctx context.Context, req *v1alpha3.StartAIAgentRequest) (*v1alpha3.StartAIAgentResponse, error) {
 	return s.startAIAgent(ctx, req)
-}
-
-func (s *AIAgentServiceGatewayServer) ListAIAgentsBySecrets(ctx context.Context, req *v1alpha3.ListAIAgentsBySecretsRequest) (*v1alpha3.ListAIAgentsBySecretsResponse, error) {
-	return s.listAIAgentsBySecrets(ctx, req)
 }
 
 // RegisterAIAgentServiceHandlerGatewayServer registers the Connect handlers for the AIAgentService

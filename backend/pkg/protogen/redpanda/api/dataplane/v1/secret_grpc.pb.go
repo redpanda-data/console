@@ -31,7 +31,7 @@ const (
 	SecretService_CreateKafkaConnectSecret_FullMethodName = "/redpanda.api.dataplane.v1.SecretService/CreateKafkaConnectSecret"
 	SecretService_UpdateKafkaConnectSecret_FullMethodName = "/redpanda.api.dataplane.v1.SecretService/UpdateKafkaConnectSecret"
 	SecretService_DeleteKafkaConnectSecret_FullMethodName = "/redpanda.api.dataplane.v1.SecretService/DeleteKafkaConnectSecret"
-	SecretService_ListResourcesBySecrets_FullMethodName   = "/redpanda.api.dataplane.v1.SecretService/ListResourcesBySecrets"
+	SecretService_ListResources_FullMethodName            = "/redpanda.api.dataplane.v1.SecretService/ListResources"
 )
 
 // SecretServiceClient is the client API for SecretService service.
@@ -60,8 +60,8 @@ type SecretServiceClient interface {
 	UpdateKafkaConnectSecret(ctx context.Context, in *UpdateKafkaConnectSecretRequest, opts ...grpc.CallOption) (*UpdateKafkaConnectSecretResponse, error)
 	// DeleteKafkaConnectSecret deletes the secret.
 	DeleteKafkaConnectSecret(ctx context.Context, in *DeleteKafkaConnectSecretRequest, opts ...grpc.CallOption) (*DeleteKafkaConnectSecretResponse, error)
-	// ListResourcesBySecrets returns resources that uses given secret
-	ListResourcesBySecrets(ctx context.Context, in *ListResourcesBySecretsRequest, opts ...grpc.CallOption) (*ListResourcesBySecretsResponse, error)
+	// ListResources returns resources that uses given secret
+	ListResources(ctx context.Context, in *ListResourcesRequest, opts ...grpc.CallOption) (*ListResourcesResponse, error)
 }
 
 type secretServiceClient struct {
@@ -182,10 +182,10 @@ func (c *secretServiceClient) DeleteKafkaConnectSecret(ctx context.Context, in *
 	return out, nil
 }
 
-func (c *secretServiceClient) ListResourcesBySecrets(ctx context.Context, in *ListResourcesBySecretsRequest, opts ...grpc.CallOption) (*ListResourcesBySecretsResponse, error) {
+func (c *secretServiceClient) ListResources(ctx context.Context, in *ListResourcesRequest, opts ...grpc.CallOption) (*ListResourcesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListResourcesBySecretsResponse)
-	err := c.cc.Invoke(ctx, SecretService_ListResourcesBySecrets_FullMethodName, in, out, cOpts...)
+	out := new(ListResourcesResponse)
+	err := c.cc.Invoke(ctx, SecretService_ListResources_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -218,8 +218,8 @@ type SecretServiceServer interface {
 	UpdateKafkaConnectSecret(context.Context, *UpdateKafkaConnectSecretRequest) (*UpdateKafkaConnectSecretResponse, error)
 	// DeleteKafkaConnectSecret deletes the secret.
 	DeleteKafkaConnectSecret(context.Context, *DeleteKafkaConnectSecretRequest) (*DeleteKafkaConnectSecretResponse, error)
-	// ListResourcesBySecrets returns resources that uses given secret
-	ListResourcesBySecrets(context.Context, *ListResourcesBySecretsRequest) (*ListResourcesBySecretsResponse, error)
+	// ListResources returns resources that uses given secret
+	ListResources(context.Context, *ListResourcesRequest) (*ListResourcesResponse, error)
 	mustEmbedUnimplementedSecretServiceServer()
 }
 
@@ -263,8 +263,8 @@ func (UnimplementedSecretServiceServer) UpdateKafkaConnectSecret(context.Context
 func (UnimplementedSecretServiceServer) DeleteKafkaConnectSecret(context.Context, *DeleteKafkaConnectSecretRequest) (*DeleteKafkaConnectSecretResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteKafkaConnectSecret not implemented")
 }
-func (UnimplementedSecretServiceServer) ListResourcesBySecrets(context.Context, *ListResourcesBySecretsRequest) (*ListResourcesBySecretsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListResourcesBySecrets not implemented")
+func (UnimplementedSecretServiceServer) ListResources(context.Context, *ListResourcesRequest) (*ListResourcesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListResources not implemented")
 }
 func (UnimplementedSecretServiceServer) mustEmbedUnimplementedSecretServiceServer() {}
 func (UnimplementedSecretServiceServer) testEmbeddedByValue()                       {}
@@ -485,20 +485,20 @@ func _SecretService_DeleteKafkaConnectSecret_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SecretService_ListResourcesBySecrets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListResourcesBySecretsRequest)
+func _SecretService_ListResources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListResourcesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SecretServiceServer).ListResourcesBySecrets(ctx, in)
+		return srv.(SecretServiceServer).ListResources(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SecretService_ListResourcesBySecrets_FullMethodName,
+		FullMethod: SecretService_ListResources_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SecretServiceServer).ListResourcesBySecrets(ctx, req.(*ListResourcesBySecretsRequest))
+		return srv.(SecretServiceServer).ListResources(ctx, req.(*ListResourcesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -555,8 +555,8 @@ var SecretService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SecretService_DeleteKafkaConnectSecret_Handler,
 		},
 		{
-			MethodName: "ListResourcesBySecrets",
-			Handler:    _SecretService_ListResourcesBySecrets_Handler,
+			MethodName: "ListResources",
+			Handler:    _SecretService_ListResources_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
