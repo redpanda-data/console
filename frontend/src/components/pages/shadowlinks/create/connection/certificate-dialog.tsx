@@ -138,7 +138,7 @@ export function CertificateDialog({
                   'application/pkix-cert': ['.crt', '.cer'],
                   'application/x-pkcs12': ['.key'],
                 }}
-                dataId="certificate-dropzone"
+                data-testid="certificate-dropzone"
                 maxFiles={1}
                 onDrop={handleFileUpload}
               >

@@ -11,8 +11,8 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
 import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import { useMemo, useState } from 'react';
 import { useListShadowTopicInfiniteQuery } from 'react-query/api/shadowlink';
 import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
 
