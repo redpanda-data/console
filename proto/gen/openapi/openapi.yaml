@@ -1249,6 +1249,8 @@ components:
         name_contains:
           description: Any pipelines that partially match this name will be returned.
           type: string
+        secret_id:
+          type: string
         tags[string]:
           additionalProperties:
             type: string
@@ -4406,6 +4408,10 @@ paths:
           name: filter.tags[string]
           schema:
             type: string
+        - in: query
+          name: filter.secret_id
+          schema:
+            type: string
         - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
           in: query
           name: page_size
@@ -6018,7 +6024,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
