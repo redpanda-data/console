@@ -79,30 +79,42 @@ export const updatePageTitle = () => {
  * Transform form values to CreateShadowLinkRequest protobuf message
  */
 const buildCreateShadowLinkRequest = (values: FormValues) => {
+  // Determine TLS settings based on mTLS configuration
+  let tlsSettings:
+    | { case: 'tlsFileSettings'; value: ReturnType<typeof create<typeof TLSFileSettingsSchema>> }
+    | { case: 'tlsPemSettings'; value: ReturnType<typeof create<typeof TLSPEMSettingsSchema>> }
+    | undefined;
+
+  if (values.useMtls) {
+    // When mTLS is enabled, use mTLS certificates
+    if (values.mtlsMode === TLS_MODE.FILE_PATH) {
+      tlsSettings = {
+        case: 'tlsFileSettings' as const,
+        value: create(TLSFileSettingsSchema, {
+          caPath: values.mtls.ca?.filePath || undefined,
+          keyPath: values.mtls.clientKey?.filePath || undefined,
+          certPath: values.mtls.clientCert?.filePath || undefined,
+        }),
+      };
+    } else {
+      tlsSettings = {
+        case: 'tlsPemSettings' as const,
+        value: create(TLSPEMSettingsSchema, {
+          ca: values.mtls.ca?.pemContent || undefined,
+          key: values.mtls.clientKey?.pemContent || undefined,
+          cert: values.mtls.clientCert?.pemContent || undefined,
+        }),
+      };
+    }
+  }
+
   // Build client options
   const clientOptions = create(ShadowLinkClientOptionsSchema, {
     bootstrapServers: values.bootstrapServers.map((s) => s.value),
     tlsSettings: values.useTls
       ? create(TLSSettingsSchema, {
           enabled: true,
-          tlsSettings:
-            values.tls.mode === TLS_MODE.FILE_PATH
-              ? {
-                  case: 'tlsFileSettings',
-                  value: create(TLSFileSettingsSchema, {
-                    caPath: values.tls.caPath || undefined,
-                    keyPath: values.tls.keyPath || undefined,
-                    certPath: values.tls.certPath || undefined,
-                  }),
-                }
-              : {
-                  case: 'tlsPemSettings',
-                  value: create(TLSPEMSettingsSchema, {
-                    ca: values.tls.caPem || undefined,
-                    key: values.tls.keyPem || undefined,
-                    cert: values.tls.certPem || undefined,
-                  }),
-                },
+          tlsSettings,
         })
       : undefined,
     authenticationConfiguration: values.useScram
@@ -245,7 +257,7 @@ export const ShadowLinkCreatePage = () => {
   }, []);
 
   const next = async (methods: { next: () => void }) => {
-    const valid = await form.trigger(['name', 'bootstrapServers', 'tls', 'scramCredentials']);
+    const valid = await form.trigger(['name', 'bootstrapServers', 'mtls', 'scramCredentials']);
 
     if (valid) {
       methods.next();
