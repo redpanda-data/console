@@ -72,6 +72,14 @@ components:
           description: The topic name.
           type: string
       type: object
+    AnnotatedOption:
+      properties:
+        description:
+          type: string
+        value:
+          type: string
+      title: AnnotatedOption represents an annotated option
+      type: object
     AuthenticationInfo:
       properties:
         mechanism:
@@ -217,8 +225,6 @@ components:
           items:
             $ref: '#/components/schemas/ComponentSpec'
           type: array
-        date:
-          type: string
         inputs:
           items:
             $ref: '#/components/schemas/ComponentSpec'
@@ -270,7 +276,7 @@ components:
         name:
           type: string
         status:
-          type: string
+          $ref: '#/components/schemas/ComponentStatus'
         summary:
           type: string
         type:
@@ -278,6 +284,14 @@ components:
         version:
           type: string
       type: object
+    ComponentStatus:
+      description: ComponentStatus represents the stability level of a component.
+      enum:
+        - COMPONENT_STATUS_STABLE
+        - COMPONENT_STATUS_BETA
+        - COMPONENT_STATUS_EXPERIMENTAL
+        - COMPONENT_STATUS_DEPRECATED
+      type: string
     Config:
       properties:
         name:
@@ -906,9 +920,9 @@ components:
         advanced:
           type: boolean
         annotated_options:
-          additionalProperties:
-            type: string
-          type: object
+          items:
+            $ref: '#/components/schemas/AnnotatedOption'
+          type: array
         children:
           items:
             $ref: '#/components/schemas/FieldSpec'
@@ -995,11 +1009,6 @@ components:
             characters and match a regular expression of `[A-Z][A-Z0-9_]+[A-Z0-9]`,
             which represents UPPER_SNAKE_CASE.
           type: string
-      type: object
-    GetComponentListResponse:
-      properties:
-        components:
-          $ref: '#/components/schemas/ComponentList'
       type: object
     GetConnectClusterResponse:
       properties:
@@ -1331,6 +1340,11 @@ components:
           $ref: '#/components/schemas/ResourcePatternType'
         resource_type:
           $ref: '#/components/schemas/ResourceType'
+      type: object
+    ListComponentsResponse:
+      properties:
+        components:
+          $ref: '#/components/schemas/ComponentList'
       type: object
     ListConnectClustersResponse:
       properties:
@@ -4551,7 +4565,7 @@ paths:
   /v1/redpanda-connect/components:
     get:
       description: Returns a JSON list of available [components](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about), filtered by component type.
-      operationId: PipelineService_GetComponentList
+      operationId: PipelineService_ListComponents
       parameters:
         - in: query
           name: read_mask
@@ -4562,7 +4576,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetComponentListResponse'
+                $ref: '#/components/schemas/ListComponentsResponse'
           description: OK
         "401":
           content:
@@ -6248,7 +6262,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

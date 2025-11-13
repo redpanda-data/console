@@ -59,9 +59,9 @@ const (
 	// PipelineServiceGetPipelineServiceConfigSchemaProcedure is the fully-qualified name of the
 	// PipelineService's GetPipelineServiceConfigSchema RPC.
 	PipelineServiceGetPipelineServiceConfigSchemaProcedure = "/redpanda.api.dataplane.v1.PipelineService/GetPipelineServiceConfigSchema"
-	// PipelineServiceGetComponentListProcedure is the fully-qualified name of the PipelineService's
-	// GetComponentList RPC.
-	PipelineServiceGetComponentListProcedure = "/redpanda.api.dataplane.v1.PipelineService/GetComponentList"
+	// PipelineServiceListComponentsProcedure is the fully-qualified name of the PipelineService's
+	// ListComponents RPC.
+	PipelineServiceListComponentsProcedure = "/redpanda.api.dataplane.v1.PipelineService/ListComponents"
 	// PipelineServiceGetPipelinesForSecretProcedure is the fully-qualified name of the
 	// PipelineService's GetPipelinesForSecret RPC.
 	PipelineServiceGetPipelinesForSecretProcedure = "/redpanda.api.dataplane.v1.PipelineService/GetPipelinesForSecret"
@@ -84,7 +84,7 @@ var (
 	pipelineServiceStopPipelineMethodDescriptor                   = pipelineServiceServiceDescriptor.Methods().ByName("StopPipeline")
 	pipelineServiceStartPipelineMethodDescriptor                  = pipelineServiceServiceDescriptor.Methods().ByName("StartPipeline")
 	pipelineServiceGetPipelineServiceConfigSchemaMethodDescriptor = pipelineServiceServiceDescriptor.Methods().ByName("GetPipelineServiceConfigSchema")
-	pipelineServiceGetComponentListMethodDescriptor               = pipelineServiceServiceDescriptor.Methods().ByName("GetComponentList")
+	pipelineServiceListComponentsMethodDescriptor                 = pipelineServiceServiceDescriptor.Methods().ByName("ListComponents")
 	pipelineServiceGetPipelinesForSecretMethodDescriptor          = pipelineServiceServiceDescriptor.Methods().ByName("GetPipelinesForSecret")
 	pipelineServiceGetPipelinesBySecretsMethodDescriptor          = pipelineServiceServiceDescriptor.Methods().ByName("GetPipelinesBySecrets")
 	pipelineServiceLintPipelineConfigMethodDescriptor             = pipelineServiceServiceDescriptor.Methods().ByName("LintPipelineConfig")
@@ -109,8 +109,8 @@ type PipelineServiceClient interface {
 	StartPipeline(context.Context, *connect.Request[v1.StartPipelineRequest]) (*connect.Response[v1.StartPipelineResponse], error)
 	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(context.Context, *connect.Request[v1.GetPipelineServiceConfigSchemaRequest]) (*connect.Response[v1.GetPipelineServiceConfigSchemaResponse], error)
-	// GetComponentList returns a JSON containing lists of allowed components based on component type filter.
-	GetComponentList(context.Context, *connect.Request[v1.GetComponentListRequest]) (*connect.Response[v1.GetComponentListResponse], error)
+	// ListComponents returns a JSON containing lists of allowed components based on component type filter.
+	ListComponents(context.Context, *connect.Request[v1.ListComponentsRequest]) (*connect.Response[v1.ListComponentsResponse], error)
 	// GetPipelinesForSecret implements the get pipelines for secret method which lists the pipelines
 	// in the Redpanda cluster for the given secret.
 	GetPipelinesForSecret(context.Context, *connect.Request[v1.GetPipelinesForSecretRequest]) (*connect.Response[v1.GetPipelinesForSecretResponse], error)
@@ -180,10 +180,10 @@ func NewPipelineServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(pipelineServiceGetPipelineServiceConfigSchemaMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		getComponentList: connect.NewClient[v1.GetComponentListRequest, v1.GetComponentListResponse](
+		listComponents: connect.NewClient[v1.ListComponentsRequest, v1.ListComponentsResponse](
 			httpClient,
-			baseURL+PipelineServiceGetComponentListProcedure,
-			connect.WithSchema(pipelineServiceGetComponentListMethodDescriptor),
+			baseURL+PipelineServiceListComponentsProcedure,
+			connect.WithSchema(pipelineServiceListComponentsMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		getPipelinesForSecret: connect.NewClient[v1.GetPipelinesForSecretRequest, v1.GetPipelinesForSecretResponse](
@@ -217,7 +217,7 @@ type pipelineServiceClient struct {
 	stopPipeline                   *connect.Client[v1.StopPipelineRequest, v1.StopPipelineResponse]
 	startPipeline                  *connect.Client[v1.StartPipelineRequest, v1.StartPipelineResponse]
 	getPipelineServiceConfigSchema *connect.Client[v1.GetPipelineServiceConfigSchemaRequest, v1.GetPipelineServiceConfigSchemaResponse]
-	getComponentList               *connect.Client[v1.GetComponentListRequest, v1.GetComponentListResponse]
+	listComponents                 *connect.Client[v1.ListComponentsRequest, v1.ListComponentsResponse]
 	getPipelinesForSecret          *connect.Client[v1.GetPipelinesForSecretRequest, v1.GetPipelinesForSecretResponse]
 	getPipelinesBySecrets          *connect.Client[v1.GetPipelinesBySecretsRequest, v1.GetPipelinesBySecretsResponse]
 	lintPipelineConfig             *connect.Client[v1.LintPipelineConfigRequest, v1.LintPipelineConfigResponse]
@@ -264,9 +264,9 @@ func (c *pipelineServiceClient) GetPipelineServiceConfigSchema(ctx context.Conte
 	return c.getPipelineServiceConfigSchema.CallUnary(ctx, req)
 }
 
-// GetComponentList calls redpanda.api.dataplane.v1.PipelineService.GetComponentList.
-func (c *pipelineServiceClient) GetComponentList(ctx context.Context, req *connect.Request[v1.GetComponentListRequest]) (*connect.Response[v1.GetComponentListResponse], error) {
-	return c.getComponentList.CallUnary(ctx, req)
+// ListComponents calls redpanda.api.dataplane.v1.PipelineService.ListComponents.
+func (c *pipelineServiceClient) ListComponents(ctx context.Context, req *connect.Request[v1.ListComponentsRequest]) (*connect.Response[v1.ListComponentsResponse], error) {
+	return c.listComponents.CallUnary(ctx, req)
 }
 
 // GetPipelinesForSecret calls redpanda.api.dataplane.v1.PipelineService.GetPipelinesForSecret.
@@ -304,8 +304,8 @@ type PipelineServiceHandler interface {
 	StartPipeline(context.Context, *connect.Request[v1.StartPipelineRequest]) (*connect.Response[v1.StartPipelineResponse], error)
 	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(context.Context, *connect.Request[v1.GetPipelineServiceConfigSchemaRequest]) (*connect.Response[v1.GetPipelineServiceConfigSchemaResponse], error)
-	// GetComponentList returns a JSON containing lists of allowed components based on component type filter.
-	GetComponentList(context.Context, *connect.Request[v1.GetComponentListRequest]) (*connect.Response[v1.GetComponentListResponse], error)
+	// ListComponents returns a JSON containing lists of allowed components based on component type filter.
+	ListComponents(context.Context, *connect.Request[v1.ListComponentsRequest]) (*connect.Response[v1.ListComponentsResponse], error)
 	// GetPipelinesForSecret implements the get pipelines for secret method which lists the pipelines
 	// in the Redpanda cluster for the given secret.
 	GetPipelinesForSecret(context.Context, *connect.Request[v1.GetPipelinesForSecretRequest]) (*connect.Response[v1.GetPipelinesForSecretResponse], error)
@@ -371,10 +371,10 @@ func NewPipelineServiceHandler(svc PipelineServiceHandler, opts ...connect.Handl
 		connect.WithSchema(pipelineServiceGetPipelineServiceConfigSchemaMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	pipelineServiceGetComponentListHandler := connect.NewUnaryHandler(
-		PipelineServiceGetComponentListProcedure,
-		svc.GetComponentList,
-		connect.WithSchema(pipelineServiceGetComponentListMethodDescriptor),
+	pipelineServiceListComponentsHandler := connect.NewUnaryHandler(
+		PipelineServiceListComponentsProcedure,
+		svc.ListComponents,
+		connect.WithSchema(pipelineServiceListComponentsMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	pipelineServiceGetPipelinesForSecretHandler := connect.NewUnaryHandler(
@@ -413,8 +413,8 @@ func NewPipelineServiceHandler(svc PipelineServiceHandler, opts ...connect.Handl
 			pipelineServiceStartPipelineHandler.ServeHTTP(w, r)
 		case PipelineServiceGetPipelineServiceConfigSchemaProcedure:
 			pipelineServiceGetPipelineServiceConfigSchemaHandler.ServeHTTP(w, r)
-		case PipelineServiceGetComponentListProcedure:
-			pipelineServiceGetComponentListHandler.ServeHTTP(w, r)
+		case PipelineServiceListComponentsProcedure:
+			pipelineServiceListComponentsHandler.ServeHTTP(w, r)
 		case PipelineServiceGetPipelinesForSecretProcedure:
 			pipelineServiceGetPipelinesForSecretHandler.ServeHTTP(w, r)
 		case PipelineServiceGetPipelinesBySecretsProcedure:
@@ -462,8 +462,8 @@ func (UnimplementedPipelineServiceHandler) GetPipelineServiceConfigSchema(contex
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.PipelineService.GetPipelineServiceConfigSchema is not implemented"))
 }
 
-func (UnimplementedPipelineServiceHandler) GetComponentList(context.Context, *connect.Request[v1.GetComponentListRequest]) (*connect.Response[v1.GetComponentListResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.PipelineService.GetComponentList is not implemented"))
+func (UnimplementedPipelineServiceHandler) ListComponents(context.Context, *connect.Request[v1.ListComponentsRequest]) (*connect.Response[v1.ListComponentsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.PipelineService.ListComponents is not implemented"))
 }
 
 func (UnimplementedPipelineServiceHandler) GetPipelinesForSecret(context.Context, *connect.Request[v1.GetPipelinesForSecretRequest]) (*connect.Response[v1.GetPipelinesForSecretResponse], error) {

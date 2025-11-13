@@ -353,8 +353,8 @@ service PipelineService {
     };
   }
 
-  // GetComponentList returns a JSON containing lists of allowed components based on component type filter.
-  rpc GetComponentList(GetComponentListRequest) returns (GetComponentListResponse) {
+  // ListComponents returns a JSON containing lists of allowed components based on component type filter.
+  rpc ListComponents(ListComponentsRequest) returns (ListComponentsResponse) {
     option (google.api.http) = {get: "/v1/redpanda-connect/components"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Retrieve the list of available components"
@@ -364,7 +364,7 @@ service PipelineService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.GetComponentListResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.ListComponentsResponse"}
           }
         }
       }
@@ -674,41 +674,49 @@ message GetPipelineServiceConfigSchemaResponse {
   string config_schema = 1;
 }
 
-message GetComponentListRequest {
+message ListComponentsRequest {
   google.protobuf.FieldMask read_mask = 1;
 }
 
-message GetComponentListResponse {
+message ListComponentsResponse {
   // Structured component list data instead of JSON string.
   ComponentList components = 1;
 }
 
 // ComponentList contains the structured component data.
 message ComponentList {
-  string version = 1;
-  string date = 2;
-  repeated ComponentSpec buffers = 3;
-  repeated ComponentSpec caches = 4;
-  repeated ComponentSpec inputs = 5;
-  repeated ComponentSpec outputs = 6;
-  repeated ComponentSpec processors = 7;
-  repeated ComponentSpec rate_limits = 8;
-  repeated ComponentSpec metrics = 9;
-  repeated ComponentSpec tracers = 10;
-  repeated ComponentSpec scanners = 11;
-  repeated BloblangFunctionSpec bloblang_functions = 12;
-  repeated BloblangMethodSpec bloblang_methods = 13;
+  string version = 1 [(buf.validate.field).string.pattern = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"];
+  repeated ComponentSpec buffers = 2;
+  repeated ComponentSpec caches = 3;
+  repeated ComponentSpec inputs = 4;
+  repeated ComponentSpec outputs = 5;
+  repeated ComponentSpec processors = 6;
+  repeated ComponentSpec rate_limits = 7;
+  repeated ComponentSpec metrics = 8;
+  repeated ComponentSpec tracers = 9;
+  repeated ComponentSpec scanners = 10;
+  repeated BloblangFunctionSpec bloblang_functions = 11;
+  repeated BloblangMethodSpec bloblang_methods = 12;
+}
+
+// ComponentStatus represents the stability level of a component.
+enum ComponentStatus {
+  COMPONENT_STATUS_UNSPECIFIED = 0;
+  COMPONENT_STATUS_STABLE = 1;
+  COMPONENT_STATUS_BETA = 2;
+  COMPONENT_STATUS_EXPERIMENTAL = 3;
+  COMPONENT_STATUS_DEPRECATED = 4;
 }
 
 // ComponentSpec represents a component specification.
 message ComponentSpec {
   string name = 1;
   string type = 2;
-  string status = 3;
+  ComponentStatus status = 3;
   string summary = 4;
   string description = 5;
   repeated string categories = 6;
-  string version = 7;
+  string version = 7 [(buf.validate.field).string.pattern = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"];
   FieldSpec config = 8;
   repeated string examples = 9;
   string footnotes = 10;
@@ -726,9 +734,15 @@ message FieldSpec {
   string default_value = 8;
   repeated string examples = 9;
   repeated FieldSpec children = 10;
-  map<string, string> annotated_options = 11;
+  repeated AnnotatedOption annotated_options = 11;
   repeated string interpolated = 12;
-  string version = 13;
+  string version = 13 [(buf.validate.field).string.pattern = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"];
+}
+
+// AnnotatedOption represents an annotated option
+message AnnotatedOption {
+  string value = 1;
+  string description = 2;
 }
 
 // BloblangFunctionSpec represents a Bloblang function specification.
@@ -739,7 +753,7 @@ message BloblangFunctionSpec {
   repeated string categories = 4;
   ParamSpec params = 5;
   repeated string examples = 6;
-  string version = 7;
+  string version = 7 [(buf.validate.field).string.pattern = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"];
 }
 
 // BloblangMethodSpec represents a Bloblang method specification.
@@ -750,7 +764,7 @@ message BloblangMethodSpec {
   repeated string categories = 4;
   ParamSpec params = 5;
   repeated string examples = 6;
-  string version = 7;
+  string version = 7 [(buf.validate.field).string.pattern = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"];
 }
 
 // ParamSpec represents parameter specifications.

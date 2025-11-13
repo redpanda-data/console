@@ -28,7 +28,7 @@ const (
 	PipelineService_StopPipeline_FullMethodName                   = "/redpanda.api.dataplane.v1.PipelineService/StopPipeline"
 	PipelineService_StartPipeline_FullMethodName                  = "/redpanda.api.dataplane.v1.PipelineService/StartPipeline"
 	PipelineService_GetPipelineServiceConfigSchema_FullMethodName = "/redpanda.api.dataplane.v1.PipelineService/GetPipelineServiceConfigSchema"
-	PipelineService_GetComponentList_FullMethodName               = "/redpanda.api.dataplane.v1.PipelineService/GetComponentList"
+	PipelineService_ListComponents_FullMethodName                 = "/redpanda.api.dataplane.v1.PipelineService/ListComponents"
 	PipelineService_GetPipelinesForSecret_FullMethodName          = "/redpanda.api.dataplane.v1.PipelineService/GetPipelinesForSecret"
 	PipelineService_GetPipelinesBySecrets_FullMethodName          = "/redpanda.api.dataplane.v1.PipelineService/GetPipelinesBySecrets"
 	PipelineService_LintPipelineConfig_FullMethodName             = "/redpanda.api.dataplane.v1.PipelineService/LintPipelineConfig"
@@ -58,8 +58,8 @@ type PipelineServiceClient interface {
 	StartPipeline(ctx context.Context, in *StartPipelineRequest, opts ...grpc.CallOption) (*StartPipelineResponse, error)
 	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(ctx context.Context, in *GetPipelineServiceConfigSchemaRequest, opts ...grpc.CallOption) (*GetPipelineServiceConfigSchemaResponse, error)
-	// GetComponentList returns a JSON containing lists of allowed components based on component type filter.
-	GetComponentList(ctx context.Context, in *GetComponentListRequest, opts ...grpc.CallOption) (*GetComponentListResponse, error)
+	// ListComponents returns a JSON containing lists of allowed components based on component type filter.
+	ListComponents(ctx context.Context, in *ListComponentsRequest, opts ...grpc.CallOption) (*ListComponentsResponse, error)
 	// GetPipelinesForSecret implements the get pipelines for secret method which lists the pipelines
 	// in the Redpanda cluster for the given secret.
 	GetPipelinesForSecret(ctx context.Context, in *GetPipelinesForSecretRequest, opts ...grpc.CallOption) (*GetPipelinesForSecretResponse, error)
@@ -159,10 +159,10 @@ func (c *pipelineServiceClient) GetPipelineServiceConfigSchema(ctx context.Conte
 	return out, nil
 }
 
-func (c *pipelineServiceClient) GetComponentList(ctx context.Context, in *GetComponentListRequest, opts ...grpc.CallOption) (*GetComponentListResponse, error) {
+func (c *pipelineServiceClient) ListComponents(ctx context.Context, in *ListComponentsRequest, opts ...grpc.CallOption) (*ListComponentsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetComponentListResponse)
-	err := c.cc.Invoke(ctx, PipelineService_GetComponentList_FullMethodName, in, out, cOpts...)
+	out := new(ListComponentsResponse)
+	err := c.cc.Invoke(ctx, PipelineService_ListComponents_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -223,8 +223,8 @@ type PipelineServiceServer interface {
 	StartPipeline(context.Context, *StartPipelineRequest) (*StartPipelineResponse, error)
 	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(context.Context, *GetPipelineServiceConfigSchemaRequest) (*GetPipelineServiceConfigSchemaResponse, error)
-	// GetComponentList returns a JSON containing lists of allowed components based on component type filter.
-	GetComponentList(context.Context, *GetComponentListRequest) (*GetComponentListResponse, error)
+	// ListComponents returns a JSON containing lists of allowed components based on component type filter.
+	ListComponents(context.Context, *ListComponentsRequest) (*ListComponentsResponse, error)
 	// GetPipelinesForSecret implements the get pipelines for secret method which lists the pipelines
 	// in the Redpanda cluster for the given secret.
 	GetPipelinesForSecret(context.Context, *GetPipelinesForSecretRequest) (*GetPipelinesForSecretResponse, error)
@@ -268,8 +268,8 @@ func (UnimplementedPipelineServiceServer) StartPipeline(context.Context, *StartP
 func (UnimplementedPipelineServiceServer) GetPipelineServiceConfigSchema(context.Context, *GetPipelineServiceConfigSchemaRequest) (*GetPipelineServiceConfigSchemaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPipelineServiceConfigSchema not implemented")
 }
-func (UnimplementedPipelineServiceServer) GetComponentList(context.Context, *GetComponentListRequest) (*GetComponentListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetComponentList not implemented")
+func (UnimplementedPipelineServiceServer) ListComponents(context.Context, *ListComponentsRequest) (*ListComponentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListComponents not implemented")
 }
 func (UnimplementedPipelineServiceServer) GetPipelinesForSecret(context.Context, *GetPipelinesForSecretRequest) (*GetPipelinesForSecretResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPipelinesForSecret not implemented")
@@ -445,20 +445,20 @@ func _PipelineService_GetPipelineServiceConfigSchema_Handler(srv interface{}, ct
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PipelineService_GetComponentList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetComponentListRequest)
+func _PipelineService_ListComponents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListComponentsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PipelineServiceServer).GetComponentList(ctx, in)
+		return srv.(PipelineServiceServer).ListComponents(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: PipelineService_GetComponentList_FullMethodName,
+		FullMethod: PipelineService_ListComponents_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PipelineServiceServer).GetComponentList(ctx, req.(*GetComponentListRequest))
+		return srv.(PipelineServiceServer).ListComponents(ctx, req.(*ListComponentsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -557,8 +557,8 @@ var PipelineService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _PipelineService_GetPipelineServiceConfigSchema_Handler,
 		},
 		{
-			MethodName: "GetComponentList",
-			Handler:    _PipelineService_GetComponentList_Handler,
+			MethodName: "ListComponents",
+			Handler:    _PipelineService_ListComponents_Handler,
 		},
 		{
 			MethodName: "GetPipelinesForSecret",
