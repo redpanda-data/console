@@ -151,6 +151,24 @@ export const AdvancedClientOptions = () => {
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={control}
+              name="advanceClientOptions.fetchPartitionMaxBytes"
+              render={({ field }) => (
+                <FormItem data-testid="fetch-partition-max-bytes-field">
+                  <FormLabel>Fetch partition max in bytes</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                  </FormControl>
+                  <FormDescription>
+                    Maximum amount of data in bytes the broker will return for a single partition in a fetch request.
+                    Controls per-partition memory usage.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CollapsibleContent>
         </CardContent>
       </Card>

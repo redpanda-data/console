@@ -129,6 +129,13 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
           },
         })
       : undefined,
+    metadataMaxAgeMs: values.advanceClientOptions.metadataMaxAgeMs,
+    connectionTimeoutMs: values.advanceClientOptions.connectionTimeoutMs,
+    retryBackoffMs: values.advanceClientOptions.retryBackoffMs,
+    fetchWaitMaxMs: values.advanceClientOptions.fetchWaitMaxMs,
+    fetchMinBytes: values.advanceClientOptions.fetchMinBytes,
+    fetchMaxBytes: values.advanceClientOptions.fetchMaxBytes,
+    fetchPartitionMaxBytes: values.advanceClientOptions.fetchPartitionMaxBytes,
   });
 
   const allNameFilter = [

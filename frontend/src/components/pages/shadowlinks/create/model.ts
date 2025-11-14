@@ -56,6 +56,7 @@ export const FormSchema = z
       fetchWaitMaxMs: z.number(),
       fetchMinBytes: z.number(),
       fetchMaxBytes: z.number(),
+      fetchPartitionMaxBytes: z.number(),
     }),
     // TLS configuration
     useTls: z.boolean(),
@@ -203,8 +204,9 @@ export const initialValues: FormValues = {
     connectionTimeoutMs: 1000, // 1 sec
     retryBackoffMs: 100, // 100 ms
     fetchWaitMaxMs: 500, // 500 ms
-    fetchMinBytes: 5_242_880, // 20MiB
+    fetchMinBytes: 5_242_880, // 5MiB
     fetchMaxBytes: 20_971_520, // 20MiB
+    fetchPartitionMaxBytes: 1_048_576, // 1MiB
   },
   useScram: true,
   scramCredentials: {
