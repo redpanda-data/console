@@ -1,0 +1,64 @@
+/**
+ * Copyright 2025 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+'use client';
+
+import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+
+import { ConfigurationMirroring } from './configuration-mirroring';
+import { ConfigurationSource } from './configuration-source';
+import { ConfigurationTopicReplication } from './configuration-topic-replication';
+
+export interface ShadowLinkConfigurationProps {
+  shadowLink: ShadowLink;
+}
+
+export const ShadowLinkConfiguration = ({ shadowLink }: ShadowLinkConfigurationProps) => (
+  <Tabs defaultValue="all">
+    <TabsList testId="configuration-subtabs" variant="default">
+      <TabsTrigger testId="all-tab" value="all" variant="underline">
+        All
+      </TabsTrigger>
+      <TabsTrigger testId="source-tab" value="source" variant="underline">
+        Source
+      </TabsTrigger>
+      <TabsTrigger testId="mirroring-tab" value="mirroring" variant="underline">
+        Mirroring
+      </TabsTrigger>
+      <TabsTrigger testId="topic-config-replication-tab" value="topic-config-replication" variant="underline">
+        Topic config replication
+      </TabsTrigger>
+    </TabsList>
+
+    <TabsContents className="w-2/3">
+      <TabsContent testId="all-content" value="all">
+        <div className="flex flex-col gap-6">
+          <ConfigurationSource shadowLink={shadowLink} />
+          <ConfigurationMirroring shadowLink={shadowLink} />
+          <ConfigurationTopicReplication shadowLink={shadowLink} />
+        </div>
+      </TabsContent>
+
+      <TabsContent testId="source-content" value="source">
+        <ConfigurationSource shadowLink={shadowLink} />
+      </TabsContent>
+
+      <TabsContent testId="mirroring-content" value="mirroring">
+        <ConfigurationMirroring shadowLink={shadowLink} />
+      </TabsContent>
+
+      <TabsContent testId="topic-config-replication-content" value="topic-config-replication">
+        <ConfigurationTopicReplication shadowLink={shadowLink} />
+      </TabsContent>
+    </TabsContents>
+  </Tabs>
+);

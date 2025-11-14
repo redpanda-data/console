@@ -102,6 +102,7 @@
     "react-day-picker": "^9.11.0",
     "react-dom": "^18.3.1",
     "react-draggable": "^4.5.0",
+    "react-dropzone": "^14.3.8",
     "react-highlight-words": "^0.21.0",
     "react-hook-form": "^7.54.2",
     "react-icons": "^4.12.0",

@@ -17,7 +17,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'c
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Loader2, Plus } from 'lucide-react';
-import { runInAction } from 'mobx';
 import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import React, { useEffect } from 'react';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
@@ -99,14 +98,6 @@ export const createColumns: ColumnDef<ListShadowLinksResponse_ShadowLink>[] = [
   },
 ];
 
-// Update page title using uiState pattern
-export const updatePageTitle = () => {
-  runInAction(() => {
-    uiState.pageTitle = 'Shadow Links';
-    uiState.pageBreadcrumbs = [{ title: 'Shadow Links', linkTo: '/shadowlinks' }];
-  });
-};
-
 export const ShadowLinkListPage = () => {
   const navigate = useNavigate();
 
@@ -120,7 +111,8 @@ export const ShadowLinkListPage = () => {
   const hasShadowLink = shadowLinks.length > 0;
 
   useEffect(() => {
-    updatePageTitle();
+    uiState.pageBreadcrumbs = [{ title: 'Shadow Links', linkTo: '' }];
+    uiState.pageTitle = 'Shadow Links';
   }, []);
 
   // Show toast on error

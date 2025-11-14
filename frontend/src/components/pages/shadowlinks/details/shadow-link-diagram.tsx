@@ -86,7 +86,7 @@ export const ShadowLinkDiagram = ({ shadowLink }: ShadowLinkDiagramProps) => {
       target: 'shadow',
       type: 'straight',
       style: edgeStyle,
-      animated: false,
+      animated: true,
     },
   ];
 

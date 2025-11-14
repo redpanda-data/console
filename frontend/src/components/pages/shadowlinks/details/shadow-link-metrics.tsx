@@ -9,12 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useGetShadowMetricsQuery } from 'react-query/api/shadowlink';
+
+import { SHORT_LIVED_CACHE_STALE_TIME } from '../../../../react-query/react-query.utils';
 
 const getStateDisplay = (state: ShadowLinkState): string => {
   const stateMap = {
@@ -25,6 +28,20 @@ const getStateDisplay = (state: ShadowLinkState): string => {
   return stateMap[state] || 'Unknown';
 };
 
+const MetricCardRefreshButton = ({ isFetching, onRefresh }: { isFetching: boolean; onRefresh: () => void }) =>
+  isFetching ? (
+    <Loader2 className="absolute top-2 right-2 h-4 w-4 animate-spin text-muted-foreground" />
+  ) : (
+    <Button
+      className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100"
+      onClick={onRefresh}
+      size="icon"
+      variant="ghost"
+    >
+      <RefreshCw className="h-4 w-4" />
+    </Button>
+  );
+
 interface ShadowLinkMetricsProps {
   shadowLink: ShadowLink;
 }
@@ -34,7 +51,8 @@ export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
     data: metricsData,
     isFetching,
     error,
-  } = useGetShadowMetricsQuery({ name: shadowLink.name }, { refetchInterval: 15_000 });
+    refetch,
+  } = useGetShadowMetricsQuery({ name: shadowLink.name }, { refetchInterval: SHORT_LIVED_CACHE_STALE_TIME });
 
   if (error) {
     return (
@@ -49,9 +67,9 @@ export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {/* State */}
-      <Card testId="shadow-link-metric-state">
+      <Card className="group" testId="shadow-link-metric-state">
         <CardContent className="relative pt-6">
-          {isFetching && <Loader2 className="absolute top-2 right-2 h-4 w-4 animate-spin text-muted-foreground" />}
+          <MetricCardRefreshButton isFetching={isFetching} onRefresh={() => refetch()} />
           <Text className="text-muted-foreground text-sm" testId="metric-label-state">
             State
           </Text>
@@ -62,9 +80,9 @@ export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
       </Card>
 
       {/* Topics replicated */}
-      <Card testId="shadow-link-metric-replicated">
+      <Card className="group" testId="shadow-link-metric-replicated">
         <CardContent className="relative pt-6">
-          {isFetching && <Loader2 className="absolute top-2 right-2 h-4 w-4 animate-spin text-muted-foreground" />}
+          <MetricCardRefreshButton isFetching={isFetching} onRefresh={() => refetch()} />
           <Text className="text-muted-foreground text-sm" testId="metric-label-replicated">
             Topics replicated
           </Text>
@@ -75,9 +93,9 @@ export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
       </Card>
 
       {/* Failed over topics */}
-      <Card testId="shadow-link-metric-failedover">
+      <Card className="group" testId="shadow-link-metric-failedover">
         <CardContent className="relative pt-6">
-          {isFetching && <Loader2 className="absolute top-2 right-2 h-4 w-4 animate-spin text-muted-foreground" />}
+          <MetricCardRefreshButton isFetching={isFetching} onRefresh={() => refetch()} />
           <Text className="text-muted-foreground text-sm" testId="metric-label-failedover">
             Failed over topics
           </Text>
@@ -88,9 +106,9 @@ export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
       </Card>
 
       {/* Errored topics */}
-      <Card testId="shadow-link-metric-error">
+      <Card className="group" testId="shadow-link-metric-error">
         <CardContent className="relative pt-6">
-          {isFetching && <Loader2 className="absolute top-2 right-2 h-4 w-4 animate-spin text-muted-foreground" />}
+          <MetricCardRefreshButton isFetching={isFetching} onRefresh={() => refetch()} />
           <Text className="text-muted-foreground text-sm" testId="metric-label-error">
             Errored topics
           </Text>
