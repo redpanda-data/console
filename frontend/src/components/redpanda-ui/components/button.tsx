@@ -2,13 +2,13 @@
 
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Slot as SlotPrimitive } from 'radix-ui';
-import React from 'react';
+import React, { type ElementType } from 'react';
 
 import { useGroup } from './group';
 import { cn } from '../lib/utils';
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive selection:bg-selected selection:text-selected-foreground",
+  "cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive selection:bg-selected selection:text-selected-foreground",
   {
     variants: {
       variant: {
@@ -21,6 +21,7 @@ const buttonVariants = cva(
         ghost: 'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
         link: 'text-primary underline-offset-4 hover:underline',
         dashed: 'border-dashed border-2 border-primary',
+        secondaryOutline: 'border !border-secondary text-secondary bg-background shadow-xs hover:bg-secondary/10',
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',
@@ -42,9 +43,11 @@ const Button = React.forwardRef<
     VariantProps<typeof buttonVariants> & {
       asChild?: boolean;
       testId?: string;
+      as?: ElementType;
+      to?: string;
     }
->(({ className, variant, size, asChild = false, testId, ...props }, ref) => {
-  const Comp = asChild ? SlotPrimitive.Slot : 'button';
+>(({ className, variant, size, asChild = false, testId, as, to, ...props }, ref) => {
+  const Comp = as ?? (asChild ? SlotPrimitive.Slot : 'button');
   const { attached, position } = useGroup();
 
   return (
@@ -63,6 +66,7 @@ const Button = React.forwardRef<
               : 'rounded-md',
         className,
       )}
+      to={to}
       {...props}
     />
   );
