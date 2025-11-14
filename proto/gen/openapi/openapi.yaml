@@ -72,6 +72,14 @@ components:
           description: The topic name.
           type: string
       type: object
+    AnnotatedOption:
+      properties:
+        description:
+          type: string
+        value:
+          type: string
+      title: AnnotatedOption represents an annotated option
+      type: object
     AuthenticationInfo:
       properties:
         mechanism:
@@ -154,6 +162,136 @@ components:
             $ref: '#/components/schemas/SuccessfulEntity'
           type: array
       type: object
+    BloblangFunctionSpec:
+      description: BloblangFunctionSpec represents a Bloblang function specification.
+      properties:
+        categories:
+          items:
+            type: string
+          type: array
+        description:
+          type: string
+        examples:
+          items:
+            type: string
+          type: array
+        name:
+          type: string
+        params:
+          $ref: '#/components/schemas/ParamSpec'
+        status:
+          type: string
+        version:
+          type: string
+      type: object
+    BloblangMethodSpec:
+      description: BloblangMethodSpec represents a Bloblang method specification.
+      properties:
+        categories:
+          items:
+            type: string
+          type: array
+        description:
+          type: string
+        examples:
+          items:
+            type: string
+          type: array
+        name:
+          type: string
+        params:
+          $ref: '#/components/schemas/ParamSpec'
+        status:
+          type: string
+        version:
+          type: string
+      type: object
+    ComponentList:
+      description: ComponentList contains the structured component data.
+      properties:
+        bloblang_functions:
+          items:
+            $ref: '#/components/schemas/BloblangFunctionSpec'
+          type: array
+        bloblang_methods:
+          items:
+            $ref: '#/components/schemas/BloblangMethodSpec'
+          type: array
+        buffers:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        caches:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        inputs:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        metrics:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        outputs:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        processors:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        rate_limits:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        scanners:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        tracers:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        version:
+          type: string
+      type: object
+    ComponentSpec:
+      description: ComponentSpec represents a component specification.
+      properties:
+        categories:
+          items:
+            type: string
+          type: array
+        config:
+          $ref: '#/components/schemas/FieldSpec'
+        description:
+          type: string
+        examples:
+          items:
+            type: string
+          type: array
+        footnotes:
+          type: string
+        name:
+          type: string
+        status:
+          $ref: '#/components/schemas/ComponentStatus'
+        summary:
+          type: string
+        type:
+          type: string
+        version:
+          type: string
+      type: object
+    ComponentStatus:
+      description: ComponentStatus represents the stability level of a component.
+      enum:
+        - COMPONENT_STATUS_STABLE
+        - COMPONENT_STATUS_BETA
+        - COMPONENT_STATUS_EXPERIMENTAL
+        - COMPONENT_STATUS_DEPRECATED
+      type: string
     Config:
       properties:
         name:
@@ -776,6 +914,44 @@ components:
         error_message:
           type: string
       type: object
+    FieldSpec:
+      description: FieldSpec represents a field specification.
+      properties:
+        advanced:
+          type: boolean
+        annotated_options:
+          items:
+            $ref: '#/components/schemas/AnnotatedOption'
+          type: array
+        children:
+          items:
+            $ref: '#/components/schemas/FieldSpec'
+          type: array
+        default_value:
+          type: string
+        deprecated:
+          type: boolean
+        description:
+          type: string
+        examples:
+          items:
+            type: string
+          type: array
+        interpolated:
+          items:
+            type: string
+          type: array
+        kind:
+          type: string
+        name:
+          type: string
+        optional:
+          type: boolean
+        type:
+          type: string
+        version:
+          type: string
+      type: object
     FieldViolation:
       description: A message type used to describe a single bad request field.
       properties:
@@ -1148,8 +1324,27 @@ components:
       properties:
         resources:
           items:
-            $ref: '#/components/schemas/Resource'
+            $ref: '#/components/schemas/ListACLsResponse.Resource'
           type: array
+      type: object
+    ListACLsResponse.Resource:
+      properties:
+        acls:
+          items:
+            $ref: '#/components/schemas/Policy'
+          type: array
+        resource_name:
+          description: The name of the resource this ACL targets.
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+      type: object
+    ListComponentsResponse:
+      properties:
+        components:
+          $ref: '#/components/schemas/ComponentList'
       type: object
     ListConnectClustersResponse:
       properties:
@@ -1235,6 +1430,8 @@ components:
         name_contains:
           description: Any pipelines that partially match this name will be returned.
           type: string
+        secret_id:
+          type: string
         tags[string]:
           additionalProperties:
             type: string
@@ -1271,6 +1468,38 @@ components:
             $ref: '#/components/schemas/QuotaEntry'
           type: array
       type: object
+    ListResourcesRequest.Filter:
+      properties:
+        scopes:
+          items:
+            $ref: '#/components/schemas/Scope'
+          type: array
+        secret_id:
+          type: string
+      type: object
+    ListResourcesResponse:
+      properties:
+        resources:
+          items:
+            $ref: '#/components/schemas/ListResourcesResponse.Resource'
+          type: array
+      type: object
+    ListResourcesResponse.Resource:
+      properties:
+        display_name:
+          type: string
+        id:
+          type: string
+        type:
+          $ref: '#/components/schemas/ListResourcesResponse.Type'
+      type: object
+    ListResourcesResponse.Type:
+      enum:
+        - TYPE_PIPELINE
+        - TYPE_CLUSTER
+        - TYPE_MCP_SERVER
+        - TYPE_AI_AGENT
+      type: string
     ListRoleMembersRequest.Filter:
       description: Filter options.
       properties:
@@ -1541,6 +1770,26 @@ components:
         only_failed:
           description: Restart only connectors that have failed.
           type: boolean
+      type: object
+    ParamDefinition:
+      description: ParamDefinition represents a parameter definition.
+      properties:
+        default_value:
+          type: string
+        description:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+      type: object
+    ParamSpec:
+      description: ParamSpec represents parameter specifications.
+      properties:
+        definitions:
+          items:
+            $ref: '#/components/schemas/ParamDefinition'
+          type: array
       type: object
     PartitionStatus:
       enum:
@@ -1930,20 +2179,6 @@ components:
           description: Number of requests the client has made.
           format: uint64
           type: string
-      type: object
-    Resource:
-      properties:
-        acls:
-          items:
-            $ref: '#/components/schemas/Policy'
-          type: array
-        resource_name:
-          description: The name of the resource this ACL targets.
-          type: string
-        resource_pattern_type:
-          $ref: '#/components/schemas/ResourcePatternType'
-        resource_type:
-          $ref: '#/components/schemas/ResourceType'
       type: object
     ResourcePatternType:
       description: |-
@@ -4327,6 +4562,43 @@ paths:
       summary: Delete a quota
       tags:
         - Quotas
+  /v1/redpanda-connect/components:
+    get:
+      description: Returns a JSON list of available [components](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about), filtered by component type.
+      operationId: PipelineService_ListComponents
+      parameters:
+        - in: query
+          name: read_mask
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListComponentsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Retrieve the list of available components
+      tags:
+        - Redpanda Connect Pipelines
   /v1/redpanda-connect/config-schema:
     get:
       description: The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
@@ -4372,6 +4644,10 @@ paths:
         - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
           in: query
           name: filter.tags[string]
+          schema:
+            type: string
+        - in: query
+          name: filter.secret_id
           schema:
             type: string
         - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
@@ -5233,6 +5509,54 @@ paths:
       summary: Create secret
       tags:
         - Secrets
+  /v1/secrets/resources:
+    get:
+      description: Get resources by secret.
+      operationId: SecretService_ListResources
+      parameters:
+        - in: query
+          name: filter.secret_id
+          schema:
+            type: string
+        - in: query
+          name: filter.scopes
+          schema:
+            items:
+              enum:
+                - SCOPE_REDPANDA_CONNECT
+                - SCOPE_REDPANDA_CLUSTER
+                - SCOPE_MCP_SERVER
+                - SCOPE_AI_AGENT
+              type: string
+            type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResourcesResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get resources by secret
+      tags:
+        - Secrets
   /v1/secrets/{id}:
     delete:
       description: Delete a secret.
@@ -5938,7 +6262,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

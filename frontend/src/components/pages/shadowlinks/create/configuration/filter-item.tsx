@@ -21,6 +21,7 @@ import type { Control, FieldPath, FieldValues } from 'react-hook-form';
 import { useWatch } from 'react-hook-form';
 
 import { Item } from '../../../../redpanda-ui/components/item';
+import { getFilterTypeLabel } from '../../shadowlink-helpers';
 
 interface FilterItemProps<TFieldValues extends FieldValues> {
   control: Control<TFieldValues>;
@@ -31,22 +32,6 @@ interface FilterItemProps<TFieldValues extends FieldValues> {
   viewType: boolean; // true = editable, false = resume/summary
   'data-testid'?: string;
 }
-
-const getFilterTypeLabel = (patternType: PatternType, filterType: FilterType): string => {
-  if (patternType === PatternType.LITERAL && filterType === FilterType.INCLUDE) {
-    return 'Include specific topics';
-  }
-  if (patternType === PatternType.PREFIX && filterType === FilterType.INCLUDE) {
-    return 'Include starting with';
-  }
-  if (patternType === PatternType.LITERAL && filterType === FilterType.EXCLUDE) {
-    return 'Exclude specific';
-  }
-  if (patternType === PatternType.PREFIX && filterType === FilterType.EXCLUDE) {
-    return 'Exclude starting with';
-  }
-  return 'Include specific topics';
-};
 
 export const FilterItem = <TFieldValues extends FieldValues>({
   control,

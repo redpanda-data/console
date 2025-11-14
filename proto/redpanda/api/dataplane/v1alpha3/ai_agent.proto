@@ -468,6 +468,10 @@ message ListAIAgentsRequest {
       },
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "AI agents that match all the provided tags will be returned."}
     ];
+
+    string secret_id = 3;
+
+    string mcp_server_id = 4;
   }
 }
 

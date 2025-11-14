@@ -338,7 +338,7 @@ service MCPServerService {
   }
 
   // Lints a Redpanda Connect MCP tools configuration and returns zero or more
-  // issues (“hints”). An empty list means the config passed all lint checks.
+  // issues ("hints"). An empty list means the config passed all lint checks.
   rpc LintMCPConfig(LintMCPConfigRequest) returns (LintMCPConfigResponse) {
     option (google.api.http) = {
       post: "/v1alpha3/redpanda-connect/mcp-servers:lint-config"

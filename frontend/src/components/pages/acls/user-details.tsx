@@ -33,7 +33,6 @@ import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 @observer
 class UserDetailsPage extends PageComponent<{ userName: string }> {
   @observable username = '';
-  @observable mechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512' = 'SCRAM-SHA-256';
 
   @observable isValidUsername = false;
   @observable isValidPassword = false;
@@ -91,7 +90,6 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
         <div className="flex flex-col gap-4">
           <UserInformationCard
             onEditPassword={api.isAdminApiConfigured ? () => (this.isChangePasswordModalOpen = true) : undefined}
-            saslMechanism={this.mechanism}
             username={userName}
           />
           <UserPermissionDetailsContent

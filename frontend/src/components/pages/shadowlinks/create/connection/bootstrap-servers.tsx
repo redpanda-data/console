@@ -16,6 +16,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Trash } from 'lucide-react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 
+import { MtlsConfiguration } from './mtls-configuration';
 import { TlsConfiguration } from './tls-configuration';
 import type { FormValues } from '../model';
 
@@ -76,6 +77,8 @@ export const BootstrapServers = () => {
         </Button>
 
         <TlsConfiguration />
+
+        <MtlsConfiguration />
       </CardContent>
     </Card>
   );

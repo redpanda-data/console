@@ -833,7 +833,7 @@ export const MCPServerService: GenService<{
   },
   /**
    * Lints a Redpanda Connect MCP tools configuration and returns zero or more
-   * issues (“hints”). An empty list means the config passed all lint checks.
+   * issues ("hints"). An empty list means the config passed all lint checks.
    *
    * @generated from rpc redpanda.api.dataplane.v1alpha3.MCPServerService.LintMCPConfig
    */
