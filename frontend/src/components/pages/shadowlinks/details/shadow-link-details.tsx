@@ -14,7 +14,7 @@
 import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import { useMemo, useState } from 'react';
 import { useListShadowTopicInfiniteQuery } from 'react-query/api/shadowlink';
-import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
+import { MAX_PAGE_SIZE, SHORT_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 
 import { ShadowLinkDiagram } from './shadow-link-diagram';
 import { ShadowLinkMetrics } from './shadow-link-metrics';
@@ -46,7 +46,7 @@ export const ShadowLinkDetails = ({ shadowLink, shadowLinkName, onFailoverTopic 
         : undefined,
       pageSize: MAX_PAGE_SIZE,
     },
-    { refetchInterval: 15_000 }
+    { refetchInterval: SHORT_LIVED_CACHE_STALE_TIME }
   );
 
   // Flatten all pages of topics from infinite query

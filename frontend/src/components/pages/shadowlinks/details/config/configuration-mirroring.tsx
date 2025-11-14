@@ -17,120 +17,18 @@ import { Item, ItemGroup } from 'components/redpanda-ui/components/item';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import type { ACLFilter, NameFilter } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/acl_pb';
+
+import {
+  getFilterTypeLabel,
+  getOperationLabel,
+  getPatternTypeLabel,
+  getPermissionTypeLabel,
+  getResourceTypeLabel,
+} from '../../shadowlink-helpers';
 
 export interface ConfigurationMirroringProps {
   shadowLink: ShadowLink;
 }
-
-// Helper function to get filter label from pattern and filter type
-const getFilterTypeLabel = (patternType: PatternType, filterType: FilterType): string => {
-  if (patternType === PatternType.LITERAL && filterType === FilterType.INCLUDE) {
-    return 'Include specific topics';
-  }
-  if (patternType === PatternType.PREFIX && filterType === FilterType.INCLUDE) {
-    return 'Include starting with';
-  }
-  if (patternType === PatternType.LITERAL && filterType === FilterType.EXCLUDE) {
-    return 'Exclude specific';
-  }
-  if (patternType === PatternType.PREFIX && filterType === FilterType.EXCLUDE) {
-    return 'Exclude starting with';
-  }
-  return 'Include specific topics';
-};
-
-// Helper functions to convert ACL enum values to readable labels
-const getResourceTypeLabel = (type: ACLResource | undefined): string => {
-  if (type === undefined) {
-    return 'Any';
-  }
-  switch (type) {
-    case ACLResource.ACL_RESOURCE_ANY:
-      return 'Any';
-    case ACLResource.ACL_RESOURCE_TOPIC:
-      return 'Topic';
-    case ACLResource.ACL_RESOURCE_GROUP:
-      return 'Consumer Group';
-    case ACLResource.ACL_RESOURCE_CLUSTER:
-      return 'Cluster';
-    case ACLResource.ACL_RESOURCE_TXN_ID:
-      return 'Transaction ID';
-    case ACLResource.ACL_RESOURCE_SR_SUBJECT:
-      return 'Schema Registry Subject';
-    case ACLResource.ACL_RESOURCE_SR_REGISTRY:
-      return 'Schema Registry';
-    default:
-      return 'Any';
-  }
-};
-
-const getPatternTypeLabel = (pattern: ACLPattern | undefined): string => {
-  if (pattern === undefined) {
-    return 'Any';
-  }
-  switch (pattern) {
-    case ACLPattern.ACL_PATTERN_ANY:
-      return 'Any';
-    case ACLPattern.ACL_PATTERN_LITERAL:
-      return 'Literal';
-    case ACLPattern.ACL_PATTERN_PREFIXED:
-      return 'Prefixed';
-    case ACLPattern.ACL_PATTERN_MATCH:
-      return 'Match';
-    default:
-      return 'Any';
-  }
-};
-
-const getOperationLabel = (operation: ACLOperation | undefined): string => {
-  if (operation === undefined) {
-    return 'Any';
-  }
-  switch (operation) {
-    case ACLOperation.ACL_OPERATION_ANY:
-      return 'Any';
-    case ACLOperation.ACL_OPERATION_READ:
-      return 'Read';
-    case ACLOperation.ACL_OPERATION_WRITE:
-      return 'Write';
-    case ACLOperation.ACL_OPERATION_CREATE:
-      return 'Create';
-    case ACLOperation.ACL_OPERATION_REMOVE:
-      return 'Remove';
-    case ACLOperation.ACL_OPERATION_ALTER:
-      return 'Alter';
-    case ACLOperation.ACL_OPERATION_DESCRIBE:
-      return 'Describe';
-    case ACLOperation.ACL_OPERATION_CLUSTER_ACTION:
-      return 'Cluster Action';
-    case ACLOperation.ACL_OPERATION_DESCRIBE_CONFIGS:
-      return 'Describe Configs';
-    case ACLOperation.ACL_OPERATION_ALTER_CONFIGS:
-      return 'Alter Configs';
-    case ACLOperation.ACL_OPERATION_IDEMPOTENT_WRITE:
-      return 'Idempotent Write';
-    default:
-      return 'Any';
-  }
-};
-
-const getPermissionTypeLabel = (permissionType: ACLPermissionType | undefined): string => {
-  if (permissionType === undefined) {
-    return 'Any';
-  }
-  switch (permissionType) {
-    case ACLPermissionType.ACL_PERMISSION_TYPE_ANY:
-      return 'Any';
-    case ACLPermissionType.ACL_PERMISSION_TYPE_ALLOW:
-      return 'Allow';
-    case ACLPermissionType.ACL_PERMISSION_TYPE_DENY:
-      return 'Deny';
-    default:
-      return 'Any';
-  }
-};
 
 // Component to display a single name filter (topic or consumer group)
 const NameFilterDisplay = ({ filter, index }: { filter: NameFilter; index: number }) => {
@@ -153,6 +51,38 @@ const NameFilterDisplay = ({ filter, index }: { filter: NameFilter; index: numbe
     </Item>
   );
 };
+
+// Reusable component for displaying name filter sections
+const NameFilterSection = ({
+  title,
+  filters,
+  testId,
+  emptyMessage,
+}: {
+  title: string;
+  filters: NameFilter[];
+  testId: string;
+  emptyMessage: string;
+}) => (
+  <Card size="full" testId={`${testId}-card`}>
+    <CardHeader>
+      <Heading level={3}>{title}</Heading>
+    </CardHeader>
+    <CardContent>
+      {filters.length > 0 ? (
+        <ItemGroup>
+          {filters.map((filter, index) => (
+            <NameFilterDisplay filter={filter} index={index} key={`${testId}-filter-${index}`} />
+          ))}
+        </ItemGroup>
+      ) : (
+        <Text className="text-muted-foreground" testId={`no-${testId}`}>
+          {emptyMessage}
+        </Text>
+      )}
+    </CardContent>
+  </Card>
+);
 
 // Component to display a single ACL filter
 const ACLFilterDisplay = ({ filter, index }: { filter: ACLFilter; index: number }) => {
@@ -210,6 +140,32 @@ const ACLFilterDisplay = ({ filter, index }: { filter: ACLFilter; index: number 
   );
 };
 
+// Reusable component for displaying ACL filter section
+const ACLFilterSection = ({ filters }: { filters: ACLFilter[] }) => {
+  const hasAllACLs = filters.length === 0;
+
+  return (
+    <Card size="full" testId="acl-replication-card">
+      <CardHeader>
+        <Heading level={3}>ACL replication</Heading>
+      </CardHeader>
+      <CardContent>
+        {hasAllACLs ? (
+          <Badge testId="all-acls-badge" variant="secondary">
+            All ACLs
+          </Badge>
+        ) : (
+          <div className="space-y-3">
+            {filters.map((filter, index) => (
+              <ACLFilterDisplay filter={filter} index={index} key={`acl-filter-${index}`} />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 export const ConfigurationMirroring = ({ shadowLink }: ConfigurationMirroringProps) => {
   const topicSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
   const consumerSyncOptions = shadowLink.configurations?.consumerOffsetSyncOptions;
@@ -220,8 +176,6 @@ export const ConfigurationMirroring = ({ shadowLink }: ConfigurationMirroringPro
   const consumerFilters = consumerSyncOptions?.groupFilters || [];
   const aclFilters = securitySyncOptions?.aclFilters || [];
 
-  const hasAllACLs = aclFilters.length === 0;
-
   return (
     <div className="flex flex-col gap-6">
       <Heading level={2} testId="shadowing-title">
@@ -229,64 +183,23 @@ export const ConfigurationMirroring = ({ shadowLink }: ConfigurationMirroringPro
       </Heading>
 
       {/* Topic Replication Section */}
-      <Card size="full" testId="topic-replication-card">
-        <CardHeader>
-          <Heading level={3}>Topic replication</Heading>
-        </CardHeader>
-        <CardContent>
-          {topicFilters.length > 0 ? (
-            <ItemGroup>
-              {topicFilters.map((filter, index) => (
-                <NameFilterDisplay filter={filter} index={index} key={`topic-filter-${index}`} />
-              ))}
-            </ItemGroup>
-          ) : (
-            <Text className="text-muted-foreground" testId="no-topic-filters">
-              No topic filters configured
-            </Text>
-          )}
-        </CardContent>
-      </Card>
+      <NameFilterSection
+        emptyMessage="No topic filters configured"
+        filters={topicFilters}
+        testId="topic-replication"
+        title="Topic replication"
+      />
 
       {/* ACL Replication Section */}
-      <Card size="full" testId="acl-replication-card">
-        <CardHeader>
-          <Heading level={3}>ACL replication</Heading>
-        </CardHeader>
-        <CardContent>
-          {hasAllACLs ? (
-            <Badge testId="all-acls-badge" variant="secondary">
-              All ACLs
-            </Badge>
-          ) : (
-            <div className="space-y-3">
-              {aclFilters.map((filter, index) => (
-                <ACLFilterDisplay filter={filter} index={index} key={`acl-filter-${index}`} />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <ACLFilterSection filters={aclFilters} />
 
       {/* Consumer Group Replication Section */}
-      <Card size="full" testId="consumer-group-replication-card">
-        <CardHeader>
-          <Heading level={3}>Consumer group replication</Heading>
-        </CardHeader>
-        <CardContent>
-          {consumerFilters.length > 0 ? (
-            <ItemGroup>
-              {consumerFilters.map((filter, index) => (
-                <NameFilterDisplay filter={filter} index={index} key={`consumer-filter-${index}`} />
-              ))}
-            </ItemGroup>
-          ) : (
-            <Text className="text-muted-foreground" testId="no-consumer-filters">
-              No consumer group filters configured
-            </Text>
-          )}
-        </CardContent>
-      </Card>
+      <NameFilterSection
+        emptyMessage="No consumer group filters configured"
+        filters={consumerFilters}
+        testId="consumer-group-replication"
+        title="Consumer group replication"
+      />
     </div>
   );
 };

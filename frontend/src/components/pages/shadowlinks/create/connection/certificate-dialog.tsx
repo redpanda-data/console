@@ -20,6 +20,7 @@ import {
 import { Dropzone } from 'components/redpanda-ui/components/dropzone';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
+import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { useCallback, useEffect, useState } from 'react';
 
 import { TLS_MODE, type TLSMode } from '../model';
@@ -125,7 +126,9 @@ export function CertificateDialog({
       <DialogContent data-testid={`certificate-dialog-${certificateType}`}>
         <DialogHeader>
           <DialogTitle>{CERTIFICATE_LABELS[certificateType]}</DialogTitle>
-          <p className="text-muted-foreground text-sm">{CERTIFICATE_DESCRIPTIONS[certificateType]}</p>
+          <Text className="text-muted-foreground" variant="small">
+            {CERTIFICATE_DESCRIPTIONS[certificateType]}
+          </Text>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -142,8 +145,16 @@ export function CertificateDialog({
                 maxFiles={1}
                 onDrop={handleFileUpload}
               >
-                {fileName && <div className="text-muted-foreground text-sm">{fileName}</div>}
-                {!fileName && <div className="text-muted-foreground text-sm">Drag and drop or click to replace</div>}
+                {fileName && (
+                  <Text className="text-muted-foreground" variant="small">
+                    {fileName}
+                  </Text>
+                )}
+                {!fileName && (
+                  <Text className="text-muted-foreground" variant="small">
+                    Drag and drop or click to replace
+                  </Text>
+                )}
               </Dropzone>
             </div>
           ) : (
@@ -156,10 +167,10 @@ export function CertificateDialog({
                 testId="file-path-input"
                 value={filePath}
               />
-              <p className="text-muted-foreground text-sm">
+              <Text className="text-muted-foreground" variant="small">
                 The certificate must reside on the broker. Provide a relative path from the broker's configuration
-                directory. Example: /etc/redpanda/certs/ca.crt
-              </p>
+                directory. Example: <InlineCode>/etc/redpanda/certs/ca.crt</InlineCode>
+              </Text>
             </div>
           )}
         </div>

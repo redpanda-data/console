@@ -21,6 +21,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import type React from 'react';
 
 export interface ConfigurationSourceProps {
@@ -60,9 +61,9 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
   const isAuthEnabled = Boolean(scramConfig);
 
   let scramMechanismLabel = '-';
-  if (scramConfig?.scramMechanism === 1) {
+  if (scramConfig?.scramMechanism === ScramMechanism.SCRAM_SHA_256) {
     scramMechanismLabel = 'SCRAM-SHA-256';
-  } else if (scramConfig?.scramMechanism === 2) {
+  } else if (scramConfig?.scramMechanism === ScramMechanism.SCRAM_SHA_512) {
     scramMechanismLabel = 'SCRAM-SHA-512';
   }
 

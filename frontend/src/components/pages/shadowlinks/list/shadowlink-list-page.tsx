@@ -112,6 +112,7 @@ export const ShadowLinkListPage = () => {
 
   useEffect(() => {
     uiState.pageBreadcrumbs = [{ title: 'Shadow Links', linkTo: '' }];
+    uiState.pageTitle = 'Shadow Links';
   }, []);
 
   // Show toast on error

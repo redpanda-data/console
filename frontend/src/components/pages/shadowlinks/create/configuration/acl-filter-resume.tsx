@@ -9,101 +9,15 @@
  */
 
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/acl_pb';
 import { useFormContext, useWatch } from 'react-hook-form';
 
+import {
+  getOperationLabel,
+  getPatternTypeLabel,
+  getPermissionTypeLabel,
+  getResourceTypeLabel,
+} from '../../shadowlink-helpers';
 import type { FormValues } from '../model';
-
-// Helper functions to convert enum values to readable labels
-const getResourceTypeLabel = (type: ACLResource | undefined): string => {
-  if (type === undefined) {
-    return 'Any';
-  }
-  switch (type) {
-    case ACLResource.ACL_RESOURCE_ANY:
-      return 'Any';
-    case ACLResource.ACL_RESOURCE_TOPIC:
-      return 'Topic';
-    case ACLResource.ACL_RESOURCE_GROUP:
-      return 'Consumer Group';
-    case ACLResource.ACL_RESOURCE_CLUSTER:
-      return 'Cluster';
-    case ACLResource.ACL_RESOURCE_TXN_ID:
-      return 'Transaction ID';
-    case ACLResource.ACL_RESOURCE_SR_SUBJECT:
-      return 'Schema Registry Subject';
-    case ACLResource.ACL_RESOURCE_SR_REGISTRY:
-      return 'Schema Registry';
-    default:
-      return 'Any';
-  }
-};
-
-const getPatternTypeLabel = (pattern: ACLPattern | undefined): string => {
-  if (pattern === undefined) {
-    return 'Any';
-  }
-  switch (pattern) {
-    case ACLPattern.ACL_PATTERN_ANY:
-      return 'Any';
-    case ACLPattern.ACL_PATTERN_LITERAL:
-      return 'Literal';
-    case ACLPattern.ACL_PATTERN_PREFIXED:
-      return 'Prefixed';
-    case ACLPattern.ACL_PATTERN_MATCH:
-      return 'Match';
-    default:
-      return 'Any';
-  }
-};
-
-const getOperationLabel = (operation: ACLOperation | undefined): string => {
-  if (operation === undefined) {
-    return 'Any';
-  }
-  switch (operation) {
-    case ACLOperation.ACL_OPERATION_ANY:
-      return 'Any';
-    case ACLOperation.ACL_OPERATION_READ:
-      return 'Read';
-    case ACLOperation.ACL_OPERATION_WRITE:
-      return 'Write';
-    case ACLOperation.ACL_OPERATION_CREATE:
-      return 'Create';
-    case ACLOperation.ACL_OPERATION_REMOVE:
-      return 'Remove';
-    case ACLOperation.ACL_OPERATION_ALTER:
-      return 'Alter';
-    case ACLOperation.ACL_OPERATION_DESCRIBE:
-      return 'Describe';
-    case ACLOperation.ACL_OPERATION_CLUSTER_ACTION:
-      return 'Cluster Action';
-    case ACLOperation.ACL_OPERATION_DESCRIBE_CONFIGS:
-      return 'Describe Configs';
-    case ACLOperation.ACL_OPERATION_ALTER_CONFIGS:
-      return 'Alter Configs';
-    case ACLOperation.ACL_OPERATION_IDEMPOTENT_WRITE:
-      return 'Idempotent Write';
-    default:
-      return 'Any';
-  }
-};
-
-const getPermissionTypeLabel = (permissionType: ACLPermissionType | undefined): string => {
-  if (permissionType === undefined) {
-    return 'Any';
-  }
-  switch (permissionType) {
-    case ACLPermissionType.ACL_PERMISSION_TYPE_ANY:
-      return 'Any';
-    case ACLPermissionType.ACL_PERMISSION_TYPE_ALLOW:
-      return 'Allow';
-    case ACLPermissionType.ACL_PERMISSION_TYPE_DENY:
-      return 'Deny';
-    default:
-      return 'Any';
-  }
-};
 
 // ACL Filter Resume Component - shows compact summary
 export const ACLFilterResume = ({ index }: { index: number }) => {
