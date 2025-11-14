@@ -24,6 +24,8 @@ import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowli
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import type React from 'react';
 
+import { TlsCertificatesConfig } from './tls-certificates-config';
+
 export interface ConfigurationSourceProps {
   shadowLink: ShadowLink;
 }
@@ -46,16 +48,11 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
   const scramConfig =
     authConfig?.authentication?.case === 'scramConfiguration' ? authConfig.authentication.value : undefined;
 
-  // Determine TLS status
+  // Determine TLS status based on enabled boolean
   const isTlsEnabled = Boolean(tlsSettings?.enabled);
 
-  let tlsCertificateLabel = '-';
-  if (tlsSettings?.tlsSettings?.case === 'tlsFileSettings') {
-    const caPath = tlsSettings.tlsSettings.value.caPath;
-    tlsCertificateLabel = `${caPath.split('/').pop() || 'certificate'} (upload)`;
-  } else if (tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
-    tlsCertificateLabel = 'ca-cert.pem (upload)';
-  }
+  // Check if TLS certificates are configured (based on oneof tls_settings)
+  const hasTLSCerts = Boolean(tlsSettings?.tlsSettings?.case);
 
   // Determine authentication status
   const isAuthEnabled = Boolean(scramConfig);
@@ -122,7 +119,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
               }
             />
 
-            {isTlsEnabled && <ConfigField label="Certificate" testId="certificate" value={tlsCertificateLabel} />}
+            {hasTLSCerts && <TlsCertificatesConfig tlsSettings={tlsSettings} />}
           </div>
         </CardContent>
       </Card>
