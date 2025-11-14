@@ -60,6 +60,7 @@ export const AIAgentToggleButton = () => {
     return (
       <Button
         className="gap-2"
+        data-testid="stop-ai-agent-button"
         disabled={isStopping || aiAgentData.aiAgent.state === AIAgent_State.STOPPING}
         onClick={handleStopAgent}
         size="sm"
@@ -74,6 +75,7 @@ export const AIAgentToggleButton = () => {
   return (
     <Button
       className="gap-2"
+      data-testid="start-ai-agent-button"
       disabled={isStarting || aiAgentData.aiAgent.state === AIAgent_State.STARTING}
       onClick={handleStartAgent}
       size="sm"

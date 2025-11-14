@@ -242,14 +242,14 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[160px]">
-              <DropdownMenuItem onClick={handleCopy}>
+              <DropdownMenuItem data-testid="copy-url-menu-item" onClick={handleCopy}>
                 <div className="flex items-center gap-4">
                   <Copy className="h-4 w-4" /> Copy URL
                 </div>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {canStart && (
-                <DropdownMenuItem onClick={handleStart}>
+                <DropdownMenuItem data-testid="start-server-menu-item" onClick={handleStart}>
                   {isStarting ? (
                     <div className="flex items-center gap-4">
                       <Loader2 className="h-4 w-4 animate-spin" /> Starting
@@ -263,7 +263,7 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
                 </DropdownMenuItem>
               )}
               {canStop && (
-                <DropdownMenuItem onClick={handleStop}>
+                <DropdownMenuItem data-testid="stop-server-menu-item" onClick={handleStop}>
                   {isStopping ? (
                     <div className="flex items-center gap-4">
                       <Loader2 className="h-4 w-4 animate-spin" /> Stopping
