@@ -86,11 +86,7 @@ export const TlsCertificatesConfig = ({ tlsSettings }: TlsCertificatesConfigProp
           )
         }
       />
-      <ConfigField
-        label="Certificate input method"
-        testId="certificate-input-method"
-        value={certificateInputMethod}
-      />
+      <ConfigField label="Certificate input method" testId="certificate-input-method" value={certificateInputMethod} />
       <ConfigField
         label="CA certificate"
         testId="ca-certificate"
