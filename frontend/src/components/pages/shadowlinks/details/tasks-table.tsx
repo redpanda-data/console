@@ -12,9 +12,11 @@
 'use client';
 
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { RefreshCw } from 'lucide-react';
 import type { ShadowLinkTaskStatus } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import { useMemo } from 'react';
 
@@ -22,9 +24,10 @@ import { TaskStatusBadge } from './task-status-badge';
 
 type TasksTableProps = {
   tasks: ShadowLinkTaskStatus[];
+  onRefresh?: () => void;
 };
 
-export const TasksTable = ({ tasks }: TasksTableProps) => {
+export const TasksTable = ({ tasks, onRefresh }: TasksTableProps) => {
   const columnHelper = createColumnHelper<ShadowLinkTaskStatus>();
 
   const columns = useMemo(
@@ -72,6 +75,13 @@ export const TasksTable = ({ tasks }: TasksTableProps) => {
     <Card size="full" testId="tasks-table-card">
       <CardHeader>
         <CardTitle>Tasks</CardTitle>
+        {onRefresh && (
+          <CardAction>
+            <Button data-testid="refresh-tasks-button" onClick={onRefresh} size="icon" type="button" variant="ghost">
+              <RefreshCw className="h-5 w-5" />
+            </Button>
+          </CardAction>
+        )}
       </CardHeader>
       <CardContent>
         {tasks?.length === 0 ? (

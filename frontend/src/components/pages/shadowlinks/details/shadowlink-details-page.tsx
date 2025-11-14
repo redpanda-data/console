@@ -188,7 +188,7 @@ export const ShadowLinkDetailsPage = () => {
           </TabsContent>
 
           <TabsContent testId="tasks-content" value="tasks">
-            <TasksTable tasks={shadowLink.tasksStatus} />
+            <TasksTable onRefresh={refetch} tasks={shadowLink.tasksStatus} />
           </TabsContent>
 
           <TabsContent testId="configuration-content" value="configuration">
