@@ -56,7 +56,7 @@ type MCPServerServiceClient interface {
 	// The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
 	GetMCPServerServiceConfigSchema(ctx context.Context, in *GetMCPServerServiceConfigSchemaRequest, opts ...grpc.CallOption) (*GetMCPServerServiceConfigSchemaResponse, error)
 	// Lints a Redpanda Connect MCP tools configuration and returns zero or more
-	// issues (“hints”). An empty list means the config passed all lint checks.
+	// issues ("hints"). An empty list means the config passed all lint checks.
 	LintMCPConfig(ctx context.Context, in *LintMCPConfigRequest, opts ...grpc.CallOption) (*LintMCPConfigResponse, error)
 }
 
@@ -183,7 +183,7 @@ type MCPServerServiceServer interface {
 	// The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
 	GetMCPServerServiceConfigSchema(context.Context, *GetMCPServerServiceConfigSchemaRequest) (*GetMCPServerServiceConfigSchemaResponse, error)
 	// Lints a Redpanda Connect MCP tools configuration and returns zero or more
-	// issues (“hints”). An empty list means the config passed all lint checks.
+	// issues ("hints"). An empty list means the config passed all lint checks.
 	LintMCPConfig(context.Context, *LintMCPConfigRequest) (*LintMCPConfigResponse, error)
 	mustEmbedUnimplementedMCPServerServiceServer()
 }

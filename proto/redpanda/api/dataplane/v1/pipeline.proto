@@ -531,6 +531,8 @@ message ListPipelinesRequest {
       },
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Pipelines that match all the provided tags will be returned."}
     ];
+
+    string secret_id = 3;
   }
 }
 

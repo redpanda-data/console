@@ -28,6 +28,7 @@ type SecretServiceGatewayServer struct {
 	createKafkaConnectSecret connect_gateway.UnaryHandler[v1.CreateKafkaConnectSecretRequest, v1.CreateKafkaConnectSecretResponse]
 	updateKafkaConnectSecret connect_gateway.UnaryHandler[v1.UpdateKafkaConnectSecretRequest, v1.UpdateKafkaConnectSecretResponse]
 	deleteKafkaConnectSecret connect_gateway.UnaryHandler[v1.DeleteKafkaConnectSecretRequest, v1.DeleteKafkaConnectSecretResponse]
+	listResources            connect_gateway.UnaryHandler[v1.ListResourcesRequest, v1.ListResourcesResponse]
 }
 
 // NewSecretServiceGatewayServer constructs a Connect-Gateway gRPC server for the SecretService
@@ -45,6 +46,7 @@ func NewSecretServiceGatewayServer(svc SecretServiceHandler, opts ...connect_gat
 		createKafkaConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceCreateKafkaConnectSecretProcedure, svc.CreateKafkaConnectSecret, opts...),
 		updateKafkaConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceUpdateKafkaConnectSecretProcedure, svc.UpdateKafkaConnectSecret, opts...),
 		deleteKafkaConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceDeleteKafkaConnectSecretProcedure, svc.DeleteKafkaConnectSecret, opts...),
+		listResources:            connect_gateway.NewUnaryHandler(SecretServiceListResourcesProcedure, svc.ListResources, opts...),
 	}
 }
 
@@ -90,6 +92,10 @@ func (s *SecretServiceGatewayServer) UpdateKafkaConnectSecret(ctx context.Contex
 
 func (s *SecretServiceGatewayServer) DeleteKafkaConnectSecret(ctx context.Context, req *v1.DeleteKafkaConnectSecretRequest) (*v1.DeleteKafkaConnectSecretResponse, error) {
 	return s.deleteKafkaConnectSecret(ctx, req)
+}
+
+func (s *SecretServiceGatewayServer) ListResources(ctx context.Context, req *v1.ListResourcesRequest) (*v1.ListResourcesResponse, error) {
+	return s.listResources(ctx, req)
 }
 
 // RegisterSecretServiceHandlerGatewayServer registers the Connect handlers for the SecretService
