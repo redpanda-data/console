@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { useFormContext } from 'react-hook-form';
 
 import { AdvancedClientOptions } from '../create/connection/advanced-client-options';

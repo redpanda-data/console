@@ -10,20 +10,29 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import {
+  type ACLFilter,
+  ACLFilterSchema,
   AuthenticationConfigurationSchema,
+  ConsumerOffsetSyncOptionsSchema,
+  FilterType,
+  NameFilterSchema,
+  PatternType,
   ScramConfigSchema,
+  SecuritySettingsSyncOptionsSchema,
   type ShadowLinkClientOptions,
   ShadowLinkClientOptionsSchema,
   TLSFileSettingsSchema,
   TLSPEMSettingsSchema,
   type TLSSettings,
   TLSSettingsSchema,
+  TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/acl_pb';
 
 import type { FormValues } from '../create/model';
 import { TLS_MODE } from '../create/model';
-import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 
 /**
  * Type for category update functions
@@ -183,6 +192,190 @@ export const getUpdateValuesForConnection = (
 };
 
 /**
+ * Get update values for topics category
+ * Compares form values with original values and returns schema + field mask paths
+ */
+export const getUpdateValuesForTopics = (
+  values: FormValues,
+  originalValues: FormValues
+): UpdateResult<ReturnType<typeof create<typeof TopicMetadataSyncOptionsSchema>>> => {
+  const fieldMaskPaths: string[] = [];
+
+  // Compare all topic configuration (mode, filters, and properties)
+  const topicConfigChanged =
+    values.topicsMode !== originalValues.topicsMode ||
+    values.topics.length !== originalValues.topics.length ||
+    values.topics.some(
+      (topic, idx) =>
+        topic.name !== originalValues.topics[idx]?.name ||
+        topic.patterType !== originalValues.topics[idx]?.patterType ||
+        topic.filterType !== originalValues.topics[idx]?.filterType
+    ) ||
+    !arraysEqual(values.topicProperties || [], originalValues.topicProperties || []);
+
+  if (topicConfigChanged) {
+    fieldMaskPaths.push('configurations.topic_metadata_sync_options');
+  }
+
+  // Build topic metadata sync options
+  const allNameFilter = [
+    create(NameFilterSchema, {
+      patternType: PatternType.LITERAL,
+      filterType: FilterType.INCLUDE,
+      name: '*',
+    }),
+  ];
+
+  const topicMetadataSyncOptions = create(TopicMetadataSyncOptionsSchema, {
+    autoCreateShadowTopicFilters:
+      values.topicsMode === 'all'
+        ? allNameFilter
+        : values.topics.map((topic) =>
+            create(NameFilterSchema, {
+              patternType: topic.patterType,
+              filterType: topic.filterType,
+              name: topic.name,
+            })
+          ),
+    syncedShadowTopicProperties: values.topicProperties || [],
+  });
+
+  return {
+    value: topicMetadataSyncOptions,
+    fieldMaskPaths,
+  };
+};
+
+/**
+ * Get update values for consumer groups category
+ * Compares form values with original values and returns schema + field mask paths
+ */
+export const getUpdateValuesForConsumerGroups = (
+  values: FormValues,
+  originalValues: FormValues
+): UpdateResult<ReturnType<typeof create<typeof ConsumerOffsetSyncOptionsSchema>>> => {
+  const fieldMaskPaths: string[] = [];
+
+  // Compare consumer groups mode and filters
+  const consumerFiltersChanged =
+    values.consumersMode !== originalValues.consumersMode ||
+    values.consumers.length !== originalValues.consumers.length ||
+    values.consumers.some(
+      (consumer, idx) =>
+        consumer.name !== originalValues.consumers[idx]?.name ||
+        consumer.patterType !== originalValues.consumers[idx]?.patterType ||
+        consumer.filterType !== originalValues.consumers[idx]?.filterType
+    );
+
+  if (consumerFiltersChanged) {
+    fieldMaskPaths.push('configurations.consumer_offset_sync_options');
+  }
+
+  // Build consumer offset sync options
+  const allNameFilter = [
+    create(NameFilterSchema, {
+      patternType: PatternType.LITERAL,
+      filterType: FilterType.INCLUDE,
+      name: '*',
+    }),
+  ];
+
+  const consumerOffsetSyncOptions = create(ConsumerOffsetSyncOptionsSchema, {
+    groupFilters:
+      values.consumersMode === 'all'
+        ? allNameFilter
+        : values.consumers.map((consumer) =>
+            create(NameFilterSchema, {
+              patternType: consumer.patterType,
+              filterType: consumer.filterType,
+              name: consumer.name,
+            })
+          ),
+  });
+
+  return {
+    value: consumerOffsetSyncOptions,
+    fieldMaskPaths,
+  };
+};
+
+/**
+ * Get update values for ACLs category
+ * Compares form values with original values and returns schema + field mask paths
+ */
+export const getUpdateValuesForACLs = (
+  values: FormValues,
+  originalValues: FormValues
+): UpdateResult<ReturnType<typeof create<typeof SecuritySettingsSyncOptionsSchema>>> => {
+  const fieldMaskPaths: string[] = [];
+
+  // Compare ACL mode and filters
+  const currentACLFilters = values.aclFilters || [];
+  const originalACLFilters = originalValues.aclFilters || [];
+
+  const aclFiltersChanged =
+    values.aclsMode !== originalValues.aclsMode ||
+    currentACLFilters.length !== originalACLFilters.length ||
+    currentACLFilters.some(
+      (acl, idx) =>
+        acl.resourceType !== originalACLFilters[idx]?.resourceType ||
+        acl.resourcePattern !== originalACLFilters[idx]?.resourcePattern ||
+        acl.resourceName !== originalACLFilters[idx]?.resourceName ||
+        acl.principal !== originalACLFilters[idx]?.principal ||
+        acl.operation !== originalACLFilters[idx]?.operation ||
+        acl.permissionType !== originalACLFilters[idx]?.permissionType ||
+        acl.host !== originalACLFilters[idx]?.host
+    );
+
+  if (aclFiltersChanged) {
+    fieldMaskPaths.push('configurations.security_sync_options');
+  }
+
+  // Build security sync options
+  const allACLs = [
+    create(ACLFilterSchema, {
+      resourceFilter: {
+        resourceType: ACLResource.ACL_RESOURCE_ANY,
+        patternType: ACLPattern.ACL_PATTERN_ANY,
+        name: '',
+      },
+      accessFilter: {
+        principal: '',
+        operation: ACLOperation.ACL_OPERATION_ANY,
+        permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ANY,
+        host: '',
+      },
+    }),
+  ];
+
+  const securitySyncOptions = create(SecuritySettingsSyncOptionsSchema, {
+    aclFilters:
+      values.aclsMode === 'all'
+        ? allACLs
+        : currentACLFilters.map((acl) =>
+            create(ACLFilterSchema, {
+              resourceFilter: {
+                resourceType: acl.resourceType,
+                patternType: acl.resourcePattern,
+                name: acl.resourceName || '',
+              },
+              accessFilter: {
+                principal: acl.principal || '',
+                operation: acl.operation,
+                permissionType: acl.permissionType,
+                host: acl.host || '',
+              },
+            })
+          ),
+  });
+
+  return {
+    value: securitySyncOptions,
+    fieldMaskPaths,
+  };
+};
+
+/**
  * Extract TLS settings from shadow link client options
  */
 const extractTLSSettings = (
@@ -311,17 +504,36 @@ export const buildDefaultConnectionValues = (
 };
 
 /**
+ * Check if name filters represent "all" mode (single filter with name='*')
+ */
+const isAllNameFilter = (filters: { name: string; patternType: PatternType; filterType: FilterType }[]): boolean =>
+  filters.length === 1 &&
+  filters[0].name === '*' &&
+  filters[0].patternType === PatternType.LITERAL &&
+  filters[0].filterType === FilterType.INCLUDE;
+
+/**
  * Build default form values for topics category from shadow link configurations
  */
 export const buildDefaultTopicsValues = (
-  _shadowLink: ShadowLink
+  shadowLink: ShadowLink
 ): Pick<FormValues, 'topicsMode' | 'topics' | 'topicProperties'> => {
-  // TODO: Parse _shadowLink.configurations?.topicMetadataSyncOptions when Topics tab is implemented
-  // For now, return defaults
+  const topicMetadataSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
+  const filters = topicMetadataSyncOptions?.autoCreateShadowTopicFilters || [];
+
+  // Check if using "all topics" mode
+  const isAllMode = isAllNameFilter(filters);
+
   return {
-    topicsMode: 'all',
-    topics: [],
-    topicProperties: [],
+    topicsMode: isAllMode ? 'all' : 'specify',
+    topics: isAllMode
+      ? []
+      : filters.map((filter) => ({
+          name: filter.name,
+          patterType: filter.patternType,
+          filterType: filter.filterType,
+        })),
+    topicProperties: topicMetadataSyncOptions?.syncedShadowTopicProperties || [],
   };
 };
 
@@ -329,25 +541,72 @@ export const buildDefaultTopicsValues = (
  * Build default form values for consumer groups category from shadow link configurations
  */
 export const buildDefaultConsumerGroupsValues = (
-  _shadowLink: ShadowLink
+  shadowLink: ShadowLink
 ): Pick<FormValues, 'enableConsumerOffsetSync' | 'consumersMode' | 'consumers'> => {
-  // TODO: Parse _shadowLink.configurations?.consumerOffsetSyncOptions when Consumer Groups tab is implemented
-  // For now, return defaults
+  const consumerOffsetSyncOptions = shadowLink.configurations?.consumerOffsetSyncOptions;
+  const groupFilters = consumerOffsetSyncOptions?.groupFilters || [];
+
+  // Check if using "all consumer groups" mode
+  const isAllMode = isAllNameFilter(groupFilters);
+
   return {
-    enableConsumerOffsetSync: false,
-    consumersMode: 'all',
-    consumers: [],
+    enableConsumerOffsetSync: false, // UI-only field, not stored in backend
+    consumersMode: isAllMode ? 'all' : 'specify',
+    consumers: isAllMode
+      ? []
+      : groupFilters.map((filter) => ({
+          name: filter.name,
+          patterType: filter.patternType,
+          filterType: filter.filterType,
+        })),
   };
+};
+
+/**
+ * Check if ACL filters represent "all" mode (single filter matching any ACL)
+ */
+const isAllACLFilter = (filters: ACLFilter[]): boolean => {
+  if (filters.length !== 1) {
+    return false;
+  }
+
+  const filter = filters[0];
+  const resourceFilter = filter.resourceFilter;
+  const accessFilter = filter.accessFilter;
+
+  return (
+    resourceFilter?.resourceType === ACLResource.ACL_RESOURCE_ANY &&
+    resourceFilter?.patternType === ACLPattern.ACL_PATTERN_ANY &&
+    resourceFilter?.name === '' &&
+    accessFilter?.principal === '' &&
+    accessFilter?.operation === ACLOperation.ACL_OPERATION_ANY &&
+    accessFilter?.permissionType === ACLPermissionType.ACL_PERMISSION_TYPE_ANY &&
+    accessFilter?.host === ''
+  );
 };
 
 /**
  * Build default form values for ACLs category from shadow link configurations
  */
-export const buildDefaultACLsValues = (_shadowLink: ShadowLink): Pick<FormValues, 'aclsMode' | 'aclFilters'> => {
-  // TODO: Parse _shadowLink.configurations?.securitySyncOptions when ACLs tab is implemented
-  // For now, return defaults
+export const buildDefaultACLsValues = (shadowLink: ShadowLink): Pick<FormValues, 'aclsMode' | 'aclFilters'> => {
+  const securitySyncOptions = shadowLink.configurations?.securitySyncOptions;
+  const aclFilters = securitySyncOptions?.aclFilters || [];
+
+  // Check if using "all ACLs" mode
+  const isAllMode = isAllACLFilter(aclFilters);
+
   return {
-    aclsMode: 'all',
-    aclFilters: [],
+    aclsMode: isAllMode ? 'all' : 'specify',
+    aclFilters: isAllMode
+      ? []
+      : aclFilters.map((filter) => ({
+          resourceType: filter.resourceFilter?.resourceType,
+          resourcePattern: filter.resourceFilter?.patternType,
+          resourceName: filter.resourceFilter?.name,
+          principal: filter.accessFilter?.principal,
+          operation: filter.accessFilter?.operation,
+          permissionType: filter.accessFilter?.permissionType,
+          host: filter.accessFilter?.host,
+        })),
   };
 };

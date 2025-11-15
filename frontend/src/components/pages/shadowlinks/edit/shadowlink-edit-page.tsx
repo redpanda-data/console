@@ -28,12 +28,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
+import { ShadowingTab } from './shadowing-tab';
 import {
   buildDefaultACLsValues,
   buildDefaultConnectionValues,
   buildDefaultConsumerGroupsValues,
   buildDefaultTopicsValues,
+  getUpdateValuesForACLs,
   getUpdateValuesForConnection,
+  getUpdateValuesForConsumerGroups,
+  getUpdateValuesForTopics,
 } from './shadowlink-edit-utils';
 import { SourceTab } from './source-tab';
 import { useGetShadowLinkQuery, useUpdateShadowLinkMutation } from '../../../../react-query/api/shadowlink';
@@ -51,12 +55,18 @@ const buildUpdateShadowLinkRequest = (
   // Build original form values for comparison
   const originalValues = buildDefaultFormValues(originalShadowLink);
 
-  // Get update values for connection category
+  // Get update values for all categories
   const connectionUpdate = getUpdateValuesForConnection(values, originalValues);
+  const topicsUpdate = getUpdateValuesForTopics(values, originalValues);
+  const consumerGroupsUpdate = getUpdateValuesForConsumerGroups(values, originalValues);
+  const aclsUpdate = getUpdateValuesForACLs(values, originalValues);
 
-  // Build configurations (only source settings for now)
+  // Build configurations with all category values
   const configurations = create(ShadowLinkConfigurationsSchema, {
     clientOptions: connectionUpdate.value,
+    topicMetadataSyncOptions: topicsUpdate.value,
+    consumerOffsetSyncOptions: consumerGroupsUpdate.value,
+    securitySyncOptions: aclsUpdate.value,
   });
 
   // Build shadow link
@@ -65,9 +75,14 @@ const buildUpdateShadowLinkRequest = (
     configurations,
   });
 
-  // Build field mask with only the fields that changed
+  // Build field mask with all changed field paths from all categories
   const updateMask: FieldMask = create(FieldMaskSchema, {
-    paths: connectionUpdate.fieldMaskPaths,
+    paths: [
+      ...connectionUpdate.fieldMaskPaths,
+      ...topicsUpdate.fieldMaskPaths,
+      ...consumerGroupsUpdate.fieldMaskPaths,
+      ...aclsUpdate.fieldMaskPaths,
+    ],
   });
 
   // Build final request
@@ -170,9 +185,7 @@ export const ShadowLinkEditPage = () => {
             <TabsList>
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="source">Source</TabsTrigger>
-              <TabsTrigger disabled value="replication">
-                Replication
-              </TabsTrigger>
+              <TabsTrigger value="shadowing">Shadowing</TabsTrigger>
               <TabsTrigger disabled value="topic-config">
                 Topic config replication
               </TabsTrigger>
@@ -181,7 +194,7 @@ export const ShadowLinkEditPage = () => {
             <TabsContent value="all">
               <div className="space-y-4">
                 <SourceTab />
-                {/* Additional tabs content will go here in future */}
+                <ShadowingTab />
               </div>
             </TabsContent>
 
@@ -189,8 +202,8 @@ export const ShadowLinkEditPage = () => {
               <SourceTab />
             </TabsContent>
 
-            <TabsContent value="replication">
-              <div>Replication settings (coming soon)</div>
+            <TabsContent value="shadowing">
+              <ShadowingTab />
             </TabsContent>
 
             <TabsContent value="topic-config">
