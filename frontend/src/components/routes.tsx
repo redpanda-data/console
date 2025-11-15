@@ -78,6 +78,7 @@ import SchemaList from './pages/schemas/schema-list';
 import { SecretsStorePage } from './pages/secrets/secrets-store-page';
 import { ShadowLinkCreatePage } from './pages/shadowlinks/create/shadowlink-create-page';
 import { ShadowLinkDetailsPage } from './pages/shadowlinks/details/shadowlink-details-page';
+import { ShadowLinkEditPage } from './pages/shadowlinks/edit/shadowlink-edit-page';
 import { ShadowLinkListPage } from './pages/shadowlinks/list/shadowlink-list-page';
 import TopicDetails from './pages/topics/topic-details';
 import TopicList from './pages/topics/topic-list';
@@ -594,9 +595,10 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Shadow Links',
     LinkIcon,
     true,
-    routeVisibility(false, [Feature.ShadowLinkService])
+    routeVisibility(() => !isEmbedded(), [Feature.ShadowLinkService])
   ),
   MakeRoute<{}>('/shadowlinks/create', ShadowLinkCreatePage, 'Create Shadow Link'),
+  MakeRoute<{ name: string }>('/shadowlinks/:name/edit', ShadowLinkEditPage, 'Edit Shadow Link'),
   MakeRoute<{ name: string }>('/shadowlinks/:name', ShadowLinkDetailsPage, 'Shadow Link Details'),
 
   MakeRoute<{}>(
