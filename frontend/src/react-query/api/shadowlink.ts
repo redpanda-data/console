@@ -33,6 +33,7 @@ import {
   type ListShadowLinkTopicsRequest,
   ListShadowLinkTopicsRequestSchema,
   type ListShadowLinkTopicsResponseSchema,
+  type UpdateShadowLinkResponseSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import {
   createShadowLink,
@@ -41,9 +42,13 @@ import {
   getShadowMetrics,
   listShadowLinks,
   listShadowLinkTopics,
+  updateShadowLink,
 } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { failOver } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink-ShadowLinkService_connectquery';
-import type { CreateShadowLinkRequestSchema } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import type {
+  CreateShadowLinkRequestSchema,
+  UpdateShadowLinkRequestSchema,
+} from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 
 /**
@@ -124,6 +129,24 @@ export const useCreateShadowLinkMutation = (
   const { invalid } = useInvalidateShadowLinkList();
 
   return useMutation(createShadowLink, {
+    onSettled: async (_, error) => {
+      if (!error) {
+        await invalid();
+      }
+    },
+    ...transportOptions,
+  });
+};
+
+/**
+ * Hook to update an existing shadow link
+ */
+export const useUpdateShadowLinkMutation = (
+  transportOptions?: UseMutationOptions<typeof UpdateShadowLinkRequestSchema, typeof UpdateShadowLinkResponseSchema>
+) => {
+  const { invalid } = useInvalidateShadowLinkList();
+
+  return useMutation(updateShadowLink, {
     onSettled: async (_, error) => {
       if (!error) {
         await invalid();
