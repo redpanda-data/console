@@ -49,10 +49,15 @@ export const AdvancedClientOptions = () => {
               control={control}
               name="advanceClientOptions.metadataMaxAgeMs"
               render={({ field }) => (
-                <FormItem data-testid="metadata-max-age-field">
+                <FormItem>
                   <FormLabel>Metadata max age in ms</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                    <Input
+                      testId="metadata-max-age-ms-input"
+                      type="number"
+                      {...field}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
                   </FormControl>
                   <FormDescription>
                     Maximum time in milliseconds before metadata is refreshed. Controls how often the client updates

@@ -125,7 +125,11 @@ export const TopicsStep = () => {
                         render={({ field: nameField }) => (
                           <FormItem className="flex-1">
                             <FormControl>
-                              <Input placeholder="e.g., * or metrics" {...nameField} />
+                              <Input
+                                placeholder="e.g., * or metrics"
+                                testId={`topic-filter-${index}-name`}
+                                {...nameField}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

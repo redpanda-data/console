@@ -45,9 +45,9 @@ export const BootstrapServers = () => {
               control={control}
               name={`bootstrapServers.${index}.value`}
               render={({ field: bootServer }) => (
-                <FormItem className="flex-1" data-testid={`bootstrap-server-input-${index}`}>
+                <FormItem className="flex-1">
                   <FormControl>
-                    <Input placeholder="broker1:9092" {...bootServer} />
+                    <Input placeholder="broker1:9092" testId={`bootstrap-server-input-${index}`} {...bootServer} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

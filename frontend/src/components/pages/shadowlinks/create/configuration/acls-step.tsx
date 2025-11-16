@@ -269,7 +269,11 @@ export const AclsStep = () => {
                                 <FormItem>
                                   <FormLabel>Principal</FormLabel>
                                   <FormControl>
-                                    <Input placeholder="All" {...principalField} />
+                                    <Input
+                                      placeholder="All"
+                                      testId={`acl-filter-${index}-principal`}
+                                      {...principalField}
+                                    />
                                   </FormControl>
                                   <FormDescription>Empty matches all principals</FormDescription>
                                   <FormMessage />

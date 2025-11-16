@@ -125,7 +125,11 @@ export const ConsumerOffsetStep = () => {
                         render={({ field: nameField }) => (
                           <FormItem className="flex-1">
                             <FormControl>
-                              <Input placeholder="e.g., my-consumer-group or prefix-*" {...nameField} />
+                              <Input
+                                placeholder="e.g., my-consumer-group or prefix-*"
+                                testId={`consumer-filter-${index}-name`}
+                                {...nameField}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
