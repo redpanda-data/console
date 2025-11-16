@@ -40,6 +40,7 @@ import {
   getUpdateValuesForTopics,
 } from './shadowlink-edit-utils';
 import { SourceTab } from './source-tab';
+import { TopicConfigTab } from './topic-config-tab';
 import { useGetShadowLinkQuery, useUpdateShadowLinkMutation } from '../../../../react-query/api/shadowlink';
 import { FormSchema, type FormValues } from '../create/model';
 
@@ -183,10 +184,16 @@ export const ShadowLinkEditPage = () => {
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Tabs defaultValue="source">
             <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="source">Source</TabsTrigger>
-              <TabsTrigger value="shadowing">Shadowing</TabsTrigger>
-              <TabsTrigger disabled value="topic-config">
+              <TabsTrigger data-testid="tab-all" value="all">
+                All
+              </TabsTrigger>
+              <TabsTrigger data-testid="tab-source" value="source">
+                Source
+              </TabsTrigger>
+              <TabsTrigger data-testid="tab-shadowing" value="shadowing">
+                Shadowing
+              </TabsTrigger>
+              <TabsTrigger data-testid="tab-topic-config" value="topic-config">
                 Topic config replication
               </TabsTrigger>
             </TabsList>
@@ -195,6 +202,7 @@ export const ShadowLinkEditPage = () => {
               <div className="space-y-4">
                 <SourceTab />
                 <ShadowingTab />
+                <TopicConfigTab />
               </div>
             </TabsContent>
 
@@ -207,7 +215,7 @@ export const ShadowLinkEditPage = () => {
             </TabsContent>
 
             <TabsContent value="topic-config">
-              <div>Topic config replication settings (coming soon)</div>
+              <TopicConfigTab />
             </TabsContent>
           </Tabs>
 

@@ -99,6 +99,7 @@ export const FormSchema = z
     ),
     // Topic properties
     topicProperties: z.array(z.string()).optional(),
+    excludeDefault: z.boolean(),
 
     // Consumer offset sync
     enableConsumerOffsetSync: z.boolean(),
@@ -225,6 +226,7 @@ export const initialValues: FormValues = {
   topicsMode: 'all',
   topics: [],
   topicProperties: [],
+  excludeDefault: false,
   enableConsumerOffsetSync: false,
   consumersMode: 'all',
   consumers: [],

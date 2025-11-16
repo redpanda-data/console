@@ -9,10 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
-import { FilterType, PatternType, ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { describe, expect, test } from 'vitest';
+import { create } from '@bufbuild/protobuf';
+import { ShadowLinkSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import {
+  FilterType,
+  NameFilterSchema,
+  PatternType,
+  ScramMechanism,
+  ShadowLinkConfigurationsSchema,
+  TopicMetadataSyncOptionsSchema,
+} from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { describe, expect, it, test } from 'vitest';
 
-import { getUpdateValuesForTopics } from './shadowlink-edit-utils';
+import { buildDefaultTopicsValues, getUpdateValuesForTopics } from './shadowlink-edit-utils';
 import type { FormValues } from '../create/model';
 import { TLS_MODE } from '../create/model';
 
@@ -46,6 +55,7 @@ const baseFormValues: FormValues = {
   topicsMode: 'all',
   topics: [],
   topicProperties: [],
+  excludeDefault: false,
   enableConsumerOffsetSync: false,
   consumersMode: 'all',
   consumers: [],
@@ -443,6 +453,259 @@ describe('getUpdateValuesForTopics', () => {
       expect(result.value.autoCreateShadowTopicFilters[0].patternType).toBe(PatternType.LITERAL);
       expect(result.value.autoCreateShadowTopicFilters[0].filterType).toBe(FilterType.INCLUDE);
       expect(result.value.syncedShadowTopicProperties).toEqual([]);
+    });
+  });
+
+  describe('buildDefaultTopicsValues', () => {
+    describe('All Topics Mode', () => {
+      it('should return "all" mode when filter is single wildcard (*)', () => {
+        const shadowLink = create(ShadowLinkSchema, {
+          name: 'test-link',
+          uid: 'uid-123',
+          syncedShadowTopicProperties: [],
+          configurations: create(ShadowLinkConfigurationsSchema, {
+            topicMetadataSyncOptions: create(TopicMetadataSyncOptionsSchema, {
+              autoCreateShadowTopicFilters: [
+                create(NameFilterSchema, {
+                  name: '*',
+                  patternType: PatternType.LITERAL,
+                  filterType: FilterType.INCLUDE,
+                }),
+              ],
+            }),
+          }),
+        });
+
+        const result = buildDefaultTopicsValues(shadowLink);
+
+        expect(result.topicsMode).toBe('all');
+      });
+
+      it('should return empty topics array in "all" mode', () => {
+        const shadowLink = create(ShadowLinkSchema, {
+          name: 'test-link',
+          uid: 'uid-123',
+          syncedShadowTopicProperties: [],
+          configurations: create(ShadowLinkConfigurationsSchema, {
+            topicMetadataSyncOptions: create(TopicMetadataSyncOptionsSchema, {
+              autoCreateShadowTopicFilters: [
+                create(NameFilterSchema, {
+                  name: '*',
+                  patternType: PatternType.LITERAL,
+                  filterType: FilterType.INCLUDE,
+                }),
+              ],
+            }),
+          }),
+        });
+
+        const result = buildDefaultTopicsValues(shadowLink);
+
+        expect(result.topics).toEqual([]);
+      });
+
+      it('should extract topicProperties from shadowLink.syncedShadowTopicProperties', () => {
+        const shadowLink = create(ShadowLinkSchema, {
+          name: 'test-link',
+          uid: 'uid-123',
+          syncedShadowTopicProperties: ['retention.bytes', 'compression.type'],
+          configurations: create(ShadowLinkConfigurationsSchema, {
+            topicMetadataSyncOptions: create(TopicMetadataSyncOptionsSchema, {
+              autoCreateShadowTopicFilters: [
+                create(NameFilterSchema, {
+                  name: '*',
+                  patternType: PatternType.LITERAL,
+                  filterType: FilterType.INCLUDE,
+                }),
+              ],
+            }),
+          }),
+        });
+
+        const result = buildDefaultTopicsValues(shadowLink);
+
+        expect(result.topicProperties).toEqual(['retention.bytes', 'compression.type']);
+      });
+
+      it('should extract excludeDefault from topicMetadataSyncOptions', () => {
+        const shadowLink = create(ShadowLinkSchema, {
+          name: 'test-link',
+          uid: 'uid-123',
+          syncedShadowTopicProperties: [],
+          configurations: create(ShadowLinkConfigurationsSchema, {
+            topicMetadataSyncOptions: create(TopicMetadataSyncOptionsSchema, {
+              autoCreateShadowTopicFilters: [
+                create(NameFilterSchema, {
+                  name: '*',
+                  patternType: PatternType.LITERAL,
+                  filterType: FilterType.INCLUDE,
+                }),
+              ],
+              excludeDefault: true,
+            }),
+          }),
+        });
+
+        const result = buildDefaultTopicsValues(shadowLink);
+
+        expect(result.excludeDefault).toBe(true);
+      });
+    });
+
+    describe('Specify Topics Mode', () => {
+      it('should return "specify" mode when filters are not wildcard', () => {
+        const shadowLink = create(ShadowLinkSchema, {
+          name: 'test-link',
+          uid: 'uid-123',
+          syncedShadowTopicProperties: [],
+          configurations: create(ShadowLinkConfigurationsSchema, {
+            topicMetadataSyncOptions: create(TopicMetadataSyncOptionsSchema, {
+              autoCreateShadowTopicFilters: [
+                create(NameFilterSchema, {
+                  name: 'my-topic',
+                  patternType: PatternType.LITERAL,
+                  filterType: FilterType.INCLUDE,
+                }),
+              ],
+            }),
+          }),
+        });
+
+        const result = buildDefaultTopicsValues(shadowLink);
+
+        expect(result.topicsMode).toBe('specify');
+      });
+
+      it('should map filters correctly with name, patterType, filterType', () => {
+        const shadowLink = create(ShadowLinkSchema, {
+          name: 'test-link',
+          uid: 'uid-123',
+          syncedShadowTopicProperties: [],
+          configurations: create(ShadowLinkConfigurationsSchema, {
+            topicMetadataSyncOptions: create(TopicMetadataSyncOptionsSchema, {
+              autoCreateShadowTopicFilters: [
+                create(NameFilterSchema, {
+                  name: 'my-topic',
+                  patternType: PatternType.LITERAL,
+                  filterType: FilterType.INCLUDE,
+                }),
+              ],
+            }),
+          }),
+        });
+
+        const result = buildDefaultTopicsValues(shadowLink);
+
+        expect(result.topics).toEqual([
+          {
+            name: 'my-topic',
+            patterType: PatternType.LITERAL,
+            filterType: FilterType.INCLUDE,
+          },
+        ]);
+      });
+
+      it('should handle multiple filters', () => {
+        const shadowLink = create(ShadowLinkSchema, {
+          name: 'test-link',
+          uid: 'uid-123',
+          syncedShadowTopicProperties: [],
+          configurations: create(ShadowLinkConfigurationsSchema, {
+            topicMetadataSyncOptions: create(TopicMetadataSyncOptionsSchema, {
+              autoCreateShadowTopicFilters: [
+                create(NameFilterSchema, {
+                  name: 'topic-1',
+                  patternType: PatternType.LITERAL,
+                  filterType: FilterType.INCLUDE,
+                }),
+                create(NameFilterSchema, {
+                  name: 'topic-2',
+                  patternType: PatternType.PREFIX,
+                  filterType: FilterType.EXCLUDE,
+                }),
+              ],
+            }),
+          }),
+        });
+
+        const result = buildDefaultTopicsValues(shadowLink);
+
+        expect(result.topics).toHaveLength(2);
+        expect(result.topics[0]).toEqual({
+          name: 'topic-1',
+          patterType: PatternType.LITERAL,
+          filterType: FilterType.INCLUDE,
+        });
+        expect(result.topics[1]).toEqual({
+          name: 'topic-2',
+          patterType: PatternType.PREFIX,
+          filterType: FilterType.EXCLUDE,
+        });
+      });
+    });
+
+    describe('Default Values & Edge Cases', () => {
+      it('should default excludeDefault to false when undefined', () => {
+        const shadowLink = create(ShadowLinkSchema, {
+          name: 'test-link',
+          uid: 'uid-123',
+          syncedShadowTopicProperties: [],
+          configurations: create(ShadowLinkConfigurationsSchema, {
+            topicMetadataSyncOptions: create(TopicMetadataSyncOptionsSchema, {
+              autoCreateShadowTopicFilters: [
+                create(NameFilterSchema, {
+                  name: '*',
+                  patternType: PatternType.LITERAL,
+                  filterType: FilterType.INCLUDE,
+                }),
+              ],
+            }),
+          }),
+        });
+
+        const result = buildDefaultTopicsValues(shadowLink);
+
+        expect(result.excludeDefault).toBe(false);
+      });
+
+      it('should return empty topicProperties array when undefined', () => {
+        const shadowLink = create(ShadowLinkSchema, {
+          name: 'test-link',
+          uid: 'uid-123',
+          syncedShadowTopicProperties: [],
+          configurations: create(ShadowLinkConfigurationsSchema, {
+            topicMetadataSyncOptions: create(TopicMetadataSyncOptionsSchema, {
+              autoCreateShadowTopicFilters: [
+                create(NameFilterSchema, {
+                  name: '*',
+                  patternType: PatternType.LITERAL,
+                  filterType: FilterType.INCLUDE,
+                }),
+              ],
+            }),
+          }),
+        });
+
+        const result = buildDefaultTopicsValues(shadowLink);
+
+        expect(result.topicProperties).toEqual([]);
+      });
+
+      it('should handle missing topicMetadataSyncOptions gracefully', () => {
+        const shadowLink = create(ShadowLinkSchema, {
+          name: 'test-link',
+          uid: 'uid-123',
+          syncedShadowTopicProperties: [],
+          configurations: create(ShadowLinkConfigurationsSchema, {}),
+        });
+
+        const result = buildDefaultTopicsValues(shadowLink);
+
+        expect(result.topicsMode).toBe('specify');
+        expect(result.topics).toEqual([]);
+        expect(result.topicProperties).toEqual([]);
+        expect(result.excludeDefault).toBe(false);
+      });
     });
   });
 });

@@ -201,8 +201,8 @@ export const getUpdateValuesForTopics = (
 ): UpdateResult<ReturnType<typeof create<typeof TopicMetadataSyncOptionsSchema>>> => {
   const fieldMaskPaths: string[] = [];
 
-  // Compare all topic configuration (mode, filters, and properties)
-  const topicConfigChanged =
+  // Compare topic filters (mode and filters)
+  const topicFiltersChanged =
     values.topicsMode !== originalValues.topicsMode ||
     values.topics.length !== originalValues.topics.length ||
     values.topics.some(
@@ -210,11 +210,23 @@ export const getUpdateValuesForTopics = (
         topic.name !== originalValues.topics[idx]?.name ||
         topic.patterType !== originalValues.topics[idx]?.patterType ||
         topic.filterType !== originalValues.topics[idx]?.filterType
-    ) ||
-    !arraysEqual(values.topicProperties || [], originalValues.topicProperties || []);
+    );
+
+  // Compare topic properties
+  const topicPropertiesChanged = !arraysEqual(values.topicProperties || [], originalValues.topicProperties || []);
+
+  // Compare excludeDefault
+  const excludeDefaultChanged = values.excludeDefault !== originalValues.excludeDefault;
+
+  // If filters or properties changed, use parent path (covers all children including excludeDefault)
+  const topicConfigChanged = topicFiltersChanged || topicPropertiesChanged;
 
   if (topicConfigChanged) {
+    // Parent path includes filters, properties, AND excludeDefault
     fieldMaskPaths.push('configurations.topic_metadata_sync_options');
+  } else if (excludeDefaultChanged) {
+    // Only excludeDefault changed independently
+    fieldMaskPaths.push('configurations.topic_metadata_sync_options.exclude_default');
   }
 
   // Build topic metadata sync options
@@ -238,6 +250,7 @@ export const getUpdateValuesForTopics = (
             })
           ),
     syncedShadowTopicProperties: values.topicProperties || [],
+    excludeDefault: values.excludeDefault,
   });
 
   return {
@@ -517,7 +530,7 @@ const isAllNameFilter = (filters: { name: string; patternType: PatternType; filt
  */
 export const buildDefaultTopicsValues = (
   shadowLink: ShadowLink
-): Pick<FormValues, 'topicsMode' | 'topics' | 'topicProperties'> => {
+): Pick<FormValues, 'topicsMode' | 'topics' | 'topicProperties' | 'excludeDefault'> => {
   const topicMetadataSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
   const filters = topicMetadataSyncOptions?.autoCreateShadowTopicFilters || [];
 
@@ -533,7 +546,9 @@ export const buildDefaultTopicsValues = (
           patterType: filter.patternType,
           filterType: filter.filterType,
         })),
-    topicProperties: topicMetadataSyncOptions?.syncedShadowTopicProperties || [],
+    // Use the computed list from shadowLink which includes defaults merged with custom properties
+    topicProperties: shadowLink.syncedShadowTopicProperties || [],
+    excludeDefault: topicMetadataSyncOptions?.excludeDefault ?? false,
   };
 };
 
