@@ -7,10 +7,6 @@ on:
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-verify.yml"
-    branches-ignore:
-      - "dependabot/**"
-      - "snyk-upgrade-**"
-      - "gh-readonly-queue/**"
   pull_request:
     paths:
       - "frontend/**"
