@@ -165,7 +165,9 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
                           <FormErrorMessage>
                             <UnorderedList>
                               {state.meta.errors?.map((error) => (
+                                // biome-ignore lint/suspicious/noExplicitAny: error type from @tanstack/react-form is not properly typed
                                 <li key={(error as any)?.path ?? ''}>
+                                  {/* biome-ignore lint/suspicious/noExplicitAny: error type from @tanstack/react-form is not properly typed */}
                                   <Text color="red.500">{(error as any)?.message ?? 'Validation error'}</Text>
                                 </li>
                               ))}
