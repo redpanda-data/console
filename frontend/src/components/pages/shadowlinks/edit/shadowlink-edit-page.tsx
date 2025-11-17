@@ -22,8 +22,8 @@ import {
   ShadowLinkSchema,
   UpdateShadowLinkRequestSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import { type FieldErrors, useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
@@ -135,6 +135,9 @@ export const ShadowLinkEditPage = () => {
     },
   });
 
+  // Track current active tab
+  const [currentTab, setCurrentTab] = useState<string>('source');
+
   // Initialize form with values that automatically update when shadowLink data changes
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
@@ -148,6 +151,69 @@ export const ShadowLinkEditPage = () => {
     }
     const request = buildUpdateShadowLinkRequest(name, values, shadowLink);
     void updateShadowLink(request);
+  };
+
+  /**
+   * Map form field to its corresponding tab
+   */
+  const getTabForField = (fieldName: string): string => {
+    const fieldToTabMap: Record<string, string> = {
+      // Source tab fields
+      name: 'source',
+      bootstrapServers: 'source',
+      useScram: 'source',
+      scramCredentials: 'source',
+      advanceClientOptions: 'source',
+      useTls: 'source',
+      useMtls: 'source',
+      mtls: 'source',
+      // Shadowing tab fields
+      topicsMode: 'shadowing',
+      topics: 'shadowing',
+      consumersMode: 'shadowing',
+      consumers: 'shadowing',
+      aclsMode: 'shadowing',
+      aclFilters: 'shadowing',
+      // Topic config tab fields
+      topicProperties: 'topic-config',
+      excludeDefault: 'topic-config',
+    };
+
+    return fieldToTabMap[fieldName] || 'source';
+  };
+
+  /**
+   * Handle validation errors on form submit
+   * Navigate to the tab containing the first error
+   */
+  const onValidationError = (errors: FieldErrors<FormValues>) => {
+    // Find the first field with an error
+    const firstErrorField = Object.keys(errors)[0];
+
+    if (firstErrorField) {
+      // Get the tab that contains this field
+      const errorTab = getTabForField(firstErrorField);
+
+      // Navigate to that tab
+      setCurrentTab(errorTab);
+
+      // Get error count
+      const errorCount = Object.keys(errors).length;
+
+      // Format tab name for display
+      const tabDisplayNames: Record<string, string> = {
+        source: 'Source',
+        shadowing: 'Shadowing',
+        'topic-config': 'Topic config',
+        all: 'All',
+      };
+      const tabName = tabDisplayNames[errorTab] || errorTab;
+
+      // Show toast notification with tab information
+      toast.error(`Found ${errorCount} validation ${errorCount === 1 ? 'error' : 'errors'}`, {
+        description: `Navigated to ${tabName} tab`,
+      });
+    }
   };
 
   useEffect(() => {
@@ -181,8 +247,8 @@ export const ShadowLinkEditPage = () => {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <Tabs defaultValue="source">
+        <form onSubmit={form.handleSubmit(onSubmit, onValidationError)}>
+          <Tabs onValueChange={setCurrentTab} value={currentTab}>
             <TabsList>
               <TabsTrigger data-testid="tab-all" value="all">
                 All
