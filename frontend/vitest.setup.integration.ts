@@ -7,11 +7,11 @@ import './tests/mock-react-select';
 // These tests run in jsdom environment and need browser API mocks
 
 // Mock ResizeObserver - not available in jsdom but required by RadixUI components
-const ResizeObserverMock = vi.fn(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
+class ResizeObserverMock {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+}
 
 vi.stubGlobal('ResizeObserver', ResizeObserverMock);
 

@@ -35,7 +35,17 @@ export default defineConfig(({ mode }) => {
       },
       server: {
         deps: {
-          inline: ['katex'],
+          inline: [
+            'katex',
+            'streamdown',
+            'rehype-harden',
+            'character-entities',
+            'decode-named-character-reference',
+            'parse-entities',
+            'stringify-entities',
+            'character-entities-html4',
+            'character-entities-legacy',
+          ],
         },
       },
       alias: [
