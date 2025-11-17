@@ -52,7 +52,7 @@ import GroupDetails from './pages/consumers/group-details';
 import GroupList from './pages/consumers/group-list';
 import KnowledgeBaseCreate from './pages/knowledgebase/knowledge-base-create';
 import KnowledgeBaseDetails from './pages/knowledgebase/knowledge-base-details';
-import KnowledgeBaseList from './pages/knowledgebase/knowledge-base-list';
+import { KnowledgeBaseListPage } from './pages/knowledgebase/knowledge-base-list-page';
 import { RemoteMCPCreatePage } from './pages/mcp-servers/create/remote-mcp-create-page';
 import { RemoteMCPDetailsPage } from './pages/mcp-servers/details/remote-mcp-details-page';
 import { RemoteMCPListPage } from './pages/mcp-servers/list/remote-mcp-list-page';
@@ -434,7 +434,7 @@ export const APP_ROUTES: IRouteEntry[] = [
 
   MakeRoute<{}>(
     '/knowledgebases',
-    KnowledgeBaseList,
+    KnowledgeBaseListPage,
     'Knowledge Bases',
     BookOpenIcon,
     true,
