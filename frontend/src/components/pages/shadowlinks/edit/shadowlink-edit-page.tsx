@@ -212,6 +212,7 @@ export const ShadowLinkEditPage = () => {
       // Show toast notification with tab information
       toast.error(`Found ${errorCount} validation ${errorCount === 1 ? 'error' : 'errors'}`, {
         description: `Navigated to ${tabName} tab`,
+        testId: 'validation-error-toast',
       });
     }
   };
