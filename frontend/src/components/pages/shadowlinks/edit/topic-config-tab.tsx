@@ -33,14 +33,14 @@ import {
   getPropertiesByCategory,
   isPropertyAlwaysReplicated,
   isPropertyEditable,
-  type MirroringStatus,
+  type ShadowingStatus,
 } from './topic-properties-config';
 import type { FormValues } from '../create/model';
 
 /**
  * Get badge variant based on status
  */
-const getBadgeVariant = (status: MirroringStatus): BadgeVariant => {
+const getBadgeVariant = (status: ShadowingStatus): BadgeVariant => {
   switch (status) {
     case 'always':
       return 'green';
@@ -58,7 +58,7 @@ const getBadgeVariant = (status: MirroringStatus): BadgeVariant => {
 /**
  * Format status label for display
  */
-const formatStatusLabel = (status: MirroringStatus): string => {
+const formatStatusLabel = (status: ShadowingStatus): string => {
   switch (status) {
     case 'always':
       return 'Always';
@@ -76,7 +76,7 @@ const formatStatusLabel = (status: MirroringStatus): string => {
 /**
  * Get tooltip message for disabled properties
  */
-const getTooltipMessage = (property: { status: MirroringStatus[] }): string | null => {
+const getTooltipMessage = (property: { status: ShadowingStatus[] }): string | null => {
   if (property.status.includes('always')) {
     return 'Required property - always replicated to shadow cluster';
   }
@@ -92,7 +92,7 @@ const getTooltipMessage = (property: { status: MirroringStatus[] }): string | nu
 type TopicPropertyItemProps = {
   property: {
     name: string;
-    status: MirroringStatus[];
+    status: ShadowingStatus[];
   };
   isSelected: boolean;
   isEditable: boolean;

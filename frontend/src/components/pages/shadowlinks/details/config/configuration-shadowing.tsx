@@ -26,7 +26,7 @@ import {
   getResourceTypeLabel,
 } from '../../shadowlink-helpers';
 
-export interface ConfigurationMirroringProps {
+export interface ConfigurationShadowingProps {
   shadowLink: ShadowLink;
 }
 
@@ -166,7 +166,7 @@ const ACLFilterSection = ({ filters }: { filters: ACLFilter[] }) => {
   );
 };
 
-export const ConfigurationMirroring = ({ shadowLink }: ConfigurationMirroringProps) => {
+export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingProps) => {
   const topicSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
   const consumerSyncOptions = shadowLink.configurations?.consumerOffsetSyncOptions;
   const securitySyncOptions = shadowLink.configurations?.securitySyncOptions;
