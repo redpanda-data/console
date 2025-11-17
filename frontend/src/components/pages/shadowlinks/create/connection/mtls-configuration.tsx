@@ -173,7 +173,7 @@ export const MtlsConfiguration = () => {
                           Upload
                         </TabsTrigger>
                         <TabsTrigger data-testid="mtls-mode-file-path-tab" value="file_path">
-                          File Path
+                          File path
                         </TabsTrigger>
                       </TabsList>
                     </Tabs>

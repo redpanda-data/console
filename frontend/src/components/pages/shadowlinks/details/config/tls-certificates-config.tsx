@@ -43,7 +43,7 @@ export const TlsCertificatesConfig = ({ tlsSettings }: TlsCertificatesConfigProp
   if (tlsSettings?.tlsSettings?.case === 'tlsFileSettings') {
     const caPath = tlsSettings.tlsSettings.value.caPath;
     caCertificateLabel = caPath || '-';
-    certificateInputMethod = 'File Path';
+    certificateInputMethod = 'File path';
   } else if (tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
     caCertificateLabel = 'ca-cert.pem';
     certificateInputMethod = 'Upload';
@@ -90,7 +90,7 @@ export const TlsCertificatesConfig = ({ tlsSettings }: TlsCertificatesConfigProp
       <ConfigField
         label="CA certificate"
         testId="ca-certificate"
-        value={<CertificateValue isFilePath={certificateInputMethod === 'File Path'} value={caCertificateLabel} />}
+        value={<CertificateValue isFilePath={certificateInputMethod === 'File path'} value={caCertificateLabel} />}
       />
       {isMtlsEnabled && (
         <>
@@ -98,13 +98,13 @@ export const TlsCertificatesConfig = ({ tlsSettings }: TlsCertificatesConfigProp
             label="Client certificate"
             testId="client-certificate"
             value={
-              <CertificateValue isFilePath={certificateInputMethod === 'File Path'} value={clientCertificateLabel} />
+              <CertificateValue isFilePath={certificateInputMethod === 'File path'} value={clientCertificateLabel} />
             }
           />
           <ConfigField
             label="Client private key"
             testId="client-key"
-            value={<CertificateValue isFilePath={certificateInputMethod === 'File Path'} value={clientKeyLabel} />}
+            value={<CertificateValue isFilePath={certificateInputMethod === 'File path'} value={clientKeyLabel} />}
           />
         </>
       )}

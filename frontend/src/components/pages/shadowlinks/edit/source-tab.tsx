@@ -24,7 +24,7 @@ export const SourceTab = () => {
 
   return (
     <div className="space-y-4">
-      {/* Shadow Link Name (Read-only) */}
+      {/* Shadow link name (Read-only) */}
       <Card size="full">
         <CardHeader>Name</CardHeader>
         <CardContent>

@@ -33,7 +33,7 @@ export const ConnectionStep = () => {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel required>Shadow Link Name</FormLabel>
+                <FormLabel required>Shadow link name</FormLabel>
                 <FormControl>
                   <Input placeholder="my-shadow-link" {...field} />
                 </FormControl>

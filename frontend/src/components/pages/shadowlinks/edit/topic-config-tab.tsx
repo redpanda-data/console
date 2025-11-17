@@ -224,7 +224,7 @@ export const TopicConfigTab = () => {
       <Card className="gap-0" size="full">
         <CardHeader>
           <div className="space-y-2">
-            <CardTitle>Topic config replication</CardTitle>
+            <CardTitle>Topic properties shadowed</CardTitle>
             <Text variant="muted">
               Toggle replication on and off for specific topic configurations. When enabled, the configuration will be
               replicated to the shadow cluster.

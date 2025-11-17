@@ -146,7 +146,7 @@ export const ShadowLinkDetailsPage = () => {
       {/* Action Buttons */}
       <div className="flex justify-end gap-3">
         <Button onClick={() => openFailoverDialog()} size="sm" variant="outline">
-          Failover All Topics
+          Failover all topics
         </Button>
 
         <Button onClick={() => navigate(`/shadowlinks/${name}/edit`)} size="sm" variant="outline">

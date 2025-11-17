@@ -67,7 +67,7 @@ const { Stepper } = defineStepper(
 // Update page title using uiState pattern
 export const updatePageTitle = () => {
   runInAction(() => {
-    uiState.pageTitle = 'Create Shadow Link';
+    uiState.pageTitle = 'Create shadow link';
     uiState.pageBreadcrumbs = [
       { title: 'Shadow Links', linkTo: '/shadowlinks' },
       { title: 'Create', linkTo: '/shadowlinks/create' },
@@ -275,9 +275,9 @@ export const ShadowLinkCreatePage = () => {
     <div className="flex flex-col gap-4">
       {/* Header */}
       <div className="space-y-2">
-        <Heading level={1}>Create Shadow Link</Heading>
+        <Heading level={1}>Create shadow link</Heading>
         <Text variant="muted">
-          Set up a new shadow link to replicate topics from a source cluster for disaster recovery.
+          Set up a shadow link to replicate topics from a source cluster for disaster recovery.
         </Text>
       </div>
 
@@ -320,7 +320,7 @@ export const ShadowLinkCreatePage = () => {
               <Stepper.Controls className="flex justify-start">
                 {methods.isLast ? (
                   <Button disabled={isCreating} onClick={form.handleSubmit(onSubmit)} variant="secondary">
-                    Create Shadow Link
+                    Create shadow link
                   </Button>
                 ) : (
                   <Button onClick={() => next(methods)} type="button" variant="secondary">

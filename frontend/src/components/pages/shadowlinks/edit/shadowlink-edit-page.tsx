@@ -261,7 +261,7 @@ export const ShadowLinkEditPage = () => {
                 Shadowing
               </TabsTrigger>
               <TabsTrigger data-testid="tab-topic-config" value="topic-config">
-                Topic config replication
+                Topic properties shadowed
               </TabsTrigger>
             </TabsList>
 

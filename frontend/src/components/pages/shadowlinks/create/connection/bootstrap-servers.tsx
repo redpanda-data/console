@@ -38,7 +38,7 @@ export const BootstrapServers = () => {
         <CardTitle>Source cluster</CardTitle>
       </CardHeader>
       <CardContent>
-        <FormLabel required>Bootstrap Servers</FormLabel>
+        <FormLabel required>Bootstrap servers</FormLabel>
         {bootstrapServerFields.map((field, index) => (
           <div className="flex items-start gap-2" data-testid={`bootstrap-server-row-${index}`} key={field.id}>
             <FormField

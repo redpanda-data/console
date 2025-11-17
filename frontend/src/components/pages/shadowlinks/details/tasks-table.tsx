@@ -33,7 +33,7 @@ export const TasksTable = ({ tasks, onRefresh }: TasksTableProps) => {
   const columns = useMemo(
     () => [
       columnHelper.accessor('name', {
-        header: 'Task Name',
+        header: 'Task name',
         size: 250,
         cell: (info) => (
           <Text className="font-medium" variant="default">
