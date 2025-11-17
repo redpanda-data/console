@@ -22,7 +22,10 @@ import {
   isBakedInTrial,
   prettyLicenseType,
 } from 'components/license/license-utils';
-import JSONBigInt from 'json-bigint';
+import JSONBigIntFactory from 'json-bigint';
+
+const JSONBigInt = JSONBigIntFactory({ storeAsString: true });
+
 import { comparer, computed, observable, runInAction, transaction } from 'mobx';
 import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
@@ -2929,10 +2932,11 @@ export function createMessageSearch() {
                 m.key.payload = keyPayload;
                 m.key.normalizedPayload = key?.normalizedPayload;
 
+                // Only parse JSON payloads with JSONBigInt to preserve large integer precision
                 try {
                   m.key.payload = JSONBigInt.parse(keyPayload);
                 } catch {
-                  // no op - payload may not be JSON
+                  // no op - payload may not be valid JSON
                 }
 
                 m.key.troubleshootReport = key?.troubleshootReport;
@@ -3008,10 +3012,11 @@ export function createMessageSearch() {
                 m.valueJson = valuePayload;
                 m.value.isPayloadTooLarge = val?.isPayloadTooLarge;
 
+                // Only parse JSON payloads with JSONBigInt to preserve large integer precision
                 try {
                   m.value.payload = JSONBigInt.parse(valuePayload);
                 } catch {
-                  // no op - payload may not be JSON
+                  // no op - payload may not be valid JSON
                 }
 
                 m.valueJson = valuePayload;
