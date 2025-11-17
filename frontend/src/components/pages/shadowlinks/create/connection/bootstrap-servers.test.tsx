@@ -177,13 +177,15 @@ describe('BootstrapServers', () => {
       const input1 = getBootstrapInput(1);
       fireEvent.change(input1, { target: { value: 'kafka2.example.com:9092' } });
 
-      const disabledTab = screen.getByTestId('tls-disabled-tab');
-      fireEvent.click(disabledTab);
+      const tlsToggle = screen.getByTestId('tls-toggle');
+
+      // TLS is enabled by default (initialValues.useTls = true), so clicking will disable it
+      fireEvent.click(tlsToggle);
 
       await waitFor(() => {
         expect(input0).toHaveValue('kafka1.example.com:9092');
         expect(input1).toHaveValue('kafka2.example.com:9092');
-        expect(disabledTab).toHaveAttribute('aria-selected', 'true');
+        expect(tlsToggle).not.toBeChecked();
       });
     });
   });

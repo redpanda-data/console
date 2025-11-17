@@ -19,10 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
+import { Switch } from 'components/redpanda-ui/components/switch';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useFormContext, useWatch } from 'react-hook-form';
 
-import { Tabs, TabsList, TabsTrigger } from '../../../../redpanda-ui/components/tabs';
 import type { FormValues } from '../model';
 
 export const ScramConfiguration = () => {
@@ -38,21 +38,10 @@ export const ScramConfiguration = () => {
         control={control}
         name="useScram"
         render={({ field }) => (
-          <FormItem className="flex flex-col">
-            <div>
-              <FormLabel>Use SCRAM authentication</FormLabel>
-            </div>
+          <FormItem className="flex flex-row items-center gap-3">
+            <FormLabel>Use SCRAM authentication</FormLabel>
             <FormControl>
-              <Tabs onValueChange={(value) => field.onChange(value === 'true')} value={String(field.value)}>
-                <TabsList variant="default">
-                  <TabsTrigger data-testid="scram-enabled-tab" value="true">
-                    Enabled
-                  </TabsTrigger>
-                  <TabsTrigger data-testid="scram-disabled-tab" value="false">
-                    Disabled
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <Switch checked={field.value} onCheckedChange={field.onChange} testId="scram-toggle" />
             </FormControl>
           </FormItem>
         )}
