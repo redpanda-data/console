@@ -11,18 +11,63 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
+import { Input } from 'components/redpanda-ui/components/input';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { useFormContext, useWatch } from 'react-hook-form';
+import type { Control, FieldErrors } from 'react-hook-form';
+import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { CertificateDialog, type CertificateType } from './certificate-dialog';
+import { Text } from '../../../../redpanda-ui/components/typography';
 import type { FormValues } from '../model';
+
+interface MtlsCertificatesUploadProps {
+  control: Control<FormValues>;
+  errors: FieldErrors<FormValues>;
+  renderCertificateButton: (certType: CertificateType) => React.ReactNode;
+}
+
+const MtlsCertificatesUpload = ({ control, errors, renderCertificateButton }: MtlsCertificatesUploadProps) => (
+  <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
+      <FormField
+        control={control}
+        name="mtls.ca"
+        render={() => <FormItem className="w-1/2">{renderCertificateButton('ca')}</FormItem>}
+      />
+
+      <FormField
+        control={control}
+        name="mtls.clientCert"
+        render={() => <FormItem className="w-1/2">{renderCertificateButton('clientCert')}</FormItem>}
+      />
+
+      <FormField
+        control={control}
+        name="mtls.clientKey"
+        render={() => <FormItem className="w-1/2">{renderCertificateButton('clientKey')}</FormItem>}
+      />
+    </div>
+
+    {(errors.mtls?.ca || errors.mtls?.clientCert || errors.mtls?.clientKey) && (
+      <div className="flex flex-col gap-1" data-testid="mtls-certificates-errors">
+        {errors.mtls?.ca?.message && <Text className="text-destructive text-sm">{String(errors.mtls.ca.message)}</Text>}
+        {errors.mtls?.clientCert?.message && (
+          <Text className="text-destructive text-sm">{String(errors.mtls.clientCert.message)}</Text>
+        )}
+        {errors.mtls?.clientKey?.message && (
+          <Text className="text-destructive text-sm">{String(errors.mtls.clientKey.message)}</Text>
+        )}
+      </div>
+    )}
+  </div>
+);
 
 export const MtlsConfiguration = () => {
   const { control, setValue } = useFormContext<FormValues>();
+  const { errors } = useFormState({ control });
   const useTls = useWatch({ control, name: 'useTls' });
-  const useMtls = useWatch({ control, name: 'useMtls' });
   const mtlsMode = useWatch({ control, name: 'mtlsMode' });
   const mtls = useWatch({ control, name: 'mtls' });
 
@@ -57,6 +102,19 @@ export const MtlsConfiguration = () => {
         return 'Client private key';
       default:
         return 'Certificate';
+    }
+  };
+
+  const getCertificatePlaceholder = (certType: CertificateType): string => {
+    switch (certType) {
+      case 'ca':
+        return '/etc/redpanda/certs/ca.crt';
+      case 'clientCert':
+        return '/etc/redpanda/certs/client.crt';
+      case 'clientKey':
+        return '/etc/redpanda/certs/client.key';
+      default:
+        return '/path/to/certificate';
     }
   };
 
@@ -118,25 +176,76 @@ export const MtlsConfiguration = () => {
     );
   };
 
+  const renderCertificateInput = (certType: CertificateType) => {
+    const label = getCertificateLabel(certType);
+    const placeholder = getCertificatePlaceholder(certType);
+    const cert = getCertificateValue(certType);
+
+    let testIdSuffix = 'client-key';
+    if (certType === 'ca') {
+      testIdSuffix = 'ca';
+    } else if (certType === 'clientCert') {
+      testIdSuffix = 'client-cert';
+    }
+
+    return (
+      <FormField
+        control={control}
+        name={`mtls.${certType}`}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{label} path</FormLabel>
+            <FormControl>
+              <Input
+                data-testid={`mtls-${testIdSuffix}-path-input`}
+                onChange={(e) => {
+                  const value = e.target.value.trim();
+                  field.onChange(value ? { filePath: value } : undefined);
+                }}
+                placeholder={placeholder}
+                type="text"
+                value={cert?.filePath || ''}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    );
+  };
+
   return (
     <>
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4" data-testid="mtls-certificates-form">
+        <Text variant="muted">
+          Configure certificates for mutual TLS authentication. Upload embeds certificate content in the configuration,
+          while file path references certificates already on the broker. Providing certificates enables mTLS; leaving
+          them empty uses server-side TLS only.
+        </Text>
+
         <FormField
           control={control}
-          name="useMtls"
+          name="mtlsMode"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <div>
-                <FormLabel>mTLS</FormLabel>
-              </div>
+              <FormLabel>Certificate input method</FormLabel>
               <FormControl>
-                <Tabs onValueChange={(value) => field.onChange(value === 'true')} value={String(field.value)}>
+                <Tabs
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    // Clear all certificates when mode changes
+                    setValue('mtls.ca', undefined);
+                    setValue('mtls.clientCert', undefined);
+                    setValue('mtls.clientKey', undefined);
+                  }}
+                  value={field.value}
+                >
                   <TabsList variant="default">
-                    <TabsTrigger data-testid="mtls-enabled-tab" value="true">
-                      Enabled
+                    <TabsTrigger data-testid="mtls-mode-upload-tab" value="pem">
+                      Upload
                     </TabsTrigger>
-                    <TabsTrigger data-testid="mtls-disabled-tab" value="false">
-                      Disabled
+                    <TabsTrigger data-testid="mtls-mode-file-path-tab" value="file_path">
+                      File path
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -145,78 +254,14 @@ export const MtlsConfiguration = () => {
           )}
         />
 
-        {useMtls && (
-          <div className="space-y-4" data-testid="mtls-certificates-form">
-            <p className="text-muted-foreground text-sm">
-              Mutual TLS requires three certificates for secure two-way authentication between client and server.
-            </p>
-
-            <FormField
-              control={control}
-              name="mtlsMode"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Certificate input method</FormLabel>
-                  <FormControl>
-                    <Tabs
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        // Clear all certificates when mode changes
-                        setValue('mtls.ca', undefined);
-                        setValue('mtls.clientCert', undefined);
-                        setValue('mtls.clientKey', undefined);
-                      }}
-                      value={field.value}
-                    >
-                      <TabsList variant="default">
-                        <TabsTrigger data-testid="mtls-mode-upload-tab" value="pem">
-                          Upload
-                        </TabsTrigger>
-                        <TabsTrigger data-testid="mtls-mode-file-path-tab" value="file_path">
-                          File Path
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <div className="space-y-4">
-              <FormField
-                control={control}
-                name="mtls.ca"
-                render={() => (
-                  <FormItem>
-                    <div>{renderCertificateButton('ca')}</div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={control}
-                name="mtls.clientCert"
-                render={() => (
-                  <FormItem>
-                    <div>{renderCertificateButton('clientCert')}</div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={control}
-                name="mtls.clientKey"
-                render={() => (
-                  <FormItem>
-                    <div>{renderCertificateButton('clientKey')}</div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+        {mtlsMode === 'file_path' ? (
+          <div className="flex flex-col gap-4">
+            {renderCertificateInput('ca')}
+            {renderCertificateInput('clientCert')}
+            {renderCertificateInput('clientKey')}
           </div>
+        ) : (
+          <MtlsCertificatesUpload control={control} errors={errors} renderCertificateButton={renderCertificateButton} />
         )}
       </div>
 

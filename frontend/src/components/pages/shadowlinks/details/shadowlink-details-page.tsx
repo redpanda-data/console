@@ -14,7 +14,7 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, Loader2, Trash2 } from 'lucide-react';
+import { AlertCircle, Edit, Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   useDeleteShadowLinkMutation,
@@ -146,7 +146,12 @@ export const ShadowLinkDetailsPage = () => {
       {/* Action Buttons */}
       <div className="flex justify-end gap-3">
         <Button onClick={() => openFailoverDialog()} size="sm" variant="outline">
-          Failover All Topics
+          Failover all topics
+        </Button>
+
+        <Button onClick={() => navigate(`/shadowlinks/${name}/edit`)} size="sm" variant="outline">
+          <Edit className="mr-2 h-4 w-4" />
+          Edit
         </Button>
 
         <Button disabled={isDeleting} onClick={() => setShowDeleteDialog(true)} size="sm" variant="destructive">

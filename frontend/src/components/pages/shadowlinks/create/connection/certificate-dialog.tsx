@@ -180,7 +180,7 @@ export function CertificateDialog({
             Cancel
           </Button>
           <Button data-testid="save-certificate-button" disabled={!isValid} onClick={handleSave}>
-            {existingValue ? 'Update Certificate' : 'Add Certificate'}
+            {existingValue ? 'Update certificate' : 'Add certificate'}
           </Button>
         </DialogFooter>
       </DialogContent>

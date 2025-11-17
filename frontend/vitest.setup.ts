@@ -5,6 +5,18 @@ import './tests/mock-react-select';
 
 window.scrollTo = vi.fn();
 
+// Mock ResizeObserver - not available in jsdom but required by RadixUI components
+// (Switch, Tabs, etc.) that use @radix-ui/react-use-size internally
+// Mock the ResizeObserver
+const ResizeObserverMock = vi.fn(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));
+
+// Stub the global ResizeObserver
+vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+
 beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,

@@ -32,10 +32,10 @@ export const ShadowLinkConfiguration = ({ shadowLink }: ShadowLinkConfigurationP
         Source
       </TabsTrigger>
       <TabsTrigger testId="mirroring-tab" value="mirroring" variant="underline">
-        Mirroring
+        Shadowing
       </TabsTrigger>
       <TabsTrigger testId="topic-config-replication-tab" value="topic-config-replication" variant="underline">
-        Topic config replication
+        Topic properties shadowed
       </TabsTrigger>
     </TabsList>
 

@@ -49,10 +49,15 @@ export const AdvancedClientOptions = () => {
               control={control}
               name="advanceClientOptions.metadataMaxAgeMs"
               render={({ field }) => (
-                <FormItem data-testid="metadata-max-age-field">
+                <FormItem>
                   <FormLabel>Metadata max age in ms</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                    <Input
+                      testId="metadata-max-age-field"
+                      type="number"
+                      {...field}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
                   </FormControl>
                   <FormDescription>
                     Maximum time in milliseconds before metadata is refreshed. Controls how often the client updates
@@ -146,6 +151,24 @@ export const AdvancedClientOptions = () => {
                   <FormDescription>
                     Maximum amount of data in bytes the broker will return for a fetch request. Controls memory usage
                     and network bandwidth.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={control}
+              name="advanceClientOptions.fetchPartitionMaxBytes"
+              render={({ field }) => (
+                <FormItem data-testid="fetch-partition-max-bytes-field">
+                  <FormLabel>Fetch partition max in bytes</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                  </FormControl>
+                  <FormDescription>
+                    Maximum amount of data in bytes the broker will return for a single partition in a fetch request.
+                    Controls per-partition memory usage.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

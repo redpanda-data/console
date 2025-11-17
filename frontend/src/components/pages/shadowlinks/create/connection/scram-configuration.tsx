@@ -40,7 +40,7 @@ export const ScramConfiguration = () => {
         render={({ field }) => (
           <FormItem className="flex flex-col">
             <div>
-              <FormLabel>Use SCRAM Authentication</FormLabel>
+              <FormLabel>Use SCRAM authentication</FormLabel>
             </div>
             <FormControl>
               <Tabs onValueChange={(value) => field.onChange(value === 'true')} value={String(field.value)}>

@@ -23,21 +23,19 @@ const createValidFormValues = () => ({
 });
 
 describe('Shadow Link Form Validation', () => {
-  describe('mTLS validation', () => {
-    test('should pass validation when mTLS is disabled', () => {
+  describe('Certificate validation', () => {
+    test('should pass validation when no certificates are provided', () => {
       const values = {
         ...createValidFormValues(),
-        useMtls: false,
       };
 
       const result = FormSchema.safeParse(values);
       expect(result.success).toBe(true);
     });
 
-    test('should pass validation when both client key and cert are provided in FILE_PATH mode', () => {
+    test('should pass validation when all certificates are provided in FILE_PATH mode', () => {
       const values = {
         ...createValidFormValues(),
-        useMtls: true,
         mtlsMode: TLS_MODE.FILE_PATH,
         mtls: {
           ca: {
@@ -56,10 +54,9 @@ describe('Shadow Link Form Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    test('should pass validation when both client key and cert are provided in PEM mode', () => {
+    test('should pass validation when all certificates are provided in PEM mode', () => {
       const values = {
         ...createValidFormValues(),
-        useMtls: true,
         mtlsMode: TLS_MODE.PEM,
         mtls: {
           ca: {
@@ -81,10 +78,9 @@ describe('Shadow Link Form Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    test('should pass validation when neither client key nor cert are provided', () => {
+    test('should pass validation when only CA certificate is provided', () => {
       const values = {
         ...createValidFormValues(),
-        useMtls: true,
         mtlsMode: TLS_MODE.FILE_PATH,
         mtls: {
           ca: {
@@ -99,50 +95,9 @@ describe('Shadow Link Form Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    test('should fail validation when CA certificate is not provided in FILE_PATH mode', () => {
-      const values = {
-        ...createValidFormValues(),
-        useMtls: true,
-        mtlsMode: TLS_MODE.FILE_PATH,
-        mtls: {
-          ca: undefined,
-          clientCert: undefined,
-          clientKey: undefined,
-        },
-      };
-
-      const result = FormSchema.safeParse(values);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        const errorMessages = result.error.issues.map((issue) => issue.message);
-        expect(errorMessages).toContain('CA certificate is required when mTLS is enabled');
-      }
-    });
-
-    test('should fail validation when CA certificate is not provided in PEM mode', () => {
-      const values = {
-        ...createValidFormValues(),
-        useMtls: true,
-        mtlsMode: TLS_MODE.PEM,
-        mtls: {
-          ca: undefined,
-          clientCert: undefined,
-          clientKey: undefined,
-        },
-      };
-
-      const result = FormSchema.safeParse(values);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        const errorMessages = result.error.issues.map((issue) => issue.message);
-        expect(errorMessages).toContain('CA certificate is required when mTLS is enabled');
-      }
-    });
-
     test('should fail validation when client key is provided without cert in FILE_PATH mode', () => {
       const values = {
         ...createValidFormValues(),
-        useMtls: true,
         mtlsMode: TLS_MODE.FILE_PATH,
         mtls: {
           ca: {
@@ -166,7 +121,6 @@ describe('Shadow Link Form Validation', () => {
     test('should fail validation when client cert is provided without key in FILE_PATH mode', () => {
       const values = {
         ...createValidFormValues(),
-        useMtls: true,
         mtlsMode: TLS_MODE.FILE_PATH,
         mtls: {
           ca: {
@@ -190,7 +144,6 @@ describe('Shadow Link Form Validation', () => {
     test('should fail validation when client key is provided without cert in PEM mode', () => {
       const values = {
         ...createValidFormValues(),
-        useMtls: true,
         mtlsMode: TLS_MODE.PEM,
         mtls: {
           ca: {
@@ -216,7 +169,6 @@ describe('Shadow Link Form Validation', () => {
     test('should fail validation when client cert is provided without key in PEM mode', () => {
       const values = {
         ...createValidFormValues(),
-        useMtls: true,
         mtlsMode: TLS_MODE.PEM,
         mtls: {
           ca: {
@@ -242,7 +194,6 @@ describe('Shadow Link Form Validation', () => {
     test('should ignore empty strings and treat them as not provided in FILE_PATH mode', () => {
       const values = {
         ...createValidFormValues(),
-        useMtls: true,
         mtlsMode: TLS_MODE.FILE_PATH,
         mtls: {
           ca: {
@@ -264,7 +215,6 @@ describe('Shadow Link Form Validation', () => {
     test('should ignore empty strings and treat them as not provided in PEM mode', () => {
       const values = {
         ...createValidFormValues(),
-        useMtls: true,
         mtlsMode: TLS_MODE.PEM,
         mtls: {
           ca: {

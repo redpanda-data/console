@@ -127,7 +127,7 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
                           <div className="flex items-center justify-between py-3">
                             <Text data-testid={`property-${categoryKey}-${index}`}>{property}</Text>
                             <Badge data-testid={`property-${categoryKey}-${index}-badge`} variant="gray">
-                              Replicated
+                              Shadowed
                             </Badge>
                           </div>
                           {index < properties.length - 1 && (
