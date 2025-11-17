@@ -66,19 +66,19 @@ describe('getUpdateValuesForConnection', () => {
         description: 'different server added',
         originalServers: [{ value: 'localhost:9092' }],
         newServers: [{ value: 'localhost:9092' }, { value: 'localhost:9093' }],
-        expectedPath: 'configurations.client_options.bootstrap_servers',
+        expectedPath: 'configurations.client_options',
       },
       {
         description: 'server removed',
         originalServers: [{ value: 'localhost:9092' }, { value: 'localhost:9093' }],
         newServers: [{ value: 'localhost:9092' }],
-        expectedPath: 'configurations.client_options.bootstrap_servers',
+        expectedPath: 'configurations.client_options',
       },
       {
         description: 'server value modified',
         originalServers: [{ value: 'localhost:9092' }],
         newServers: [{ value: 'example.com:9092' }],
-        expectedPath: 'configurations.client_options.bootstrap_servers',
+        expectedPath: 'configurations.client_options',
       },
     ])('should detect $description', ({ originalServers, newServers, expectedPath }) => {
       const original = { ...baseFormValues, bootstrapServers: originalServers };
@@ -87,6 +87,7 @@ describe('getUpdateValuesForConnection', () => {
       const result = getUpdateValuesForConnection(updated, original);
 
       expect(result.fieldMaskPaths).toContain(expectedPath);
+      expect(result.fieldMaskPaths).toHaveLength(1);
     });
 
     test('should NOT detect change when only server order changed (order-independent)', () => {
@@ -277,7 +278,7 @@ describe('getUpdateValuesForConnection', () => {
   });
 
   describe('Multiple changes', () => {
-    test('should detect multiple field changes', () => {
+    test('should detect multiple field changes with bootstrap change using parent path', () => {
       const original = {
         ...baseFormValues,
         bootstrapServers: [{ value: 'localhost:9092' }],
@@ -304,12 +305,9 @@ describe('getUpdateValuesForConnection', () => {
 
       const result = getUpdateValuesForConnection(updated, original);
 
-      expect(result.fieldMaskPaths).toContain('configurations.client_options.bootstrap_servers');
-      expect(result.fieldMaskPaths).toContain('configurations.client_options.authentication_configuration');
-      expect(result.fieldMaskPaths).toContain('configurations.client_options.tls_settings');
-      expect(result.fieldMaskPaths).toContain('configurations.client_options.metadata_max_age_ms');
-      expect(result.fieldMaskPaths).toContain('configurations.client_options.fetch_max_bytes');
-      expect(result.fieldMaskPaths).toHaveLength(5);
+      // When bootstrap changes, should use parent path only (covers all client_options)
+      expect(result.fieldMaskPaths).toContain('configurations.client_options');
+      expect(result.fieldMaskPaths).toHaveLength(1);
     });
 
     test('should detect all 7 advanced options changed', () => {
