@@ -24,7 +24,11 @@ import { FilterItem } from './filter-item';
 import type { FormValues } from '../model';
 
 export const ConsumerOffsetStep = () => {
-  const { control, setValue } = useFormContext<FormValues>();
+  const {
+    control,
+    setValue,
+    formState: { errors },
+  } = useFormContext<FormValues>();
   const [isOpen, setIsOpen] = useState(false);
 
   const consumersMode = useWatch({ control, name: 'consumersMode' });
@@ -82,18 +86,23 @@ export const ConsumerOffsetStep = () => {
             {/* Resume/summary view when collapsed */}
             {!isOpen && consumersMode === 'specify' && fields.length > 0 && (
               <div className="mt-4 space-y-2">
-                {fields.map((field, index) => (
-                  <FilterItem
-                    control={control}
-                    fieldNamePrefix="consumers"
-                    index={index}
-                    key={field.id}
-                    onRemove={() => remove(index)}
-                    viewType={false}
-                  >
-                    {null}
-                  </FilterItem>
-                ))}
+                {fields.map((field, index) => {
+                  const fieldError = errors.consumers?.[index];
+                  const errorMessage = fieldError?.name?.message;
+                  return (
+                    <FilterItem
+                      control={control}
+                      errorMessage={errorMessage}
+                      fieldNamePrefix="consumers"
+                      index={index}
+                      key={field.id}
+                      onRemove={() => remove(index)}
+                      viewType={false}
+                    >
+                      {null}
+                    </FilterItem>
+                  );
+                })}
               </div>
             )}
 

@@ -31,6 +31,7 @@ interface FilterItemProps<TFieldValues extends FieldValues> {
   children: React.ReactNode;
   viewType: boolean; // true = editable, false = resume/summary
   'data-testid'?: string;
+  errorMessage?: string; // Error message to display in resume/summary view
 }
 
 export const FilterItem = <TFieldValues extends FieldValues>({
@@ -41,6 +42,7 @@ export const FilterItem = <TFieldValues extends FieldValues>({
   children,
   viewType,
   'data-testid': dataTestId,
+  errorMessage,
 }: FilterItemProps<TFieldValues>) => {
   const patternFieldName = `${fieldNamePrefix}.${index}.patterType` as FieldPath<TFieldValues>;
   const filterFieldName = `${fieldNamePrefix}.${index}.filterType` as FieldPath<TFieldValues>;
@@ -60,20 +62,27 @@ export const FilterItem = <TFieldValues extends FieldValues>({
     const filterLabel = getFilterTypeLabel(patternValue, filterValue);
 
     return (
-      <Item>
-        <div className="font-medium text-sm">{filterLabel}</div>
-        <div className="flex flex-wrap gap-2">
-          {nameValue ? (
-            <Badge size="sm" variant="blue">
-              {nameValue}
-            </Badge>
-          ) : (
-            <Badge size="sm" variant="gray">
-              (empty)
-            </Badge>
+      <div>
+        <Item>
+          <div className="font-medium text-sm">{filterLabel}</div>
+          <div className="flex flex-wrap gap-2">
+            {nameValue ? (
+              <Badge size="sm" variant="blue">
+                {nameValue}
+              </Badge>
+            ) : (
+              <Badge size="sm" variant="gray">
+                (empty)
+              </Badge>
+            )}
+          </div>
+          {errorMessage && (
+            <p className="mt-1 text-destructive text-sm" data-slot="form-message">
+              {errorMessage}
+            </p>
           )}
-        </div>
-      </Item>
+        </Item>
+      </div>
     );
   }
 
