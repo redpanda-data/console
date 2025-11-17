@@ -7,10 +7,6 @@ on:
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-verify.yml"
-    branches-ignore:
-      - "dependabot/**"
-      - "snyk-upgrade-**"
-      - "gh-readonly-queue/**"
   pull_request:
     paths:
       - "frontend/**"
@@ -204,10 +200,10 @@ jobs:
       - name: Install Playwright browsers
         run: bun run install:chromium
       - name: Install Go dependencies
-        working-directory: ../backend/cmd/api
+        working-directory: backend/cmd/api
         run: go get .
       - name: Build Go server
-        working-directory: ../backend/cmd/api
+        working-directory: backend/cmd/api
         run: go build -v ./...
       - name: Log networks
         if: runner.debug == '1'

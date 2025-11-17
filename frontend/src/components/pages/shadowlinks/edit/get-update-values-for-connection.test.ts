@@ -36,7 +36,6 @@ const baseFormValues: FormValues = {
     mechanism: ScramMechanism.SCRAM_SHA_256,
   },
   useTls: true,
-  useMtls: false,
   mtlsMode: TLS_MODE.PEM,
   mtls: {
     ca: undefined,
@@ -51,6 +50,7 @@ const baseFormValues: FormValues = {
   consumers: [],
   aclsMode: 'all',
   aclFilters: [],
+  excludeDefault: false,
 };
 
 describe('getUpdateValuesForConnection', () => {
@@ -138,7 +138,7 @@ describe('getUpdateValuesForConnection', () => {
           ca: undefined,
           clientCert: undefined,
           clientKey: undefined,
-        }
+        },
       };
       const updated = {
         ...baseFormValues,
@@ -147,7 +147,7 @@ describe('getUpdateValuesForConnection', () => {
           ca: { pemContent: 'ca-cert-content' },
           clientCert: undefined,
           clientKey: undefined,
-        }
+        },
       };
 
       const result = getUpdateValuesForConnection(updated, original);
@@ -163,7 +163,7 @@ describe('getUpdateValuesForConnection', () => {
           ca: { pemContent: 'ca-cert-content' },
           clientCert: undefined,
           clientKey: undefined,
-        }
+        },
       };
       const updated = {
         ...baseFormValues,
@@ -172,7 +172,7 @@ describe('getUpdateValuesForConnection', () => {
           ca: undefined,
           clientCert: undefined,
           clientKey: undefined,
-        }
+        },
       };
 
       const result = getUpdateValuesForConnection(updated, original);
@@ -188,7 +188,7 @@ describe('getUpdateValuesForConnection', () => {
           ca: { pemContent: 'ca-cert-content' },
           clientCert: undefined,
           clientKey: undefined,
-        }
+        },
       };
       const updated = {
         ...baseFormValues,
@@ -197,7 +197,7 @@ describe('getUpdateValuesForConnection', () => {
           ca: { pemContent: 'ca-cert-content' },
           clientCert: undefined,
           clientKey: undefined,
-        }
+        },
       };
 
       const result = getUpdateValuesForConnection(updated, original);
