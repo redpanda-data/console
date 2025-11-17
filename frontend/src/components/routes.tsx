@@ -50,7 +50,7 @@ import CreateConnector from './pages/connect/create-connector';
 import KafkaConnectOverview from './pages/connect/overview';
 import GroupDetails from './pages/consumers/group-details';
 import GroupList from './pages/consumers/group-list';
-import KnowledgeBaseCreate from './pages/knowledgebase/knowledge-base-create';
+import { KnowledgeBaseCreatePage } from './pages/knowledgebase/knowledge-base-create-page';
 import { KnowledgeBaseDetailsPage } from './pages/knowledgebase/knowledge-base-details-page';
 import { KnowledgeBaseListPage } from './pages/knowledgebase/knowledge-base-list-page';
 import { RemoteMCPCreatePage } from './pages/mcp-servers/create/remote-mcp-create-page';
@@ -446,7 +446,7 @@ export const APP_ROUTES: IRouteEntry[] = [
       []
     )
   ),
-  MakeRoute<{}>('/knowledgebases/create', KnowledgeBaseCreate, 'Create Knowledge Base'),
+  MakeRoute<{}>('/knowledgebases/create', KnowledgeBaseCreatePage, 'Create Knowledge Base'),
   MakeRoute<{ knowledgebaseId: string }>(
     '/knowledgebases/:knowledgebaseId',
     KnowledgeBaseDetailsPage,

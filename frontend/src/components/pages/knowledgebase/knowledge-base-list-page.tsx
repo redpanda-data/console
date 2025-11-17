@@ -11,7 +11,6 @@
 
 'use client';
 
-import { create } from '@bufbuild/protobuf';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -33,25 +32,20 @@ import {
   DataTablePagination,
   DataTableViewOptions,
 } from 'components/redpanda-ui/components/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { AlertCircle, Loader2, MoreHorizontal, Plus, X } from 'lucide-react';
+import { AlertCircle, Loader2, Plus, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import type { KnowledgeBase } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { DeleteKnowledgeBaseRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import React, { useEffect } from 'react';
-import { useDeleteKnowledgeBaseMutation, useListKnowledgeBasesQuery } from 'react-query/api/knowledge-base';
+import { useListKnowledgeBasesQuery } from 'react-query/api/knowledge-base';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Features } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
+
+import { KnowledgeBaseActionsCell } from './knowledge-base-actions';
 
 export type KnowledgeBaseTableRow = {
   id: string;
@@ -125,47 +119,9 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
   {
     id: 'actions',
     enableHiding: false,
-    cell: ({ row }) => {
-      const { mutate: deleteKnowledgeBase, isPending: isDeleting } = useDeleteKnowledgeBaseMutation({
-        onSuccess: () => {
-          toast.success(`Knowledge base ${row?.original?.displayName} deleted`);
-        },
-        onError: (err) => {
-          toast.error('Failed to delete knowledge base', {
-            description: String(err),
-          });
-        },
-      });
-
-      const kb = row.original;
-
-      const handleDelete = (id: string) => {
-        deleteKnowledgeBase(create(DeleteKnowledgeBaseRequestSchema, { id }));
-      };
-
-      return (
-        <div data-actions-column>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="h-8 w-8 data-[state=open]:bg-muted" size="icon" variant="ghost">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[160px]">
-              <DeleteResourceAlertDialog
-                isDeleting={isDeleting}
-                onDelete={handleDelete}
-                onOpenChange={setIsDeleteDialogOpen}
-                resourceId={kb.id}
-                resourceName={kb.displayName}
-                resourceType="Knowledge Base"
-              />
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      );
-    },
+    cell: ({ row }) => (
+      <KnowledgeBaseActionsCell knowledgeBase={row.original} setIsDeleteDialogOpen={setIsDeleteDialogOpen} />
+    ),
   },
 ];
 

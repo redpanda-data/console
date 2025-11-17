@@ -426,6 +426,8 @@ export const AIAgentCreatePage = () => {
                               onChange={field.onChange}
                               placeholder="Select from secrets store or create new"
                               scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
+                              secretNamePlaceholder="e.g., OPENAI_API_KEY"
+                              secretValueDescription="Your OpenAI API key"
                               value={field.value}
                             />
                           </FormControl>

@@ -33,32 +33,20 @@ import {
   DataTablePagination,
   DataTableViewOptions,
 } from 'components/redpanda-ui/components/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { AlertCircle, Check, Copy, Loader2, MoreHorizontal, Pause, Play, Plus, X } from 'lucide-react';
+import { AlertCircle, Check, Loader2, Pause, Plus, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import type { MCPServer as APIMCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { MCPServer_State } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import React, { useEffect } from 'react';
-import {
-  useDeleteMCPServerMutation,
-  useListMCPServersQuery,
-  useStartMCPServerMutation,
-  useStopMCPServerMutation,
-} from 'react-query/api/remote-mcp';
+import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
+
+import { RemoteMCPActionsCell } from './remote-mcp-actions';
 
 const statusOptions = [
   { value: String(MCPServer_State.RUNNING), label: 'Running', icon: Check },
@@ -200,95 +188,7 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
   {
     id: 'actions',
     enableHiding: false,
-    cell: ({ row }) => {
-      const { mutate: deleteMCPServer, isPending: isDeleting } = useDeleteMCPServerMutation({
-        onSuccess: () => {
-          toast.success(`MCP server ${row?.original?.name} deleted`);
-        },
-      });
-      const { mutate: startMCPServer, isPending: isStarting } = useStartMCPServerMutation();
-      const { mutate: stopMCPServer, isPending: isStopping } = useStopMCPServerMutation();
-
-      const server = row.original;
-
-      const handleDelete = (id: string) => {
-        deleteMCPServer({ id });
-      };
-
-      const handleCopy = () => {
-        navigator.clipboard.writeText(server.url);
-      };
-
-      const handleStart = (event: React.MouseEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        startMCPServer({ id: server.id });
-      };
-
-      const handleStop = (event: React.MouseEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        stopMCPServer({ id: server.id });
-      };
-
-      const canStart = server.state === MCPServer_State.STOPPED || server.state === MCPServer_State.ERROR;
-      const canStop = server.state === MCPServer_State.RUNNING;
-
-      return (
-        <div data-actions-column>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="h-8 w-8 data-[state=open]:bg-muted" size="icon" variant="ghost">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[160px]">
-              <DropdownMenuItem onClick={handleCopy}>
-                <div className="flex items-center gap-4">
-                  <Copy className="h-4 w-4" /> Copy URL
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {canStart && (
-                <DropdownMenuItem onClick={handleStart}>
-                  {isStarting ? (
-                    <div className="flex items-center gap-4">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Starting
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-4">
-                      <Play className="h-4 w-4" />
-                      Start Server
-                    </div>
-                  )}
-                </DropdownMenuItem>
-              )}
-              {canStop && (
-                <DropdownMenuItem onClick={handleStop}>
-                  {isStopping ? (
-                    <div className="flex items-center gap-4">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Stopping
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-4">
-                      <Pause className="h-4 w-4" /> Stop Server
-                    </div>
-                  )}
-                </DropdownMenuItem>
-              )}
-              {(canStart || canStop) && <DropdownMenuSeparator />}
-              <DeleteResourceAlertDialog
-                isDeleting={isDeleting}
-                onDelete={handleDelete}
-                onOpenChange={setIsDeleteDialogOpen}
-                resourceId={server.id}
-                resourceName={server.name}
-                resourceType="Remote MCP Server"
-              />
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      );
-    },
+    cell: ({ row }) => <RemoteMCPActionsCell server={row.original} setIsDeleteDialogOpen={setIsDeleteDialogOpen} />,
   },
 ];
 

@@ -62,27 +62,54 @@ type SecretSelectorProps = {
   placeholder?: string;
   onSecretCreated?: (secretId: string) => void;
   scopes: Scope[];
+  /** Custom dialog title (default: "Create new secret") */
+  dialogTitle?: string;
+  /** Custom dialog description */
+  dialogDescription?: string;
+  /** Custom empty state message */
+  emptyStateMessage?: string;
+  /** Custom secret name placeholder */
+  secretNamePlaceholder?: string;
+  /** Custom secret value placeholder */
+  secretValuePlaceholder?: string;
+  /** Custom secret value label/description */
+  secretValueDescription?: string;
+  /** Custom validation pattern for secret value */
+  secretValuePattern?: {
+    regex: RegExp;
+    message: string;
+  };
 };
 
-const NewSecretFormSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Secret name is required')
-    .max(255, 'Secret name must be fewer than 255 characters')
-    .regex(
-      /^[A-Za-z][A-Za-z0-9_]*$/,
-      'Secret name must start with a letter and contain only letters, numbers, and underscores'
-    ),
-  value: z
-    .string()
-    .min(1, 'Secret value is required')
-    .regex(
-      /^sk-(proj-)?[A-Za-z0-9-_]{20,}$/,
-      'Invalid OpenAI API key format. Must start with "sk-" or "sk-proj-" followed by at least 20 alphanumeric characters'
-    ),
-});
+// Default validation for OpenAI API keys (for backward compatibility)
+const DEFAULT_SECRET_VALUE_PATTERN = {
+  regex: /^sk-(proj-)?[A-Za-z0-9-_]{20,}$/,
+  message:
+    'Invalid OpenAI API key format. Must start with "sk-" or "sk-proj-" followed by at least 20 alphanumeric characters',
+};
 
-type NewSecretFormData = z.infer<typeof NewSecretFormSchema>;
+// Generic validation that accepts any non-empty string
+export const GENERIC_SECRET_VALUE_PATTERN = {
+  regex: /.+/,
+  message: 'Secret value is required',
+};
+
+const createSecretFormSchema = (
+  secretValuePattern: { regex: RegExp; message: string } = DEFAULT_SECRET_VALUE_PATTERN
+) =>
+  z.object({
+    name: z
+      .string()
+      .min(1, 'Secret name is required')
+      .max(255, 'Secret name must be fewer than 255 characters')
+      .regex(
+        /^[A-Za-z][A-Za-z0-9_]*$/,
+        'Secret name must start with a letter and contain only letters, numbers, and underscores'
+      ),
+    value: z.string().min(1, 'Secret value is required').regex(secretValuePattern.regex, secretValuePattern.message),
+  });
+
+type NewSecretFormData = z.infer<ReturnType<typeof createSecretFormSchema>>;
 
 export const SecretSelector: React.FC<SecretSelectorProps> = ({
   value,
@@ -91,12 +118,23 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
   placeholder = 'Select from secrets store or create new',
   onSecretCreated,
   scopes,
+  dialogTitle = 'Create new secret',
+  dialogDescription = 'Create a new secret to securely store sensitive information. The secret will be stored securely.',
+  emptyStateMessage = 'Create a secret to securely store sensitive information',
+  secretNamePlaceholder = 'e.g., MY_SECRET',
+  secretValuePlaceholder = 'Enter secret value',
+  secretValueDescription = 'Your secret value',
+  secretValuePattern,
 }) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation();
 
+  // Use custom validation pattern or default to generic pattern
+  const validationPattern = secretValuePattern || GENERIC_SECRET_VALUE_PATTERN;
+  const formSchema = createSecretFormSchema(validationPattern);
+
   const form = useForm<NewSecretFormData>({
-    resolver: zodResolver(NewSecretFormSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       value: '',
@@ -150,7 +188,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
             No secrets available
           </Text>
           <Text className="mb-4 text-center" variant="muted">
-            Create a secret to securely store your OpenAI API key
+            {emptyStateMessage}
           </Text>
           <Button onClick={() => setIsCreateDialogOpen(true)} type="button" variant="outline">
             <div className="flex items-center gap-2">
@@ -186,10 +224,8 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
       <Dialog onOpenChange={setIsCreateDialogOpen} open={isCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create new secret</DialogTitle>
-            <DialogDescription>
-              Create a new secret for your OpenAI API key. The secret will be stored securely.
-            </DialogDescription>
+            <DialogTitle>{dialogTitle}</DialogTitle>
+            <DialogDescription>{dialogDescription}</DialogDescription>
           </DialogHeader>
 
           <Form {...form}>
@@ -202,7 +238,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
                     <FormLabel>Secret name</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="e.g., OPENAI_API_KEY"
+                        placeholder={secretNamePlaceholder}
                         {...field}
                         onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                       />
@@ -220,9 +256,9 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
                   <FormItem>
                     <FormLabel>Secret value</FormLabel>
                     <FormControl>
-                      <Input placeholder="sk-..." type="password" {...field} />
+                      <Input placeholder={secretValuePlaceholder} type="password" {...field} />
                     </FormControl>
-                    <FormDescription>Your OpenAI API key</FormDescription>
+                    <FormDescription>{secretValueDescription}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
