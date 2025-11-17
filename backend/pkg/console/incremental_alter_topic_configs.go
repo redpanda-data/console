@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"errors"
 
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
@@ -30,6 +31,17 @@ func (s *Service) EditTopicConfig(ctx context.Context, topicName string, configs
 	req := kmsg.NewIncrementalAlterConfigsRequest()
 	req.Resources = []kmsg.IncrementalAlterConfigsRequestResource{alterResource}
 
-	_, err = req.RequestWith(ctx, cl)
-	return err
+	response, err := req.RequestWith(ctx, cl)
+	if err != nil {
+		return err
+	}
+
+	var kafkaErrs error
+	for _, resource := range response.Resources {
+		kafkaErr := newKafkaErrorWithDynamicMessage(resource.ErrorCode, resource.ErrorMessage)
+		if kafkaErr != nil {
+			kafkaErrs = errors.Join(kafkaErrs, kafkaErr)
+		}
+	}
+	return kafkaErrs
 }
