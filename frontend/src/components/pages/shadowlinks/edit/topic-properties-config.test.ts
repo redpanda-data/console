@@ -44,7 +44,7 @@ describe('topic-properties-config', () => {
       const compactionProps = result.get('Compaction');
 
       expect(compactionProps).toBeDefined();
-      expect(compactionProps!.length).toBeGreaterThan(0);
+      expect(compactionProps?.length).toBeGreaterThan(0);
       expect(compactionProps?.map((p) => p.name)).toEqual(
         expect.arrayContaining(['cleanup.policy', 'min.compaction.lag.ms', 'max.compaction.lag.ms'])
       );

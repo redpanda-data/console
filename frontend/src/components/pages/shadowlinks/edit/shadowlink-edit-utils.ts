@@ -107,49 +107,53 @@ export const getUpdateValuesForConnection = (
     values.bootstrapServers.map((s) => s.value),
     originalValues.bootstrapServers.map((s) => s.value)
   );
+
   if (bootstrapServersChanged) {
-    fieldMaskPaths.push('configurations.client_options.bootstrap_servers');
-  }
+    // If bootstrap servers changed, use parent path which covers all client_options fields
+    fieldMaskPaths.push('configurations.client_options');
+  } else {
+    // If bootstrap servers didn't change, use specific paths for individual field changes
 
-  // Compare TLS settings - always include if mTLS is enabled (to ensure certs are sent)
-  const tlsChanged = values.useTls !== originalValues.useTls || values.useMtls !== originalValues.useMtls;
-  if (tlsChanged || values.useMtls) {
-    fieldMaskPaths.push('configurations.client_options.tls_settings');
-  }
+    // Compare TLS settings - always include if mTLS is enabled (to ensure certs are sent)
+    const tlsChanged = values.useTls !== originalValues.useTls || values.useMtls !== originalValues.useMtls;
+    if (tlsChanged || values.useMtls) {
+      fieldMaskPaths.push('configurations.client_options.tls_settings');
+    }
 
-  // Compare authentication
-  const authChanged =
-    values.useScram !== originalValues.useScram ||
-    values.scramCredentials?.username !== originalValues.scramCredentials?.username ||
-    values.scramCredentials?.password !== originalValues.scramCredentials?.password ||
-    values.scramCredentials?.mechanism !== originalValues.scramCredentials?.mechanism;
-  if (authChanged) {
-    fieldMaskPaths.push('configurations.client_options.authentication_configuration');
-  }
+    // Compare authentication
+    const authChanged =
+      values.useScram !== originalValues.useScram ||
+      values.scramCredentials?.username !== originalValues.scramCredentials?.username ||
+      values.scramCredentials?.password !== originalValues.scramCredentials?.password ||
+      values.scramCredentials?.mechanism !== originalValues.scramCredentials?.mechanism;
+    if (authChanged) {
+      fieldMaskPaths.push('configurations.client_options.authentication_configuration');
+    }
 
-  // Compare advanced client options
-  if (values.advanceClientOptions.metadataMaxAgeMs !== originalValues.advanceClientOptions.metadataMaxAgeMs) {
-    fieldMaskPaths.push('configurations.client_options.metadata_max_age_ms');
-  }
-  if (values.advanceClientOptions.connectionTimeoutMs !== originalValues.advanceClientOptions.connectionTimeoutMs) {
-    fieldMaskPaths.push('configurations.client_options.connection_timeout_ms');
-  }
-  if (values.advanceClientOptions.retryBackoffMs !== originalValues.advanceClientOptions.retryBackoffMs) {
-    fieldMaskPaths.push('configurations.client_options.retry_backoff_ms');
-  }
-  if (values.advanceClientOptions.fetchWaitMaxMs !== originalValues.advanceClientOptions.fetchWaitMaxMs) {
-    fieldMaskPaths.push('configurations.client_options.fetch_wait_max_ms');
-  }
-  if (values.advanceClientOptions.fetchMinBytes !== originalValues.advanceClientOptions.fetchMinBytes) {
-    fieldMaskPaths.push('configurations.client_options.fetch_min_bytes');
-  }
-  if (values.advanceClientOptions.fetchMaxBytes !== originalValues.advanceClientOptions.fetchMaxBytes) {
-    fieldMaskPaths.push('configurations.client_options.fetch_max_bytes');
-  }
-  if (
-    values.advanceClientOptions.fetchPartitionMaxBytes !== originalValues.advanceClientOptions.fetchPartitionMaxBytes
-  ) {
-    fieldMaskPaths.push('configurations.client_options.fetch_partition_max_bytes');
+    // Compare advanced client options
+    if (values.advanceClientOptions.metadataMaxAgeMs !== originalValues.advanceClientOptions.metadataMaxAgeMs) {
+      fieldMaskPaths.push('configurations.client_options.metadata_max_age_ms');
+    }
+    if (values.advanceClientOptions.connectionTimeoutMs !== originalValues.advanceClientOptions.connectionTimeoutMs) {
+      fieldMaskPaths.push('configurations.client_options.connection_timeout_ms');
+    }
+    if (values.advanceClientOptions.retryBackoffMs !== originalValues.advanceClientOptions.retryBackoffMs) {
+      fieldMaskPaths.push('configurations.client_options.retry_backoff_ms');
+    }
+    if (values.advanceClientOptions.fetchWaitMaxMs !== originalValues.advanceClientOptions.fetchWaitMaxMs) {
+      fieldMaskPaths.push('configurations.client_options.fetch_wait_max_ms');
+    }
+    if (values.advanceClientOptions.fetchMinBytes !== originalValues.advanceClientOptions.fetchMinBytes) {
+      fieldMaskPaths.push('configurations.client_options.fetch_min_bytes');
+    }
+    if (values.advanceClientOptions.fetchMaxBytes !== originalValues.advanceClientOptions.fetchMaxBytes) {
+      fieldMaskPaths.push('configurations.client_options.fetch_max_bytes');
+    }
+    if (
+      values.advanceClientOptions.fetchPartitionMaxBytes !== originalValues.advanceClientOptions.fetchPartitionMaxBytes
+    ) {
+      fieldMaskPaths.push('configurations.client_options.fetch_partition_max_bytes');
+    }
   }
 
   // Build TLS settings
