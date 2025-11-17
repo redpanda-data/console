@@ -4,7 +4,7 @@
     "useDefineForClassFields": true,
     "target": "ESNext",
     "lib": ["dom", "dom.iterable", "esnext"],
-    "types": ["vitest/globals"],
+    "types": ["vitest/globals", "node"],
     "emitDecoratorMetadata": true,
     "allowJs": true,
     "skipLibCheck": true,

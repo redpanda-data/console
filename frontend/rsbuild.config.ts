@@ -108,16 +108,16 @@ export default defineConfig({
       if (process.env.RSDOCTOR) {
         plugins.push(
           new RsdoctorRspackPlugin({
-            supports: {
-              /**
-               * @see https://rsdoctor.dev/config/options/options#generatetilegraph
-               */
-              generateTileGraph: true,
+            disableClientServer: true,
+            output: {
+              mode: 'brief',
+              options: {
+                type: ['json'],
+              },
             },
           })
         );
       }
-
       appendPlugins(plugins);
     },
   },
