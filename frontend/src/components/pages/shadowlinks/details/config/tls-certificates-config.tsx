@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Badge } from 'components/redpanda-ui/components/badge';
 import { Text } from 'components/redpanda-ui/components/typography';
 import type { TLSSettings } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import type React from 'react';
@@ -49,50 +48,32 @@ export const TlsCertificatesConfig = ({ tlsSettings }: TlsCertificatesConfigProp
     certificateInputMethod = 'Upload';
   }
 
-  // mTLS - Check if client cert and key are provided
-  const isMtlsEnabled =
-    (tlsSettings?.tlsSettings?.case === 'tlsFileSettings' &&
-      Boolean(tlsSettings.tlsSettings.value.certPath) &&
-      Boolean(tlsSettings.tlsSettings.value.keyPath)) ||
-    (tlsSettings?.tlsSettings?.case === 'tlsPemSettings' &&
-      Boolean(tlsSettings.tlsSettings.value.cert) &&
-      Boolean(tlsSettings.tlsSettings.value.key));
-
+  // Client certificates
   let clientCertificateLabel = '-';
   let clientKeyLabel = '-';
+  let hasClientCertificates = false;
+
   if (tlsSettings?.tlsSettings?.case === 'tlsFileSettings') {
     const certPath = tlsSettings.tlsSettings.value.certPath;
     const keyPath = tlsSettings.tlsSettings.value.keyPath;
     clientCertificateLabel = certPath || '-';
     clientKeyLabel = keyPath || '-';
+    hasClientCertificates = Boolean(certPath || keyPath);
   } else if (tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
     clientCertificateLabel = tlsSettings.tlsSettings.value.cert ? 'client-cert.pem' : '-';
     clientKeyLabel = tlsSettings.tlsSettings.value.key ? 'client-key.pem' : '-';
+    hasClientCertificates = Boolean(tlsSettings.tlsSettings.value.cert || tlsSettings.tlsSettings.value.key);
   }
+
   return (
     <>
-      <ConfigField
-        label="mTLS status"
-        testId="mtls-status"
-        value={
-          isMtlsEnabled ? (
-            <Badge testId="mtls-status-badge" variant="green">
-              Enabled
-            </Badge>
-          ) : (
-            <Badge testId="mtls-status-badge" variant="secondary">
-              Disabled
-            </Badge>
-          )
-        }
-      />
       <ConfigField label="Certificate input method" testId="certificate-input-method" value={certificateInputMethod} />
       <ConfigField
         label="CA certificate"
         testId="ca-certificate"
         value={<CertificateValue isFilePath={certificateInputMethod === 'File path'} value={caCertificateLabel} />}
       />
-      {isMtlsEnabled && (
+      {hasClientCertificates && (
         <>
           <ConfigField
             label="Client certificate"

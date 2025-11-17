@@ -30,8 +30,6 @@ import {
   ShadowLinkClientOptionsSchema,
   ShadowLinkConfigurationsSchema,
   ShadowLinkSchema,
-  TLSFileSettingsSchema,
-  TLSPEMSettingsSchema,
   TLSSettingsSchema,
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
@@ -43,7 +41,7 @@ import { uiState } from 'state/ui-state';
 
 import { ConfigurationStep } from './configuration/configuration-step';
 import { ConnectionStep } from './connection/connection-step';
-import { FormSchema, type FormValues, initialValues, TLS_MODE } from './model';
+import { FormSchema, type FormValues, initialValues } from './model';
 import {
   ACLOperation,
   ACLPattern,
@@ -51,6 +49,7 @@ import {
   ACLResource,
 } from '../../../../protogen/redpanda/core/common/acl_pb';
 import { useCreateShadowLinkMutation } from '../../../../react-query/api/shadowlink';
+import { buildTLSSettings } from '../edit/shadowlink-edit-utils';
 
 // Stepper definition
 const { Stepper } = defineStepper(
@@ -79,34 +78,8 @@ export const updatePageTitle = () => {
  * Transform form values to CreateShadowLinkRequest protobuf message
  */
 const buildCreateShadowLinkRequest = (values: FormValues) => {
-  // Determine TLS settings based on mTLS configuration
-  let tlsSettings:
-    | { case: 'tlsFileSettings'; value: ReturnType<typeof create<typeof TLSFileSettingsSchema>> }
-    | { case: 'tlsPemSettings'; value: ReturnType<typeof create<typeof TLSPEMSettingsSchema>> }
-    | undefined;
-
-  if (values.useMtls) {
-    // When mTLS is enabled, use mTLS certificates
-    if (values.mtlsMode === TLS_MODE.FILE_PATH) {
-      tlsSettings = {
-        case: 'tlsFileSettings' as const,
-        value: create(TLSFileSettingsSchema, {
-          caPath: values.mtls.ca?.filePath || undefined,
-          keyPath: values.mtls.clientKey?.filePath || undefined,
-          certPath: values.mtls.clientCert?.filePath || undefined,
-        }),
-      };
-    } else {
-      tlsSettings = {
-        case: 'tlsPemSettings' as const,
-        value: create(TLSPEMSettingsSchema, {
-          ca: values.mtls.ca?.pemContent || undefined,
-          key: values.mtls.clientKey?.pemContent || undefined,
-          cert: values.mtls.clientCert?.pemContent || undefined,
-        }),
-      };
-    }
-  }
+  // Build TLS settings from certificate configuration
+  const tlsSettings = buildTLSSettings(values);
 
   // Build client options
   const clientOptions = create(ShadowLinkClientOptionsSchema, {

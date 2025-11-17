@@ -60,6 +60,7 @@ export const arraysEqual = (a: string[], b: string[]): boolean => {
 
 /**
  * Build TLS settings based on mTLS configuration
+ * mTLS is determined by presence of certificates
  */
 export const buildTLSSettings = (
   values: FormValues
@@ -67,7 +68,13 @@ export const buildTLSSettings = (
   | { case: 'tlsFileSettings'; value: ReturnType<typeof create<typeof TLSFileSettingsSchema>> }
   | { case: 'tlsPemSettings'; value: ReturnType<typeof create<typeof TLSPEMSettingsSchema>> }
   | undefined => {
-  if (!values.useMtls) {
+  // Check if any certificates are provided
+  const hasCertificates =
+    values.mtlsMode === TLS_MODE.FILE_PATH
+      ? Boolean(values.mtls.ca?.filePath || values.mtls.clientCert?.filePath || values.mtls.clientKey?.filePath)
+      : Boolean(values.mtls.ca?.pemContent || values.mtls.clientCert?.pemContent || values.mtls.clientKey?.pemContent);
+
+  if (!hasCertificates) {
     return undefined;
   }
 
@@ -114,9 +121,22 @@ export const getUpdateValuesForConnection = (
   } else {
     // If bootstrap servers didn't change, use specific paths for individual field changes
 
-    // Compare TLS settings - always include if mTLS is enabled (to ensure certs are sent)
-    const tlsChanged = values.useTls !== originalValues.useTls || values.useMtls !== originalValues.useMtls;
-    if (tlsChanged || values.useMtls) {
+    // Compare TLS settings - include if TLS changed or certificates changed
+    const hasCertificates =
+      values.mtlsMode === TLS_MODE.FILE_PATH
+        ? Boolean(values.mtls.ca?.filePath || values.mtls.clientCert?.filePath || values.mtls.clientKey?.filePath)
+        : Boolean(
+            values.mtls.ca?.pemContent || values.mtls.clientCert?.pemContent || values.mtls.clientKey?.pemContent
+          );
+
+    const tlsChanged =
+      values.useTls !== originalValues.useTls ||
+      values.mtlsMode !== originalValues.mtlsMode ||
+      values.mtls.ca !== originalValues.mtls.ca ||
+      values.mtls.clientCert !== originalValues.mtls.clientCert ||
+      values.mtls.clientKey !== originalValues.mtls.clientKey;
+
+    if (tlsChanged || hasCertificates) {
       fieldMaskPaths.push('configurations.client_options.tls_settings');
     }
 
@@ -394,13 +414,13 @@ export const getUpdateValuesForACLs = (
 
 /**
  * Extract TLS settings from shadow link client options
+ * mTLS is determined by presence of certificates
  */
 const extractTLSSettings = (
   tlsCertsSettings: TLSSettings['tlsSettings'] | undefined
-): Pick<FormValues, 'useMtls' | 'mtlsMode' | 'mtls'> => {
+): Pick<FormValues, 'mtlsMode' | 'mtls'> => {
   if (!tlsCertsSettings) {
     return {
-      useMtls: false,
       mtlsMode: TLS_MODE.PEM,
       mtls: {
         ca: undefined,
@@ -413,7 +433,6 @@ const extractTLSSettings = (
   if (tlsCertsSettings.case === 'tlsFileSettings') {
     const fileSettings = tlsCertsSettings.value;
     return {
-      useMtls: true,
       mtlsMode: TLS_MODE.FILE_PATH,
       mtls: {
         ca: fileSettings.caPath ? { filePath: fileSettings.caPath } : undefined,
@@ -427,7 +446,6 @@ const extractTLSSettings = (
   if (tlsCertsSettings.case === 'tlsPemSettings') {
     const pemSettings = tlsCertsSettings.value;
     return {
-      useMtls: true,
       mtlsMode: TLS_MODE.PEM,
       mtls: {
         ca: pemSettings.ca ? { pemContent: pemSettings.ca } : undefined,
@@ -439,7 +457,6 @@ const extractTLSSettings = (
 
   // Fallback for unknown cases
   return {
-    useMtls: false,
     mtlsMode: TLS_MODE.PEM,
     mtls: {
       ca: undefined,
@@ -493,14 +510,7 @@ export const buildDefaultConnectionValues = (
   shadowLink: ShadowLink
 ): Pick<
   FormValues,
-  | 'bootstrapServers'
-  | 'useTls'
-  | 'useMtls'
-  | 'mtlsMode'
-  | 'mtls'
-  | 'useScram'
-  | 'scramCredentials'
-  | 'advanceClientOptions'
+  'bootstrapServers' | 'useTls' | 'mtlsMode' | 'mtls' | 'useScram' | 'scramCredentials' | 'advanceClientOptions'
 > => {
   const clientOptions = shadowLink.configurations?.clientOptions;
   const tlsCertsSettings = clientOptions?.tlsSettings?.tlsSettings;

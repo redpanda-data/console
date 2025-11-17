@@ -112,6 +112,45 @@ const buildDefaultFormValues = (shadowLink: ShadowLink): FormValues => {
   };
 };
 
+/**
+ * Map form field to its corresponding tab
+ */
+const getTabForField = (fieldName: string): string => {
+  const fieldToTabMap: Record<string, string> = {
+    // Source tab fields
+    name: 'source',
+    bootstrapServers: 'source',
+    useScram: 'source',
+    scramCredentials: 'source',
+    advanceClientOptions: 'source',
+    useTls: 'source',
+    mtls: 'source',
+    mtlsMode: 'source',
+    // Shadowing tab fields
+    topicsMode: 'shadowing',
+    topics: 'shadowing',
+    consumersMode: 'shadowing',
+    consumers: 'shadowing',
+    aclsMode: 'shadowing',
+    aclFilters: 'shadowing',
+    // Topic config tab fields
+    topicProperties: 'topic-config',
+    excludeDefault: 'topic-config',
+  };
+
+  return fieldToTabMap[fieldName] || 'source';
+};
+
+/**
+ * Display names for tabs used in error messages
+ */
+const tabDisplayNames: Record<string, string> = {
+  source: 'Source',
+  shadowing: 'Shadowing',
+  'topic-config': 'Topic config',
+  all: 'All',
+};
+
 export const ShadowLinkEditPage = () => {
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
@@ -154,35 +193,6 @@ export const ShadowLinkEditPage = () => {
   };
 
   /**
-   * Map form field to its corresponding tab
-   */
-  const getTabForField = (fieldName: string): string => {
-    const fieldToTabMap: Record<string, string> = {
-      // Source tab fields
-      name: 'source',
-      bootstrapServers: 'source',
-      useScram: 'source',
-      scramCredentials: 'source',
-      advanceClientOptions: 'source',
-      useTls: 'source',
-      useMtls: 'source',
-      mtls: 'source',
-      // Shadowing tab fields
-      topicsMode: 'shadowing',
-      topics: 'shadowing',
-      consumersMode: 'shadowing',
-      consumers: 'shadowing',
-      aclsMode: 'shadowing',
-      aclFilters: 'shadowing',
-      // Topic config tab fields
-      topicProperties: 'topic-config',
-      excludeDefault: 'topic-config',
-    };
-
-    return fieldToTabMap[fieldName] || 'source';
-  };
-
-  /**
    * Handle validation errors on form submit
    * Navigate to the tab containing the first error
    */
@@ -201,12 +211,6 @@ export const ShadowLinkEditPage = () => {
       const errorCount = Object.keys(errors).length;
 
       // Format tab name for display
-      const tabDisplayNames: Record<string, string> = {
-        source: 'Source',
-        shadowing: 'Shadowing',
-        'topic-config': 'Topic config',
-        all: 'All',
-      };
       const tabName = tabDisplayNames[errorTab] || errorTab;
 
       // Show toast notification with tab information

@@ -61,8 +61,7 @@ export const FormSchema = z
     // TLS configuration
     useTls: z.boolean(),
 
-    // mTLS configuration
-    useMtls: z.boolean(),
+    // mTLS configuration (optional - determined by presence of certificates)
     mtlsMode: z.enum([TLS_MODE.FILE_PATH, TLS_MODE.PEM]),
     mtls: z.object({
       ca: z
@@ -150,48 +149,31 @@ export const FormSchema = z
       }
     }
 
-    // If mTLS is enabled, validate requirements
-    if (data.useMtls) {
-      // CA certificate is mandatory when mTLS is enabled
-      const hasCaCert =
-        data.mtlsMode === TLS_MODE.FILE_PATH
-          ? Boolean(data.mtls.ca?.filePath?.trim())
-          : Boolean(data.mtls.ca?.pemContent?.trim());
+    // Validate client key and cert consistency (both optional, but if one is provided, both must be)
+    const hasClientKey =
+      data.mtlsMode === TLS_MODE.FILE_PATH
+        ? Boolean(data.mtls.clientKey?.filePath?.trim())
+        : Boolean(data.mtls.clientKey?.pemContent?.trim());
 
-      if (!hasCaCert) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'CA certificate is required when mTLS is enabled',
-          path: ['mtls', 'ca'],
-        });
-      }
+    const hasClientCert =
+      data.mtlsMode === TLS_MODE.FILE_PATH
+        ? Boolean(data.mtls.clientCert?.filePath?.trim())
+        : Boolean(data.mtls.clientCert?.pemContent?.trim());
 
-      // Validate client key and cert consistency (both optional, but if one is provided, both must be)
-      const hasClientKey =
-        data.mtlsMode === TLS_MODE.FILE_PATH
-          ? Boolean(data.mtls.clientKey?.filePath?.trim())
-          : Boolean(data.mtls.clientKey?.pemContent?.trim());
+    if (hasClientKey && !hasClientCert) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Client certificate is required when client private key is provided',
+        path: ['mtls', 'clientCert'],
+      });
+    }
 
-      const hasClientCert =
-        data.mtlsMode === TLS_MODE.FILE_PATH
-          ? Boolean(data.mtls.clientCert?.filePath?.trim())
-          : Boolean(data.mtls.clientCert?.pemContent?.trim());
-
-      if (hasClientKey && !hasClientCert) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Client certificate is required when client private key is provided',
-          path: ['mtls', 'clientCert'],
-        });
-      }
-
-      if (hasClientCert && !hasClientKey) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Client private key is required when client certificate is provided',
-          path: ['mtls', 'clientKey'],
-        });
-      }
+    if (hasClientCert && !hasClientKey) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Client private key is required when client certificate is provided',
+        path: ['mtls', 'clientKey'],
+      });
     }
   });
 
@@ -216,7 +198,6 @@ export const initialValues: FormValues = {
     mechanism: ScramMechanism.SCRAM_SHA_256,
   },
   useTls: true,
-  useMtls: false,
   mtlsMode: TLS_MODE.PEM,
   mtls: {
     ca: undefined,

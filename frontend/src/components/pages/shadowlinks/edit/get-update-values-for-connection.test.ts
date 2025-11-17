@@ -113,48 +113,92 @@ describe('getUpdateValuesForConnection', () => {
         description: 'TLS enabled',
         originalUseTls: false,
         newUseTls: true,
-        originalUseMtls: false,
-        newUseMtls: false,
         expectedPath: 'configurations.client_options.tls_settings',
       },
       {
         description: 'TLS disabled',
         originalUseTls: true,
         newUseTls: false,
-        originalUseMtls: false,
-        newUseMtls: false,
         expectedPath: 'configurations.client_options.tls_settings',
       },
-      //TODO double check this
-      {
-        description: 'mTLS enabled',
-        originalUseTls: true,
-        newUseTls: true,
-        originalUseMtls: false,
-        newUseMtls: true,
-        expectedPath: 'configurations.client_options.tls_settings',
-      },
-      {
-        description: 'mTLS disabled',
-        originalUseTls: true,
-        newUseTls: true,
-        originalUseMtls: true,
-        newUseMtls: false,
-        expectedPath: 'configurations.client_options.tls_settings',
-      },
-    ])('should detect $description', ({ originalUseTls, newUseTls, originalUseMtls, newUseMtls, expectedPath }) => {
-      const original = { ...baseFormValues, useTls: originalUseTls, useMtls: originalUseMtls };
-      const updated = { ...baseFormValues, useTls: newUseTls, useMtls: newUseMtls };
+    ])('should detect $description', ({ originalUseTls, newUseTls, expectedPath }) => {
+      const original = { ...baseFormValues, useTls: originalUseTls };
+      const updated = { ...baseFormValues, useTls: newUseTls };
 
       const result = getUpdateValuesForConnection(updated, original);
 
       expect(result.fieldMaskPaths).toContain(expectedPath);
     });
 
-    // TODO: Double check this
-    test('should always include tls_settings when mTLS is enabled even if unchanged', () => {
-      const original = { ...baseFormValues, useTls: true, useMtls: true };
-      const updated = { ...baseFormValues, useTls: true, useMtls: true };
+    test('should detect when certificates are added', () => {
+      const original = {
+        ...baseFormValues,
+        useTls: true,
+        mtls: {
+          ca: undefined,
+          clientCert: undefined,
+          clientKey: undefined,
+        }
+      };
+      const updated = {
+        ...baseFormValues,
+        useTls: true,
+        mtls: {
+          ca: { pemContent: 'ca-cert-content' },
+          clientCert: undefined,
+          clientKey: undefined,
+        }
+      };
+
+      const result = getUpdateValuesForConnection(updated, original);
+
+      expect(result.fieldMaskPaths).toContain('configurations.client_options.tls_settings');
+    });
+
+    test('should detect when certificates are removed', () => {
+      const original = {
+        ...baseFormValues,
+        useTls: true,
+        mtls: {
+          ca: { pemContent: 'ca-cert-content' },
+          clientCert: undefined,
+          clientKey: undefined,
+        }
+      };
+      const updated = {
+        ...baseFormValues,
+        useTls: true,
+        mtls: {
+          ca: undefined,
+          clientCert: undefined,
+          clientKey: undefined,
+        }
+      };
+
+      const result = getUpdateValuesForConnection(updated, original);
+
+      expect(result.fieldMaskPaths).toContain('configurations.client_options.tls_settings');
+    });
+
+    test('should always include tls_settings when certificates are present even if unchanged', () => {
+      const original = {
+        ...baseFormValues,
+        useTls: true,
+        mtls: {
+          ca: { pemContent: 'ca-cert-content' },
+          clientCert: undefined,
+          clientKey: undefined,
+        }
+      };
+      const updated = {
+        ...baseFormValues,
+        useTls: true,
+        mtls: {
+          ca: { pemContent: 'ca-cert-content' },
+          clientCert: undefined,
+          clientKey: undefined,
+        }
+      };
 
       const result = getUpdateValuesForConnection(updated, original);
 
