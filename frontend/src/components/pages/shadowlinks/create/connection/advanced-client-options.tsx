@@ -53,7 +53,7 @@ export const AdvancedClientOptions = () => {
                   <FormLabel>Metadata max age in ms</FormLabel>
                   <FormControl>
                     <Input
-                      testId="metadata-max-age-ms-input"
+                      testId="metadata-max-age-field"
                       type="number"
                       {...field}
                       onChange={(e) => field.onChange(Number(e.target.value))}

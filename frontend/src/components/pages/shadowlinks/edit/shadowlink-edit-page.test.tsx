@@ -188,7 +188,7 @@ const updateMetadataMaxAge = async (
     expect(scr.getByTestId('advanced-options-content')).toBeInTheDocument();
   });
 
-  const metadataMaxAgeInput = scr.getByTestId('metadata-max-age-ms-input');
+  const metadataMaxAgeInput = scr.getByTestId('metadata-max-age-field');
   await user.clear(metadataMaxAgeInput);
   await user.type(metadataMaxAgeInput, value.toString());
 };
