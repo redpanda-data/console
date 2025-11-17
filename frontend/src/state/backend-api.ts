@@ -22,6 +22,7 @@ import {
   isBakedInTrial,
   prettyLicenseType,
 } from 'components/license/license-utils';
+import JSONBigInt from 'json-bigint';
 import { comparer, computed, observable, runInAction, transaction } from 'mobx';
 import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
@@ -2929,14 +2930,14 @@ export function createMessageSearch() {
                 m.key.normalizedPayload = key?.normalizedPayload;
 
                 try {
-                  m.key.payload = JSON.parse(keyPayload);
+                  m.key.payload = JSONBigInt.parse(keyPayload);
                 } catch {
                   // no op - payload may not be JSON
                 }
 
                 m.key.troubleshootReport = key?.troubleshootReport;
                 m.key.schemaId = key?.schemaId ?? 0;
-                m.keyJson = JSON.stringify(m.key.payload);
+                m.keyJson = keyPayload;
                 m.key.size = Number(key?.payloadSize);
                 m.key.isPayloadTooLarge = key?.isPayloadTooLarge;
 
@@ -3008,12 +3009,12 @@ export function createMessageSearch() {
                 m.value.isPayloadTooLarge = val?.isPayloadTooLarge;
 
                 try {
-                  m.value.payload = JSON.parse(valuePayload);
+                  m.value.payload = JSONBigInt.parse(valuePayload);
                 } catch {
                   // no op - payload may not be JSON
                 }
 
-                m.valueJson = JSON.stringify(m.value.payload);
+                m.valueJson = valuePayload;
                 m.value.size = Number(val?.payloadSize);
 
                 this.messages.push(m);
