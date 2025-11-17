@@ -50,7 +50,7 @@ const baseFormValues: FormValues = {
   consumers: [],
   aclsMode: 'all',
   aclFilters: [],
-  excludeDefault: false
+  excludeDefault: false,
 };
 
 describe('getUpdateValuesForConnection', () => {
