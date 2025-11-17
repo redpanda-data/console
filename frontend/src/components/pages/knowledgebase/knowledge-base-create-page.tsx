@@ -53,6 +53,9 @@ import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
+import { runInAction } from 'mobx';
+import { uiState } from 'state/ui-state';
+
 import { BasicInformationSection } from './components/form-sections/basic-information-section';
 import { EmbeddingGeneratorSection } from './components/form-sections/embedding-generator-section';
 import { GenerationSection } from './components/form-sections/generation-section';
@@ -99,6 +102,22 @@ export const KnowledgeBaseCreatePage = () => {
     control: form.control,
     name: 'tags',
   });
+
+  // Update page title and breadcrumbs
+  useEffect(() => {
+    runInAction(() => {
+      uiState.pageTitle = 'Create Knowledge Base';
+      uiState.pageBreadcrumbs.pop();
+      uiState.pageBreadcrumbs.push({
+        title: 'Knowledge Bases',
+        linkTo: '/knowledgebases',
+      });
+      uiState.pageBreadcrumbs.push({
+        title: 'Create',
+        linkTo: '/knowledgebases/create',
+      });
+    });
+  }, []);
 
   // Get available secrets
   const availableSecrets = useMemo(() => {
