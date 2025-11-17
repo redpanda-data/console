@@ -54,12 +54,7 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
   };
 
   // Form type
-  type Secret = {
-    id: string;
-    value: string;
-    labels: string[];
-    scopes: Scope[];
-  };
+  type Secret = z.infer<typeof finalSchema>;
 
   const defaultValues: Secret = {
     id: '',
@@ -71,6 +66,7 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
   const formOpts = formOptions({
     defaultValues,
     validators: {
+      // @ts-expect-error - Zod schema type incompatibility with @tanstack/react-form validators
       onChange: finalSchema,
     },
     onSubmit: async ({ value }) => {
@@ -169,8 +165,8 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
                           <FormErrorMessage>
                             <UnorderedList>
                               {state.meta.errors?.map((error) => (
-                                <li key={error.path}>
-                                  <Text color="red.500">{error.message}</Text>
+                                <li key={(error as any)?.path ?? ''}>
+                                  <Text color="red.500">{(error as any)?.message ?? 'Validation error'}</Text>
                                 </li>
                               ))}
                             </UnorderedList>
