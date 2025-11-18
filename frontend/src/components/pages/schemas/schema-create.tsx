@@ -275,6 +275,7 @@ async function validateSchema(state: SchemaEditorStateHelper): Promise<{
   isValid: boolean; // is the schema valid at all (can be parsed, no unknown types etc)
   errorDetails?: string; // details about why the schema is not valid
   isCompatible?: boolean; // is the new schema not compatible with older versions; only set when the schema is valid
+  compatibilityError?: { errorType: string; description: string }; // detailed compatibility error from schema registry
 }> {
   if (!state.computedSubjectName) {
     return { isValid: false, errorDetails: 'Missing subject name' };
@@ -299,6 +300,7 @@ async function validateSchema(state: SchemaEditorStateHelper): Promise<{
     isValid: r.isValid,
     errorDetails: r.parsingError,
     isCompatible: r.isValid ? r.compatibility.isCompatible : undefined,
+    compatibilityError: r.compatibility.error,
   };
 }
 
