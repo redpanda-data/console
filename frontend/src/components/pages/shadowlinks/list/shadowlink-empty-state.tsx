@@ -62,9 +62,7 @@ export const ShadowLinkFeatureDisabledState = () => (
       <ShadowingDescription />
       <Text>To get started, run the following command to enable Shadowing on your cluster:</Text>
       <CodeBlock testId="shadowlink-enable-command">
-        <Pre>
-          <code>{'rpk cluster config set enable_shadow_linking true'}</code>
-        </Pre>
+        <Pre>rpk cluster config set enable_shadow_linking true</Pre>
       </CodeBlock>
     </CardContent>
   </Card>
