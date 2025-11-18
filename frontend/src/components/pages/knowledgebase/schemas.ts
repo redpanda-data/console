@@ -159,6 +159,6 @@ export const initialValues: KnowledgeBaseCreateFormValues = {
   rerankerModel: 'rerank-v3.5',
   rerankerApiKey: '',
   generationProvider: 'openai',
-  generationModel: 'gpt-4.1',
+  generationModel: 'gpt-5',
   generationApiKey: '',
 };

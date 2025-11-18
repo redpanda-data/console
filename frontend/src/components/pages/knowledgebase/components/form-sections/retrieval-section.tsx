@@ -20,14 +20,23 @@ import {
   FormLabel,
   FormMessage,
 } from 'components/redpanda-ui/components/form';
-import { Input } from 'components/redpanda-ui/components/input';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from 'components/redpanda-ui/components/select';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { GENERIC_SECRET_VALUE_PATTERN } from 'components/ui/secret/secret-selector';
+import { GENERIC_SECRET_VALUE_PATTERN, SecretSelector } from 'components/ui/secret/secret-selector';
+import { ExternalLink } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import type { UseFormReturn } from 'react-hook-form';
 
+import { COHERE_RERANKER_MODELS } from '../../constants';
 import type { KnowledgeBaseCreateFormValues } from '../../schemas';
-import { SecretDropdownField } from '../form-fields/secret-dropdown-field';
 
 type RetrievalSectionProps = {
   form: UseFormReturn<KnowledgeBaseCreateFormValues>;
@@ -73,9 +82,54 @@ export const RetrievalSection: React.FC<RetrievalSectionProps> = ({ form, availa
               render={({ field }) => (
                 <FormItem>
                   <FormLabel required>Model</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., rerank-v3.5" {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select reranker model">
+                          {field.value ? (
+                            <div className="flex items-center gap-2">
+                              <img alt="Cohere" className="h-4 w-4" src={CohereLogo} />
+                              <span>{field.value}</span>
+                            </div>
+                          ) : (
+                            'Select reranker model'
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>
+                          <div className="flex items-center gap-2">
+                            <img alt="Cohere" className="h-4 w-4" src={CohereLogo} />
+                            <span>Cohere</span>
+                          </div>
+                        </SelectLabel>
+                        {COHERE_RERANKER_MODELS.map((model) => (
+                          <SelectItem key={model.name} value={model.name}>
+                            <div className="flex flex-col gap-0.5">
+                              <Text className="font-medium">{model.name}</Text>
+                              <Text className="text-xs" variant="muted">
+                                {model.description}
+                              </Text>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    See{' '}
+                    <a
+                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                      href="https://docs.cohere.com/docs/rerank"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      Cohere rerank models <ExternalLink className="h-3 w-3" />
+                    </a>{' '}
+                    for available models.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -85,24 +139,27 @@ export const RetrievalSection: React.FC<RetrievalSectionProps> = ({ form, availa
               control={form.control}
               name="rerankerApiKey"
               render={({ field }) => (
-                <SecretDropdownField
-                  availableSecrets={availableSecrets}
-                  dialogDescription="Create a new secret for your Cohere API key for reranking. The secret will be stored securely."
-                  dialogTitle="Create Cohere API key secret"
-                  emptyStateMessage="Create a secret to securely store your Cohere API key"
-                  errorMessage={form.formState.errors.rerankerApiKey?.message}
-                  helperText="All credentials are securely stored in your Secrets Store"
-                  isRequired
-                  label="API Key"
-                  onChange={field.onChange}
-                  placeholder="Select Cohere API key from secrets"
-                  scopes={[Scope.REDPANDA_CONNECT]}
-                  secretNamePlaceholder="e.g., COHERE_API_KEY"
-                  secretValueDescription="Your Cohere API key"
-                  secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
-                  secretValuePlaceholder="Enter Cohere API key"
-                  value={field.value || ''}
-                />
+                <FormItem>
+                  <FormLabel required>API Key</FormLabel>
+                  <FormControl>
+                    <SecretSelector
+                      availableSecrets={availableSecrets}
+                      dialogDescription="Create a new secret for your Cohere API key for reranking. The secret will be stored securely."
+                      dialogTitle="Create Cohere API key secret"
+                      emptyStateMessage="Create a secret to securely store your Cohere API key"
+                      onChange={field.onChange}
+                      placeholder="Select Cohere API key from secrets"
+                      scopes={[Scope.REDPANDA_CONNECT]}
+                      secretNamePlaceholder="e.g., COHERE_API_KEY"
+                      secretValueDescription="Your Cohere API key"
+                      secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
+                      secretValuePlaceholder="Enter Cohere API key"
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <FormDescription>All credentials are securely stored in your Secrets Store</FormDescription>
+                  <FormMessage />
+                </FormItem>
               )}
             />
           </>

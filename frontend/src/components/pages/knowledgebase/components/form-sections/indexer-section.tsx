@@ -10,7 +10,14 @@
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
 import {
@@ -22,14 +29,13 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { GENERIC_SECRET_VALUE_PATTERN } from 'components/ui/secret/secret-selector';
+import { GENERIC_SECRET_VALUE_PATTERN, SecretSelector } from 'components/ui/secret/secret-selector';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { SASLMechanism } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import type { UseFormReturn } from 'react-hook-form';
 
 import type { KnowledgeBaseCreateFormValues } from '../../schemas';
 import { TopicSelector } from '../../topic-selector';
-import { SecretDropdownField } from '../form-fields/secret-dropdown-field';
 import { UserDropdown } from '../form-fields/user-dropdown';
 
 type IndexerSectionProps = {
@@ -138,7 +144,7 @@ export const IndexerSection: React.FC<IndexerSectionProps> = ({ form, availableS
         />
 
         {credentialChoice === 'manual' && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <>
             <FormField
               control={form.control}
               name="redpandaUsername"
@@ -158,27 +164,30 @@ export const IndexerSection: React.FC<IndexerSectionProps> = ({ form, availableS
               control={form.control}
               name="redpandaPassword"
               render={({ field }) => (
-                <SecretDropdownField
-                  availableSecrets={availableSecrets}
-                  dialogDescription="Create a new secret for your Redpanda user password. The secret will be stored securely."
-                  dialogTitle="Create Redpanda password secret"
-                  emptyStateMessage="Create a secret to securely store your Redpanda password"
-                  errorMessage={form.formState.errors.redpandaPassword?.message}
-                  helperText="All credentials are securely stored in your Secrets Store"
-                  isRequired
-                  label="Redpanda Password"
-                  onChange={field.onChange}
-                  placeholder="Enter password or select from secrets"
-                  scopes={[Scope.REDPANDA_CONNECT]}
-                  secretNamePlaceholder="e.g., REDPANDA_PASSWORD"
-                  secretValueDescription="Your Redpanda user password"
-                  secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
-                  secretValuePlaceholder="Enter password"
-                  value={field.value || ''}
-                />
+                <FormItem>
+                  <FormLabel required>Redpanda Password</FormLabel>
+                  <FormControl>
+                    <SecretSelector
+                      availableSecrets={availableSecrets}
+                      dialogDescription="Create a new secret for your Redpanda user password. The secret will be stored securely."
+                      dialogTitle="Create Redpanda password secret"
+                      emptyStateMessage="Create a secret to securely store your Redpanda password"
+                      onChange={field.onChange}
+                      placeholder="Select password or create new"
+                      scopes={[Scope.REDPANDA_CONNECT]}
+                      secretNamePlaceholder="e.g., REDPANDA_PASSWORD"
+                      secretValueDescription="Your Redpanda user password"
+                      secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
+                      secretValuePlaceholder="Enter password"
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <FormDescription>All credentials are securely stored in your Secrets Store</FormDescription>
+                  <FormMessage />
+                </FormItem>
               )}
             />
-          </div>
+          </>
         )}
 
         {credentialChoice === 'manual' && (
