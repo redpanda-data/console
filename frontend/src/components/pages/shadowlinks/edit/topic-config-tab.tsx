@@ -25,11 +25,12 @@ import { Switch } from 'components/redpanda-ui/components/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import {
   CATEGORY_ORDER,
+  getDefaultProperties,
   getPropertiesByCategory,
   isPropertyAlwaysReplicated,
   isPropertyEditable,
@@ -185,9 +186,46 @@ const ExcludeDefaultToggle = () => {
 export const TopicConfigTab = () => {
   const { control, setValue } = useFormContext<FormValues>();
   const [isOpen, setIsOpen] = useState(false);
+  const prevExcludeDefault = useRef<boolean | undefined>(undefined);
 
   const topicProperties = useWatch({ control, name: 'topicProperties' }) || [];
+  const excludeDefault = useWatch({ control, name: 'excludeDefault' });
   const propertiesByCategory = getPropertiesByCategory();
+
+  /**
+   * Sync default properties when excludeDefault toggle changes
+   */
+  useEffect(() => {
+    // Skip on initial mount or if excludeDefault hasn't changed
+    if (prevExcludeDefault.current === excludeDefault) {
+      return;
+    }
+
+    // Update ref for next comparison
+    const previousValue = prevExcludeDefault.current;
+    prevExcludeDefault.current = excludeDefault;
+
+    // Skip on initial mount
+    if (previousValue === undefined) {
+      return;
+    }
+
+    const defaultProps = getDefaultProperties();
+
+    if (excludeDefault) {
+      // When excluding defaults, remove all default properties from the list
+      const filteredProperties = topicProperties.filter((prop) => !defaultProps.includes(prop));
+      if (filteredProperties.length !== topicProperties.length) {
+        setValue('topicProperties', filteredProperties, { shouldDirty: true });
+      }
+    } else {
+      // When not excluding defaults, add all default properties to the explicit list
+      const propsToAdd = defaultProps.filter((prop) => !topicProperties.includes(prop));
+      if (propsToAdd.length > 0) {
+        setValue('topicProperties', [...topicProperties, ...propsToAdd], { shouldDirty: true });
+      }
+    }
+  }, [excludeDefault, topicProperties, setValue]);
 
   /**
    * Toggle a property in the topicProperties array
