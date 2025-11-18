@@ -27,7 +27,7 @@ const SourceClusterNode = ({ data }: { data: { brokers: string[] } }) => (
       <div className="flex flex-col gap-1 text-muted-foreground text-xs">
         {data.brokers.map((broker) => (
           <Text key={broker} variant={'muted'}>
-            {broker}
+            {broker.length > 30 ? `${broker.substring(0, 27)}...` : broker}
           </Text>
         ))}
       </div>
