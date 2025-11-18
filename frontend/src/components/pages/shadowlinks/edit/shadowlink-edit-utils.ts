@@ -31,8 +31,7 @@ import {
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/acl_pb';
 
-import type { FormValues } from '../create/model';
-import { TLS_MODE } from '../create/model';
+import { type FormValues, TLS_MODE } from '../create/model';
 
 /**
  * Type for category update functions
@@ -510,7 +509,14 @@ export const buildDefaultConnectionValues = (
   shadowLink: ShadowLink
 ): Pick<
   FormValues,
-  'bootstrapServers' | 'useTls' | 'mtlsMode' | 'mtls' | 'useScram' | 'scramCredentials' | 'advanceClientOptions'
+  | 'bootstrapServers'
+  | 'useTls'
+  | 'useMtls'
+  | 'mtlsMode'
+  | 'mtls'
+  | 'useScram'
+  | 'scramCredentials'
+  | 'advanceClientOptions'
 > => {
   const clientOptions = shadowLink.configurations?.clientOptions;
   const tlsCertsSettings = clientOptions?.tlsSettings?.tlsSettings;
@@ -521,10 +527,20 @@ export const buildDefaultConnectionValues = (
 
   const bootstrapServers = (clientOptions?.bootstrapServers || []).map((server) => ({ value: server }));
 
+  const tlsEnabled = Boolean(clientOptions?.tlsSettings?.enabled);
+
+  const hasClientCerts = Boolean(
+    (tlsSettings.mtlsMode === TLS_MODE.FILE_PATH &&
+      (tlsSettings.mtls.clientCert?.filePath || tlsSettings.mtls.clientKey?.filePath)) ||
+      (tlsSettings.mtlsMode === TLS_MODE.PEM &&
+        (tlsSettings.mtls.clientCert?.pemContent || tlsSettings.mtls.clientKey?.pemContent))
+  );
+
   return {
     bootstrapServers: bootstrapServers.length > 0 ? bootstrapServers : [{ value: '' }],
     advanceClientOptions: advancedOptions,
-    useTls: Boolean(clientOptions?.tlsSettings?.enabled),
+    useTls: tlsEnabled,
+    useMtls: hasClientCerts,
     ...tlsSettings,
     ...authSettings,
   };

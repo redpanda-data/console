@@ -58,8 +58,10 @@ export const FormSchema = z
       fetchMaxBytes: z.number(),
       fetchPartitionMaxBytes: z.number(),
     }),
+
     // TLS configuration
     useTls: z.boolean(),
+    useMtls: z.boolean(),
 
     // mTLS configuration (optional - determined by presence of certificates)
     mtlsMode: z.enum([TLS_MODE.FILE_PATH, TLS_MODE.PEM]),
@@ -131,25 +133,25 @@ export const FormSchema = z
       .optional(),
   })
   .superRefine((data, ctx) => {
-    // If SCRAM is enabled, username and password are required
+    // SCRAM authentication validation
     if (data.useScram) {
       if (!data.scramCredentials?.username?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Username is required when SCRAM is enabled',
+          message: 'SCRAM username is required for authentication. Provide a username or disable SCRAM.',
           path: ['scramCredentials', 'username'],
         });
       }
       if (!data.scramCredentials?.password) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Password is required when SCRAM is enabled',
+          message: 'SCRAM password is required for authentication. Provide a password or disable SCRAM.',
           path: ['scramCredentials', 'password'],
         });
       }
     }
 
-    // Validate client key and cert consistency (both optional, but if one is provided, both must be)
+    // mTLS validation: client cert and key must be provided together
     const hasClientKey =
       data.mtlsMode === TLS_MODE.FILE_PATH
         ? Boolean(data.mtls.clientKey?.filePath?.trim())
@@ -160,10 +162,29 @@ export const FormSchema = z
         ? Boolean(data.mtls.clientCert?.filePath?.trim())
         : Boolean(data.mtls.clientCert?.pemContent?.trim());
 
+    // If mTLS is enabled, client cert and key must both be provided
+    if (data.useMtls) {
+      if (!hasClientCert) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Client certificate is required for mutual TLS authentication',
+          path: ['mtls', 'clientCert'],
+        });
+      }
+      if (!hasClientKey) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Client private key is required for mutual TLS authentication',
+          path: ['mtls', 'clientKey'],
+        });
+      }
+    }
+
+    // If one is provided without the other (when mTLS not explicitly enabled), they must be paired
     if (hasClientKey && !hasClientCert) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Client certificate is required when client private key is provided',
+        message: 'Client certificate and private key must be provided together for mutual authentication',
         path: ['mtls', 'clientCert'],
       });
     }
@@ -171,8 +192,17 @@ export const FormSchema = z
     if (hasClientCert && !hasClientKey) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Client private key is required when client certificate is provided',
+        message: 'Client certificate and private key must be provided together for mutual authentication',
         path: ['mtls', 'clientKey'],
+      });
+    }
+
+    // mTLS can only be enabled if TLS is enabled
+    if (data.useMtls && !data.useTls) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Mutual TLS requires TLS to be enabled',
+        path: ['useMtls'],
       });
     }
   });
@@ -191,13 +221,14 @@ export const initialValues: FormValues = {
     fetchMaxBytes: 20_971_520, // 20MiB
     fetchPartitionMaxBytes: 1_048_576, // 1MiB
   },
-  useScram: true,
+  useScram: false,
   scramCredentials: {
     username: '',
     password: '',
     mechanism: ScramMechanism.SCRAM_SHA_256,
   },
   useTls: true,
+  useMtls: false,
   mtlsMode: TLS_MODE.PEM,
   mtls: {
     ca: undefined,

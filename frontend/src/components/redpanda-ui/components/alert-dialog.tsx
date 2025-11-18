@@ -106,7 +106,7 @@ function AlertDialogAction({
   testId,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Action> & { testId?: string }) {
-  return <AlertDialogPrimitive.Action className={cn(buttonVariants(), className)} data-testid={testId} {...props} />;
+  return <AlertDialogPrimitive.Action className={cn(buttonVariants(), "rounded-md", className)} data-testid={testId} {...props} />;
 }
 
 function AlertDialogCancel({
@@ -116,7 +116,7 @@ function AlertDialogCancel({
 }: React.ComponentProps<typeof AlertDialogPrimitive.Cancel> & { testId?: string }) {
   return (
     <AlertDialogPrimitive.Cancel
-      className={cn(buttonVariants({ variant: 'outline' }), className)}
+      className={cn(buttonVariants({ variant: 'outline' }), "rounded-md", className)}
       data-testid={testId}
       {...props}
     />

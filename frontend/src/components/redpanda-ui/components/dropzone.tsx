@@ -5,7 +5,7 @@ import React, { useContext } from 'react';
 import type { DropEvent, DropzoneOptions, FileRejection } from 'react-dropzone';
 import { useDropzone } from 'react-dropzone';
 
-import { Button } from './button';
+import { Button, ButtonVariants } from './button';
 import { cn } from '../lib/utils';
 
 type DropzoneContextType = {
@@ -37,11 +37,12 @@ export type DropzoneProps = Omit<DropzoneOptions, 'onDrop'> & {
   onDrop?: (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => void;
   children?: React.ReactNode;
   testId?: string;
+  variant?: ButtonVariants['variant'];
 };
 
 export const Dropzone = React.forwardRef<HTMLButtonElement, DropzoneProps>(
   (
-    { accept, maxFiles = 1, maxSize, minSize, onDrop, onError, disabled, src, className, children, testId, ...props },
+    { accept, maxFiles = 1, maxSize, minSize, onDrop, onError, disabled, src, className, children, testId, variant = 'outline', ...props },
     ref,
   ) => {
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -69,11 +70,11 @@ export const Dropzone = React.forwardRef<HTMLButtonElement, DropzoneProps>(
           ref={ref}
           type="button"
           disabled={disabled}
-          variant="outline"
+          variant={variant}
           data-testid={testId}
           className={cn(
             'group relative h-auto w-full flex-col overflow-hidden p-8',
-            isDragActive && 'outline-none ring-1 ring-ring',
+            isDragActive && 'outline-none ring-2 ring-ring',
             className,
           )}
           {...getRootProps()}

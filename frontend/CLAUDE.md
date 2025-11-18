@@ -2,7 +2,7 @@
 
 Guidance for Claude Code when working with this repository.
 
-When creating user interfaces, refer to @.claude/UI.md
+When creating user interfaces, use the `frontend-developer` skill.
 
 ## Project Overview
 
@@ -11,6 +11,7 @@ Frontend for Redpanda Console - web app for managing Kafka/Redpanda clusters. Re
 ## Commands
 
 ### Package Management
+
 **CRITICAL**: Use `bun` as package manager. Run `bun i --yarn` after installing packages (generates `yarn.lock` for Snyk).
 
 ```bash
@@ -21,13 +22,16 @@ bun add -d <package>           # Add dev dependency
 ```
 
 ### Development
+
 ```bash
 bun start                      # Dev server http://localhost:3000
 bun start2 --port=3004         # With additional features (SSO, REASSIGN_PARTITIONS)
 ```
+
 Dev server proxies `/api`, `/redpanda.api`, `/auth`, `/logout` to `http://localhost:9090`.
 
 ### Testing
+
 ```bash
 bun run test                   # All tests (unit + integration)
 bun run test:unit              # Unit tests (*.test.ts)
@@ -38,11 +42,11 @@ bun run e2e-test:ui            # E2E with UI mode
 
 **Three-Tier Testing Strategy:**
 
-| Type | Files | Environment | Purpose |
-|------|-------|-------------|---------|
-| Unit | `*.test.ts` | Node.js | Pure functions, utilities, data transforms (NO React) |
-| Integration | `*.test.tsx` | jsdom | Component + API integration, hooks, forms (NO rendering tests) |
-| E2E | `*.spec.ts` in `tests/` | Playwright | Multi-page workflows, browser interactions |
+| Type        | Files                   | Environment | Purpose                                                        |
+| ----------- | ----------------------- | ----------- | -------------------------------------------------------------- |
+| Unit        | `*.test.ts`             | Node.js     | Pure functions, utilities, data transforms (NO React)          |
+| Integration | `*.test.tsx`            | jsdom       | Component + API integration, hooks, forms (NO rendering tests) |
+| E2E         | `*.spec.ts` in `tests/` | Playwright  | Multi-page workflows, browser interactions                     |
 
 **CRITICAL**: Use `.test.tsx` if file uses `render`, `renderHook`, or JSX. Otherwise use `.test.ts`.
 
@@ -50,28 +54,28 @@ bun run e2e-test:ui            # E2E with UI mode
 
 ```typescript
 // ✅ GOOD - Pure utility function
-describe('formatDate', () => {
-  it('should format ISO date to human readable', () => {
-    expect(formatDate('2025-01-01')).toBe('January 1, 2025');
+describe("formatDate", () => {
+  it("should format ISO date to human readable", () => {
+    expect(formatDate("2025-01-01")).toBe("January 1, 2025");
   });
 });
 
 // ✅ GOOD - Data transformation
-describe('transformUserData', () => {
-  it('should map API response to User model', () => {
-    const apiData = { name: 'John', email: 'john@example.com' };
+describe("transformUserData", () => {
+  it("should map API response to User model", () => {
+    const apiData = { name: "John", email: "john@example.com" };
     expect(transformUserData(apiData)).toEqual({
-      name: 'John',
-      email: 'john@example.com',
-      displayName: 'John (john@example.com)'
+      name: "John",
+      email: "john@example.com",
+      displayName: "John (john@example.com)",
     });
   });
 });
 
 // ❌ BAD - This belongs in integration tests (*.test.tsx)
-import { renderHook } from '@testing-library/react';
-describe('useCustomHook', () => {
-  it('should return data', () => {
+import { renderHook } from "@testing-library/react";
+describe("useCustomHook", () => {
+  it("should return data", () => {
     const { result } = renderHook(() => useCustomHook());
     expect(result.current.data).toBeDefined();
   });
@@ -82,40 +86,41 @@ describe('useCustomHook', () => {
 
 ```tsx
 // ✅ GOOD - API integration test with mocked transport
-import { render, waitFor, fireEvent } from 'test-utils';
-import { createRouterTransport } from '@connectrpc/connect';
+import { render, waitFor, fireEvent } from "test-utils";
+import { createRouterTransport } from "@connectrpc/connect";
 
-describe('CreateServerModal', () => {
-  it('should call createServer API with correct data', async () => {
+describe("CreateServerModal", () => {
+  it("should call createServer API with correct data", async () => {
     const mockCreateServer = vi.fn(() =>
-      Promise.resolve({ id: '123', name: 'test-server' })
+      Promise.resolve({ id: "123", name: "test-server" })
     );
 
     const transport = createRouterTransport(({ rpc }) => {
       rpc(createServer, mockCreateServer);
     });
 
-    const { getByRole, getByLabelText } = render(
-      <CreateServerModal />,
-      { transport }
-    );
+    const { getByRole, getByLabelText } = render(<CreateServerModal />, {
+      transport,
+    });
 
-    fireEvent.change(getByLabelText('Name'), { target: { value: 'test-server' } });
-    fireEvent.click(getByRole('button', { name: 'Create' }));
+    fireEvent.change(getByLabelText("Name"), {
+      target: { value: "test-server" },
+    });
+    fireEvent.click(getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(mockCreateServer).toHaveBeenCalledWith({
-        name: 'test-server'
+        name: "test-server",
       });
     });
   });
 });
 
 // ✅ GOOD - Testing custom React hooks
-import { renderHook } from '@testing-library/react';
+import { renderHook } from "@testing-library/react";
 
-describe('usePaginationParams', () => {
-  it('should parse pagination from URL params', () => {
+describe("usePaginationParams", () => {
+  it("should parse pagination from URL params", () => {
     const { result } = renderHook(() => usePaginationParams());
     expect(result.current.page).toBe(1);
     expect(result.current.pageSize).toBe(20);
@@ -123,9 +128,9 @@ describe('usePaginationParams', () => {
 });
 
 // ❌ BAD - Testing UI component rendering (belongs in UI registry)
-test('button has correct background color', () => {
+test("button has correct background color", () => {
   render(<Button variant="primary">Click me</Button>);
-  expect(screen.getByRole('button')).toHaveClass('bg-blue-500');
+  expect(screen.getByRole("button")).toHaveClass("bg-blue-500");
 });
 ```
 
@@ -133,31 +138,33 @@ test('button has correct background color', () => {
 
 ```typescript
 // ✅ GOOD - Multi-step workflow
-test('user can create and configure MCP server', async ({ page }) => {
-  await page.goto('/remote-mcp');
-  await page.click('text=Create Server');
-  await page.fill('[name="name"]', 'My Server');
-  await page.fill('[name="url"]', 'http://example.com');
-  await page.click('text=Submit');
+test("user can create and configure MCP server", async ({ page }) => {
+  await page.goto("/remote-mcp");
+  await page.click("text=Create Server");
+  await page.fill('[name="name"]', "My Server");
+  await page.fill('[name="url"]', "http://example.com");
+  await page.click("text=Submit");
 
   // Navigate to configuration
-  await expect(page.locator('text=My Server')).toBeVisible();
-  await page.click('text=My Server');
-  await page.click('text=Configure');
+  await expect(page.locator("text=My Server")).toBeVisible();
+  await page.click("text=My Server");
+  await page.click("text=Configure");
 
   // Multi-step configuration
-  await page.selectOption('[name="protocol"]', 'https');
-  await page.click('text=Save Configuration');
-  await expect(page.locator('text=Configuration saved')).toBeVisible();
+  await page.selectOption('[name="protocol"]', "https");
+  await page.click("text=Save Configuration");
+  await expect(page.locator("text=Configuration saved")).toBeVisible();
 });
 ```
 
 **E2E Test Setup:**
+
 1. Navigate to `tests/e2e-ui` and run `bun install && bunx playwright install`
 2. Get secrets from @Beniamin Malinski (1Password link)
 3. Add secrets to `.env` file under `tests/e2e-ui`
 
 **E2E Test Checklist:**
+
 ```bash
 bunx playwright test --update-snapshots              # Run all tests
 bunx playwright test namespace.spec.ts --update-snapshots  # Single test
@@ -168,6 +175,7 @@ bunx playwright codegen https://dev--redpanda-cloud.netlify.app/  # Generate cod
 **Important**: Add `testId` attributes to UI components when modifying them for easier E2E testing.
 
 ### Code Quality
+
 ```bash
 bun run type:check             # TypeScript check
 bun run lint                   # Biome lint + fix
@@ -175,6 +183,7 @@ bun run format                 # Biome format
 ```
 
 ### Building
+
 ```bash
 bun run build                  # Production build
 bun run preview                # Preview build
@@ -188,6 +197,7 @@ bun run analyze                # Bundle analyzer
 ⚠️ **Codebase in transition - use modern patterns for all new code**
 
 **❌ LEGACY (Don't Use)**
+
 - `@redpanda-data/ui` (Chakra-based)
 - Chakra UI
 - MobX, class components, decorators
@@ -195,6 +205,7 @@ bun run analyze                # Bundle analyzer
 - Jest
 
 **✅ MODERN (Use These)**
+
 - Redpanda UI Registry (`src/components/redpanda-ui/`) - Tailwind + shadcn
 - Functional components with hooks
 - Local state (`useState`) or Zustand (global state)
@@ -204,6 +215,7 @@ bun run analyze                # Bundle analyzer
 - Zod or protovalidate-es validation
 
 ### Directory Structure
+
 ```
 src/
 ├── components/
@@ -223,6 +235,7 @@ src/
 ## Core Principles
 
 ### 1. Separate Business Logic from Styling
+
 **GOAL**: Minimal CSS/className in business logic. Push styling to UI registry components and layouts.
 
 ```tsx
@@ -246,6 +259,7 @@ export const UserListPage = () => {
 ```
 
 ### 2. Component Guidelines
+
 1. Use Redpanda UI Registry components from `src/components/redpanda-ui/`
 2. If component doesn't exist, create it in registry (not inline)
 3. Use functional components with hooks
@@ -262,14 +276,17 @@ import { Button } from "@chakra-ui/react";
 ```
 
 ### 3. State Management
+
 **Philosophy: Local First, Global When Needed**
 
 **Use Local State (`useState`) for:**
+
 - Component-specific UI state
 - Temporary data
 - State used by 1-2 components
 
 **Use Zustand for:**
+
 - Cross-component state
 - User preferences
 - Multi-step forms persisting across navigation
@@ -297,7 +314,7 @@ const theme = usePreferencesStore((state) => state.theme);
 import { AutoForm } from "@autoform/react";
 import { ZodProvider } from "@autoform/zod";
 
-<AutoForm schema={zodSchema} onSubmit={handleSubmit} provider={ZodProvider} />
+<AutoForm schema={zodSchema} onSubmit={handleSubmit} provider={ZodProvider} />;
 
 // ✅ GOOD - React Hook Form for complex forms
 import { useForm } from "react-hook-form";
@@ -307,6 +324,7 @@ const { register, handleSubmit } = useForm({ resolver: zodResolver(schema) });
 ```
 
 ### 5. API Communication
+
 **gRPC-Web via Connect Protocol**
 
 - Use React Query hooks from `/src/react-query/`
@@ -325,6 +343,7 @@ const { data, isLoading } = useQuery({
 ## Development Workflow
 
 ### Adding New Feature
+
 1. Create page in `src/components/pages/your-feature/`
 2. Use functional components + hooks
 3. Compose with Redpanda UI components (create in registry if needed)
@@ -351,29 +370,29 @@ export const MyFeaturePage = () => {
 
 ```tsx
 // ✅ Integration test - API calls with mocked transport
-describe('CreateServerModal', () => {
-  it('calls API with correct data', async () => {
-    const mockTransport = vi.fn(() => Promise.resolve({ id: '123' }));
+describe("CreateServerModal", () => {
+  it("calls API with correct data", async () => {
+    const mockTransport = vi.fn(() => Promise.resolve({ id: "123" }));
     const transport = createRouterTransport(({ rpc }) => {
       rpc(createServer, mockTransport);
     });
 
     const { getByRole } = render(<CreateServerModal />, { transport });
-    fireEvent.click(getByRole('button', { name: 'Create' }));
+    fireEvent.click(getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
-      expect(mockTransport).toHaveBeenCalledWith({ name: 'test' });
+      expect(mockTransport).toHaveBeenCalledWith({ name: "test" });
     });
   });
 });
 
 // ✅ E2E test - Complex workflow
-test('user creates and configures server', async ({ page }) => {
-  await page.goto('/remote-mcp');
-  await page.click('text=Create Server');
-  await page.fill('[name="name"]', 'My Server');
-  await page.click('text=Submit');
-  await expect(page.locator('text=My Server')).toBeVisible();
+test("user creates and configures server", async ({ page }) => {
+  await page.goto("/remote-mcp");
+  await page.click("text=Create Server");
+  await page.fill('[name="name"]', "My Server");
+  await page.click("text=Submit");
+  await expect(page.locator("text=My Server")).toBeVisible();
 });
 
 // ❌ DON'T test UI component rendering (tested in UI registry)
@@ -386,20 +405,23 @@ test('user creates and configures server', async ({ page }) => {
 // src/components/redpanda-ui/components/status-badge.tsx
 export const StatusBadge = ({ status, children }: Props) => {
   return (
-    <div className={cn(
-      "inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm",
-      status === 'active' && "bg-green-100 text-green-800"
-    )}>
+    <div
+      className={cn(
+        "inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm",
+        status === "active" && "bg-green-100 text-green-800"
+      )}
+    >
       {children}
     </div>
   );
 };
 
 // Use without styling in business logic
-<StatusBadge status={server.status}>{server.name}</StatusBadge>
+<StatusBadge status={server.status}>{server.name}</StatusBadge>;
 ```
 
 ## Key Files
+
 - `src/App.tsx` - Main app with providers
 - `src/components/routes.tsx` - Route definitions
 - `src/config.ts` - App config & feature flags
@@ -408,7 +430,9 @@ export const StatusBadge = ({ status, children }: Props) => {
 - `biome.json` - Linter/formatter config
 
 ## Environment Variables
+
 Prefix: `REACT_APP_`
+
 - `REACT_APP_ENABLED_FEATURES` - Feature flags (comma-separated)
 - `REACT_APP_CONSOLE_GIT_SHA` - Git SHA
 - `REACT_APP_BUSINESS` - Business features
@@ -417,6 +441,7 @@ Prefix: `REACT_APP_`
 ## Migration Checklist
 
 **✅ DO:**
+
 - Minimize CSS/className in business logic
 - Create UI components in registry (`src/components/redpanda-ui/`)
 - Use component composition
@@ -428,6 +453,7 @@ Prefix: `REACT_APP_`
 - Run `bun i --yarn` after package installs
 
 **❌ DON'T:**
+
 - Heavy styling in business logic
 - `@redpanda-data/ui` or Chakra UI
 - MobX or class components

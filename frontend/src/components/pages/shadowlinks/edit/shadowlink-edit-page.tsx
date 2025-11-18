@@ -124,6 +124,7 @@ const getTabForField = (fieldName: string): string => {
     scramCredentials: 'source',
     advanceClientOptions: 'source',
     useTls: 'source',
+    useMtls: 'source',
     mtls: 'source',
     mtlsMode: 'source',
     // Shadowing tab fields

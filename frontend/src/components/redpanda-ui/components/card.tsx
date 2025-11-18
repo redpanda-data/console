@@ -6,7 +6,7 @@ import { cn } from '../lib/utils';
 import { motion, MotionProps } from 'motion/react';
 
 const cardVariants = cva(
-  'rounded-lg min-w-0 border border-solid bg-white border-base-200 flex flex-col shadow-elevated dark:bg-base-900 dark:border-base-800',
+  'rounded-lg min-w-0 border border-solid bg-white !border-base-200 flex flex-col dark:bg-base-900 dark:border-base-800',
   {
     variants: {
       size: {
@@ -18,14 +18,14 @@ const cardVariants = cva(
       },
       variant: {
         default: '',
-        elevated: 'shadow-lg',
-        outlined: 'border-2',
+        elevated: 'shadow-elevated',
+        outlined: 'border-1',
         ghost: 'border-0 shadow-none bg-transparent dark:bg-transparent',
       },
     },
     defaultVariants: {
       size: 'md',
-      variant: 'default',
+      variant: 'elevated',
     },
   },
 );

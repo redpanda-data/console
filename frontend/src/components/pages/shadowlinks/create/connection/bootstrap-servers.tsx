@@ -13,11 +13,10 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Trash } from 'lucide-react';
+import { Plus, Trash } from 'lucide-react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 
-import { MtlsConfiguration } from './mtls-configuration';
-import { TlsConfiguration } from './tls-configuration';
+import { TlsCertificates } from './tls-configuration';
 import type { FormValues } from '../model';
 
 export const BootstrapServers = () => {
@@ -37,48 +36,50 @@ export const BootstrapServers = () => {
       <CardHeader>
         <CardTitle>Source cluster</CardTitle>
       </CardHeader>
-      <CardContent>
-        <FormLabel required>Bootstrap servers</FormLabel>
-        {bootstrapServerFields.map((field, index) => (
-          <div className="flex items-start gap-2" data-testid={`bootstrap-server-row-${index}`} key={field.id}>
-            <FormField
-              control={control}
-              name={`bootstrapServers.${index}.value`}
-              render={({ field: bootServer }) => (
-                <FormItem className="flex-1">
-                  <FormControl>
-                    <Input placeholder="broker1:9092" testId={`bootstrap-server-input-${index}`} {...bootServer} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+          <FormLabel required>Bootstrap servers</FormLabel>
+          {bootstrapServerFields.map((field, index) => (
+            <div className="flex items-start gap-2" data-testid={`bootstrap-server-row-${index}`} key={field.id}>
+              <FormField
+                control={control}
+                name={`bootstrapServers.${index}.value`}
+                render={({ field: bootServer }) => (
+                  <FormItem className="flex-1">
+                    <FormControl>
+                      <Input placeholder="broker1:9092" testId={`bootstrap-server-input-${index}`} {...bootServer} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {bootstrapServerFields.length > 1 && (
+                <Button
+                  data-testid={`delete-bootstrap-server-${index}`}
+                  onClick={() => removeBootstrapServer(index)}
+                  size="icon"
+                  type="button"
+                  variant="outline"
+                >
+                  <Trash className="h-4 w-4" />
+                </Button>
               )}
-            />
-            {bootstrapServerFields.length > 1 && (
-              <Button
-                data-testid={`delete-bootstrap-server-${index}`}
-                onClick={() => removeBootstrapServer(index)}
-                size="icon"
-                type="button"
-                variant="outline"
-              >
-                <Trash className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        ))}
-        <Button
-          data-testid="add-bootstrap-server-button"
-          onClick={() => appendBootstrapServer({ value: '' })}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          Add URL
-        </Button>
+            </div>
+          ))}
+          <Button
+            className="w-full"
+            data-testid="add-bootstrap-server-button"
+            onClick={() => appendBootstrapServer({ value: '' })}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            <Plus className="mr-1 h-4 w-4" />
+            Add URL
+          </Button>
+        </div>
 
-        <TlsConfiguration />
-
-        <MtlsConfiguration />
+        <TlsCertificates />
       </CardContent>
     </Card>
   );

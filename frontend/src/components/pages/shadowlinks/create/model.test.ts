@@ -114,7 +114,9 @@ describe('Shadow Link Form Validation', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         const errorMessages = result.error.issues.map((issue) => issue.message);
-        expect(errorMessages).toContain('Client certificate is required when client private key is provided');
+        expect(errorMessages).toContain(
+          'Client certificate and private key must be provided together for mutual authentication'
+        );
       }
     });
 
@@ -137,7 +139,9 @@ describe('Shadow Link Form Validation', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         const errorMessages = result.error.issues.map((issue) => issue.message);
-        expect(errorMessages).toContain('Client private key is required when client certificate is provided');
+        expect(errorMessages).toContain(
+          'Client certificate and private key must be provided together for mutual authentication'
+        );
       }
     });
 
@@ -162,7 +166,9 @@ describe('Shadow Link Form Validation', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         const errorMessages = result.error.issues.map((issue) => issue.message);
-        expect(errorMessages).toContain('Client certificate is required when client private key is provided');
+        expect(errorMessages).toContain(
+          'Client certificate and private key must be provided together for mutual authentication'
+        );
       }
     });
 
@@ -187,7 +193,9 @@ describe('Shadow Link Form Validation', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         const errorMessages = result.error.issues.map((issue) => issue.message);
-        expect(errorMessages).toContain('Client private key is required when client certificate is provided');
+        expect(errorMessages).toContain(
+          'Client certificate and private key must be provided together for mutual authentication'
+        );
       }
     });
 

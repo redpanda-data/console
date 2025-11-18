@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Card, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import {
@@ -19,10 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
+import { Switch } from 'components/redpanda-ui/components/switch';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useFormContext, useWatch } from 'react-hook-form';
 
-import { Tabs, TabsList, TabsTrigger } from '../../../../redpanda-ui/components/tabs';
 import type { FormValues } from '../model';
 
 export const ScramConfiguration = () => {
@@ -30,87 +31,85 @@ export const ScramConfiguration = () => {
   const useScram = useWatch({ control, name: 'useScram' });
 
   return (
-    <Card size="full">
+    <Card data-testid="scram-authentication" size="full">
       <CardHeader>
-        <CardTitle>Authentication</CardTitle>
+        <FormField
+          control={control}
+          name="useScram"
+          render={({ field }) => (
+            <FormItem className="flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">Use SCRAM Authentication</FormLabel>
+                <Text className="text-muted-foreground text-sm">
+                  Authenticate with username and password using SCRAM-SHA
+                </Text>
+              </div>
+              <FormControl>
+                <Switch checked={field.value} onCheckedChange={field.onChange} testId="enable-scram-switch" />
+              </FormControl>
+            </FormItem>
+          )}
+        />
       </CardHeader>
-      <FormField
-        control={control}
-        name="useScram"
-        render={({ field }) => (
-          <FormItem className="flex flex-col">
-            <div>
-              <FormLabel>Use SCRAM authentication</FormLabel>
-            </div>
-            <FormControl>
-              <Tabs onValueChange={(value) => field.onChange(value === 'true')} value={String(field.value)}>
-                <TabsList variant="default">
-                  <TabsTrigger data-testid="scram-enabled-tab" value="true">
-                    Enabled
-                  </TabsTrigger>
-                  <TabsTrigger data-testid="scram-disabled-tab" value="false">
-                    Disabled
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </FormControl>
-          </FormItem>
-        )}
-      />
-
-      {useScram && (
-        <div className="space-y-4" data-testid="scram-credentials-form">
-          <FormField
-            control={control}
-            name="scramCredentials.username"
-            render={({ field }) => (
-              <FormItem data-testid="scram-username-field">
-                <FormLabel>Username</FormLabel>
-                <FormControl>
-                  <Input {...field} testId="scram-username-input" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={control}
-            name="scramCredentials.password"
-            render={({ field }) => (
-              <FormItem data-testid="scram-password-field">
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input {...field} testId="scram-password-input" type="password" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={control}
-            name="scramCredentials.mechanism"
-            render={({ field }) => (
-              <FormItem data-testid="scram-mechanism-field">
-                <FormLabel>SASL mechanism</FormLabel>
-                <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)}>
+      <CardContent>
+        {useScram && (
+          <div className="space-y-4 pt-2">
+            <FormField
+              control={control}
+              name="scramCredentials.username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel required>Username</FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select mechanism" />
-                    </SelectTrigger>
+                    <Input data-testid="scram-username-input" placeholder="Enter username" type="text" {...field} />
                   </FormControl>
-                  <SelectContent>
-                    <SelectItem value={String(ScramMechanism.SCRAM_SHA_256)}>SCRAM-SHA-256</SelectItem>
-                    <SelectItem value={String(ScramMechanism.SCRAM_SHA_512)}>SCRAM-SHA-512</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-      )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={control}
+              name="scramCredentials.password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel required>Password</FormLabel>
+                  <FormControl>
+                    <Input data-testid="scram-password-input" placeholder="Enter password" type="password" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={control}
+              name="scramCredentials.mechanism"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>SCRAM Mechanism</FormLabel>
+                  <Select
+                    defaultValue={String(ScramMechanism.SCRAM_SHA_256)}
+                    onValueChange={(value) => field.onChange(Number(value))}
+                    value={String(field.value)}
+                  >
+                    <FormControl>
+                      <SelectTrigger data-testid="scram-mechanism-select">
+                        <SelectValue placeholder="Select mechanism" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={String(ScramMechanism.SCRAM_SHA_256)}>SCRAM-SHA-256</SelectItem>
+                      <SelectItem value={String(ScramMechanism.SCRAM_SHA_512)}>SCRAM-SHA-512</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 };
