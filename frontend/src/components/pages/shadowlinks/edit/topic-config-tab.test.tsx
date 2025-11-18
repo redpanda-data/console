@@ -25,17 +25,10 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
     mode: 'onBlur',
   });
 
-  const onSubmit = () => {
-    // Test form submission
-  };
-
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form>
         <TopicConfigTab />
-        <button data-testid="submit-button" type="submit">
-          Submit
-        </button>
         <div data-testid="form-state">{JSON.stringify(form.watch())}</div>
       </form>
     </Form>
