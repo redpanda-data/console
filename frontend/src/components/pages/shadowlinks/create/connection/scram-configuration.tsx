@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
@@ -21,6 +22,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { AlertTriangle } from 'lucide-react';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useFormContext, useWatch } from 'react-hook-form';
 
@@ -29,6 +31,7 @@ import type { FormValues } from '../model';
 export const ScramConfiguration = () => {
   const { control } = useFormContext<FormValues>();
   const useScram = useWatch({ control, name: 'useScram' });
+  const useTls = useWatch({ control, name: 'useTls' });
 
   return (
     <Card data-testid="scram-authentication" size="full">
@@ -54,6 +57,16 @@ export const ScramConfiguration = () => {
       <CardContent>
         {useScram && (
           <div className="space-y-4 pt-2">
+            {!useTls && (
+              <Alert data-testid="scram-without-tls-warning" variant="warning">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  SCRAM authentication without TLS sends credentials in plaintext. Enable TLS encryption to secure your
+                  connection.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <FormField
               control={control}
               name="scramCredentials.username"
@@ -61,7 +74,7 @@ export const ScramConfiguration = () => {
                 <FormItem>
                   <FormLabel required>Username</FormLabel>
                   <FormControl>
-                    <Input data-testid="scram-username-input" placeholder="Enter username" type="text" {...field} />
+                    <Input placeholder="Enter username" testId="scram-username-input" type="text" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -75,7 +88,7 @@ export const ScramConfiguration = () => {
                 <FormItem>
                   <FormLabel required>Password</FormLabel>
                   <FormControl>
-                    <Input data-testid="scram-password-input" placeholder="Enter password" type="password" {...field} />
+                    <Input placeholder="Enter password" testId="scram-password-input" type="password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -94,7 +107,7 @@ export const ScramConfiguration = () => {
                     value={String(field.value)}
                   >
                     <FormControl>
-                      <SelectTrigger data-testid="scram-mechanism-select">
+                      <SelectTrigger testId="scram-mechanism-select">
                         <SelectValue placeholder="Select mechanism" />
                       </SelectTrigger>
                     </FormControl>

@@ -172,8 +172,11 @@ const enableTLS = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen
 ) => {
-  const tlsEnabledTab = scr.getByTestId('tls-enabled-tab');
-  await user.click(tlsEnabledTab);
+  const tlsSwitch = scr.getByTestId('enable-tls-switch');
+  // Only click if not already enabled
+  if (!tlsSwitch.getAttribute('aria-checked') || tlsSwitch.getAttribute('aria-checked') === 'false') {
+    await user.click(tlsSwitch);
+  }
 };
 
 const updateMetadataMaxAge = async (
@@ -337,8 +340,19 @@ const enableMTLS = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen
 ) => {
-  const mtlsEnabledTab = scr.getByTestId('mtls-enabled-tab');
-  await user.click(mtlsEnabledTab);
+  // First ensure TLS is enabled (mTLS requires TLS)
+  await enableTLS(user, scr);
+
+  // Wait for mTLS switch to appear (it's progressively disclosed)
+  await waitFor(() => {
+    expect(scr.getByTestId('enable-mtls-switch')).toBeInTheDocument();
+  });
+
+  const mtlsSwitch = scr.getByTestId('enable-mtls-switch');
+  // Only click if not already enabled
+  if (!mtlsSwitch.getAttribute('aria-checked') || mtlsSwitch.getAttribute('aria-checked') === 'false') {
+    await user.click(mtlsSwitch);
+  }
 };
 
 const uploadCACertificate = async (

@@ -294,11 +294,15 @@ export const TlsCertificates = () => {
                   <TabsContent className="space-y-4 px-8 py-6" value="pem">
                     <CertificateItem
                       certType="ca"
-                      description="Verify the identity of the source cluster"
+                      description={
+                        useMtls
+                          ? 'Verify the identity of the source cluster'
+                          : 'Optional: Verify the identity of the source cluster (system trust store used if not provided)'
+                      }
                       error={errors.mtls?.ca as FieldError | undefined}
                       onFileUpload={(file) => handleFileUpload('ca', file)}
                       onRemove={() => handleRemoveCertificate('ca')}
-                      title="CA Certificate"
+                      title={useMtls ? 'CA Certificate' : 'CA Certificate (Optional)'}
                       value={mtls.ca}
                     />
 
@@ -333,7 +337,12 @@ export const TlsCertificates = () => {
                       name="mtls.ca"
                       render={() => (
                         <FormItem>
-                          <FormLabel>CA Certificate path</FormLabel>
+                          <FormLabel>{useMtls ? 'CA Certificate path' : 'CA Certificate path (Optional)'}</FormLabel>
+                          {!useMtls && (
+                            <Text className="text-muted-foreground text-sm">
+                              System trust store will be used if not provided
+                            </Text>
+                          )}
                           <FormControl>
                             <Input
                               data-testid="mtls-ca-path-input"
