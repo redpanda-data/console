@@ -9,22 +9,22 @@
  * by the Apache License, Version 2.0
  */
 
+import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import { useFormContext } from 'react-hook-form';
 
-import { AdvancedClientOptions } from './advanced-client-options';
-import { BootstrapServers } from './bootstrap-servers';
-import { ScramConfiguration } from './scram-configuration';
-import { Card, CardContent, CardHeader } from '../../../../redpanda-ui/components/card';
-import type { FormValues } from '../model';
+import { AdvancedClientOptions } from '../create/connection/advanced-client-options';
+import { BootstrapServers } from '../create/connection/bootstrap-servers';
+import { ScramConfiguration } from '../create/connection/scram-configuration';
+import type { FormValues } from '../create/model';
 
-export const ConnectionStep = () => {
+export const SourceTab = () => {
   const { control } = useFormContext<FormValues>();
 
   return (
     <div className="space-y-4">
-      {/* SL name */}
+      {/* Shadow link name (Read-only) */}
       <Card size="full">
         <CardHeader>Name</CardHeader>
         <CardContent>
@@ -35,7 +35,7 @@ export const ConnectionStep = () => {
               <FormItem>
                 <FormLabel required>Shadow link name</FormLabel>
                 <FormControl>
-                  <Input placeholder="my-shadow-link" {...field} />
+                  <Input placeholder="my-shadow-link" {...field} disabled />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -43,10 +43,13 @@ export const ConnectionStep = () => {
           />
         </CardContent>
       </Card>
+
       {/* Source Cluster Connection and TLS */}
       <BootstrapServers />
+
       {/* SCRAM Credentials */}
       <ScramConfiguration />
+
       {/* Advanced Settings */}
       <AdvancedClientOptions />
     </div>

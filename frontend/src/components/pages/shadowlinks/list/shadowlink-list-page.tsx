@@ -83,7 +83,7 @@ export const createColumns: ColumnDef<ListShadowLinksResponse_ShadowLink>[] = [
   {
     id: 'sourceCluster',
     accessorFn: (row) => row.bootstrapServers.join(',') || 'N/A',
-    header: 'Source Cluster',
+    header: 'Source cluster',
     cell: ({ row }) => (
       <Text className="font-mono text-muted-foreground" variant="small">
         {row.original.bootstrapServers.join(',') || 'N/A'}
@@ -149,7 +149,7 @@ export const ShadowLinkListPage = () => {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <Text variant="muted">
-          Manage shadowlinks to replicate topics from source clusters for disaster recovery and high availability.
+          Manage shadow links to replicate topics from source clusters for disaster recovery and high availability.
         </Text>
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
@@ -161,7 +161,7 @@ export const ShadowLinkListPage = () => {
                 variant="secondary"
               >
                 <Plus className="h-4 w-4" />
-                Create Shadowlink
+                Create shadow link
               </Button>
             </span>
           </TooltipTrigger>

@@ -79,12 +79,12 @@ export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
         </CardContent>
       </Card>
 
-      {/* Topics replicated */}
+      {/* Replicated topics */}
       <Card className="group" testId="shadow-link-metric-replicated">
         <CardContent className="relative pt-6">
           <MetricCardRefreshButton isFetching={isFetching} onRefresh={() => refetch()} />
           <Text className="text-muted-foreground text-sm" testId="metric-label-replicated">
-            Topics replicated
+            Replicated topics
           </Text>
           <Text className="mt-2 font-semibold text-2xl" testId="metric-value-replicated">
             {metricsData?.totalTopicsReplicated?.toString() ?? '-'}

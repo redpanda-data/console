@@ -24,23 +24,22 @@ export const ShadowLinkEmptyState = ({ onCreateClick }: ShadowLinkEmptyStateProp
     </CardHeader>
     <CardContent className="flex flex-col gap-4">
       <Text>
-        Shadowing is Redpanda's disaster recovery solution that protects your data from regional outages. It
-        continuously replicates your topics to a separate cluster in a different location, creating a live backup that
-        stays up-to-date.
+        Shadowing protects your data from regional outages. It continuously replicates topics to a separate cluster in a
+        different region, creating an up-to-date backup.
       </Text>
       <Text>
-        Think of it as an insurance policy for your data. Your source cluster handles all production traffic while the
-        shadow cluster maintains a read-only copy. If disaster strikes and your primary region goes down, you can
-        quickly switch to the shadow cluster with minimal data loss.
+        Think of it as an insurance policy for your data. The source cluster handles all production traffic, while the
+        shadow cluster maintains a read-only copy. If your primary region goes down, you can quickly switch to the
+        shadow cluster with minimal data loss.
       </Text>
       <Text>
         Shadowing preserves everything: your data, offsets, timestamps, and consumer positions. This means your
-        applications can resume exactly where they left off after a failover.
+        applications can resume exactly where they left off after a failover. Create a shadow link to connect your
+        source cluster to your shadow cluster.
       </Text>
-      <Text>Get started by creating your first shadow link to connect a source topic to a destination cluster.</Text>
       <div>
         <Button onClick={onCreateClick} testId="create-shadowlink-button">
-          Create Shadow link
+          Create shadow link
         </Button>
       </div>
     </CardContent>

@@ -12,7 +12,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from 'components/redpanda-ui/components/form';
 import { useForm } from 'react-hook-form';
-import { fireEvent, render, screen, waitFor, within } from 'test-utils';
+import { fireEvent, render, screen, waitFor } from 'test-utils';
 
 import { BootstrapServers } from './bootstrap-servers';
 import { FormSchema, type FormValues, initialValues } from '../model';
@@ -33,11 +33,8 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
   );
 };
 
-// Helper to get input from FormItem wrapper
-const getBootstrapInput = (index: number) => {
-  const formItem = screen.getByTestId(`bootstrap-server-input-${index}`);
-  return within(formItem).getByRole('textbox');
-};
+// Helper to get bootstrap server input
+const getBootstrapInput = (index: number) => screen.getByTestId(`bootstrap-server-input-${index}`);
 
 // Validation error message
 const ERROR_MESSAGE = 'Must be in format host:port (e.g., localhost:9092)';
@@ -100,16 +97,14 @@ describe('BootstrapServers', () => {
       fireEvent.blur(input);
 
       await waitFor(() => {
-        const formItem = screen.getByTestId('bootstrap-server-input-0');
-        expect(within(formItem).getByText(ERROR_MESSAGE)).toBeInTheDocument();
+        expect(screen.getByText(ERROR_MESSAGE)).toBeInTheDocument();
       });
 
       fireEvent.change(input, { target: { value: 'localhost:9092' } });
       fireEvent.blur(input);
 
       await waitFor(() => {
-        const formItem = screen.getByTestId('bootstrap-server-input-0');
-        expect(within(formItem).queryByText(ERROR_MESSAGE)).not.toBeInTheDocument();
+        expect(screen.queryByText(ERROR_MESSAGE)).not.toBeInTheDocument();
       });
     });
   });

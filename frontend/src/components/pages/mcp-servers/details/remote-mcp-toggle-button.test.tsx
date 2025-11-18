@@ -38,8 +38,6 @@ vi.mock('config', () => ({
 
 import { RemoteMCPToggleButton } from './remote-mcp-toggle-button';
 
-const START_BUTTON_REGEX = /start/i;
-
 describe('RemoteMCPToggleButton', () => {
   test('should stop a running MCP server from the details page', async () => {
     const serverId = 'server-1';
@@ -253,7 +251,7 @@ describe('RemoteMCPToggleButton', () => {
     );
 
     await waitFor(() => {
-      const startButton = screen.getByRole('button', { name: START_BUTTON_REGEX });
+      const startButton = screen.getByTestId('start-mcp-server-button');
       expect(startButton).toBeVisible();
       expect(startButton).toBeDisabled();
     });
@@ -294,7 +292,7 @@ describe('RemoteMCPToggleButton', () => {
     );
 
     await waitFor(() => {
-      const startButton = screen.getByRole('button', { name: /start/i });
+      const startButton = screen.getByRole('button', { name: 'Start' });
       expect(startButton).toBeVisible();
       expect(startButton).toBeEnabled();
     });

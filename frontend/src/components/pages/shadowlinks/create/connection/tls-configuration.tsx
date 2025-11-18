@@ -16,7 +16,7 @@ import { useFormContext } from 'react-hook-form';
 import type { FormValues } from '../model';
 
 export const TlsConfiguration = () => {
-  const { control, setValue } = useFormContext<FormValues>();
+  const { control } = useFormContext<FormValues>();
   return (
     <div className="space-y-4" data-testid="tls-configuration">
       <FormField
@@ -30,14 +30,7 @@ export const TlsConfiguration = () => {
             <FormControl>
               <Tabs
                 data-testid="tls-toggle"
-                onValueChange={(value) => {
-                  const enabled = value === 'true';
-                  field.onChange(enabled);
-                  // Disable mTLS when TLS is disabled
-                  if (!enabled) {
-                    setValue('useMtls', false);
-                  }
-                }}
+                onValueChange={(value) => field.onChange(value === 'true')}
                 value={String(field.value)}
               >
                 <TabsList variant="default">
