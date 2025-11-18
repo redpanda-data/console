@@ -73,12 +73,14 @@ Follow this 7-step methodology systematically:
 3. Document frontend validation rules
 4. Create comparison table: Frontend vs Backend validation
 5. Identify any gaps or mismatches
+6. Note design system components used (Switch, Item, Dropzone, etc.) - reference `ux-patterns` skill if available
 
 **Output**: Frontend schema documentation with:
 - FormValues type structure
 - Zod validation rules
 - Comparison table showing frontend vs backend validation
 - List of any gaps or mismatches
+- Design system components used in current implementation
 
 ### Step 4: User Journey Mapping (15 minutes)
 
@@ -92,6 +94,8 @@ Follow this 7-step methodology systematically:
 5. Document error states and messaging
 6. Create visual flow diagram (text-based is fine)
 7. Map component hierarchy
+8. Document test IDs used (pattern: `{component}-{element}-{type}`)
+9. Note any progressive disclosure patterns (fields shown/hidden based on state)
 
 **Output**: Detailed user journey with:
 - High-level flow diagram
@@ -100,6 +104,8 @@ Follow this 7-step methodology systematically:
 - Validation points
 - Error states and messaging
 - Component hierarchy
+- Test ID inventory for testability assessment
+- Progressive disclosure behaviors
 
 ### Step 5: Feature Context Research (10 minutes)
 
@@ -131,6 +137,7 @@ Evaluate each dimension and document strengths and gaps:
 4. **Error Prevention**: Are users guided to avoid errors?
 5. **Feedback & Guidance**: Do users understand what's happening?
 6. **Consistency**: Is the UX consistent with similar features in the app?
+7. **Smart Field Dependencies**: Do related fields auto-enable/disable appropriately? Are field relationships clear?
 
 **Output**: UX evaluation with:
 - ✅ Strengths for each dimension
@@ -150,6 +157,8 @@ Evaluate each dimension and document strengths and gaps:
 3. Suggest specific improvements for each problem
 4. Raise design questions that need decisions
 5. Note any technical constraints or opportunities
+6. Reference established patterns from `ux-patterns` skill when applicable
+7. Identify similar features that could benefit from same improvements (pattern consistency)
 
 **Output**: Prioritized recommendations with:
 - Critical issues (must fix)
@@ -157,6 +166,7 @@ Evaluate each dimension and document strengths and gaps:
 - Nice-to-have enhancements (could fix)
 - Design questions to resolve
 - Implementation considerations
+- Pattern references and consistency opportunities
 
 ## Output Format
 
@@ -423,11 +433,12 @@ A successful analysis includes:
 3. ✅ Validation comparison table
 4. ✅ Detailed user journey with decision points
 5. ✅ Feature context research
-6. ✅ UX evaluation across 6 dimensions
+6. ✅ UX evaluation across 7 dimensions (including Smart Field Dependencies)
 7. ✅ Specific, actionable recommendations
 8. ✅ Design questions raised
 9. ✅ Code references with line numbers
 10. ✅ Clear categorization (critical/important/nice-to-have)
+11. ✅ Pattern consistency opportunities identified
 
 ## Tips for Claude
 

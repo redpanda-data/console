@@ -7,9 +7,20 @@ This directory contains specialized skills that extend Claude's capabilities for
 ### 🎨 improve-ux
 **Deep UX analysis and improvement recommendations**
 
-Performs systematic analysis of features including backend schema, user journey mapping, validation comparison, context research, and actionable recommendations.
+Performs systematic 7-step analysis of features including backend schema, user journey mapping, validation comparison, context research, and actionable recommendations.
 
 **See**: `improve-ux/SKILL.md` for full documentation and `improve-ux/reference.md` for example output
+
+---
+
+### 📐 ux-patterns
+**Reference library of established UX patterns**
+
+Lookup established UX patterns for progressive disclosure, component selection, field dependencies, state visualization, and testability. Contains real implementation examples with code and decision rationales.
+
+**See**: `ux-patterns/SKILL.md` for pattern library
+
+**Use when**: Implementing UX improvements, choosing between component options, or ensuring pattern consistency.
 
 ---
 

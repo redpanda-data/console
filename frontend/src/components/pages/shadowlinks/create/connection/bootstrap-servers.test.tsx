@@ -177,13 +177,52 @@ describe('BootstrapServers', () => {
       const input1 = getBootstrapInput(1);
       fireEvent.change(input1, { target: { value: 'kafka2.example.com:9092' } });
 
-      const disabledTab = screen.getByTestId('tls-disabled-tab');
-      fireEvent.click(disabledTab);
+      // TLS is enabled by default, so disable it
+      const tlsSwitch = screen.getByTestId('enable-tls-switch');
+      fireEvent.click(tlsSwitch);
 
       await waitFor(() => {
         expect(input0).toHaveValue('kafka1.example.com:9092');
         expect(input1).toHaveValue('kafka2.example.com:9092');
-        expect(disabledTab).toHaveAttribute('aria-selected', 'true');
+        expect(tlsSwitch).not.toBeChecked();
+      });
+    });
+
+    test('should enable mTLS when TLS is enabled', async () => {
+      render(<TestWrapper />);
+
+      // TLS is enabled by default
+      const tlsSwitch = screen.getByTestId('enable-tls-switch');
+      expect(tlsSwitch).toBeChecked();
+
+      // mTLS switch should be visible
+      const mtlsSwitch = screen.getByTestId('enable-mtls-switch');
+      expect(mtlsSwitch).toBeInTheDocument();
+      expect(mtlsSwitch).not.toBeChecked();
+
+      // Enable mTLS
+      fireEvent.click(mtlsSwitch);
+
+      await waitFor(() => {
+        expect(mtlsSwitch).toBeChecked();
+        expect(tlsSwitch).toBeChecked(); // TLS should remain enabled
+      });
+    });
+
+    test('should hide mTLS when TLS is disabled', async () => {
+      render(<TestWrapper />);
+
+      const tlsSwitch = screen.getByTestId('enable-tls-switch');
+
+      // Verify mTLS switch is visible initially
+      expect(screen.getByTestId('enable-mtls-switch')).toBeInTheDocument();
+
+      // Disable TLS
+      fireEvent.click(tlsSwitch);
+
+      await waitFor(() => {
+        expect(tlsSwitch).not.toBeChecked();
+        expect(screen.queryByTestId('enable-mtls-switch')).not.toBeInTheDocument();
       });
     });
   });

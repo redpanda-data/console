@@ -42,7 +42,7 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
 
 describe('ScramConfiguration', () => {
   describe('SCRAM enabled state', () => {
-    test('should show credentials form when Enabled is selected', () => {
+    test('should show credentials form when switch is enabled', () => {
       const customValues: FormValues = {
         ...initialValues,
         useScram: true,
@@ -50,14 +50,14 @@ describe('ScramConfiguration', () => {
 
       render(<TestWrapper defaultValues={customValues} />);
 
-      expect(screen.getByTestId('scram-enabled-tab')).toHaveAttribute('aria-selected', 'true');
-      expect(screen.getByTestId('scram-credentials-form')).toBeInTheDocument();
-      expect(screen.getByTestId('scram-username-field')).toBeInTheDocument();
-      expect(screen.getByTestId('scram-password-field')).toBeInTheDocument();
-      expect(screen.getByTestId('scram-mechanism-field')).toBeInTheDocument();
+      const scramSwitch = screen.getByTestId('enable-scram-switch');
+      expect(scramSwitch).toBeChecked();
+      expect(screen.getByTestId('scram-username-input')).toBeInTheDocument();
+      expect(screen.getByTestId('scram-password-input')).toBeInTheDocument();
+      expect(screen.getByTestId('scram-mechanism-select')).toBeInTheDocument();
     });
 
-    test('should hide credentials form when Disabled is selected', () => {
+    test('should hide credentials form when switch is disabled', () => {
       const customValues: FormValues = {
         ...initialValues,
         useScram: false,
@@ -65,11 +65,41 @@ describe('ScramConfiguration', () => {
 
       render(<TestWrapper defaultValues={customValues} />);
 
-      expect(screen.getByTestId('scram-disabled-tab')).toHaveAttribute('aria-selected', 'true');
-      expect(screen.queryByTestId('scram-credentials-form')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('scram-username-field')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('scram-password-field')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('scram-mechanism-field')).not.toBeInTheDocument();
+      const scramSwitch = screen.getByTestId('enable-scram-switch');
+      expect(scramSwitch).not.toBeChecked();
+      expect(screen.queryByTestId('scram-username-input')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('scram-password-input')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('scram-mechanism-select')).not.toBeInTheDocument();
+    });
+
+    test('should toggle credentials form when switch is clicked', async () => {
+      render(<TestWrapper />);
+
+      const scramSwitch = screen.getByTestId('enable-scram-switch');
+
+      // Initially disabled (default)
+      expect(scramSwitch).not.toBeChecked();
+      expect(screen.queryByTestId('scram-username-input')).not.toBeInTheDocument();
+
+      // Enable SCRAM
+      fireEvent.click(scramSwitch);
+
+      await waitFor(() => {
+        expect(scramSwitch).toBeChecked();
+        expect(screen.getByTestId('scram-username-input')).toBeInTheDocument();
+        expect(screen.getByTestId('scram-password-input')).toBeInTheDocument();
+        expect(screen.getByTestId('scram-mechanism-select')).toBeInTheDocument();
+      });
+
+      // Disable SCRAM
+      fireEvent.click(scramSwitch);
+
+      await waitFor(() => {
+        expect(scramSwitch).not.toBeChecked();
+        expect(screen.queryByTestId('scram-username-input')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('scram-password-input')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('scram-mechanism-select')).not.toBeInTheDocument();
+      });
     });
   });
 
@@ -94,8 +124,12 @@ describe('ScramConfiguration', () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Username is required when SCRAM is enabled')).toBeInTheDocument();
-        expect(screen.getByText('Password is required when SCRAM is enabled')).toBeInTheDocument();
+        expect(
+          screen.getByText('SCRAM username is required for authentication. Provide a username or disable SCRAM.')
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText('SCRAM password is required for authentication. Provide a password or disable SCRAM.')
+        ).toBeInTheDocument();
       });
 
       fireEvent.change(usernameInput, { target: { value: 'admin' } });
@@ -104,8 +138,12 @@ describe('ScramConfiguration', () => {
       await waitFor(() => {
         expect(usernameInput).toHaveValue('admin');
         expect(passwordInput).toHaveValue('secure-password-123');
-        expect(screen.queryByText('Username is required when SCRAM is enabled')).not.toBeInTheDocument();
-        expect(screen.queryByText('Password is required when SCRAM is enabled')).not.toBeInTheDocument();
+        expect(
+          screen.queryByText('SCRAM username is required for authentication. Provide a username or disable SCRAM.')
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByText('SCRAM password is required for authentication. Provide a password or disable SCRAM.')
+        ).not.toBeInTheDocument();
       });
     });
   });

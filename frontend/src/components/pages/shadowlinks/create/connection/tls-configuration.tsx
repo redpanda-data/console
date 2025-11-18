@@ -273,7 +273,7 @@ export const TlsCertificates = () => {
                 )}
               />
 
-              <div className="mt-4 space-y-4">
+              <div className="mt-8 space-y-4">
                 <div>
                   <FormLabel>Certificate input method</FormLabel>
                   <Text className="text-muted-foreground text-sm">

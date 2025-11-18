@@ -245,74 +245,66 @@ export const ShadowLinkCreatePage = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div className="space-y-2">
+    <div className="!mt-6 flex flex-col gap-8">
+      <div className="flex flex-col gap-4">
         <Heading level={1}>Create shadow link</Heading>
         <Text variant="muted">
           Set up a shadow link to replicate topics from a source cluster for disaster recovery.
         </Text>
       </div>
 
-      <Stepper.Provider className="flex flex-col space-y-4" variant="horizontal">
+      <Stepper.Provider variant="horizontal">
         {({ methods }) => (
-          <>
-            <div className="xl:w-1/3">
-              <Stepper.Navigation>
-                <Stepper.Step of="shadow-connection">
-                  <Stepper.Title>Connection</Stepper.Title>
-                </Stepper.Step>
-                <Stepper.Step of="shadow-configuration">
-                  <Stepper.Title>Configuration</Stepper.Title>
-                </Stepper.Step>
-              </Stepper.Navigation>
-            </div>
+          <div className="w-full space-y-6 lg:max-w-3xl">
+            <Stepper.Navigation>
+              <Stepper.Step of="shadow-connection">
+                <Stepper.Title>Connection</Stepper.Title>
+              </Stepper.Step>
+              <Stepper.Step of="shadow-configuration">
+                <Stepper.Title>Configuration</Stepper.Title>
+              </Stepper.Step>
+            </Stepper.Navigation>
 
-            <div className="xl:w-2/3">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)}>
-                  <DevTool control={form.control} />
-                  {/* CONNECTION STEP */}
-                  {methods.current.id === 'shadow-connection' && (
-                    <Stepper.Panel>
-                      <ConnectionStep />
-                    </Stepper.Panel>
-                  )}
-
-                  {/* SHADOW CONFIGURATION STEP */}
-                  {methods.current.id === 'shadow-configuration' && (
-                    <Stepper.Panel>
-                      <ConfigurationStep />
-                    </Stepper.Panel>
-                  )}
-                </form>
-              </Form>
-            </div>
-
-            <div className="w-1/2">
-              <Stepper.Controls className="flex justify-start">
-                {methods.isLast ? (
-                  <Button disabled={isCreating} onClick={form.handleSubmit(onSubmit)} variant="secondary">
-                    Create shadow link
-                  </Button>
-                ) : (
-                  <Button onClick={() => next(methods)} type="button" variant="secondary">
-                    Next
-                  </Button>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)}>
+                <DevTool control={form.control} />
+                {/* CONNECTION STEP */}
+                {methods.current.id === 'shadow-connection' && (
+                  <Stepper.Panel>
+                    <ConnectionStep />
+                  </Stepper.Panel>
                 )}
 
-                {methods.isFirst ? (
-                  <Button onClick={() => navigate('/shadowlinks')} type="button" variant="outline">
-                    Cancel
-                  </Button>
-                ) : (
-                  <Button onClick={methods.prev} type="button" variant="outline">
-                    Back
-                  </Button>
+                {/* SHADOW CONFIGURATION STEP */}
+                {methods.current.id === 'shadow-configuration' && (
+                  <Stepper.Panel>
+                    <ConfigurationStep />
+                  </Stepper.Panel>
                 )}
-              </Stepper.Controls>
-            </div>
-          </>
+              </form>
+            </Form>
+
+            <Stepper.Controls>
+              {methods.isFirst ? (
+                <Button onClick={() => navigate('/shadowlinks')} type="button" variant="outline">
+                  Cancel
+                </Button>
+              ) : (
+                <Button onClick={methods.prev} type="button" variant="outline">
+                  Back
+                </Button>
+              )}
+              {methods.isLast ? (
+                <Button disabled={isCreating} onClick={form.handleSubmit(onSubmit)} variant="secondary">
+                  Create shadow link
+                </Button>
+              ) : (
+                <Button onClick={() => next(methods)} type="button" variant="secondary">
+                  Next
+                </Button>
+              )}
+            </Stepper.Controls>
+          </div>
         )}
       </Stepper.Provider>
     </div>
