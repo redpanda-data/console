@@ -25,9 +25,10 @@ const REGEX_SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/;
 type TopicSelectorProps = {
   selectedTopics: string[];
   onTopicsChange: (topics: string[]) => void;
+  isReadOnly?: boolean;
 };
 
-export const TopicSelector = ({ selectedTopics, onTopicsChange }: TopicSelectorProps) => {
+export const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: TopicSelectorProps) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch all topics
@@ -143,9 +144,10 @@ export const TopicSelector = ({ selectedTopics, onTopicsChange }: TopicSelectorP
           filterOption={() => true}
           formatOptionLabel={formatOptionLabel}
           inputValue={searchTerm}
+          isDisabled={isReadOnly}
           isLoading={isLoading}
           isMulti
-          isSearchable
+          isSearchable={!isReadOnly}
           noOptionsMessage={() => (searchTerm ? `Press Enter to add pattern: ${searchTerm}` : 'No topics found')}
           onChange={(selected) => {
             if (isMultiValue(selected)) {

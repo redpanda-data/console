@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Redpanda Data, Inc.
+ * Copyright 2024 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -9,84 +9,75 @@
  * by the Apache License, Version 2.0
  */
 
-import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
-import { SecretSelector } from 'components/ui/secret/secret-selector';
-import type { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { AiOutlinePlus } from 'react-icons/ai';
 
-// Regex pattern for extracting secret ID from interpolation format
-const SECRET_INTERPOLATION_REGEX = /\$\{secrets\.([^}]+)\}/;
+import { rpcnSecretManagerApi } from '../../../../../state/backend-api';
+import { SingleSelect } from '../../../../misc/select';
+import { FormItem, FormLabel, FormMessage } from '../../../../redpanda-ui/components/form';
 
-/**
- * SecretDropdownField component for selecting secrets or creating new ones
- */
-export type SecretDropdownFieldProps = {
+const CREATE_NEW_OPTION_VALUE = 'CREATE_NEW_OPTION_VALUE';
+
+type SecretDropdownFieldProps = {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  availableSecrets: Array<{ id: string; name: string }>;
   placeholder?: string;
+  onCreateNew: () => void;
   isRequired?: boolean;
   errorMessage?: string;
   helperText?: string;
-  scopes: Scope[];
-  dialogTitle?: string;
-  dialogDescription?: string;
-  emptyStateMessage?: string;
-  secretNamePlaceholder?: string;
-  secretValuePlaceholder?: string;
-  secretValueDescription?: string;
-  secretValuePattern?: {
-    regex: RegExp;
-    message: string;
-  };
 };
 
-export const SecretDropdownField: React.FC<SecretDropdownFieldProps> = ({
+export const SecretDropdownField = ({
   label,
   value,
   onChange,
-  availableSecrets,
   placeholder,
+  onCreateNew,
   isRequired = false,
   errorMessage,
   helperText,
-  scopes,
-  dialogTitle,
-  dialogDescription,
-  emptyStateMessage,
-  secretNamePlaceholder,
-  secretValuePlaceholder,
-  secretValueDescription,
-  secretValuePattern,
-}) => {
-  const handleSecretChange = (secretId: string) => {
-    // Convert secret ID to interpolation format
-    onChange(`\${secrets.${secretId}}`);
+}: SecretDropdownFieldProps) => {
+  const availableSecrets = rpcnSecretManagerApi.secrets || [];
+
+  const secretOptions = availableSecrets.map((secret) => ({
+    value: `\${secrets.${secret.id}}`,
+    label: secret.id,
+  }));
+
+  const CREATE_NEW_OPTION = {
+    value: CREATE_NEW_OPTION_VALUE,
+    label: (
+      <div className="flex items-center gap-1">
+        <AiOutlinePlus />
+        <span className="font-semibold">Create New</span>
+      </div>
+    ),
   };
 
-  // Extract secret ID from interpolation format
-  const extractedValue = value.match(SECRET_INTERPOLATION_REGEX)?.[1] || '';
+  const allOptions = [...secretOptions, CREATE_NEW_OPTION];
+
+  const handleChange = (selectedValue: string) => {
+    if (selectedValue === CREATE_NEW_OPTION_VALUE) {
+      onCreateNew();
+    } else {
+      onChange(selectedValue);
+    }
+  };
 
   return (
     <FormItem>
-      <FormLabel required={isRequired}>{label}</FormLabel>
-      {helperText && <FormDescription>{helperText}</FormDescription>}
-      <FormControl>
-        <SecretSelector
-          availableSecrets={availableSecrets}
-          dialogDescription={dialogDescription}
-          dialogTitle={dialogTitle}
-          emptyStateMessage={emptyStateMessage}
-          onChange={handleSecretChange}
-          placeholder={placeholder || 'Select a secret...'}
-          scopes={scopes}
-          secretNamePlaceholder={secretNamePlaceholder}
-          secretValueDescription={secretValueDescription}
-          secretValuePattern={secretValuePattern}
-          secretValuePlaceholder={secretValuePlaceholder}
-          value={extractedValue}
-        />
-      </FormControl>
+      <FormLabel className="font-medium">
+        {label}
+        {isRequired && <span className="ml-1 text-destructive">*</span>}
+      </FormLabel>
+      {helperText && <p className="mb-2 text-muted-foreground text-sm">{helperText}</p>}
+      <SingleSelect
+        onChange={handleChange}
+        options={allOptions}
+        placeholder={placeholder || 'Select a secret...'}
+        value={value}
+      />
       {errorMessage && <FormMessage>{errorMessage}</FormMessage>}
     </FormItem>
   );

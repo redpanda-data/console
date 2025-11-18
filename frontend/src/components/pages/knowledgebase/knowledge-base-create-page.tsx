@@ -19,6 +19,7 @@ import { Form, FormContainer } from 'components/redpanda-ui/components/form';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { Loader2 } from 'lucide-react';
+import { runInAction } from 'mobx';
 import { CreateSecretRequestSchema as CreateSecretRequestSchemaConsole } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -50,11 +51,9 @@ import { useCreateKnowledgeBaseMutation } from 'react-query/api/knowledge-base';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
-
-import { runInAction } from 'mobx';
-import { uiState } from 'state/ui-state';
 
 import { BasicInformationSection } from './components/form-sections/basic-information-section';
 import { EmbeddingGeneratorSection } from './components/form-sections/embedding-generator-section';

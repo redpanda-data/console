@@ -29,7 +29,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
-import { KnowledgeBaseEditTabs } from './knowledge-base-edit-tabs';
+import { KnowledgeBaseEditTabs, type KnowledgeBaseEditTabsRef } from './knowledge-base-edit-tabs';
 import { ShortNum } from '../../misc/short-num';
 
 export const updatePageTitle = (knowledgebaseId?: string) => {
@@ -45,7 +45,7 @@ export const updatePageTitle = (knowledgebaseId?: string) => {
 export const KnowledgeBaseDetailsPage = () => {
   const { knowledgebaseId } = useParams<{ knowledgebaseId: string }>();
   const navigate = useNavigate();
-  const editTabsRef = useRef<KnowledgeBaseEditTabs>(null);
+  const editTabsRef = useRef<KnowledgeBaseEditTabsRef>(null);
 
   // Local state
   const [isEditMode, setIsEditMode] = useState(false);

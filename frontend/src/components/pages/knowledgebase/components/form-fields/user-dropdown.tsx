@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Redpanda Data, Inc.
+ * Copyright 2024 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -9,56 +9,52 @@
  * by the Apache License, Version 2.0
  */
 
-import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from 'components/redpanda-ui/components/select';
-import { useListUsersQuery } from 'react-query/api/user';
+import { useListUsersQuery } from '../../../../../react-query/api/user';
+import { SingleSelect } from '../../../../misc/select';
+import { FormItem, FormLabel, FormMessage } from '../../../../redpanda-ui/components/form';
 
-/**
- * UserDropdown component for selecting users
- */
-export type UserDropdownProps = {
+type UserDropdownProps = {
   label: string;
   value: string;
   onChange: (value: string) => void;
   isRequired?: boolean;
   errorMessage?: string;
   helperText?: string;
+  isDisabled?: boolean;
 };
 
-export const UserDropdown: React.FC<UserDropdownProps> = ({
+export const UserDropdown = ({
   label,
   value,
   onChange,
   isRequired = false,
   errorMessage,
   helperText,
-}) => {
+  isDisabled = false,
+}: UserDropdownProps) => {
   const { data: usersData, isLoading } = useListUsersQuery();
+
+  const userOptions =
+    usersData?.users?.map((user) => ({
+      value: user.name,
+      label: user.name,
+    })) || [];
 
   return (
     <FormItem>
-      <FormLabel required={isRequired}>{label}</FormLabel>
-      {helperText && <FormDescription>{helperText}</FormDescription>}
-      <Select disabled={isLoading} onValueChange={onChange} value={value}>
-        <FormControl>
-          <SelectTrigger>
-            <SelectValue placeholder={isLoading ? 'Loading users...' : 'Select a user...'} />
-          </SelectTrigger>
-        </FormControl>
-        <SelectContent>
-          {usersData?.users?.map((user) => (
-            <SelectItem key={user.name} value={user.name}>
-              {user.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <FormLabel className="font-medium">
+        {label}
+        {isRequired && <span className="ml-1 text-destructive">*</span>}
+      </FormLabel>
+      {helperText && <p className="mb-2 text-muted-foreground text-sm">{helperText}</p>}
+      <SingleSelect
+        isDisabled={isDisabled}
+        isLoading={isLoading}
+        onChange={onChange}
+        options={userOptions}
+        placeholder={isLoading ? 'Loading users...' : 'Select a user...'}
+        value={value}
+      />
       {errorMessage && <FormMessage>{errorMessage}</FormMessage>}
     </FormItem>
   );
