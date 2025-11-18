@@ -21,13 +21,26 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { useEffect } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import type { FormValues } from '../model';
 
 export const ScramConfiguration = () => {
-  const { control } = useFormContext<FormValues>();
+  const { control, setValue } = useFormContext<FormValues>();
   const useScram = useWatch({ control, name: 'useScram' });
+
+  useEffect(() => {
+    if (useScram) {
+      setValue('scramCredentials', {
+        username: '',
+        password: '',
+        mechanism: ScramMechanism.SCRAM_SHA_256,
+      });
+    } else {
+      setValue('scramCredentials', undefined);
+    }
+  }, [useScram, setValue]);
 
   return (
     <Card size="full">
