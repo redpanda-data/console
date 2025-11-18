@@ -42,20 +42,17 @@ export const loadMessages = async (agentId: string, contextId: string): Promise<
  */
 const serializeContentBlocks = (blocks: ContentBlock[]): import('database/chat-db').ContentBlock[] =>
   blocks.map((block) => {
-    if (block.type === 'text') {
-      return { ...block, timestamp: block.timestamp.toISOString() };
-    }
     if (block.type === 'tool') {
       return { ...block, timestamp: block.timestamp.toISOString() };
     }
     if (block.type === 'artifact') {
       return { ...block, timestamp: block.timestamp.toISOString() };
     }
-    if (block.type === 'status-update') {
+    if (block.type === 'task-status-update') {
       return { ...block, timestamp: block.timestamp.toISOString() };
     }
     return block;
-  });
+  }) as import('database/chat-db').ContentBlock[];
 
 /**
  * Save a message to the database
@@ -67,8 +64,8 @@ export const saveMessage = async (
 ): Promise<void> => {
   try {
     // Extract text content from contentBlocks
-    const textBlock = message.contentBlocks.find((block) => block.type === 'text');
-    const textContent = textBlock?.type === 'text' ? textBlock.text : '';
+    const textBlock = message.contentBlocks.find((block) => block.type === 'task-status-update');
+    const textContent = textBlock?.type === 'task-status-update' ? textBlock.text || '' : '';
 
     const dbMessage: ChatDbMessage = {
       id: message.id,

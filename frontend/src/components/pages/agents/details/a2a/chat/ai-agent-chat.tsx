@@ -27,16 +27,14 @@ import type { AIAgentChatProps } from './types';
 export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Get the agent card URL for the a2a provider
-  const agentCardUrl = useMemo(() => getAgentCardUrl({ agentUrl: agent.url }), [agent.url]);
-
   // Manage chat messages and context
   const { messages, setMessages, contextId, setContextSeed, isLoadingHistory } = useChatMessages(agent.id);
 
   // Manage chat actions (submit, clear)
+  // Pass agent.url directly so the A2A client can try multiple agent card URLs
   const { isLoading, editingMessageId, handleSubmit, cancelEdit, clearChat, setInput, input } = useChatActions({
     agentId: agent.id,
-    agentCardUrl,
+    agentCardUrl: agent.url,
     model: agent.model,
     contextId,
     messages,
@@ -53,16 +51,27 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
   });
 
   return (
-    <div className="flex h-full w-full flex-col">
-      <Conversation className="relative flex flex-1 flex-col">
-        <ConversationContent>
+    <div className="flex flex-col h-[calc(100vh-255px)]">
+      {/* Context ID header */}
+      {contextId && (
+        <div className="shrink-0 border-b bg-muted/30 px-4 py-2">
+          <div className="flex gap-1.5 text-muted-foreground text-xs">
+            <span className="font-medium">context_id:</span>
+            <span className="font-mono">{contextId}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Scrollable content area */}
+      <div className="min-h-0 flex-1 overflow-y-scroll">
+        <div className="p-4">
           {isLoadingHistory && (
             <div className="flex h-full items-center justify-center">
               <Loader size={24} />
             </div>
           )}
 
-          {!isLoadingHistory && messages.length === 0 && <ConversationEmptyState />}
+          {!isLoadingHistory && messages.length === 0 && <ConversationEmptyState title="No messages yet" />}
 
           {!isLoadingHistory &&
             messages.length > 0 &&
@@ -70,7 +79,11 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
               // Only show loading indicator on the last assistant message to avoid duplicates
               const isLastAssistant = message.role === 'assistant' && index === messages.length - 1;
 
-              return <ChatMessage isLoading={isLoading && isLastAssistant} key={message.id} message={message} />;
+              return (
+                <div key={message.id}>
+                  <ChatMessage isLoading={isLoading && isLastAssistant} message={message} />
+                </div>
+              );
             })}
 
           {/* Invisible anchor element at bottom with viewport detection */}
@@ -80,26 +93,29 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
             onViewportLeave={onViewportLeave}
             ref={endRef}
           />
-        </ConversationContent>
-      </Conversation>
+        </div>
+      </div>
 
-      <ChatInput
-        autoScrollEnabled={!autoScrollPaused}
-        editingMessageId={editingMessageId}
-        hasMessages={messages.length > 0}
-        input={input}
-        isLoading={isLoading}
-        model={agent.model}
-        onAutoScrollChange={(enabled) => setAutoScrollPaused(!enabled)}
-        onCancelEdit={cancelEdit}
-        onClearHistory={clearChat}
-        onInputChange={setInput}
-        onSubmit={(message, event) => {
-          event.preventDefault();
-          void handleSubmit(message);
-        }}
-        textareaRef={textareaRef}
-      />
+      {/* Input at bottom - flex child */}
+      <div className="shrink-0 sticky bottom-0">
+        <ChatInput
+          autoScrollEnabled={!autoScrollPaused}
+          editingMessageId={editingMessageId}
+          hasMessages={messages.length > 0}
+          input={input}
+          isLoading={isLoading}
+          model={agent.model}
+          onAutoScrollChange={(enabled) => setAutoScrollPaused(!enabled)}
+          onCancelEdit={cancelEdit}
+          onClearHistory={clearChat}
+          onInputChange={setInput}
+          onSubmit={(message, event) => {
+            event.preventDefault();
+            void handleSubmit(message);
+          }}
+          textareaRef={textareaRef}
+        />
+      </div>
     </div>
   );
 };

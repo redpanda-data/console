@@ -12,10 +12,12 @@
 import type { ChatMessage, ContentBlock } from '../types';
 
 /**
- * Close the active text block and add it to content blocks if it has content
+ * Close the active text/artifact block and add it to content blocks if it has content
+ * NOTE: Only used for artifacts now, as text messages come via status-update events
  */
 export const closeActiveTextBlock = (contentBlocks: ContentBlock[], activeTextBlock: ContentBlock | null): void => {
-  if (activeTextBlock && activeTextBlock.type === 'text' && activeTextBlock.text.length > 0) {
+  // Only push artifact blocks (text blocks are deprecated)
+  if (activeTextBlock && activeTextBlock.type === 'artifact') {
     contentBlocks.push(activeTextBlock);
   }
 };

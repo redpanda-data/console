@@ -24,7 +24,7 @@ export const Message = ({ className, from, ...props }: MessageProps) => (
 );
 
 const messageContentVariants = cva(
-  "max-w-[85%] rounded-xl shadow-sm overflow-hidden flex flex-col",
+  "flex flex-col overflow-hidden rounded-lg border bg-background shadow-sm",
   {
     variants: {
       variant: {
@@ -32,8 +32,8 @@ const messageContentVariants = cva(
         flat: "",
       },
       from: {
-        user: "bg-blue-500 text-white dark:bg-blue-600 dark:text-white",
-        assistant: "border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100",
+        user: "",
+        assistant: "",
       },
     },
     defaultVariants: {
@@ -152,10 +152,7 @@ export const MessageMetadata = ({
   return (
     <div
       className={cn(
-        "border-t px-3 py-1.5 text-[11px]",
-        from === "user"
-          ? "bg-blue-600/10 text-blue-100/80 dark:bg-blue-700/20 dark:text-blue-200/80"
-          : "bg-muted/20 text-muted-foreground/80",
+        "border-t bg-muted/30 px-4 py-2 text-muted-foreground text-xs",
         className
       )}
       {...props}

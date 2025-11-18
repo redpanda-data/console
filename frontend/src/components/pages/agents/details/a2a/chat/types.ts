@@ -25,7 +25,6 @@ export type ArtifactPart =
  * Each block represents a temporal event in the agent's response
  */
 export type ContentBlock =
-  | { type: 'text'; text: string; timestamp: Date }
   | {
       type: 'tool';
       toolCallId: string;
@@ -45,7 +44,15 @@ export type ContentBlock =
       parts: ArtifactPart[];
       timestamp: Date;
     }
-  | { type: 'status-update'; taskState: string; timestamp: Date };
+  | {
+      type: 'task-status-update';
+      taskState?: string;
+      previousState?: string;
+      text?: string;
+      messageId?: string;
+      final: boolean;
+      timestamp: Date;
+    };
 
 export type ChatMessage = {
   id: string;

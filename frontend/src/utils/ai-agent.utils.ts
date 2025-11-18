@@ -13,7 +13,7 @@
  * Resolves the full agent card URL from a given agent URL.
  *
  * According to the A2A (Agent-to-Agent) protocol specification, agent cards
- * are typically located at `/.well-known/agent.json` relative to the agent's base URL.
+ * are typically located at `/.well-known/agent-card.json` relative to the agent's base URL.
  *
  * @param agentUrl - The agent URL
  *
@@ -23,14 +23,40 @@ export function getAgentCardUrl({ agentUrl }: { agentUrl: string }): string {
   // Normalize URL by removing trailing slash
   const normalizedUrl = agentUrl.endsWith('/') ? agentUrl.slice(0, -1) : agentUrl;
 
-  // If the URL already points to an agent card (contains 'agent.json' or '.well-known'),
+  // If the URL already points to an agent card (contains 'agent-card.json' or '.well-known'),
   // assume it's the full path and use it as-is
-  const isFullPath = normalizedUrl.includes('agent.json') || normalizedUrl.includes('well-known');
+  const isFullPath = normalizedUrl.includes('agent-card.json') || normalizedUrl.includes('well-known');
 
   if (isFullPath) {
     return normalizedUrl;
   }
 
   // Otherwise, append the standard A2A agent card path
-  return `${normalizedUrl}/.well-known/agent.json`;
+  return `${normalizedUrl}/.well-known/agent-card.json`;
+}
+
+/**
+ * Returns a list of agent card URLs to try, in order of preference.
+ * First tries agent-card.json, then falls back to agent.json for compatibility.
+ *
+ * @param agentUrl - The agent URL
+ *
+ * @returns Array of URLs to try, in order
+ */
+export function getAgentCardUrls({ agentUrl }: { agentUrl: string }): string[] {
+  // Normalize URL by removing trailing slash
+  const normalizedUrl = agentUrl.endsWith('/') ? agentUrl.slice(0, -1) : agentUrl;
+
+  // If the URL already points to a specific file, use it as-is
+  const isFullPath = normalizedUrl.includes('agent-card.json') || normalizedUrl.includes('agent.json') || normalizedUrl.includes('well-known');
+
+  if (isFullPath) {
+    return [normalizedUrl];
+  }
+
+  // Try agent-card.json first, fall back to agent.json
+  return [
+    `${normalizedUrl}/.well-known/agent-card.json`,
+    `${normalizedUrl}/.well-known/agent.json`
+  ];
 }

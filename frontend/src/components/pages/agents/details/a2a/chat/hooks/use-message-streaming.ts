@@ -15,15 +15,16 @@ import { config } from 'config';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
+import { TaskArtifactUpdateEvent, TaskStatusUpdateEvent, Task } from '@a2a-js/sdk';
 import {
   handleArtifactUpdateEvent,
-  handleRawTaskEvent,
+  handleTaskEvent,
   handleResponseMetadataEvent,
   handleStatusUpdateEvent,
   handleTextDeltaEvent,
 } from './event-handlers';
 import { buildMessageWithContentBlocks, closeActiveTextBlock } from './message-builder';
-import type { RawChunk, ResponseMetadataEvent, StreamChunk, StreamingState, TextDeltaEvent } from './streaming-types';
+import type { ResponseMetadataEvent, StreamChunk, StreamingState, TextDeltaEvent } from './streaming-types';
 import { a2a } from '../../a2a-provider';
 import type { ChatMessage } from '../types';
 import { saveMessage, updateMessage } from '../utils/database-operations';
@@ -102,17 +103,16 @@ export const streamMessage = async ({
         continue;
       }
 
-      // Handle raw events (task, status-update, artifact-update)
+      // Handle A2A SDK events directly (no Raw wrapper)
       if (streamChunk.type === 'raw' && 'rawValue' in streamChunk) {
-        const rawChunk = streamChunk as RawChunk;
-        const rawValue = rawChunk.rawValue;
+        const event = (streamChunk as any).rawValue;
 
-        if (rawValue.kind === 'task') {
-          handleRawTaskEvent(rawValue, state, assistantMessage, onMessageUpdate);
-        } else if (rawValue.kind === 'status-update') {
-          handleStatusUpdateEvent(rawValue, state, assistantMessage, onMessageUpdate);
-        } else if (rawValue.kind === 'artifact-update') {
-          handleArtifactUpdateEvent(rawValue, state, assistantMessage, onMessageUpdate);
+        if (event.kind === 'task') {
+          handleTaskEvent(event as Task, state, assistantMessage, onMessageUpdate);
+        } else if (event.kind === 'status-update') {
+          handleStatusUpdateEvent(event as TaskStatusUpdateEvent, state, assistantMessage, onMessageUpdate);
+        } else if (event.kind === 'artifact-update') {
+          handleArtifactUpdateEvent(event as TaskArtifactUpdateEvent, state, assistantMessage, onMessageUpdate);
         }
         continue;
       }

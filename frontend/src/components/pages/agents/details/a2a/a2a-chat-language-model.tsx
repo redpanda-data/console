@@ -22,6 +22,37 @@ import {
   LanguageModelV2File,
 } from '@ai-sdk/provider';
 import { convertAsyncIteratorToReadableStream, generateId, IdGenerator } from '@ai-sdk/provider-utils';
+import { getAgentCardUrls } from 'utils/ai-agent.utils';
+
+/**
+ * Try multiple agent card URLs in order until one succeeds.
+ * Tries agent-card.json first, then falls back to agent.json
+ */
+async function createA2AClientWithFallback(agentUrl: string, options: { fetchImpl: typeof fetch }): Promise<A2AClient> {
+  const urls = getAgentCardUrls({ agentUrl });
+  const errors: Error[] = [];
+
+  for (let i = 0; i < urls.length; i++) {
+    const url = urls[i];
+    const isLastUrl = i === urls.length - 1;
+
+    try {
+      const client = await A2AClient.fromCardUrl(url, options);
+      return client;
+    } catch (error) {
+      errors.push(error as Error);
+      console.log(`Failed to fetch agent card from ${url}, ${isLastUrl ? 'no more URLs to try' : 'trying next URL...'}`);
+      // Continue to next URL if not the last one
+      if (isLastUrl) {
+        break;
+      }
+    }
+  }
+
+  // If all URLs failed, throw an error with all attempted URLs
+  const errorMessage = `Failed to create A2A client. Tried URLs: ${urls.join(', ')}. Errors: ${errors.map(e => e.message).join('; ')}`;
+  throw new Error(errorMessage);
+}
 
 type A2AStreamEventData = Task | Message | TaskStatusUpdateEvent | TaskArtifactUpdateEvent;
 
@@ -180,7 +211,7 @@ class A2aChatLanguageModel implements LanguageModelV2 {
       return fetch(url, newInit);
     };
 
-    const client = await A2AClient.fromCardUrl(this.modelId, { fetchImpl: fetchWithCustomHeader });
+    const client = await createA2AClientWithFallback(this.modelId, { fetchImpl: fetchWithCustomHeader });
 
     if (args.messages.length < 1) {
       throw new Error('Cannot handle zero messages!');
@@ -242,7 +273,7 @@ class A2aChatLanguageModel implements LanguageModelV2 {
       return fetch(url, newInit);
     };
 
-    const client = await A2AClient.fromCardUrl(this.modelId, { fetchImpl: fetchWithCustomHeader });
+    const client = await createA2AClientWithFallback(this.modelId, { fetchImpl: fetchWithCustomHeader });
 
     if (args.messages.length < 1) {
       throw new Error('Cannot handle less then one message!');
@@ -289,26 +320,6 @@ class A2aChatLanguageModel implements LanguageModelV2 {
       const activeTextIds = new Set<string>();
       let finishReason: LanguageModelV2FinishReason = 'unknown';
 
-      const enqueueNonTextParts = (controller: TransformStreamDefaultController<LanguageModelV2StreamPart>, parts: Part[]) => {
-        const nonTextContentParts = parts.filter((part) => part.kind !== "text");
-
-        for (const part of nonTextContentParts) {
-          if (part.kind === "file") {
-            if ("bytes" in part.file) {
-              controller.enqueue({
-                type: "file",
-                data: part.file.bytes,
-                mediaType: part.file.mimeType as string
-              })
-            }
-            if ("uri" in part.file) {
-              // FIXME: missing handling for part.file.uri!
-            }
-          }
-          // FIXME: missing part.kind === "data"
-        }
-      };
-
       const enqueueTextParts = (controller: TransformStreamDefaultController<LanguageModelV2StreamPart>, parts: Part[], id: string, lastChunk: boolean) => {
         const textContentParts = parts.filter((part) => part.kind === "text");
 
@@ -338,8 +349,8 @@ class A2aChatLanguageModel implements LanguageModelV2 {
         }
       }
 
-      const enqueueParts = (controller: TransformStreamDefaultController<LanguageModelV2StreamPart>, parts: Part[], id: string, lastChunk: boolean) => {
-        enqueueNonTextParts(controller, parts);
+      const enqueueParts = (controller: TransformStreamDefaultController<LanguageModelV2StreamPart>, parts: Part[] | null, id: string, lastChunk: boolean) => {
+        if (!parts) return;
         enqueueTextParts(controller, parts, id, lastChunk);
       }
 
@@ -359,11 +370,6 @@ class A2aChatLanguageModel implements LanguageModelV2 {
                 controller.enqueue({ type: 'raw', rawValue: event });
               }
 
-              //if (!event.success) {
-              //  controller.enqueue({ type: 'error', error: event.error });
-              //  return;
-              //}
-
               if (isFirstChunk) {
                 isFirstChunk = false;
 
@@ -373,40 +379,13 @@ class A2aChatLanguageModel implements LanguageModelV2 {
                 });
               }
 
-              // Differentiate subsequent stream events.
+              // Handle only artifact-update and task state changes
               if (event.kind === 'status-update') {
                 if (event.final) {
                   finishReason = mapFinishReason(event)
                 }
-              } else if (event.kind === 'artifact-update') {
-                enqueueParts(controller, event.artifact.parts, event.artifact.artifactId, event.lastChunk as boolean);
-              } else {
-                // This could be a direct Message response if the agent doesn't create a task.
-                if (isFirstChunk) {
-                  isFirstChunk = false;
-                  controller.enqueue({
-                    type: 'response-metadata',
-                    ...getResponseMetadata(event),
-                  });
-                }
-
-                if (event.kind === "task" && event.status.message) {
-                  enqueueParts(controller, event.status.message.parts, event.status.message.messageId, true);
-                }
-                if (event.kind === "task" && event.artifacts) {
-                  if (event.artifacts) {
-                    for (const artifact of event.artifacts) {
-                      enqueueParts(controller, artifact.parts, artifact.artifactId, true);
-                    }
-                  }
-                }
-
-                if (event.kind === "message") {
-                  enqueueParts(controller, event.parts, event.messageId, true);
-                }
-
-                finishReason = 'stop';
               }
+              // Artifact-update events are handled as raw events, not converted to text-delta
             },
 
             flush(controller) {
@@ -502,7 +481,7 @@ class A2aChatLanguageModel implements LanguageModelV2 {
         });
       }
       response.artifacts?.forEach((artifact) => {
-        artifact.parts.forEach((part) => {
+        artifact.parts?.forEach((part) => {
           content = content.concat(...this.convertProviderPartToContent(part).flat());
         })
       })

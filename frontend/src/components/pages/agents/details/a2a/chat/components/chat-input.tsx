@@ -26,11 +26,11 @@ import {
   PromptInputTools,
 } from 'components/ai-elements/prompt-input';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Switch } from 'components/redpanda-ui/components/switch';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useScrollToBottom } from 'hooks/use-scroll-to-bottom';
-import { ArrowDownIcon, HistoryIcon } from 'lucide-react';
+import { ArrowDownIcon, HistoryIcon, ArrowDownToLineIcon } from 'lucide-react';
 import { useEffect } from 'react';
 
 import { AIAgentModel } from '../../../../ai-agent-model';
@@ -72,12 +72,12 @@ export const ChatInput = ({
   // Auto-scroll to bottom when message is submitted (isLoading becomes true)
   useEffect(() => {
     if (isLoading) {
-      scrollToBottom('smooth');
+      scrollToBottom('instant');
     }
   }, [isLoading, scrollToBottom]);
 
   return (
-    <div className="sticky bottom-0 z-10 border-t bg-background p-4">
+    <div className="bg-background px-4 pt-4">
       {/* Scroll to bottom button - appears when not at bottom */}
       <AnimatePresence>
         {!isAtBottom && (
@@ -129,23 +129,44 @@ export const ChatInput = ({
                 </PromptInputModelSelectContent>
               </PromptInputModelSelect>
             )}
-            <Button disabled={!hasMessages} onClick={onClearHistory} type="button" variant="ghost">
+            <Button
+              disabled={!hasMessages}
+              onClick={() => {
+                onClearHistory();
+                // Refocus textarea after clearing
+                setTimeout(() => textareaRef.current?.focus(), 0);
+              }}
+              type="button"
+              variant="ghost"
+            >
               <HistoryIcon className="size-3" />
               <Text as="span" className="text-sm">
                 Clear history
               </Text>
             </Button>
           </PromptInputTools>
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-1.5 whitespace-nowrap">
-              <Switch checked={autoScrollEnabled} onCheckedChange={onAutoScrollChange} testId="auto-scroll-switch" />
-              <Text as="span" className="text-sm">
-                Auto scroll
-              </Text>
-            </div>
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  className="size-8"
+                  onClick={() => onAutoScrollChange(!autoScrollEnabled)}
+                  size="icon"
+                  type="button"
+                  variant={autoScrollEnabled ? 'default' : 'ghost'}
+                >
+                  <ArrowDownToLineIcon className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <Text as="span" className="text-xs">
+                  {autoScrollEnabled ? 'Auto scroll enabled' : 'Auto scroll disabled'}
+                </Text>
+              </TooltipContent>
+            </Tooltip>
             {editingMessageId ? (
               <div className="flex gap-2">
-                <Button onClick={onCancelEdit} type="button" variant="outline">
+                <Button onClick={onCancelEdit} size="sm" type="button" variant="outline">
                   Cancel
                 </Button>
                 <PromptInputSubmit disabled={!input} size="sm" status={isLoading ? 'streaming' : 'ready'}>
@@ -153,7 +174,7 @@ export const ChatInput = ({
                 </PromptInputSubmit>
               </div>
             ) : (
-              <PromptInputSubmit disabled={!(input || isLoading)} status={isLoading ? 'streaming' : 'ready'} />
+              <PromptInputSubmit className="size-8" disabled={!(input || isLoading)} size="icon-xs" status={isLoading ? 'streaming' : 'ready'} />
             )}
           </div>
         </PromptInputFooter>

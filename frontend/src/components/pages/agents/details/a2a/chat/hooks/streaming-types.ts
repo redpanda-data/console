@@ -56,77 +56,9 @@ export type TextDeltaEvent = {
 };
 
 /**
- * Raw task event
+ * Stream chunk union type - simplified, no Raw wrappers
  */
-export type RawTaskEvent = {
-  kind: 'task';
-  id: string;
-  taskId?: string;
-  status?: {
-    state?: string;
-  };
-};
-
-/**
- * Raw status-update event
- */
-export type RawStatusUpdateEvent = {
-  kind: 'status-update';
-  taskId?: string;
-  status?: {
-    state?: string;
-    timestamp?: string; // Timestamp is at status level
-    message?: {
-      kind: string;
-      messageId: string;
-      metadata?: {
-        llm_message?: string;
-      };
-      parts?: Array<{ kind: string; text?: string }>;
-      role: string;
-    };
-  };
-};
-
-/**
- * Raw artifact-update event
- */
-export type RawArtifactUpdateEvent = {
-  kind: 'artifact-update';
-  taskId?: string;
-  artifact?: {
-    artifactId: string;
-    name?: string;
-    description?: string;
-    parts: Array<{
-      kind: string;
-      text?: string;
-      file?: {
-        name?: string;
-        mimeType?: string;
-        bytes?: string;
-      };
-    }>;
-  };
-};
-
-/**
- * Union of all raw event types
- */
-export type RawEvent = RawTaskEvent | RawStatusUpdateEvent | RawArtifactUpdateEvent;
-
-/**
- * Raw chunk wrapper
- */
-export type RawChunk = {
-  type: 'raw';
-  rawValue: RawEvent;
-};
-
-/**
- * Stream chunk union type
- */
-export type StreamChunk = ResponseMetadataEvent | TextDeltaEvent | RawChunk | { type: string };
+export type StreamChunk = ResponseMetadataEvent | TextDeltaEvent | { type: string; rawValue?: any };
 
 /**
  * Streaming state that accumulates during stream consumption

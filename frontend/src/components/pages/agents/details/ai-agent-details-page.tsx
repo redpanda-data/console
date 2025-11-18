@@ -90,10 +90,10 @@ export const AIAgentDetailsPage = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-[calc(100vh-120px)] flex-col gap-4">
       <AIAgentDetailsHeader />
 
-      <Tabs onValueChange={handleTabChange} value={activeTab}>
+      <Tabs className="min-h-0 flex-1" onValueChange={handleTabChange} value={activeTab}>
         <TabsList>
           <TabsTrigger className="gap-2" value="configuration">
             <div className="flex items-center gap-2">
@@ -113,7 +113,7 @@ export const AIAgentDetailsPage = () => {
           <AIAgentConfigurationTab />
         </TabsContent>
         {isAiAgentsInspectorFeatureEnabled && (
-          <TabsContent value="inspector">
+          <TabsContent className="flex h-full flex-col" value="inspector">
             <AIAgentInspectorTab />
           </TabsContent>
         )}
