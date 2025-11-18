@@ -10,7 +10,7 @@
  */
 
 import { FormControl, FormField, FormItem, FormLabel } from 'components/redpanda-ui/components/form';
-import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { Switch } from 'components/redpanda-ui/components/switch';
 import { useFormContext } from 'react-hook-form';
 
 import type { FormValues } from '../model';
@@ -23,25 +23,10 @@ export const TlsConfiguration = () => {
         control={control}
         name="useTls"
         render={({ field }) => (
-          <FormItem className="flex flex-col">
-            <div>
-              <FormLabel>Enable TLS</FormLabel>
-            </div>
+          <FormItem className="flex flex-row items-center gap-3">
+            <FormLabel>Enable TLS</FormLabel>
             <FormControl>
-              <Tabs
-                data-testid="tls-toggle"
-                onValueChange={(value) => field.onChange(value === 'true')}
-                value={String(field.value)}
-              >
-                <TabsList variant="default">
-                  <TabsTrigger data-testid="tls-enabled-tab" value="true">
-                    Enabled
-                  </TabsTrigger>
-                  <TabsTrigger data-testid="tls-disabled-tab" value="false">
-                    Disabled
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <Switch checked={field.value} onCheckedChange={field.onChange} testId="tls-toggle" />
             </FormControl>
           </FormItem>
         )}

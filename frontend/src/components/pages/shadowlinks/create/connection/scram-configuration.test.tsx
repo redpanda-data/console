@@ -42,7 +42,7 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
 
 describe('ScramConfiguration', () => {
   describe('SCRAM enabled state', () => {
-    test('should show credentials form when Enabled is selected', () => {
+    test('should show credentials form when switch is enabled', () => {
       const customValues: FormValues = {
         ...initialValues,
         useScram: true,
@@ -50,14 +50,14 @@ describe('ScramConfiguration', () => {
 
       render(<TestWrapper defaultValues={customValues} />);
 
-      expect(screen.getByTestId('scram-enabled-tab')).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('scram-toggle')).toBeChecked();
       expect(screen.getByTestId('scram-credentials-form')).toBeInTheDocument();
       expect(screen.getByTestId('scram-username-field')).toBeInTheDocument();
       expect(screen.getByTestId('scram-password-field')).toBeInTheDocument();
       expect(screen.getByTestId('scram-mechanism-field')).toBeInTheDocument();
     });
 
-    test('should hide credentials form when Disabled is selected', () => {
+    test('should hide credentials form when switch is disabled', () => {
       const customValues: FormValues = {
         ...initialValues,
         useScram: false,
@@ -65,7 +65,7 @@ describe('ScramConfiguration', () => {
 
       render(<TestWrapper defaultValues={customValues} />);
 
-      expect(screen.getByTestId('scram-disabled-tab')).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('scram-toggle')).not.toBeChecked();
       expect(screen.queryByTestId('scram-credentials-form')).not.toBeInTheDocument();
       expect(screen.queryByTestId('scram-username-field')).not.toBeInTheDocument();
       expect(screen.queryByTestId('scram-password-field')).not.toBeInTheDocument();

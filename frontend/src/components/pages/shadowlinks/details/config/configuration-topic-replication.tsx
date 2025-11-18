@@ -97,7 +97,7 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
     return (
       <Card size="full" testId="topic-replication-placeholder-card">
         <CardContent className="py-8 text-center">
-          <Text className="text-muted-foreground">No topic properties configured for replication</Text>
+          <Text className="text-muted-foreground">No topic properties configured for shadowing</Text>
         </CardContent>
       </Card>
     );
@@ -106,7 +106,7 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
   return (
     <div className="flex flex-col gap-6">
       <Heading level={2} testId="shadowing-title">
-        Topic config replication
+        Topic config shadow
       </Heading>
       {sortedCategories.map((category) => {
         const properties = categorizedProperties[category];

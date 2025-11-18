@@ -172,8 +172,8 @@ const enableTLS = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen
 ) => {
-  const tlsEnabledTab = scr.getByTestId('tls-enabled-tab');
-  await user.click(tlsEnabledTab);
+  const tlsToggle = scr.getByTestId('tls-toggle');
+  await user.click(tlsToggle);
 };
 
 const updateMetadataMaxAge = async (
@@ -337,8 +337,8 @@ const enableMTLS = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen
 ) => {
-  const mtlsEnabledTab = scr.getByTestId('mtls-enabled-tab');
-  await user.click(mtlsEnabledTab);
+  const mtlsToggle = scr.getByTestId('mtls-toggle');
+  await user.click(mtlsToggle);
 };
 
 const uploadCACertificate = async (

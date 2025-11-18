@@ -10,21 +10,21 @@
  */
 
 /**
- * Mirroring status for topic properties in shadow link replication
+ * Shadowing status for topic properties in shadow link replication
  */
-export type MirroringStatus = 'always' | 'optional' | 'default' | 'never';
+export type ShadowingStatus = 'always' | 'optional' | 'default' | 'never';
 
 /**
  * Topic property configuration
  */
 export type TopicPropertyConfig = {
   name: string;
-  status: MirroringStatus[];
+  status: ShadowingStatus[];
   category: string;
 };
 
 /**
- * Complete list of all topic properties with their mirroring status and categories
+ * Complete list of all topic properties with their shadowing status and categories
  */
 export const TOPIC_PROPERTIES: TopicPropertyConfig[] = [
   // Retention
