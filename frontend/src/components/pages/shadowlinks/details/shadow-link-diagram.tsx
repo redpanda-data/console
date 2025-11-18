@@ -105,6 +105,7 @@ export const ShadowLinkDiagram = ({ shadowLink }: ShadowLinkDiagramProps) => {
               nodeTypes={nodeTypes}
               panOnDrag={false}
               preventScrolling={false}
+              proOptions={{ hideAttribution: true }}
               zoomOnPinch={false}
               zoomOnScroll={false}
             >
