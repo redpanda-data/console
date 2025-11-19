@@ -2,6 +2,16 @@
 
 ## Master / Unreleased
 
+## v3.3.1 / 2025-11-19
+- [IMPROVEMENT] Add detailed schema compatibility error messages.
+
+## v3.3.0 / 2025-11-19
+- [IMPROVEMENT] Add support for Redpanda v25.3 features.
+- [IMPROVEMENT] Add endpoint to list recent kafka connections.
+- [IMPROVEMENT] Improve topic filters.
+- [IMPROVEMENT] Update dependencies.
+- [BUGFIX] Fix JSONBigInt to store values as strings to prevent precision loss.
+
 ## v3.2.2 / 2025-09-15
 - [IMPROVEMENT] Add error message on failures during ACL creation.
 - [IMPROVEMENT] Add Remote MCP support.
