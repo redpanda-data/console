@@ -141,9 +141,9 @@ export function CertificateDialog({
                   'application/pkix-cert': ['.crt', '.cer'],
                   'application/x-pkcs12': ['.key'],
                 }}
-                testId="certificate-dropzone"
                 maxFiles={1}
                 onDrop={handleFileUpload}
+                testId="certificate-dropzone"
               >
                 {fileName && (
                   <Text className="text-muted-foreground" variant="small">
