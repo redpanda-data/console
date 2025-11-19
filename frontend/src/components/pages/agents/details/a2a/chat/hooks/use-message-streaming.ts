@@ -9,18 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
+import type { Task, TaskArtifactUpdateEvent, TaskStatusUpdateEvent } from '@a2a-js/sdk';
 import { ConnectError } from '@connectrpc/connect';
 import { streamText } from 'ai';
 import { config } from 'config';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-import { TaskArtifactUpdateEvent, TaskStatusUpdateEvent, Task } from '@a2a-js/sdk';
 import {
   handleArtifactUpdateEvent,
-  handleTaskEvent,
   handleResponseMetadataEvent,
   handleStatusUpdateEvent,
+  handleTaskEvent,
   handleTextDeltaEvent,
 } from './event-handlers';
 import { buildMessageWithContentBlocks, closeActiveTextBlock } from './message-builder';
@@ -105,14 +105,16 @@ export const streamMessage = async ({
 
       // Handle A2A SDK events directly (no Raw wrapper)
       if (streamChunk.type === 'raw' && 'rawValue' in streamChunk) {
-        const event = (streamChunk as any).rawValue;
+        const event = streamChunk.rawValue;
 
-        if (event.kind === 'task') {
-          handleTaskEvent(event as Task, state, assistantMessage, onMessageUpdate);
-        } else if (event.kind === 'status-update') {
-          handleStatusUpdateEvent(event as TaskStatusUpdateEvent, state, assistantMessage, onMessageUpdate);
-        } else if (event.kind === 'artifact-update') {
-          handleArtifactUpdateEvent(event as TaskArtifactUpdateEvent, state, assistantMessage, onMessageUpdate);
+        if (event && typeof event === 'object' && 'kind' in event) {
+          if (event.kind === 'task') {
+            handleTaskEvent(event as Task, state, assistantMessage, onMessageUpdate);
+          } else if (event.kind === 'status-update') {
+            handleStatusUpdateEvent(event as TaskStatusUpdateEvent, state, assistantMessage, onMessageUpdate);
+          } else if (event.kind === 'artifact-update') {
+            handleArtifactUpdateEvent(event as TaskArtifactUpdateEvent, state, assistantMessage, onMessageUpdate);
+          }
         }
         continue;
       }

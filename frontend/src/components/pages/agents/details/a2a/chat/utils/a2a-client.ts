@@ -18,7 +18,7 @@ import { getAgentCardUrls } from 'utils/ai-agent.utils';
  * This ensures the client has proper JWT auth and fetch context
  */
 export async function createA2AClient(agentCardUrl: string): Promise<A2AClient> {
-  const fetchWithCustomHeader: typeof fetch = async (url, init) => {
+  const fetchWithCustomHeader: typeof fetch = (url, init) => {
     const headers = new Headers(init?.headers);
     if (config.jwt) {
       headers.set('Authorization', `Bearer ${config.jwt}`);
@@ -32,10 +32,7 @@ export async function createA2AClient(agentCardUrl: string): Promise<A2AClient> 
   const urls = getAgentCardUrls({ agentUrl: agentCardUrl });
   const errors: Error[] = [];
 
-  for (let i = 0; i < urls.length; i++) {
-    const url = urls[i];
-    const isLastUrl = i === urls.length - 1;
-
+  for (const url of urls) {
     try {
       const client = await A2AClient.fromCardUrl(url, {
         fetchImpl: fetchWithCustomHeader,
@@ -43,11 +40,7 @@ export async function createA2AClient(agentCardUrl: string): Promise<A2AClient> 
       return client;
     } catch (error) {
       errors.push(error as Error);
-      console.log(`Failed to fetch agent card from ${url}, ${isLastUrl ? 'no more URLs to try' : 'trying next URL...'}`);
-
-      if (!isLastUrl) {
-        continue;
-      }
+      // Continue to next URL if available
     }
   }
 

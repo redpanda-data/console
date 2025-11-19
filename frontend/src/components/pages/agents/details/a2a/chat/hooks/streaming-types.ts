@@ -58,7 +58,7 @@ export type TextDeltaEvent = {
 /**
  * Stream chunk union type - simplified, no Raw wrappers
  */
-export type StreamChunk = ResponseMetadataEvent | TextDeltaEvent | { type: string; rawValue?: any };
+export type StreamChunk = ResponseMetadataEvent | TextDeltaEvent | { type: string; rawValue?: unknown };
 
 /**
  * Streaming state that accumulates during stream consumption

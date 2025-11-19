@@ -31,33 +31,24 @@ const messageContentVariants = cva(
         contained: "",
         flat: "",
       },
-      from: {
-        user: "",
-        assistant: "",
-      },
     },
     defaultVariants: {
       variant: "contained",
-      from: "assistant",
     },
   }
 );
 
 export type MessageContentProps = HTMLAttributes<HTMLDivElement> &
-  VariantProps<typeof messageContentVariants> & {
-    from?: UIMessage["role"];
-  };
+  VariantProps<typeof messageContentVariants>;
 
 export const MessageContent = ({
   children,
   className,
   variant,
-  from,
   ...props
 }: MessageContentProps) => (
   <article
-    aria-label={`${from || "message"}`}
-    className={cn(messageContentVariants({ variant, from, className }))}
+    className={cn(messageContentVariants({ variant, className }))}
     {...props}
   >
     {children}

@@ -148,8 +148,7 @@ export const useChatActions = ({
         await client.cancelTask({ id: taskId });
 
         toast.success('Task cancelled');
-      } catch (error) {
-        console.error('Failed to cancel task:', error);
+      } catch (_error) {
         toast.error('Failed to cancel task');
       }
     },

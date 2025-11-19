@@ -18,34 +18,11 @@ import type { ChatMessage, ContentBlock } from '../types';
  * Deserialize contentBlocks from database (ISO string → Date)
  */
 const deserializeContentBlocks = (dbBlocks: import('database/chat-db').ContentBlock[]): ContentBlock[] =>
-  dbBlocks.map((block: any) => {
-    // Handle legacy 'text' and 'status-update' types (convert to 'task-status-update')
-    if (block.type === 'text') {
-      return {
-        type: 'task-status-update',
-        text: block.text,
-        final: false,
-        timestamp: new Date(block.timestamp)
-      };
+  dbBlocks.map((block): ContentBlock => {
+    if (block.type === 'tool' || block.type === 'artifact' || block.type === 'task-status-update') {
+      return { ...block, timestamp: new Date(block.timestamp) } as ContentBlock;
     }
-    if (block.type === 'status-update') {
-      return {
-        type: 'task-status-update',
-        taskState: block.taskState,
-        final: false,
-        timestamp: new Date(block.timestamp)
-      };
-    }
-    if (block.type === 'tool') {
-      return { ...block, timestamp: new Date(block.timestamp) };
-    }
-    if (block.type === 'artifact') {
-      return { ...block, timestamp: new Date(block.timestamp) };
-    }
-    if (block.type === 'task-status-update') {
-      return { ...block, timestamp: new Date(block.timestamp) };
-    }
-    return block;
+    return block as ContentBlock;
   });
 
 /**
@@ -188,7 +165,9 @@ export const createErrorMessage = (contextId: string): ChatMessage => {
   return {
     id: nanoid(),
     role: 'assistant',
-    contentBlocks: [{ type: 'task-status-update', text: 'Sorry, I encountered an error. Please try again.', final: true, timestamp }],
+    contentBlocks: [
+      { type: 'task-status-update', text: 'Sorry, I encountered an error. Please try again.', final: true, timestamp },
+    ],
     timestamp,
     contextId,
   };

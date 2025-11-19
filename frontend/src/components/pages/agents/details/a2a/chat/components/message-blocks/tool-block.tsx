@@ -27,21 +27,19 @@ type ToolBlockProps = {
  * Renders a tool block that transitions from request → response state
  * Spawns closed by default, user can manually toggle
  */
-export const ToolBlock = ({ toolCallId, toolName, state, input, output, errorText, isLastBlock }: ToolBlockProps) => {
-  return (
-    <Tool defaultOpen={false} disableAnimations key={toolCallId}>
-      <ToolHeader
-        state={state}
-        title={toolName || 'Tool'}
-        toolCallId={toolCallId}
-        type={`tool-${toolName || 'unknown'}`}
-      />
-      <ToolContent>
-        <ToolInput input={input} />
-        {(state === 'output-available' || state === 'output-error') && (
-          <ToolOutput errorText={errorText} output={output} />
-        )}
-      </ToolContent>
-    </Tool>
-  );
-};
+export const ToolBlock = ({ toolCallId, toolName, state, input, output, errorText }: ToolBlockProps) => (
+  <Tool defaultOpen={false} disableAnimations key={toolCallId}>
+    <ToolHeader
+      state={state}
+      title={toolName || 'Tool'}
+      toolCallId={toolCallId}
+      type={`tool-${toolName || 'unknown'}`}
+    />
+    <ToolContent>
+      <ToolInput input={input} />
+      {(state === 'output-available' || state === 'output-error') && (
+        <ToolOutput errorText={errorText} output={output} />
+      )}
+    </ToolContent>
+  </Tool>
+);

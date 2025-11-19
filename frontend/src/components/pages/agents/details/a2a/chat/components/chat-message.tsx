@@ -39,7 +39,7 @@ export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
     return (
       <div>
         <Message from={message.role}>
-          <MessageContent from={message.role} variant="flat">
+          <MessageContent variant="flat">
             <MessageBody>
               <UserMessageContent text={text} timestamp={message.timestamp} />
             </MessageBody>
@@ -117,7 +117,7 @@ export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
     const loadingElement = isLoading ? (
       <div className="mb-4">
         <Message from={message.role}>
-          <MessageContent from={message.role} variant="flat">
+          <MessageContent variant="flat">
             <MessageBody>
               <LoadingMessageContent />
             </MessageBody>

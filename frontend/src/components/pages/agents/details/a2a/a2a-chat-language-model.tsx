@@ -349,11 +349,6 @@ class A2aChatLanguageModel implements LanguageModelV2 {
         }
       }
 
-      const enqueueParts = (controller: TransformStreamDefaultController<LanguageModelV2StreamPart>, parts: Part[] | null, id: string, lastChunk: boolean) => {
-        if (!parts) return;
-        enqueueTextParts(controller, parts, id, lastChunk);
-      }
-
       return {
         stream: (simulatedStream || convertAsyncIteratorToReadableStream(response)).pipeThrough(
           new TransformStream<

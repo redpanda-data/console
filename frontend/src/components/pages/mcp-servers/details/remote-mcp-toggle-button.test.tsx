@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+const _START_BUTTON_REGEX = /start/i;
+
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import {
@@ -294,7 +296,7 @@ describe('RemoteMCPToggleButton', () => {
     );
 
     await waitFor(() => {
-      const startButton = screen.getByRole('button', { name: /start/i });
+      const startButton = screen.getByRole('button', { name: START_BUTTON_REGEX });
       expect(startButton).toBeVisible();
       expect(startButton).toBeEnabled();
     });

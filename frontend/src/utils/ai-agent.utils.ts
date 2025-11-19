@@ -48,15 +48,15 @@ export function getAgentCardUrls({ agentUrl }: { agentUrl: string }): string[] {
   const normalizedUrl = agentUrl.endsWith('/') ? agentUrl.slice(0, -1) : agentUrl;
 
   // If the URL already points to a specific file, use it as-is
-  const isFullPath = normalizedUrl.includes('agent-card.json') || normalizedUrl.includes('agent.json') || normalizedUrl.includes('well-known');
+  const isFullPath =
+    normalizedUrl.includes('agent-card.json') ||
+    normalizedUrl.includes('agent.json') ||
+    normalizedUrl.includes('well-known');
 
   if (isFullPath) {
     return [normalizedUrl];
   }
 
   // Try agent-card.json first, fall back to agent.json
-  return [
-    `${normalizedUrl}/.well-known/agent-card.json`,
-    `${normalizedUrl}/.well-known/agent.json`
-  ];
+  return [`${normalizedUrl}/.well-known/agent-card.json`, `${normalizedUrl}/.well-known/agent.json`];
 }

@@ -20,12 +20,10 @@ import { useScrollToBottom } from './use-scroll-to-bottom';
 export function useChatScroll({
   agentId,
   isLoading,
-  isStreaming,
   messages,
 }: {
   agentId: string;
   isLoading: boolean;
-  isStreaming: boolean;
   messages: unknown[];
 }) {
   const {

@@ -26,7 +26,13 @@ type TaskStatusUpdateBlockProps = {
  * Unified component for task status updates and agent messages
  * Shows state badge (only if actual state change), collapsible message text (if present)
  */
-export const TaskStatusUpdateBlock = ({ taskState, previousState, text, messageId, timestamp }: TaskStatusUpdateBlockProps) => {
+export const TaskStatusUpdateBlock = ({
+  taskState,
+  previousState,
+  text,
+  messageId,
+  timestamp,
+}: TaskStatusUpdateBlockProps) => {
   const validState = taskState as
     | 'submitted'
     | 'working'

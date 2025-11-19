@@ -14,7 +14,6 @@ import {
   ArtifactContent,
   ArtifactDescription,
   ArtifactHeader,
-  ArtifactMetadata,
   ArtifactTitle,
 } from 'components/ai-elements/artifact';
 import { Image } from 'components/ai-elements/image';
