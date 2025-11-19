@@ -17,6 +17,7 @@ import { createTopic, listTopics } from 'protogen/redpanda/api/dataplane/v1/topi
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import type { GetTopicsResponse, TopicDescription } from 'state/rest-interfaces';
+import { authenticatedFetch } from 'utils/authenticated-fetch';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { api } from '../../state/backend-api';
@@ -53,11 +54,8 @@ export const useLegacyListTopicsQuery = (
   const legacyListTopicsResult = useTanstackQuery<GetTopicsResponse>({
     queryKey: infiniteQueryKey,
     queryFn: async () => {
-      const response = await fetch(`${config.restBasePath}/topics`, {
+      const response = await authenticatedFetch(`${config.restBasePath}/topics`, {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${config.jwt}`,
-        },
       });
 
       return response.json();

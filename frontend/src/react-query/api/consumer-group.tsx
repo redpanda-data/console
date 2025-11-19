@@ -1,6 +1,7 @@
 import { useQuery as useTanstackQuery } from '@tanstack/react-query';
 import { config } from 'config';
 import type { GroupDescription } from 'state/rest-interfaces';
+import { authenticatedFetch } from 'utils/authenticated-fetch';
 
 export type GetConsumerGroupsResponse = {
   consumerGroups: GroupDescription[];
@@ -19,11 +20,9 @@ export const useLegacyListConsumerGroupsQuery = (options?: { enabled?: boolean }
   const legacyListConsumerGroupsResult = useTanstackQuery<GetConsumerGroupsResponse>({
     queryKey: ['consumer-groups'],
     queryFn: async () => {
-      const response = await fetch(`${config.restBasePath}/consumer-groups`, {
+      const response = await authenticatedFetch(`${config.restBasePath}/consumer-groups`, {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${config.jwt}`,
-        },
+        headers: {},
       });
 
       const data = await response.json();

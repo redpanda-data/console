@@ -69,7 +69,7 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
       return !inline && match ? (
         <SyntaxHighlighter
           customStyle={{
-            'background-color': null,
+            backgroundColor: null,
             border: null,
             margin: null,
             padding: null,
