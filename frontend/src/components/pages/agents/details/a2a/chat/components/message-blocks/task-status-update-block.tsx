@@ -12,14 +12,13 @@ import { Artifact, ArtifactContent, ArtifactHeader, ArtifactTitle } from 'compon
 import { Response } from 'components/ai-elements/response';
 import { TaskState } from 'components/ai-elements/task';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
-import { ChevronDownIcon } from 'lucide-react';
+import { ChevronDownIcon, MoveRightIcon } from 'lucide-react';
 
 type TaskStatusUpdateBlockProps = {
   taskState?: string;
   previousState?: string;
   text?: string;
   messageId?: string;
-  final: boolean;
   timestamp: Date;
 };
 
@@ -27,7 +26,7 @@ type TaskStatusUpdateBlockProps = {
  * Unified component for task status updates and agent messages
  * Shows state badge (only if actual state change), collapsible message text (if present)
  */
-export const TaskStatusUpdateBlock = ({ taskState, previousState, text, messageId, final, timestamp }: TaskStatusUpdateBlockProps) => {
+export const TaskStatusUpdateBlock = ({ taskState, previousState, text, messageId, timestamp }: TaskStatusUpdateBlockProps) => {
   const validState = taskState as
     | 'submitted'
     | 'working'
@@ -63,10 +62,6 @@ export const TaskStatusUpdateBlock = ({ taskState, previousState, text, messageI
           </div>
         )}
         <div className="flex gap-1.5">
-          <span className="font-medium">final:</span>
-          <span>{final ? 'true' : 'false'}</span>
-        </div>
-        <div className="flex gap-1.5">
           <span className="font-medium">time:</span>
           <span>{time}</span>
         </div>
@@ -80,7 +75,7 @@ export const TaskStatusUpdateBlock = ({ taskState, previousState, text, messageI
       {hasPreviousState && (
         <>
           <TaskState state={previousState as typeof validState} />
-          <span className="text-muted-foreground leading-none" style={{ fontSize: '1.5rem' }}>→</span>
+          <MoveRightIcon className="size-4 text-muted-foreground" />
         </>
       )}
       <TaskState state={validState} />

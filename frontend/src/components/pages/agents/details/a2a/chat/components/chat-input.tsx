@@ -48,6 +48,7 @@ type ChatInputProps = {
   onClearHistory: () => void;
   onCancelEdit: () => void;
   onAutoScrollChange: (enabled: boolean) => void;
+  onCancel?: () => void;
 };
 
 /**
@@ -66,6 +67,7 @@ export const ChatInput = ({
   onClearHistory,
   onCancelEdit,
   onAutoScrollChange,
+  onCancel,
 }: ChatInputProps) => {
   const { isAtBottom, scrollToBottom } = useScrollToBottom();
 
@@ -174,7 +176,18 @@ export const ChatInput = ({
                 </PromptInputSubmit>
               </div>
             ) : (
-              <PromptInputSubmit className="size-8" disabled={!(input || isLoading)} size="icon-xs" status={isLoading ? 'streaming' : 'ready'} />
+              <PromptInputSubmit
+                className="size-8"
+                disabled={!(input || isLoading)}
+                onClick={(e) => {
+                  if (isLoading && onCancel) {
+                    e.preventDefault();
+                    onCancel();
+                  }
+                }}
+                size="icon-xs"
+                status={isLoading ? 'streaming' : 'ready'}
+              />
             )}
           </div>
         </PromptInputFooter>

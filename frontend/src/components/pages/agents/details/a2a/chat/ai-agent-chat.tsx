@@ -30,9 +30,9 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
   // Manage chat messages and context
   const { messages, setMessages, contextId, setContextSeed, isLoadingHistory } = useChatMessages(agent.id);
 
-  // Manage chat actions (submit, clear)
+  // Manage chat actions (submit, clear, cancel)
   // Pass agent.url directly so the A2A client can try multiple agent card URLs
-  const { isLoading, editingMessageId, handleSubmit, cancelEdit, clearChat, setInput, input } = useChatActions({
+  const { isLoading, editingMessageId, handleSubmit, cancelEdit, clearChat, handleCancelTask, setInput, input } = useChatActions({
     agentId: agent.id,
     agentCardUrl: agent.url,
     model: agent.model,
@@ -106,6 +106,12 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
           isLoading={isLoading}
           model={agent.model}
           onAutoScrollChange={(enabled) => setAutoScrollPaused(!enabled)}
+          onCancel={() => {
+            const lastMessage = messages[messages.length - 1];
+            if (lastMessage?.taskId) {
+              void handleCancelTask(lastMessage.taskId);
+            }
+          }}
           onCancelEdit={cancelEdit}
           onClearHistory={clearChat}
           onInputChange={setInput}
