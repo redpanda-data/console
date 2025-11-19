@@ -141,7 +141,7 @@ export function CertificateDialog({
                   'application/pkix-cert': ['.crt', '.cer'],
                   'application/x-pkcs12': ['.key'],
                 }}
-                data-testid="certificate-dropzone"
+                testId="certificate-dropzone"
                 maxFiles={1}
                 onDrop={handleFileUpload}
               >
@@ -164,7 +164,7 @@ export function CertificateDialog({
                 id="filePath"
                 onChange={(e) => setFilePath(e.target.value)}
                 placeholder="/etc/redpanda/certs/ca.crt"
-                testId="file-path-input"
+                testId={`${certificateType}-file-path-input`}
                 value={filePath}
               />
               <Text className="text-muted-foreground" variant="small">
