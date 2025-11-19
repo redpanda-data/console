@@ -12,9 +12,12 @@
 import { DeleteIcon } from '@chakra-ui/icons';
 import {
   Alert,
+  AlertDescription,
   AlertIcon,
+  AlertTitle,
   Box,
   Button,
+  CloseButton,
   Flex,
   FormField,
   Heading,
@@ -168,105 +171,149 @@ const SchemaPageButtons = observer(
     const toast = useToast();
     const [isValidating, setValidating] = useState(false);
     const [isCreating, setCreating] = useState(false);
+    const [persistentValidationError, setPersistentValidationError] = useState<{
+      isValid: boolean;
+      errorDetails?: string;
+      isCompatible?: boolean;
+      compatibilityError?: { errorType: string; description: string };
+    } | null>(null);
     const { editorState } = p;
     const isMissingName = !editorState.computedSubjectName;
 
     return (
-      <Flex gap="4" mt="4">
-        <Button
-          colorScheme="brand"
-          isDisabled={isCreating || isMissingName || isValidating || editorState.isInvalidKeyOrValue}
-          isLoading={isCreating}
-          loadingText="Creating..."
-          onClick={async () => {
-            // We must validate first, "create" does not properly check and just gives internal server error if anything is wrong with the schema
-            setValidating(true);
-            const validationResponse = await validateSchema(editorState).finally(() => setValidating(false));
+      <>
+        {persistentValidationError && (
+          <Alert mb="4" mt="4" status="error" variant="left-accent">
+            <AlertIcon />
+            <Box flex="1">
+              <AlertTitle alignItems="center" display="flex">
+                {persistentValidationError.compatibilityError?.errorType
+                  ? persistentValidationError.compatibilityError.errorType.replace(/_/g, ' ')
+                  : 'Schema Validation Error'}
+              </AlertTitle>
+              <AlertDescription display="block" mt="2">
+                {persistentValidationError.compatibilityError?.description ||
+                  persistentValidationError.errorDetails ||
+                  'Schema validation failed'}
+              </AlertDescription>
+            </Box>
+            <CloseButton
+              alignSelf="flex-start"
+              onClick={() => setPersistentValidationError(null)}
+              position="relative"
+              right={-1}
+              top={-1}
+            />
+          </Alert>
+        )}
 
-            if (!validationResponse.isValid || validationResponse.isCompatible === false) {
-              // Something is wrong with the schema, abort
-              openValidationErrorsModal(validationResponse);
-              return;
-            }
+        <Flex gap="4" mt="4">
+          <Button
+            colorScheme="brand"
+            isDisabled={isCreating || isMissingName || isValidating || editorState.isInvalidKeyOrValue}
+            isLoading={isCreating}
+            loadingText="Creating..."
+            onClick={async () => {
+              // We must validate first, "create" does not properly check and just gives internal server error if anything is wrong with the schema
+              setValidating(true);
+              const validationResponse = await validateSchema(editorState).finally(() => setValidating(false));
 
-            // try to create the schema
-            setCreating(true);
-            try {
-              const subjectName = editorState.computedSubjectName;
-              const r = await api
-                .createSchema(editorState.computedSubjectName, {
-                  schemaType: editorState.format as SchemaTypeType,
-                  schema: editorState.schemaText,
-                  references: editorState.references.filter((x) => x.name && x.subject),
-                })
-                .finally(() => setCreating(false));
+              if (!validationResponse.isValid || validationResponse.isCompatible === false) {
+                // Something is wrong with the schema, abort
+                // Persist error only after user closes the modal
+                openValidationErrorsModal(validationResponse, () => {
+                  setPersistentValidationError(validationResponse);
+                });
+                return;
+              }
 
-              await api.refreshSchemaDetails(subjectName, true);
+              // Clear any previous validation errors
+              setPersistentValidationError(null);
 
-              // success: navigate to details
-              const latestVersion = api.schemaDetails.get(subjectName)?.latestActiveVersion;
-              // biome-ignore lint/suspicious/noConsole: intentional console usage
-              console.log('schema created', { response: r });
-              // biome-ignore lint/suspicious/noConsole: intentional console usage
-              console.log('navigating to details', { subjectName, latestVersion });
-              appGlobal.historyReplace(
-                `/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=${latestVersion}`
-              );
-            } catch (err) {
-              // error: open modal
-              // biome-ignore lint/suspicious/noConsole: intentional console usage
-              console.log('failed to create schema', { err });
-              toast({
-                status: 'error',
-                duration: undefined,
-                isClosable: true,
-                title: 'Error creating schema',
-                description: String(err),
-              });
-            }
-          }}
-          variant="solid"
-        >
-          Save
-        </Button>
+              // try to create the schema
+              setCreating(true);
+              try {
+                const subjectName = editorState.computedSubjectName;
+                const r = await api
+                  .createSchema(editorState.computedSubjectName, {
+                    schemaType: editorState.format as SchemaTypeType,
+                    schema: editorState.schemaText,
+                    references: editorState.references.filter((x) => x.name && x.subject),
+                  })
+                  .finally(() => setCreating(false));
 
-        <Button
-          isDisabled={isValidating || isMissingName || isValidating || editorState.isInvalidKeyOrValue}
-          isLoading={isValidating}
-          loadingText="Validate"
-          onClick={async () => {
-            setValidating(true);
-            const r = await validateSchema(editorState).finally(() => setValidating(false));
+                await api.refreshSchemaDetails(subjectName, true);
 
-            if (r.isValid) {
-              toast({
-                status: 'success',
-                duration: 4000,
-                isClosable: false,
-                title: 'Schema validated successfully',
-              });
-            } else {
-              openValidationErrorsModal(r);
-            }
-          }}
-          variant="solid"
-        >
-          Validate
-        </Button>
+                // success: navigate to details
+                const latestVersion = api.schemaDetails.get(subjectName)?.latestActiveVersion;
+                // biome-ignore lint/suspicious/noConsole: intentional console usage
+                console.log('schema created', { response: r });
+                // biome-ignore lint/suspicious/noConsole: intentional console usage
+                console.log('navigating to details', { subjectName, latestVersion });
+                appGlobal.historyReplace(
+                  `/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=${latestVersion}`
+                );
+              } catch (err) {
+                // error: open modal
+                // biome-ignore lint/suspicious/noConsole: intentional console usage
+                console.log('failed to create schema', { err });
+                toast({
+                  status: 'error',
+                  duration: undefined,
+                  isClosable: true,
+                  title: 'Error creating schema',
+                  description: String(err),
+                });
+              }
+            }}
+            variant="solid"
+          >
+            Save
+          </Button>
 
-        <Button
-          onClick={() => {
-            if (p.parentSubjectName) {
-              appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(p.parentSubjectName)}`);
-            } else {
-              appGlobal.historyReplace('/schema-registry');
-            }
-          }}
-          variant="link"
-        >
-          Cancel
-        </Button>
-      </Flex>
+          <Button
+            isDisabled={isValidating || isMissingName || isValidating || editorState.isInvalidKeyOrValue}
+            isLoading={isValidating}
+            loadingText="Validate"
+            onClick={async () => {
+              setValidating(true);
+              const r = await validateSchema(editorState).finally(() => setValidating(false));
+
+              if (r.isValid && r.isCompatible !== false) {
+                // Clear any previous validation errors on successful validation
+                setPersistentValidationError(null);
+                toast({
+                  status: 'success',
+                  duration: 4000,
+                  isClosable: false,
+                  title: 'Schema validated successfully',
+                });
+              } else {
+                // Persist error only after user closes the modal
+                openValidationErrorsModal(r, () => {
+                  setPersistentValidationError(r);
+                });
+              }
+            }}
+            variant="solid"
+          >
+            Validate
+          </Button>
+
+          <Button
+            onClick={() => {
+              if (p.parentSubjectName) {
+                appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(p.parentSubjectName)}`);
+              } else {
+                appGlobal.historyReplace('/schema-registry');
+              }
+            }}
+            variant="link"
+          >
+            Cancel
+          </Button>
+        </Flex>
+      </>
     );
   }
 );
@@ -275,6 +322,7 @@ async function validateSchema(state: SchemaEditorStateHelper): Promise<{
   isValid: boolean; // is the schema valid at all (can be parsed, no unknown types etc)
   errorDetails?: string; // details about why the schema is not valid
   isCompatible?: boolean; // is the new schema not compatible with older versions; only set when the schema is valid
+  compatibilityError?: { errorType: string; description: string }; // detailed compatibility error from schema registry
 }> {
   if (!state.computedSubjectName) {
     return { isValid: false, errorDetails: 'Missing subject name' };
@@ -299,6 +347,7 @@ async function validateSchema(state: SchemaEditorStateHelper): Promise<{
     isValid: r.isValid,
     errorDetails: r.parsingError,
     isCompatible: r.isValid ? r.compatibility.isCompatible : undefined,
+    compatibilityError: r.compatibility.error,
   };
 }
 
