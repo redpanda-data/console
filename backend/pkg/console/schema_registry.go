@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -601,8 +602,8 @@ type schemaRegValidationError struct {
 }
 
 // parseCompatibilityError parses schema registry messages and returns formatted user-friendly messages.
-// Schema registry returns messages as separate JSON-like strings that we need to parse and format.
-func parseCompatibilityError(messages []string) schemaRegValidationError {
+// Schema registry may return JSON with unquoted keys that we need to fix before parsing.
+func (s *Service) parseCompatibilityError(messages []string) schemaRegValidationError {
 	if len(messages) == 0 {
 		return schemaRegValidationError{}
 	}
@@ -610,15 +611,17 @@ func parseCompatibilityError(messages []string) schemaRegValidationError {
 	// Iterate through all messages to extract errorType and description
 	data := schemaRegValidationError{}
 	for _, msg := range messages {
-		// Schema registry returns invalid JSON with unquoted keys like: {errorType:"...", description:"..."}
-		// We need to fix this by adding quotes around the keys
-		// Replace: {key: with {"key":
-		fixedMsg := strings.ReplaceAll(msg, "{", "{\"")
-		fixedMsg = strings.ReplaceAll(fixedMsg, ":", "\":")
-		fixedMsg = strings.ReplaceAll(fixedMsg, ", ", ", \"")
+
+		// Schema registry may return invalid JSON with unquoted keys like: {errorType:"...", description:"..."}
+		// Use regex to quote unquoted keys: word: becomes "word":
+		fixedMsg := regexp.MustCompile(`(\w+):`).ReplaceAllString(msg, `"$1":`)
 
 		err := json.Unmarshal([]byte(fixedMsg), &data)
 		if err != nil {
+			s.logger.Warn("failed to parse schema registry compatibility error message",
+				slog.String("original_message", msg),
+				slog.String("fixed_message", fixedMsg),
+				slog.String("error", err.Error()))
 			continue
 		}
 
@@ -667,7 +670,7 @@ func (s *Service) ValidateSchemaRegistrySchema(
 	} else {
 		isCompatible = compatRes.Is
 		// Parse the messages from schema registry to extract only errorType and description
-		compatErr = parseCompatibilityError(compatRes.Messages)
+		compatErr = s.parseCompatibilityError(compatRes.Messages)
 	}
 
 	var parsingErr string
