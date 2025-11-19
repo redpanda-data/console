@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 const CONTAINER_STATE_FILE = resolve(__dirname, '.testcontainers-state.json');
 
 export default async function globalTeardown() {
-  console.log('Stopping docker-compose environment...');
+  console.log('\n🛑 Stopping test environment...');
 
   try {
     if (!fs.existsSync(CONTAINER_STATE_FILE)) {
@@ -21,14 +21,54 @@ export default async function globalTeardown() {
 
     const state = JSON.parse(fs.readFileSync(CONTAINER_STATE_FILE, 'utf8'));
 
-    console.log(`Stopping docker-compose project: ${state.projectName}`);
+    // Stop backend server
+    if (state.backendPid) {
+      console.log(`Stopping backend server (PID: ${state.backendPid})...`);
+      try {
+        await execAsync(`kill ${state.backendPid}`);
+      } catch (error) {
+        console.log('Backend already stopped or not found');
+      }
+    }
 
-    await execAsync(`docker compose -f "${state.composeFile}" -p "${state.projectName}" down -v`);
+    // Stop frontend server
+    if (state.frontendPid) {
+      console.log(`Stopping frontend server (PID: ${state.frontendPid})...`);
+      try {
+        await execAsync(`kill ${state.frontendPid}`);
+      } catch (error) {
+        console.log('Frontend already stopped or not found');
+      }
+    }
+
+    // Stop Docker containers (testcontainers)
+    if (state.connectId) {
+      console.log(`Stopping Kafka Connect container...`);
+      await execAsync(`docker stop ${state.connectId}`).catch(() => {});
+      await execAsync(`docker rm ${state.connectId}`).catch(() => {});
+    }
+
+    if (state.owlshopId) {
+      console.log(`Stopping OwlShop container...`);
+      await execAsync(`docker stop ${state.owlshopId}`).catch(() => {});
+      await execAsync(`docker rm ${state.owlshopId}`).catch(() => {});
+    }
+
+    if (state.redpandaId) {
+      console.log(`Stopping Redpanda container...`);
+      await execAsync(`docker stop ${state.redpandaId}`).catch(() => {});
+      await execAsync(`docker rm ${state.redpandaId}`).catch(() => {});
+    }
+
+    if (state.networkId) {
+      console.log(`Removing Docker network...`);
+      await execAsync(`docker network rm ${state.networkId}`).catch(() => {});
+    }
 
     fs.unlinkSync(CONTAINER_STATE_FILE);
 
-    console.log('Docker-compose environment stopped successfully');
+    console.log('✅ Test environment stopped successfully\n');
   } catch (error) {
-    console.error('Failed to stop docker-compose environment:', error);
+    console.error('Failed to stop test environment:', error);
   }
 }

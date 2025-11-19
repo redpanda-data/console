@@ -1,6 +1,6 @@
 # E2E Testing with Testcontainers
 
-This directory contains the E2E test setup that uses Docker containers to provide a complete test environment.
+This directory contains the E2E test setup that uses Docker containers and Playwright's lifecycle hooks to provide a complete test environment.
 
 ## Quick Start
 
@@ -10,11 +10,12 @@ Simply run the E2E tests as usual:
 bun run e2e-test
 ```
 
-The test script will automatically:
+Playwright's globalSetup will automatically:
 1. Start all required Docker containers (Redpanda, Kafka Connect, OwlShop)
 2. Wait for services to be healthy
-3. Run the Playwright tests
-4. Clean up containers after tests complete
+3. Start backend and frontend servers
+4. Run the Playwright tests
+5. Clean up everything after tests complete (via globalTeardown)
 
 ## Services
 
@@ -41,25 +42,40 @@ The docker-compose configuration is in `tests/config/docker-compose.yaml`. It in
 
 The backend configuration is in `tests/config/console.config.yaml` and matches the docker-compose setup.
 
-## Manual Container Management
+## Architecture
 
-If you need to manually manage the containers:
+The E2E test setup uses Playwright's lifecycle hooks:
 
-### Start containers
+- **`global-setup.mjs`**: Runs once before all tests
+  - Starts Docker containers (Redpanda, Kafka Connect, OwlShop)
+  - Waits for services to be healthy
+  - Starts backend (Go) and frontend (Bun) servers
+  - Saves process IDs for cleanup
+
+- **`global-teardown.mjs`**: Runs once after all tests
+  - Stops backend and frontend servers
+  - Stops and removes Docker containers
+  - Cleans up state files
+
+## Manual Management
+
+If you need to manually manage the environment:
+
+### Start everything
 ```bash
-cd tests
-node global-setup.mjs
+cd tests && node -e "import('./global-setup.mjs').then(m => m.default())"
 ```
 
-### Stop containers
+### Stop everything
 ```bash
-cd tests
-node global-teardown.mjs
+cd tests && node -e "import('./global-teardown.mjs').then(m => m.default())"
 ```
 
-### Check container status
+### Check status
 ```bash
 docker ps | grep -E "redpanda|connect|owlshop"
+lsof -i :9090  # Backend
+lsof -i :3000  # Frontend
 ```
 
 ## Troubleshooting
@@ -90,9 +106,19 @@ docker compose -f tests/config/docker-compose.yaml -p redpanda-e2e down -v
 
 ## Files
 
-- `global-setup.mjs` - Starts docker-compose environment
-- `global-teardown.mjs` - Stops and cleans up containers
-- `start-e2e.sh` - Wrapper script that ensures containers start before tests
-- `config/docker-compose.yaml` - Docker Compose configuration
-- `config/console.config.yaml` - Redpanda Console configuration
-- `config/conf/.bootstrap.yaml` - Redpanda bootstrap configuration
+- **`global-setup.mjs`** - Playwright globalSetup hook
+  - Starts Docker containers
+  - Starts backend and frontend servers
+  - Waits for all services to be ready
+
+- **`global-teardown.mjs`** - Playwright globalTeardown hook
+  - Stops web servers
+  - Stops and removes Docker containers
+
+- **`config/docker-compose.yaml`** - Docker Compose configuration
+  - Redpanda with SASL authentication
+  - Kafka Connect
+  - OwlShop data generator
+
+- **`config/console.config.yaml`** - Redpanda Console backend configuration
+- **`config/conf/.bootstrap.yaml`** - Redpanda bootstrap configuration
