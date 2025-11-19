@@ -18,12 +18,9 @@ import type { ChatMessage, ContentBlock } from '../types';
  * Deserialize contentBlocks from database (ISO string → Date)
  */
 const deserializeContentBlocks = (dbBlocks: import('database/chat-db').ContentBlock[]): ContentBlock[] =>
-  dbBlocks.map((block): ContentBlock => {
-    if (block.type === 'tool' || block.type === 'artifact' || block.type === 'task-status-update') {
-      return { ...block, timestamp: new Date(block.timestamp) } as ContentBlock;
-    }
-    return block as ContentBlock;
-  });
+  dbBlocks
+    .filter((block) => block.type === 'tool' || block.type === 'artifact' || block.type === 'task-status-update')
+    .map((block): ContentBlock => ({ ...block, timestamp: new Date(block.timestamp) }) as ContentBlock);
 
 /**
  * Build chat message from stored contentBlocks

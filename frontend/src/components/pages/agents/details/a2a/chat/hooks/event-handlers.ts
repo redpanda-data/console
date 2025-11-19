@@ -120,7 +120,7 @@ const createStatusUpdateBlock = (
     messageText: string;
     messageIdValue: string | undefined;
     timestamp: string | undefined;
-    final: boolean | undefined;
+    final: boolean;
   }
 ): void => {
   const { newState, hasStateChange, messageText, messageIdValue, timestamp, final } = options;
@@ -248,7 +248,7 @@ export const handleStatusUpdateEvent = (
     messageText,
     messageIdValue,
     timestamp,
-    final: event.final,
+    final: event.final ?? false,
   });
 
   if (timestamp) {

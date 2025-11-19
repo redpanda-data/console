@@ -320,35 +320,6 @@ class A2aChatLanguageModel implements LanguageModelV2 {
       const activeTextIds = new Set<string>();
       let finishReason: LanguageModelV2FinishReason = 'unknown';
 
-      const enqueueTextParts = (controller: TransformStreamDefaultController<LanguageModelV2StreamPart>, parts: Part[], id: string, lastChunk: boolean) => {
-        const textContentParts = parts.filter((part) => part.kind === "text");
-
-        if (textContentParts.length > 0) {
-          if (!activeTextIds.has(id)) {
-            controller.enqueue({ type: 'text-start', id });
-            activeTextIds.add(id);
-          }
-
-          const textContent = parts.filter((part) => part.kind === "text").map((part) => {
-            return (part).text;
-          }).join(' ');
-
-          controller.enqueue({
-            type: 'text-delta',
-            id,
-            delta: textContent,
-          });
-
-          if (lastChunk) {
-            controller.enqueue({
-              type: 'text-end',
-              id,
-            });
-            activeTextIds.delete(id);
-          }
-        }
-      }
-
       return {
         stream: (simulatedStream || convertAsyncIteratorToReadableStream(response)).pipeThrough(
           new TransformStream<
