@@ -37,7 +37,6 @@ export type ToolCall = {
 };
 
 export type ContentBlock =
-  | { type: 'text'; text: string; timestamp: string }
   | {
       type: 'tool';
       toolCallId: string;
@@ -57,7 +56,15 @@ export type ContentBlock =
       parts: ArtifactPart[];
       timestamp: string;
     }
-  | { type: 'status-update'; taskState: string; timestamp: string };
+  | {
+      type: 'task-status-update';
+      taskState?: string;
+      previousState?: string;
+      text?: string;
+      messageId?: string;
+      final: boolean;
+      timestamp: string;
+    };
 
 export type ChatMessage = {
   id: string;

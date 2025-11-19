@@ -56,7 +56,7 @@ export default defineConfig({
       context: ['/api', '/redpanda.api', '/auth', '/logout'],
       target: process.env.PROXY_TARGET || 'http://localhost:9090',
       changeOrigin: !!process.env.PROXY_TARGET,
-      secure: false,
+      secure: process.env.PROXY_TARGET ? false : undefined,
     },
   },
   source: {

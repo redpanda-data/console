@@ -28,7 +28,7 @@ import { getAgentCardUrls } from 'utils/ai-agent.utils';
  * Try multiple agent card URLs in order until one succeeds.
  * Tries agent-card.json first, then falls back to agent.json
  */
-async function createA2AClientWithFallback(agentUrl: string, options: { fetchImpl: typeof fetch }): Promise<A2AClient> {
+async function createA2AClientWithFallback(agentUrl: string, options: Parameters<typeof A2AClient.fromCardUrl>[1]): Promise<A2AClient> {
   const urls = getAgentCardUrls({ agentUrl });
   const errors: Error[] = [];
 

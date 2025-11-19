@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import type { TaskState } from '@a2a-js/sdk';
 import type { AIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 
 /**
@@ -46,8 +47,8 @@ export type ContentBlock =
     }
   | {
       type: 'task-status-update';
-      taskState?: string;
-      previousState?: string;
+      taskState?: TaskState;
+      previousState?: TaskState;
       text?: string;
       messageId?: string;
       final: boolean;
@@ -64,16 +65,7 @@ export type ChatMessage = {
   timestamp: Date;
   contextId?: string;
   taskId?: string;
-  taskState?:
-    | 'submitted'
-    | 'working'
-    | 'input-required'
-    | 'completed'
-    | 'canceled'
-    | 'failed'
-    | 'rejected'
-    | 'auth-required'
-    | 'unknown';
+  taskState?: TaskState;
   /**
    * Index in contentBlocks where task-related content starts
    * Content before this index should be rendered above the Task box

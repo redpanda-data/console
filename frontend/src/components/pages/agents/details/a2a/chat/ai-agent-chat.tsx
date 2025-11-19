@@ -13,6 +13,7 @@
 
 import { ConversationEmptyState } from 'components/ai-elements/conversation';
 import { Loader } from 'components/ai-elements/loader';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { motion } from 'framer-motion';
 import { useChatScroll } from 'hooks/use-chat-scroll';
 import { useRef } from 'react';
@@ -54,9 +55,13 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
       {/* Context ID header */}
       {contextId && (
         <div className="shrink-0 border-b bg-muted/30 px-4 py-2">
-          <div className="flex gap-1.5 text-muted-foreground text-xs">
-            <span className="font-medium">context_id:</span>
-            <span className="font-mono">{contextId}</span>
+          <div className="flex gap-1.5 text-muted-foreground">
+            <Text className="font-medium" variant="small">
+              context_id:
+            </Text>
+            <Text className="font-mono" variant="small">
+              {contextId}
+            </Text>
           </div>
         </div>
       )}

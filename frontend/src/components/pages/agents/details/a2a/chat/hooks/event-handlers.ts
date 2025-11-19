@@ -138,10 +138,10 @@ const createStatusUpdateBlock = (
   const statusUpdateBlock: ContentBlock = {
     type: 'task-status-update',
     taskState: newState,
-    previousState: state.previousTaskState as string | undefined,
+    previousState: state.previousTaskState,
     text: messageText.trim().length > 0 ? messageText : undefined,
     messageId: messageIdValue,
-    final: final ?? false,
+    final,
     timestamp: eventTimestamp,
   };
   state.contentBlocks.push(statusUpdateBlock);
@@ -238,7 +238,7 @@ export const handleStatusUpdateEvent = (
   }
 
   const newState = event.status?.state as ChatMessage['taskState'] | undefined;
-  const hasStateChange = newState && (!state.previousTaskState || state.previousTaskState !== newState);
+  const hasStateChange = !!(newState && (!state.previousTaskState || state.previousTaskState !== newState));
 
   const { text: messageText, messageId: messageIdValue } = extractMessageText(message);
 
