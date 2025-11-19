@@ -150,12 +150,15 @@ export function openInfoModal(p: {
   });
 }
 
-export function openValidationErrorsModal(result: {
-  isValid: boolean;
-  errorDetails?: string | undefined;
-  isCompatible?: boolean | undefined;
-  compatibilityError?: { errorType: string; description: string } | undefined;
-}) {
+export function openValidationErrorsModal(
+  result: {
+    isValid: boolean;
+    errorDetails?: string | undefined;
+    isCompatible?: boolean | undefined;
+    compatibilityError?: { errorType: string; description: string } | undefined;
+  },
+  onClose?: () => void
+) {
   const { isValid, errorDetails, isCompatible, compatibilityError } = result;
 
   const compatBox = (() => {
@@ -225,6 +228,7 @@ export function openValidationErrorsModal(result: {
         </Flex>
       </>
     ),
+    onClose,
   });
 }
 

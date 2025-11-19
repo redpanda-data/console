@@ -611,7 +611,6 @@ func (s *Service) parseCompatibilityError(messages []string) schemaRegValidation
 	// Iterate through all messages to extract errorType and description
 	data := schemaRegValidationError{}
 	for _, msg := range messages {
-
 		// Schema registry may return invalid JSON with unquoted keys like: {errorType:"...", description:"..."}
 		// Use regex to quote unquoted keys: word: becomes "word":
 		fixedMsg := regexp.MustCompile(`(\w+):`).ReplaceAllString(msg, `"$1":`)
