@@ -22,6 +22,10 @@ import {
   isBakedInTrial,
   prettyLicenseType,
 } from 'components/license/license-utils';
+import JSONBigIntFactory from 'json-bigint';
+
+const JSONBigInt = JSONBigIntFactory({ storeAsString: true });
+
 import { comparer, computed, observable, runInAction, transaction } from 'mobx';
 import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
@@ -2928,15 +2932,16 @@ export function createMessageSearch() {
                 m.key.payload = keyPayload;
                 m.key.normalizedPayload = key?.normalizedPayload;
 
+                // Only parse JSON payloads with JSONBigInt to preserve large integer precision
                 try {
-                  m.key.payload = JSON.parse(keyPayload);
+                  m.key.payload = JSONBigInt.parse(keyPayload);
                 } catch {
-                  // no op - payload may not be JSON
+                  // no op - payload may not be valid JSON
                 }
 
                 m.key.troubleshootReport = key?.troubleshootReport;
                 m.key.schemaId = key?.schemaId ?? 0;
-                m.keyJson = JSON.stringify(m.key.payload);
+                m.keyJson = keyPayload;
                 m.key.size = Number(key?.payloadSize);
                 m.key.isPayloadTooLarge = key?.isPayloadTooLarge;
 
@@ -3007,13 +3012,14 @@ export function createMessageSearch() {
                 m.valueJson = valuePayload;
                 m.value.isPayloadTooLarge = val?.isPayloadTooLarge;
 
+                // Only parse JSON payloads with JSONBigInt to preserve large integer precision
                 try {
-                  m.value.payload = JSON.parse(valuePayload);
+                  m.value.payload = JSONBigInt.parse(valuePayload);
                 } catch {
-                  // no op - payload may not be JSON
+                  // no op - payload may not be valid JSON
                 }
 
-                m.valueJson = JSON.stringify(m.value.payload);
+                m.valueJson = valuePayload;
                 m.value.size = Number(val?.payloadSize);
 
                 this.messages.push(m);

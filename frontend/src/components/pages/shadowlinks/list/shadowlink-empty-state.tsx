@@ -11,7 +11,26 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { CodeBlock, Pre } from 'components/redpanda-ui/components/code-block';
 import { Text } from 'components/redpanda-ui/components/typography';
+
+const ShadowingDescription = () => (
+  <>
+    <Text>
+      Shadowing protects your data from regional outages. It continuously replicates topics to a separate cluster in a
+      different region, creating an up-to-date backup.
+    </Text>
+    <Text>
+      Think of it as an insurance policy for your data. The source cluster handles all production traffic, while the
+      shadow cluster maintains a read-only copy. If your primary region goes down, you can quickly switch to the shadow
+      cluster with minimal data loss.
+    </Text>
+    <Text>
+      Shadowing preserves everything: your data, offsets, timestamps, and consumer positions. This means your
+      applications can resume exactly where they left off after a failover.
+    </Text>
+  </>
+);
 
 interface ShadowLinkEmptyStateProps {
   onCreateClick: () => void;
@@ -22,27 +41,29 @@ export const ShadowLinkEmptyState = ({ onCreateClick }: ShadowLinkEmptyStateProp
     <CardHeader>
       <CardTitle>Shadowing</CardTitle>
     </CardHeader>
-    <CardContent className="flex flex-col gap-4">
-      <Text>
-        Shadowing is Redpanda's disaster recovery solution that protects your data from regional outages. It
-        continuously replicates your topics to a separate cluster in a different location, creating a live backup that
-        stays up-to-date.
-      </Text>
-      <Text>
-        Think of it as an insurance policy for your data. Your source cluster handles all production traffic while the
-        shadow cluster maintains a read-only copy. If disaster strikes and your primary region goes down, you can
-        quickly switch to the shadow cluster with minimal data loss.
-      </Text>
-      <Text>
-        Shadowing preserves everything: your data, offsets, timestamps, and consumer positions. This means your
-        applications can resume exactly where they left off after a failover.
-      </Text>
-      <Text>Get started by creating your first shadow link to connect a source topic to a destination cluster.</Text>
+    <CardContent className="flex flex-col gap-3">
+      <ShadowingDescription />
+      <Text>Create a shadow link to connect your source cluster to your shadow cluster.</Text>
       <div>
         <Button onClick={onCreateClick} testId="create-shadowlink-button">
-          Create Shadow link
+          Create shadow link
         </Button>
       </div>
+    </CardContent>
+  </Card>
+);
+
+export const ShadowLinkFeatureDisabledState = () => (
+  <Card data-testid="shadowlink-feature-disabled-card" size="full">
+    <CardHeader>
+      <CardTitle>Shadowing</CardTitle>
+    </CardHeader>
+    <CardContent className="flex flex-col gap-3">
+      <ShadowingDescription />
+      <Text>To get started, run the following command to enable Shadowing on your cluster:</Text>
+      <CodeBlock testId="shadowlink-enable-command">
+        <Pre>rpk cluster config set enable_shadow_linking true</Pre>
+      </CodeBlock>
     </CardContent>
   </Card>
 );

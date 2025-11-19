@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-const _START_BUTTON_REGEX = /start/i;
-
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import {
@@ -39,8 +37,6 @@ vi.mock('config', () => ({
 }));
 
 import { RemoteMCPToggleButton } from './remote-mcp-toggle-button';
-
-const START_BUTTON_REGEX = /start/i;
 
 describe('RemoteMCPToggleButton', () => {
   test('should stop a running MCP server from the details page', async () => {
@@ -255,7 +251,7 @@ describe('RemoteMCPToggleButton', () => {
     );
 
     await waitFor(() => {
-      const startButton = screen.getByRole('button', { name: START_BUTTON_REGEX });
+      const startButton = screen.getByTestId('start-mcp-server-button');
       expect(startButton).toBeVisible();
       expect(startButton).toBeDisabled();
     });
@@ -296,7 +292,7 @@ describe('RemoteMCPToggleButton', () => {
     );
 
     await waitFor(() => {
-      const startButton = screen.getByRole('button', { name: START_BUTTON_REGEX });
+      const startButton = screen.getByRole('button', { name: 'Start' });
       expect(startButton).toBeVisible();
       expect(startButton).toBeEnabled();
     });

@@ -61,6 +61,8 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
         .map(([key, value]) => ({ key, value }))
     : [{ key: '', value: '' }];
 
+  const updateSchema = secretSchema(z.string().optional());
+
   const formOpts = formOptions({
     defaultValues: {
       id: secretId,
@@ -69,7 +71,8 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
       labels: existingLabels.length > 0 ? existingLabels : [],
     },
     validators: {
-      onChange: secretSchema(z.string().optional()),
+      // @ts-expect-error - Zod schema type incompatibility with @tanstack/react-form validators
+      onChange: updateSchema,
     },
     onSubmit: async ({ value }) => {
       const labelsMap: { [key: string]: string } = {};
@@ -141,8 +144,10 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
                           <FormErrorMessage>
                             <UnorderedList>
                               {state.meta.errors?.map((error) => (
-                                <li key={error.path}>
-                                  <Text color="red.500">{error.message}</Text>
+                                // biome-ignore lint/suspicious/noExplicitAny: error type from @tanstack/react-form is not properly typed
+                                <li key={(error as any)?.path ?? ''}>
+                                  {/* biome-ignore lint/suspicious/noExplicitAny: error type from @tanstack/react-form is not properly typed */}
+                                  <Text color="red.500">{(error as any)?.message ?? 'Validation error'}</Text>
                                 </li>
                               ))}
                             </UnorderedList>

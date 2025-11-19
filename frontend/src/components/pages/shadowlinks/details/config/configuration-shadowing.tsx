@@ -26,7 +26,7 @@ import {
   getResourceTypeLabel,
 } from '../../shadowlink-helpers';
 
-export interface ConfigurationMirroringProps {
+export interface ConfigurationShadowingProps {
   shadowLink: ShadowLink;
 }
 
@@ -94,7 +94,7 @@ const ACLFilterDisplay = ({ filter, index }: { filter: ACLFilter; index: number 
       <div className="font-medium text-sm">ACL Filter {index + 1}</div>
       <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-3">
         <div>
-          <span className="text-muted-foreground">Resource Type:</span>{' '}
+          <span className="text-muted-foreground">Resource type:</span>{' '}
           <Badge size="sm" variant="blue">
             {getResourceTypeLabel(resourceFilter?.resourceType)}
           </Badge>
@@ -106,7 +106,7 @@ const ACLFilterDisplay = ({ filter, index }: { filter: ACLFilter; index: number 
           </Badge>
         </div>
         <div>
-          <span className="text-muted-foreground">Resource Name:</span>{' '}
+          <span className="text-muted-foreground">Resource name:</span>{' '}
           <Badge size="sm" variant="blue">
             {resourceFilter?.name || 'All'}
           </Badge>
@@ -166,7 +166,7 @@ const ACLFilterSection = ({ filters }: { filters: ACLFilter[] }) => {
   );
 };
 
-export const ConfigurationMirroring = ({ shadowLink }: ConfigurationMirroringProps) => {
+export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingProps) => {
   const topicSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
   const consumerSyncOptions = shadowLink.configurations?.consumerOffsetSyncOptions;
   const securitySyncOptions = shadowLink.configurations?.securitySyncOptions;

@@ -11,6 +11,7 @@
 
 'use client';
 
+import { Code } from '@connectrpc/connect';
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
@@ -24,7 +25,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
-import { ShadowLinkEmptyState } from './shadowlink-empty-state';
+import { ShadowLinkEmptyState, ShadowLinkFeatureDisabledState } from './shadowlink-empty-state';
 import { getShadowLinkStateLabel } from '../model';
 
 // Extracted component for table body content
@@ -83,7 +84,7 @@ export const createColumns: ColumnDef<ListShadowLinksResponse_ShadowLink>[] = [
   {
     id: 'sourceCluster',
     accessorFn: (row) => row.bootstrapServers.join(',') || 'N/A',
-    header: 'Source Cluster',
+    header: 'Source cluster',
     cell: ({ row }) => (
       <Text className="font-mono text-muted-foreground" variant="small">
         {row.original.bootstrapServers.join(',') || 'N/A'}
@@ -115,9 +116,9 @@ export const ShadowLinkListPage = () => {
     uiState.pageTitle = 'Shadow Links';
   }, []);
 
-  // Show toast on error
+  // Show toast on error (except for feature-disabled errors)
   useEffect(() => {
-    if (error) {
+    if (error && error.code !== Code.FailedPrecondition) {
       toast.error('Failed to load shadowlinks', {
         description: error.message,
       });
@@ -136,6 +137,15 @@ export const ShadowLinkListPage = () => {
     getCoreRowModel: getCoreRowModel(),
   });
 
+  // Feature disabled state
+  if (error?.code === Code.FailedPrecondition && error.message.includes('Cluster link feature is disabled')) {
+    return (
+      <div className="my-2 flex justify-center gap-2">
+        <ShadowLinkFeatureDisabledState />
+      </div>
+    );
+  }
+
   // Empty state when no shadowlinks exist
   if (!(isLoading || error) && shadowLinks.length === 0) {
     return (
@@ -149,7 +159,7 @@ export const ShadowLinkListPage = () => {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <Text variant="muted">
-          Manage shadowlinks to replicate topics from source clusters for disaster recovery and high availability.
+          Manage shadow links to replicate topics from source clusters for disaster recovery and high availability.
         </Text>
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
@@ -161,7 +171,7 @@ export const ShadowLinkListPage = () => {
                 variant="secondary"
               >
                 <Plus className="h-4 w-4" />
-                Create Shadowlink
+                Create shadow link
               </Button>
             </span>
           </TooltipTrigger>

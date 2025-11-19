@@ -26,7 +26,7 @@ const SourceClusterNode = ({ data }: { data: { brokers: string[] } }) => (
       <ItemTitle>Source cluster</ItemTitle>
       <div className="flex flex-col gap-1 text-muted-foreground text-xs">
         {data.brokers.map((broker) => (
-          <Text key={broker} variant={'muted'}>
+          <Text className="max-w-[240px] truncate" key={broker} variant={'muted'}>
             {broker}
           </Text>
         ))}
@@ -105,6 +105,7 @@ export const ShadowLinkDiagram = ({ shadowLink }: ShadowLinkDiagramProps) => {
               nodeTypes={nodeTypes}
               panOnDrag={false}
               preventScrolling={false}
+              proOptions={{ hideAttribution: true }}
               zoomOnPinch={false}
               zoomOnScroll={false}
             >

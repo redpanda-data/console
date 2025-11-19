@@ -24,7 +24,11 @@ import { FilterItem } from './filter-item';
 import type { FormValues } from '../model';
 
 export const TopicsStep = () => {
-  const { control, setValue } = useFormContext<FormValues>();
+  const {
+    control,
+    setValue,
+    formState: { errors },
+  } = useFormContext<FormValues>();
   const [isOpen, setIsOpen] = useState(false);
 
   const topicsMode = useWatch({ control, name: 'topicsMode' });
@@ -59,7 +63,7 @@ export const TopicsStep = () => {
     <Collapsible onOpenChange={setIsOpen} open={isOpen}>
       <Card className="gap-0" size="full">
         <CardHeader>
-          <CardTitle>Topic mirroring</CardTitle>
+          <CardTitle>Topic shadowing</CardTitle>
           <CardAction>
             <CollapsibleTrigger asChild>
               <Button className="w-fit p-0" data-testid="topics-toggle-button" size="sm" variant="ghost">
@@ -82,18 +86,23 @@ export const TopicsStep = () => {
             {/* Resume/summary view when collapsed */}
             {!isOpen && topicsMode === 'specify' && fields.length > 0 && (
               <div className="mt-4 space-y-2">
-                {fields.map((field, index) => (
-                  <FilterItem
-                    control={control}
-                    fieldNamePrefix="topics"
-                    index={index}
-                    key={field.id}
-                    onRemove={() => remove(index)}
-                    viewType={false}
-                  >
-                    {null}
-                  </FilterItem>
-                ))}
+                {fields.map((field, index) => {
+                  const fieldError = errors.topics?.[index];
+                  const errorMessage = fieldError?.name?.message;
+                  return (
+                    <FilterItem
+                      control={control}
+                      errorMessage={errorMessage}
+                      fieldNamePrefix="topics"
+                      index={index}
+                      key={field.id}
+                      onRemove={() => remove(index)}
+                      viewType={false}
+                    >
+                      {null}
+                    </FilterItem>
+                  );
+                })}
               </div>
             )}
 
@@ -102,7 +111,7 @@ export const TopicsStep = () => {
               <TabsContent value="all">
                 <Alert>
                   <AlertDescription>
-                    All topics from the source cluster will be mirrored to the destination cluster.
+                    All topics from the source cluster will be shadowed to the destination cluster.
                   </AlertDescription>
                 </Alert>
               </TabsContent>
@@ -125,7 +134,11 @@ export const TopicsStep = () => {
                         render={({ field: nameField }) => (
                           <FormItem className="flex-1">
                             <FormControl>
-                              <Input placeholder="e.g., * or metrics" {...nameField} />
+                              <Input
+                                placeholder="e.g., * or metrics"
+                                testId={`topic-filter-${index}-name`}
+                                {...nameField}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
