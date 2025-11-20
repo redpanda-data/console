@@ -17,6 +17,27 @@ vi.stubGlobal('ResizeObserver', ResizeObserverMock);
 
 window.scrollTo = vi.fn();
 
+// Mock lottie-react - lottie-web tries to access canvas APIs not available in jsdom
+vi.mock('lottie-react', () => ({
+  useLottie: () => ({
+    View: null,
+    play: vi.fn(),
+    stop: vi.fn(),
+    pause: vi.fn(),
+    setSpeed: vi.fn(),
+    goToAndStop: vi.fn(),
+    goToAndPlay: vi.fn(),
+    setDirection: vi.fn(),
+    playSegments: vi.fn(),
+    setSubframe: vi.fn(),
+    destroy: vi.fn(),
+    getDuration: vi.fn(),
+    animationItem: null,
+    animationContainerRef: { current: null },
+    animationLoaded: false,
+  }),
+}));
+
 beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
