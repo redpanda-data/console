@@ -98,7 +98,7 @@ const App = () => {
                   ) : (
                     <>
                       <AnnouncementBar />
-                      <Grid minH="100vh" maxHeight="100vh" overflow="hidden" templateColumns="auto 1fr">
+                      <Grid minH="100vh" templateColumns="auto 1fr">
                         <AppSidebar />
                         <Container as="main" maxWidth="1500px" pt="8" px="12" width="full">
                           <AppContent />
