@@ -9,9 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Shimmer } from 'components/ai-elements/shimmer';
-
 /**
- * Renders loading state shimmer
+ * Renders loading state (empty during streaming)
  */
-export const LoadingMessageContent = () => <Shimmer as="span" />;
+export const LoadingMessageContent = () => null;
