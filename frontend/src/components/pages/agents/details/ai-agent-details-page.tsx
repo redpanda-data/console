@@ -90,7 +90,7 @@ export const AIAgentDetailsPage = () => {
   }
 
   return (
-    <div className="flex max-h-[calc(100vh-120px)] flex-col gap-4">
+    <div className="flex max-h-[calc(100vh-120px)] flex-col gap-4 overflow-hidden">
       <AIAgentDetailsHeader />
 
       <Tabs className="min-h-0 flex-1" onValueChange={handleTabChange} value={activeTab}>
