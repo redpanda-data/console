@@ -14,8 +14,4 @@ import { Shimmer } from 'components/ai-elements/shimmer';
 /**
  * Renders loading state shimmer
  */
-export const LoadingMessageContent = () => (
-  <div className="flex items-center gap-2">
-    <Shimmer as="span" />
-  </div>
-);
+export const LoadingMessageContent = () => <Shimmer as="span" />;
