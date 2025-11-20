@@ -186,6 +186,11 @@ export enum PayloadEncoding {
    * @generated from enum value: PAYLOAD_ENCODING_CBOR = 15;
    */
   CBOR = 15,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_PROTOBUF_BSR = 16;
+   */
+  PROTOBUF_BSR = 16,
 }
 
 /**
