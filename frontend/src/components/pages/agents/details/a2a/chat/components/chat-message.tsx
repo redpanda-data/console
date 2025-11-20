@@ -15,7 +15,6 @@ import { ChatMessageActions } from './chat-message-actions';
 import { ArtifactBlock } from './message-blocks/artifact-block';
 import { TaskStatusUpdateBlock } from './message-blocks/task-status-update-block';
 import { ToolBlock } from './message-blocks/tool-block';
-import { LoadingMessageContent } from './message-content/loading-message-content';
 import { UserMessageContent } from './message-content/user-message-content';
 import { TaskMessageWrapper } from './task-message/task-message-wrapper';
 import type { ChatMessage as ChatMessageType, ContentBlock } from '../types';
@@ -111,29 +110,12 @@ export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
     // Render task-related content blocks
     const taskElements = taskBlocks.map((block, index) => renderContentBlock(block, taskStartIndex + index));
 
-    // Show loading indicator during streaming
-    // For task messages, show loading AFTER pre-task content but BEFORE task wrapper
-    // For non-task messages, show loading AFTER all content
-    const loadingElement = isLoading ? (
-      <div className="mb-4">
-        <Message from={message.role}>
-          <MessageContent variant="flat">
-            <MessageBody>
-              <LoadingMessageContent />
-            </MessageBody>
-          </MessageContent>
-        </Message>
-      </div>
-    ) : null;
-
     // Wrap in task UI if this is a task message
     if (isTaskMessage && message.taskId) {
       return (
         <div>
           {/* Always render pre-task content first (messages that arrived before task event) */}
           {preTaskElements}
-          {/* Show loading indicator after pre-task content but before task wrapper */}
-          {loadingElement}
           {/* Task wrapper contains task-related content blocks */}
           <TaskMessageWrapper messageId={message.id} taskId={message.taskId} taskState={message.taskState}>
             {taskElements}
@@ -147,7 +129,6 @@ export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
       <div>
         {preTaskElements}
         {taskElements}
-        {loadingElement}
         <ChatMessageActions
           role={message.role}
           text={(() => {
