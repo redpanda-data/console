@@ -128,8 +128,8 @@ export const MtlsConfiguration = () => {
     if (!hasCert) {
       return (
         <Button
-          data-testid={`add-${certType}-button`}
           onClick={() => handleOpenDialog(certType)}
+          testId={`add-${certType}-button`}
           type="button"
           variant="outline"
         >
@@ -151,9 +151,9 @@ export const MtlsConfiguration = () => {
         </div>
         <div className="flex gap-2">
           <Button
-            data-testid={`edit-${certType}-button`}
             onClick={() => handleOpenDialog(certType)}
             size="sm"
+            testId={`edit-${certType}-button`}
             type="button"
             variant="ghost"
           >
@@ -162,9 +162,9 @@ export const MtlsConfiguration = () => {
           </Button>
           <Button
             className="text-destructive hover:text-destructive"
-            data-testid={`remove-${certType}-button`}
             onClick={() => handleRemoveCertificate(certType)}
             size="sm"
+            testId={`remove-${certType}-button`}
             type="button"
             variant="ghost"
           >
@@ -197,12 +197,12 @@ export const MtlsConfiguration = () => {
             <FormLabel>{label} path</FormLabel>
             <FormControl>
               <Input
-                data-testid={`mtls-${testIdSuffix}-path-input`}
                 onChange={(e) => {
                   const value = e.target.value.trim();
                   field.onChange(value ? { filePath: value } : undefined);
                 }}
                 placeholder={placeholder}
+                testId={`mtls-${testIdSuffix}-path-input`}
                 type="text"
                 value={cert?.filePath || ''}
               />
