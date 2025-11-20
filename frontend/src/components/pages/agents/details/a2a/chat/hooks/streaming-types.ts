@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import type { TaskState } from '@a2a-js/sdk';
+import type { Message, Task, TaskArtifactUpdateEvent, TaskState, TaskStatusUpdateEvent } from '@a2a-js/sdk';
 
 import type { ChatMessage, ContentBlock } from '../types';
 
@@ -56,9 +56,17 @@ export type TextDeltaEvent = {
 };
 
 /**
+ * Raw event from A2A SDK wrapped in AI SDK's streaming protocol
+ */
+export type RawStreamEvent = {
+  type: 'raw';
+  rawValue: Task | TaskStatusUpdateEvent | TaskArtifactUpdateEvent | Message;
+};
+
+/**
  * Stream chunk union type - simplified, no Raw wrappers
  */
-export type StreamChunk = ResponseMetadataEvent | TextDeltaEvent | { type: string; rawValue?: unknown };
+export type StreamChunk = ResponseMetadataEvent | TextDeltaEvent | RawStreamEvent;
 
 /**
  * Streaming state that accumulates during stream consumption
