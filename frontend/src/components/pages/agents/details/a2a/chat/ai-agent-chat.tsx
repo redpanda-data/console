@@ -51,7 +51,7 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
   });
 
   return (
-    <div className="flex flex-col h-[calc(100vh-255px)] pb-5">
+    <div className="flex flex-col h-[calc(100vh-255px)]">
       {/* Context ID header */}
       {contextId && (
         <div className="shrink-0 border-b bg-muted/30 px-4 py-2">
