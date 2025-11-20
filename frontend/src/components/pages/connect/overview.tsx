@@ -11,12 +11,12 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Badge, Box, DataTable, Stack, Tooltip } from '@redpanda-data/ui';
-import { useQuery } from '@tanstack/react-query';
 import ErrorResult from 'components/misc/error-result';
 import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FunctionComponent } from 'react';
+import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
 import { Navigate, useLocation } from 'react-router-dom';
 
 import {
@@ -29,16 +29,11 @@ import {
   TaskState,
   TasksColumn,
 } from './helper';
-import { config, isFeatureFlagEnabled, isServerless } from '../../../config';
+import { isFeatureFlagEnabled, isServerless } from '../../../config';
 import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/app-global';
 import { api, pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
-import type {
-  ClusterConnectorInfo,
-  ClusterConnectors,
-  ClusterConnectorTaskInfo,
-  KafkaConnectors,
-} from '../../../state/rest-interfaces';
+import type { ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo } from '../../../state/rest-interfaces';
 import { Features } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
 import { Code, DefaultSkeleton } from '../../../utils/tsx-utils';
@@ -87,27 +82,13 @@ const WrapKafkaConnectOverview: FunctionComponent<{ matchedPath: string }> = (pr
   const searchParams = new URLSearchParams(search);
   const defaultTab = searchParams.get('defaultTab') || '';
 
-  const { data, isLoading } = useQuery<KafkaConnectors>({
-    queryKey: ['kafka-connect-connectors'],
-    queryFn: async () => {
-      const response = await config.fetch(`${config.restBasePath}/kafka-connect/connectors`, {
-        method: 'GET',
-        headers: [['Content-Type', 'application/json']],
-      });
+  const { data: kafkaConnectors, isLoading: isLoadingKafkaConnectors } = useKafkaConnectConnectorsQuery();
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch kafka connect connectors');
-      }
-
-      return response.json();
-    },
-  });
-
-  if (isLoading) {
+  if (isLoadingKafkaConnectors) {
     return <WaitingRedpanda />;
   }
 
-  const isKafkaConnectEnabled = data?.isConfigured ?? false;
+  const isKafkaConnectEnabled = kafkaConnectors?.isConfigured ?? false;
 
   return <KafkaConnectOverview defaultView={defaultTab} isKafkaConnectEnabled={isKafkaConnectEnabled} {...props} />;
 };
