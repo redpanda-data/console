@@ -10,9 +10,10 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Badge, Box, DataTable, Link, Stack, Text, Tooltip } from '@redpanda-data/ui';
+import { Badge, Box, DataTable, Stack, Tooltip } from '@redpanda-data/ui';
 import { useQuery } from '@tanstack/react-query';
 import ErrorResult from 'components/misc/error-result';
+import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FunctionComponent } from 'react';
@@ -158,26 +159,25 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string; isKafkaC
           </Box>
         ),
         content: (
-          <Box>
-            {!isFeatureFlagEnabled('enableRpcnTiles') && (
-              <Text mb={4}>
-                Redpanda Connect is an alternative to Kafka Connect. Choose from a growing ecosystem of readily
-                available connectors.{' '}
-                <Link href="https://docs.redpanda.com/redpanda-cloud/develop/connect/about/" target="_blank">
-                  Learn more.
-                </Link>
-              </Text>
-            )}
+          <div className="mb-4 flex flex-col gap-4">
+            <Text>
+              {this.props.isKafkaConnectEnabled
+                ? 'Redpanda Connect is an alternative to Kafka Connect. Choose from a growing ecosystem of readily available connectors.'
+                : 'Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that drive real-time analytics and actionable business insights. Integrate data across systems with hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable pipelines.'}{' '}
+              <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
+                Learn more
+              </Link>
+            </Text>
             {Features.pipelinesApi ? <RpConnectPipelinesList matchedPath="/rp-connect" /> : <RedpandaConnectIntro />}
-          </Box>
+          </div>
         ),
       },
       {
         key: ConnectView.KafkaConnect,
         title: <Box minWidth="180px">Kafka Connect</Box>,
         content: (
-          <Box>
-            <Text mb={4}>
+          <div className="flex flex-col gap-4">
+            <Text>
               Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data with
               different data systems.{' '}
               <Link href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/" target="_blank">
@@ -185,7 +185,7 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string; isKafkaC
               </Link>
             </Text>
             <TabKafkaConnect />
-          </Box>
+          </div>
         ),
       },
     ] as Tab[];
@@ -410,14 +410,12 @@ class TabTasks extends Component {
             accessorKey: 'name', // Assuming 'name' is correct based on your initial dataIndex
             cell: ({ row: { original } }) => (
               <Text
-                className="hoverLink"
+                className="hoverLink whitespace-break-spaces break-words"
                 onClick={() =>
                   appGlobal.historyPush(
                     `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`
                   )
                 }
-                whiteSpace="break-spaces"
-                wordBreak="break-word"
               >
                 {original.connectorName}
               </Text>
