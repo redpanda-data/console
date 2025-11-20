@@ -10,14 +10,12 @@
  */
 
 import { Shimmer } from 'components/ai-elements/shimmer';
-import { LightbulbIcon } from 'lucide-react';
 
 /**
- * Renders loading state "Thinking..." shimmer
+ * Renders loading state shimmer
  */
 export const LoadingMessageContent = () => (
   <div className="flex items-center gap-2">
-    <LightbulbIcon className="size-4" />
-    <Shimmer as="span">Thinking...</Shimmer>
+    <Shimmer as="span" />
   </div>
 );
