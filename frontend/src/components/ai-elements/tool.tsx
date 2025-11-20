@@ -23,14 +23,11 @@ import { isValidElement } from "react";
 import { deepParseJson } from "utils/json-utils";
 import { CodeBlock } from "./code-block";
 
-export type ToolProps = ComponentProps<typeof Collapsible> & {
-  disableAnimations?: boolean;
-};
+export type ToolProps = ComponentProps<typeof Collapsible>;
 
-export const Tool = ({ className, disableAnimations, ...props }: ToolProps) => (
+export const Tool = ({ className, ...props }: ToolProps) => (
   <Collapsible
     className={cn("mb-4 w-full rounded-md border group", className)}
-    data-disable-animations={disableAnimations ? 'true' : 'false'}
     {...props}
   />
 );

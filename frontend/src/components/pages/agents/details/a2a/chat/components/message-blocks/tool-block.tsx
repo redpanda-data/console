@@ -28,7 +28,7 @@ type ToolBlockProps = {
  * Spawns closed by default, user can manually toggle
  */
 export const ToolBlock = ({ toolCallId, toolName, state, input, output, errorText }: ToolBlockProps) => (
-  <Tool defaultOpen={false} disableAnimations key={toolCallId}>
+  <Tool defaultOpen={false} key={toolCallId}>
     <ToolHeader
       state={state}
       title={toolName || 'Tool'}
