@@ -10,7 +10,7 @@
  */
 
 import { Message, MessageSendParams, SendMessageResponse, SendMessageSuccessResponse, Task, TaskArtifactUpdateEvent, TaskStatusUpdateEvent, FilePart, TextPart, Part } from '@a2a-js/sdk';
-import { A2AClient } from "@a2a-js/sdk/client";
+import { A2AClient, A2AClientOptions } from "@a2a-js/sdk/client";
 
 import {
   LanguageModelV2, LanguageModelV2CallOptions, LanguageModelV2Prompt, LanguageModelV2Content, LanguageModelV2CallWarning,
@@ -28,7 +28,7 @@ import { getAgentCardUrls } from 'utils/ai-agent.utils';
  * Try multiple agent card URLs in order until one succeeds.
  * Tries agent-card.json first, then falls back to agent.json
  */
-async function createA2AClientWithFallback(agentUrl: string, options: Parameters<typeof A2AClient.fromCardUrl>[1]): Promise<A2AClient> {
+async function createA2AClientWithFallback(agentUrl: string, options: A2AClientOptions): Promise<A2AClient> {
   const urls = getAgentCardUrls({ agentUrl });
   const errors: Error[] = [];
 
