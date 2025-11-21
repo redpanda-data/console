@@ -133,7 +133,7 @@ export const MessageMetadata = ({
   ...props
 }: MessageMetadataProps) => {
   const time = timestamp instanceof Date
-    ? timestamp.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    ? timestamp.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })
     : timestamp;
 
   // Don't render if no metadata to show
@@ -165,7 +165,7 @@ export const MessageMetadata = ({
             )}
             {messageId && (
               <div className="flex gap-1.5">
-                <span className="font-medium">msg:</span>
+                <span className="font-medium">message_id:</span>
                 <span className="font-mono">{messageId}</span>
               </div>
             )}
@@ -173,7 +173,7 @@ export const MessageMetadata = ({
         )}
         {from === "user" && messageId && (
           <div className="flex gap-1.5">
-            <span className="font-medium">msg:</span>
+            <span className="font-medium">message_id:</span>
             <span className="font-mono">{messageId}</span>
           </div>
         )}
