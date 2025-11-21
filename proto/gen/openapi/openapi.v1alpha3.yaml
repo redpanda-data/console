@@ -1148,6 +1148,18 @@ components:
           type: string
       type: object
     v1alpha3.FailOverResponse:
+      properties:
+        failed_over_topics:
+          items:
+            type: string
+          title: |-
+            List of topics that were failed over
+            If shadow_topic_name was specified in the request, this will contain only that topic
+            If shadow_topic_name was not specified, this will contain all topics in the shadow link
+          type: array
+        name:
+          title: Name of the shadow link that was failed over
+          type: string
       type: object
     v1alpha3.GetShadowTopicResponse:
       properties:
@@ -2145,12 +2157,12 @@ paths:
         required: true
         x-originalParamName: body
       responses:
-        "200":
+        "202":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/v1alpha3.FailOverResponse'
-          description: Failover completed
+          description: Failover accepted and initiated
         default:
           content:
             application/json:
