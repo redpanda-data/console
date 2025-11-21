@@ -16,7 +16,7 @@ export type ArtifactProps = HTMLAttributes<HTMLDivElement>;
 export const Artifact = ({ className, ...props }: ArtifactProps) => (
   <div
     className={cn(
-      "flex flex-col overflow-hidden rounded-lg border bg-background shadow-sm",
+      "flex flex-col overflow-hidden rounded-lg border bg-background shadow-sm [&_*]:!transition-none",
       className
     )}
     {...props}
@@ -143,7 +143,7 @@ export const ArtifactContent = ({
   className,
   ...props
 }: ArtifactContentProps) => (
-  <div className={cn("flex-1 overflow-auto p-4 min-h-[100px]", className)} {...props} />
+  <div className={cn("flex-1 overflow-auto p-4 min-h-[100px] [&_*]:!transition-none [&_*]:!animation-none", className)} {...props} />
 );
 
 export type ArtifactMetadataProps = HTMLAttributes<HTMLDivElement> & {
