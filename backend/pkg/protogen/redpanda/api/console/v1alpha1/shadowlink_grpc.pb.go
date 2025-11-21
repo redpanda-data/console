@@ -21,14 +21,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ShadowLinkService_CreateShadowLink_FullMethodName     = "/redpanda.api.console.v1alpha1.ShadowLinkService/CreateShadowLink"
-	ShadowLinkService_GetShadowLink_FullMethodName        = "/redpanda.api.console.v1alpha1.ShadowLinkService/GetShadowLink"
-	ShadowLinkService_ListShadowLinks_FullMethodName      = "/redpanda.api.console.v1alpha1.ShadowLinkService/ListShadowLinks"
-	ShadowLinkService_UpdateShadowLink_FullMethodName     = "/redpanda.api.console.v1alpha1.ShadowLinkService/UpdateShadowLink"
-	ShadowLinkService_DeleteShadowLink_FullMethodName     = "/redpanda.api.console.v1alpha1.ShadowLinkService/DeleteShadowLink"
-	ShadowLinkService_ListShadowLinkTopics_FullMethodName = "/redpanda.api.console.v1alpha1.ShadowLinkService/ListShadowLinkTopics"
-	ShadowLinkService_GetShadowTopic_FullMethodName       = "/redpanda.api.console.v1alpha1.ShadowLinkService/GetShadowTopic"
-	ShadowLinkService_GetShadowMetrics_FullMethodName     = "/redpanda.api.console.v1alpha1.ShadowLinkService/GetShadowMetrics"
+	ShadowLinkService_CreateShadowLink_FullMethodName = "/redpanda.api.console.v1alpha1.ShadowLinkService/CreateShadowLink"
+	ShadowLinkService_GetShadowLink_FullMethodName    = "/redpanda.api.console.v1alpha1.ShadowLinkService/GetShadowLink"
+	ShadowLinkService_ListShadowLinks_FullMethodName  = "/redpanda.api.console.v1alpha1.ShadowLinkService/ListShadowLinks"
+	ShadowLinkService_UpdateShadowLink_FullMethodName = "/redpanda.api.console.v1alpha1.ShadowLinkService/UpdateShadowLink"
+	ShadowLinkService_DeleteShadowLink_FullMethodName = "/redpanda.api.console.v1alpha1.ShadowLinkService/DeleteShadowLink"
 )
 
 // ShadowLinkServiceClient is the client API for ShadowLinkService service.
@@ -40,9 +37,6 @@ type ShadowLinkServiceClient interface {
 	ListShadowLinks(ctx context.Context, in *ListShadowLinksRequest, opts ...grpc.CallOption) (*ListShadowLinksResponse, error)
 	UpdateShadowLink(ctx context.Context, in *v2.UpdateShadowLinkRequest, opts ...grpc.CallOption) (*UpdateShadowLinkResponse, error)
 	DeleteShadowLink(ctx context.Context, in *v2.DeleteShadowLinkRequest, opts ...grpc.CallOption) (*DeleteShadowLinkResponse, error)
-	ListShadowLinkTopics(ctx context.Context, in *ListShadowLinkTopicsRequest, opts ...grpc.CallOption) (*ListShadowLinkTopicsResponse, error)
-	GetShadowTopic(ctx context.Context, in *GetShadowTopicRequest, opts ...grpc.CallOption) (*GetShadowTopicResponse, error)
-	GetShadowMetrics(ctx context.Context, in *GetShadowMetricsRequest, opts ...grpc.CallOption) (*GetShadowMetricsResponse, error)
 }
 
 type shadowLinkServiceClient struct {
@@ -103,36 +97,6 @@ func (c *shadowLinkServiceClient) DeleteShadowLink(ctx context.Context, in *v2.D
 	return out, nil
 }
 
-func (c *shadowLinkServiceClient) ListShadowLinkTopics(ctx context.Context, in *ListShadowLinkTopicsRequest, opts ...grpc.CallOption) (*ListShadowLinkTopicsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListShadowLinkTopicsResponse)
-	err := c.cc.Invoke(ctx, ShadowLinkService_ListShadowLinkTopics_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *shadowLinkServiceClient) GetShadowTopic(ctx context.Context, in *GetShadowTopicRequest, opts ...grpc.CallOption) (*GetShadowTopicResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetShadowTopicResponse)
-	err := c.cc.Invoke(ctx, ShadowLinkService_GetShadowTopic_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *shadowLinkServiceClient) GetShadowMetrics(ctx context.Context, in *GetShadowMetricsRequest, opts ...grpc.CallOption) (*GetShadowMetricsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetShadowMetricsResponse)
-	err := c.cc.Invoke(ctx, ShadowLinkService_GetShadowMetrics_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ShadowLinkServiceServer is the server API for ShadowLinkService service.
 // All implementations must embed UnimplementedShadowLinkServiceServer
 // for forward compatibility.
@@ -142,9 +106,6 @@ type ShadowLinkServiceServer interface {
 	ListShadowLinks(context.Context, *ListShadowLinksRequest) (*ListShadowLinksResponse, error)
 	UpdateShadowLink(context.Context, *v2.UpdateShadowLinkRequest) (*UpdateShadowLinkResponse, error)
 	DeleteShadowLink(context.Context, *v2.DeleteShadowLinkRequest) (*DeleteShadowLinkResponse, error)
-	ListShadowLinkTopics(context.Context, *ListShadowLinkTopicsRequest) (*ListShadowLinkTopicsResponse, error)
-	GetShadowTopic(context.Context, *GetShadowTopicRequest) (*GetShadowTopicResponse, error)
-	GetShadowMetrics(context.Context, *GetShadowMetricsRequest) (*GetShadowMetricsResponse, error)
 	mustEmbedUnimplementedShadowLinkServiceServer()
 }
 
@@ -169,15 +130,6 @@ func (UnimplementedShadowLinkServiceServer) UpdateShadowLink(context.Context, *v
 }
 func (UnimplementedShadowLinkServiceServer) DeleteShadowLink(context.Context, *v2.DeleteShadowLinkRequest) (*DeleteShadowLinkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteShadowLink not implemented")
-}
-func (UnimplementedShadowLinkServiceServer) ListShadowLinkTopics(context.Context, *ListShadowLinkTopicsRequest) (*ListShadowLinkTopicsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListShadowLinkTopics not implemented")
-}
-func (UnimplementedShadowLinkServiceServer) GetShadowTopic(context.Context, *GetShadowTopicRequest) (*GetShadowTopicResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetShadowTopic not implemented")
-}
-func (UnimplementedShadowLinkServiceServer) GetShadowMetrics(context.Context, *GetShadowMetricsRequest) (*GetShadowMetricsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetShadowMetrics not implemented")
 }
 func (UnimplementedShadowLinkServiceServer) mustEmbedUnimplementedShadowLinkServiceServer() {}
 func (UnimplementedShadowLinkServiceServer) testEmbeddedByValue()                           {}
@@ -290,60 +242,6 @@ func _ShadowLinkService_DeleteShadowLink_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ShadowLinkService_ListShadowLinkTopics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListShadowLinkTopicsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ShadowLinkServiceServer).ListShadowLinkTopics(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ShadowLinkService_ListShadowLinkTopics_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ShadowLinkServiceServer).ListShadowLinkTopics(ctx, req.(*ListShadowLinkTopicsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ShadowLinkService_GetShadowTopic_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetShadowTopicRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ShadowLinkServiceServer).GetShadowTopic(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ShadowLinkService_GetShadowTopic_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ShadowLinkServiceServer).GetShadowTopic(ctx, req.(*GetShadowTopicRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ShadowLinkService_GetShadowMetrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetShadowMetricsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ShadowLinkServiceServer).GetShadowMetrics(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ShadowLinkService_GetShadowMetrics_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ShadowLinkServiceServer).GetShadowMetrics(ctx, req.(*GetShadowMetricsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // ShadowLinkService_ServiceDesc is the grpc.ServiceDesc for ShadowLinkService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -370,18 +268,6 @@ var ShadowLinkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteShadowLink",
 			Handler:    _ShadowLinkService_DeleteShadowLink_Handler,
-		},
-		{
-			MethodName: "ListShadowLinkTopics",
-			Handler:    _ShadowLinkService_ListShadowLinkTopics_Handler,
-		},
-		{
-			MethodName: "GetShadowTopic",
-			Handler:    _ShadowLinkService_GetShadowTopic_Handler,
-		},
-		{
-			MethodName: "GetShadowMetrics",
-			Handler:    _ShadowLinkService_GetShadowMetrics_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

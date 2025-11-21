@@ -18,28 +18,22 @@ import (
 // ShadowLinkServiceGatewayServer implements the gRPC server API for the ShadowLinkService service.
 type ShadowLinkServiceGatewayServer struct {
 	v1alpha1.UnimplementedShadowLinkServiceServer
-	createShadowLink     connect_gateway.UnaryHandler[v2.CreateShadowLinkRequest, v1alpha1.CreateShadowLinkResponse]
-	getShadowLink        connect_gateway.UnaryHandler[v1alpha1.GetShadowLinkRequest, v1alpha1.GetShadowLinkResponse]
-	listShadowLinks      connect_gateway.UnaryHandler[v1alpha1.ListShadowLinksRequest, v1alpha1.ListShadowLinksResponse]
-	updateShadowLink     connect_gateway.UnaryHandler[v2.UpdateShadowLinkRequest, v1alpha1.UpdateShadowLinkResponse]
-	deleteShadowLink     connect_gateway.UnaryHandler[v2.DeleteShadowLinkRequest, v1alpha1.DeleteShadowLinkResponse]
-	listShadowLinkTopics connect_gateway.UnaryHandler[v1alpha1.ListShadowLinkTopicsRequest, v1alpha1.ListShadowLinkTopicsResponse]
-	getShadowTopic       connect_gateway.UnaryHandler[v1alpha1.GetShadowTopicRequest, v1alpha1.GetShadowTopicResponse]
-	getShadowMetrics     connect_gateway.UnaryHandler[v1alpha1.GetShadowMetricsRequest, v1alpha1.GetShadowMetricsResponse]
+	createShadowLink connect_gateway.UnaryHandler[v2.CreateShadowLinkRequest, v1alpha1.CreateShadowLinkResponse]
+	getShadowLink    connect_gateway.UnaryHandler[v1alpha1.GetShadowLinkRequest, v1alpha1.GetShadowLinkResponse]
+	listShadowLinks  connect_gateway.UnaryHandler[v1alpha1.ListShadowLinksRequest, v1alpha1.ListShadowLinksResponse]
+	updateShadowLink connect_gateway.UnaryHandler[v2.UpdateShadowLinkRequest, v1alpha1.UpdateShadowLinkResponse]
+	deleteShadowLink connect_gateway.UnaryHandler[v2.DeleteShadowLinkRequest, v1alpha1.DeleteShadowLinkResponse]
 }
 
 // NewShadowLinkServiceGatewayServer constructs a Connect-Gateway gRPC server for the
 // ShadowLinkService service.
 func NewShadowLinkServiceGatewayServer(svc ShadowLinkServiceHandler, opts ...connect_gateway.HandlerOption) *ShadowLinkServiceGatewayServer {
 	return &ShadowLinkServiceGatewayServer{
-		createShadowLink:     connect_gateway.NewUnaryHandler(ShadowLinkServiceCreateShadowLinkProcedure, svc.CreateShadowLink, opts...),
-		getShadowLink:        connect_gateway.NewUnaryHandler(ShadowLinkServiceGetShadowLinkProcedure, svc.GetShadowLink, opts...),
-		listShadowLinks:      connect_gateway.NewUnaryHandler(ShadowLinkServiceListShadowLinksProcedure, svc.ListShadowLinks, opts...),
-		updateShadowLink:     connect_gateway.NewUnaryHandler(ShadowLinkServiceUpdateShadowLinkProcedure, svc.UpdateShadowLink, opts...),
-		deleteShadowLink:     connect_gateway.NewUnaryHandler(ShadowLinkServiceDeleteShadowLinkProcedure, svc.DeleteShadowLink, opts...),
-		listShadowLinkTopics: connect_gateway.NewUnaryHandler(ShadowLinkServiceListShadowLinkTopicsProcedure, svc.ListShadowLinkTopics, opts...),
-		getShadowTopic:       connect_gateway.NewUnaryHandler(ShadowLinkServiceGetShadowTopicProcedure, svc.GetShadowTopic, opts...),
-		getShadowMetrics:     connect_gateway.NewUnaryHandler(ShadowLinkServiceGetShadowMetricsProcedure, svc.GetShadowMetrics, opts...),
+		createShadowLink: connect_gateway.NewUnaryHandler(ShadowLinkServiceCreateShadowLinkProcedure, svc.CreateShadowLink, opts...),
+		getShadowLink:    connect_gateway.NewUnaryHandler(ShadowLinkServiceGetShadowLinkProcedure, svc.GetShadowLink, opts...),
+		listShadowLinks:  connect_gateway.NewUnaryHandler(ShadowLinkServiceListShadowLinksProcedure, svc.ListShadowLinks, opts...),
+		updateShadowLink: connect_gateway.NewUnaryHandler(ShadowLinkServiceUpdateShadowLinkProcedure, svc.UpdateShadowLink, opts...),
+		deleteShadowLink: connect_gateway.NewUnaryHandler(ShadowLinkServiceDeleteShadowLinkProcedure, svc.DeleteShadowLink, opts...),
 	}
 }
 
@@ -61,18 +55,6 @@ func (s *ShadowLinkServiceGatewayServer) UpdateShadowLink(ctx context.Context, r
 
 func (s *ShadowLinkServiceGatewayServer) DeleteShadowLink(ctx context.Context, req *v2.DeleteShadowLinkRequest) (*v1alpha1.DeleteShadowLinkResponse, error) {
 	return s.deleteShadowLink(ctx, req)
-}
-
-func (s *ShadowLinkServiceGatewayServer) ListShadowLinkTopics(ctx context.Context, req *v1alpha1.ListShadowLinkTopicsRequest) (*v1alpha1.ListShadowLinkTopicsResponse, error) {
-	return s.listShadowLinkTopics(ctx, req)
-}
-
-func (s *ShadowLinkServiceGatewayServer) GetShadowTopic(ctx context.Context, req *v1alpha1.GetShadowTopicRequest) (*v1alpha1.GetShadowTopicResponse, error) {
-	return s.getShadowTopic(ctx, req)
-}
-
-func (s *ShadowLinkServiceGatewayServer) GetShadowMetrics(ctx context.Context, req *v1alpha1.GetShadowMetricsRequest) (*v1alpha1.GetShadowMetricsResponse, error) {
-	return s.getShadowMetrics(ctx, req)
 }
 
 // RegisterShadowLinkServiceHandlerGatewayServer registers the Connect handlers for the
