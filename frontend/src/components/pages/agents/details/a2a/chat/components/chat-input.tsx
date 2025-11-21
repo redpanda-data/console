@@ -26,10 +26,8 @@ import {
   PromptInputTools,
 } from 'components/ai-elements/prompt-input';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { HistoryIcon, PinIcon } from 'lucide-react';
-import { useState } from 'react';
+import { HistoryIcon } from 'lucide-react';
 
 import { AIAgentModel } from '../../../../ai-agent-model';
 
@@ -39,13 +37,11 @@ type ChatInputProps = {
   editingMessageId: string | null;
   model: string | undefined;
   hasMessages: boolean;
-  autoScrollEnabled: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   onInputChange: (value: string) => void;
   onSubmit: (message: PromptInputMessage, event: React.FormEvent) => void;
   onClearHistory: () => void;
   onCancelEdit: () => void;
-  onAutoScrollChange: (enabled: boolean) => void;
   onCancel?: () => void;
 };
 
@@ -58,20 +54,15 @@ export const ChatInput = ({
   editingMessageId,
   model,
   hasMessages,
-  autoScrollEnabled,
   textareaRef,
   onInputChange,
   onSubmit,
   onClearHistory,
   onCancelEdit,
-  onAutoScrollChange,
   onCancel,
 }: ChatInputProps) => {
-  // Conversation handles autoscroll automatically, no manual scroll controls needed
-  const [_isAtBottom] = useState(true);
-
   return (
-    <div className="bg-background px-4 pt-4 pb-4">
+    <div className="bg-background px-4 pt-4 pb-8">
       <PromptInput globalDrop multiple onSubmit={onSubmit}>
         <PromptInputBody>
           <PromptInputAttachments>{(attachment) => <PromptInputAttachment data={attachment} />}</PromptInputAttachments>
@@ -115,24 +106,6 @@ export const ChatInput = ({
             </Button>
           </PromptInputTools>
           <div className="flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  className="size-8"
-                  onClick={() => onAutoScrollChange(!autoScrollEnabled)}
-                  size="icon"
-                  type="button"
-                  variant={autoScrollEnabled ? 'default' : 'ghost'}
-                >
-                  <PinIcon className="size-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <Text as="span" className="text-xs">
-                  {autoScrollEnabled ? 'Auto scroll enabled' : 'Auto scroll disabled'}
-                </Text>
-              </TooltipContent>
-            </Tooltip>
             {editingMessageId ? (
               <div className="flex gap-2">
                 <Button onClick={onCancelEdit} size="sm" type="button" variant="outline">

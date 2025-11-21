@@ -78,15 +78,11 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
       </Conversation>
 
       <ChatInput
-        autoScrollEnabled={true}
         editingMessageId={editingMessageId}
         hasMessages={messages.length > 0}
         input={input}
         isLoading={isLoading}
         model={agent.model}
-        onAutoScrollChange={() => {
-          // No-op: Conversation handles autoscroll internally
-        }}
         onCancel={() => {
           const lastMessage = messages.at(-1);
           if (lastMessage?.taskId) {
