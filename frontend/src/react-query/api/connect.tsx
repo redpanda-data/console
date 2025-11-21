@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
-import { useQuery } from '@connectrpc/connect-query';
+import { useMutation, useQuery } from '@connectrpc/connect-query';
 import {
   LintPipelineConfigRequestSchema,
   type LintPipelineConfigResponse,
@@ -41,3 +41,5 @@ export const useLintPipelineConfigQuery = (
     ...options,
   });
 };
+
+export const useLintPipelineConfigMutation = () => useMutation(lintPipelineConfig);

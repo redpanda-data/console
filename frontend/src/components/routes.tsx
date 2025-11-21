@@ -67,6 +67,7 @@ import RoleCreatePage from './pages/roles/role-create-page';
 import RoleDetailPage from './pages/roles/role-detail-page';
 import RoleUpdatePage from './pages/roles/role-update-page';
 import { ConnectOnboardingWizard } from './pages/rp-connect/onboarding/onboarding-wizard';
+import PipelinePage from './pages/rp-connect/pipeline';
 import RpConnectPipelinesCreate from './pages/rp-connect/pipelines-create';
 import RpConnectPipelinesDetails from './pages/rp-connect/pipelines-details';
 import RpConnectPipelinesEdit from './pages/rp-connect/pipelines-edit';
@@ -527,14 +528,22 @@ export const APP_ROUTES: IRouteEntry[] = [
   MakeRoute<{}>('/rp-connect/create', RpConnectPipelinesCreate, 'Connectors'),
   MakeRoute<{}>(
     '/rp-connect/wizard',
-    ConnectOnboardingWizard,
+    isFeatureFlagEnabled('enableRpcnTiles') ? PipelinePage : ConnectOnboardingWizard,
     'Connectors',
     undefined,
     undefined,
     routeVisibility(() => isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded())
   ),
-  MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Connectors'),
-  MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId/edit', RpConnectPipelinesEdit, 'Connectors'),
+  MakeRoute<{ pipelineId: string }>(
+    '/rp-connect/:pipelineId',
+    isFeatureFlagEnabled('enableRpcnTiles') ? PipelinePage : RpConnectPipelinesDetails,
+    'Connectors'
+  ),
+  MakeRoute<{ pipelineId: string }>(
+    '/rp-connect/:pipelineId/edit',
+    isFeatureFlagEnabled('enableRpcnTiles') ? PipelinePage : RpConnectPipelinesEdit,
+    'Connectors'
+  ),
   MakeRoute<{ secretId: string }>('/rp-connect/secrets/:secretId/edit', RpConnectSecretUpdate, 'Connector-Secrets'),
 
   MakeRoute<{}>(

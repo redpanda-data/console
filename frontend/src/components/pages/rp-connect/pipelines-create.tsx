@@ -11,49 +11,24 @@
 
 import { create } from '@bufbuild/protobuf';
 import type { Monaco } from '@monaco-editor/react';
-import {
-  Button,
-  type CreateToastFnReturn,
-  Flex,
-  FormField,
-  Input,
-  NumberInput,
-  useDisclosure,
-  useToast,
-} from '@redpanda-data/ui';
+import { Button, Flex, FormField, Input, NumberInput, useDisclosure, useToast } from '@redpanda-data/ui';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
-import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
-import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
-import { isFeatureFlagEnabled } from 'config';
-import { useDebounce } from 'hooks/use-debounce';
 import { AlertCircle, PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from 'react';
-import { useListComponentsQuery } from 'react-query/api/connect';
-import { useListSecretsQuery } from 'react-query/api/secret';
-import { Link, useSearchParams } from 'react-router-dom';
-import {
-  onboardingWizardStore,
-  useOnboardingWizardDataStore,
-  useOnboardingYamlContentStore,
-} from 'state/onboarding-wizard-store';
+import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
-import { extractLintHintsFromError, formatPipelineError } from './errors';
-import { CreatePipelineSidebar } from './onboarding/create-pipeline-sidebar';
+import { formatPipelineError } from './errors';
 import { SecretsQuickAdd } from './secrets/secrets-quick-add';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { getContextualVariableSyntax, REDPANDA_CONTEXTUAL_VARIABLES } from './types/constants';
-import type { ConnectComponentType } from './types/schema';
-import { parseSchema } from './utils/schema';
-import { getConnectTemplate } from './utils/yaml';
-import type { LintHint } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
 import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
@@ -74,7 +49,6 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   @observable editorContent = exampleContent;
   @observable isCreating = false;
   @observable secrets: string[] = [];
-  @observable lintResults: Record<string, LintHint> = {};
   // TODO: Actually show this within the pipeline create page
   @observable tags = {} as Record<string, string>;
 
@@ -111,12 +85,11 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
     const CreateButton = () => {
       const toast = useToast();
-      const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
       return (
         <NewButton
           disabled={alreadyExists || isNameEmpty || this.isCreating}
-          onClick={action(() => this.createPipeline(enableRpcnTiles ? undefined : toast))}
+          onClick={action(() => this.createPipeline(toast))}
           variant="secondary"
         >
           {this.isCreating && <Spinner />}
@@ -186,18 +159,9 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           <PipelineEditor onChange={(x) => (this.editorContent = x)} secrets={this.secrets} yaml={this.editorContent} />
         </div>
 
-        {isFeatureFlagEnabled('enableRpcnTiles') && this.lintResults && Object.keys(this.lintResults).length > 0 && (
-          <div className="mt-4">
-            <LintHintList lintHints={this.lintResults} />
-          </div>
-        )}
-
         <Flex alignItems="center" gap="4">
           <CreateButton />
-          <Link
-            onClick={() => (isFeatureFlagEnabled('enableRpcnTiles') ? onboardingWizardStore.reset() : undefined)}
-            to="/connect-clusters"
-          >
+          <Link to="/connect-clusters">
             <Button variant="link">Cancel</Button>
           </Link>
         </Flex>
@@ -206,7 +170,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   }
 
   // biome-ignore lint/suspicious/useAwait: async needed for error handling in MobX action
-  async createPipeline(toast?: CreateToastFnReturn) {
+  async createPipeline(toast: ReturnType<typeof useToast>) {
     this.isCreating = true;
 
     pipelinesApi
@@ -227,25 +191,20 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
       )
       .then(
         action(async (r) => {
-          if (toast) {
+          toast({
+            status: 'success',
+            duration: 4000,
+            isClosable: false,
+            title: 'Pipeline created',
+          });
+          const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
+          if (retUnits && this.tasks !== retUnits) {
             toast({
-              status: 'success',
-              duration: 4000,
+              status: 'warning',
+              duration: 6000,
               isClosable: false,
-              title: 'Pipeline created',
+              title: `Pipeline has been resized to use ${retUnits} compute units`,
             });
-            const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
-            if (retUnits && this.tasks !== retUnits) {
-              toast({
-                status: 'warning',
-                duration: 6000,
-                isClosable: false,
-                title: `Pipeline has been resized to use ${retUnits} compute units`,
-              });
-            }
-          } else {
-            this.lintResults = {};
-            onboardingWizardStore.reset();
           }
 
           await pipelinesApi.refreshPipelines(true);
@@ -254,17 +213,13 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
       )
       .catch(
         action((err) => {
-          if (toast) {
-            toast({
-              status: 'error',
-              duration: null,
-              isClosable: true,
-              title: 'Failed to create pipeline',
-              description: formatPipelineError(err),
-            });
-          } else {
-            this.lintResults = extractLintHintsFromError(err);
-          }
+          toast({
+            status: 'error',
+            duration: null,
+            isClosable: true,
+            title: 'Failed to create pipeline',
+            description: formatPipelineError(err),
+          });
         })
       )
       .finally(() => {
@@ -393,134 +348,6 @@ export const PipelineEditor = observer(
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [contextualVarsAutocomplete, setContextualVarsAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
-    const persistedYamlContent = useOnboardingYamlContentStore((state) => state.yamlContent);
-    const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
-
-    const [actualEditorContent, setActualEditorContent] = useState<string>('');
-    const hasInitializedServerless = useRef(false);
-
-    const debouncedSyncToStore = useDebounce((yamlContent: string) => {
-      useOnboardingYamlContentStore.getState().setYamlContent({
-        yamlContent,
-      });
-    }, 500);
-
-    const yaml = useMemo(() => {
-      // If wizard is enabled and we have persisted yaml content, use that
-      if (enableRpcnTiles && persistedYamlContent) {
-        return persistedYamlContent;
-      }
-      // Otherwise fall back to prop
-      return p.yaml;
-    }, [enableRpcnTiles, persistedYamlContent, p.yaml]);
-
-    const [searchParams] = useSearchParams();
-    const isServerlessMode = searchParams.get('serverless') === 'true';
-
-    const { data: componentListResponse } = useListComponentsQuery();
-    const components = useMemo(
-      () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
-      [componentListResponse]
-    );
-    const { data: secretsData, refetch: refetchSecrets } = useListSecretsQuery();
-    const existingSecrets = useMemo(() => {
-      if (!secretsData?.secrets) {
-        return [];
-      }
-      return secretsData.secrets.map((secret) => secret?.id).filter(Boolean) as string[];
-    }, [secretsData]);
-
-    const detectedSecrets = useMemo(() => {
-      try {
-        const secretRefs = extractSecretReferences(yaml);
-        return getUniqueSecretNames(secretRefs);
-      } catch {
-        return [];
-      }
-    }, [yaml]);
-
-    const handleAddConnector = (connectionName: string, connectionType: ConnectComponentType) => {
-      if (!editorInstance) {
-        return;
-      }
-
-      // Always get current YAML from editor instance (not store)
-      const currentValue = editorInstance.getValue();
-
-      const mergedYaml = getConnectTemplate({
-        connectionName,
-        connectionType,
-        components,
-        showOptionalFields: false,
-        existingYaml: currentValue,
-      });
-
-      if (!mergedYaml) {
-        return;
-      }
-
-      editorInstance.setValue(mergedYaml);
-
-      useOnboardingYamlContentStore.getState().setYamlContent({
-        yamlContent: mergedYaml,
-      });
-
-      const wizardData = useOnboardingWizardDataStore.getState();
-      wizardData.setWizardData({
-        ...wizardData,
-        [connectionType]: {
-          connectionName,
-          connectionType,
-        },
-      });
-    };
-
-    // On initial mount in serverless mode, generate YAML from persisted connectors
-    // Wait for hydration to complete before initializing
-    // biome-ignore lint/correctness/useExhaustiveDependencies: Only runs once after hydration, ref prevents re-initialization
-    useEffect(() => {
-      const shouldInitialize = enableRpcnTiles && isServerlessMode && !hasInitializedServerless.current;
-
-      if (!shouldInitialize) {
-        return;
-      }
-
-      const wizardData = useOnboardingWizardDataStore.getState();
-      const inputData = wizardData.input;
-      const outputData = wizardData.output;
-
-      if (inputData?.connectionName && inputData?.connectionType) {
-        let yamlContent = '';
-
-        // Generate input template
-        yamlContent =
-          getConnectTemplate({
-            connectionName: inputData.connectionName,
-            connectionType: inputData.connectionType,
-            components,
-            showOptionalFields: false,
-            existingYaml: yamlContent,
-          }) || yamlContent;
-
-        // Generate output template if exists
-        if (outputData?.connectionName && outputData?.connectionType) {
-          yamlContent =
-            getConnectTemplate({
-              connectionName: outputData.connectionName,
-              connectionType: outputData.connectionType,
-              components,
-              showOptionalFields: false,
-              existingYaml: yamlContent,
-            }) || yamlContent;
-        }
-
-        if (yamlContent) {
-          useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent });
-        }
-      }
-
-      hasInitializedServerless.current = true;
-    }, []);
 
     useEffect(() => {
       return () => {
@@ -535,33 +362,6 @@ export const PipelineEditor = observer(
       };
     }, [secretAutocomplete, contextualVarsAutocomplete]);
 
-    // Sync actual editor content with editor instance
-    useEffect(() => {
-      if (!editorInstance) {
-        return;
-      }
-
-      const currentValue = editorInstance.getValue();
-      setActualEditorContent(currentValue);
-
-      if (currentValue !== p.yaml) {
-        p.onChange?.(currentValue);
-      }
-
-      const disposable = editorInstance.onDidChangeModelContent(() => {
-        const newValue = editorInstance.getValue();
-        setActualEditorContent(newValue);
-
-        if (enableRpcnTiles) {
-          debouncedSyncToStore(newValue);
-        }
-      });
-
-      return () => {
-        disposable.dispose();
-      };
-    }, [editorInstance, enableRpcnTiles, debouncedSyncToStore, p.onChange, p.yaml]);
-
     return (
       <Tabs
         tabs={[
@@ -574,7 +374,7 @@ export const PipelineEditor = observer(
                 <div className="flex min-h-[400px] gap-7">
                   <PipelinesYamlEditor
                     defaultPath="config.yaml"
-                    defaultValue={yaml}
+                    defaultValue={p.yaml}
                     language="yaml"
                     onChange={(e) => {
                       if (e) {
@@ -593,27 +393,17 @@ export const PipelineEditor = observer(
                     path="config.yaml"
                   />
 
-                  {!p.isDisabled &&
-                    (enableRpcnTiles ? (
-                      <CreatePipelineSidebar
-                        detectedSecrets={detectedSecrets}
-                        editorContent={actualEditorContent}
-                        editorInstance={editorInstance}
-                        existingSecrets={existingSecrets}
-                        onAddConnector={handleAddConnector}
-                        onSecretsCreated={refetchSecrets}
-                      />
-                    ) : (
-                      <QuickActions
-                        editorInstance={editorInstance}
-                        resetAutocompleteSecrets={() => {
-                          if (secretAutocomplete && monaco) {
-                            secretAutocomplete.dispose();
-                            void registerSecretsAutocomplete(monaco, setSecretAutocomplete);
-                          }
-                        }}
-                      />
-                    ))}
+                  {!p.isDisabled && (
+                    <QuickActions
+                      editorInstance={editorInstance}
+                      resetAutocompleteSecrets={() => {
+                        if (secretAutocomplete && monaco) {
+                          secretAutocomplete.dispose();
+                          void registerSecretsAutocomplete(monaco, setSecretAutocomplete);
+                        }
+                      }}
+                    />
+                  )}
                 </div>
 
                 {isKafkaConnectPipeline(p.yaml) && (
