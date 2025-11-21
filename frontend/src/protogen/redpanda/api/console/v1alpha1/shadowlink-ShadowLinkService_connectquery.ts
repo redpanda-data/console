@@ -28,18 +28,3 @@ export const updateShadowLink = ShadowLinkService.method.updateShadowLink;
  * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.DeleteShadowLink
  */
 export const deleteShadowLink = ShadowLinkService.method.deleteShadowLink;
-
-/**
- * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.ListShadowLinkTopics
- */
-export const listShadowLinkTopics = ShadowLinkService.method.listShadowLinkTopics;
-
-/**
- * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.GetShadowTopic
- */
-export const getShadowTopic = ShadowLinkService.method.getShadowTopic;
-
-/**
- * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.GetShadowMetrics
- */
-export const getShadowMetrics = ShadowLinkService.method.getShadowMetrics;

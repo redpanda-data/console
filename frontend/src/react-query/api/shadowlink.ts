@@ -25,26 +25,34 @@ import {
   type CreateShadowLinkResponseSchema,
   type GetShadowLinkRequest,
   GetShadowLinkRequestSchema,
-  type GetShadowMetricsRequest,
-  GetShadowMetricsRequestSchema,
-  type GetShadowMetricsResponse,
   type ListShadowLinksRequest,
   ListShadowLinksRequestSchema,
-  type ListShadowLinkTopicsRequest,
-  ListShadowLinkTopicsRequestSchema,
-  type ListShadowLinkTopicsResponseSchema,
   type UpdateShadowLinkResponseSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import {
   createShadowLink,
   deleteShadowLink,
   getShadowLink,
-  getShadowMetrics,
   listShadowLinks,
-  listShadowLinkTopics,
   updateShadowLink,
 } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
-import { failOver } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink-ShadowLinkService_connectquery';
+import {
+  type GetShadowMetricsRequest,
+  GetShadowMetricsRequestSchema,
+  type GetShadowMetricsResponse,
+  type GetShadowTopicRequest,
+  GetShadowTopicRequestSchema,
+  type GetShadowTopicResponse,
+  type ListShadowLinkTopicsRequest,
+  ListShadowLinkTopicsRequestSchema,
+  type ListShadowLinkTopicsResponseSchema,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
+import {
+  failOver,
+  getShadowMetrics,
+  getShadowTopic,
+  listShadowLinkTopics,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink-ShadowLinkService_connectquery';
 import type {
   CreateShadowLinkRequestSchema,
   UpdateShadowLinkRequestSchema,
@@ -79,6 +87,15 @@ export const useListShadowTopicQuery = (request: MessageInit<ListShadowLinkTopic
   const listShadowTopicsRequest = create(ListShadowLinkTopicsRequestSchema, request);
 
   return useQuery(listShadowLinkTopics, listShadowTopicsRequest);
+};
+
+export const useGetShadowTopicQuery = (
+  request: MessageInit<GetShadowTopicRequest>,
+  options?: QueryOptions<GenMessage<GetShadowTopicResponse>, GetShadowTopicResponse>
+) => {
+  const getShadowTopicRequest = create(GetShadowTopicRequestSchema, request);
+
+  return useQuery(getShadowTopic, getShadowTopicRequest, options);
 };
 
 export const useListShadowTopicInfiniteQuery = (

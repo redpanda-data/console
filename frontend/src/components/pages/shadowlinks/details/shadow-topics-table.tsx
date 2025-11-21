@@ -18,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'c
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Info, Loader2, RefreshCw, X } from 'lucide-react';
-import type { ShadowTopic } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import type { ShadowTopic } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
