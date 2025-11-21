@@ -36,6 +36,7 @@ import { observer } from 'mobx-react';
 import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from 'react';
+import { useListComponentsQuery } from 'react-query/api/connect';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -50,6 +51,7 @@ import { SecretsQuickAdd } from './secrets/secrets-quick-add';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { getContextualVariableSyntax, REDPANDA_CONTEXTUAL_VARIABLES } from './types/constants';
 import type { ConnectComponentType } from './types/schema';
+import { parseSchema } from './utils/schema';
 import { getConnectTemplate } from './utils/yaml';
 import type { LintHint } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
 import { appGlobal } from '../../../state/app-global';
@@ -415,6 +417,11 @@ export const PipelineEditor = observer(
     const [searchParams] = useSearchParams();
     const isServerlessMode = searchParams.get('serverless') === 'true';
 
+    const { data: componentListResponse } = useListComponentsQuery();
+    const components = useMemo(
+      () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
+      [componentListResponse]
+    );
     const { data: secretsData, refetch: refetchSecrets } = useListSecretsQuery();
     const existingSecrets = useMemo(() => {
       if (!secretsData?.secrets) {
@@ -443,6 +450,7 @@ export const PipelineEditor = observer(
       const mergedYaml = getConnectTemplate({
         connectionName,
         connectionType,
+        components,
         showOptionalFields: false,
         existingYaml: currentValue,
       });
@@ -489,6 +497,7 @@ export const PipelineEditor = observer(
           getConnectTemplate({
             connectionName: inputData.connectionName,
             connectionType: inputData.connectionType,
+            components,
             showOptionalFields: false,
             existingYaml: yamlContent,
           }) || yamlContent;
@@ -499,6 +508,7 @@ export const PipelineEditor = observer(
             getConnectTemplate({
               connectionName: outputData.connectionName,
               connectionType: outputData.connectionType,
+              components,
               showOptionalFields: false,
               existingYaml: yamlContent,
             }) || yamlContent;

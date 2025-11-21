@@ -1,7 +1,7 @@
 import { toast } from 'sonner';
 import { Document, parseDocument, stringify as yamlStringify } from 'yaml';
 
-import { getBuiltInComponents, schemaToConfig } from './schema';
+import { schemaToConfig } from './schema';
 // import { HANDLED_ARRAY_MERGE_PATHS } from '../types/constants';
 import type { ConnectComponentSpec, ConnectConfigObject, RawFieldSpec } from '../types/schema';
 
@@ -436,21 +436,22 @@ export const configToYaml = (
 export const getConnectTemplate = ({
   connectionName,
   connectionType,
+  components,
   showOptionalFields,
   showAdvancedFields,
   existingYaml,
 }: {
   connectionName: string;
   connectionType: string;
+  components: ConnectComponentSpec[];
   showOptionalFields?: boolean;
   showAdvancedFields?: boolean;
   existingYaml?: string;
 }) => {
   // Phase 0: Find the component spec for the selected connectionName and connectionType
-  const builtInComponents = getBuiltInComponents();
   const componentSpec =
     connectionName && connectionType
-      ? builtInComponents.find((comp) => comp.type === connectionType && comp.name === connectionName)
+      ? components.find((comp) => comp.type === connectionType && comp.name === connectionName)
       : undefined;
 
   if (!componentSpec) {

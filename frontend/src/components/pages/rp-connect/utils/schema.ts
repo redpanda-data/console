@@ -1,152 +1,82 @@
+import {
+  type ComponentList,
+  type ComponentSpec,
+  ComponentStatus,
+} from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { onboardingWizardStore } from 'state/onboarding-wizard-store';
 
 import { isConsumerGroupField, isPasswordField, isSchemaRegistryUrlField, isTopicField, isUserField } from './wizard';
-import benthosSchemaFull from '../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
 import {
   CRITICAL_CONNECTION_FIELDS,
   convertToScreamingSnakeCase,
   getContextualVariableSyntax,
   getSecretSyntax,
-  MANAGED_ONLY_CONNECT_COMPONENTS,
   NON_CRITICAL_CONFIG_OBJECTS,
   REDPANDA_TOPIC_AND_USER_COMPONENTS,
 } from '../types/constants';
-import {
-  type BenthosSchemaFull,
-  CONNECT_COMPONENT_TYPE,
-  type ConnectComponentSpec,
-  type ConnectComponentType,
-  type ConnectConfigKey,
-  type ConnectConfigObject,
-  type RawComponentSpec,
-  type RawFieldSpec,
+import type {
+  ConnectComponentSpec,
+  ConnectComponentType,
+  ConnectConfigKey,
+  ConnectConfigObject,
+  RawFieldSpec,
 } from '../types/schema';
 
-const convertFieldSpecFromFullSchema = (fieldSpec: RawFieldSpec): RawFieldSpec => {
-  const spec: RawFieldSpec = {
-    name: fieldSpec.name || '',
-    type: fieldSpec.type || 'unknown',
-    kind: fieldSpec.kind || 'scalar',
-    description: fieldSpec.description,
-    is_advanced: fieldSpec.is_advanced,
-    is_deprecated: fieldSpec.is_deprecated,
-    is_optional: fieldSpec.is_optional,
-    is_secret: fieldSpec.is_secret,
-    default: fieldSpec.default,
-    interpolated: fieldSpec.interpolated,
-    bloblang: fieldSpec.bloblang,
-    examples: fieldSpec.examples,
-    annotated_options: fieldSpec.annotated_options,
-    options: fieldSpec.options,
-    version: fieldSpec.version,
-    linter: fieldSpec.linter,
-    scrubber: fieldSpec.scrubber,
-  };
-
-  if (fieldSpec.children && Array.isArray(fieldSpec.children)) {
-    spec.children = fieldSpec.children.map(convertFieldSpecFromFullSchema);
+// Helper to convert proto ComponentStatus enum to string
+export function componentStatusToString(status: ComponentStatus): string {
+  switch (status) {
+    case ComponentStatus.STABLE:
+      return 'stable';
+    case ComponentStatus.BETA:
+      return 'beta';
+    case ComponentStatus.EXPERIMENTAL:
+      return 'experimental';
+    case ComponentStatus.DEPRECATED:
+      return 'deprecated';
+    case ComponentStatus.UNSPECIFIED:
+      return 'stable';
+    default:
+      return 'stable';
   }
-
-  return spec;
-};
-
-const createComponentConfigSpec = (component: RawComponentSpec): RawFieldSpec => {
-  const config = component.config;
-
-  const configSpec: RawFieldSpec = {
-    name: component.name,
-    type: 'object',
-    kind: 'scalar',
-    children: [],
-  };
-
-  if (config?.children && Array.isArray(config.children)) {
-    configSpec.children = config.children.map(convertFieldSpecFromFullSchema);
-  }
-
-  return configSpec;
-};
-
-const typeToSchemaKey: Record<Exclude<ConnectComponentType, 'custom'>, keyof BenthosSchemaFull> = {
-  input: 'inputs',
-  output: 'outputs',
-  processor: 'processors',
-  cache: 'caches',
-  buffer: 'buffers',
-  rate_limit: 'rate-limits',
-  scanner: 'scanners',
-  metrics: 'metrics',
-  tracer: 'tracers',
-};
-
-const typeToYamlConfigKey: Record<Exclude<ConnectComponentType, 'custom'>, ConnectConfigKey> = {
-  input: 'input',
-  output: 'output',
-  processor: 'pipeline',
-  cache: 'cache_resources',
-  buffer: 'buffer',
-  rate_limit: 'rate_limit_resources',
-  scanner: 'scanner',
-  metrics: 'metrics',
-  tracer: 'tracer',
-};
+}
 
 /**
- * Phase 0: Parses benthos schema and returns all components with metadata
- * @returns all components with metadata
+ * Consolidated mapping for component types across different contexts:
+ * - listKey: Field name in ComponentList proto (plural)
+ * - yamlKey: Key used in YAML config structure
  */
-const parseSchema = () => {
-  const schemaData = benthosSchemaFull;
-  const allComponents: ConnectComponentSpec[] = [];
-
-  // Parse each component type from flat arrays
-  for (const componentType of CONNECT_COMPONENT_TYPE) {
-    if (componentType === 'custom') {
-      continue;
-    }
-    const schemaKey = typeToSchemaKey[componentType];
-    const componentsArray = schemaData[schemaKey] as RawComponentSpec[] | undefined;
-
-    if (!(componentsArray && Array.isArray(componentsArray))) {
-      continue;
-    }
-
-    for (const comp of componentsArray) {
-      if (MANAGED_ONLY_CONNECT_COMPONENTS.includes(comp.name)) {
-        continue;
-      }
-      const componentSpec: ConnectComponentSpec = {
-        name: comp.name,
-        type: comp.type as Exclude<ConnectComponentType, 'custom'>,
-        status: comp.status || 'stable',
-        plugin: comp.plugin,
-        summary: comp.summary,
-        description: comp.description,
-        categories: comp.categories || undefined,
-        config: createComponentConfigSpec(comp),
-        version: comp.version || '1.0.0',
-      };
-
-      allComponents.push(componentSpec);
-    }
-  }
-
-  return allComponents;
+const COMPONENT_TYPE_MAPPINGS: Record<
+  Exclude<ConnectComponentType, 'custom'>,
+  { listKey: keyof ComponentList; yamlKey: ConnectConfigKey }
+> = {
+  buffer: { listKey: 'buffers', yamlKey: 'buffer' },
+  cache: { listKey: 'caches', yamlKey: 'cache_resources' },
+  input: { listKey: 'inputs', yamlKey: 'input' },
+  output: { listKey: 'outputs', yamlKey: 'output' },
+  processor: { listKey: 'processors', yamlKey: 'pipeline' },
+  rate_limit: { listKey: 'rateLimits', yamlKey: 'rate_limit_resources' },
+  metrics: { listKey: 'metrics', yamlKey: 'metrics' },
+  tracer: { listKey: 'tracers', yamlKey: 'tracer' },
+  scanner: { listKey: 'scanners', yamlKey: 'scanner' },
 };
 
-// Singleton cache for parsed components (lazy-loaded to avoid circular dependencies)
-let _builtInComponentsCache: ConnectComponentSpec[] | undefined;
+// Derived mapping for backward compatibility
+const typeToYamlConfigKey: Record<Exclude<ConnectComponentType, 'custom'>, ConnectConfigKey> = Object.fromEntries(
+  Object.entries(COMPONENT_TYPE_MAPPINGS).map(([type, { yamlKey }]) => [type, yamlKey])
+) as Record<Exclude<ConnectComponentType, 'custom'>, ConnectConfigKey>;
 
 /**
- * Gets built-in components, parsing schema on first call and caching result
- * This lazy initialization prevents circular dependency issues during module loading
+ * Parses ComponentList from API response into ConnectComponentSpec array.
+ * Converts proto ComponentSpec to strongly-typed ConnectComponentSpec by overriding the type field.
  */
-export const getBuiltInComponents = (): ConnectComponentSpec[] => {
-  if (!_builtInComponentsCache) {
-    _builtInComponentsCache = parseSchema();
-  }
-  return _builtInComponentsCache;
-};
+export const parseSchema = (componentList: ComponentList): ConnectComponentSpec[] =>
+  Object.entries(COMPONENT_TYPE_MAPPINGS).flatMap(([componentType, { listKey }]) =>
+    ((componentList[listKey] as ComponentSpec[]) || []).map((comp) => ({
+      ...comp,
+      type: componentType as Exclude<ConnectComponentType, 'custom'>,
+      config: comp.config,
+    }))
+  );
 
 const generateRedpandaTopLevelConfig = (): Record<string, unknown> => {
   const userData = onboardingWizardStore.getUserData();
@@ -359,44 +289,34 @@ function shouldHideField(params: {
 }): boolean {
   const { spec, showOptionalFields, showAdvancedFields, componentName } = params;
 
+  // Critical fields always visible
   const isRedpandaComponent = componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName);
-  const isCriticalRedpandaField = isRedpandaComponent && spec.name && CRITICAL_CONNECTION_FIELDS.has(spec.name);
-  const isExplicitlyRequired = spec.is_optional === false;
-  const isExplicitlyOptional = spec.is_optional === true;
-  const isImplicitlyRequired = spec.is_optional === undefined && spec.default === undefined;
-  const isExplicitlyAdvanced = spec.is_advanced === true;
-  const isNonCriticalRedpandaField = isRedpandaComponent && spec.name && NON_CRITICAL_CONFIG_OBJECTS.has(spec.name);
-
-  if (isCriticalRedpandaField) {
+  const isCriticalField = isRedpandaComponent && spec.name && CRITICAL_CONNECTION_FIELDS.has(spec.name);
+  if (isCriticalField) {
     return false;
   }
 
-  // this is a really wierd edge case where the schema doesn't match the docs, and this is the only consistent way to show "common" fields
-  if (isExplicitlyRequired || isImplicitlyRequired || !isExplicitlyAdvanced) {
-    return false;
-  }
+  const isAdvanced = spec.advanced === true;
+  const isOptional = spec.optional === true;
 
-  if (showAdvancedFields && isExplicitlyAdvanced) {
-    return false;
-  }
-
-  if (showOptionalFields && isExplicitlyOptional) {
-    return false;
-  }
-
-  if (isExplicitlyAdvanced) {
+  // Hide advanced fields unless explicitly requested
+  if (isAdvanced && !showAdvancedFields) {
     return true;
   }
 
-  if (isExplicitlyOptional) {
+  // Hide optional fields unless explicitly requested
+  if (isOptional && !showOptionalFields) {
     return true;
   }
 
-  if (isNonCriticalRedpandaField) {
+  // Hide non-critical config objects for Redpanda components
+  const isNonCriticalConfigObject = isRedpandaComponent && spec.name && NON_CRITICAL_CONFIG_OBJECTS.has(spec.name);
+  if (isNonCriticalConfigObject && !showOptionalFields) {
     return true;
   }
 
-  return true;
+  // Show everything else (required, non-advanced, non-optional fields)
+  return false;
 }
 
 function generateObjectValue(
@@ -409,7 +329,7 @@ function generateObjectValue(
     return {};
   }
 
-  const obj = {} as Record<string, unknown>;
+  const obj: Record<string, unknown> = {};
 
   for (const child of spec.children) {
     const childValue = generateDefaultValue(child, {
@@ -437,7 +357,7 @@ function generateArrayValue(params: {
   // Special case: SASL arrays for redpanda/kafka_franz components
   const isSaslArray = spec.name?.toLowerCase() === 'sasl';
   if (isSaslArray && spec.children && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)) {
-    const saslObj = {} as Record<string, unknown>;
+    const saslObj: Record<string, unknown> = {};
 
     for (const child of spec.children) {
       const childValue = generateDefaultValue(child, {
@@ -470,8 +390,10 @@ function generateScalarValue(spec: RawFieldSpec, options: GenerateDefaultValueOp
       return 0;
     case 'bool':
       return false;
-    case 'object':
-      return generateObjectValue(spec, showOptionalFields, showAdvancedFields, componentName) ?? {};
+    case 'object': {
+      const obj = generateObjectValue(spec, showOptionalFields, showAdvancedFields, componentName);
+      return obj && Object.keys(obj).length > 0 ? obj : undefined;
+    }
     default:
       return '';
   }
@@ -484,24 +406,41 @@ interface GenerateDefaultValueOptions {
   parentName?: string;
 }
 
-export function generateDefaultValue(
-  spec: RawFieldSpec,
-  options?: GenerateDefaultValueOptions
-): RawFieldSpec['default'] {
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex field generation logic with many conditions
+export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefaultValueOptions): unknown {
   const { showOptionalFields, showAdvancedFields, componentName, parentName } = options || {};
 
   const isCriticalField = spec.name ? CRITICAL_CONNECTION_FIELDS.has(spec.name) : false;
-  const isExplicitlyRequired = spec.is_optional === false;
-  const isExplicitlyOptional = spec.is_optional === true;
-  const isImplicitlyRequired = spec.is_optional === undefined && spec.default === undefined;
-  const hasNonEmptyDefault = spec.default !== undefined && spec.default !== '';
+  const isExplicitlyRequired = spec.optional === false;
+  const isExplicitlyOptional = spec.optional === true;
+  const isImplicitlyRequired = spec.optional === undefined && spec.defaultValue === undefined;
+  const hasNonEmptyDefault = spec.defaultValue !== undefined && spec.defaultValue !== '';
+
+  const shouldHide = shouldHideField({
+    spec,
+    showOptionalFields: !!showOptionalFields,
+    showAdvancedFields: !!showAdvancedFields,
+    componentName,
+  });
+
+  // biome-ignore lint/suspicious/noConsole: Debug logging for field value generation
+  console.log('DEBUG [generateDefaultValue] Processing field:', {
+    fieldName: spec.name,
+    fieldType: spec.type,
+    fieldKind: spec.kind,
+    hasDefault: !!spec.defaultValue,
+    isOptional: spec.optional,
+    isAdvanced: spec.advanced,
+    shouldHide,
+    isCriticalField,
+  });
 
   if (hasNonEmptyDefault && isExplicitlyRequired) {
-    spec.comment = `Required (default: ${JSON.stringify(spec.default)})`;
+    spec.comment = `Required (default: ${JSON.stringify(spec.defaultValue)})`;
   } else if ((isExplicitlyRequired || isImplicitlyRequired) && spec.name !== 'seed_brokers') {
     spec.comment = 'Required';
   } else if (hasNonEmptyDefault && isExplicitlyOptional) {
-    spec.comment = `Optional (default: ${JSON.stringify(spec.default)})`;
+    spec.comment = `Optional (default: ${JSON.stringify(spec.defaultValue)})`;
   } else if (isExplicitlyOptional || isCriticalField) {
     spec.comment = 'Optional';
   } else if (spec.name === 'seed_brokers') {
@@ -529,38 +468,41 @@ export function generateDefaultValue(
   }
 
   // Check if field should be hidden
-  if (
-    shouldHideField({
-      spec,
-      showOptionalFields: showOptionalFields ?? false,
-      showAdvancedFields: showAdvancedFields ?? false,
-      componentName,
-    })
-  ) {
+  if (shouldHide) {
     return undefined;
   }
 
-  // Return default if available
-  if (spec.default !== undefined) {
-    return spec.default;
+  // Return default if available, but skip empty string defaults for object types
+  // (empty string is a placeholder, we want to generate the actual object from children)
+  if (spec.defaultValue !== undefined && !(spec.defaultValue === '' && spec.type === 'object')) {
+    return spec.defaultValue;
   }
 
   // Generate value based on field kind
+  let generatedValue: unknown;
   switch (spec.kind) {
     case 'scalar':
-      return generateScalarValue(spec, options || {});
-    case 'array':
-      return generateArrayValue({
+      generatedValue = generateScalarValue(spec, options || {});
+      break;
+    case 'array': {
+      const arrayValue = generateArrayValue({
         spec,
         showOptionalFields: showOptionalFields ?? false,
         showAdvancedFields: showAdvancedFields ?? false,
         componentName,
       });
+      generatedValue = arrayValue && arrayValue.length > 0 ? arrayValue : undefined;
+      break;
+    }
     case '2darray':
-      return [];
+      generatedValue = [];
+      break;
     case 'map':
-      return {};
+      generatedValue = {};
+      break;
     default:
-      return undefined;
+      generatedValue = undefined;
   }
+
+  return generatedValue;
 }

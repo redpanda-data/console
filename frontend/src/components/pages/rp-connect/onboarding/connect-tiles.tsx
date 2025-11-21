@@ -19,13 +19,14 @@ import { SearchIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
 import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useListComponentsQuery } from 'react-query/api/connect';
 
 import { ConnectTile } from './connect-tile';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 import type { BaseStepRef } from '../types/wizard';
 import { type ConnectTilesListFormData, connectTilesListFormSchema } from '../types/wizard';
 import { getAllCategories } from '../utils/categories';
-import { getBuiltInComponents } from '../utils/schema';
+import { parseSchema } from '../utils/schema';
 
 const PRIORITY_COMPONENTS = [
   'redpanda',
@@ -185,9 +186,14 @@ export const ConnectTiles = memo(
         defaultValues,
       });
 
+      const { data: componentListResponse } = useListComponentsQuery();
+      const builtInComponents = useMemo(
+        () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
+        [componentListResponse]
+      );
       const allComponents = useMemo(
-        () => [...getBuiltInComponents(), ...(additionalComponents || [])],
-        [additionalComponents]
+        () => [...builtInComponents, ...(additionalComponents || [])],
+        [builtInComponents, additionalComponents]
       );
 
       const categories = useMemo(
