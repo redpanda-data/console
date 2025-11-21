@@ -26,6 +26,8 @@ import {
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table';
+import CohereLogo from 'assets/cohere.svg';
+import OpenAILogo from 'assets/openai.svg';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   DataTableColumnHeader,
@@ -45,32 +47,94 @@ import { toast } from 'sonner';
 import { Features } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
 
+import { IndexerStatus } from './components/indexer-status';
 import { KnowledgeBaseActionsCell } from './knowledge-base-actions';
 
 export type KnowledgeBaseTableRow = {
   id: string;
   displayName: string;
   description: string;
+  indexerStatus: { configured: boolean; topicCount: number };
+  embeddingGenerator: { provider: string; model: string };
+  rerankerModel: { provider: string; model: string };
+  languageModel: { provider: string; model: string };
   tags: Record<string, string>;
+};
+
+const getIndexerStatus = (kb: KnowledgeBase): { configured: boolean; topicCount: number } => {
+  if (!kb.indexer) {
+    return { configured: false, topicCount: 0 };
+  }
+  const topicCount = kb.indexer.inputTopics?.length || 0;
+  return { configured: topicCount > 0, topicCount };
+};
+
+const getEmbeddingGeneratorDisplay = (kb: KnowledgeBase): { provider: string; model: string } => {
+  if (!kb.embeddingGenerator) {
+    return { provider: '', model: '' };
+  }
+  const provider = kb.embeddingGenerator.provider?.provider.case || '';
+  const model = kb.embeddingGenerator.model || '';
+  return { provider, model };
+};
+
+const getRerankerModelDisplay = (kb: KnowledgeBase): { provider: string; model: string } => {
+  if (!kb.retriever?.reranker?.enabled) {
+    return { provider: '', model: '' };
+  }
+  const provider = kb.retriever.reranker.provider?.provider.case || '';
+  const model =
+    kb.retriever.reranker.provider?.provider.case === 'cohere'
+      ? kb.retriever.reranker.provider.provider.value.model
+      : '';
+  return { provider, model: model || '' };
+};
+
+const getLanguageModelDisplay = (kb: KnowledgeBase): { provider: string; model: string } => {
+  if (!kb.generation) {
+    return { provider: '', model: '' };
+  }
+  const provider = kb.generation.provider?.provider.case || '';
+  const model = kb.generation.model || '';
+  return { provider, model };
+};
+
+const ProviderLogo = ({ provider, className }: { provider: string; className?: string }) => {
+  switch (provider.toLowerCase()) {
+    case 'openai':
+      return <img alt="OpenAI" className={className} src={OpenAILogo} />;
+    case 'cohere':
+      return <img alt="Cohere" className={className} src={CohereLogo} />;
+    default:
+      return null;
+  }
+};
+
+const ModelCell = ({ provider, model }: { provider: string; model: string }) => {
+  if (model === '') {
+    return null;
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <ProviderLogo className="h-4 w-4 flex-shrink-0" provider={provider} />
+      <Text variant="default">{model}</Text>
+    </div>
+  );
 };
 
 const transformKnowledgeBase = (kb: KnowledgeBase): KnowledgeBaseTableRow => ({
   id: kb.id,
   displayName: kb.displayName,
   description: kb.description,
+  indexerStatus: getIndexerStatus(kb),
+  embeddingGenerator: getEmbeddingGeneratorDisplay(kb),
+  rerankerModel: getRerankerModelDisplay(kb),
+  languageModel: getLanguageModelDisplay(kb),
   tags: kb.tags || {},
 });
 
 export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): ColumnDef<KnowledgeBaseTableRow>[] => [
-  {
-    accessorKey: 'id',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
-    cell: ({ row }) => (
-      <Text className="font-mono" variant="default">
-        {row.getValue('id')}
-      </Text>
-    ),
-  },
   {
     accessorKey: 'displayName',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
@@ -86,35 +150,43 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
     cell: ({ row }) => {
       const description = row.getValue('description') as string;
       return (
-        <Text className="break-words" variant="muted">
-          {description || '—'}
+        <Text className="wrap-break-word" variant="default">
+          {description || ''}
         </Text>
       );
     },
   },
   {
-    accessorKey: 'tags',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Tags" />,
+    accessorKey: 'indexerStatus',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Indexer Status" />,
     cell: ({ row }) => {
-      const tags = row.getValue('tags') as Record<string, string>;
-      const tagEntries = Object.entries(tags);
-      if (tagEntries.length === 0) {
-        return <Text variant="muted">—</Text>;
-      }
-      return (
-        <div className="flex flex-wrap gap-1">
-          {tagEntries.map(([key, value]) => (
-            <span
-              className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 font-medium text-gray-700 text-xs"
-              key={key}
-            >
-              {key}: {value}
-            </span>
-          ))}
-        </div>
-      );
+      const value = row.getValue('indexerStatus') as { configured: boolean; topicCount: number };
+      return <IndexerStatus configured={value.configured} topicCount={value.topicCount} />;
     },
-    enableSorting: false,
+  },
+  {
+    accessorKey: 'embeddingGenerator',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Embedding Generator" />,
+    cell: ({ row }) => {
+      const value = row.getValue('embeddingGenerator') as { provider: string; model: string };
+      return <ModelCell model={value.model} provider={value.provider} />;
+    },
+  },
+  {
+    accessorKey: 'rerankerModel',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Reranker Model" />,
+    cell: ({ row }) => {
+      const value = row.getValue('rerankerModel') as { provider: string; model: string };
+      return <ModelCell model={value.model} provider={value.provider} />;
+    },
+  },
+  {
+    accessorKey: 'languageModel',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Language Model" />,
+    cell: ({ row }) => {
+      const value = row.getValue('languageModel') as { provider: string; model: string };
+      return <ModelCell model={value.model} provider={value.provider} />;
+    },
   },
   {
     id: 'actions',
@@ -229,10 +301,10 @@ export const KnowledgeBaseListPage = () => {
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: (row, _columnId, filterValue) => {
       const search = filterValue.toLowerCase();
-      const id = String(row.getValue('id')).toLowerCase();
       const displayName = String(row.getValue('displayName')).toLowerCase();
       const description = String(row.getValue('description')).toLowerCase();
-      return id.includes(search) || displayName.includes(search) || description.includes(search);
+
+      return displayName.includes(search) || description.includes(search);
     },
     initialState: {
       pagination: {

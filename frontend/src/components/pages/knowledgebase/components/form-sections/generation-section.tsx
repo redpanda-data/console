@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import OpenAILogo from 'assets/openai.svg';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import {
   FormControl,
@@ -29,9 +28,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { GENERIC_SECRET_VALUE_PATTERN, SecretSelector } from 'components/ui/secret/secret-selector';
 import { ExternalLink } from 'lucide-react';
-import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { MODEL_OPTIONS_BY_PROVIDER, PROVIDER_INFO } from '../../../agents/ai-agent-model';
@@ -39,27 +36,15 @@ import type { KnowledgeBaseCreateFormValues } from '../../schemas';
 
 type GenerationSectionProps = {
   form: UseFormReturn<KnowledgeBaseCreateFormValues>;
-  availableSecrets: Array<{ id: string; name: string }>;
 };
 
-export const GenerationSection: React.FC<GenerationSectionProps> = ({ form, availableSecrets }) => (
+export const GenerationSection: React.FC<GenerationSectionProps> = ({ form }) => (
   <Card size="full">
     <CardHeader>
       <CardTitle>Generation</CardTitle>
     </CardHeader>
     <CardContent>
       <div className="space-y-4">
-        <FormItem>
-          <FormLabel>Provider</FormLabel>
-          <div className="flex items-center gap-2 pt-2">
-            <img alt="OpenAI" className="h-4 w-4" src={OpenAILogo} />
-            <Text>OpenAI</Text>
-          </div>
-          <Text className="text-sm" variant="muted">
-            Only OpenAI is currently supported as a generation provider.
-          </Text>
-        </FormItem>
-
         <FormField
           control={form.control}
           name="generationModel"
@@ -129,34 +114,6 @@ export const GenerationSection: React.FC<GenerationSectionProps> = ({ form, avai
               </FormItem>
             );
           }}
-        />
-
-        <FormField
-          control={form.control}
-          name="generationApiKey"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel required>API Key</FormLabel>
-              <FormControl>
-                <SecretSelector
-                  availableSecrets={availableSecrets}
-                  dialogDescription="Create a new secret for your OpenAI API key. The secret will be stored securely."
-                  dialogTitle="Create OpenAI API key secret"
-                  emptyStateMessage="Create a secret to securely store your OpenAI API key"
-                  onChange={field.onChange}
-                  placeholder="Select OpenAI API key from secrets"
-                  scopes={[Scope.REDPANDA_CONNECT]}
-                  secretNamePlaceholder="e.g., OPENAI_API_KEY"
-                  secretValueDescription="Your OpenAI API key"
-                  secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
-                  secretValuePlaceholder="Enter OpenAI API key"
-                  value={field.value}
-                />
-              </FormControl>
-              <FormDescription>All credentials are securely stored in your Secrets Store</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
         />
       </div>
     </CardContent>

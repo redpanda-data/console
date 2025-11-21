@@ -31,12 +31,16 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { GENERIC_SECRET_VALUE_PATTERN, SecretSelector } from 'components/ui/secret/secret-selector';
+import {
+  GENERIC_SECRET_VALUE_PATTERN,
+  OPENAI_API_KEY_PATTERN,
+  SecretSelector,
+} from 'components/ui/secret/secret-selector';
 import { ExternalLink } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import type { UseFormReturn } from 'react-hook-form';
 
-import { COHERE_MODELS, OPENAI_MODELS } from '../../constants';
+import { COHERE_MODELS, detectEmbeddingProvider, OPENAI_MODELS } from '../../constants';
 import type { KnowledgeBaseCreateFormValues } from '../../schemas';
 
 type EmbeddingGeneratorSectionProps = {
@@ -58,42 +62,11 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
       <div className="space-y-4">
         <FormField
           control={form.control}
-          name="embeddingProvider"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Provider</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="openai">
-                    <div className="flex items-center gap-2">
-                      <img alt="OpenAI" className="h-4 w-4" src={OpenAILogo} />
-                      <span>OpenAI</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="cohere">
-                    <div className="flex items-center gap-2">
-                      <img alt="Cohere" className="h-4 w-4" src={CohereLogo} />
-                      <span>Cohere</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
           name="embeddingModel"
           render={({ field }) => {
-            const currentProvider = embeddingProvider === 'openai' ? OpenAILogo : CohereLogo;
-            const currentProviderLabel = embeddingProvider === 'openai' ? 'OpenAI' : 'Cohere';
+            const detectedProvider = detectEmbeddingProvider(field.value);
+            const currentProvider = detectedProvider === 'openai' ? OpenAILogo : CohereLogo;
+            const currentProviderLabel = detectedProvider === 'openai' ? 'OpenAI' : 'Cohere';
 
             return (
               <FormItem>
@@ -101,8 +74,14 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
                 <Select
                   onValueChange={(value) => {
                     field.onChange(value);
-                    const models = embeddingProvider === 'openai' ? OPENAI_MODELS : COHERE_MODELS;
-                    const selectedModel = models.find((m) => m.name === value);
+                    // Auto-detect and set provider based on selected model
+                    const provider = detectEmbeddingProvider(value);
+                    if (provider) {
+                      form.setValue('embeddingProvider', provider);
+                    }
+                    // Set dimensions based on selected model
+                    const allModels = [...OPENAI_MODELS, ...COHERE_MODELS];
+                    const selectedModel = allModels.find((m) => m.name === value);
                     if (selectedModel) {
                       form.setValue('embeddingDimensions', selectedModel.dimensions);
                     }
@@ -124,46 +103,42 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {embeddingProvider === 'openai' && (
-                      <SelectGroup>
-                        <SelectLabel>
-                          <div className="flex items-center gap-2">
-                            <img alt="OpenAI" className="h-4 w-4" src={OpenAILogo} />
-                            <span>OpenAI</span>
+                    <SelectGroup>
+                      <SelectLabel>
+                        <div className="flex items-center gap-2">
+                          <img alt="OpenAI" className="h-4 w-4" src={OpenAILogo} />
+                          <span>OpenAI</span>
+                        </div>
+                      </SelectLabel>
+                      {OPENAI_MODELS.map((model) => (
+                        <SelectItem key={model.name} value={model.name}>
+                          <div className="flex flex-col gap-0.5">
+                            <Text className="font-medium">{model.name}</Text>
+                            <Text className="text-xs" variant="muted">
+                              {model.description}
+                            </Text>
                           </div>
-                        </SelectLabel>
-                        {OPENAI_MODELS.map((model) => (
-                          <SelectItem key={model.name} value={model.name}>
-                            <div className="flex flex-col gap-0.5">
-                              <Text className="font-medium">{model.name}</Text>
-                              <Text className="text-xs" variant="muted">
-                                {model.description}
-                              </Text>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    )}
-                    {embeddingProvider === 'cohere' && (
-                      <SelectGroup>
-                        <SelectLabel>
-                          <div className="flex items-center gap-2">
-                            <img alt="Cohere" className="h-4 w-4" src={CohereLogo} />
-                            <span>Cohere</span>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>
+                        <div className="flex items-center gap-2">
+                          <img alt="Cohere" className="h-4 w-4" src={CohereLogo} />
+                          <span>Cohere</span>
+                        </div>
+                      </SelectLabel>
+                      {COHERE_MODELS.map((model) => (
+                        <SelectItem key={model.name} value={model.name}>
+                          <div className="flex flex-col gap-0.5">
+                            <Text className="font-medium">{model.name}</Text>
+                            <Text className="text-xs" variant="muted">
+                              {model.description}
+                            </Text>
                           </div>
-                        </SelectLabel>
-                        {COHERE_MODELS.map((model) => (
-                          <SelectItem key={model.name} value={model.name}>
-                            <div className="flex flex-col gap-0.5">
-                              <Text className="font-medium">{model.name}</Text>
-                              <Text className="text-xs" variant="muted">
-                                {model.description}
-                              </Text>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    )}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
                 {embeddingProvider === 'openai' && (
@@ -241,8 +216,8 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
                     scopes={[Scope.REDPANDA_CONNECT]}
                     secretNamePlaceholder="e.g., OPENAI_API_KEY"
                     secretValueDescription="Your OpenAI API key"
-                    secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
-                    secretValuePlaceholder="Enter OpenAI API key"
+                    secretValuePattern={OPENAI_API_KEY_PATTERN}
+                    secretValuePlaceholder="Enter OpenAI API key (e.g., sk-...)"
                     value={field.value || ''}
                   />
                 </FormControl>

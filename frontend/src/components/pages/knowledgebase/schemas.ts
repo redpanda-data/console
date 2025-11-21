@@ -35,7 +35,12 @@ export const KnowledgeBaseCreateFormSchema = z
     // Vector Database (PostgreSQL only for now)
     vectorDatabaseType: z.literal('postgres').default('postgres'),
     postgresDsn: z.string().min(1, 'PostgreSQL DSN is required'),
-    postgresTable: z.string().min(1, 'PostgreSQL table name is required'),
+    postgresTable: z
+      .string()
+      .min(1, 'PostgreSQL table name is required')
+      .regex(/^[a-zA-Z][a-zA-Z0-9_]*$/, {
+        message: 'Table name must start with a letter and contain only letters, numbers, and underscores',
+      }),
 
     // Embedding Generator
     embeddingProvider: z.enum(['openai', 'cohere']).default('openai'),
@@ -65,7 +70,6 @@ export const KnowledgeBaseCreateFormSchema = z
     // Generation (mandatory)
     generationProvider: z.literal('openai').default('openai'),
     generationModel: z.string().min(1, 'Generation model is required'),
-    generationApiKey: z.string().min(1, 'Generation API Key is required'),
   })
   .superRefine((data, ctx) => {
     // Validate chunk overlap is less than chunk size
@@ -94,7 +98,7 @@ export const KnowledgeBaseCreateFormSchema = z
       });
     }
 
-    // Validate manual credentials
+    // Validate credentials based on choice
     if (data.credentialChoice === 'manual') {
       if (!data.redpandaUsername || data.redpandaUsername.trim() === '') {
         ctx.addIssue({
@@ -108,6 +112,25 @@ export const KnowledgeBaseCreateFormSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Redpanda password is required',
+          path: ['redpandaPassword'],
+        });
+      }
+    }
+
+    // For auto-generated credentials, ensure they are populated
+    if (data.credentialChoice === 'auto') {
+      if (!data.redpandaUsername || data.redpandaUsername.trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Auto-generated username is required',
+          path: ['redpandaUsername'],
+        });
+      }
+
+      if (!data.redpandaPassword || data.redpandaPassword.trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Auto-generated password is required',
           path: ['redpandaPassword'],
         });
       }
@@ -131,6 +154,15 @@ export const KnowledgeBaseCreateFormSchema = z
         });
       }
     }
+
+    // Validate that OpenAI API key is provided when using OpenAI for generation
+    if (data.generationProvider === 'openai' && !data.openaiApiKey) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'OpenAI API Key is required for generation',
+        path: ['openaiApiKey'],
+      });
+    }
   });
 
 export type KnowledgeBaseCreateFormValues = z.infer<typeof KnowledgeBaseCreateFormSchema>;
@@ -148,7 +180,7 @@ export const initialValues: KnowledgeBaseCreateFormValues = {
   embeddingDimensions: 768,
   openaiApiKey: '',
   cohereApiKey: '',
-  chunkSize: 512,
+  chunkSize: 768,
   chunkOverlap: 100,
   inputTopics: [],
   credentialChoice: 'manual',
@@ -159,6 +191,5 @@ export const initialValues: KnowledgeBaseCreateFormValues = {
   rerankerModel: 'rerank-v3.5',
   rerankerApiKey: '',
   generationProvider: 'openai',
-  generationModel: 'gpt-5',
-  generationApiKey: '',
+  generationModel: 'gpt-5.1',
 };

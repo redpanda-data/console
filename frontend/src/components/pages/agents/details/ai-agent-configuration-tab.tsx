@@ -659,24 +659,22 @@ export const AIAgentConfigurationTab = () => {
                     <div className="space-y-2">
                       <Label htmlFor="apiKeySecret">OpenAI API Token</Label>
                       {isEditing ? (
-                        <div className="[&>div]:flex-col [&>div]:items-stretch [&>div]:gap-2">
-                          <SecretSelector
-                            availableSecrets={availableSecrets}
-                            onChange={(value) => {
-                              const currentData = getCurrentData();
-                              if (!currentData) {
-                                return;
-                              }
-                              setEditedAgentData({
-                                ...currentData,
-                                apiKeySecret: value,
-                              });
-                            }}
-                            placeholder="Select from secrets store or create new"
-                            scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
-                            value={displayData.apiKeySecret}
-                          />
-                        </div>
+                        <SecretSelector
+                          availableSecrets={availableSecrets}
+                          onChange={(value) => {
+                            const currentData = getCurrentData();
+                            if (!currentData) {
+                              return;
+                            }
+                            setEditedAgentData({
+                              ...currentData,
+                              apiKeySecret: value,
+                            });
+                          }}
+                          placeholder="Select from secrets store or create new"
+                          scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
+                          value={displayData.apiKeySecret}
+                        />
                       ) : (
                         <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
                           <Text variant="default">{displayData.apiKeySecret || 'No secret configured'}</Text>
@@ -686,9 +684,14 @@ export const AIAgentConfigurationTab = () => {
                     <div className="space-y-2">
                       <Label>Provider</Label>
                       <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <Text variant="default">
-                          {agent.provider?.provider.case === 'openai' ? 'OpenAI' : 'Unknown'}
-                        </Text>
+                        {agent.provider?.provider.case === 'openai' ? (
+                          <div className="flex items-center gap-2">
+                            <img alt="OpenAI" className="h-4 w-4" src={PROVIDER_INFO.openai.icon} />
+                            <Text variant="default">OpenAI</Text>
+                          </div>
+                        ) : (
+                          <Text variant="default">Unknown</Text>
+                        )}
                       </div>
                     </div>
                   </div>

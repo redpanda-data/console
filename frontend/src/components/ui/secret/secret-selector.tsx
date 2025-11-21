@@ -81,8 +81,8 @@ type SecretSelectorProps = {
   };
 };
 
-// Default validation for OpenAI API keys (for backward compatibility)
-const DEFAULT_SECRET_VALUE_PATTERN = {
+// OpenAI API key validation pattern
+export const OPENAI_API_KEY_PATTERN = {
   regex: /^sk-(proj-)?[A-Za-z0-9-_]{20,}$/,
   message:
     'Invalid OpenAI API key format. Must start with "sk-" or "sk-proj-" followed by at least 20 alphanumeric characters',
@@ -95,7 +95,7 @@ export const GENERIC_SECRET_VALUE_PATTERN = {
 };
 
 const createSecretFormSchema = (
-  secretValuePattern: { regex: RegExp; message: string } = DEFAULT_SECRET_VALUE_PATTERN
+  secretValuePattern: { regex: RegExp; message: string } = OPENAI_API_KEY_PATTERN
 ) =>
   z.object({
     name: z

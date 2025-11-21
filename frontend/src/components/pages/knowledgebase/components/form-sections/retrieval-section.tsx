@@ -71,11 +71,6 @@ export const RetrievalSection: React.FC<RetrievalSectionProps> = ({ form, availa
 
         {rerankerEnabled && (
           <>
-            <div className="flex items-center gap-2">
-              <img alt="Cohere" className="h-4 w-4" src={CohereLogo} />
-              <Text className="font-medium text-sm">Cohere Reranker Configuration</Text>
-            </div>
-
             <FormField
               control={form.control}
               name="rerankerModel"

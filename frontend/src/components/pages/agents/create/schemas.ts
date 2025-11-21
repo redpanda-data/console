@@ -61,7 +61,7 @@ export const initialValues: FormValues = {
   tags: [],
   triggerType: 'http',
   apiKeySecret: '',
-  model: 'gpt-5',
+  model: 'gpt-5.1',
   maxIterations: 30,
   individualTools: [],
   selectedMcpServers: [],

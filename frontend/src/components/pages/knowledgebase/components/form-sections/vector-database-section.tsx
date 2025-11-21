@@ -83,8 +83,11 @@ export const VectorDatabaseSection: React.FC<VectorDatabaseSectionProps> = ({ fo
             <FormItem>
               <FormLabel required>Table Name</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Input {...field} placeholder="my_table" />
               </FormControl>
+              <FormDescription>
+                Must start with a letter and contain only letters, numbers, and underscores
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

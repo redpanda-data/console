@@ -9,9 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
+import { FormControl, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'components/redpanda-ui/components/select';
+import { Text } from 'components/redpanda-ui/components/typography';
+
 import { useListUsersQuery } from '../../../../../react-query/api/user';
-import { SingleSelect } from '../../../../misc/select';
-import { FormItem, FormLabel, FormMessage } from '../../../../redpanda-ui/components/form';
 
 type UserDropdownProps = {
   label: string;
@@ -34,27 +42,36 @@ export const UserDropdown = ({
 }: UserDropdownProps) => {
   const { data: usersData, isLoading } = useListUsersQuery();
 
-  const userOptions =
-    usersData?.users?.map((user) => ({
-      value: user.name,
-      label: user.name,
-    })) || [];
+  const users = usersData?.users || [];
 
   return (
     <FormItem>
-      <FormLabel className="font-medium">
-        {label}
-        {isRequired && <span className="ml-1 text-destructive">*</span>}
-      </FormLabel>
-      {helperText && <p className="mb-2 text-muted-foreground text-sm">{helperText}</p>}
-      <SingleSelect
-        isDisabled={isDisabled}
-        isLoading={isLoading}
-        onChange={onChange}
-        options={userOptions}
-        placeholder={isLoading ? 'Loading users...' : 'Select a user...'}
-        value={value}
-      />
+      <FormLabel required={isRequired}>{label}</FormLabel>
+      {helperText && (
+        <Text className="mb-2 text-sm" variant="muted">
+          {helperText}
+        </Text>
+      )}
+      <Select disabled={isDisabled || isLoading} onValueChange={onChange} value={value}>
+        <FormControl>
+          <SelectTrigger>
+            <SelectValue placeholder={isLoading ? 'Loading users...' : 'Select a user...'} />
+          </SelectTrigger>
+        </FormControl>
+        <SelectContent>
+          {users.length > 0 ? (
+            users.map((user) => (
+              <SelectItem key={user.name} value={user.name}>
+                {user.name}
+              </SelectItem>
+            ))
+          ) : (
+            <div className="px-2 py-6 text-center text-sm">
+              <Text variant="muted">{isLoading ? 'Loading...' : 'No users found'}</Text>
+            </div>
+          )}
+        </SelectContent>
+      </Select>
       {errorMessage && <FormMessage>{errorMessage}</FormMessage>}
     </FormItem>
   );

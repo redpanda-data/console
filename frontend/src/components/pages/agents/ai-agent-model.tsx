@@ -68,14 +68,25 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     icon: OpenAILogo,
     models: [
       {
+        value: 'gpt-5.1',
+        name: 'gpt-5.1',
+        description: 'The best model for coding and agentic tasks with configurable reasoning effort',
+      },
+      {
         value: 'gpt-5',
         name: 'gpt-5',
-        description: 'The best model for coding and agentic tasks across domains',
+        description:
+          'Previous intelligent reasoning model for coding and agentic tasks with configurable reasoning effort',
       },
       {
         value: 'gpt-5-mini',
         name: 'gpt-5-mini',
-        description: 'A faster, cost-efficient version of gpt-5 for well-defined tasks',
+        description: 'A faster, cost-efficient version of GPT-5 for well-defined tasks',
+      },
+      {
+        value: 'gpt-5-nano',
+        name: 'gpt-5-nano',
+        description: 'Fastest, most cost-efficient version of GPT-5',
       },
     ],
   },

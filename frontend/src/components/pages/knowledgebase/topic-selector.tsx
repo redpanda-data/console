@@ -13,8 +13,16 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useQuery } from '@connectrpc/connect-query';
-import { isMultiValue, Select } from '@redpanda-data/ui';
-import { FormLabel } from 'components/redpanda-ui/components/form';
+import {
+  MultiSelect,
+  MultiSelectContent,
+  MultiSelectEmpty,
+  MultiSelectItem,
+  MultiSelectList,
+  MultiSelectSearch,
+  MultiSelectTrigger,
+  MultiSelectValue,
+} from 'components/redpanda-ui/components/multi-select';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
@@ -74,96 +82,69 @@ export const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = fal
     [allTopics]
   );
 
-  // Create options for the select dropdown - always show all topics
-  const topicOptions = allTopics.map((name) => ({
-    value: name,
-    label: name,
-  }));
-
-  // Filter options based on search term - always treat as regex first
-  const filteredOptions = searchTerm
-    ? topicOptions.filter((option) => {
-        const matchingTopics = getMatchingTopics(searchTerm);
-        return matchingTopics.includes(option.value);
-      })
-    : topicOptions;
-
-  // Custom option component - show if filtered by regex
-  const formatOptionLabel = (option: { value: string; label?: React.ReactNode }): React.ReactNode => {
-    // Show if this option is being shown because it matches a regex search
-    if (searchTerm && isRegexPattern(searchTerm)) {
-      return (
-        <div>
-          <Text className="font-medium">
-            {option.value}{' '}
-            <Text as="span" className="text-blue-600 text-xs">
-              (matches: {searchTerm})
-            </Text>
-          </Text>
-        </div>
-      );
+  // Filter topics based on search term
+  const filteredTopics = useMemo(() => {
+    if (!searchTerm) {
+      return allTopics;
     }
-    return option.label;
-  };
+    const lowerSearch = searchTerm.toLowerCase();
+    return allTopics.filter((topic) => topic.toLowerCase().includes(lowerSearch));
+  }, [allTopics, searchTerm]);
 
-  // Allow custom input (for regex patterns)
-  const handleInputChange = (inputValue: string, { action }: { action: string }) => {
-    if (action === 'input-change') {
-      setSearchTerm(inputValue);
-    }
+  // Handle selecting items (both from list and custom patterns via Enter key)
+  const handleValueChange = (values: string[]) => {
+    onTopicsChange(values);
   };
-
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && searchTerm && !topicOptions.find((opt) => opt.value === searchTerm)) {
-      // Add the search term as a new option (likely a regex pattern)
-      const newTopics = [...selectedTopics, searchTerm];
-      onTopicsChange(newTopics);
-      setSearchTerm('');
-      event.preventDefault();
-    }
-  };
-
-  // Format the selected values
-  const selectedValues = selectedTopics.map((topic) => {
-    const matchingCount = isRegexPattern(topic) ? getMatchingTopics(topic).length : 1;
-    return {
-      value: topic,
-      label: isRegexPattern(topic) ? `${topic} (${matchingCount} matches)` : topic,
-    };
-  });
 
   return (
     <div className="space-y-4">
       <div>
-        <FormLabel required>Input Topics</FormLabel>
         <Text className="mb-2 text-sm" variant="muted">
-          Select topics or enter regex patterns (e.g., my-topics-prefix-.*) to index for this knowledge base.
+          Select topics or type regex patterns (e.g., my-topics-prefix-.*) and press Enter to add them.
         </Text>
 
-        <Select
-          filterOption={() => true}
-          formatOptionLabel={formatOptionLabel}
-          inputValue={searchTerm}
-          isDisabled={isReadOnly}
-          isLoading={isLoading}
-          isMulti
-          isSearchable={!isReadOnly}
-          noOptionsMessage={() => (searchTerm ? `Press Enter to add pattern: ${searchTerm}` : 'No topics found')}
-          onChange={(selected) => {
-            if (isMultiValue(selected)) {
-              onTopicsChange(selected.map((item) => item.value));
-            } else {
-              onTopicsChange([]);
-            }
-            // Clear search term when selection changes
-            setSearchTerm('');
-          }}
-          onInputChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          options={filteredOptions}
-          placeholder="Search topics or enter regex patterns..."
-          value={selectedValues}
-        />
+        <MultiSelect
+          disabled={isReadOnly}
+          onSearch={(keyword) => setSearchTerm(keyword || '')}
+          onValueChange={handleValueChange}
+          value={selectedTopics}
+        >
+          <MultiSelectTrigger className="w-full">
+            <MultiSelectValue
+              placeholder={isLoading ? 'Loading topics...' : 'Select topics or add regex patterns...'}
+            />
+          </MultiSelectTrigger>
+          <MultiSelectContent>
+            <MultiSelectSearch
+              onKeyDown={(e) => {
+                // Allow adding custom regex patterns by pressing Enter
+                if (e.key === 'Enter' && searchTerm && !allTopics.includes(searchTerm)) {
+                  e.preventDefault();
+                  onTopicsChange([...selectedTopics, searchTerm]);
+                  setSearchTerm('');
+                }
+              }}
+              placeholder="Search topics or type regex pattern..."
+            />
+            <MultiSelectList>
+              {filteredTopics.length > 0 &&
+                filteredTopics.map((topic) => (
+                  <MultiSelectItem key={topic} value={topic}>
+                    {topic}
+                  </MultiSelectItem>
+                ))}
+              {filteredTopics.length === 0 && searchTerm && (
+                <div className="px-2 py-6 text-center text-sm">
+                  <Text className="text-muted-foreground">
+                    Press <kbd className="rounded border bg-muted px-1 text-xs">Enter</kbd> to add "{searchTerm}" as a
+                    regex pattern
+                  </Text>
+                </div>
+              )}
+              <MultiSelectEmpty>No topics found</MultiSelectEmpty>
+            </MultiSelectList>
+          </MultiSelectContent>
+        </MultiSelect>
       </div>
 
       {/* Show preview of what each selected item matches */}

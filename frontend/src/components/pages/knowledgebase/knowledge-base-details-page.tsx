@@ -16,12 +16,32 @@ import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Search, Settings } from 'lucide-react';
 import { runInAction } from 'mobx';
-import type { KnowledgeBaseUpdate } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { UpdateKnowledgeBaseRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type KnowledgeBase,
+  type KnowledgeBaseUpdate,
+  KnowledgeBaseUpdate_EmbeddingGenerator_Provider_CohereSchema,
+  KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAISchema,
+  KnowledgeBaseUpdate_EmbeddingGenerator_ProviderSchema,
+  KnowledgeBaseUpdate_EmbeddingGeneratorSchema,
+  KnowledgeBaseUpdate_Generation_Provider_OpenAISchema,
+  KnowledgeBaseUpdate_Generation_ProviderSchema,
+  KnowledgeBaseUpdate_GenerationSchema,
+  KnowledgeBaseUpdate_IndexerSchema,
+  KnowledgeBaseUpdate_Retriever_Reranker_Provider_CohereSchema,
+  KnowledgeBaseUpdate_Retriever_Reranker_ProviderSchema,
+  KnowledgeBaseUpdate_Retriever_RerankerSchema,
+  KnowledgeBaseUpdate_RetrieverSchema,
+  KnowledgeBaseUpdate_VectorDatabase_PostgresSchema,
+  KnowledgeBaseUpdate_VectorDatabaseSchema,
+  KnowledgeBaseUpdateSchema,
+  UpdateKnowledgeBaseRequestSchema,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
 import { useLegacyConsumerGroupDetailsQuery } from 'react-query/api/consumer-group';
 import { useGetKnowledgeBaseQuery, useUpdateKnowledgeBaseMutation } from 'react-query/api/knowledge-base';
 import { useListSecretsQuery } from 'react-query/api/secret';
@@ -29,7 +49,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
-import { KnowledgeBaseEditTabs, type KnowledgeBaseEditTabsRef } from './knowledge-base-edit-tabs';
+import { IndexerStatus } from './components/indexer-status';
+import { KnowledgeBaseConfigurationTab } from './knowledge-base-configuration-tab';
+import { PlaygroundTab } from './knowledge-base-playground-tab';
 import { ShortNum } from '../../misc/short-num';
 
 export const updatePageTitle = (knowledgebaseId?: string) => {
@@ -42,10 +64,117 @@ export const updatePageTitle = (knowledgebaseId?: string) => {
   });
 };
 
+export type KnowledgeBaseEditTabsRef = {
+  handleSave: () => Promise<void>;
+};
+
+function initializeFormData(kb: KnowledgeBase): KnowledgeBaseUpdate {
+  if (!kb) {
+    return create(KnowledgeBaseUpdateSchema, {
+      displayName: '',
+      description: '',
+      tags: {},
+    });
+  }
+
+  const updateData = create(KnowledgeBaseUpdateSchema, {
+    displayName: kb.displayName || '',
+    description: kb.description || '',
+    tags: { ...(kb.tags || {}) },
+  });
+
+  if (kb.vectorDatabase?.vectorDatabase.case === 'postgres') {
+    updateData.vectorDatabase = create(KnowledgeBaseUpdate_VectorDatabaseSchema, {
+      vectorDatabase: {
+        case: 'postgres',
+        value: create(KnowledgeBaseUpdate_VectorDatabase_PostgresSchema, {
+          dsn: kb.vectorDatabase.vectorDatabase.value.dsn,
+        }),
+      },
+    });
+  }
+
+  if (kb.embeddingGenerator) {
+    const embGen = kb.embeddingGenerator;
+    updateData.embeddingGenerator = create(KnowledgeBaseUpdate_EmbeddingGeneratorSchema, {});
+
+    if (embGen.provider?.provider.case === 'openai') {
+      updateData.embeddingGenerator.provider = create(KnowledgeBaseUpdate_EmbeddingGenerator_ProviderSchema, {
+        provider: {
+          case: 'openai',
+          value: create(KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAISchema, {
+            apiKey: embGen.provider.provider.value.apiKey,
+          }),
+        },
+      });
+    } else if (embGen.provider?.provider.case === 'cohere') {
+      updateData.embeddingGenerator.provider = create(KnowledgeBaseUpdate_EmbeddingGenerator_ProviderSchema, {
+        provider: {
+          case: 'cohere',
+          value: create(KnowledgeBaseUpdate_EmbeddingGenerator_Provider_CohereSchema, {
+            baseUrl: embGen.provider.provider.value.baseUrl,
+            apiKey: embGen.provider.provider.value.apiKey,
+          }),
+        },
+      });
+    }
+  }
+
+  if (kb.indexer) {
+    updateData.indexer = create(KnowledgeBaseUpdate_IndexerSchema, {
+      chunkSize: kb.indexer.chunkSize,
+      chunkOverlap: kb.indexer.chunkOverlap,
+      redpandaUsername: kb.indexer.redpandaUsername,
+      redpandaPassword: kb.indexer.redpandaPassword,
+      redpandaSaslMechanism: kb.indexer.redpandaSaslMechanism,
+      inputTopics: kb.indexer.inputTopics ? [...kb.indexer.inputTopics] : [],
+    });
+  }
+
+  if (kb.retriever) {
+    updateData.retriever = create(KnowledgeBaseUpdate_RetrieverSchema, {});
+
+    if (kb.retriever.reranker) {
+      const reranker = kb.retriever.reranker;
+      updateData.retriever.reranker = create(KnowledgeBaseUpdate_Retriever_RerankerSchema, {
+        enabled: reranker.enabled,
+      });
+
+      if (reranker.provider?.provider.case === 'cohere') {
+        updateData.retriever.reranker.provider = create(KnowledgeBaseUpdate_Retriever_Reranker_ProviderSchema, {
+          provider: {
+            case: 'cohere',
+            value: create(KnowledgeBaseUpdate_Retriever_Reranker_Provider_CohereSchema, {
+              apiKey: reranker.provider.provider.value.apiKey,
+              model: reranker.provider.provider.value.model,
+            }),
+          },
+        });
+      }
+    }
+  }
+
+  if (kb.generation) {
+    updateData.generation = create(KnowledgeBaseUpdate_GenerationSchema, {});
+
+    if (kb.generation.provider?.provider.case === 'openai') {
+      updateData.generation.provider = create(KnowledgeBaseUpdate_Generation_ProviderSchema, {
+        provider: {
+          case: 'openai',
+          value: create(KnowledgeBaseUpdate_Generation_Provider_OpenAISchema, {
+            apiKey: kb.generation.provider.provider.value.apiKey,
+          }),
+        },
+      });
+    }
+  }
+
+  return updateData;
+}
+
 export const KnowledgeBaseDetailsPage = () => {
   const { knowledgebaseId } = useParams<{ knowledgebaseId: string }>();
   const navigate = useNavigate();
-  const editTabsRef = useRef<KnowledgeBaseEditTabsRef>(null);
 
   // Local state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -80,11 +209,75 @@ export const KnowledgeBaseDetailsPage = () => {
   // Preload secrets for knowledge base configuration
   useListSecretsQuery(undefined, { enabled: !!knowledgebaseId });
 
+  // Form setup
+  const form = useForm<KnowledgeBaseUpdate>({
+    defaultValues: knowledgeBase ? initializeFormData(knowledgeBase) : undefined,
+    mode: 'onChange',
+  });
+
+  const refreshFormData = useCallback(() => {
+    if (knowledgeBase) {
+      form.reset(initializeFormData(knowledgeBase));
+      setFormHasChanges(false);
+    }
+  }, [knowledgeBase, form]);
+
+  /**
+   * Get current knowledge base data initialized from server data.
+   * This ensures secrets are always available for display by reading directly from the knowledge base prop.
+   */
+  const getCurrentData = useCallback((): KnowledgeBaseUpdate | null => {
+    if (knowledgeBase) {
+      return initializeFormData(knowledgeBase);
+    }
+
+    return null;
+  }, [knowledgeBase]);
+
   useEffect(() => {
     if (knowledgebaseId) {
       updatePageTitle(knowledgebaseId);
     }
   }, [knowledgebaseId]);
+
+  useEffect(() => {
+    if (isEditMode && knowledgeBase) {
+      refreshFormData();
+    }
+  }, [isEditMode, knowledgeBase, refreshFormData]);
+
+  // Watch for form changes
+  useEffect(() => {
+    const subscription = form.watch(() => {
+      setFormHasChanges(form.formState.isDirty);
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  const generateUpdateMask = useCallback((): string[] => {
+    const updateMask: string[] = [];
+    const dirtyFields = form.formState.dirtyFields;
+
+    const walkDirtyFields = (obj: Record<string, unknown>, path: string[] = []) => {
+      for (const key in obj) {
+        if (Object.hasOwn(obj, key)) {
+          const currentPath = [...path, key];
+          const value = obj[key];
+          if (value !== true && typeof value === 'object' && value !== null) {
+            walkDirtyFields(value as Record<string, unknown>, currentPath);
+          } else {
+            const protobufPath = currentPath
+              .map((segment) => segment.replace(/([A-Z])/g, '_$1').toLowerCase())
+              .join('.');
+            updateMask.push(protobufPath);
+          }
+        }
+      }
+    };
+
+    walkDirtyFields(dirtyFields);
+    return updateMask;
+  }, [form.formState.dirtyFields]);
 
   // Handlers
   const handleStartEdit = () => {
@@ -95,12 +288,13 @@ export const KnowledgeBaseDetailsPage = () => {
   const handleCancelEdit = () => {
     setIsEditMode(false);
     setFormHasChanges(false);
+    refreshFormData();
   };
 
   const handleSave = async () => {
-    if (editTabsRef.current) {
-      await editTabsRef.current.handleSave();
-    }
+    const formData = form.getValues();
+    const updateMask = generateUpdateMask();
+    await handleUpdate(formData, updateMask);
   };
 
   const handleUpdate = (updatedKnowledgeBase: KnowledgeBaseUpdate, updateMask?: string[]) => {
@@ -122,6 +316,7 @@ export const KnowledgeBaseDetailsPage = () => {
           refetchConsumerGroup();
           setIsEditMode(false);
           setFormHasChanges(false);
+          form.reset(updatedKnowledgeBase, { keepValues: true });
           resolve();
         },
         onError: (err: unknown) => {
@@ -132,10 +327,6 @@ export const KnowledgeBaseDetailsPage = () => {
         },
       });
     });
-  };
-
-  const handleFormChange = (hasChanges: boolean) => {
-    setFormHasChanges(hasChanges);
   };
 
   // Loading state
@@ -169,40 +360,6 @@ export const KnowledgeBaseDetailsPage = () => {
   }
 
   const consumerGroupLoadFailed = !!consumerGroupError;
-
-  // Helper function to render consumer group status
-  const renderConsumerGroupStatus = () => {
-    if (consumerGroup) {
-      const memberCount = consumerGroup.members?.length ?? 0;
-      const state = consumerGroup.state || '-';
-      return (
-        <div className="flex items-baseline gap-2">
-          <span className="font-semibold text-xl">{state}</span>
-          <Text className="text-sm" variant="muted">
-            ({memberCount} members)
-          </Text>
-        </div>
-      );
-    }
-
-    if (consumerGroupLoadFailed) {
-      return (
-        <Text className="text-xl" title="Consumer group not yet available" variant="muted">
-          Initializing...
-        </Text>
-      );
-    }
-
-    if (isLoadingConsumerGroup) {
-      return <Skeleton className="h-7 w-32" />;
-    }
-
-    return (
-      <Text className="text-xl" variant="muted">
-        -
-      </Text>
-    );
-  };
 
   // Helper function to render consumer group lag
   const renderConsumerGroupLag = () => {
@@ -254,15 +411,17 @@ export const KnowledgeBaseDetailsPage = () => {
         <div className="flex gap-2">
           {isEditMode ? (
             <>
+              <Button disabled={!formHasChanges || isUpdating} onClick={handleSave} variant="secondary">
+                Save Changes
+              </Button>
               <Button onClick={handleCancelEdit} variant="outline">
                 Cancel
               </Button>
-              <Button disabled={!formHasChanges || isUpdating} onClick={handleSave}>
-                Save Changes
-              </Button>
             </>
           ) : (
-            <Button onClick={handleStartEdit}>Edit</Button>
+            <Button onClick={handleStartEdit} variant="secondary">
+              Edit Configuration
+            </Button>
           )}
         </div>
       </div>
@@ -275,7 +434,14 @@ export const KnowledgeBaseDetailsPage = () => {
               <Text className="mb-1 font-medium text-sm" variant="muted">
                 Indexer Status
               </Text>
-              {renderConsumerGroupStatus()}
+              <IndexerStatus
+                configured={!!knowledgeBase.indexer}
+                hasError={consumerGroupLoadFailed}
+                isLoading={isLoadingConsumerGroup}
+                memberCount={consumerGroup?.members?.length}
+                state={consumerGroup?.state}
+                topicCount={knowledgeBase.indexer?.inputTopics?.length ?? 0}
+              />
             </div>
 
             <div>
@@ -288,15 +454,33 @@ export const KnowledgeBaseDetailsPage = () => {
         </CardContent>
       </Card>
 
-      {/* Edit Tabs - Keep existing component for now */}
-      <KnowledgeBaseEditTabs
-        isEditMode={isEditMode}
-        knowledgeBase={knowledgeBase}
-        onCancel={handleCancelEdit}
-        onFormChange={handleFormChange}
-        onSave={handleUpdate}
-        ref={editTabsRef}
-      />
+      {/* Configuration and Playground Tabs */}
+      <FormProvider {...form}>
+        <Tabs defaultValue="configuration">
+          <TabsList>
+            <TabsTrigger value="configuration">
+              <Settings className="mr-2 h-4 w-4" />
+              Configuration
+            </TabsTrigger>
+            <TabsTrigger value="playground">
+              <Search className="mr-2 h-4 w-4" />
+              Playground
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="configuration">
+            <KnowledgeBaseConfigurationTab
+              getCurrentData={getCurrentData}
+              isEditMode={isEditMode}
+              knowledgeBase={knowledgeBase}
+            />
+          </TabsContent>
+
+          <TabsContent value="playground">
+            <PlaygroundTab knowledgeBase={knowledgeBase} />
+          </TabsContent>
+        </Tabs>
+      </FormProvider>
     </div>
   );
 };

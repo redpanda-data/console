@@ -63,6 +63,9 @@ import { RetrievalSection } from './components/form-sections/retrieval-section';
 import { VectorDatabaseSection } from './components/form-sections/vector-database-section';
 import { initialValues, KnowledgeBaseCreateFormSchema, type KnowledgeBaseCreateFormValues } from './schemas';
 
+// Regex pattern for extracting secret ID from secret reference (format: ${secrets.SECRET_ID})
+const SECRET_REFERENCE_PATTERN = /^\$\{secrets\.(.+)\}$/;
+
 export const KnowledgeBaseCreatePage = () => {
   const navigate = useNavigate();
   const { mutateAsync: createKnowledgeBase, isPending: isCreating } = useCreateKnowledgeBaseMutation();
@@ -80,17 +83,7 @@ export const KnowledgeBaseCreatePage = () => {
   const embeddingProvider = form.watch('embeddingProvider');
   const credentialChoice = form.watch('credentialChoice');
   const rerankerEnabled = form.watch('rerankerEnabled');
-
-  // Update model and dimensions when provider changes
-  useEffect(() => {
-    if (embeddingProvider === 'openai') {
-      form.setValue('embeddingModel', 'text-embedding-3-small');
-      form.setValue('embeddingDimensions', 768);
-    } else if (embeddingProvider === 'cohere') {
-      form.setValue('embeddingModel', 'embed-v4.0');
-      form.setValue('embeddingDimensions', 1536);
-    }
-  }, [embeddingProvider, form]);
+  const displayName = form.watch('displayName');
 
   // Tags field array
   const {
@@ -131,43 +124,78 @@ export const KnowledgeBaseCreatePage = () => {
       }));
   }, [secretsData]);
 
-  // Auto-populate secrets fields
+  // Auto-populate secrets fields based on name patterns
   useEffect(() => {
     if (availableSecrets.length === 0) {
       return;
     }
 
-    const secretIds = new Set(availableSecrets.map((s) => s.id));
+    // Helper function to find a secret by pattern (case-insensitive)
+    const findSecretByPattern = (pattern: string): string | undefined => {
+      const upperPattern = pattern.toUpperCase();
 
-    const fieldSecretMappings: Record<string, string> = {
-      postgresDsn: 'POSTGRES_DSN',
-      openaiApiKey: 'OPENAI_API_KEY',
-      cohereApiKey: 'COHERE_API_KEY',
-      rerankerApiKey: 'COHERE_API_KEY',
-      generationApiKey: 'OPENAI_API_KEY',
+      // First try to find an exact match
+      const exactMatch = availableSecrets.find((s) => s.id.toUpperCase() === upperPattern);
+      if (exactMatch) {
+        return exactMatch.id;
+      }
+
+      // Then try to find a secret containing the pattern
+      const patternMatch = availableSecrets.find((s) => s.id.toUpperCase().includes(upperPattern));
+      if (patternMatch) {
+        return patternMatch.id;
+      }
+
+      return undefined;
     };
 
-    for (const [fieldName, secretName] of Object.entries(fieldSecretMappings)) {
+    // Map fields to their pattern keywords
+    const fieldPatternMappings: Record<string, string> = {
+      postgresDsn: 'POSTGRES',
+      openaiApiKey: 'OPENAI',
+      cohereApiKey: 'COHERE',
+      rerankerApiKey: 'COHERE', // TODO: Update once we have more reranker providers
+      redpandaPassword: 'PASSWORD',
+    };
+
+    for (const [fieldName, pattern] of Object.entries(fieldPatternMappings)) {
       const currentValue = form.getValues(fieldName as keyof KnowledgeBaseCreateFormValues) as string;
 
-      if ((!currentValue || currentValue.trim() === '') && secretIds.has(secretName)) {
-        form.setValue(fieldName as keyof KnowledgeBaseCreateFormValues, `\${secrets.${secretName}}` as never);
+      // Only auto-populate if field is empty
+      if (!currentValue || currentValue.trim() === '') {
+        const matchingSecret = findSecretByPattern(pattern);
+        if (matchingSecret) {
+          form.setValue(fieldName as keyof KnowledgeBaseCreateFormValues, matchingSecret as never);
+        }
       }
     }
   }, [availableSecrets, form]);
 
-  // Helper functions for auto-generating credentials
-  const generateKnowledgeBaseId = (): string => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < 20; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+  // Auto-generate credentials when auto mode is selected
+  useEffect(() => {
+    if (credentialChoice === 'auto') {
+      // Generate username based on display name
+      const sanitizedName =
+        displayName
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '') || 'kb';
+      const username = `user-${sanitizedName}`;
+      const passwordSecretId = `KB_PASSWORD_${sanitizedName}`.toUpperCase();
+
+      // Set username
+      form.setValue('redpandaUsername', username);
+
+      // Set password secret reference
+      form.setValue('redpandaPassword', `\${secrets.${passwordSecretId}}`);
+
+      // Always use SCRAM-SHA-256 for auto-generated credentials
+      form.setValue('redpandaSaslMechanism', SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256);
     }
-    return result;
-  };
+  }, [credentialChoice, displayName, form]);
 
-  const generateUsername = (kbId: string): string => `KB_USER_${kbId}`;
-
+  // Helper function to generate a secure password
   const generatePassword = (): string => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
     let result = '';
@@ -177,10 +205,8 @@ export const KnowledgeBaseCreatePage = () => {
     return result;
   };
 
-  const createAutoCredentials = async (kbId: string): Promise<{ username: string; passwordSecret: string }> => {
-    const username = generateUsername(kbId);
+  const createAutoCredentials = async (username: string, passwordSecretId: string): Promise<void> => {
     const password = generatePassword();
-    const passwordSecretId = `KB_PASSWORD_${kbId}`;
 
     try {
       // Create the secret for the password
@@ -211,11 +237,6 @@ export const KnowledgeBaseCreatePage = () => {
       });
 
       await userClient.createUser(userRequest);
-
-      return {
-        username,
-        passwordSecret: `\${secrets.${passwordSecretId}}`,
-      };
     } catch (_error) {
       throw new Error('Failed to create auto-generated credentials. Please try manual credentials instead.');
     }
@@ -308,7 +329,7 @@ export const KnowledgeBaseCreatePage = () => {
       provider: {
         case: 'openai',
         value: create(KnowledgeBaseCreate_Generation_Provider_OpenAISchema, {
-          apiKey: values.generationApiKey,
+          apiKey: values.openaiApiKey || '',
         }),
       },
     });
@@ -335,12 +356,16 @@ export const KnowledgeBaseCreatePage = () => {
     try {
       // If auto-generating credentials, create user and secret first
       if (values.credentialChoice === 'auto') {
-        const kbId = generateKnowledgeBaseId();
-        const { username, passwordSecret } = await createAutoCredentials(kbId);
+        const username = values.redpandaUsername || '';
+        // Extract secret ID from the password field (format: ${secrets.SECRET_ID})
+        const passwordSecretId = values.redpandaPassword?.replace(SECRET_REFERENCE_PATTERN, '$1') || '';
 
-        // Update form values with generated credentials
-        values.redpandaUsername = username;
-        values.redpandaPassword = passwordSecret;
+        if (!(username && passwordSecretId)) {
+          toast.error('Failed to generate credentials. Please ensure the display name is set.');
+          return;
+        }
+
+        await createAutoCredentials(username, passwordSecretId);
 
         toast.info(`Created user "${username}" and stored password in secret store`);
       }
@@ -386,7 +411,7 @@ export const KnowledgeBaseCreatePage = () => {
 
             <RetrievalSection availableSecrets={availableSecrets} form={form} rerankerEnabled={rerankerEnabled} />
 
-            <GenerationSection availableSecrets={availableSecrets} form={form} />
+            <GenerationSection form={form} />
 
             {/* Actions */}
             <div className="flex justify-end gap-2">

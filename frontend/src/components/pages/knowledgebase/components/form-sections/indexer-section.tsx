@@ -11,6 +11,15 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldSet,
+  FieldTitle,
+} from 'components/redpanda-ui/components/field';
+import {
   FormControl,
   FormDescription,
   FormField,
@@ -113,35 +122,93 @@ export const IndexerSection: React.FC<IndexerSectionProps> = ({ form, availableS
           name="credentialChoice"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Redpanda Credentials</FormLabel>
-              <FormControl>
-                <RadioGroup onValueChange={field.onChange} value={field.value}>
-                  <div className="space-y-3">
-                    <div className="flex items-start space-x-3 rounded-md border p-4 opacity-50">
-                      <RadioGroupItem disabled value="auto" />
-                      <div className="space-y-1 leading-none">
-                        <Text className="font-medium">Auto-generate credentials (Coming Soon)</Text>
-                        <Text className="text-sm" variant="muted">
-                          We'll create a unique user and password for this knowledge base automatically
-                        </Text>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-3 rounded-md border p-4">
-                      <RadioGroupItem value="manual" />
-                      <div className="space-y-1 leading-none">
-                        <Text className="font-medium">Provide your own credentials</Text>
-                        <Text className="text-sm" variant="muted">
-                          Use existing Redpanda username and password
-                        </Text>
-                      </div>
-                    </div>
-                  </div>
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
+              <FieldGroup>
+                <FieldSet>
+                  <FieldLabel htmlFor="credential-choice">Redpanda Credentials</FieldLabel>
+                  <FieldDescription>
+                    Select how you want to provide credentials for this knowledge base
+                  </FieldDescription>
+                  <FormControl>
+                    <RadioGroup onValueChange={field.onChange} value={field.value}>
+                      <FieldLabel htmlFor="auto-credentials">
+                        <Field className="border-secondary" orientation="horizontal">
+                          <FieldContent>
+                            <FieldTitle>Auto-generate credentials</FieldTitle>
+                            <FieldDescription>
+                              We'll create a unique user and password for this knowledge base automatically
+                            </FieldDescription>
+                          </FieldContent>
+                          <RadioGroupItem id="auto-credentials" value="auto" />
+                        </Field>
+                      </FieldLabel>
+                      <FieldLabel htmlFor="manual-credentials">
+                        <Field className="border-secondary" orientation="horizontal">
+                          <FieldContent>
+                            <FieldTitle>Provide your own credentials</FieldTitle>
+                            <FieldDescription>Use existing Redpanda username and password</FieldDescription>
+                          </FieldContent>
+                          <RadioGroupItem id="manual-credentials" value="manual" />
+                        </Field>
+                      </FieldLabel>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FieldSet>
+              </FieldGroup>
             </FormItem>
           )}
         />
+
+        {credentialChoice === 'auto' && (
+          <>
+            <FormField
+              control={form.control}
+              name="redpandaUsername"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Redpanda Username (auto-generated)</FormLabel>
+                  <FormControl>
+                    <Input {...field} disabled value={field.value || ''} />
+                  </FormControl>
+                  <FormDescription>
+                    This username will be created automatically when you submit the form
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="redpandaPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Redpanda Password Secret (auto-generated)</FormLabel>
+                  <FormControl>
+                    <Input {...field} disabled value={field.value || ''} />
+                  </FormControl>
+                  <FormDescription>A secure password will be generated and stored in this secret</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="redpandaSaslMechanism"
+              render={() => (
+                <FormItem>
+                  <FormLabel>SASL Mechanism</FormLabel>
+                  <FormControl>
+                    <Input disabled value="SCRAM-SHA-256" />
+                  </FormControl>
+                  <FormDescription>Auto-generated credentials always use SCRAM-SHA-256</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
+        )}
 
         {credentialChoice === 'manual' && (
           <>
@@ -187,34 +254,32 @@ export const IndexerSection: React.FC<IndexerSectionProps> = ({ form, availableS
                 </FormItem>
               )}
             />
-          </>
-        )}
 
-        {credentialChoice === 'manual' && (
-          <FormField
-            control={form.control}
-            name="redpandaSaslMechanism"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel required>SASL Mechanism</FormLabel>
-                <Select
-                  onValueChange={(value) => field.onChange(Number.parseInt(value, 10))}
-                  value={String(field.value)}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value={String(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256)}>SCRAM-SHA-256</SelectItem>
-                    <SelectItem value={String(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512)}>SCRAM-SHA-512</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="redpandaSaslMechanism"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel required>SASL Mechanism</FormLabel>
+                  <Select
+                    onValueChange={(value) => field.onChange(Number.parseInt(value, 10))}
+                    value={String(field.value)}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={String(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256)}>SCRAM-SHA-256</SelectItem>
+                      <SelectItem value={String(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512)}>SCRAM-SHA-512</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
         )}
       </div>
     </CardContent>
