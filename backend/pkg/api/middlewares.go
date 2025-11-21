@@ -146,6 +146,18 @@ func createSetVersionInfoHeader(builtAt string) func(next http.Handler) http.Han
 	}
 }
 
+// Create a middleware that sets HSTS headers when serving via TLS
+func createHSTSHeaderMiddleware(tlsEnabled bool) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if tlsEnabled {
+				w.Header().Set("Strict-Transport-Security", "max-age=31536000")
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 // forceLoopbackMiddleware blocks requests not coming from the loopback interface.
 func forceLoopbackMiddleware(logger *slog.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
