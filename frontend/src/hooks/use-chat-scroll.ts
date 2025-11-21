@@ -52,7 +52,7 @@ export function useChatScroll({
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
-      scrollTimeoutRef.current = setTimeout(() => scrollToBottom('instant'), 10);
+      scrollTimeoutRef.current = setTimeout(() => scrollToBottom('instant'), 0);
     }
   }, [messages, isLoading, autoScrollPaused, scrollToBottom]);
 
