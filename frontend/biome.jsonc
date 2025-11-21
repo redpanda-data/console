@@ -875,11 +875,16 @@
     },
     {
       // Scripts and CLI tools
-      "includes": ["**/scripts/**/*", "**/bin/**/*", "*.mjs", "*.cjs"],
+      "includes": ["**/scripts/**/*", "**/bin/**/*", "*.mjs", "*.cjs", "**/tests/global-*.mjs", "**/tests/*.sh"],
       "linter": {
         "rules": {
           "suspicious": {
-            "noConsole": "off"
+            "noConsole": "off",
+            "useAwait": "off",
+            "noEmptyBlockStatements": "off"
+          },
+          "nursery": {
+            "noShadow": "off"
           },
           "style": {
             "noProcessEnv": "off"

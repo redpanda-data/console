@@ -8,7 +8,7 @@ volumes:
 services:
   redpanda:
     image: redpandadata/redpanda:v25.2.1
-    container_name: redpanda
+    container_name: ${E2E_PROJECT_NAME}-redpanda
     command:
       - redpanda start
       - --smp 1
@@ -47,8 +47,8 @@ services:
       RP_BOOTSTRAP_USER: "e2euser:very-secret"
 
   owlshop:
-    container_name: owlshop
     image: quay.io/cloudhut/owl-shop:master
+    container_name: ${E2E_PROJECT_NAME}-owlshop
     networks:
       - redpanda_network
     platform: 'linux/amd64'
@@ -77,7 +77,7 @@ services:
 
   connect:
     image: docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:latest
-    container_name: connect
+    container_name: ${E2E_PROJECT_NAME}-connect
     networks:
       - redpanda_network
     depends_on:
