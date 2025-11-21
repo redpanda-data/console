@@ -78,6 +78,7 @@ function CollapsibleContent({
           <motion.div
             key="collapsible-content"
             data-slot="collapsible-content"
+            layout
             initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
             animate={{ opacity: 1, height: 'auto', overflow: 'hidden' }}
             exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
