@@ -18,21 +18,7 @@ import type { ChatMessage, ContentBlock } from '../types';
  * Deserialize contentBlocks from database (ISO string → Date)
  */
 const deserializeContentBlocks = (dbBlocks: import('database/chat-db').ContentBlock[]): ContentBlock[] =>
-  dbBlocks.map((block) => {
-    if (block.type === 'text') {
-      return { ...block, timestamp: new Date(block.timestamp) };
-    }
-    if (block.type === 'tool') {
-      return { ...block, timestamp: new Date(block.timestamp) };
-    }
-    if (block.type === 'artifact') {
-      return { ...block, timestamp: new Date(block.timestamp) };
-    }
-    if (block.type === 'status-update') {
-      return { ...block, timestamp: new Date(block.timestamp) };
-    }
-    return block;
-  });
+  dbBlocks.map((block): ContentBlock => ({ ...block, timestamp: new Date(block.timestamp) }) as ContentBlock);
 
 /**
  * Build chat message from stored contentBlocks
@@ -55,11 +41,12 @@ const reconstructContentBlocks = (dbMsg: ChatDbMessage): ContentBlock[] => {
   const contentBlocks: ContentBlock[] = [];
   const now = new Date();
 
-  // Add main content as text block
+  // Add main content as task-status-update block
   if (dbMsg.content) {
     contentBlocks.push({
-      type: 'text',
+      type: 'task-status-update',
       text: dbMsg.content,
+      final: false,
       timestamp: dbMsg.timestamp || now,
     });
   }
@@ -148,7 +135,7 @@ export const createUserMessage = (prompt: string, contextId: string): ChatMessag
   return {
     id: nanoid(),
     role: 'user',
-    contentBlocks: [{ type: 'text', text: prompt || 'Sent with attachments', timestamp }],
+    contentBlocks: [{ type: 'task-status-update', text: prompt || 'Sent with attachments', final: false, timestamp }],
     timestamp,
     contextId,
   };
@@ -173,7 +160,9 @@ export const createErrorMessage = (contextId: string): ChatMessage => {
   return {
     id: nanoid(),
     role: 'assistant',
-    contentBlocks: [{ type: 'text', text: 'Sorry, I encountered an error. Please try again.', timestamp }],
+    contentBlocks: [
+      { type: 'task-status-update', text: 'Sorry, I encountered an error. Please try again.', final: true, timestamp },
+    ],
     timestamp,
     contextId,
   };

@@ -10,14 +10,11 @@
  */
 
 import { Message, MessageBody, MessageContent, MessageMetadata } from 'components/ai-elements/message';
-import { SparklesIcon } from 'lucide-react';
 
 import { ChatMessageActions } from './chat-message-actions';
 import { ArtifactBlock } from './message-blocks/artifact-block';
-import { StatusUpdateBlock } from './message-blocks/status-update-block';
-import { TextBlock } from './message-blocks/text-block';
+import { TaskStatusUpdateBlock } from './message-blocks/task-status-update-block';
 import { ToolBlock } from './message-blocks/tool-block';
-import { LoadingMessageContent } from './message-content/loading-message-content';
 import { UserMessageContent } from './message-content/user-message-content';
 import { TaskMessageWrapper } from './task-message/task-message-wrapper';
 import type { ChatMessage as ChatMessageType, ContentBlock } from '../types';
@@ -30,18 +27,18 @@ type ChatMessageProps = {
 /**
  * Individual chat message component with Jupyter-style interleaved rendering
  */
-export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
+export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps) => {
   const isTaskMessage = message.taskId && message.role === 'assistant';
 
   // User message rendering
   if (message.role === 'user') {
     const firstBlock = message.contentBlocks[0];
-    const text = firstBlock?.type === 'text' ? firstBlock.text : '';
+    const text = firstBlock?.type === 'task-status-update' ? firstBlock.text || '' : '';
 
     return (
       <div>
         <Message from={message.role}>
-          <MessageContent from={message.role} variant="flat">
+          <MessageContent variant="flat">
             <MessageBody>
               <UserMessageContent text={text} timestamp={message.timestamp} />
             </MessageBody>
@@ -58,26 +55,6 @@ export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
     // Helper function to render a single content block
     const renderContentBlock = (block: ContentBlock, index: number) => {
       switch (block.type) {
-        case 'text':
-          return (
-            <div className="mb-4" key={`${message.id}-text-${index}`}>
-              <Message from={message.role}>
-                <SparklesIcon className="size-4" />
-                <MessageContent from={message.role} variant="flat">
-                  <MessageBody>
-                    <TextBlock text={block.text} timestamp={block.timestamp} />
-                  </MessageBody>
-                  <MessageMetadata
-                    contextId={message.contextId}
-                    from="assistant"
-                    messageId={message.id}
-                    taskId={message.taskId}
-                    timestamp={message.timestamp}
-                  />
-                </MessageContent>
-              </Message>
-            </div>
-          );
         case 'tool':
           return (
             <div className="mb-4" key={`${message.id}-tool-${block.toolCallId}`}>
@@ -106,11 +83,16 @@ export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
               />
             </div>
           );
-        case 'status-update':
+        case 'task-status-update':
           return (
-            <div className="mb-4" key={`${message.id}-status-${index}`}>
-              <StatusUpdateBlock taskState={block.taskState} timestamp={block.timestamp} />
-            </div>
+            <TaskStatusUpdateBlock
+              key={`${message.id}-status-${index}`}
+              messageId={block.messageId}
+              previousState={block.previousState}
+              taskState={block.taskState}
+              text={block.text}
+              timestamp={block.timestamp}
+            />
           );
         default:
           return null;
@@ -128,41 +110,16 @@ export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
     // Render task-related content blocks
     const taskElements = taskBlocks.map((block, index) => renderContentBlock(block, taskStartIndex + index));
 
-    // Show loading indicator during streaming
-    // For task messages, show loading AFTER pre-task content but BEFORE task wrapper
-    // For non-task messages, show loading AFTER all content
-    const loadingElement = isLoading ? (
-      <div className="mb-4">
-        <Message from={message.role}>
-          <SparklesIcon className="size-4" />
-          <MessageContent from={message.role} variant="flat">
-            <MessageBody>
-              <LoadingMessageContent />
-            </MessageBody>
-          </MessageContent>
-        </Message>
-      </div>
-    ) : null;
-
     // Wrap in task UI if this is a task message
     if (isTaskMessage && message.taskId) {
       return (
         <div>
           {/* Always render pre-task content first (messages that arrived before task event) */}
           {preTaskElements}
-          {/* Show loading indicator after pre-task content but before task wrapper */}
-          {loadingElement}
           {/* Task wrapper contains task-related content blocks */}
           <TaskMessageWrapper messageId={message.id} taskId={message.taskId} taskState={message.taskState}>
             {taskElements}
           </TaskMessageWrapper>
-          <ChatMessageActions
-            role={message.role}
-            text={(() => {
-              const textBlock = message.contentBlocks.find((b) => b.type === 'text');
-              return textBlock?.type === 'text' ? textBlock.text : '';
-            })()}
-          />
         </div>
       );
     }
@@ -172,12 +129,11 @@ export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
       <div>
         {preTaskElements}
         {taskElements}
-        {loadingElement}
         <ChatMessageActions
           role={message.role}
           text={(() => {
-            const textBlock = message.contentBlocks.find((b) => b.type === 'text');
-            return textBlock?.type === 'text' ? textBlock.text : '';
+            const textBlock = message.contentBlocks.find((b) => b.type === 'task-status-update');
+            return textBlock?.type === 'task-status-update' ? textBlock.text || '' : '';
           })()}
         />
       </div>

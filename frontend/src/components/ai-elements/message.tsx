@@ -24,40 +24,31 @@ export const Message = ({ className, from, ...props }: MessageProps) => (
 );
 
 const messageContentVariants = cva(
-  "max-w-[85%] rounded-xl shadow-sm overflow-hidden flex flex-col",
+  "flex flex-col overflow-hidden rounded-lg border bg-background shadow-sm",
   {
     variants: {
       variant: {
         contained: "",
         flat: "",
       },
-      from: {
-        user: "bg-blue-500 text-white dark:bg-blue-600 dark:text-white",
-        assistant: "border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100",
-      },
     },
     defaultVariants: {
       variant: "contained",
-      from: "assistant",
     },
   }
 );
 
 export type MessageContentProps = HTMLAttributes<HTMLDivElement> &
-  VariantProps<typeof messageContentVariants> & {
-    from?: UIMessage["role"];
-  };
+  VariantProps<typeof messageContentVariants>;
 
 export const MessageContent = ({
   children,
   className,
   variant,
-  from,
   ...props
 }: MessageContentProps) => (
   <article
-    aria-label={`${from || "message"}`}
-    className={cn(messageContentVariants({ variant, from, className }))}
+    className={cn(messageContentVariants({ variant, className }))}
     {...props}
   >
     {children}
@@ -142,7 +133,7 @@ export const MessageMetadata = ({
   ...props
 }: MessageMetadataProps) => {
   const time = timestamp instanceof Date
-    ? timestamp.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    ? timestamp.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })
     : timestamp;
 
   // Don't render if no metadata to show
@@ -152,10 +143,7 @@ export const MessageMetadata = ({
   return (
     <div
       className={cn(
-        "border-t px-3 py-1.5 text-[11px]",
-        from === "user"
-          ? "bg-blue-600/10 text-blue-100/80 dark:bg-blue-700/20 dark:text-blue-200/80"
-          : "bg-muted/20 text-muted-foreground/80",
+        "border-t bg-muted/30 px-4 py-2 text-muted-foreground text-xs",
         className
       )}
       {...props}
@@ -177,7 +165,7 @@ export const MessageMetadata = ({
             )}
             {messageId && (
               <div className="flex gap-1.5">
-                <span className="font-medium">msg:</span>
+                <span className="font-medium">message_id:</span>
                 <span className="font-mono">{messageId}</span>
               </div>
             )}
@@ -185,7 +173,7 @@ export const MessageMetadata = ({
         )}
         {from === "user" && messageId && (
           <div className="flex gap-1.5">
-            <span className="font-medium">msg:</span>
+            <span className="font-medium">message_id:</span>
             <span className="font-mono">{messageId}</span>
           </div>
         )}
