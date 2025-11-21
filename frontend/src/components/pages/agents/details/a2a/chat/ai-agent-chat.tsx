@@ -11,10 +11,8 @@
 
 'use client';
 
-import { ConversationEmptyState } from 'components/ai-elements/conversation';
+import { Conversation, ConversationContent, ConversationEmptyState } from 'components/ai-elements/conversation';
 import { Loader } from 'components/ai-elements/loader';
-import { motion } from 'framer-motion';
-import { useChatScroll } from 'hooks/use-chat-scroll';
 import { useRef } from 'react';
 
 import { ChatInput } from './components/chat-input';
@@ -42,13 +40,6 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
       setContextSeed,
     });
 
-  // Manage scroll behavior
-  const { endRef, autoScrollPaused, setAutoScrollPaused, onViewportEnter, onViewportLeave } = useChatScroll({
-    agentId: agent.id,
-    isLoading,
-    messages,
-  });
-
   return (
     <div className="flex h-[calc(100vh-255px)] flex-col">
       {/* Context ID header */}
@@ -61,9 +52,8 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
         </div>
       )}
 
-      {/* Scrollable content area */}
-      <div className="min-h-0 flex-1 overflow-y-scroll">
-        <div className="p-4">
+      <Conversation className="flex-1" initial="instant" resize="instant">
+        <ConversationContent>
           {isLoadingHistory && (
             <div className="flex h-full items-center justify-center">
               <Loader size={24} />
@@ -84,43 +74,34 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
                 </div>
               );
             })}
+        </ConversationContent>
+      </Conversation>
 
-          {/* Invisible anchor element at bottom with viewport detection */}
-          <motion.div
-            className="min-h-[24px] min-w-[24px] shrink-0"
-            onViewportEnter={onViewportEnter}
-            onViewportLeave={onViewportLeave}
-            ref={endRef}
-          />
-        </div>
-      </div>
-
-      {/* Input at bottom - flex child */}
-      <div className="sticky bottom-0 shrink-0">
-        <ChatInput
-          autoScrollEnabled={!autoScrollPaused}
-          editingMessageId={editingMessageId}
-          hasMessages={messages.length > 0}
-          input={input}
-          isLoading={isLoading}
-          model={agent.model}
-          onAutoScrollChange={(enabled) => setAutoScrollPaused(!enabled)}
-          onCancel={() => {
-            const lastMessage = messages.at(-1);
-            if (lastMessage?.taskId) {
-              void handleCancelTask(lastMessage.taskId);
-            }
-          }}
-          onCancelEdit={cancelEdit}
-          onClearHistory={clearChat}
-          onInputChange={setInput}
-          onSubmit={(message, event) => {
-            event.preventDefault();
-            void handleSubmit(message);
-          }}
-          textareaRef={textareaRef}
-        />
-      </div>
+      <ChatInput
+        autoScrollEnabled={true}
+        editingMessageId={editingMessageId}
+        hasMessages={messages.length > 0}
+        input={input}
+        isLoading={isLoading}
+        model={agent.model}
+        onAutoScrollChange={() => {
+          // No-op: Conversation handles autoscroll internally
+        }}
+        onCancel={() => {
+          const lastMessage = messages.at(-1);
+          if (lastMessage?.taskId) {
+            void handleCancelTask(lastMessage.taskId);
+          }
+        }}
+        onCancelEdit={cancelEdit}
+        onClearHistory={clearChat}
+        onInputChange={setInput}
+        onSubmit={(message, event) => {
+          event.preventDefault();
+          void handleSubmit(message);
+        }}
+        textareaRef={textareaRef}
+      />
     </div>
   );
 };

@@ -28,10 +28,8 @@ import {
 import { Button } from 'components/redpanda-ui/components/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { AnimatePresence, motion } from 'framer-motion';
-import { useScrollToBottom } from 'hooks/use-scroll-to-bottom';
-import { ArrowDownIcon, HistoryIcon, PinIcon } from 'lucide-react';
-import { useEffect } from 'react';
+import { HistoryIcon, PinIcon } from 'lucide-react';
+import { useState } from 'react';
 
 import { AIAgentModel } from '../../../../ai-agent-model';
 
@@ -69,42 +67,11 @@ export const ChatInput = ({
   onAutoScrollChange,
   onCancel,
 }: ChatInputProps) => {
-  const { isAtBottom, scrollToBottom } = useScrollToBottom();
-
-  // Auto-scroll to bottom when message is submitted (isLoading becomes true)
-  useEffect(() => {
-    if (isLoading) {
-      scrollToBottom('instant');
-    }
-  }, [isLoading, scrollToBottom]);
+  // Conversation handles autoscroll automatically, no manual scroll controls needed
+  const [_isAtBottom] = useState(true);
 
   return (
-    <div className="bg-background px-4 pt-4">
-      {/* Scroll to bottom button - appears when not at bottom */}
-      <AnimatePresence>
-        {!isAtBottom && (
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            className="-translate-x-1/2 absolute bottom-28 left-1/2 z-50"
-            exit={{ opacity: 0, y: 10 }}
-            initial={{ opacity: 0, y: 10 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          >
-            <Button
-              onClick={(event) => {
-                event.preventDefault();
-                scrollToBottom('instant');
-              }}
-              size="icon"
-              type="button"
-              variant="outline"
-            >
-              <ArrowDownIcon className="size-4" />
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+    <div className="bg-background px-4 pt-4 pb-4">
       <PromptInput globalDrop multiple onSubmit={onSubmit}>
         <PromptInputBody>
           <PromptInputAttachments>{(attachment) => <PromptInputAttachment data={attachment} />}</PromptInputAttachments>
