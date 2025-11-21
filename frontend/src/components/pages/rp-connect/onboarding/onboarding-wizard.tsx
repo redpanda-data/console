@@ -7,6 +7,7 @@ import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { AnimatePresence } from 'motion/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useListComponentsQuery } from 'react-query/api/connect';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useOnboardingTopicDataStore,
@@ -32,6 +33,7 @@ import {
 } from '../types/constants';
 import type { ExtendedConnectComponentSpec } from '../types/schema';
 import type { AddTopicFormData, BaseStepRef, ConnectTilesListFormData, UserStepRef } from '../types/wizard';
+import { parseSchema } from '../utils/schema';
 import { handleStepResult, regenerateYamlForTopicUserComponents } from '../utils/wizard';
 import { getConnectTemplate } from '../utils/yaml';
 
@@ -48,13 +50,26 @@ export const ConnectOnboardingWizard = ({
     {
       name: 'custom',
       type: 'custom',
-      plugin: false,
+      status: 0,
+      summary: '',
+      description: '',
+      categories: [],
+      version: '',
+      examples: [],
+      footnotes: '',
+      $typeName: 'redpanda.api.dataplane.v1.ComponentSpec',
     },
   ],
   onChange,
   onCancel: onCancelProp,
 }: ConnectOnboardingWizardProps = {}) => {
   const navigate = useNavigate();
+
+  const { data: componentListResponse } = useListComponentsQuery();
+  const components = useMemo(
+    () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
+    [componentListResponse]
+  );
 
   const persistedInputConnectionName = useOnboardingWizardDataStore(useShallow((state) => state.input?.connectionName));
   const persistedOutputConnectionName = useOnboardingWizardDataStore(
@@ -159,6 +174,7 @@ export const ConnectOnboardingWizard = ({
           const yamlContent = getConnectTemplate({
             connectionName,
             connectionType,
+            components,
             showOptionalFields: false,
             existingYaml: useOnboardingYamlContentStore.getState().yamlContent,
           });
@@ -208,6 +224,7 @@ export const ConnectOnboardingWizard = ({
           const yamlContent = getConnectTemplate({
             connectionName,
             connectionType,
+            components,
             showOptionalFields: false,
             existingYaml: useOnboardingYamlContentStore.getState().yamlContent,
           });
@@ -253,7 +270,7 @@ export const ConnectOnboardingWizard = ({
           const result = await addTopicStepRef.current?.triggerSubmit();
           if (result?.success && result.data) {
             setTopicData({ topicName: result.data.topicName });
-            regenerateYamlForTopicUserComponents();
+            regenerateYamlForTopicUserComponents(components);
           }
           handleStepResult(result, methods.next);
         } finally {
@@ -271,7 +288,7 @@ export const ConnectOnboardingWizard = ({
               saslMechanism: result.data.saslMechanism,
               consumerGroup: result.data.consumerGroup || '',
             });
-            regenerateYamlForTopicUserComponents();
+            regenerateYamlForTopicUserComponents(components);
             methods.next();
           }
         } finally {

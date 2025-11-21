@@ -1,80 +1,10 @@
-import benthosSchemaFull from '../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
+import type { ComponentSpec, ComponentStatus, FieldSpec } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
-export type BenthosSchemaFull = typeof benthosSchemaFull;
-
-export type BloblangFunctionSpec = NonNullable<BenthosSchemaFull['bloblang-functions']>[number];
-export type BloblangMethodSpec = NonNullable<BenthosSchemaFull['bloblang-methods']>[number];
-
-// RawFieldSpec needs manual definition since it's a recursive structure with many optional properties
-// that TypeScript infers too narrowly from the JSON data
-export interface RawFieldSpec {
-  name?: string;
-  type?: string;
-  kind?: string;
-  description?: string;
-  is_advanced?: boolean;
-  is_deprecated?: boolean;
-  is_optional?: boolean;
-  is_secret?: boolean;
-  default?: unknown;
-  interpolated?: boolean;
-  bloblang?: boolean;
-  examples?: unknown[];
-  annotated_options?: [string, string][];
-  options?: string[];
+// RawFieldSpec matches proto FieldSpec structure
+export interface RawFieldSpec extends Omit<FieldSpec, 'children'> {
+  comment?: string; // Keep for internal use (YAML generation)
   children?: RawFieldSpec[];
-  version?: string;
-  linter?: string;
-  scrubber?: string;
-  comment?: string; // Schema-derived comment for YAML generation
 }
-
-interface ConnectAnnotatedExample {
-  title: string;
-  summary: string;
-  config: string;
-}
-
-// RawComponentSpec manually defined to include all properties from all component types
-export interface RawComponentSpec {
-  name: string;
-  type: string;
-  status?: string;
-  support_level?: string;
-  plugin: boolean;
-  summary?: string;
-  description?: string;
-  categories?: string[] | null;
-  footnotes?: string;
-  examples?: ConnectAnnotatedExample[];
-  config?: RawFieldSpec;
-  version?: string;
-}
-
-export type BloblangParams = BloblangFunctionSpec['params'];
-export type BloblangParam = NonNullable<BloblangParams['named']>[number];
-export type MethodCatSpec = NonNullable<BloblangMethodSpec['categories']>[number];
-export type ExampleSpec = NonNullable<BloblangFunctionSpec['examples']>[number];
-
-// Represents the stability status of a Benthos component or feature.
-export const CONNECT_COMPONENT_STATUS = [
-  // The component/feature is considered stable and recommended for production use.
-  // Breaking changes are highly unlikely.
-  'stable',
-  // The component/feature is in beta. It's largely complete and functional
-  // but may have some bugs or undergo minor breaking changes before becoming stable.
-  'beta',
-  // The component/feature is experimental. It's subject to significant changes
-  // or removal in future versions. Use with caution and expect potential instability or breaking changes.
-  'experimental',
-  // The component/feature is deprecated and will be removed in a future version.
-  // It should be avoided in new configurations and migrated away from in existing ones.
-  'deprecated',
-] as const;
-
-export type KnownConnectComponentStatus = (typeof CONNECT_COMPONENT_STATUS)[number];
-
-export type ConnectComponentStatus = (typeof CONNECT_COMPONENT_STATUS)[number] | (string & {});
 
 export const CONNECT_COMPONENT_TYPE = [
   // Buffers messages, often used between inputs/outputs and processing stages
@@ -113,7 +43,7 @@ export const CONNECT_COMPONENT_TYPE = [
   'tracer',
   // used exclusively for skipping the wizard
   'custom',
-] as const satisfies readonly RawComponentSpec['type'][];
+] as const satisfies readonly ComponentSpec['type'][];
 
 export type ConnectComponentType = (typeof CONNECT_COMPONENT_TYPE)[number];
 
@@ -176,20 +106,10 @@ export const CONNECT_VALUE_TYPE = [
 
 export type ConnectValueType = (typeof CONNECT_VALUE_TYPE)[number] | (string & {});
 
-export interface ConnectComponentSpec extends Omit<RawComponentSpec, 'type' | 'status' | 'config'> {
-  name: string;
+export interface ConnectComponentSpec extends Omit<ComponentSpec, 'type' | 'status'> {
   type: ConnectComponentType;
-  status?: ConnectComponentStatus;
-  support_level?: string;
-  plugin: boolean;
-  summary?: string;
-  description?: string;
-  categories?: string[] | null;
-  footnotes?: string;
-  examples?: ConnectAnnotatedExample[];
-  config?: RawFieldSpec;
-  version?: string;
-  logoUrl?: string;
+  status: ComponentStatus;
+  logoUrl?: string; // UI-specific field
 }
 
 /**

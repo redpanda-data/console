@@ -7,7 +7,7 @@ import {
 
 import { getConnectTemplate } from './yaml';
 import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
-import type { RawFieldSpec } from '../types/schema';
+import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 import type { StepSubmissionResult } from '../types/wizard';
 
 export const handleStepResult = <T>(result: StepSubmissionResult<T> | undefined, onSuccess: () => void): boolean => {
@@ -48,7 +48,7 @@ export const handleStepResult = <T>(result: StepSubmissionResult<T> | undefined,
  * Regenerates YAML templates for components that require topic/user data
  * Used at ADD_TOPIC and ADD_USER steps to update YAML with new context
  */
-export const regenerateYamlForTopicUserComponents = (): void => {
+export const regenerateYamlForTopicUserComponents = (components: ConnectComponentSpec[]): void => {
   const { setWizardData: _, ...wizardData } = useOnboardingWizardDataStore.getState();
 
   const inputNeedsTopicUser =
@@ -64,6 +64,7 @@ export const regenerateYamlForTopicUserComponents = (): void => {
         getConnectTemplate({
           connectionName: wizardData.input.connectionName,
           connectionType: wizardData.input.connectionType,
+          components,
           showOptionalFields: false,
           existingYaml: yamlContent,
         }) || yamlContent;
@@ -74,6 +75,7 @@ export const regenerateYamlForTopicUserComponents = (): void => {
         getConnectTemplate({
           connectionName: wizardData.output.connectionName,
           connectionType: wizardData.output.connectionType,
+          components,
           showOptionalFields: false,
           existingYaml: yamlContent,
         }) || yamlContent;
