@@ -10,7 +10,15 @@ import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
 import "redpanda/core/admin/v2/shadow_link.proto";
 
-message FailOverResponse {}
+message FailOverResponse {
+  // Name of the shadow link that was failed over
+  string name = 1;
+
+  // List of topics that were failed over
+  // If shadow_topic_name was specified in the request, this will contain only that topic
+  // If shadow_topic_name was not specified, this will contain all topics in the shadow link
+  repeated string failed_over_topics = 2;
+}
 
 message ListShadowLinkTopicsRequest {
   string shadow_link_name = 1 [
@@ -118,9 +126,9 @@ service ShadowLinkService {
       summary: "Fail Over Shadow Link"
       description: "Fail over a shadow link or a specific shadow topic within a link."
       responses: {
-        key: "200"
+        key: "202"
         value: {
-          description: "Failover completed"
+          description: "Failover accepted and initiated"
           schema: {
             json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.FailOverResponse"}
           }
