@@ -128,7 +128,6 @@ export const ToolContent = ({ className, ...props }: ToolContentProps) => (
       "text-popover-foreground outline-none",
       className
     )}
-    layout={false}
     transition={{ duration: 0 }}
     {...props}
   />

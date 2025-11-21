@@ -114,7 +114,7 @@ export const TaskStatusUpdateBlock = ({
             </div>
           </ArtifactHeader>
         </CollapsibleTrigger>
-        <CollapsibleContent layout={false} transition={{ duration: 0 }}>
+        <CollapsibleContent>
           <ArtifactContent>
             <Response>{text}</Response>
           </ArtifactContent>
