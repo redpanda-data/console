@@ -21,7 +21,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ShadowLinkService_FailOver_FullMethodName = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/FailOver"
+	ShadowLinkService_FailOver_FullMethodName             = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/FailOver"
+	ShadowLinkService_ListShadowLinkTopics_FullMethodName = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/ListShadowLinkTopics"
+	ShadowLinkService_GetShadowTopic_FullMethodName       = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/GetShadowTopic"
+	ShadowLinkService_GetShadowMetrics_FullMethodName     = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/GetShadowMetrics"
 )
 
 // ShadowLinkServiceClient is the client API for ShadowLinkService service.
@@ -29,6 +32,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ShadowLinkServiceClient interface {
 	FailOver(ctx context.Context, in *v2.FailOverRequest, opts ...grpc.CallOption) (*FailOverResponse, error)
+	ListShadowLinkTopics(ctx context.Context, in *ListShadowLinkTopicsRequest, opts ...grpc.CallOption) (*ListShadowLinkTopicsResponse, error)
+	GetShadowTopic(ctx context.Context, in *GetShadowTopicRequest, opts ...grpc.CallOption) (*GetShadowTopicResponse, error)
+	GetShadowMetrics(ctx context.Context, in *GetShadowMetricsRequest, opts ...grpc.CallOption) (*GetShadowMetricsResponse, error)
 }
 
 type shadowLinkServiceClient struct {
@@ -49,11 +55,44 @@ func (c *shadowLinkServiceClient) FailOver(ctx context.Context, in *v2.FailOverR
 	return out, nil
 }
 
+func (c *shadowLinkServiceClient) ListShadowLinkTopics(ctx context.Context, in *ListShadowLinkTopicsRequest, opts ...grpc.CallOption) (*ListShadowLinkTopicsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListShadowLinkTopicsResponse)
+	err := c.cc.Invoke(ctx, ShadowLinkService_ListShadowLinkTopics_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *shadowLinkServiceClient) GetShadowTopic(ctx context.Context, in *GetShadowTopicRequest, opts ...grpc.CallOption) (*GetShadowTopicResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetShadowTopicResponse)
+	err := c.cc.Invoke(ctx, ShadowLinkService_GetShadowTopic_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *shadowLinkServiceClient) GetShadowMetrics(ctx context.Context, in *GetShadowMetricsRequest, opts ...grpc.CallOption) (*GetShadowMetricsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetShadowMetricsResponse)
+	err := c.cc.Invoke(ctx, ShadowLinkService_GetShadowMetrics_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ShadowLinkServiceServer is the server API for ShadowLinkService service.
 // All implementations must embed UnimplementedShadowLinkServiceServer
 // for forward compatibility.
 type ShadowLinkServiceServer interface {
 	FailOver(context.Context, *v2.FailOverRequest) (*FailOverResponse, error)
+	ListShadowLinkTopics(context.Context, *ListShadowLinkTopicsRequest) (*ListShadowLinkTopicsResponse, error)
+	GetShadowTopic(context.Context, *GetShadowTopicRequest) (*GetShadowTopicResponse, error)
+	GetShadowMetrics(context.Context, *GetShadowMetricsRequest) (*GetShadowMetricsResponse, error)
 	mustEmbedUnimplementedShadowLinkServiceServer()
 }
 
@@ -66,6 +105,15 @@ type UnimplementedShadowLinkServiceServer struct{}
 
 func (UnimplementedShadowLinkServiceServer) FailOver(context.Context, *v2.FailOverRequest) (*FailOverResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FailOver not implemented")
+}
+func (UnimplementedShadowLinkServiceServer) ListShadowLinkTopics(context.Context, *ListShadowLinkTopicsRequest) (*ListShadowLinkTopicsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListShadowLinkTopics not implemented")
+}
+func (UnimplementedShadowLinkServiceServer) GetShadowTopic(context.Context, *GetShadowTopicRequest) (*GetShadowTopicResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetShadowTopic not implemented")
+}
+func (UnimplementedShadowLinkServiceServer) GetShadowMetrics(context.Context, *GetShadowMetricsRequest) (*GetShadowMetricsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetShadowMetrics not implemented")
 }
 func (UnimplementedShadowLinkServiceServer) mustEmbedUnimplementedShadowLinkServiceServer() {}
 func (UnimplementedShadowLinkServiceServer) testEmbeddedByValue()                           {}
@@ -106,6 +154,60 @@ func _ShadowLinkService_FailOver_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ShadowLinkService_ListShadowLinkTopics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListShadowLinkTopicsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShadowLinkServiceServer).ListShadowLinkTopics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ShadowLinkService_ListShadowLinkTopics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShadowLinkServiceServer).ListShadowLinkTopics(ctx, req.(*ListShadowLinkTopicsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ShadowLinkService_GetShadowTopic_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetShadowTopicRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShadowLinkServiceServer).GetShadowTopic(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ShadowLinkService_GetShadowTopic_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShadowLinkServiceServer).GetShadowTopic(ctx, req.(*GetShadowTopicRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ShadowLinkService_GetShadowMetrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetShadowMetricsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShadowLinkServiceServer).GetShadowMetrics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ShadowLinkService_GetShadowMetrics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShadowLinkServiceServer).GetShadowMetrics(ctx, req.(*GetShadowMetricsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ShadowLinkService_ServiceDesc is the grpc.ServiceDesc for ShadowLinkService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -116,6 +218,18 @@ var ShadowLinkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FailOver",
 			Handler:    _ShadowLinkService_FailOver_Handler,
+		},
+		{
+			MethodName: "ListShadowLinkTopics",
+			Handler:    _ShadowLinkService_ListShadowLinkTopics_Handler,
+		},
+		{
+			MethodName: "GetShadowTopic",
+			Handler:    _ShadowLinkService_GetShadowTopic_Handler,
+		},
+		{
+			MethodName: "GetShadowMetrics",
+			Handler:    _ShadowLinkService_GetShadowMetrics_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

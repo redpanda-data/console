@@ -350,6 +350,18 @@ components:
             $ref: '#/components/schemas/ConfigurationYAMLSchema'
           type: array
       type: object
+    GetShadowMetricsResponse:
+      properties:
+        error_topics:
+          format: uint64
+          type: string
+        failed_over_topics:
+          format: uint64
+          type: string
+        total_topics_replicated:
+          format: uint64
+          type: string
+      type: object
     KnowledgeBase:
       properties:
         description:
@@ -898,6 +910,23 @@ components:
         next_page_token:
           type: string
       type: object
+    ListShadowLinkTopicsRequest.Filter:
+      properties:
+        topic_name_contains:
+          description: Substring match on shadow topic name. Case-sensitive.
+          type: string
+      type: object
+    ListShadowLinkTopicsResponse:
+      properties:
+        next_page_token:
+          title: Token to retrieve the next page
+          type: string
+        shadow_topics:
+          items:
+            $ref: '#/components/schemas/v1alpha3.ShadowTopic'
+          title: Shadow topic status information
+          type: array
+      type: object
     MCPServer.State:
       description: |-
         State of the MCP server.
@@ -968,6 +997,28 @@ components:
           description: The Redpanda Connect MCP server configuration.
           type: object
       type: object
+    PartitionInfo:
+      properties:
+        high_watermark:
+          format: int64
+          type: string
+        lag:
+          format: int64
+          type: string
+        partition_id:
+          format: int32
+          type: integer
+        source_high_watermark:
+          format: int64
+          type: string
+        source_last_stable_offset:
+          format: int64
+          type: string
+        source_last_updated_timestamp:
+          format: date-time
+          type: string
+      title: Partition-level information
+      type: object
     Resources:
       properties:
         cpu_shares:
@@ -1003,6 +1054,25 @@ components:
       enum:
         - SASL_MECHANISM_SCRAM_SHA_256
         - SASL_MECHANISM_SCRAM_SHA_512
+      type: string
+    ShadowTopicState:
+      description: |-
+        - SHADOW_TOPIC_STATE_ACTIVE: Shadow topic is active
+         - SHADOW_TOPIC_STATE_FAULTED: Shadow topic has faulted
+         - SHADOW_TOPIC_STATE_PAUSED: Shadow topic has been paused
+         - SHADOW_TOPIC_STATE_FAILING_OVER: Shadow topic is in the process of failing over
+         - SHADOW_TOPIC_STATE_FAILED_OVER: Shadow topic has failed over successfully
+         - SHADOW_TOPIC_STATE_PROMOTING: Shadow topic is in the process of being promoted
+         - SHADOW_TOPIC_STATE_PROMOTED: Shadow topic is promoted successfully
+      enum:
+        - SHADOW_TOPIC_STATE_ACTIVE
+        - SHADOW_TOPIC_STATE_FAULTED
+        - SHADOW_TOPIC_STATE_PAUSED
+        - SHADOW_TOPIC_STATE_FAILING_OVER
+        - SHADOW_TOPIC_STATE_FAILED_OVER
+        - SHADOW_TOPIC_STATE_PROMOTING
+        - SHADOW_TOPIC_STATE_PROMOTED
+      title: State of a shadow topic
       type: string
     StartAIAgentResponse:
       properties:
@@ -1079,6 +1149,23 @@ components:
       type: object
     v1alpha3.FailOverResponse:
       type: object
+    v1alpha3.GetShadowTopicResponse:
+      properties:
+        partitions:
+          items:
+            $ref: '#/components/schemas/PartitionInfo'
+          type: array
+        state:
+          $ref: '#/components/schemas/ShadowTopicState'
+        topic_name:
+          type: string
+        total_lag:
+          format: int64
+          type: string
+        total_partitions:
+          format: int32
+          type: integer
+      type: object
     v1alpha3.MCPServer:
       description: Defines the MCP server resource.
       properties:
@@ -1117,6 +1204,19 @@ components:
         - id
         - display_name
         - tools
+      type: object
+    v1alpha3.ShadowTopic:
+      properties:
+        state:
+          $ref: '#/components/schemas/ShadowTopicState'
+        topic_name:
+          type: string
+        total_lag:
+          format: int64
+          type: string
+        total_partitions:
+          format: int32
+          type: integer
       type: object
   securitySchemes:
     auth0:
@@ -2058,6 +2158,107 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Fail Over Shadow Link
+      tags:
+        - Shadow Links (Dataplane)
+  /v1alpha3/shadowlink/{name}/metrics:
+    get:
+      description: Retrieve metrics for a specific shadow link, including total topics replicated, failed over topics, and error topics.
+      operationId: ShadowLinkService_GetShadowMetrics
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetShadowMetricsResponse'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Shadow Link Metrics
+      tags:
+        - Shadow Links (Dataplane)
+  /v1alpha3/shadowlink/{shadow_link_name}/topic:
+    get:
+      description: 'List shadow topic status information for a specific shadow link. Optional: filter based on topic name.'
+      operationId: ShadowLinkService_ListShadowLinkTopics
+      parameters:
+        - in: path
+          name: shadow_link_name
+          required: true
+          schema:
+            type: string
+        - description: Substring match on shadow topic name. Case-sensitive.
+          in: query
+          name: filter.topic_name_contains
+          schema:
+            type: string
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListShadowLinkTopicsResponse'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Shadow Link Topics
+      tags:
+        - Shadow Links (Dataplane)
+  /v1alpha3/shadowlink/{shadow_link_name}/topic/{topic_name}:
+    get:
+      description: Retrieve details of a specific shadow topic within a shadow link.
+      operationId: ShadowLinkService_GetShadowTopic
+      parameters:
+        - in: path
+          name: shadow_link_name
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: topic_name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alpha3.GetShadowTopicResponse'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Shadow Topic
       tags:
         - Shadow Links (Dataplane)
 security:
