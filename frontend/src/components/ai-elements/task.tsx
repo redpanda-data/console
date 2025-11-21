@@ -80,6 +80,7 @@ export const TaskContent = ({
       "text-popover-foreground outline-none",
       className
     )}
+    layout={false}
     transition={{ duration: 0 }}
     {...props}
   >
