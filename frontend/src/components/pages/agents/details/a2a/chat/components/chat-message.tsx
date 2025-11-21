@@ -27,7 +27,7 @@ type ChatMessageProps = {
 /**
  * Individual chat message component with Jupyter-style interleaved rendering
  */
-export const ChatMessage = ({ message, isLoading }: ChatMessageProps) => {
+export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps) => {
   const isTaskMessage = message.taskId && message.role === 'assistant';
 
   // User message rendering

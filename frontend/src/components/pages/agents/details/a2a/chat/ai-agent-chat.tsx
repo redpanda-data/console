@@ -11,12 +11,11 @@
 
 'use client';
 
-import { Conversation, ConversationContent, ConversationEmptyState } from 'components/ai-elements/conversation';
+import { ConversationEmptyState } from 'components/ai-elements/conversation';
 import { Loader } from 'components/ai-elements/loader';
 import { motion } from 'framer-motion';
 import { useChatScroll } from 'hooks/use-chat-scroll';
-import { useMemo, useRef } from 'react';
-import { getAgentCardUrl } from 'utils/ai-agent.utils';
+import { useRef } from 'react';
 
 import { ChatInput } from './components/chat-input';
 import { ChatMessage } from './components/chat-message';
@@ -32,26 +31,26 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
 
   // Manage chat actions (submit, clear, cancel)
   // Pass agent.url directly so the A2A client can try multiple agent card URLs
-  const { isLoading, editingMessageId, handleSubmit, cancelEdit, clearChat, handleCancelTask, setInput, input } = useChatActions({
-    agentId: agent.id,
-    agentCardUrl: agent.url,
-    model: agent.model,
-    contextId,
-    messages,
-    setMessages,
-    setContextSeed,
-  });
+  const { isLoading, editingMessageId, handleSubmit, cancelEdit, clearChat, handleCancelTask, setInput, input } =
+    useChatActions({
+      agentId: agent.id,
+      agentCardUrl: agent.url,
+      model: agent.model,
+      contextId,
+      messages,
+      setMessages,
+      setContextSeed,
+    });
 
   // Manage scroll behavior
   const { endRef, autoScrollPaused, setAutoScrollPaused, onViewportEnter, onViewportLeave } = useChatScroll({
     agentId: agent.id,
     isLoading,
-    isStreaming: isLoading, // Use isLoading as streaming indicator
     messages,
   });
 
   return (
-    <div className="flex flex-col h-[calc(100vh-255px)]">
+    <div className="flex h-[calc(100vh-255px)] flex-col">
       {/* Context ID header */}
       {contextId && (
         <div className="shrink-0 border-b bg-muted/30 px-4 py-2">
@@ -97,7 +96,7 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
       </div>
 
       {/* Input at bottom - flex child */}
-      <div className="shrink-0 sticky bottom-0">
+      <div className="sticky bottom-0 shrink-0">
         <ChatInput
           autoScrollEnabled={!autoScrollPaused}
           editingMessageId={editingMessageId}
@@ -107,7 +106,7 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
           model={agent.model}
           onAutoScrollChange={(enabled) => setAutoScrollPaused(!enabled)}
           onCancel={() => {
-            const lastMessage = messages[messages.length - 1];
+            const lastMessage = messages.at(-1);
             if (lastMessage?.taskId) {
               void handleCancelTask(lastMessage.taskId);
             }
