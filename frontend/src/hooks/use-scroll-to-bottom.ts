@@ -64,11 +64,15 @@ export function useScrollToBottom() {
 
   const onViewportEnter = useCallback(() => {
     setIsAtBottom(true);
-  }, [setIsAtBottom]);
+    // Re-enable autoscroll when user manually scrolls back to bottom
+    setAutoScrollPaused(false);
+  }, [setIsAtBottom, setAutoScrollPaused]);
 
   const onViewportLeave = useCallback(() => {
     setIsAtBottom(false);
-  }, [setIsAtBottom]);
+    // Disable autoscroll when user scrolls away from bottom
+    setAutoScrollPaused(true);
+  }, [setIsAtBottom, setAutoScrollPaused]);
 
   return {
     endRef,
