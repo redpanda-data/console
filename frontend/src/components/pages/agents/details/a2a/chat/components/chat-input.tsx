@@ -30,7 +30,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/
 import { Text } from 'components/redpanda-ui/components/typography';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useScrollToBottom } from 'hooks/use-scroll-to-bottom';
-import { ArrowDownIcon, ArrowDownToLineIcon, HistoryIcon } from 'lucide-react';
+import { ArrowDownIcon, HistoryIcon, PinIcon } from 'lucide-react';
 import { useEffect } from 'react';
 
 import { AIAgentModel } from '../../../../ai-agent-model';
@@ -157,7 +157,7 @@ export const ChatInput = ({
                   type="button"
                   variant={autoScrollEnabled ? 'default' : 'ghost'}
                 >
-                  <ArrowDownToLineIcon className="size-4" />
+                  <PinIcon className="size-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
