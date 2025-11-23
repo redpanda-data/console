@@ -13,6 +13,7 @@ import { Code, Maximize2, PencilRuler } from 'lucide-react';
 import type { editor } from 'monaco-editor';
 
 import { YamlEditor } from './yaml-editor';
+import { EditorProps } from '@monaco-editor/react';
 
 type YamlEditorCardProps = {
   value: string;
@@ -24,7 +25,7 @@ type YamlEditorCardProps = {
   onExpand?: () => void;
   isLinting?: boolean;
   options?: editor.IStandaloneEditorConstructionOptions;
-};
+} & Omit<EditorProps, 'onChange'>;
 
 export const YamlEditorCard: React.FC<YamlEditorCardProps> = ({
   value,
@@ -36,6 +37,7 @@ export const YamlEditorCard: React.FC<YamlEditorCardProps> = ({
   onExpand,
   isLinting = false,
   options,
+  ...rest
 }) => {
   // When height is 100%, use flex layout to properly fill the container
   const isFlexHeight = height === '100%';
@@ -82,7 +84,7 @@ export const YamlEditorCard: React.FC<YamlEditorCardProps> = ({
           }
           style={isFlexHeight ? undefined : { height }}
         >
-          <YamlEditor onChange={(val) => onChange(val || '')} options={options} value={value} />
+          <YamlEditor {...rest} onChange={(val) => onChange(val || '')} options={options} value={value} />
         </div>
       </div>
     </div>

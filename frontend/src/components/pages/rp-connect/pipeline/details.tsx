@@ -9,7 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from 'components/redpanda-ui/components/accordion';
+import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import {
   FormControl,
   FormDescription,
@@ -19,9 +25,10 @@ import {
   FormMessage,
 } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
-import { ChevronDown } from 'lucide-react';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { useFormContext } from 'react-hook-form';
 
 import { MAX_TASKS, MIN_TASKS } from '../tasks';
@@ -31,74 +38,102 @@ interface DetailsProps {
 }
 
 export function Details({ readonly = false }: DetailsProps) {
-  const { control } = useFormContext();
+  const { control, watch } = useFormContext();
+  const name = watch('name');
+  const description = watch('description');
+  const computeUnits = watch('computeUnits');
+
+  if (readonly) {
+    return (
+      <Card size="full">
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <Label>Pipeline Name</Label>
+            <Text>{name}</Text>
+          </div>
+
+          <Accordion collapsible type="single">
+            <AccordionItem value="advanced" variant="outlined">
+              <AccordionTrigger>Advanced Settings</AccordionTrigger>
+              <AccordionContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Text>{description || '-'}</Text>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Compute Units: {computeUnits}</Label>
+                  <Text variant="muted">One compute unit = 0.1 CPU and 400 MB memory</Text>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <FormField
-        control={control}
-        name="name"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel required>Pipeline Name</FormLabel>
-            <FormControl>
-              <Input {...field} disabled={readonly} placeholder="Enter pipeline name" />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <Collapsible>
-        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border bg-muted/50 px-4 py-2 font-medium text-sm hover:bg-muted">
-          <span>Advanced Settings</span>
-          <ChevronDown className="h-4 w-4 transition-transform duration-200 [&[data-state=open]]:rotate-180" />
-        </CollapsibleTrigger>
-        <CollapsibleContent className="mt-4 space-y-4">
-          <FormField
-            control={control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    disabled={readonly}
-                    placeholder="Optional description for this pipeline"
-                    rows={3}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {!readonly && (
-            <FormField
-              control={control}
-              name="computeUnits"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Compute Units: {field.value}</FormLabel>
-                  <FormControl>
-                    <Slider
-                      disabled={readonly}
-                      max={MAX_TASKS}
-                      min={MIN_TASKS}
-                      onValueChange={(values) => field.onChange(values[0])}
-                      step={1}
-                      value={[field.value]}
-                    />
-                  </FormControl>
-                  <FormDescription>One compute unit = 0.1 CPU and 400 MB memory</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+    <Card size="full">
+      <CardContent>
+        <FormField
+          control={control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel required>Pipeline Name</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Enter pipeline name" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </CollapsibleContent>
-      </Collapsible>
-    </div>
+        />
+
+        <Accordion collapsible type="single">
+          <AccordionItem value="advanced" variant="outlined">
+            <AccordionTrigger>Advanced Settings</AccordionTrigger>
+            <AccordionContent className="space-y-4">
+              <FormField
+                control={control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} placeholder="Optional description for this pipeline" rows={3} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={control}
+                name="computeUnits"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Compute Units: {field.value}</FormLabel>
+                    <FormControl>
+                      <Slider
+                        max={MAX_TASKS}
+                        min={MIN_TASKS}
+                        onValueChange={(values) => field.onChange(values[0])}
+                        step={1}
+                        value={[field.value]}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-muted-foreground text-sm">
+                      One compute unit = 0.1 CPU and 400 MB memory
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </CardContent>
+    </Card>
   );
 }

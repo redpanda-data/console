@@ -182,11 +182,6 @@ export const AddContextualVariablesCard = ({
               </div>
             </Collapsible>
           )}
-
-          <Text className="text-muted-foreground text-sm">
-            Click a variable to insert it at your cursor position. These variables are automatically resolved at
-            runtime.
-          </Text>
         </div>
       </CardContent>
     </Card>

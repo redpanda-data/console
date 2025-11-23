@@ -22,7 +22,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { AddTopicStep } from './add-topic-step';
 import { AddUserStep } from './add-user-step';
 import { ConnectTiles } from './connect-tiles';
-import RpConnectPipelinesCreate from '../pipelines-create';
+import PipelinePage from '../pipeline';
 import {
   REDPANDA_TOPIC_AND_USER_COMPONENTS,
   stepMotionProps,
@@ -394,7 +394,7 @@ export const ConnectOnboardingWizard = ({
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <RpConnectPipelinesCreate matchedPath="/rp-connect/wizard" />
+                        <PipelinePage />
                       </CardContent>
                     </Card>
                   ),

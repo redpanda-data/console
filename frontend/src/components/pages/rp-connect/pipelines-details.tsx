@@ -19,6 +19,7 @@ import { Link } from 'react-router-dom';
 import { onboardingWizardStore } from 'state/onboarding-wizard-store';
 
 import { openDeleteModal } from './modals';
+import PipelinePage from './pipeline';
 import { PipelineStatus } from './pipelines-list';
 import { cpuToTasks } from './tasks';
 import usePaginationParams from '../../../hooks/use-pagination-params';
@@ -77,6 +78,9 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
   }
 
   render() {
+    if (isFeatureFlagEnabled('enableRpcnTiles')) {
+      return <PipelinePage />;
+    }
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }

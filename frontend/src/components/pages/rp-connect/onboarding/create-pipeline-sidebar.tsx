@@ -1,4 +1,5 @@
 import { useDisclosure } from '@redpanda-data/ui';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import type { editor } from 'monaco-editor';
 import { memo, useCallback, useMemo, useState } from 'react';
@@ -12,6 +13,8 @@ import { AddSecretsCard } from './add-secrets-card';
 import { AddSecretsDialog } from './add-secrets-dialog';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import { getConnectTemplate } from '../utils/yaml';
+
+const sidebarClassNames = 'w-[260px]';
 
 type CreatePipelineSidebarProps = {
   editorInstance: editor.IStandaloneCodeEditor | null;
@@ -83,7 +86,7 @@ export const CreatePipelineSidebar = memo(
     }, [refetchSecrets]);
 
     if (editorInstance === null) {
-      return <div className="min-w-[300px]" />;
+      return <div className={sidebarClassNames} />;
     }
 
     const handleConnectorTypeChange = (connectorType: ConnectComponentType) => {
@@ -92,7 +95,7 @@ export const CreatePipelineSidebar = memo(
     };
 
     return (
-      <div className="flex flex-col gap-4">
+      <div className={cn(sidebarClassNames, 'flex flex-col gap-4')}>
         <AddConnectorsCard
           editorContent={editorContent}
           hasInput={hasInput}

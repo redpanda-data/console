@@ -17,6 +17,7 @@ import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
+import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -26,6 +27,7 @@ import React, { type Dispatch, type SetStateAction, useEffect, useState } from '
 import { Link } from 'react-router-dom';
 
 import { formatPipelineError } from './errors';
+import PipelinePage from './pipeline';
 import { SecretsQuickAdd } from './secrets/secrets-quick-add';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { getContextualVariableSyntax, REDPANDA_CONTEXTUAL_VARIABLES } from './types/constants';
@@ -73,6 +75,9 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   }
 
   render() {
+    if (isFeatureFlagEnabled('enableRpcnTiles')) {
+      return <PipelinePage />;
+    }
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }
