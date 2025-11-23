@@ -2,27 +2,48 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
+import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { Check, ChevronDown, PlusIcon } from 'lucide-react';
 import type { editor } from 'monaco-editor';
 import { useCallback, useMemo, useState } from 'react';
+import { useListSecretsQuery } from 'react-query/api/secret';
+
+import { AddSecretsDialog } from './add-secrets-dialog';
 
 export const AddSecretsCard = ({
-  detectedSecrets,
-  missingSecrets,
-  existingSecrets,
+  editorContent,
   editorInstance,
-  onOpenDialog,
 }: {
-  detectedSecrets: string[];
-  missingSecrets: string[];
-  existingSecrets: string[];
+  editorContent: string;
   editorInstance: editor.IStandaloneCodeEditor | null;
-  onOpenDialog: () => void;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSecretsDialogOpen, setIsSecretsDialogOpen] = useState(false);
+
+  // Fetch secrets
+  const { data: secretsResponse, refetch: refetchSecrets } = useListSecretsQuery({});
+  const existingSecrets = useMemo(
+    () => (secretsResponse?.secrets ? secretsResponse.secrets.map((s) => s?.id || '') : []),
+    [secretsResponse]
+  );
+
+  // Detect secrets in editor content
+  const detectedSecrets = useMemo(() => {
+    if (!editorContent) {
+      return [];
+    }
+    const references = extractSecretReferences(editorContent);
+    return getUniqueSecretNames(references);
+  }, [editorContent]);
+
   const detectedSecretsSet = useMemo(() => new Set(detectedSecrets), [detectedSecrets]);
+  const existingSecretsSet = useMemo(() => new Set(existingSecrets), [existingSecrets]);
+  const missingSecrets = useMemo(
+    () => detectedSecrets.filter((secret) => !existingSecretsSet.has(secret)),
+    [detectedSecrets, existingSecretsSet]
+  );
 
   const categorizedSecrets = useMemo(() => {
     const used: string[] = [];
@@ -85,6 +106,40 @@ export const AddSecretsCard = ({
     },
     [editorInstance]
   );
+
+  const handleSecretsCreated = useCallback(() => {
+    refetchSecrets();
+    setIsSecretsDialogOpen(false);
+  }, [refetchSecrets]);
+
+  const handleOpenDialog = useCallback(() => {
+    setIsSecretsDialogOpen(true);
+  }, []);
+
+  const handleUpdateEditorContent = useCallback(
+    (oldName: string, newName: string) => {
+      if (!editorInstance) {
+        return;
+      }
+
+      const model = editorInstance.getModel();
+      if (!model) {
+        return;
+      }
+
+      // Find and replace all occurrences of ${secrets.oldName} with ${secrets.newName}
+      const oldPattern = `\${secrets.${oldName}}`;
+      const newPattern = `\${secrets.${newName}}`;
+      const content = model.getValue();
+      const updatedContent = content.replaceAll(oldPattern, newPattern);
+
+      if (content !== updatedContent) {
+        model.setValue(updatedContent);
+      }
+    },
+    [editorInstance]
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -147,27 +202,38 @@ export const AddSecretsCard = ({
           )}
           {missingSecrets.length > 0 && (
             <div className="flex flex-col gap-2">
-              <Text variant="label">Missing secrets:</Text>
+              <Text className="text-destructive" variant="label">
+                Missing secrets:
+              </Text>
               <div className="flex flex-wrap gap-2">
                 {missingSecrets.map((secret) => (
                   <Badge
-                    className="cursor-pointer font-mono hover:opacity-80"
+                    className="cursor-pointer text-sm hover:opacity-80"
                     key={secret}
-                    onClick={onOpenDialog}
+                    onClick={handleOpenDialog}
                     variant="red"
                   >
-                    Create $secrets.{secret}
+                    Create <InlineCode className="bg-transparent">$secrets.{secret}</InlineCode>
+                    <PlusIcon className="size-4" />
                   </Badge>
                 ))}
               </div>
             </div>
           )}
-          <Button onClick={onOpenDialog} size={existingSecrets.length > 0 ? 'sm' : 'default'} variant="outline">
+          <Button onClick={handleOpenDialog} size={existingSecrets.length > 0 ? 'sm' : 'default'} variant="outline">
             {existingSecrets.length > 0 ? 'Add more secrets' : 'Add secret'}
             <PlusIcon className="h-4 w-4" />
           </Button>
         </div>
       </CardContent>
+      <AddSecretsDialog
+        existingSecrets={existingSecrets}
+        isOpen={isSecretsDialogOpen}
+        missingSecrets={missingSecrets}
+        onClose={() => setIsSecretsDialogOpen(false)}
+        onSecretsCreated={handleSecretsCreated}
+        onUpdateEditorContent={handleUpdateEditorContent}
+      />
     </Card>
   );
 };

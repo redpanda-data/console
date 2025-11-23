@@ -12,11 +12,16 @@
 import Editor, { type EditorProps, type Monaco } from '@monaco-editor/react';
 import 'monaco-editor';
 import type { editor } from 'monaco-editor';
+import type { JSONSchema } from 'monaco-yaml';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export type YamlEditorProps = EditorProps & {
   'data-testid'?: string;
+  schema?: {
+    definitions?: Record<string, JSONSchema>;
+    properties?: Record<string, JSONSchema>;
+  };
 };
 
 const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
@@ -52,7 +57,7 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   },
 } as const;
 
-const monacoYamlOptions: MonacoYamlOptions = {
+const defaultFallbackSchema: MonacoYamlOptions = {
   enableSchemaRequest: false,
   format: true,
   completion: true,
@@ -66,12 +71,36 @@ const monacoYamlOptions: MonacoYamlOptions = {
       uri: 'http://example.com/yaml-schema.json',
     },
   ],
-} as MonacoYamlOptions;
+};
 
 export const YamlEditor = (props: YamlEditorProps) => {
-  const { options: givenOptions, ...rest } = props;
+  const { options: givenOptions, schema, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
   const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
+
+  // Build Monaco YAML options with schema from props or fallback
+  const monacoYamlOptions = useMemo<MonacoYamlOptions>(() => {
+    if (schema?.definitions || schema?.properties) {
+      return {
+        enableSchemaRequest: false,
+        format: true,
+        completion: true,
+        validate: true,
+        schemas: [
+          {
+            fileMatch: ['**/*.yaml', '**/*.yml'],
+            schema: {
+              type: 'object',
+              ...(schema.definitions && { definitions: schema.definitions }),
+              ...(schema.properties && { properties: schema.properties }),
+            },
+            uri: 'https://redpanda-connect-schema.json',
+          },
+        ],
+      };
+    }
+    return defaultFallbackSchema;
+  }, [schema]);
 
   useEffect(
     () => () => {
@@ -82,10 +111,14 @@ export const YamlEditor = (props: YamlEditorProps) => {
     [yaml]
   );
 
-  const setMonacoOptions = useCallback((monaco: Monaco) => {
-    const yamlConfig = configureMonacoYaml(monaco, monacoYamlOptions);
-    setYaml(yamlConfig);
-  }, []);
+
+  const setMonacoOptions = useCallback(
+    (monaco: Monaco) => {
+      const yamlConfig = configureMonacoYaml(monaco, monacoYamlOptions);
+      setYaml(yamlConfig);
+    },
+    [monacoYamlOptions]
+  );
 
   return (
     <Editor
@@ -94,7 +127,6 @@ export const YamlEditor = (props: YamlEditorProps) => {
       loading={<LoadingPlaceholder />}
       options={options}
       wrapperProps={{
-        className: 'kowlEditor',
         style: {
           minWidth: 0,
           width: '100%',

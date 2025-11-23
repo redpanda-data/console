@@ -154,6 +154,7 @@ export type ConnectTilesProps = {
   additionalComponents?: ExtendedConnectComponentSpec[];
   componentTypeFilter?: ConnectComponentType[];
   onChange?: (connectionName: string, connectionType: ConnectComponentType) => void;
+  onValidityChange?: (isValid: boolean) => void;
   hideHeader?: boolean;
   hideFilters?: boolean;
   defaultConnectionName?: string;
@@ -174,6 +175,7 @@ export const ConnectTiles = memo(
         additionalComponents,
         componentTypeFilter,
         onChange,
+        onValidityChange,
         hideHeader,
         hideFilters,
         defaultConnectionName,
@@ -218,7 +220,7 @@ export const ConnectTiles = memo(
 
       const form = useForm<ConnectTilesListFormData>({
         resolver: zodResolver(connectTilesListFormSchema),
-        mode: 'onSubmit',
+        mode: 'onChange',
         defaultValues,
       });
 
@@ -256,6 +258,11 @@ export const ConnectTiles = memo(
           checkScrollable();
         });
       }, [checkScrollable]);
+
+      // Notify parent when validity changes
+      useEffect(() => {
+        onValidityChange?.(form.formState.isValid);
+      }, [form.formState.isValid, onValidityChange]);
 
       useImperativeHandle(ref, () => ({
         triggerSubmit: async () => {
@@ -359,9 +366,16 @@ export const ConnectTiles = memo(
                               component={component}
                               key={uniqueKey}
                               onChange={() => {
-                                field.onChange(component.name);
-                                form.setValue('connectionType', component.type as ConnectComponentType);
-                                onChange?.(component.name, component.type as ConnectComponentType);
+                                if (isChecked) {
+                                  // Unselect if already selected
+                                  field.onChange('');
+                                  form.setValue('connectionType', '' as ConnectComponentType);
+                                } else {
+                                  // Select the component
+                                  field.onChange(component.name);
+                                  form.setValue('connectionType', component.type as ConnectComponentType);
+                                  onChange?.(component.name, component.type as ConnectComponentType);
+                                }
                               }}
                               uniqueKey={uniqueKey}
                             />

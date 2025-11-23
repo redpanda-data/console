@@ -18,7 +18,9 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { useDebounce } from 'hooks/use-debounce';
+import { useDebouncedValue } from 'hooks/use-debounced-value';
 import type { editor } from 'monaco-editor';
+import type { JSONSchema } from 'monaco-yaml';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import {
   CreatePipelineRequestSchema,
@@ -26,14 +28,17 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
   CreatePipelineRequestSchema as CreatePipelineRequestSchemaDataPlane,
-  LintPipelineConfigRequestSchema,
   PipelineCreateSchema,
   PipelineUpdateSchema,
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useLintPipelineConfigMutation, useListComponentsQuery } from 'react-query/api/connect';
+import {
+  useGetPipelineServiceConfigSchemaQuery,
+  useLintPipelineConfigQuery,
+  useListComponentsQuery,
+} from 'react-query/api/connect';
 import { useCreatePipelineMutation, useGetPipelineQuery, useUpdatePipelineMutation } from 'react-query/api/pipeline';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useOnboardingWizardDataStore, useOnboardingYamlContentStore } from 'state/onboarding-wizard-store';
@@ -67,6 +72,7 @@ export default function PipelinePage() {
   const isServerlessMode = searchParams.get('serverless') === 'true';
   const hasInitializedServerless = useRef(false);
   const persistedYamlContent = useOnboardingYamlContentStore((state) => state.yamlContent);
+  const setPersistedYamlContent = useOnboardingYamlContentStore((state) => state.setYamlContent);
   const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
 
   // Form state with validation
@@ -99,43 +105,50 @@ export default function PipelinePage() {
     [componentListResponse]
   );
 
+  // Fetch JSON Schema from backend for YAML editor
+  const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
+  const yamlEditorSchema = useMemo(() => {
+    if (!schemaResponse?.configSchema) {
+      return undefined;
+    }
+
+    try {
+      const parsed = JSON.parse(schemaResponse.configSchema);
+      return {
+        definitions: parsed.definitions as Record<string, JSONSchema> | undefined,
+        properties: parsed.properties as Record<string, JSONSchema> | undefined,
+      };
+    } catch {
+      // Fallback to undefined if schema parsing fails - editor will use basic YAML schema
+      return undefined;
+    }
+  }, [schemaResponse]);
+
   // Mutations - only those used in this component
   const createMutation = useCreatePipelineMutation();
   const updateMutation = useUpdatePipelineMutation();
 
-  // Linting
-  const lintMutation = useLintPipelineConfigMutation();
-  const handleLint = async (yaml: string) => {
-    if (!yaml || mode === 'view') {
-      return;
-    }
+  // Linting - debounce the input to avoid excessive API calls
+  const debouncedYamlContent = useDebouncedValue(yamlContent, 500);
 
-    try {
-      const response = await lintMutation.mutateAsync(create(LintPipelineConfigRequestSchema, { configYaml: yaml }));
-      const hints: Record<string, LintHint> = {};
-      for (const [idx, hint] of Object.entries(response.lintHints)) {
-        hints[`hint_${idx}`] = hint;
-      }
-      setLintHints(hints);
-    } catch (err) {
-      setLintHints(extractLintHintsFromError(err));
-    }
-  };
+  const { data: lintResponse, isPending: isLinting } = useLintPipelineConfigQuery(debouncedYamlContent, {
+    enabled: mode !== 'view',
+  });
 
-  const debouncedLint = useDebounce(handleLint, 500);
-
-  // Zustand store syncing (CREATE mode only)
-  const debouncedSyncToStore = useDebounce(
-    useCallback(
-      (yaml: string) => {
-        if (mode === 'create') {
-          useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: yaml });
+  // Process lint results when they arrive
+  useEffect(() => {
+    if (lintResponse) {
+      try {
+        const hints: Record<string, LintHint> = {};
+        for (const [idx, hint] of Object.entries(lintResponse?.lintHints || [])) {
+          hints[`hint_${idx}`] = hint;
         }
-      },
-      [mode]
-    ),
-    500
-  );
+        setLintHints(hints);
+      } catch (err) {
+        setLintHints(extractLintHintsFromError(err));
+      }
+    }
+  }, [lintResponse]);
 
   // Initialize form data from pipeline (edit/view)
   useEffect(() => {
@@ -323,18 +336,13 @@ export default function PipelinePage() {
     setYamlContent(newYaml);
   }, []);
 
-  const handleYamlChange = useCallback(
-    (value: string | undefined) => {
-      if (value) {
-        setYamlContent(value);
-        if (mode === 'create') {
-          debouncedSyncToStore(value);
-        }
-        debouncedLint(value);
-      }
-    },
-    [debouncedLint, debouncedSyncToStore, mode]
-  );
+  const handleYamlChange = useDebounce((value: string) => {
+    setYamlContent(value);
+    // only when we're in create mode (which is always embedded within the wizard) we sync to the zustand store
+    if (mode === 'create') {
+      setPersistedYamlContent({ yamlContent: value });
+    }
+  }, 500);
 
   const isSaving = useMemo(
     () => createMutation.isPending || updateMutation.isPending,
@@ -369,6 +377,7 @@ export default function PipelinePage() {
           options={{
             readOnly: mode === 'view',
           }}
+          schema={yamlEditorSchema}
           value={yamlContent}
         />
 
@@ -377,7 +386,7 @@ export default function PipelinePage() {
           <div className="mt-4">
             <Alert variant="destructive">
               <AlertDescription>
-                <LintHintList className="w-full" lintHints={lintHints} />
+                <LintHintList className="w-full" isPending={isLinting} lintHints={lintHints} />
               </AlertDescription>
             </Alert>
           </div>

@@ -10,6 +10,7 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -35,6 +36,7 @@ export const Footer = memo(({ mode, onSave, onCancel, isSaving }: FooterProps) =
       </Button>
       <Button disabled={isSaving} onClick={onSave}>
         {mode === 'create' ? 'Create Pipeline' : 'Update Pipeline'}
+        {isSaving && <Spinner size="sm" />}
       </Button>
     </div>
   );
