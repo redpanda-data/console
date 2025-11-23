@@ -11,6 +11,7 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { Code, Maximize2, PencilRuler } from 'lucide-react';
 import type { editor } from 'monaco-editor';
+import type { JSONSchema } from 'monaco-yaml';
 
 import { YamlEditor } from './yaml-editor';
 import { EditorProps } from '@monaco-editor/react';
@@ -25,6 +26,10 @@ type YamlEditorCardProps = {
   onExpand?: () => void;
   isLinting?: boolean;
   options?: editor.IStandaloneEditorConstructionOptions;
+  schema?: {
+    definitions?: Record<string, JSONSchema>;
+    properties?: Record<string, JSONSchema>;
+  };
 } & Omit<EditorProps, 'onChange'>;
 
 export const YamlEditorCard: React.FC<YamlEditorCardProps> = ({
@@ -37,6 +42,7 @@ export const YamlEditorCard: React.FC<YamlEditorCardProps> = ({
   onExpand,
   isLinting = false,
   options,
+  schema,
   ...rest
 }) => {
   // When height is 100%, use flex layout to properly fill the container
@@ -84,7 +90,7 @@ export const YamlEditorCard: React.FC<YamlEditorCardProps> = ({
           }
           style={isFlexHeight ? undefined : { height }}
         >
-          <YamlEditor {...rest} onChange={(val) => onChange(val || '')} options={options} value={value} />
+          <YamlEditor {...rest} onChange={(val) => onChange(val || '')} options={options} schema={schema} value={value} />
         </div>
       </div>
     </div>

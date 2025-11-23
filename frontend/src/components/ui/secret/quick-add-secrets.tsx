@@ -35,7 +35,7 @@ import {
   type Scope,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import type React from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useCreateSecretMutation } from 'react-query/api/secret';
 import { toast } from 'sonner';
@@ -52,6 +52,7 @@ type QuickAddSecretsProps = {
   enableNewSecrets?: boolean;
   hideHeader?: boolean;
   onError?: (errors: string[]) => void;
+  onUpdateEditorContent?: (oldName: string, newName: string) => void;
 };
 
 const SecretFormSchema = z.record(
@@ -86,19 +87,50 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
   onSecretsCreated,
   enableNewSecrets = false,
   onError,
+  onUpdateEditorContent,
 }) => {
-  const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation();
+  const { mutateAsync: createSecret } = useCreateSecretMutation();
   const [createdSecrets, setCreatedSecrets] = useState<string[]>([]);
   const [newlyCreatedSecrets, setNewlyCreatedSecrets] = useState<string[]>([]);
 
-  const missingSecrets = requiredSecrets.filter(
-    (secret) => !(existingSecrets.includes(secret) || createdSecrets.includes(secret))
-  );
+  /**
+   * Normalizes secret name to uppercase and validates characters
+   * Secrets are always stored in uppercase
+   */
+  const normalizeSecretName = (name: string): string => {
+    // Convert to uppercase and replace invalid characters with underscores
+    return name.toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+  };
+  
+  // Create sets of uppercase normalized names for efficient lookup
+  const existingSecretsSet = new Set(existingSecrets.map(normalizeSecretName));
+  const createdSecretsSet = new Set(createdSecrets.map(normalizeSecretName));
+  
+  // Normalize and deduplicate missing secrets to uppercase
+  const missingSecretsMap = useMemo(() => {
+    const map = new Map<string, string>(); // normalized -> original
+    for (const secret of requiredSecrets) {
+      const normalized = normalizeSecretName(secret);
+      if (!existingSecretsSet.has(normalized) && !createdSecretsSet.has(normalized)) {
+        map.set(normalized, secret);
+      }
+    }
+    return map;
+  }, [requiredSecrets, existingSecretsSet, createdSecretsSet]);
+  
+  const missingSecrets = Array.from(missingSecretsMap.keys());
+
+  // Memoize form key to force remount when missing secrets change
+  // This ensures form state resets when secrets are created (via query cache invalidation)
+  const formKey = useMemo(() => missingSecrets.sort().join(','), [missingSecrets]);
 
   const form = useForm<SecretFormData>({
     resolver: zodResolver(SecretFormSchema),
     defaultValues: Object.fromEntries(
-      missingSecrets.map((secretName) => [secretName, { value: defaultValues[secretName] || '' }])
+      missingSecrets.map((normalizedName) => {
+        const originalName = missingSecretsMap.get(normalizedName) || normalizedName;
+        return [normalizedName, { value: defaultValues[originalName] || defaultValues[normalizedName] || '' }];
+      })
     ),
   });
 
@@ -111,14 +143,23 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
   });
 
   const handleCreateSecrets = async (data: SecretFormData) => {
-    const secretEntries = Object.entries(data);
+    // Filter out secrets that have already been created
+    const secretEntries = Object.entries(data).filter(([normalizedSecretName]) => {
+      return !(existingSecretsSet.has(normalizedSecretName) || createdSecretsSet.has(normalizedSecretName));
+    });
+
+    if (secretEntries.length === 0) {
+      toast.info('All secrets have already been created');
+      return;
+    }
+
     const errors: Array<{ secretName: string; error: ConnectError }> = [];
     const successfulSecrets: string[] = [];
 
     await Promise.allSettled(
-      secretEntries.map(([secretName, { value }]) => {
+      secretEntries.map(([normalizedSecretName, { value }]) => {
         const dataPlaneRequest = create(CreateSecretRequestSchemaDataPlane, {
-          id: secretName,
+          id: normalizedSecretName,
           secretData: base64ToUInt8Array(encodeBase64(value)),
           scopes,
           labels: {},
@@ -130,10 +171,16 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
           }),
           {
             onSuccess: () => {
-              successfulSecrets.push(secretName);
+              successfulSecrets.push(normalizedSecretName);
+              
+              // Update editor content if the original name had incorrect casing
+              const originalName = missingSecretsMap.get(normalizedSecretName);
+              if (originalName && originalName !== normalizedSecretName && onUpdateEditorContent) {
+                onUpdateEditorContent(originalName, normalizedSecretName);
+              }
             },
             onError: (error) => {
-              errors.push({ secretName, error });
+              errors.push({ secretName: normalizedSecretName, error });
             },
           }
         );
@@ -166,9 +213,23 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
   };
 
   const handleCreateNewSecret = async (data: NewSecretFormData) => {
+    // Normalize the secret name to uppercase
+    const normalizedName = normalizeSecretName(data.name);
+    
+    // Check if this secret already exists
+    if (existingSecretsSet.has(normalizedName) || createdSecretsSet.has(normalizedName)) {
+      const errorMessage = `Secret "${normalizedName}" already exists`;
+      if (onError) {
+        onError([errorMessage]);
+      } else {
+        toast.error(errorMessage);
+      }
+      return;
+    }
+
     try {
       const dataPlaneRequest = create(CreateSecretRequestSchemaDataPlane, {
-        id: data.name,
+        id: normalizedName,
         secretData: base64ToUInt8Array(encodeBase64(data.value)),
         scopes,
         labels: {},
@@ -181,19 +242,19 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
       );
 
       // Update created secrets state
-      setCreatedSecrets((prev) => [...prev, data.name]);
-      setNewlyCreatedSecrets((prev) => [...prev, data.name]);
+      setCreatedSecrets((prev) => [...prev, normalizedName]);
+      setNewlyCreatedSecrets((prev) => [...prev, normalizedName]);
       // Call onSecretsCreated callback
-      onSecretsCreated?.([data.name]);
+      onSecretsCreated?.([normalizedName]);
       // Reset form
       newSecretForm.reset();
 
-      toast.success(`Secret "${data.name}" created successfully`);
+      toast.success(`Secret "${normalizedName}" created successfully`);
     } catch (error) {
       const errorMessage = formatToastErrorMessageGRPC({
         error: error as ConnectError,
         action: 'create',
-        entity: `secret ${data.name}`,
+        entity: `secret ${normalizedName}`,
       });
 
       if (onError) {
@@ -220,31 +281,31 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Alert className="border-amber-200 bg-amber-50">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-800">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
                 The tool requires secrets to function properly. Create them below before proceeding.
               </AlertDescription>
             </Alert>
 
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
-                <Form {...form}>
+                <Form key={formKey} {...form}>
                   <form className="space-y-3" onSubmit={form.handleSubmit(handleCreateSecrets)}>
-                    {missingSecrets.map((secretName) => (
+                    {missingSecrets.map((normalizedSecretName) => (
                       <FormField
                         control={form.control}
-                        key={secretName}
-                        name={`${secretName}.value` as keyof SecretFormData}
+                        key={normalizedSecretName}
+                        name={`${normalizedSecretName}.value` as keyof SecretFormData}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="font-medium font-mono text-sm">{secretName}</FormLabel>
+                            <FormLabel className="font-medium font-mono text-sm">{normalizedSecretName}</FormLabel>
                             <FormControl>
                               <Input
                                 name={field.name}
                                 onBlur={field.onBlur}
                                 onChange={field.onChange}
-                                placeholder={`Enter value for ${secretName}...`}
+                                placeholder={`Enter value for ${normalizedSecretName}...`}
                                 ref={field.ref}
                                 type="password"
                                 value={typeof field.value === 'string' ? field.value : field.value?.value || ''}
@@ -258,11 +319,11 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
 
                     <Button
                       className="w-full"
-                      disabled={isCreateSecretPending || !form.formState.isValid}
+                      disabled={form.formState.isSubmitting}
                       type="submit"
                       variant="secondary"
                     >
-                      {isCreateSecretPending ? (
+                      {form.formState.isSubmitting ? (
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           <Text as="span">Creating...</Text>
@@ -321,10 +382,12 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                           <Input
                             placeholder="e.g., API_KEY, DATABASE_PASSWORD"
                             {...field}
-                            onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                            onChange={(e) => field.onChange(normalizeSecretName(e.target.value))}
                           />
                         </FormControl>
-                        <FormDescription>Secrets are stored in uppercase</FormDescription>
+                        <FormDescription>
+                          Secrets are stored in uppercase. Invalid characters will be replaced with underscores.
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -346,11 +409,11 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
 
                   <Button
                     className="w-full"
-                    disabled={isCreateSecretPending || !newSecretForm.formState.isValid}
+                    disabled={newSecretForm.formState.isSubmitting}
                     type="submit"
                     variant="secondary"
                   >
-                    {isCreateSecretPending ? (
+                    {newSecretForm.formState.isSubmitting ? (
                       <div className="flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <Text as="span">Creating...</Text>

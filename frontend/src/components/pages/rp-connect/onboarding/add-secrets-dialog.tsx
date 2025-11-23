@@ -18,12 +18,14 @@ export const AddSecretsDialog = ({
   missingSecrets,
   existingSecrets,
   onSecretsCreated,
+  onUpdateEditorContent,
 }: {
   isOpen: boolean;
   onClose: () => void;
   missingSecrets: string[];
   existingSecrets: string[];
   onSecretsCreated: () => void;
+  onUpdateEditorContent?: (oldName: string, newName: string) => void;
 }) => {
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
@@ -61,6 +63,7 @@ export const AddSecretsDialog = ({
             existingSecrets={existingSecrets}
             onError={handleError}
             onSecretsCreated={handleSecretsCreated}
+            onUpdateEditorContent={onUpdateEditorContent}
             requiredSecrets={missingSecrets}
             scopes={[Scope.REDPANDA_CONNECT]}
           />
