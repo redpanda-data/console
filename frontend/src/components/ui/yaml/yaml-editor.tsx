@@ -32,7 +32,7 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   scrollBeyondLastLine: false,
   cursorBlinking: 'phase',
   lineNumbersMinChars: 3,
-  lineDecorationsWidth: 0,
+  lineDecorationsWidth: 8,
   overviewRulerBorder: false,
   scrollbar: {
     alwaysConsumeMouseWheel: false,

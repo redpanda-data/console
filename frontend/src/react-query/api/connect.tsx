@@ -23,6 +23,7 @@ export const useListComponentsQuery = (
     gcTime: 1000 * 60 * 60 * 24, // 24 hours
     refetchOnMount: false,
     refetchOnWindowFocus: false,
+    retry: 3,
     ...options,
   });
 };

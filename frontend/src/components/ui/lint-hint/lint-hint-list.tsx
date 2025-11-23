@@ -9,20 +9,22 @@
  */
 
 import { Text } from 'components/redpanda-ui/components/typography';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { PencilRuler } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 
 type LintHintListProps = {
   lintHints: Record<string, LintHint>;
+  className?: string;
 };
 
-export const LintHintList: React.FC<LintHintListProps> = ({ lintHints }) => {
+export const LintHintList: React.FC<LintHintListProps> = ({ className, lintHints }) => {
   if (!lintHints || Object.keys(lintHints).length === 0) {
     return null;
   }
 
   return (
-    <div className="space-y-3">
+    <div className={cn('space-y-3', className)}>
       <div className="flex items-center gap-2">
         <PencilRuler className="h-4 w-4" />
         <Text className="font-medium" variant="label">

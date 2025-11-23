@@ -4,12 +4,14 @@ import { ChevronDown } from 'lucide-react';
 import { AnimatePresence, type HTMLMotionProps, motion, type Transition } from 'motion/react';
 import { Accordion as AccordionPrimitive } from 'radix-ui';
 import React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '../lib/utils';
 
 type AccordionItemContextType = {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  variant: 'default' | 'contained' | 'outlined';
 };
 
 const AccordionItemContext = React.createContext<AccordionItemContextType | undefined>(undefined);
@@ -30,20 +32,34 @@ function Accordion({ testId, ...props }: AccordionProps) {
   return <AccordionPrimitive.Root data-slot="accordion" data-testid={testId} {...props} />;
 }
 
-type AccordionItemProps = React.ComponentProps<typeof AccordionPrimitive.Item> & {
-  children: React.ReactNode;
-  testId?: string;
-};
+const accordionItemVariants = cva('', {
+  variants: {
+    variant: {
+      default: 'border-b',
+      contained: '',
+      outlined: 'rounded-md border-1 bg-white dark:bg-base-900',
+    },
+  },
+  defaultVariants: {
+    variant: 'default',
+  },
+});
 
-function AccordionItem({ className, children, testId, ...props }: AccordionItemProps) {
+type AccordionItemProps = React.ComponentProps<typeof AccordionPrimitive.Item> &
+  VariantProps<typeof accordionItemVariants> & {
+    children: React.ReactNode;
+    testId?: string;
+  };
+
+function AccordionItem({ className, children, testId, variant = 'default', ...props }: AccordionItemProps) {
   const [isOpen, setIsOpen] = React.useState(false);
 
   return (
-    <AccordionItemContext.Provider value={{ isOpen, setIsOpen }}>
+    <AccordionItemContext.Provider value={{ isOpen, setIsOpen, variant: variant || 'default' }}>
       <AccordionPrimitive.Item
         data-slot="accordion-item"
         data-testid={testId}
-        className={cn('border-b', className)}
+        className={cn(accordionItemVariants({ variant }), className)}
         {...props}
       >
         {children}
@@ -51,6 +67,22 @@ function AccordionItem({ className, children, testId, ...props }: AccordionItemP
     </AccordionItemContext.Provider>
   );
 }
+
+const accordionTriggerVariants = cva(
+  'flex flex-1 text-start items-center justify-between font-medium transition-colors',
+  {
+    variants: {
+      variant: {
+        default: 'py-4 hover:underline',
+        contained: 'w-full rounded-md border bg-muted/50 px-4 py-2 text-sm hover:bg-muted',
+        outlined: 'w-full rounded-t-md px-3 py-2 text-sm hover:bg-muted/50',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  }
+);
 
 type AccordionTriggerProps = React.ComponentProps<typeof AccordionPrimitive.Trigger> & {
   transition?: Transition;
@@ -72,7 +104,7 @@ const AccordionTrigger = React.forwardRef<HTMLButtonElement, AccordionTriggerPro
   ) => {
     const triggerRef = React.useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => triggerRef.current || document.createElement('button'));
-    const { isOpen, setIsOpen } = useAccordionItem();
+    const { isOpen, setIsOpen, variant } = useAccordionItem();
 
     React.useEffect(() => {
       const node = triggerRef.current;
@@ -97,16 +129,15 @@ const AccordionTrigger = React.forwardRef<HTMLButtonElement, AccordionTriggerPro
       };
     }, [setIsOpen]);
 
+    const chevronSize = variant === 'contained' || variant === 'outlined' ? 'size-4' : 'size-5';
+
     return (
       <AccordionPrimitive.Header data-slot="accordion-header" className="flex">
         <AccordionPrimitive.Trigger
           ref={triggerRef}
           data-slot="accordion-trigger"
           data-testid={testId}
-          className={cn(
-            'flex flex-1 text-start items-center justify-between py-4 font-medium hover:underline',
-            className,
-          )}
+          className={cn(accordionTriggerVariants({ variant }), className)}
           {...props}
         >
           {children}
@@ -117,7 +148,7 @@ const AccordionTrigger = React.forwardRef<HTMLButtonElement, AccordionTriggerPro
               animate={{ rotate: isOpen ? 180 : 0 }}
               transition={transition}
             >
-              <ChevronDown className="size-5 shrink-0" />
+              <ChevronDown className={cn(chevronSize, 'shrink-0')} />
             </motion.div>
           )}
         </AccordionPrimitive.Trigger>
@@ -134,6 +165,19 @@ type AccordionContentProps = React.ComponentProps<typeof AccordionPrimitive.Cont
     testId?: string;
   };
 
+const accordionContentVariants = cva('pb-4 pt-0', {
+  variants: {
+    variant: {
+      default: 'text-sm',
+      contained: 'text-sm',
+      outlined: 'px-4 pb-4 pt-2 text-sm',
+    },
+  },
+  defaultVariants: {
+    variant: 'default',
+  },
+});
+
 function AccordionContent({
   className,
   children,
@@ -141,7 +185,7 @@ function AccordionContent({
   testId,
   ...props
 }: AccordionContentProps) {
-  const { isOpen } = useAccordionItem();
+  const { isOpen, variant } = useAccordionItem();
 
   return (
     <AnimatePresence>
@@ -162,7 +206,7 @@ function AccordionContent({
             className="overflow-hidden"
             {...props}
           >
-            <div className={cn('pb-4 pt-0 text-sm', className)}>{children}</div>
+            <div className={cn(accordionContentVariants({ variant }), className)}>{children}</div>
           </motion.div>
         </AccordionPrimitive.Content>
       )}

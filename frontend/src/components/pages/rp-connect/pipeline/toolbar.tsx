@@ -12,7 +12,17 @@
 import { create } from '@bufbuild/protobuf';
 import { useToast } from '@redpanda-data/ui';
 import { Button } from 'components/redpanda-ui/components/button';
-import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Group } from 'components/redpanda-ui/components/group';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Pause, Pencil, Play } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
   StartPipelineRequestSchema,
@@ -20,74 +30,72 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import type { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Pipeline_State as PipelineState } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { useCallback } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useDeletePipelineMutation, useStartPipelineMutation, useStopPipelineMutation } from 'react-query/api/pipeline';
 import { useNavigate } from 'react-router-dom';
 
 import { formatPipelineError } from '../errors';
 
 interface ToolbarProps {
-  mode: 'create' | 'edit' | 'view';
-  pipelineId?: string;
+  pipelineId: string;
   pipelineName?: string;
   pipelineState?: Pipeline_State;
-  onSave?: () => void;
-  onCancel?: () => void;
-  isSaving?: boolean;
 }
 
-export function Toolbar({ mode, pipelineId, pipelineName, pipelineState, onSave, onCancel, isSaving }: ToolbarProps) {
+export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: ToolbarProps) => {
   const navigate = useNavigate();
   const toast = useToast();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  // Call mutations locally instead of receiving via props
   const deleteMutation = useDeletePipelineMutation();
   const startMutation = useStartPipelineMutation();
   const stopMutation = useStopPipelineMutation();
 
-  const isRunning = pipelineState === PipelineState.RUNNING;
-  const isTransitioning = pipelineState === PipelineState.STARTING || pipelineState === PipelineState.STOPPING;
-  const isActionLoading = startMutation.isPending || stopMutation.isPending || deleteMutation.isPending;
+  const isRunning = useMemo(() => pipelineState === PipelineState.RUNNING, [pipelineState]);
+  const isTransitioning = useMemo(
+    () => pipelineState === PipelineState.STARTING || pipelineState === PipelineState.STOPPING,
+    [pipelineState]
+  );
+  const isActionLoading = useMemo(
+    () => startMutation.isPending || stopMutation.isPending || deleteMutation.isPending,
+    [startMutation.isPending, stopMutation.isPending, deleteMutation.isPending]
+  );
+  const isLoading = useMemo(() => isActionLoading || isTransitioning, [isActionLoading, isTransitioning]);
 
-  const handleDelete = useCallback(() => {
-    if (!pipelineId) {
-      return;
-    }
+  const handleDeleteClick = useCallback(() => {
+    setIsDeleteDialogOpen(true);
+  }, []);
 
-    // biome-ignore lint: User confirmation required for destructive action
-    if (window.confirm(`Delete pipeline "${pipelineName}"?`)) {
-      const deleteRequest = create(DeletePipelineRequestSchema, {
-        request: { id: pipelineId },
-      });
+  const handleDeleteConfirm = useCallback(() => {
+    const deleteRequest = create(DeletePipelineRequestSchema, {
+      request: { id: pipelineId },
+    });
 
-      deleteMutation.mutate(deleteRequest, {
-        onSuccess: () => {
-          toast({
-            status: 'success',
-            title: 'Pipeline deleted',
-            duration: 4000,
-            isClosable: false,
-          });
-          navigate('/connect-clusters');
-        },
-        onError: (err) => {
-          toast({
-            status: 'error',
-            title: 'Failed to delete pipeline',
-            description: formatPipelineError(err),
-            duration: null,
-            isClosable: true,
-          });
-        },
-      });
-    }
-  }, [pipelineId, pipelineName, deleteMutation, toast, navigate]);
+    deleteMutation.mutate(deleteRequest, {
+      onSuccess: () => {
+        setIsDeleteDialogOpen(false);
+        toast({
+          status: 'success',
+          title: 'Pipeline deleted',
+          duration: 4000,
+          isClosable: false,
+        });
+        navigate('/connect-clusters');
+      },
+      onError: (err) => {
+        setIsDeleteDialogOpen(false);
+        toast({
+          status: 'error',
+          title: 'Failed to delete pipeline',
+          description: formatPipelineError(err),
+          duration: null,
+          isClosable: true,
+        });
+      },
+    });
+  }, [pipelineId, deleteMutation, toast, navigate]);
 
   const handleStartStop = useCallback(() => {
-    if (!pipelineId) {
-      return;
-    }
-
     if (isRunning) {
       const stopRequest = create(StopPipelineRequestSchema, {
         request: { id: pipelineId },
@@ -143,47 +151,53 @@ export function Toolbar({ mode, pipelineId, pipelineName, pipelineState, onSave,
     navigate(`/rp-connect/${pipelineId}/edit`);
   }, [navigate, pipelineId]);
 
-  const handleCancel = useCallback(() => {
-    onCancel?.();
-    navigate(-1);
-  }, [navigate, onCancel]);
-
   return (
-    <div className="mb-4 flex items-center justify-between border-b pb-4">
-      <div className="flex items-center gap-2">
-        {mode === 'view' && (
-          <>
-            <Button onClick={handleEdit} variant="default">
+    <>
+      <div className="mb-4 flex items-center justify-between border-b pb-4">
+        <Button
+          disabled={isLoading}
+          // biome-ignore lint/style/noNestedTernary: because I said so
+          icon={isLoading ? <Spinner size="sm" /> : isRunning ? <Pause /> : <Play />}
+          onClick={handleStartStop}
+          variant="secondary"
+        >
+          {/** biome-ignore lint/style/noNestedTernary: because I said so */}
+          {isLoading ? (isRunning ? 'Stopping...' : 'Starting...') : isRunning ? 'Stop' : 'Start'}
+        </Button>
+
+        <div>
+          <Group>
+            <Button icon={<Pencil />} onClick={handleEdit} variant="outline">
               Edit
             </Button>
-            <Button disabled={isActionLoading || isTransitioning} onClick={handleStartStop} variant="outline">
-              {isRunning ? 'Stop' : 'Start'}
-            </Button>
-            <Button onClick={handleDelete} variant="destructive">
+            <Button onClick={handleDeleteClick} variant="destructiveOutline">
               Delete
             </Button>
-          </>
-        )}
-
-        {(mode === 'edit' || mode === 'create') && (
-          <>
-            <Button disabled={isSaving} onClick={onSave}>
-              {mode === 'create' ? 'Create Pipeline' : 'Update Pipeline'}
-            </Button>
-            <Button onClick={handleCancel} variant="outline">
-              Cancel
-            </Button>
-          </>
-        )}
+          </Group>
+        </div>
       </div>
 
-      {/* Mode indicator using ToggleGroup (visual only) */}
-      {mode !== 'create' && (
-        <ToggleGroup className="pointer-events-none opacity-60" type="single" value={mode}>
-          <ToggleGroupItem value="view">View</ToggleGroupItem>
-          <ToggleGroupItem value="edit">Edit</ToggleGroupItem>
-        </ToggleGroup>
-      )}
-    </div>
+      {/* Delete confirmation dialog */}
+      <Dialog onOpenChange={setIsDeleteDialogOpen} open={isDeleteDialogOpen}>
+        <DialogContent size="md" variant="destructive">
+          <DialogHeader>
+            <DialogTitle>Delete Pipeline</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{pipelineName}</strong>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setIsDeleteDialogOpen(false)} variant="outline">
+              Cancel
+            </Button>
+            <Button disabled={deleteMutation.isPending} onClick={handleDeleteConfirm} variant="destructive">
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
-}
+});
+
+Toolbar.displayName = 'Toolbar';

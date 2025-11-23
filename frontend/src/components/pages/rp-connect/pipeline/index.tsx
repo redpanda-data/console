@@ -16,9 +16,8 @@ import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert
 import { Form } from 'components/redpanda-ui/components/form';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
-import { YamlEditor } from 'components/ui/yaml/yaml-editor';
+import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { useDebounce } from 'hooks/use-debounce';
-import { AlertCircle } from 'lucide-react';
 import type { editor } from 'monaco-editor';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import {
@@ -41,6 +40,7 @@ import { useOnboardingWizardDataStore, useOnboardingYamlContentStore } from 'sta
 import { z } from 'zod';
 
 import { Details } from './details';
+import { Footer } from './footer';
 import { Toolbar } from './toolbar';
 import { usePipelineMode } from './use-pipeline-mode';
 import { extractLintHintsFromError, formatPipelineError } from '../errors';
@@ -67,6 +67,7 @@ export default function PipelinePage() {
   const isServerlessMode = searchParams.get('serverless') === 'true';
   const hasInitializedServerless = useRef(false);
   const persistedYamlContent = useOnboardingYamlContentStore((state) => state.yamlContent);
+  const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
 
   // Form state with validation
   const form = useForm<PipelineFormValues>({
@@ -81,9 +82,6 @@ export default function PipelinePage() {
   const [yamlContent, setYamlContent] = useState('');
   const [lintHints, setLintHints] = useState<Record<string, LintHint>>({});
 
-  // Editor ref for sidebar integration
-  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-
   // Fetch pipeline data in view/edit modes
   const { data: pipelineResponse, isLoading: isPipelineLoading } = useGetPipelineQuery(
     { id: pipelineId || '' },
@@ -92,7 +90,7 @@ export default function PipelinePage() {
     }
   );
 
-  const pipeline = pipelineResponse?.response?.pipeline;
+  const pipeline = useMemo(() => pipelineResponse?.response?.pipeline, [pipelineResponse]);
 
   // Fetch components for schema
   const { data: componentListResponse } = useListComponentsQuery();
@@ -338,10 +336,6 @@ export default function PipelinePage() {
     [debouncedLint, debouncedSyncToStore, mode]
   );
 
-  const handleEditorDidMount = useCallback((editorInstance: editor.IStandaloneCodeEditor) => {
-    editorRef.current = editorInstance;
-  }, []);
-
   const isSaving = useMemo(
     () => createMutation.isPending || updateMutation.isPending,
     [createMutation.isPending, updateMutation.isPending]
@@ -356,60 +350,57 @@ export default function PipelinePage() {
   }
 
   return (
-    <div className="flex h-full">
-      {/* Sidebar - only in create mode */}
-      {mode === 'create' && (
-        <div className="w-[300px] overflow-auto border-r p-4">
-          <CreatePipelineSidebar
-            components={components}
-            editorContent={yamlContent}
-            editorInstance={editorRef.current}
-            setYamlContent={handleSetYamlContent}
-          />
-        </div>
-      )}
+    <div className="flex w-full gap-4">
+      <div className="flex flex-1 flex-col gap-4 overflow-auto">
+        {/* Toolbar - only in view mode */}
+        {mode === 'view' && pipelineId && (
+          <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />
+        )}
 
-      <div className="flex flex-1 flex-col overflow-auto p-6">
-        {/* Toolbar */}
-        <Toolbar
-          isSaving={isSaving}
-          mode={mode}
-          onCancel={mode === 'create' ? clearWizardStore : undefined}
-          onSave={handleSave}
-          pipelineId={pipelineId}
-          pipelineName={form.getValues('name')}
-          pipelineState={pipeline?.state}
-        />
-
-        {/* Details - controlled component with readonly prop */}
         <Form {...form}>
           <Details readonly={mode === 'view'} />
         </Form>
 
-        {/* YAML Editor */}
-        <div className="mt-4 flex-1 overflow-hidden rounded-md border">
-          <YamlEditor
-            onChange={handleYamlChange}
-            onMount={handleEditorDidMount}
-            options={{
-              readOnly: mode === 'view',
-            }}
-            value={yamlContent}
-          />
-        </div>
+        <YamlEditorCard
+          onChange={handleYamlChange}
+          onMount={(editorRef) => {
+            setEditorInstance(editorRef);
+          }}
+          options={{
+            readOnly: mode === 'view',
+          }}
+          value={yamlContent}
+        />
 
         {/* Lint Hints - only in create/edit modes */}
         {mode !== 'view' && Object.keys(lintHints).length > 0 && (
           <div className="mt-4">
             <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <LintHintList lintHints={lintHints} />
+                <LintHintList className="w-full" lintHints={lintHints} />
               </AlertDescription>
             </Alert>
           </div>
         )}
+
+        {/* Footer - only in create/edit modes */}
+        {mode !== 'view' && (
+          <Footer
+            isSaving={isSaving}
+            mode={mode}
+            onCancel={mode === 'create' ? clearWizardStore : undefined}
+            onSave={handleSave}
+          />
+        )}
       </div>
+      {(mode === 'create' || mode === 'edit') && (
+        <CreatePipelineSidebar
+          components={components}
+          editorContent={yamlContent}
+          editorInstance={editorInstance}
+          setYamlContent={handleSetYamlContent}
+        />
+      )}
     </div>
   );
 }

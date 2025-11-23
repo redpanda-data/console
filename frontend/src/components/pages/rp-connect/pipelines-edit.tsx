@@ -21,6 +21,7 @@ import { Link } from 'react-router-dom';
 import { onboardingWizardStore } from 'state/onboarding-wizard-store';
 
 import { extractLintHintsFromError, formatPipelineError } from './errors';
+import PipelinePage from './pipeline';
 import { PipelineEditor } from './pipelines-create';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import type { LintHint } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
@@ -66,6 +67,9 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   }
 
   render() {
+    if (isFeatureFlagEnabled('enableRpcnTiles')) {
+      return <PipelinePage />;
+    }
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }

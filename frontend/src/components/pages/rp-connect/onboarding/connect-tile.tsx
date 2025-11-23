@@ -69,11 +69,14 @@ export const ConnectTile = ({
         <div className="flex flex-col gap-1">
           <InlineCode className="truncate bg-background px-0 py-0 font-semibold text-md">{component.name}</InlineCode>
           <span>
-            {component.status && component.status !== ComponentStatus.STABLE && component.name !== 'redpanda' && (
-              <Badge size="sm" variant="gray">
-                {componentStatusToString(component.status)}
-              </Badge>
-            )}
+            {(component.status === ComponentStatus.BETA ||
+              component.status === ComponentStatus.EXPERIMENTAL ||
+              component.status === ComponentStatus.DEPRECATED) &&
+              component.name !== 'redpanda' && (
+                <Badge size="sm" variant="gray">
+                  {componentStatusToString(component.status)}
+                </Badge>
+              )}
           </span>
         </div>
         <div className="-translate-y-1/2 absolute top-1/2 right-0">

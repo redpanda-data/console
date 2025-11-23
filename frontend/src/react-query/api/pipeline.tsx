@@ -161,6 +161,13 @@ export const useStartPipelineMutation = () => {
           cardinality: 'infinite',
         }),
       });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: PipelineService.method.getPipeline,
+          cardinality: 'finite',
+        }),
+        exact: false,
+      });
     },
     onError: (error) =>
       formatToastErrorMessageGRPC({
@@ -181,6 +188,13 @@ export const useStopPipelineMutation = () => {
           schema: PipelineService.method.listPipelines,
           cardinality: 'infinite',
         }),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: PipelineService.method.getPipeline,
+          cardinality: 'finite',
+        }),
+        exact: false,
       });
     },
     onError: (error) =>

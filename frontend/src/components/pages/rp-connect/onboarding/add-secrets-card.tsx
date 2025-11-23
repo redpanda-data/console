@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'compo
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { AlertCircle, Check, ChevronDown, PlusIcon } from 'lucide-react';
+import { Check, ChevronDown, PlusIcon } from 'lucide-react';
 import type { editor } from 'monaco-editor';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -92,7 +92,7 @@ export const AddSecretsCard = ({
         <CardDescription>Manage secret variables in your pipeline configuration.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           {existingSecrets.length > 0 && (
             <Collapsible onOpenChange={setIsOpen} open={isOpen}>
               <div className="flex flex-col gap-2">
@@ -147,26 +147,24 @@ export const AddSecretsCard = ({
           )}
           {missingSecrets.length > 0 && (
             <div className="flex flex-col gap-2">
-              <Text className="font-medium text-destructive text-sm">Missing secrets:</Text>
+              <Text variant="label">Missing secrets:</Text>
               <div className="flex flex-wrap gap-2">
                 {missingSecrets.map((secret) => (
-                  <Button key={secret} onClick={onOpenDialog} size="sm" variant="destructive">
-                    <AlertCircle className="h-3 w-3" />
-                    Create {secret}
-                  </Button>
+                  <Badge
+                    className="cursor-pointer font-mono hover:opacity-80"
+                    key={secret}
+                    onClick={onOpenDialog}
+                    variant="red"
+                  >
+                    Create $secrets.{secret}
+                  </Badge>
                 ))}
               </div>
             </div>
           )}
-          {existingSecrets.length === 0 && detectedSecrets.length === 0 && (
-            <Text className="text-muted-foreground text-sm">
-              Your pipeline doesn't reference any secrets yet. Use <code>$&#123;secrets.NAME&#125;</code> syntax to
-              reference secrets.
-            </Text>
-          )}
           <Button onClick={onOpenDialog} size={existingSecrets.length > 0 ? 'sm' : 'default'} variant="outline">
-            <PlusIcon className="h-4 w-4" />
             {existingSecrets.length > 0 ? 'Add more secrets' : 'Add secret'}
+            <PlusIcon className="h-4 w-4" />
           </Button>
         </div>
       </CardContent>
