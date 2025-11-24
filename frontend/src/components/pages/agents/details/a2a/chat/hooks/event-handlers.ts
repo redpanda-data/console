@@ -185,11 +185,12 @@ const processToolResponse = (state: StreamingState, data: Record<string, unknown
 
     if (hasError) {
       existingToolBlock.output = undefined;
+      existingToolBlock.errorText = data.error as string;
     } else {
       existingToolBlock.output = 'result' in data ? data.result : undefined;
+      existingToolBlock.errorText = undefined;
     }
 
-    existingToolBlock.errorText = hasError ? (data.error as string) : undefined;
     existingToolBlock.endTimestamp = endTimestamp;
   }
 };

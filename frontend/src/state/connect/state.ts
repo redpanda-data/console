@@ -531,12 +531,11 @@ export class ConnectorPropertiesStore {
     });
   }
   getConfigObject(): object {
-    const config = {
-      'connector.class': this.pluginClassName,
-      ...this.appliedConfig,
-    } as Record<string, unknown>;
-
     if (this.viewMode === 'json') {
+      const config = {
+        'connector.class': this.pluginClassName,
+      } as Record<string, unknown>;
+
       let parsedConfig = {};
       try {
         parsedConfig = JSON.parse(this.jsonText);
@@ -547,6 +546,11 @@ export class ConnectorPropertiesStore {
 
       return config;
     }
+
+    const config = {
+      'connector.class': this.pluginClassName,
+      ...this.appliedConfig,
+    } as Record<string, unknown>;
 
     for (const g of this.allGroups) {
       for (const p of g.properties) {
