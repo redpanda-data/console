@@ -66,7 +66,7 @@ export const ChatInput = ({
   onCancel,
 }: ChatInputProps) => {
   return (
-    <div className="bg-background px-4 pt-4 pb-8">
+    <div className="shrink-0 bg-background px-4 pt-4 pb-8">
       <PromptInput globalDrop multiple onSubmit={onSubmit}>
         <PromptInputBody>
           <PromptInputAttachments>{(attachment) => <PromptInputAttachment data={attachment} />}</PromptInputAttachments>
