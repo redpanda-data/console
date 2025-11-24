@@ -13,7 +13,7 @@
 
 import { Conversation, ConversationContent, ConversationEmptyState } from 'components/ai-elements/conversation';
 import { Loader } from 'components/ai-elements/loader';
-import { useRef, useMemo, useCallback } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 
 import { ChatInput } from './components/chat-input';
 import { ChatMessage } from './components/chat-message';
@@ -90,7 +90,6 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
         cumulativeReasoningTokens,
         cumulativeCachedTokens,
       };
-      console.log('[Context Usage Display]', result);
       return result;
     }
 
@@ -149,13 +148,13 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
         hasMessages={messages.length > 0}
         input={input}
         isLoading={isLoading}
-        usage={latestUsage}
         onCancel={handleCancel}
         onCancelEdit={cancelEdit}
         onClearHistory={clearChat}
         onInputChange={setInput}
         onSubmit={handleSubmitMessage}
         textareaRef={textareaRef}
+        usage={latestUsage}
       />
     </div>
   );

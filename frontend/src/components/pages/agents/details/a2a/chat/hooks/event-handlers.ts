@@ -182,7 +182,13 @@ const processToolResponse = (state: StreamingState, data: Record<string, unknown
   if (existingToolBlock && existingToolBlock.type === 'tool') {
     const hasError = 'error' in data && data.error;
     existingToolBlock.state = hasError ? 'output-error' : 'output-available';
-    existingToolBlock.output = hasError ? undefined : 'result' in data ? data.result : undefined;
+
+    if (hasError) {
+      existingToolBlock.output = undefined;
+    } else {
+      existingToolBlock.output = 'result' in data ? data.result : undefined;
+    }
+
     existingToolBlock.errorText = hasError ? (data.error as string) : undefined;
     existingToolBlock.endTimestamp = endTimestamp;
   }
@@ -264,12 +270,6 @@ export const handleStatusUpdateEvent = (
 
   // Capture usage metadata from event (only update when present to keep cumulative data)
   if (event.metadata?.usage) {
-    console.log('[Usage Tracking]', {
-      taskId: event.taskId,
-      final: event.final,
-      metadata: event.metadata.usage,
-      previousUsage: state.latestUsage
-    });
     state.latestUsage = event.metadata.usage as ChatMessage['usage'];
   }
 

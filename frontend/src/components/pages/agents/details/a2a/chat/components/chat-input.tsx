@@ -10,6 +10,15 @@
  */
 
 import {
+  Context,
+  ContextContent,
+  ContextContentBody,
+  ContextContentHeader,
+  ContextInputUsage,
+  ContextOutputUsage,
+  ContextTrigger,
+} from 'components/ai-elements/context';
+import {
   PromptInput,
   PromptInputAttachment,
   PromptInputAttachments,
@@ -27,7 +36,6 @@ import {
 } from 'components/ai-elements/prompt-input';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { Context, ContextContent, ContextContentHeader, ContextContentBody, ContextInputUsage, ContextOutputUsage, ContextTrigger } from 'components/ai-elements/context';
 import { HistoryIcon } from 'lucide-react';
 import type { AIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { memo, useMemo } from 'react';
@@ -82,7 +90,12 @@ const ChatInputComponent = ({
       cachedInputTokens: usage.cumulativeCachedTokens,
       totalTokens: usage.cumulativeInputTokens + usage.cumulativeOutputTokens,
     }),
-    [usage.cumulativeInputTokens, usage.cumulativeOutputTokens, usage.cumulativeReasoningTokens, usage.cumulativeCachedTokens]
+    [
+      usage.cumulativeInputTokens,
+      usage.cumulativeOutputTokens,
+      usage.cumulativeReasoningTokens,
+      usage.cumulativeCachedTokens,
+    ]
   );
 
   return (
@@ -114,13 +127,13 @@ const ChatInputComponent = ({
               </PromptInputModelSelect>
             )}
             <Context
-              maxTokens={usage.max_input_tokens || 272000}
-              usedTokens={usage.input_tokens}
+              maxTokens={usage.max_input_tokens || 272_000}
               modelId={modelId}
               usage={contextUsage}
+              usedTokens={usage.input_tokens}
             >
               <ContextTrigger />
-              <ContextContent side="top" align="start">
+              <ContextContent align="start" side="top">
                 <ContextContentHeader />
                 <ContextContentBody>
                   <ContextInputUsage />
