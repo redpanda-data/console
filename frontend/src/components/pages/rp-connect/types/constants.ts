@@ -18,7 +18,7 @@ export const REDPANDA_TOPIC_AND_USER_COMPONENTS = [
  * Fields that are critical for connection and should always be shown
  * even when they have defaults
  */
-export const CRITICAL_CONNECTION_FIELDS = new Set(['sasl', 'consumer_group']);
+export const CRITICAL_CONNECTION_FIELDS = new Set(['sasl', 'consumer_group', 'topics']);
 
 /**
  * Configuration object fields that should be hidden for REDPANDA_SECRET_COMPONENTS
@@ -86,6 +86,7 @@ export const wizardStepDefinitions = [
   { id: WizardStep.ADD_OUTPUT, title: 'Add an output' },
   { id: WizardStep.ADD_TOPIC, title: 'Add a topic' },
   { id: WizardStep.ADD_USER, title: 'Add permissions' },
+
   { id: WizardStep.CREATE_CONFIG, title: 'Edit pipeline' },
 ];
 
