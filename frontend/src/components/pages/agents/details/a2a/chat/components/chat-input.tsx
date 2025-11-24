@@ -42,7 +42,7 @@ type ChatInputProps = {
   agent: AIAgent;
   hasMessages: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
-  usage?: UsageMetadata;
+  usage: UsageMetadata;
   onInputChange: (value: string) => void;
   onSubmit: (message: PromptInputMessage, event: React.FormEvent) => void;
   onClearHistory: () => void;
@@ -76,13 +76,13 @@ const ChatInputComponent = ({
   // Memoize usage object to prevent recalculation on every render
   const contextUsage = useMemo(
     () => ({
-      inputTokens: usage?.cumulativeInputTokens || 0,
-      outputTokens: usage?.cumulativeOutputTokens || 0,
-      reasoningTokens: usage?.cumulativeReasoningTokens || 0,
-      cachedInputTokens: usage?.cumulativeCachedTokens || 0,
-      totalTokens: (usage?.cumulativeInputTokens || 0) + (usage?.cumulativeOutputTokens || 0),
+      inputTokens: usage.cumulativeInputTokens,
+      outputTokens: usage.cumulativeOutputTokens,
+      reasoningTokens: usage.cumulativeReasoningTokens,
+      cachedInputTokens: usage.cumulativeCachedTokens,
+      totalTokens: usage.cumulativeInputTokens + usage.cumulativeOutputTokens,
     }),
-    [usage?.cumulativeInputTokens, usage?.cumulativeOutputTokens, usage?.cumulativeReasoningTokens, usage?.cumulativeCachedTokens]
+    [usage.cumulativeInputTokens, usage.cumulativeOutputTokens, usage.cumulativeReasoningTokens, usage.cumulativeCachedTokens]
   );
 
   return (
@@ -114,8 +114,8 @@ const ChatInputComponent = ({
               </PromptInputModelSelect>
             )}
             <Context
-              maxTokens={usage?.max_input_tokens || 272000}
-              usedTokens={usage?.input_tokens || 0}
+              maxTokens={usage.max_input_tokens || 272000}
+              usedTokens={usage.input_tokens}
               modelId={modelId}
               usage={contextUsage}
             >

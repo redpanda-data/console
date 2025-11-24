@@ -94,7 +94,16 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
       return result;
     }
 
-    return undefined;
+    // Return default empty usage when no messages exist yet
+    return {
+      input_tokens: 0,
+      output_tokens: 0,
+      total_tokens: 0,
+      cumulativeInputTokens: 0,
+      cumulativeOutputTokens: 0,
+      cumulativeReasoningTokens: 0,
+      cumulativeCachedTokens: 0,
+    };
   }, [messages]);
 
   return (

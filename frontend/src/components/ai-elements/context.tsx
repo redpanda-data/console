@@ -245,10 +245,6 @@ export const ContextInputUsage = ({
     return children;
   }
 
-  if (!inputTokens) {
-    return null;
-  }
-
   const inputCost = modelId
     ? getUsage({
         modelId,
@@ -283,10 +279,6 @@ export const ContextOutputUsage = ({
 
   if (children) {
     return children;
-  }
-
-  if (!outputTokens) {
-    return null;
   }
 
   const outputCost = modelId
