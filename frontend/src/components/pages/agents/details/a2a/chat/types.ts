@@ -56,6 +56,15 @@ export type ContentBlock =
       timestamp: Date;
     };
 
+export type UsageMetadata = {
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  max_input_tokens?: number;
+  cached_tokens?: number;
+  reasoning_tokens?: number;
+};
+
 export type ChatMessage = {
   id: string;
   role: 'user' | 'assistant';
@@ -72,6 +81,10 @@ export type ChatMessage = {
    * Content before this index should be rendered above the Task box
    */
   taskStartIndex?: number;
+  /**
+   * Usage metadata from the final status-update event
+   */
+  usage?: UsageMetadata;
 };
 
 export type AIAgentChatProps = {

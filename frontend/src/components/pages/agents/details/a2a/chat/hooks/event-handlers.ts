@@ -174,7 +174,7 @@ const processToolRequest = (
 /**
  * Process tool response from data part
  */
-const processToolResponse = (state: StreamingState, data: Record<string, unknown>): void => {
+const processToolResponse = (state: StreamingState, data: Record<string, unknown>, endTimestamp: Date): void => {
   const existingToolBlock = state.contentBlocks.find(
     (block) => block.type === 'tool' && block.toolCallId === (data.id as string)
   );
@@ -184,6 +184,7 @@ const processToolResponse = (state: StreamingState, data: Record<string, unknown
     existingToolBlock.state = hasError ? 'output-error' : 'output-available';
     existingToolBlock.output = hasError ? undefined : 'result' in data ? data.result : undefined;
     existingToolBlock.errorText = hasError ? (data.error as string) : undefined;
+    existingToolBlock.endTimestamp = endTimestamp;
   }
 };
 
@@ -211,7 +212,7 @@ const processToolCalls = (
     if (dataType === 'tool_request' && data?.id && data?.name) {
       processToolRequest(state, data, eventTimestamp, message.messageId);
     } else if (dataType === 'tool_response' && data?.id && data?.name) {
-      processToolResponse(state, data);
+      processToolResponse(state, data, eventTimestamp);
     }
   }
 };
@@ -261,12 +262,18 @@ export const handleStatusUpdateEvent = (
     state.capturedTaskState = newState;
   }
 
+  // Capture usage metadata from event
+  if (event.metadata?.usage) {
+    state.latestUsage = event.metadata.usage as ChatMessage['usage'];
+  }
+
   const updatedMessage = buildMessageWithContentBlocks({
     baseMessage: assistantMessage,
     contentBlocks: state.contentBlocks,
     taskId: state.capturedTaskId,
     taskState: state.capturedTaskState,
     taskStartIndex: state.taskIdCapturedAtBlockIndex,
+    usage: state.latestUsage,
   });
   onMessageUpdate(updatedMessage);
 };

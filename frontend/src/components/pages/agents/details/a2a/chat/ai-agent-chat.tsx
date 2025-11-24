@@ -12,14 +12,15 @@
 'use client';
 
 import { Conversation, ConversationContent, ConversationEmptyState } from 'components/ai-elements/conversation';
+import { Context, ContextContent, ContextContentHeader, ContextContentBody, ContextInputUsage, ContextOutputUsage, ContextTrigger } from 'components/ai-elements/context';
 import { Loader } from 'components/ai-elements/loader';
-import { useRef } from 'react';
+import { useRef, useMemo } from 'react';
 
 import { ChatInput } from './components/chat-input';
 import { ChatMessage } from './components/chat-message';
 import { useChatActions } from './hooks/use-chat-actions';
 import { useChatMessages } from './hooks/use-chat-messages';
-import type { AIAgentChatProps } from './types';
+import type { AIAgentChatProps, UsageMetadata } from './types';
 
 export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -40,14 +41,48 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
       setContextSeed,
     });
 
+  // Get latest usage from most recent message
+  const latestUsage = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].usage) {
+        return messages[i].usage;
+      }
+    }
+    return undefined;
+  }, [messages]);
+
   return (
     <div className="flex h-[calc(100vh-255px)] flex-col">
-      {/* Context ID header */}
+      {/* Context ID header with usage stats */}
       {contextId && (
         <div className="shrink-0 border-b bg-muted/30 px-4 py-2">
-          <div className="flex gap-1.5 text-muted-foreground text-xs">
-            <span className="font-medium">context_id:</span>
-            <span className="font-mono">{contextId}</span>
+          <div className="flex items-center gap-3 text-muted-foreground text-xs">
+            <div className="flex gap-1.5">
+              <span className="font-medium">context_id:</span>
+              <span className="font-mono">{contextId}</span>
+            </div>
+            {latestUsage && latestUsage.max_input_tokens && (
+              <Context
+                maxTokens={latestUsage.max_input_tokens}
+                usedTokens={latestUsage.input_tokens}
+                modelId="openai:gpt-4o-mini"
+                usage={{
+                  inputTokens: latestUsage.input_tokens,
+                  outputTokens: latestUsage.output_tokens,
+                  reasoningTokens: latestUsage.reasoning_tokens || 0,
+                  cachedInputTokens: latestUsage.cached_tokens || 0,
+                }}
+              >
+                <ContextTrigger />
+                <ContextContent>
+                  <ContextContentHeader />
+                  <ContextContentBody>
+                    <ContextInputUsage />
+                    <ContextOutputUsage />
+                  </ContextContentBody>
+                </ContextContent>
+              </Context>
+            )}
           </div>
         </div>
       )}

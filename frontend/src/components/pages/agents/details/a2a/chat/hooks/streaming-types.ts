@@ -104,6 +104,10 @@ export type StreamingState = {
    */
   taskIdCapturedAtBlockIndex: number | undefined;
   /**
+   * Latest usage metadata from status-update events
+   */
+  latestUsage: ChatMessage['usage'] | undefined;
+  /**
    * @deprecated Legacy artifact accumulation - use contentBlocks instead
    */
   artifactsMap?: Map<string, ArtifactData>;
