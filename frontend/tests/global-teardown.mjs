@@ -8,10 +8,14 @@ const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const CONTAINER_STATE_FILE = resolve(__dirname, '.testcontainers-state.json');
+const getStateFile = (isEnterprise) =>
+  resolve(__dirname, isEnterprise ? '.testcontainers-state-enterprise.json' : '.testcontainers-state.json');
 
-export default async function globalTeardown() {
-  console.log('\n🛑 Stopping test environment...');
+export default async function globalTeardown(config) {
+  const isEnterprise = config.metadata?.isEnterprise ?? false;
+  const CONTAINER_STATE_FILE = getStateFile(isEnterprise);
+
+  console.log(`\n🛑 Stopping test environment ${isEnterprise ? '(ENTERPRISE MODE)' : '(OSS MODE)'}...`);
 
   try {
     if (!fs.existsSync(CONTAINER_STATE_FILE)) {

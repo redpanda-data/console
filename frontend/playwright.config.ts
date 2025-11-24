@@ -29,6 +29,10 @@ export default defineConfig({
   /* Global setup and teardown */
   globalSetup: './tests/global-setup.mjs',
   globalTeardown: './tests/global-teardown.mjs',
+  /* Custom metadata for setup/teardown */
+  metadata: {
+    isEnterprise: false,
+  },
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     navigationTimeout: 30 * 1000,
