@@ -59,6 +59,7 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
           return (
             <div className="mb-4" key={`${message.id}-tool-${block.toolCallId}`}>
               <ToolBlock
+                endTimestamp={block.endTimestamp}
                 errorText={block.errorText}
                 input={block.input}
                 isLastBlock={index === message.contentBlocks.length - 1}
@@ -66,7 +67,6 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
                 output={block.output}
                 state={block.state}
                 timestamp={block.timestamp}
-                endTimestamp={block.endTimestamp}
                 toolCallId={block.toolCallId}
                 toolName={block.toolName}
               />

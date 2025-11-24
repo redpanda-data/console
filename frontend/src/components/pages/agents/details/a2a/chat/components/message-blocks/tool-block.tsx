@@ -28,17 +28,26 @@ type ToolBlockProps = {
  * Renders a tool block that transitions from request → response state
  * Spawns closed by default, user can manually toggle
  */
-export const ToolBlock = ({ toolCallId, toolName, state, input, output, errorText, timestamp, endTimestamp }: ToolBlockProps) => {
+export const ToolBlock = ({
+  toolCallId,
+  toolName,
+  state,
+  input,
+  output,
+  errorText,
+  timestamp,
+  endTimestamp,
+}: ToolBlockProps) => {
   const durationMs = endTimestamp && timestamp ? endTimestamp.getTime() - timestamp.getTime() : undefined;
 
   return (
     <Tool defaultOpen={false} key={toolCallId}>
       <ToolHeader
+        durationMs={durationMs}
         state={state}
         title={toolName || 'Tool'}
         toolCallId={toolCallId}
         type={`tool-${toolName || 'unknown'}`}
-        durationMs={durationMs}
       />
       <ToolContent>
         <ToolInput input={input} />

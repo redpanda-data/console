@@ -182,7 +182,7 @@ const processToolResponse = (state: StreamingState, data: Record<string, unknown
   if (existingToolBlock && existingToolBlock.type === 'tool') {
     const hasError = 'error' in data && data.error;
     existingToolBlock.state = hasError ? 'output-error' : 'output-available';
-    existingToolBlock.output = hasError ? undefined : ('result' in data ? data.result : undefined);
+    existingToolBlock.output = hasError ? undefined : 'result' in data ? data.result : undefined;
     existingToolBlock.errorText = hasError ? (data.error as string) : undefined;
   }
 };
