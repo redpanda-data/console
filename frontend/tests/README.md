@@ -98,12 +98,6 @@ If services take longer than expected:
 - Review container logs: `docker logs redpanda`
 - The tests will continue even if Kafka Connect is slow (with a warning)
 
-### Cleanup issues
-If containers are left running after tests:
-```bash
-docker compose -f tests/config/docker-compose.yaml -p redpanda-e2e down -v
-```
-
 ## Files
 
 - **`global-setup.mjs`** - Playwright globalSetup hook
