@@ -180,9 +180,16 @@ const processToolResponse = (state: StreamingState, data: Record<string, unknown
   );
 
   if (existingToolBlock && existingToolBlock.type === 'tool') {
-    existingToolBlock.state = 'output-available';
-    existingToolBlock.output = 'result' in data ? data.result : undefined;
-    existingToolBlock.errorText = undefined;
+    const hasError = 'error' in data && data.error;
+    existingToolBlock.state = hasError ? 'output-error' : 'output-available';
+
+    if (hasError) {
+      existingToolBlock.output = undefined;
+      existingToolBlock.errorText = data.error as string;
+    } else {
+      existingToolBlock.output = 'result' in data ? data.result : undefined;
+      existingToolBlock.errorText = undefined;
+    }
   }
 };
 
