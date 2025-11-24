@@ -34,7 +34,7 @@ export const Footer = memo(({ mode, onSave, onCancel, isSaving }: FooterProps) =
       <Button disabled={isSaving} onClick={handleCancel} variant="outline">
         Cancel
       </Button>
-      <Button disabled={isSaving} onClick={onSave}>
+      <Button className="min-w-[70px]" disabled={isSaving} onClick={onSave}>
         {mode === 'create' ? 'Create Pipeline' : 'Update Pipeline'}
         {isSaving && <Spinner size="sm" />}
       </Button>

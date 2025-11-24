@@ -14,7 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@redpanda-data/ui';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Form } from 'components/redpanda-ui/components/form';
-import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { useDebounce } from 'hooks/use-debounce';
@@ -352,7 +352,7 @@ export default function PipelinePage() {
   if (isPipelineLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Spinner />
+        <WaitingRedpanda />
       </div>
     );
   }
