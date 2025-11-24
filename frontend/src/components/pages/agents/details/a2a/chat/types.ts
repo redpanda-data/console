@@ -63,6 +63,11 @@ export type UsageMetadata = {
   max_input_tokens?: number;
   cached_tokens?: number;
   reasoning_tokens?: number;
+  // Cumulative totals (calculated across all messages)
+  cumulativeInputTokens?: number;
+  cumulativeOutputTokens?: number;
+  cumulativeReasoningTokens?: number;
+  cumulativeCachedTokens?: number;
 };
 
 export type ChatMessage = {

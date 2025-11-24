@@ -27,9 +27,11 @@ import {
 } from 'components/ai-elements/prompt-input';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { Context, ContextContent, ContextContentHeader, ContextContentBody, ContextInputUsage, ContextOutputUsage, ContextTrigger } from 'components/ai-elements/context';
 import { HistoryIcon } from 'lucide-react';
 
 import { AIAgentModel } from '../../../../ai-agent-model';
+import type { UsageMetadata } from '../types';
 
 type ChatInputProps = {
   input: string;
@@ -38,6 +40,7 @@ type ChatInputProps = {
   model: string | undefined;
   hasMessages: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
+  usage?: UsageMetadata;
   onInputChange: (value: string) => void;
   onSubmit: (message: PromptInputMessage, event: React.FormEvent) => void;
   onClearHistory: () => void;
@@ -55,6 +58,7 @@ export const ChatInput = ({
   model,
   hasMessages,
   textareaRef,
+  usage,
   onInputChange,
   onSubmit,
   onClearHistory,
@@ -89,6 +93,26 @@ export const ChatInput = ({
                 </PromptInputModelSelectContent>
               </PromptInputModelSelect>
             )}
+            <Context
+              maxTokens={usage?.max_input_tokens || 272000}
+              usedTokens={usage?.input_tokens || 0}
+              modelId="openai:gpt-5"
+              usage={{
+                inputTokens: usage?.cumulativeInputTokens || 0,
+                outputTokens: usage?.cumulativeOutputTokens || 0,
+                reasoningTokens: usage?.cumulativeReasoningTokens || 0,
+                cachedInputTokens: usage?.cumulativeCachedTokens || 0,
+              }}
+            >
+              <ContextTrigger />
+              <ContextContent>
+                <ContextContentHeader />
+                <ContextContentBody>
+                  <ContextInputUsage />
+                  <ContextOutputUsage />
+                </ContextContentBody>
+              </ContextContent>
+            </Context>
             <Button
               disabled={!hasMessages}
               onClick={() => {

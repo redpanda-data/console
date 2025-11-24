@@ -80,6 +80,7 @@ export const saveMessage = async (
       isStreaming: options?.isStreaming,
       taskStartIndex: message.taskStartIndex,
       contentBlocks: serializeContentBlocks(message.contentBlocks), // NEW: Store contentBlocks structure
+      usage: message.usage, // Store usage metadata
     };
 
     await chatDb.addMessage(dbMessage);

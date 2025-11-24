@@ -262,8 +262,14 @@ export const handleStatusUpdateEvent = (
     state.capturedTaskState = newState;
   }
 
-  // Capture usage metadata from event
+  // Capture usage metadata from event (only update when present to keep cumulative data)
   if (event.metadata?.usage) {
+    console.log('[Usage Tracking]', {
+      taskId: event.taskId,
+      final: event.final,
+      metadata: event.metadata.usage,
+      previousUsage: state.latestUsage
+    });
     state.latestUsage = event.metadata.usage as ChatMessage['usage'];
   }
 

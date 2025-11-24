@@ -12,7 +12,6 @@
 'use client';
 
 import { Conversation, ConversationContent, ConversationEmptyState } from 'components/ai-elements/conversation';
-import { Context, ContextContent, ContextContentHeader, ContextContentBody, ContextInputUsage, ContextOutputUsage, ContextTrigger } from 'components/ai-elements/context';
 import { Loader } from 'components/ai-elements/loader';
 import { useRef, useMemo } from 'react';
 
@@ -41,48 +40,55 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
       setContextSeed,
     });
 
-  // Get latest usage from most recent message
+  // Get usage data: latest request's context usage + cumulative token totals
   const latestUsage = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].usage) {
-        return messages[i].usage;
+    let latestRequestUsage: UsageMetadata | undefined;
+    let cumulativeInputTokens = 0;
+    let cumulativeOutputTokens = 0;
+    let cumulativeReasoningTokens = 0;
+    let cumulativeCachedTokens = 0;
+
+    for (const message of messages) {
+      if (message.usage) {
+        // Keep the latest request's usage for context window data
+        latestRequestUsage = message.usage;
+
+        // Accumulate token counts
+        cumulativeInputTokens += message.usage.input_tokens;
+        cumulativeOutputTokens += message.usage.output_tokens;
+        if (message.usage.reasoning_tokens) {
+          cumulativeReasoningTokens += message.usage.reasoning_tokens;
+        }
+        if (message.usage.cached_tokens) {
+          cumulativeCachedTokens += message.usage.cached_tokens;
+        }
       }
     }
+
+    if (latestRequestUsage) {
+      const result = {
+        ...latestRequestUsage,
+        // Override with cumulative totals for the usage breakdown
+        cumulativeInputTokens,
+        cumulativeOutputTokens,
+        cumulativeReasoningTokens,
+        cumulativeCachedTokens,
+      };
+      console.log('[Context Usage Display]', result);
+      return result;
+    }
+
     return undefined;
   }, [messages]);
 
   return (
     <div className="flex h-[calc(100vh-255px)] flex-col">
-      {/* Context ID header with usage stats */}
+      {/* Context ID header */}
       {contextId && (
         <div className="shrink-0 border-b bg-muted/30 px-4 py-2">
-          <div className="flex items-center gap-3 text-muted-foreground text-xs">
-            <div className="flex gap-1.5">
-              <span className="font-medium">context_id:</span>
-              <span className="font-mono">{contextId}</span>
-            </div>
-            {latestUsage && latestUsage.max_input_tokens && (
-              <Context
-                maxTokens={latestUsage.max_input_tokens}
-                usedTokens={latestUsage.total_tokens}
-                modelId="openai:gpt-5"
-                usage={{
-                  inputTokens: latestUsage.input_tokens,
-                  outputTokens: latestUsage.output_tokens,
-                  reasoningTokens: latestUsage.reasoning_tokens || 0,
-                  cachedInputTokens: latestUsage.cached_tokens || 0,
-                }}
-              >
-                <ContextTrigger />
-                <ContextContent>
-                  <ContextContentHeader />
-                  <ContextContentBody>
-                    <ContextInputUsage />
-                    <ContextOutputUsage />
-                  </ContextContentBody>
-                </ContextContent>
-              </Context>
-            )}
+          <div className="flex gap-1.5 text-muted-foreground text-xs">
+            <span className="font-medium">context_id:</span>
+            <span className="font-mono">{contextId}</span>
           </div>
         </div>
       )}
@@ -118,6 +124,7 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
         input={input}
         isLoading={isLoading}
         model={agent.model}
+        usage={latestUsage}
         onCancel={() => {
           const lastMessage = messages.at(-1);
           if (lastMessage?.taskId) {
