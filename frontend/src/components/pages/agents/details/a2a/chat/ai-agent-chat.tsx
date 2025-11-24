@@ -19,7 +19,7 @@ import { ChatInput } from './components/chat-input';
 import { ChatMessage } from './components/chat-message';
 import { useChatActions } from './hooks/use-chat-actions';
 import { useChatMessages } from './hooks/use-chat-messages';
-import type { AIAgentChatProps, UsageMetadata } from './types';
+import type { AIAgentChatProps, MessageUsageMetadata } from './types';
 
 export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -58,7 +58,7 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
 
   // Get usage data: latest request's context usage + cumulative token totals
   const latestUsage = useMemo(() => {
-    let latestRequestUsage: UsageMetadata | undefined;
+    let latestRequestUsage: MessageUsageMetadata | undefined;
     let cumulativeInputTokens = 0;
     let cumulativeOutputTokens = 0;
     let cumulativeReasoningTokens = 0;

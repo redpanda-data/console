@@ -56,18 +56,22 @@ export type ContentBlock =
       timestamp: Date;
     };
 
-export type UsageMetadata = {
+// Message-level usage metadata (stored in database)
+export type MessageUsageMetadata = {
   input_tokens: number;
   output_tokens: number;
   total_tokens: number;
   max_input_tokens?: number;
   cached_tokens?: number;
   reasoning_tokens?: number;
-  // Cumulative totals (calculated across all messages)
-  cumulativeInputTokens?: number;
-  cumulativeOutputTokens?: number;
-  cumulativeReasoningTokens?: number;
-  cumulativeCachedTokens?: number;
+};
+
+// Usage metadata with cumulative totals (computed for display)
+export type UsageMetadata = MessageUsageMetadata & {
+  cumulativeInputTokens: number;
+  cumulativeOutputTokens: number;
+  cumulativeReasoningTokens: number;
+  cumulativeCachedTokens: number;
 };
 
 export type ChatMessage = {
@@ -89,7 +93,7 @@ export type ChatMessage = {
   /**
    * Usage metadata from the final status-update event
    */
-  usage?: UsageMetadata;
+  usage?: MessageUsageMetadata;
 };
 
 export type AIAgentChatProps = {
