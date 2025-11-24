@@ -107,6 +107,7 @@ async function setupDockerNetwork(state) {
   console.log('Creating Docker network...');
   const network = await new Network().start();
   state.networkId = network.getId();
+  state.network = network;
   console.log(`✓ Network created: ${state.networkId}`);
   return network;
 }
@@ -164,6 +165,7 @@ async function startRedpandaContainer(network, state) {
     .start();
 
   state.redpandaId = redpanda.getId();
+  state.redpandaContainer = redpanda;
   console.log(`✓ Redpanda container started: ${state.redpandaId}`);
 }
 
@@ -225,6 +227,7 @@ schemaRegistry:
     .start();
 
   state.owlshopId = owlshop.getId();
+  state.owlshopContainer = owlshop;
   console.log(`✓ OwlShop started: ${state.owlshopId}`);
 }
 
@@ -298,6 +301,7 @@ topic.creation.enable=false
       .start();
 
     state.connectId = connect.getId();
+    state.connectContainer = connect;
     console.log(`✓ Kafka Connect container started: ${state.connectId}`);
 
     // Verify it's responding
@@ -313,6 +317,7 @@ topic.creation.enable=false
       try {
         const containerId = connect.getId();
         state.connectId = containerId;
+        state.connectContainer = connect;
         console.log(`\n  Container ID: ${containerId}`);
         console.log('  Last 50 lines of Kafka Connect logs:');
         const { stdout } = await execAsync(`docker logs --tail 50 ${containerId}`);
@@ -402,20 +407,29 @@ async function cleanupOnFailure(state) {
       process.kill(Number.parseInt(state.frontendPid, 10));
     } catch (_) {}
   }
-  if (state.connectId) {
-    await execWithOutput(`docker stop ${state.connectId}`).catch(() => {});
-    await execWithOutput(`docker rm ${state.connectId}`).catch(() => {});
+  if (state.connectContainer) {
+    console.log('Stopping Kafka Connect container using testcontainers API...');
+    await state.connectContainer.stop().catch((error) => {
+      console.log(`Failed to stop Connect container: ${error.message}`);
+    });
   }
-  if (state.owlshopId) {
-    await execWithOutput(`docker stop ${state.owlshopId}`).catch(() => {});
-    await execWithOutput(`docker rm ${state.owlshopId}`).catch(() => {});
+  if (state.owlshopContainer) {
+    console.log('Stopping OwlShop container using testcontainers API...');
+    await state.owlshopContainer.stop().catch((error) => {
+      console.log(`Failed to stop OwlShop container: ${error.message}`);
+    });
   }
-  if (state.redpandaId) {
-    await execWithOutput(`docker stop ${state.redpandaId}`).catch(() => {});
-    await execWithOutput(`docker rm ${state.redpandaId}`).catch(() => {});
+  if (state.redpandaContainer) {
+    console.log('Stopping Redpanda container using testcontainers API...');
+    await state.redpandaContainer.stop().catch((error) => {
+      console.log(`Failed to stop Redpanda container: ${error.message}`);
+    });
   }
-  if (state.networkId) {
-    await execWithOutput(`docker network rm ${state.networkId}`).catch(() => {});
+  if (state.network) {
+    console.log('Stopping network using testcontainers API...');
+    await state.network.stop().catch((error) => {
+      console.log(`Failed to stop network: ${error.message}`);
+    });
   }
 }
 
