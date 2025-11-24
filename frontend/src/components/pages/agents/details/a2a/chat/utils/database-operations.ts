@@ -118,6 +118,14 @@ export const updateMessage = async (
       timestamp: Date;
     }>;
     contentBlocks?: ContentBlock[]; // NEW: store content blocks
+    usage?: {
+      input_tokens: number;
+      output_tokens: number;
+      total_tokens: number;
+      max_input_tokens?: number;
+      cached_tokens?: number;
+      reasoning_tokens?: number;
+    };
   }
 ): Promise<void> => {
   try {
@@ -128,6 +136,7 @@ export const updateMessage = async (
       taskId: updates.taskId,
       taskState: updates.taskState,
       taskStartIndex: updates.taskStartIndex,
+      usage: updates.usage,
     };
 
     if (updates.artifacts) {
