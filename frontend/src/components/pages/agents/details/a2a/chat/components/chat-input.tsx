@@ -140,7 +140,7 @@ const ChatInputComponent = ({
             >
               <HistoryIcon className="size-3" />
               <Text as="span" className="text-sm">
-                Clear history
+                Clear context
               </Text>
             </Button>
           </PromptInputTools>
