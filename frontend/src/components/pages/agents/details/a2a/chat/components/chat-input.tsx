@@ -120,7 +120,7 @@ const ChatInputComponent = ({
               usage={contextUsage}
             >
               <ContextTrigger />
-              <ContextContent>
+              <ContextContent side="top" align="start">
                 <ContextContentHeader />
                 <ContextContentBody>
                   <ContextInputUsage />
