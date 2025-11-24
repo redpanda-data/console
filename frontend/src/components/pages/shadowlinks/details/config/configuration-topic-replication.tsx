@@ -21,7 +21,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 
 export interface ConfigurationTopicReplicationProps {
   shadowLink: ShadowLink;

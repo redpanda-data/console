@@ -12,7 +12,7 @@
 'use client';
 
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 
 import { ConfigurationShadowing } from './configuration-shadowing';
 import { ConfigurationSource } from './configuration-source';

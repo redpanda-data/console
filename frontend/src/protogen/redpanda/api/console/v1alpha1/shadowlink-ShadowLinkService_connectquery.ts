@@ -10,11 +10,6 @@ import { ShadowLinkService } from "./shadowlink_pb";
 export const createShadowLink = ShadowLinkService.method.createShadowLink;
 
 /**
- * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.GetShadowLink
- */
-export const getShadowLink = ShadowLinkService.method.getShadowLink;
-
-/**
  * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.ListShadowLinks
  */
 export const listShadowLinks = ShadowLinkService.method.listShadowLinks;

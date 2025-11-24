@@ -22,7 +22,6 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	ShadowLinkService_CreateShadowLink_FullMethodName = "/redpanda.api.console.v1alpha1.ShadowLinkService/CreateShadowLink"
-	ShadowLinkService_GetShadowLink_FullMethodName    = "/redpanda.api.console.v1alpha1.ShadowLinkService/GetShadowLink"
 	ShadowLinkService_ListShadowLinks_FullMethodName  = "/redpanda.api.console.v1alpha1.ShadowLinkService/ListShadowLinks"
 	ShadowLinkService_UpdateShadowLink_FullMethodName = "/redpanda.api.console.v1alpha1.ShadowLinkService/UpdateShadowLink"
 	ShadowLinkService_DeleteShadowLink_FullMethodName = "/redpanda.api.console.v1alpha1.ShadowLinkService/DeleteShadowLink"
@@ -33,7 +32,6 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ShadowLinkServiceClient interface {
 	CreateShadowLink(ctx context.Context, in *v2.CreateShadowLinkRequest, opts ...grpc.CallOption) (*CreateShadowLinkResponse, error)
-	GetShadowLink(ctx context.Context, in *GetShadowLinkRequest, opts ...grpc.CallOption) (*GetShadowLinkResponse, error)
 	ListShadowLinks(ctx context.Context, in *ListShadowLinksRequest, opts ...grpc.CallOption) (*ListShadowLinksResponse, error)
 	UpdateShadowLink(ctx context.Context, in *v2.UpdateShadowLinkRequest, opts ...grpc.CallOption) (*UpdateShadowLinkResponse, error)
 	DeleteShadowLink(ctx context.Context, in *v2.DeleteShadowLinkRequest, opts ...grpc.CallOption) (*DeleteShadowLinkResponse, error)
@@ -51,16 +49,6 @@ func (c *shadowLinkServiceClient) CreateShadowLink(ctx context.Context, in *v2.C
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateShadowLinkResponse)
 	err := c.cc.Invoke(ctx, ShadowLinkService_CreateShadowLink_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *shadowLinkServiceClient) GetShadowLink(ctx context.Context, in *GetShadowLinkRequest, opts ...grpc.CallOption) (*GetShadowLinkResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetShadowLinkResponse)
-	err := c.cc.Invoke(ctx, ShadowLinkService_GetShadowLink_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +90,6 @@ func (c *shadowLinkServiceClient) DeleteShadowLink(ctx context.Context, in *v2.D
 // for forward compatibility.
 type ShadowLinkServiceServer interface {
 	CreateShadowLink(context.Context, *v2.CreateShadowLinkRequest) (*CreateShadowLinkResponse, error)
-	GetShadowLink(context.Context, *GetShadowLinkRequest) (*GetShadowLinkResponse, error)
 	ListShadowLinks(context.Context, *ListShadowLinksRequest) (*ListShadowLinksResponse, error)
 	UpdateShadowLink(context.Context, *v2.UpdateShadowLinkRequest) (*UpdateShadowLinkResponse, error)
 	DeleteShadowLink(context.Context, *v2.DeleteShadowLinkRequest) (*DeleteShadowLinkResponse, error)
@@ -118,9 +105,6 @@ type UnimplementedShadowLinkServiceServer struct{}
 
 func (UnimplementedShadowLinkServiceServer) CreateShadowLink(context.Context, *v2.CreateShadowLinkRequest) (*CreateShadowLinkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateShadowLink not implemented")
-}
-func (UnimplementedShadowLinkServiceServer) GetShadowLink(context.Context, *GetShadowLinkRequest) (*GetShadowLinkResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetShadowLink not implemented")
 }
 func (UnimplementedShadowLinkServiceServer) ListShadowLinks(context.Context, *ListShadowLinksRequest) (*ListShadowLinksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListShadowLinks not implemented")
@@ -166,24 +150,6 @@ func _ShadowLinkService_CreateShadowLink_Handler(srv interface{}, ctx context.Co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ShadowLinkServiceServer).CreateShadowLink(ctx, req.(*v2.CreateShadowLinkRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ShadowLinkService_GetShadowLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetShadowLinkRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ShadowLinkServiceServer).GetShadowLink(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ShadowLinkService_GetShadowLink_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ShadowLinkServiceServer).GetShadowLink(ctx, req.(*GetShadowLinkRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -252,10 +218,6 @@ var ShadowLinkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateShadowLink",
 			Handler:    _ShadowLinkService_CreateShadowLink_Handler,
-		},
-		{
-			MethodName: "GetShadowLink",
-			Handler:    _ShadowLinkService_GetShadowLink_Handler,
 		},
 		{
 			MethodName: "ListShadowLinks",

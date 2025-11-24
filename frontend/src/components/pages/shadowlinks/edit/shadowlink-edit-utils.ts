@@ -10,7 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 import {
   type ACLFilter,
   ACLFilterSchema,

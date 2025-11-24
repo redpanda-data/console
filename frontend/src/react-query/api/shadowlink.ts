@@ -23,8 +23,6 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import {
   type CreateShadowLinkResponseSchema,
-  type GetShadowLinkRequest,
-  GetShadowLinkRequestSchema,
   type ListShadowLinksRequest,
   ListShadowLinksRequestSchema,
   type UpdateShadowLinkResponseSchema,
@@ -32,11 +30,12 @@ import {
 import {
   createShadowLink,
   deleteShadowLink,
-  getShadowLink,
   listShadowLinks,
   updateShadowLink,
 } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import {
+  type GetShadowLinkRequest,
+  GetShadowLinkRequestSchema,
   type GetShadowMetricsRequest,
   GetShadowMetricsRequestSchema,
   type GetShadowMetricsResponse,
@@ -49,6 +48,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 import {
   failOver,
+  getShadowLink,
   getShadowMetrics,
   getShadowTopic,
   listShadowLinkTopics,

@@ -4,23 +4,11 @@ package redpanda.api.console.v1alpha1;
 
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
-import "google/api/field_behavior.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
 import "redpanda/core/admin/v2/shadow_link.proto";
 
 message CreateShadowLinkResponse {
-  ShadowLink shadow_link = 1;
-}
-
-message GetShadowLinkRequest {
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true
-  ];
-}
-
-message GetShadowLinkResponse {
   ShadowLink shadow_link = 1;
 }
 
@@ -132,27 +120,6 @@ service ShadowLinkService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_ADMIN
-      api: API_REDPANDA_ADMIN
-    };
-  }
-
-  rpc GetShadowLink(GetShadowLinkRequest) returns (GetShadowLinkResponse) {
-    option (google.api.http) = {get: "/v1alpha1/shadowlink/{name}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Get Shadow Link"
-      description: "Retrieve details of a specific shadow link by name."
-      responses: {
-        key: "200"
-        value: {
-          description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.console.v1alpha1.GetShadowLinkResponse"}
-          }
-        }
-      }
-    };
-    option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_VIEW
       api: API_REDPANDA_ADMIN
     };
   }

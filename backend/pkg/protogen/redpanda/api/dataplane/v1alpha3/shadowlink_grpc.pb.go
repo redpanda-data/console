@@ -25,6 +25,7 @@ const (
 	ShadowLinkService_ListShadowLinkTopics_FullMethodName = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/ListShadowLinkTopics"
 	ShadowLinkService_GetShadowTopic_FullMethodName       = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/GetShadowTopic"
 	ShadowLinkService_GetShadowMetrics_FullMethodName     = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/GetShadowMetrics"
+	ShadowLinkService_GetShadowLink_FullMethodName        = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/GetShadowLink"
 )
 
 // ShadowLinkServiceClient is the client API for ShadowLinkService service.
@@ -35,6 +36,7 @@ type ShadowLinkServiceClient interface {
 	ListShadowLinkTopics(ctx context.Context, in *ListShadowLinkTopicsRequest, opts ...grpc.CallOption) (*ListShadowLinkTopicsResponse, error)
 	GetShadowTopic(ctx context.Context, in *GetShadowTopicRequest, opts ...grpc.CallOption) (*GetShadowTopicResponse, error)
 	GetShadowMetrics(ctx context.Context, in *GetShadowMetricsRequest, opts ...grpc.CallOption) (*GetShadowMetricsResponse, error)
+	GetShadowLink(ctx context.Context, in *GetShadowLinkRequest, opts ...grpc.CallOption) (*GetShadowLinkResponse, error)
 }
 
 type shadowLinkServiceClient struct {
@@ -85,6 +87,16 @@ func (c *shadowLinkServiceClient) GetShadowMetrics(ctx context.Context, in *GetS
 	return out, nil
 }
 
+func (c *shadowLinkServiceClient) GetShadowLink(ctx context.Context, in *GetShadowLinkRequest, opts ...grpc.CallOption) (*GetShadowLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetShadowLinkResponse)
+	err := c.cc.Invoke(ctx, ShadowLinkService_GetShadowLink_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ShadowLinkServiceServer is the server API for ShadowLinkService service.
 // All implementations must embed UnimplementedShadowLinkServiceServer
 // for forward compatibility.
@@ -93,6 +105,7 @@ type ShadowLinkServiceServer interface {
 	ListShadowLinkTopics(context.Context, *ListShadowLinkTopicsRequest) (*ListShadowLinkTopicsResponse, error)
 	GetShadowTopic(context.Context, *GetShadowTopicRequest) (*GetShadowTopicResponse, error)
 	GetShadowMetrics(context.Context, *GetShadowMetricsRequest) (*GetShadowMetricsResponse, error)
+	GetShadowLink(context.Context, *GetShadowLinkRequest) (*GetShadowLinkResponse, error)
 	mustEmbedUnimplementedShadowLinkServiceServer()
 }
 
@@ -114,6 +127,9 @@ func (UnimplementedShadowLinkServiceServer) GetShadowTopic(context.Context, *Get
 }
 func (UnimplementedShadowLinkServiceServer) GetShadowMetrics(context.Context, *GetShadowMetricsRequest) (*GetShadowMetricsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetShadowMetrics not implemented")
+}
+func (UnimplementedShadowLinkServiceServer) GetShadowLink(context.Context, *GetShadowLinkRequest) (*GetShadowLinkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetShadowLink not implemented")
 }
 func (UnimplementedShadowLinkServiceServer) mustEmbedUnimplementedShadowLinkServiceServer() {}
 func (UnimplementedShadowLinkServiceServer) testEmbeddedByValue()                           {}
@@ -208,6 +224,24 @@ func _ShadowLinkService_GetShadowMetrics_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ShadowLinkService_GetShadowLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetShadowLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShadowLinkServiceServer).GetShadowLink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ShadowLinkService_GetShadowLink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShadowLinkServiceServer).GetShadowLink(ctx, req.(*GetShadowLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ShadowLinkService_ServiceDesc is the grpc.ServiceDesc for ShadowLinkService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -230,6 +264,10 @@ var ShadowLinkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetShadowMetrics",
 			Handler:    _ShadowLinkService_GetShadowMetrics_Handler,
+		},
+		{
+			MethodName: "GetShadowLink",
+			Handler:    _ShadowLinkService_GetShadowLink_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

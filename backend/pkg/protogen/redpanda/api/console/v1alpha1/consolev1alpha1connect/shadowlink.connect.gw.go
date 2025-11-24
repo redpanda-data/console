@@ -19,7 +19,6 @@ import (
 type ShadowLinkServiceGatewayServer struct {
 	v1alpha1.UnimplementedShadowLinkServiceServer
 	createShadowLink connect_gateway.UnaryHandler[v2.CreateShadowLinkRequest, v1alpha1.CreateShadowLinkResponse]
-	getShadowLink    connect_gateway.UnaryHandler[v1alpha1.GetShadowLinkRequest, v1alpha1.GetShadowLinkResponse]
 	listShadowLinks  connect_gateway.UnaryHandler[v1alpha1.ListShadowLinksRequest, v1alpha1.ListShadowLinksResponse]
 	updateShadowLink connect_gateway.UnaryHandler[v2.UpdateShadowLinkRequest, v1alpha1.UpdateShadowLinkResponse]
 	deleteShadowLink connect_gateway.UnaryHandler[v2.DeleteShadowLinkRequest, v1alpha1.DeleteShadowLinkResponse]
@@ -30,7 +29,6 @@ type ShadowLinkServiceGatewayServer struct {
 func NewShadowLinkServiceGatewayServer(svc ShadowLinkServiceHandler, opts ...connect_gateway.HandlerOption) *ShadowLinkServiceGatewayServer {
 	return &ShadowLinkServiceGatewayServer{
 		createShadowLink: connect_gateway.NewUnaryHandler(ShadowLinkServiceCreateShadowLinkProcedure, svc.CreateShadowLink, opts...),
-		getShadowLink:    connect_gateway.NewUnaryHandler(ShadowLinkServiceGetShadowLinkProcedure, svc.GetShadowLink, opts...),
 		listShadowLinks:  connect_gateway.NewUnaryHandler(ShadowLinkServiceListShadowLinksProcedure, svc.ListShadowLinks, opts...),
 		updateShadowLink: connect_gateway.NewUnaryHandler(ShadowLinkServiceUpdateShadowLinkProcedure, svc.UpdateShadowLink, opts...),
 		deleteShadowLink: connect_gateway.NewUnaryHandler(ShadowLinkServiceDeleteShadowLinkProcedure, svc.DeleteShadowLink, opts...),
@@ -39,10 +37,6 @@ func NewShadowLinkServiceGatewayServer(svc ShadowLinkServiceHandler, opts ...con
 
 func (s *ShadowLinkServiceGatewayServer) CreateShadowLink(ctx context.Context, req *v2.CreateShadowLinkRequest) (*v1alpha1.CreateShadowLinkResponse, error) {
 	return s.createShadowLink(ctx, req)
-}
-
-func (s *ShadowLinkServiceGatewayServer) GetShadowLink(ctx context.Context, req *v1alpha1.GetShadowLinkRequest) (*v1alpha1.GetShadowLinkResponse, error) {
-	return s.getShadowLink(ctx, req)
 }
 
 func (s *ShadowLinkServiceGatewayServer) ListShadowLinks(ctx context.Context, req *v1alpha1.ListShadowLinksRequest) (*v1alpha1.ListShadowLinksResponse, error) {

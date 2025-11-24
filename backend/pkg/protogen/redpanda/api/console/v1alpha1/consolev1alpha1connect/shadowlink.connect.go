@@ -39,9 +39,6 @@ const (
 	// ShadowLinkServiceCreateShadowLinkProcedure is the fully-qualified name of the ShadowLinkService's
 	// CreateShadowLink RPC.
 	ShadowLinkServiceCreateShadowLinkProcedure = "/redpanda.api.console.v1alpha1.ShadowLinkService/CreateShadowLink"
-	// ShadowLinkServiceGetShadowLinkProcedure is the fully-qualified name of the ShadowLinkService's
-	// GetShadowLink RPC.
-	ShadowLinkServiceGetShadowLinkProcedure = "/redpanda.api.console.v1alpha1.ShadowLinkService/GetShadowLink"
 	// ShadowLinkServiceListShadowLinksProcedure is the fully-qualified name of the ShadowLinkService's
 	// ListShadowLinks RPC.
 	ShadowLinkServiceListShadowLinksProcedure = "/redpanda.api.console.v1alpha1.ShadowLinkService/ListShadowLinks"
@@ -57,7 +54,6 @@ const (
 var (
 	shadowLinkServiceServiceDescriptor                = v1alpha1.File_redpanda_api_console_v1alpha1_shadowlink_proto.Services().ByName("ShadowLinkService")
 	shadowLinkServiceCreateShadowLinkMethodDescriptor = shadowLinkServiceServiceDescriptor.Methods().ByName("CreateShadowLink")
-	shadowLinkServiceGetShadowLinkMethodDescriptor    = shadowLinkServiceServiceDescriptor.Methods().ByName("GetShadowLink")
 	shadowLinkServiceListShadowLinksMethodDescriptor  = shadowLinkServiceServiceDescriptor.Methods().ByName("ListShadowLinks")
 	shadowLinkServiceUpdateShadowLinkMethodDescriptor = shadowLinkServiceServiceDescriptor.Methods().ByName("UpdateShadowLink")
 	shadowLinkServiceDeleteShadowLinkMethodDescriptor = shadowLinkServiceServiceDescriptor.Methods().ByName("DeleteShadowLink")
@@ -67,7 +63,6 @@ var (
 // service.
 type ShadowLinkServiceClient interface {
 	CreateShadowLink(context.Context, *connect.Request[v2.CreateShadowLinkRequest]) (*connect.Response[v1alpha1.CreateShadowLinkResponse], error)
-	GetShadowLink(context.Context, *connect.Request[v1alpha1.GetShadowLinkRequest]) (*connect.Response[v1alpha1.GetShadowLinkResponse], error)
 	ListShadowLinks(context.Context, *connect.Request[v1alpha1.ListShadowLinksRequest]) (*connect.Response[v1alpha1.ListShadowLinksResponse], error)
 	UpdateShadowLink(context.Context, *connect.Request[v2.UpdateShadowLinkRequest]) (*connect.Response[v1alpha1.UpdateShadowLinkResponse], error)
 	DeleteShadowLink(context.Context, *connect.Request[v2.DeleteShadowLinkRequest]) (*connect.Response[v1alpha1.DeleteShadowLinkResponse], error)
@@ -88,12 +83,6 @@ func NewShadowLinkServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			httpClient,
 			baseURL+ShadowLinkServiceCreateShadowLinkProcedure,
 			connect.WithSchema(shadowLinkServiceCreateShadowLinkMethodDescriptor),
-			connect.WithClientOptions(opts...),
-		),
-		getShadowLink: connect.NewClient[v1alpha1.GetShadowLinkRequest, v1alpha1.GetShadowLinkResponse](
-			httpClient,
-			baseURL+ShadowLinkServiceGetShadowLinkProcedure,
-			connect.WithSchema(shadowLinkServiceGetShadowLinkMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		listShadowLinks: connect.NewClient[v1alpha1.ListShadowLinksRequest, v1alpha1.ListShadowLinksResponse](
@@ -120,7 +109,6 @@ func NewShadowLinkServiceClient(httpClient connect.HTTPClient, baseURL string, o
 // shadowLinkServiceClient implements ShadowLinkServiceClient.
 type shadowLinkServiceClient struct {
 	createShadowLink *connect.Client[v2.CreateShadowLinkRequest, v1alpha1.CreateShadowLinkResponse]
-	getShadowLink    *connect.Client[v1alpha1.GetShadowLinkRequest, v1alpha1.GetShadowLinkResponse]
 	listShadowLinks  *connect.Client[v1alpha1.ListShadowLinksRequest, v1alpha1.ListShadowLinksResponse]
 	updateShadowLink *connect.Client[v2.UpdateShadowLinkRequest, v1alpha1.UpdateShadowLinkResponse]
 	deleteShadowLink *connect.Client[v2.DeleteShadowLinkRequest, v1alpha1.DeleteShadowLinkResponse]
@@ -129,11 +117,6 @@ type shadowLinkServiceClient struct {
 // CreateShadowLink calls redpanda.api.console.v1alpha1.ShadowLinkService.CreateShadowLink.
 func (c *shadowLinkServiceClient) CreateShadowLink(ctx context.Context, req *connect.Request[v2.CreateShadowLinkRequest]) (*connect.Response[v1alpha1.CreateShadowLinkResponse], error) {
 	return c.createShadowLink.CallUnary(ctx, req)
-}
-
-// GetShadowLink calls redpanda.api.console.v1alpha1.ShadowLinkService.GetShadowLink.
-func (c *shadowLinkServiceClient) GetShadowLink(ctx context.Context, req *connect.Request[v1alpha1.GetShadowLinkRequest]) (*connect.Response[v1alpha1.GetShadowLinkResponse], error) {
-	return c.getShadowLink.CallUnary(ctx, req)
 }
 
 // ListShadowLinks calls redpanda.api.console.v1alpha1.ShadowLinkService.ListShadowLinks.
@@ -155,7 +138,6 @@ func (c *shadowLinkServiceClient) DeleteShadowLink(ctx context.Context, req *con
 // redpanda.api.console.v1alpha1.ShadowLinkService service.
 type ShadowLinkServiceHandler interface {
 	CreateShadowLink(context.Context, *connect.Request[v2.CreateShadowLinkRequest]) (*connect.Response[v1alpha1.CreateShadowLinkResponse], error)
-	GetShadowLink(context.Context, *connect.Request[v1alpha1.GetShadowLinkRequest]) (*connect.Response[v1alpha1.GetShadowLinkResponse], error)
 	ListShadowLinks(context.Context, *connect.Request[v1alpha1.ListShadowLinksRequest]) (*connect.Response[v1alpha1.ListShadowLinksResponse], error)
 	UpdateShadowLink(context.Context, *connect.Request[v2.UpdateShadowLinkRequest]) (*connect.Response[v1alpha1.UpdateShadowLinkResponse], error)
 	DeleteShadowLink(context.Context, *connect.Request[v2.DeleteShadowLinkRequest]) (*connect.Response[v1alpha1.DeleteShadowLinkResponse], error)
@@ -171,12 +153,6 @@ func NewShadowLinkServiceHandler(svc ShadowLinkServiceHandler, opts ...connect.H
 		ShadowLinkServiceCreateShadowLinkProcedure,
 		svc.CreateShadowLink,
 		connect.WithSchema(shadowLinkServiceCreateShadowLinkMethodDescriptor),
-		connect.WithHandlerOptions(opts...),
-	)
-	shadowLinkServiceGetShadowLinkHandler := connect.NewUnaryHandler(
-		ShadowLinkServiceGetShadowLinkProcedure,
-		svc.GetShadowLink,
-		connect.WithSchema(shadowLinkServiceGetShadowLinkMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	shadowLinkServiceListShadowLinksHandler := connect.NewUnaryHandler(
@@ -201,8 +177,6 @@ func NewShadowLinkServiceHandler(svc ShadowLinkServiceHandler, opts ...connect.H
 		switch r.URL.Path {
 		case ShadowLinkServiceCreateShadowLinkProcedure:
 			shadowLinkServiceCreateShadowLinkHandler.ServeHTTP(w, r)
-		case ShadowLinkServiceGetShadowLinkProcedure:
-			shadowLinkServiceGetShadowLinkHandler.ServeHTTP(w, r)
 		case ShadowLinkServiceListShadowLinksProcedure:
 			shadowLinkServiceListShadowLinksHandler.ServeHTTP(w, r)
 		case ShadowLinkServiceUpdateShadowLinkProcedure:
@@ -220,10 +194,6 @@ type UnimplementedShadowLinkServiceHandler struct{}
 
 func (UnimplementedShadowLinkServiceHandler) CreateShadowLink(context.Context, *connect.Request[v2.CreateShadowLinkRequest]) (*connect.Response[v1alpha1.CreateShadowLinkResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ShadowLinkService.CreateShadowLink is not implemented"))
-}
-
-func (UnimplementedShadowLinkServiceHandler) GetShadowLink(context.Context, *connect.Request[v1alpha1.GetShadowLinkRequest]) (*connect.Response[v1alpha1.GetShadowLinkResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ShadowLinkService.GetShadowLink is not implemented"))
 }
 
 func (UnimplementedShadowLinkServiceHandler) ListShadowLinks(context.Context, *connect.Request[v1alpha1.ListShadowLinksRequest]) (*connect.Response[v1alpha1.ListShadowLinksResponse], error) {
