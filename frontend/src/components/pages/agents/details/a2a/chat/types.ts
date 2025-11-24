@@ -35,6 +35,7 @@ export type ContentBlock =
       output?: unknown;
       errorText?: string;
       timestamp: Date;
+      endTimestamp?: Date;
       messageId?: string;
     }
   | {

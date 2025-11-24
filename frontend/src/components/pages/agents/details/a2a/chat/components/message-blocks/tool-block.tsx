@@ -19,6 +19,7 @@ type ToolBlockProps = {
   output?: unknown;
   errorText?: string;
   timestamp: Date;
+  endTimestamp?: Date;
   messageId?: string;
   isLastBlock: boolean;
 };
@@ -27,19 +28,24 @@ type ToolBlockProps = {
  * Renders a tool block that transitions from request → response state
  * Spawns closed by default, user can manually toggle
  */
-export const ToolBlock = ({ toolCallId, toolName, state, input, output, errorText }: ToolBlockProps) => (
-  <Tool defaultOpen={false} key={toolCallId}>
-    <ToolHeader
-      state={state}
-      title={toolName || 'Tool'}
-      toolCallId={toolCallId}
-      type={`tool-${toolName || 'unknown'}`}
-    />
-    <ToolContent>
-      <ToolInput input={input} />
-      {(state === 'output-available' || state === 'output-error') && (
-        <ToolOutput errorText={errorText} output={output} />
-      )}
-    </ToolContent>
-  </Tool>
-);
+export const ToolBlock = ({ toolCallId, toolName, state, input, output, errorText, timestamp, endTimestamp }: ToolBlockProps) => {
+  const durationMs = endTimestamp && timestamp ? endTimestamp.getTime() - timestamp.getTime() : undefined;
+
+  return (
+    <Tool defaultOpen={false} key={toolCallId}>
+      <ToolHeader
+        state={state}
+        title={toolName || 'Tool'}
+        toolCallId={toolCallId}
+        type={`tool-${toolName || 'unknown'}`}
+        durationMs={durationMs}
+      />
+      <ToolContent>
+        <ToolInput input={input} />
+        {(state === 'output-available' || state === 'output-error') && (
+          <ToolOutput errorText={errorText} output={output} />
+        )}
+      </ToolContent>
+    </Tool>
+  );
+};

@@ -66,6 +66,7 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
                 output={block.output}
                 state={block.state}
                 timestamp={block.timestamp}
+                endTimestamp={block.endTimestamp}
                 toolCallId={block.toolCallId}
                 toolName={block.toolName}
               />
