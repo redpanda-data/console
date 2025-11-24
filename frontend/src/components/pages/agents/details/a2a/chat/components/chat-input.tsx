@@ -30,7 +30,7 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { Context, ContextContent, ContextContentHeader, ContextContentBody, ContextInputUsage, ContextOutputUsage, ContextTrigger } from 'components/ai-elements/context';
 import { HistoryIcon } from 'lucide-react';
 import type { AIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 
 import { AIAgentModel } from '../../../../ai-agent-model';
 import type { UsageMetadata } from '../types';
@@ -53,7 +53,7 @@ type ChatInputProps = {
 /**
  * Chat input component with prompt textarea, model selector, and controls
  */
-export const ChatInput = ({
+const ChatInputComponent = ({
   input,
   isLoading,
   editingMessageId,
@@ -174,3 +174,7 @@ export const ChatInput = ({
     </div>
   );
 };
+
+ChatInputComponent.displayName = 'ChatInput';
+
+export const ChatInput = memo(ChatInputComponent);
