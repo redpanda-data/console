@@ -30,6 +30,7 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { Context, ContextContent, ContextContentHeader, ContextContentBody, ContextInputUsage, ContextOutputUsage, ContextTrigger } from 'components/ai-elements/context';
 import { HistoryIcon } from 'lucide-react';
 import type { AIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
+import { useMemo } from 'react';
 
 import { AIAgentModel } from '../../../../ai-agent-model';
 import type { UsageMetadata } from '../types';
@@ -67,8 +68,22 @@ export const ChatInput = ({
   onCancel,
 }: ChatInputProps) => {
   // Construct modelId from agent resource: provider:model (e.g., "openai:gpt-5")
-  const provider = agent.provider?.provider.case || 'openai';
-  const modelId = `${provider}:${agent.model}`;
+  const modelId = useMemo(() => {
+    const provider = agent.provider?.provider.case || 'openai';
+    return `${provider}:${agent.model}`;
+  }, [agent.provider?.provider.case, agent.model]);
+
+  // Memoize usage object to prevent recalculation on every render
+  const contextUsage = useMemo(
+    () => ({
+      inputTokens: usage?.cumulativeInputTokens || 0,
+      outputTokens: usage?.cumulativeOutputTokens || 0,
+      reasoningTokens: usage?.cumulativeReasoningTokens || 0,
+      cachedInputTokens: usage?.cumulativeCachedTokens || 0,
+      totalTokens: (usage?.cumulativeInputTokens || 0) + (usage?.cumulativeOutputTokens || 0),
+    }),
+    [usage?.cumulativeInputTokens, usage?.cumulativeOutputTokens, usage?.cumulativeReasoningTokens, usage?.cumulativeCachedTokens]
+  );
 
   return (
     <div className="shrink-0 bg-background px-4 pt-4 pb-8">
@@ -102,13 +117,7 @@ export const ChatInput = ({
               maxTokens={usage?.max_input_tokens || 272000}
               usedTokens={usage?.input_tokens || 0}
               modelId={modelId}
-              usage={{
-                inputTokens: usage?.cumulativeInputTokens || 0,
-                outputTokens: usage?.cumulativeOutputTokens || 0,
-                reasoningTokens: usage?.cumulativeReasoningTokens || 0,
-                cachedInputTokens: usage?.cumulativeCachedTokens || 0,
-                totalTokens: (usage?.cumulativeInputTokens || 0) + (usage?.cumulativeOutputTokens || 0),
-              }}
+              usage={contextUsage}
             >
               <ContextTrigger />
               <ContextContent>
