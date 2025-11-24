@@ -84,11 +84,11 @@ const ChatInputComponent = ({
   // Memoize usage object to prevent recalculation on every render
   const contextUsage = useMemo(
     () => ({
-      inputTokens: usage.cumulativeInputTokens,
-      outputTokens: usage.cumulativeOutputTokens,
+      inputTokens: usage.cumulativeInputTokens ?? 0,
+      outputTokens: usage.cumulativeOutputTokens ?? 0,
       reasoningTokens: usage.cumulativeReasoningTokens,
       cachedInputTokens: usage.cumulativeCachedTokens,
-      totalTokens: usage.cumulativeInputTokens + usage.cumulativeOutputTokens,
+      totalTokens: (usage.cumulativeInputTokens ?? 0) + (usage.cumulativeOutputTokens ?? 0),
     }),
     [
       usage.cumulativeInputTokens,
