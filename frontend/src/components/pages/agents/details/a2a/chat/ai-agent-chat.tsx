@@ -119,11 +119,11 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
       </Conversation>
 
       <ChatInput
+        agent={agent}
         editingMessageId={editingMessageId}
         hasMessages={messages.length > 0}
         input={input}
         isLoading={isLoading}
-        model={agent.model}
         usage={latestUsage}
         onCancel={() => {
           const lastMessage = messages.at(-1);

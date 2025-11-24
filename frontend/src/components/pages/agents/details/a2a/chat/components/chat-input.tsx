@@ -29,6 +29,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Context, ContextContent, ContextContentHeader, ContextContentBody, ContextInputUsage, ContextOutputUsage, ContextTrigger } from 'components/ai-elements/context';
 import { HistoryIcon } from 'lucide-react';
+import type { AIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 
 import { AIAgentModel } from '../../../../ai-agent-model';
 import type { UsageMetadata } from '../types';
@@ -37,7 +38,7 @@ type ChatInputProps = {
   input: string;
   isLoading: boolean;
   editingMessageId: string | null;
-  model: string | undefined;
+  agent: AIAgent;
   hasMessages: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   usage?: UsageMetadata;
@@ -55,7 +56,7 @@ export const ChatInput = ({
   input,
   isLoading,
   editingMessageId,
-  model,
+  agent,
   hasMessages,
   textareaRef,
   usage,
@@ -65,6 +66,10 @@ export const ChatInput = ({
   onCancelEdit,
   onCancel,
 }: ChatInputProps) => {
+  // Construct modelId from agent resource: provider:model (e.g., "openai:gpt-5")
+  const provider = agent.provider?.provider.case || 'openai';
+  const modelId = `${provider}:${agent.model}`;
+
   return (
     <div className="shrink-0 bg-background px-4 pt-4 pb-8">
       <PromptInput globalDrop multiple onSubmit={onSubmit}>
@@ -79,16 +84,16 @@ export const ChatInput = ({
         </PromptInputBody>
         <PromptInputFooter>
           <PromptInputTools>
-            {model && (
-              <PromptInputModelSelect disabled value={model}>
+            {agent.model && (
+              <PromptInputModelSelect disabled value={agent.model}>
                 <PromptInputModelSelectTrigger>
                   <PromptInputModelSelectValue>
-                    <AIAgentModel model={model} size="sm" />
+                    <AIAgentModel model={agent.model} size="sm" />
                   </PromptInputModelSelectValue>
                 </PromptInputModelSelectTrigger>
                 <PromptInputModelSelectContent>
-                  <PromptInputModelSelectItem value={model}>
-                    <AIAgentModel model={model} size="sm" />
+                  <PromptInputModelSelectItem value={agent.model}>
+                    <AIAgentModel model={agent.model} size="sm" />
                   </PromptInputModelSelectItem>
                 </PromptInputModelSelectContent>
               </PromptInputModelSelect>
@@ -96,12 +101,13 @@ export const ChatInput = ({
             <Context
               maxTokens={usage?.max_input_tokens || 272000}
               usedTokens={usage?.input_tokens || 0}
-              modelId="openai:gpt-5"
+              modelId={modelId}
               usage={{
                 inputTokens: usage?.cumulativeInputTokens || 0,
                 outputTokens: usage?.cumulativeOutputTokens || 0,
                 reasoningTokens: usage?.cumulativeReasoningTokens || 0,
                 cachedInputTokens: usage?.cumulativeCachedTokens || 0,
+                totalTokens: (usage?.cumulativeInputTokens || 0) + (usage?.cumulativeOutputTokens || 0),
               }}
             >
               <ContextTrigger />
