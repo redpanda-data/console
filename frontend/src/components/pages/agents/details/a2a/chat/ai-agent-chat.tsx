@@ -64,8 +64,8 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
             {latestUsage && latestUsage.max_input_tokens && (
               <Context
                 maxTokens={latestUsage.max_input_tokens}
-                usedTokens={latestUsage.input_tokens}
-                modelId="openai:gpt-4o-mini"
+                usedTokens={latestUsage.total_tokens}
+                modelId="openai:gpt-5"
                 usage={{
                   inputTokens: latestUsage.input_tokens,
                   outputTokens: latestUsage.output_tokens,
