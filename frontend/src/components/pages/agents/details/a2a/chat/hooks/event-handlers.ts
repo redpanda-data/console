@@ -111,7 +111,9 @@ const extractMessageText = (
   // Extract tool requests from data parts
   const toolRequests = message.parts
     .filter((part): part is Extract<typeof part, { kind: 'data' }> => {
-      if (part.kind !== 'data') return false;
+      if (part.kind !== 'data') {
+        return false;
+      }
       const metadata = part.metadata as Record<string, unknown> | undefined;
       const data = part.data as Record<string, unknown> | undefined;
       return metadata?.data_type === 'tool_request' && !!data?.name;
