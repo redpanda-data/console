@@ -115,12 +115,22 @@ export const MessageTimestamp = ({
   );
 };
 
+// Format token count with compact notation (e.g., "1.2K", "5.6M")
+function formatTokenCount(tokens: number): string {
+  return new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(tokens);
+}
+
 export type MessageMetadataProps = HTMLAttributes<HTMLDivElement> & {
   from?: UIMessage["role"];
   timestamp?: Date | string;
   messageId?: string;
   contextId?: string;
   taskId?: string;
+  inputTokens?: number;
+  outputTokens?: number;
 };
 
 export const MessageMetadata = ({
@@ -129,6 +139,8 @@ export const MessageMetadata = ({
   messageId,
   contextId,
   taskId,
+  inputTokens,
+  outputTokens,
   className,
   ...props
 }: MessageMetadataProps) => {
@@ -136,8 +148,21 @@ export const MessageMetadata = ({
     ? timestamp.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })
     : timestamp;
 
+  // Build tokens display string
+  let tokensDisplay: string | undefined;
+  if ((inputTokens && inputTokens > 0) || (outputTokens && outputTokens > 0)) {
+    const parts: string[] = [];
+    if (inputTokens && inputTokens > 0) {
+      parts.push(`${formatTokenCount(inputTokens)} in`);
+    }
+    if (outputTokens && outputTokens > 0) {
+      parts.push(`${formatTokenCount(outputTokens)} out`);
+    }
+    tokensDisplay = parts.join(' / ');
+  }
+
   // Don't render if no metadata to show
-  const hasMetadata = contextId || taskId || messageId || time;
+  const hasMetadata = contextId || taskId || messageId || tokensDisplay || time;
   if (!hasMetadata) return null;
 
   return (
@@ -167,6 +192,12 @@ export const MessageMetadata = ({
               <div className="flex gap-1.5">
                 <span className="font-medium">message_id:</span>
                 <span className="font-mono">{messageId}</span>
+              </div>
+            )}
+            {tokensDisplay && (
+              <div className="flex gap-1.5">
+                <span className="font-medium">tokens:</span>
+                <span>{tokensDisplay}</span>
               </div>
             )}
           </>
