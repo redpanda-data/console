@@ -2262,6 +2262,7 @@ components:
         - SCOPE_REDPANDA_CLUSTER
         - SCOPE_MCP_SERVER
         - SCOPE_AI_AGENT
+        - SCOPE_AI_GATEWAY
       type: string
     Secret:
       description: Defines the secret resource.
@@ -4005,6 +4006,7 @@ paths:
                 - SCOPE_REDPANDA_CLUSTER
                 - SCOPE_MCP_SERVER
                 - SCOPE_AI_AGENT
+                - SCOPE_AI_GATEWAY
               type: string
             type: array
         - description: |-
@@ -5427,6 +5429,7 @@ paths:
                 - SCOPE_REDPANDA_CLUSTER
                 - SCOPE_MCP_SERVER
                 - SCOPE_AI_AGENT
+                - SCOPE_AI_GATEWAY
               type: string
             type: array
         - description: |-
@@ -5527,6 +5530,7 @@ paths:
                 - SCOPE_REDPANDA_CLUSTER
                 - SCOPE_MCP_SERVER
                 - SCOPE_AI_AGENT
+                - SCOPE_AI_GATEWAY
               type: string
             type: array
       responses:
