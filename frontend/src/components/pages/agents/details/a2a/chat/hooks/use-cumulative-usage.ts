@@ -10,7 +10,8 @@
  */
 
 import { useMemo } from 'react';
-import type { ChatMessage, UsageMetadata } from '../types';
+
+import type { ChatMessage, MessageUsageMetadata, UsageMetadata } from '../types';
 
 /**
  * Hook to calculate cumulative token usage from messages
@@ -18,7 +19,7 @@ import type { ChatMessage, UsageMetadata } from '../types';
  */
 export function useCumulativeUsage(messages: ChatMessage[]): UsageMetadata {
   return useMemo(() => {
-    let latestRequestUsage: UsageMetadata | undefined;
+    let latestRequestUsage: MessageUsageMetadata | undefined;
     let cumulativeInputTokens = 0;
     let cumulativeOutputTokens = 0;
     let cumulativeReasoningTokens = 0;

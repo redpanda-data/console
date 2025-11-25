@@ -71,28 +71,28 @@ export const TaskStatusUpdateBlock = ({
       <div className="flex flex-col gap-0.5">
         {messageId && (
           <div className="flex gap-1.5">
-            <Text as="span" variant="small" className="font-bold">
+            <Text as="span" className="font-bold" variant="small">
               message_id:
             </Text>
-            <Text as="span" variant="small" className="font-mono text-muted-foreground">
+            <Text as="span" className="font-mono text-muted-foreground" variant="small">
               {messageId}
             </Text>
           </div>
         )}
         {hasTokens && (
           <div className="flex items-center gap-1.5">
-            <Text as="span" variant="small" className="font-bold">
+            <Text as="span" className="font-bold" variant="small">
               tokens:
             </Text>
             <div className="flex items-center gap-2">
               {inputTokens && inputTokens > 0 && (
-                <Text as="span" variant="small" className="flex items-center gap-1 text-muted-foreground">
+                <Text as="span" className="flex items-center gap-1 text-muted-foreground" variant="small">
                   <ArrowUpIcon className="size-3" />
                   {formatTokenCount(inputTokens)}
                 </Text>
               )}
               {outputTokens && outputTokens > 0 && (
-                <Text as="span" variant="small" className="flex items-center gap-1 text-muted-foreground">
+                <Text as="span" className="flex items-center gap-1 text-muted-foreground" variant="small">
                   <ArrowDownIcon className="size-3" />
                   {formatTokenCount(outputTokens)}
                 </Text>
@@ -101,10 +101,10 @@ export const TaskStatusUpdateBlock = ({
           </div>
         )}
         <div className="flex gap-1.5">
-          <Text as="span" variant="small" className="font-bold">
+          <Text as="span" className="font-bold" variant="small">
             time:
           </Text>
-          <Text as="span" variant="small" className="text-muted-foreground">
+          <Text as="span" className="text-muted-foreground" variant="small">
             {time}
           </Text>
         </div>
