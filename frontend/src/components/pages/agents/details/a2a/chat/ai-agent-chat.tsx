@@ -94,7 +94,7 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
         </div>
       )}
 
-      <Conversation className="flex-1 min-h-0" initial="instant" resize="instant">
+      <Conversation className="flex-1" initial="instant" resize="instant">
         <ConversationContent>
           {isLoadingHistory && (
             <div className="flex h-full items-center justify-center">
