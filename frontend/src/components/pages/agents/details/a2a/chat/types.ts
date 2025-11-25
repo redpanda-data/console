@@ -54,6 +54,7 @@ export type ContentBlock =
       messageId?: string;
       final: boolean;
       timestamp: Date;
+      usage?: MessageUsageMetadata;
     };
 
 // Message-level usage metadata (stored in database)

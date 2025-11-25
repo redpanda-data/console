@@ -6,6 +6,7 @@ import {
 import { cn } from "components/redpanda-ui/lib/utils";
 import type { UIMessage } from "ai";
 import { cva, type VariantProps } from "class-variance-authority";
+import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import type { ComponentProps, HTMLAttributes } from "react";
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
@@ -148,21 +149,10 @@ export const MessageMetadata = ({
     ? timestamp.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })
     : timestamp;
 
-  // Build tokens display string
-  let tokensDisplay: string | undefined;
-  if ((inputTokens && inputTokens > 0) || (outputTokens && outputTokens > 0)) {
-    const parts: string[] = [];
-    if (inputTokens && inputTokens > 0) {
-      parts.push(`${formatTokenCount(inputTokens)} in`);
-    }
-    if (outputTokens && outputTokens > 0) {
-      parts.push(`${formatTokenCount(outputTokens)} out`);
-    }
-    tokensDisplay = parts.join(' / ');
-  }
+  const hasTokens = (inputTokens && inputTokens > 0) || (outputTokens && outputTokens > 0);
 
   // Don't render if no metadata to show
-  const hasMetadata = contextId || taskId || messageId || tokensDisplay || time;
+  const hasMetadata = contextId || taskId || messageId || hasTokens || time;
   if (!hasMetadata) return null;
 
   return (
@@ -194,10 +184,23 @@ export const MessageMetadata = ({
                 <span className="font-mono">{messageId}</span>
               </div>
             )}
-            {tokensDisplay && (
-              <div className="flex gap-1.5">
+            {hasTokens && (
+              <div className="flex items-center gap-1.5">
                 <span className="font-medium">tokens:</span>
-                <span>{tokensDisplay}</span>
+                <div className="flex items-center gap-2">
+                  {inputTokens && inputTokens > 0 && (
+                    <span className="flex items-center gap-1">
+                      <ArrowUpIcon className="size-3" />
+                      {formatTokenCount(inputTokens)}
+                    </span>
+                  )}
+                  {outputTokens && outputTokens > 0 && (
+                    <span className="flex items-center gap-1">
+                      <ArrowDownIcon className="size-3" />
+                      {formatTokenCount(outputTokens)}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </>

@@ -90,6 +90,7 @@ export const handleTaskEvent = (
 
 /**
  * Extract message text from parts (only agent role)
+ * Also extracts tool request information to show in TaskStatusUpdateBlock
  */
 const extractMessageText = (
   message: TaskStatusUpdateEvent['status']['message']
@@ -98,6 +99,7 @@ const extractMessageText = (
     return { text: '' };
   }
 
+  // Extract text parts
   const text = message.parts
     .filter(
       (part): part is Extract<typeof part, { kind: 'text' }> =>
@@ -106,7 +108,33 @@ const extractMessageText = (
     .map((part) => part.text)
     .join('');
 
-  return { text, messageId: message.messageId };
+  // Extract tool requests from data parts
+  const toolRequests = message.parts
+    .filter((part): part is Extract<typeof part, { kind: 'data' }> => {
+      if (part.kind !== 'data') return false;
+      const metadata = part.metadata as Record<string, unknown> | undefined;
+      const data = part.data as Record<string, unknown> | undefined;
+      return metadata?.data_type === 'tool_request' && !!data?.name;
+    })
+    .map((part) => (part.data as Record<string, unknown>).name as string);
+
+  // Build tool summary if tool requests exist
+  let toolSummary = '';
+  if (toolRequests.length === 1) {
+    toolSummary = `Calling tool: ${toolRequests[0]}`;
+  } else if (toolRequests.length > 1) {
+    toolSummary = `Calling ${toolRequests.length} tools: ${toolRequests.join(', ')}`;
+  }
+
+  // Combine text and tool summary
+  let combinedText = text;
+  if (text && toolSummary) {
+    combinedText = `${text}\n\n${toolSummary}`;
+  } else if (!text && toolSummary) {
+    combinedText = toolSummary;
+  }
+
+  return { text: combinedText, messageId: message.messageId };
 };
 
 /**
@@ -121,11 +149,13 @@ const createStatusUpdateBlock = (
     messageIdValue: string | undefined;
     timestamp: string | undefined;
     final: boolean;
+    usage?: ChatMessage['usage'];
   }
 ): void => {
-  const { newState, hasStateChange, messageText, messageIdValue, timestamp, final } = options;
+  const { newState, hasStateChange, messageText, messageIdValue, timestamp, final, usage } = options;
 
-  if (!hasStateChange && (!messageText || messageText.trim().length === 0)) {
+  // Create block if: state changed, has message text, or has usage data to display
+  if (!hasStateChange && (!messageText || messageText.trim().length === 0) && !usage) {
     return;
   }
 
@@ -143,6 +173,7 @@ const createStatusUpdateBlock = (
     messageId: messageIdValue,
     final,
     timestamp: eventTimestamp,
+    usage: usage ? { ...usage } : undefined,
   };
   state.contentBlocks.push(statusUpdateBlock);
 };
@@ -251,6 +282,9 @@ export const handleStatusUpdateEvent = (
 
   const { text: messageText, messageId: messageIdValue } = extractMessageText(message);
 
+  // Capture per-message usage from message metadata (not event.metadata which is task-level)
+  const currentUsage = message?.metadata?.usage as ChatMessage['usage'] | undefined;
+
   createStatusUpdateBlock(state, {
     newState,
     hasStateChange,
@@ -258,6 +292,7 @@ export const handleStatusUpdateEvent = (
     messageIdValue,
     timestamp,
     final: event.final ?? false,
+    usage: currentUsage,
   });
 
   if (timestamp) {
@@ -269,9 +304,10 @@ export const handleStatusUpdateEvent = (
     state.capturedTaskState = newState;
   }
 
-  // Capture usage metadata from event (only update when present to keep cumulative data)
-  if (event.metadata?.usage) {
-    state.latestUsage = event.metadata.usage as ChatMessage['usage'];
+  // Capture per-message usage from message metadata for context widget calculation
+  // (event.metadata.usage will be task-level cumulative - we ignore that)
+  if (message?.metadata?.usage) {
+    state.latestUsage = message.metadata.usage as ChatMessage['usage'];
   }
 
   const updatedMessage = buildMessageWithContentBlocks({

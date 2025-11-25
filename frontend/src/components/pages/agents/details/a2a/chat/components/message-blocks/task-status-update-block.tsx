@@ -12,7 +12,7 @@ import { Artifact, ArtifactContent, ArtifactHeader, ArtifactTitle } from 'compon
 import { Response } from 'components/ai-elements/response';
 import { TaskState } from 'components/ai-elements/task';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
-import { ChevronDownIcon, MoveRightIcon } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, MoveRightIcon } from 'lucide-react';
 
 type TaskStatusUpdateBlockProps = {
   taskState?: string;
@@ -69,18 +69,7 @@ export const TaskStatusUpdateBlock = ({
   const showBadge = validState && taskState !== previousState;
   const hasPreviousState = previousState && previousState !== taskState;
 
-  // Build tokens display string
-  let tokensDisplay: string | undefined;
-  if ((inputTokens && inputTokens > 0) || (outputTokens && outputTokens > 0)) {
-    const parts: string[] = [];
-    if (inputTokens && inputTokens > 0) {
-      parts.push(`${formatTokenCount(inputTokens)} in`);
-    }
-    if (outputTokens && outputTokens > 0) {
-      parts.push(`${formatTokenCount(outputTokens)} out`);
-    }
-    tokensDisplay = parts.join(' / ');
-  }
+  const hasTokens = (inputTokens && inputTokens > 0) || (outputTokens && outputTokens > 0);
 
   // Metadata component (reused in both cases)
   const metadata = (
@@ -92,10 +81,23 @@ export const TaskStatusUpdateBlock = ({
             <span className="font-mono">{messageId}</span>
           </div>
         )}
-        {tokensDisplay && (
-          <div className="flex gap-1.5">
+        {hasTokens && (
+          <div className="flex items-center gap-1.5">
             <span className="font-medium">tokens:</span>
-            <span>{tokensDisplay}</span>
+            <div className="flex items-center gap-2">
+              {inputTokens && inputTokens > 0 && (
+                <span className="flex items-center gap-1">
+                  <ArrowUpIcon className="size-3" />
+                  {formatTokenCount(inputTokens)}
+                </span>
+              )}
+              {outputTokens && outputTokens > 0 && (
+                <span className="flex items-center gap-1">
+                  <ArrowDownIcon className="size-3" />
+                  {formatTokenCount(outputTokens)}
+                </span>
+              )}
+            </div>
           </div>
         )}
         <div className="flex gap-1.5">
@@ -145,7 +147,7 @@ export const TaskStatusUpdateBlock = ({
             </div>
           </ArtifactHeader>
         </CollapsibleTrigger>
-        <CollapsibleContent>
+        <CollapsibleContent transition={{ duration: 0 }}>
           <ArtifactContent>
             <Response>{text}</Response>
           </ArtifactContent>

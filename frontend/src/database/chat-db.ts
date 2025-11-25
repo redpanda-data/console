@@ -64,6 +64,14 @@ export type ContentBlock =
       messageId?: string;
       final: boolean;
       timestamp: string;
+      usage?: {
+        input_tokens: number;
+        output_tokens: number;
+        total_tokens: number;
+        max_input_tokens?: number;
+        cached_tokens?: number;
+        reasoning_tokens?: number;
+      };
     };
 
 export type ChatMessage = {
