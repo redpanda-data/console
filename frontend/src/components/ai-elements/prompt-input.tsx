@@ -20,7 +20,7 @@ import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from "components/ui/hover-card";
+} from "components/redpanda-ui/components/hover-card";
 import {
   InputGroup,
   InputGroupAddon,
