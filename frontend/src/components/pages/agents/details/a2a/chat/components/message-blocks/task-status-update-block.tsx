@@ -20,18 +20,30 @@ type TaskStatusUpdateBlockProps = {
   text?: string;
   messageId?: string;
   timestamp: Date;
+  inputTokens?: number;
+  outputTokens?: number;
 };
 
 /**
  * Unified component for task status updates and agent messages
  * Shows state badge (only if actual state change), collapsible message text (if present)
  */
+// Format token count with compact notation (e.g., "1.2K", "5.6M")
+function formatTokenCount(tokens: number): string {
+  return new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(tokens);
+}
+
 export const TaskStatusUpdateBlock = ({
   taskState,
   previousState,
   text,
   messageId,
   timestamp,
+  inputTokens,
+  outputTokens,
 }: TaskStatusUpdateBlockProps) => {
   const validState = taskState as
     | 'submitted'
@@ -57,6 +69,19 @@ export const TaskStatusUpdateBlock = ({
   const showBadge = validState && taskState !== previousState;
   const hasPreviousState = previousState && previousState !== taskState;
 
+  // Build tokens display string
+  let tokensDisplay: string | undefined;
+  if ((inputTokens && inputTokens > 0) || (outputTokens && outputTokens > 0)) {
+    const parts: string[] = [];
+    if (inputTokens && inputTokens > 0) {
+      parts.push(`${formatTokenCount(inputTokens)} in`);
+    }
+    if (outputTokens && outputTokens > 0) {
+      parts.push(`${formatTokenCount(outputTokens)} out`);
+    }
+    tokensDisplay = parts.join(' / ');
+  }
+
   // Metadata component (reused in both cases)
   const metadata = (
     <div className="border-t bg-muted/30 px-4 py-2 text-muted-foreground text-xs">
@@ -65,6 +90,12 @@ export const TaskStatusUpdateBlock = ({
           <div className="flex gap-1.5">
             <span className="font-medium">message_id:</span>
             <span className="font-mono">{messageId}</span>
+          </div>
+        )}
+        {tokensDisplay && (
+          <div className="flex gap-1.5">
+            <span className="font-medium">tokens:</span>
+            <span>{tokensDisplay}</span>
           </div>
         )}
         <div className="flex gap-1.5">
