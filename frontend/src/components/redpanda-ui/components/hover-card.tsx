@@ -4,7 +4,8 @@ import { AnimatePresence, type HTMLMotionProps, motion, type Transition } from '
 import { HoverCard as HoverCardPrimitive } from 'radix-ui';
 import React from 'react';
 
-import { cn, type SharedProps } from '../lib/utils';
+import { type SharedProps } from '../lib/shared-types';
+import { cn } from '../lib/utils';
 
 type HoverCardContextType = {
   isOpen: boolean;
