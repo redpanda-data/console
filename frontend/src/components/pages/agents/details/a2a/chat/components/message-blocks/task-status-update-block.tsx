@@ -12,6 +12,7 @@ import { Artifact, ArtifactContent, ArtifactHeader, ArtifactTitle } from 'compon
 import { Response } from 'components/ai-elements/response';
 import { TaskState } from 'components/ai-elements/task';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, MoveRightIcon } from 'lucide-react';
 
 type TaskStatusUpdateBlockProps = {
@@ -77,32 +78,40 @@ export const TaskStatusUpdateBlock = ({
       <div className="flex flex-col gap-0.5">
         {messageId && (
           <div className="flex gap-1.5">
-            <span className="font-medium">message_id:</span>
-            <span className="font-mono">{messageId}</span>
+            <Text as="span" variant="label">
+              message_id:
+            </Text>
+            <Text as="span" className="font-mono">
+              {messageId}
+            </Text>
           </div>
         )}
         {hasTokens && (
           <div className="flex items-center gap-1.5">
-            <span className="font-medium">tokens:</span>
+            <Text as="span" variant="label">
+              tokens:
+            </Text>
             <div className="flex items-center gap-2">
               {inputTokens && inputTokens > 0 && (
-                <span className="flex items-center gap-1">
+                <Text as="span" className="flex items-center gap-1">
                   <ArrowUpIcon className="size-3" />
                   {formatTokenCount(inputTokens)}
-                </span>
+                </Text>
               )}
               {outputTokens && outputTokens > 0 && (
-                <span className="flex items-center gap-1">
+                <Text as="span" className="flex items-center gap-1">
                   <ArrowDownIcon className="size-3" />
                   {formatTokenCount(outputTokens)}
-                </span>
+                </Text>
               )}
             </div>
           </div>
         )}
         <div className="flex gap-1.5">
-          <span className="font-medium">time:</span>
-          <span>{time}</span>
+          <Text as="span" variant="label">
+            time:
+          </Text>
+          <Text as="span">{time}</Text>
         </div>
       </div>
     </div>
