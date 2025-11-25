@@ -281,7 +281,7 @@ function populateConnectionDefaults(
   return undefined;
 }
 
-function shouldHideField(params: {
+function shouldShowField(params: {
   spec: RawFieldSpec;
   showOptionalFields: boolean;
   showAdvancedFields: boolean;
@@ -293,30 +293,30 @@ function shouldHideField(params: {
   const isRedpandaComponent = componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName);
   const isCriticalField = isRedpandaComponent && spec.name && CRITICAL_CONNECTION_FIELDS.has(spec.name);
   if (isCriticalField) {
-    return false;
+    return true;
   }
 
   const isAdvanced = spec.advanced === true;
   const isOptional = spec.optional === true;
 
-  // Hide advanced fields unless explicitly requested
+  // Don't show advanced fields unless explicitly requested
   if (isAdvanced && !showAdvancedFields) {
-    return true;
+    return false;
   }
 
-  // Hide optional fields unless explicitly requested
+  // Don't show optional fields unless explicitly requested
   if (isOptional && !showOptionalFields) {
-    return true;
+    return false;
   }
 
-  // Hide non-critical config objects for Redpanda components
+  // Don't show non-critical config objects for Redpanda components unless showing optional fields
   const isNonCriticalConfigObject = isRedpandaComponent && spec.name && NON_CRITICAL_CONFIG_OBJECTS.has(spec.name);
   if (isNonCriticalConfigObject && !showOptionalFields) {
-    return true;
+    return false;
   }
 
   // Show everything else (required, non-advanced, non-optional fields)
-  return false;
+  return true;
 }
 
 function generateObjectValue(
@@ -416,23 +416,11 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
   const isImplicitlyRequired = spec.optional === undefined && spec.defaultValue === undefined;
   const hasNonEmptyDefault = spec.defaultValue !== undefined && spec.defaultValue !== '';
 
-  const shouldHide = shouldHideField({
+  const shouldShow = shouldShowField({
     spec,
     showOptionalFields: !!showOptionalFields,
     showAdvancedFields: !!showAdvancedFields,
     componentName,
-  });
-
-  // biome-ignore lint/suspicious/noConsole: Debug logging for field value generation
-  console.log('DEBUG [generateDefaultValue] Processing field:', {
-    fieldName: spec.name,
-    fieldType: spec.type,
-    fieldKind: spec.kind,
-    hasDefault: !!spec.defaultValue,
-    isOptional: spec.optional,
-    isAdvanced: spec.advanced,
-    shouldHide,
-    isCriticalField,
   });
 
   if (hasNonEmptyDefault && isExplicitlyRequired) {
@@ -467,8 +455,8 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
     }
   }
 
-  // Check if field should be hidden
-  if (shouldHide) {
+  // Check if field should be shown
+  if (!shouldShow) {
     return undefined;
   }
 
