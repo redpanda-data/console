@@ -124,27 +124,32 @@ function formatTokenCount(tokens: number): string {
   }).format(tokens);
 }
 
-export type MessageMetadataProps = HTMLAttributes<HTMLDivElement> & {
-  from?: UIMessage["role"];
+type MessageData = {
+  role: UIMessage["role"];
+  id?: string;
   timestamp?: Date | string;
-  messageId?: string;
   contextId?: string;
   taskId?: string;
-  inputTokens?: number;
-  outputTokens?: number;
+  usage?: {
+    input_tokens?: number;
+    output_tokens?: number;
+  };
+};
+
+export type MessageMetadataProps = HTMLAttributes<HTMLDivElement> & {
+  message: MessageData;
+  showTokens?: boolean;
 };
 
 export const MessageMetadata = ({
-  from,
-  timestamp,
-  messageId,
-  contextId,
-  taskId,
-  inputTokens,
-  outputTokens,
+  message,
+  showTokens = true,
   className,
   ...props
 }: MessageMetadataProps) => {
+  const { role: from, id: messageId, timestamp, contextId, taskId, usage } = message;
+  const inputTokens = showTokens ? usage?.input_tokens : undefined;
+  const outputTokens = showTokens ? usage?.output_tokens : undefined;
   const time = timestamp instanceof Date
     ? timestamp.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })
     : timestamp;

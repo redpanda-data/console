@@ -42,7 +42,7 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
             <MessageBody>
               <UserMessageContent text={text} timestamp={message.timestamp} />
             </MessageBody>
-            <MessageMetadata from="user" messageId={message.id} timestamp={message.timestamp} />
+            <MessageMetadata message={message} showTokens={false} />
           </MessageContent>
         </Message>
         <ChatMessageActions role={message.role} text={text} />
@@ -142,15 +142,7 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
                 {preTaskElements}
                 {taskElements}
               </MessageBody>
-              <MessageMetadata
-                contextId={message.contextId}
-                from={message.role}
-                inputTokens={shouldShowTokens ? message.usage?.input_tokens : undefined}
-                messageId={message.id}
-                outputTokens={shouldShowTokens ? message.usage?.output_tokens : undefined}
-                taskId={message.taskId}
-                timestamp={message.timestamp}
-              />
+              <MessageMetadata message={message} showTokens={shouldShowTokens} />
             </MessageContent>
           </Message>
         </div>
@@ -171,15 +163,7 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
                 {preTaskElements}
                 {taskElements}
               </MessageBody>
-              <MessageMetadata
-                contextId={message.contextId}
-                from={message.role}
-                inputTokens={shouldShowTokens ? message.usage?.input_tokens : undefined}
-                messageId={message.id}
-                outputTokens={shouldShowTokens ? message.usage?.output_tokens : undefined}
-                taskId={message.taskId}
-                timestamp={message.timestamp}
-              />
+              <MessageMetadata message={message} showTokens={shouldShowTokens} />
             </MessageContent>
           </Message>
           <ChatMessageActions
