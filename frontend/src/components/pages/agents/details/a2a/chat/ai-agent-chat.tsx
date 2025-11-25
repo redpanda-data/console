@@ -23,6 +23,7 @@ import type { AIAgentChatProps, MessageUsageMetadata } from './types';
 
 export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Manage chat messages and context
   const { messages, setMessages, contextId, setContextSeed, isLoadingHistory } = useChatMessages(agent.id);
@@ -56,12 +57,25 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
     [handleSubmit]
   );
 
-  // Focus the chat input when component mounts
+  // Focus textarea when container becomes visible (tab switch)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      textareaRef.current?.focus();
-    }, 100);
-    return () => clearTimeout(timer);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // Use requestAnimationFrame to ensure DOM is ready
+          requestAnimationFrame(() => {
+            textareaRef.current?.focus();
+          });
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
   }, []);
 
   // Get usage data: latest request's context usage + cumulative token totals
@@ -114,7 +128,7 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
   }, [messages]);
 
   return (
-    <div className="flex h-[calc(100vh-175px)] flex-col">
+    <div ref={containerRef} className="flex h-[calc(100vh-175px)] flex-col">
       {/* Context ID header */}
       {contextId && (
         <div className="shrink-0 border-b bg-muted/30 px-4 py-2">
