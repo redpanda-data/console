@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { Heading } from 'components/redpanda-ui/components/typography';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
 import { useParams } from 'react-router-dom';
 
