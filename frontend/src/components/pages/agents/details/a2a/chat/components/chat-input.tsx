@@ -86,7 +86,7 @@ const ChatInputComponent = ({
   const contextUsage = useContextUsage(usage);
 
   return (
-    <div className="shrink-0 bg-background px-4 pt-4 pb-8">
+    <div className="shrink-0 bg-background px-4 pt-4">
       <PromptInput globalDrop multiple onSubmit={onSubmit}>
         <PromptInputBody>
           <PromptInputAttachments>{(attachment) => <PromptInputAttachment data={attachment} />}</PromptInputAttachments>

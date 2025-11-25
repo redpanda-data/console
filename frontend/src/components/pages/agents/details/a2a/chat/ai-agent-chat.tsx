@@ -83,7 +83,7 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
   const latestUsage = useCumulativeUsage(messages);
 
   return (
-    <div className="flex h-[calc(100vh-175px)] flex-col" ref={containerRef}>
+    <div className="flex h-[calc(100vh-210px)] flex-col" ref={containerRef}>
       {/* Context ID header */}
       {contextId && (
         <div className="shrink-0 border-b bg-muted/30 px-4 py-2">
@@ -94,7 +94,7 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
         </div>
       )}
 
-      <Conversation className="flex-1" initial="instant" resize="instant">
+      <Conversation className="flex-1 min-h-0" initial="instant" resize="instant">
         <ConversationContent>
           {isLoadingHistory && (
             <div className="flex h-full items-center justify-center">
