@@ -125,7 +125,21 @@ const extractMessageText = (
   if (toolRequests.length === 1) {
     toolSummary = `Calling tool: ${toolRequests[0]}`;
   } else if (toolRequests.length > 1) {
-    toolSummary = `Calling ${toolRequests.length} tools: ${toolRequests.join(', ')}`;
+    // Group tool names by count for compact display
+    const toolCounts = toolRequests.reduce(
+      (acc, tool) => {
+        acc[tool] = (acc[tool] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    // Format: "tool1 (3×), tool2 (2×)" or just "tool1, tool2" if all unique
+    const toolList = Object.entries(toolCounts)
+      .map(([tool, count]) => (count > 1 ? `${tool} (${count}×)` : tool))
+      .join(', ');
+
+    toolSummary = `Calling ${toolRequests.length} tools: ${toolList}`;
   }
 
   // Combine text and tool summary
