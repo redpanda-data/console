@@ -171,7 +171,7 @@ export const ContextContentHeader = ({
             </p>
           </div>
           <div className="space-y-2">
-            <Progress className="bg-muted" value={usedPercent * PERCENT_MAX} />
+            <Progress className="bg-muted" transition={{ duration: 0 }} value={usedPercent * PERCENT_MAX} />
           </div>
         </>
       )}
