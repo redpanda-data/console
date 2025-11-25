@@ -13,7 +13,7 @@
 
 import { Conversation, ConversationContent, ConversationEmptyState } from 'components/ai-elements/conversation';
 import { Loader } from 'components/ai-elements/loader';
-import { useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 
 import { ChatInput } from './components/chat-input';
 import { ChatMessage } from './components/chat-message';
@@ -39,6 +39,22 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
       setMessages,
       setContextSeed,
     });
+
+  // Stable callback references to prevent ChatInput re-renders
+  const handleCancel = useCallback(() => {
+    const lastMessage = messages.at(-1);
+    if (lastMessage?.taskId) {
+      void handleCancelTask(lastMessage.taskId);
+    }
+  }, [messages, handleCancelTask]);
+
+  const handleSubmitMessage = useCallback(
+    (message: Parameters<typeof handleSubmit>[0], event: React.FormEvent) => {
+      event.preventDefault();
+      void handleSubmit(message);
+    },
+    [handleSubmit]
+  );
 
   // Get usage data: latest request's context usage + cumulative token totals
   const latestUsage = useMemo(() => {
@@ -132,19 +148,11 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
         hasMessages={messages.length > 0}
         input={input}
         isLoading={isLoading}
-        onCancel={() => {
-          const lastMessage = messages.at(-1);
-          if (lastMessage?.taskId) {
-            void handleCancelTask(lastMessage.taskId);
-          }
-        }}
+        onCancel={handleCancel}
         onCancelEdit={cancelEdit}
         onClearHistory={clearChat}
         onInputChange={setInput}
-        onSubmit={(message, event) => {
-          event.preventDefault();
-          void handleSubmit(message);
-        }}
+        onSubmit={handleSubmitMessage}
         textareaRef={textareaRef}
         usage={latestUsage}
       />
