@@ -13,13 +13,14 @@
 
 import { Conversation, ConversationContent, ConversationEmptyState } from 'components/ai-elements/conversation';
 import { Loader } from 'components/ai-elements/loader';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { ChatInput } from './components/chat-input';
 import { ChatMessage } from './components/chat-message';
 import { useChatActions } from './hooks/use-chat-actions';
 import { useChatMessages } from './hooks/use-chat-messages';
-import type { AIAgentChatProps, MessageUsageMetadata } from './types';
+import { useCumulativeUsage } from './hooks/use-cumulative-usage';
+import type { AIAgentChatProps } from './types';
 
 export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -78,54 +79,8 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
     return () => observer.disconnect();
   }, []);
 
-  // Get usage data: latest request's context usage + cumulative token totals
-  const latestUsage = useMemo(() => {
-    let latestRequestUsage: MessageUsageMetadata | undefined;
-    let cumulativeInputTokens = 0;
-    let cumulativeOutputTokens = 0;
-    let cumulativeReasoningTokens = 0;
-    let cumulativeCachedTokens = 0;
-
-    for (const message of messages) {
-      if (message.usage) {
-        // Keep the latest request's usage for context window data
-        latestRequestUsage = message.usage;
-
-        // Accumulate token counts
-        cumulativeInputTokens += message.usage.input_tokens;
-        cumulativeOutputTokens += message.usage.output_tokens;
-        if (message.usage.reasoning_tokens) {
-          cumulativeReasoningTokens += message.usage.reasoning_tokens;
-        }
-        if (message.usage.cached_tokens) {
-          cumulativeCachedTokens += message.usage.cached_tokens;
-        }
-      }
-    }
-
-    if (latestRequestUsage) {
-      const result = {
-        ...latestRequestUsage,
-        // Override with cumulative totals for the usage breakdown
-        cumulativeInputTokens,
-        cumulativeOutputTokens,
-        cumulativeReasoningTokens,
-        cumulativeCachedTokens,
-      };
-      return result;
-    }
-
-    // Return default empty usage when no messages exist yet
-    return {
-      input_tokens: 0,
-      output_tokens: 0,
-      total_tokens: 0,
-      cumulativeInputTokens: 0,
-      cumulativeOutputTokens: 0,
-      cumulativeReasoningTokens: 0,
-      cumulativeCachedTokens: 0,
-    };
-  }, [messages]);
+  // Calculate cumulative token usage from messages
+  const latestUsage = useCumulativeUsage(messages);
 
   return (
     <div className="flex h-[calc(100vh-175px)] flex-col" ref={containerRef}>
