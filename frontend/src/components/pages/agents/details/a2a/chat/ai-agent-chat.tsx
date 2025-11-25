@@ -58,7 +58,10 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
 
   // Focus the chat input when component mounts
   useEffect(() => {
-    textareaRef.current?.focus();
+    const timer = setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   // Get usage data: latest request's context usage + cumulative token totals
