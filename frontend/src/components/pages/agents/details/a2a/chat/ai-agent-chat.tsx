@@ -13,7 +13,7 @@
 
 import { Conversation, ConversationContent, ConversationEmptyState } from 'components/ai-elements/conversation';
 import { Loader } from 'components/ai-elements/loader';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { ChatInput } from './components/chat-input';
 import { ChatMessage } from './components/chat-message';
@@ -55,6 +55,11 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
     },
     [handleSubmit]
   );
+
+  // Focus the chat input when component mounts
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
 
   // Get usage data: latest request's context usage + cumulative token totals
   const latestUsage = useMemo(() => {
