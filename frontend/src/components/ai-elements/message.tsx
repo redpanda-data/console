@@ -7,7 +7,7 @@ import { cn } from "components/redpanda-ui/lib/utils";
 import type { UIMessage } from "ai";
 import { cva, type VariantProps } from "class-variance-authority";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
-import type { ComponentProps, HTMLAttributes } from "react";
+import type { ComponentProps, HTMLAttributes, ReactNode } from "react";
 import { formatTokenCount } from "utils/format-token-count";
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
@@ -117,6 +117,37 @@ export const MessageTimestamp = ({
   );
 };
 
+type MessageTokenSectionProps = {
+  inputTokens?: number;
+  outputTokens?: number;
+};
+
+const MessageTokenSection = ({ inputTokens, outputTokens }: MessageTokenSectionProps): ReactNode => {
+  const hasTokens = (inputTokens && inputTokens > 0) || (outputTokens && outputTokens > 0);
+
+  if (!hasTokens) return null;
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="font-medium">tokens:</span>
+      <div className="flex items-center gap-2">
+        {inputTokens && inputTokens > 0 && (
+          <span className="flex items-center gap-1">
+            <ArrowUpIcon className="size-3" />
+            {formatTokenCount(inputTokens)}
+          </span>
+        )}
+        {outputTokens && outputTokens > 0 && (
+          <span className="flex items-center gap-1">
+            <ArrowDownIcon className="size-3" />
+            {formatTokenCount(outputTokens)}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
 type MessageData = {
   role: UIMessage["role"];
   id?: string;
@@ -147,10 +178,8 @@ export const MessageMetadata = ({
     ? timestamp.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })
     : timestamp;
 
-  const hasTokens = (inputTokens && inputTokens > 0) || (outputTokens && outputTokens > 0);
-
   // Don't render if no metadata to show
-  const hasMetadata = contextId || taskId || messageId || hasTokens || time;
+  const hasMetadata = contextId || taskId || messageId || inputTokens || outputTokens || time;
   if (!hasMetadata) return null;
 
   return (
@@ -182,25 +211,7 @@ export const MessageMetadata = ({
                 <span className="font-mono">{messageId}</span>
               </div>
             )}
-            {hasTokens && (
-              <div className="flex items-center gap-1.5">
-                <span className="font-medium">tokens:</span>
-                <div className="flex items-center gap-2">
-                  {inputTokens && inputTokens > 0 && (
-                    <span className="flex items-center gap-1">
-                      <ArrowUpIcon className="size-3" />
-                      {formatTokenCount(inputTokens)}
-                    </span>
-                  )}
-                  {outputTokens && outputTokens > 0 && (
-                    <span className="flex items-center gap-1">
-                      <ArrowDownIcon className="size-3" />
-                      {formatTokenCount(outputTokens)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
+            <MessageTokenSection inputTokens={inputTokens} outputTokens={outputTokens} />
           </>
         )}
         {from === "user" && messageId && (
