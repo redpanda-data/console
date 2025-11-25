@@ -10,6 +10,15 @@
  */
 
 import {
+  Context,
+  ContextContent,
+  ContextContentBody,
+  ContextContentHeader,
+  ContextInputUsage,
+  ContextOutputUsage,
+  ContextTrigger,
+} from 'components/ai-elements/context';
+import {
   PromptInput,
   PromptInputAttachment,
   PromptInputAttachments,
@@ -28,16 +37,21 @@ import {
 import { Button } from 'components/redpanda-ui/components/button';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { HistoryIcon } from 'lucide-react';
+import type { AIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
+import { memo, useMemo } from 'react';
 
 import { AIAgentModel } from '../../../../ai-agent-model';
+import { useContextUsage } from '../hooks/use-context-usage';
+import type { UsageMetadata } from '../types';
 
 type ChatInputProps = {
   input: string;
   isLoading: boolean;
   editingMessageId: string | null;
-  model: string | undefined;
+  agent: AIAgent;
   hasMessages: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
+  usage: UsageMetadata;
   onInputChange: (value: string) => void;
   onSubmit: (message: PromptInputMessage, event: React.FormEvent) => void;
   onClearHistory: () => void;
@@ -48,21 +62,31 @@ type ChatInputProps = {
 /**
  * Chat input component with prompt textarea, model selector, and controls
  */
-export const ChatInput = ({
+const ChatInputComponent = ({
   input,
   isLoading,
   editingMessageId,
-  model,
+  agent,
   hasMessages,
   textareaRef,
+  usage,
   onInputChange,
   onSubmit,
   onClearHistory,
   onCancelEdit,
   onCancel,
 }: ChatInputProps) => {
+  // Construct modelId from agent resource: provider:model (e.g., "openai:gpt-5")
+  const modelId = useMemo(() => {
+    const provider = agent.provider?.provider.case || 'openai';
+    return `${provider}:${agent.model}`;
+  }, [agent.provider?.provider.case, agent.model]);
+
+  // Transform usage metadata for Context component
+  const contextUsage = useContextUsage(usage);
+
   return (
-    <div className="bg-background px-4 pt-4 pb-8">
+    <div className="shrink-0 bg-background px-4 pt-4">
       <PromptInput globalDrop multiple onSubmit={onSubmit}>
         <PromptInputBody>
           <PromptInputAttachments>{(attachment) => <PromptInputAttachment data={attachment} />}</PromptInputAttachments>
@@ -75,19 +99,36 @@ export const ChatInput = ({
         </PromptInputBody>
         <PromptInputFooter>
           <PromptInputTools>
-            {model && (
-              <PromptInputModelSelect disabled value={model}>
+            {agent.model && (
+              <PromptInputModelSelect disabled value={agent.model}>
                 <PromptInputModelSelectTrigger>
                   <PromptInputModelSelectValue>
-                    <AIAgentModel model={model} size="sm" />
+                    <AIAgentModel model={agent.model} size="sm" />
                   </PromptInputModelSelectValue>
                 </PromptInputModelSelectTrigger>
                 <PromptInputModelSelectContent>
-                  <PromptInputModelSelectItem value={model}>
-                    <AIAgentModel model={model} size="sm" />
+                  <PromptInputModelSelectItem value={agent.model}>
+                    <AIAgentModel model={agent.model} size="sm" />
                   </PromptInputModelSelectItem>
                 </PromptInputModelSelectContent>
               </PromptInputModelSelect>
+            )}
+            {usage.max_input_tokens && (
+              <Context
+                maxTokens={usage.max_input_tokens}
+                modelId={modelId}
+                usage={contextUsage}
+                usedTokens={usage.input_tokens}
+              >
+                <ContextTrigger />
+                <ContextContent align="start" side="top">
+                  <ContextContentHeader />
+                  <ContextContentBody>
+                    <ContextInputUsage />
+                    <ContextOutputUsage />
+                  </ContextContentBody>
+                </ContextContent>
+              </Context>
             )}
             <Button
               disabled={!hasMessages}
@@ -101,7 +142,7 @@ export const ChatInput = ({
             >
               <HistoryIcon className="size-3" />
               <Text as="span" className="text-sm">
-                Clear history
+                Clear context
               </Text>
             </Button>
           </PromptInputTools>
@@ -135,3 +176,7 @@ export const ChatInput = ({
     </div>
   );
 };
+
+ChatInputComponent.displayName = 'ChatInput';
+
+export const ChatInput = memo(ChatInputComponent);

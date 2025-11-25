@@ -42,7 +42,7 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
             <MessageBody>
               <UserMessageContent text={text} timestamp={message.timestamp} />
             </MessageBody>
-            <MessageMetadata from="user" messageId={message.id} timestamp={message.timestamp} />
+            <MessageMetadata message={message} showTokens={false} />
           </MessageContent>
         </Message>
         <ChatMessageActions role={message.role} text={text} />
@@ -52,6 +52,10 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
 
   // Assistant message with content blocks (new Jupyter-style rendering)
   if (message.role === 'assistant') {
+    // Check if this message only contains tool calls (no text/artifacts)
+    const hasOnlyToolCalls = message.contentBlocks.every((block) => block.type === 'tool');
+    const shouldShowTokens = message.role === 'assistant';
+
     // Helper function to render a single content block
     const renderContentBlock = (block: ContentBlock, index: number) => {
       switch (block.type) {
@@ -87,8 +91,10 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
         case 'task-status-update':
           return (
             <TaskStatusUpdateBlock
+              inputTokens={block.usage?.input_tokens}
               key={`${message.id}-status-${index}`}
               messageId={block.messageId}
+              outputTokens={block.usage?.output_tokens}
               previousState={block.previousState}
               taskState={block.taskState}
               text={block.text}
@@ -126,17 +132,56 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
     }
 
     // Non-task assistant message
+    // If message only contains tool calls, wrap in message box to show metadata
+    if (hasOnlyToolCalls && message.contentBlocks.length > 0) {
+      return (
+        <div>
+          <Message from={message.role}>
+            <MessageContent>
+              <MessageBody>
+                {preTaskElements}
+                {taskElements}
+              </MessageBody>
+              <MessageMetadata message={message} showTokens={shouldShowTokens} />
+            </MessageContent>
+          </Message>
+        </div>
+      );
+    }
+
+    // Message with text/artifacts - wrap in message box to show metadata
+    const hasTextOrArtifacts = message.contentBlocks.some(
+      (block) => block.type === 'artifact' || block.type === 'task-status-update'
+    );
+
+    if (hasTextOrArtifacts) {
+      return (
+        <div>
+          <Message from={message.role}>
+            <MessageContent>
+              <MessageBody>
+                {preTaskElements}
+                {taskElements}
+              </MessageBody>
+              <MessageMetadata message={message} showTokens={shouldShowTokens} />
+            </MessageContent>
+          </Message>
+          <ChatMessageActions
+            role={message.role}
+            text={(() => {
+              const textBlock = message.contentBlocks.find((b) => b.type === 'task-status-update');
+              return textBlock?.type === 'task-status-update' ? textBlock.text || '' : '';
+            })()}
+          />
+        </div>
+      );
+    }
+
+    // Fallback for other types
     return (
       <div>
         {preTaskElements}
         {taskElements}
-        <ChatMessageActions
-          role={message.role}
-          text={(() => {
-            const textBlock = message.contentBlocks.find((b) => b.type === 'task-status-update');
-            return textBlock?.type === 'task-status-update' ? textBlock.text || '' : '';
-          })()}
-        />
       </div>
     );
   }

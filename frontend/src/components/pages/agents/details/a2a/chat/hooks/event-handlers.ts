@@ -90,6 +90,7 @@ export const handleTaskEvent = (
 
 /**
  * Extract message text from parts (only agent role)
+ * Also extracts tool request information to show in TaskStatusUpdateBlock
  */
 const extractMessageText = (
   message: TaskStatusUpdateEvent['status']['message']
@@ -98,6 +99,7 @@ const extractMessageText = (
     return { text: '' };
   }
 
+  // Extract text parts
   const text = message.parts
     .filter(
       (part): part is Extract<typeof part, { kind: 'text' }> =>
@@ -106,7 +108,49 @@ const extractMessageText = (
     .map((part) => part.text)
     .join('');
 
-  return { text, messageId: message.messageId };
+  // Extract tool requests from data parts
+  const toolRequests = message.parts
+    .filter((part): part is Extract<typeof part, { kind: 'data' }> => {
+      if (part.kind !== 'data') {
+        return false;
+      }
+      const metadata = part.metadata as Record<string, unknown> | undefined;
+      const data = part.data as Record<string, unknown> | undefined;
+      return metadata?.data_type === 'tool_request' && !!data?.name;
+    })
+    .map((part) => (part.data as Record<string, unknown>).name as string);
+
+  // Build tool summary if tool requests exist
+  let toolSummary = '';
+  if (toolRequests.length === 1) {
+    toolSummary = `Calling tool: ${toolRequests[0]}`;
+  } else if (toolRequests.length > 1) {
+    // Group tool names by count for compact display
+    const toolCounts = toolRequests.reduce(
+      (acc, tool) => {
+        acc[tool] = (acc[tool] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    // Format: "tool1 (3×), tool2 (2×)" or just "tool1, tool2" if all unique
+    const toolList = Object.entries(toolCounts)
+      .map(([tool, count]) => (count > 1 ? `${tool} (${count}×)` : tool))
+      .join(', ');
+
+    toolSummary = `Calling ${toolRequests.length} tools: ${toolList}`;
+  }
+
+  // Combine text and tool summary
+  let combinedText = text;
+  if (text && toolSummary) {
+    combinedText = `${text}\n\n${toolSummary}`;
+  } else if (!text && toolSummary) {
+    combinedText = toolSummary;
+  }
+
+  return { text: combinedText, messageId: message.messageId };
 };
 
 /**
@@ -121,11 +165,13 @@ const createStatusUpdateBlock = (
     messageIdValue: string | undefined;
     timestamp: string | undefined;
     final: boolean;
+    usage?: ChatMessage['usage'];
   }
 ): void => {
-  const { newState, hasStateChange, messageText, messageIdValue, timestamp, final } = options;
+  const { newState, hasStateChange, messageText, messageIdValue, timestamp, final, usage } = options;
 
-  if (!hasStateChange && (!messageText || messageText.trim().length === 0)) {
+  // Create block if: state changed, has message text, or has usage data to display
+  if (!hasStateChange && (!messageText || messageText.trim().length === 0) && !usage) {
     return;
   }
 
@@ -143,6 +189,7 @@ const createStatusUpdateBlock = (
     messageId: messageIdValue,
     final,
     timestamp: eventTimestamp,
+    usage: usage ? { ...usage } : undefined,
   };
   state.contentBlocks.push(statusUpdateBlock);
 };
@@ -174,7 +221,7 @@ const processToolRequest = (
 /**
  * Process tool response from data part
  */
-const processToolResponse = (state: StreamingState, data: Record<string, unknown>): void => {
+const processToolResponse = (state: StreamingState, data: Record<string, unknown>, endTimestamp: Date): void => {
   const existingToolBlock = state.contentBlocks.find(
     (block) => block.type === 'tool' && block.toolCallId === (data.id as string)
   );
@@ -190,6 +237,8 @@ const processToolResponse = (state: StreamingState, data: Record<string, unknown
       existingToolBlock.output = 'result' in data ? data.result : undefined;
       existingToolBlock.errorText = undefined;
     }
+
+    existingToolBlock.endTimestamp = endTimestamp;
   }
 };
 
@@ -217,7 +266,7 @@ const processToolCalls = (
     if (dataType === 'tool_request' && data?.id && data?.name) {
       processToolRequest(state, data, eventTimestamp, message.messageId);
     } else if (dataType === 'tool_response' && data?.id && data?.name) {
-      processToolResponse(state, data);
+      processToolResponse(state, data, eventTimestamp);
     }
   }
 };
@@ -249,6 +298,9 @@ export const handleStatusUpdateEvent = (
 
   const { text: messageText, messageId: messageIdValue } = extractMessageText(message);
 
+  // Capture per-message usage from message metadata (not event.metadata which is task-level)
+  const currentUsage = message?.metadata?.usage as ChatMessage['usage'] | undefined;
+
   createStatusUpdateBlock(state, {
     newState,
     hasStateChange,
@@ -256,6 +308,7 @@ export const handleStatusUpdateEvent = (
     messageIdValue,
     timestamp,
     final: event.final ?? false,
+    usage: currentUsage,
   });
 
   if (timestamp) {
@@ -267,12 +320,19 @@ export const handleStatusUpdateEvent = (
     state.capturedTaskState = newState;
   }
 
+  // Capture per-message usage from message metadata for context widget calculation
+  // (event.metadata.usage will be task-level cumulative - we ignore that)
+  if (message?.metadata?.usage) {
+    state.latestUsage = message.metadata.usage as ChatMessage['usage'];
+  }
+
   const updatedMessage = buildMessageWithContentBlocks({
     baseMessage: assistantMessage,
     contentBlocks: state.contentBlocks,
     taskId: state.capturedTaskId,
     taskState: state.capturedTaskState,
     taskStartIndex: state.taskIdCapturedAtBlockIndex,
+    usage: state.latestUsage,
   });
   onMessageUpdate(updatedMessage);
 };

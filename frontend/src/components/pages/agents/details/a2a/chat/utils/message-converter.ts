@@ -32,6 +32,7 @@ const buildMessageFromStoredBlocks = (dbMsg: ChatDbMessage): ChatMessage => ({
   taskId: dbMsg.taskId,
   taskState: dbMsg.taskState as ChatMessage['taskState'],
   taskStartIndex: dbMsg.taskStartIndex,
+  usage: dbMsg.usage,
 });
 
 /**
@@ -124,6 +125,7 @@ export const convertDbToComponent = (dbMessages: ChatDbMessage[]): ChatMessage[]
       taskId: dbMsg.taskId,
       taskState: dbMsg.taskState as ChatMessage['taskState'],
       taskStartIndex: dbMsg.taskStartIndex,
+      usage: dbMsg.usage,
     };
   });
 

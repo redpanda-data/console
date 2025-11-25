@@ -12,7 +12,9 @@ import { Artifact, ArtifactContent, ArtifactHeader, ArtifactTitle } from 'compon
 import { Response } from 'components/ai-elements/response';
 import { TaskState } from 'components/ai-elements/task';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
-import { ChevronDownIcon, MoveRightIcon } from 'lucide-react';
+import { Text } from 'components/redpanda-ui/components/typography';
+import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, MoveRightIcon } from 'lucide-react';
+import { formatTokenCount } from 'utils/format-token-count';
 
 type TaskStatusUpdateBlockProps = {
   taskState?: string;
@@ -20,6 +22,8 @@ type TaskStatusUpdateBlockProps = {
   text?: string;
   messageId?: string;
   timestamp: Date;
+  inputTokens?: number;
+  outputTokens?: number;
 };
 
 /**
@@ -32,6 +36,8 @@ export const TaskStatusUpdateBlock = ({
   text,
   messageId,
   timestamp,
+  inputTokens,
+  outputTokens,
 }: TaskStatusUpdateBlockProps) => {
   const validState = taskState as
     | 'submitted'
@@ -57,19 +63,50 @@ export const TaskStatusUpdateBlock = ({
   const showBadge = validState && taskState !== previousState;
   const hasPreviousState = previousState && previousState !== taskState;
 
+  const hasTokens = (inputTokens && inputTokens > 0) || (outputTokens && outputTokens > 0);
+
   // Metadata component (reused in both cases)
   const metadata = (
     <div className="border-t bg-muted/30 px-4 py-2 text-muted-foreground text-xs">
       <div className="flex flex-col gap-0.5">
         {messageId && (
           <div className="flex gap-1.5">
-            <span className="font-medium">message_id:</span>
-            <span className="font-mono">{messageId}</span>
+            <Text as="span" className="font-bold" variant="small">
+              message_id:
+            </Text>
+            <Text as="span" className="font-mono text-muted-foreground" variant="small">
+              {messageId}
+            </Text>
+          </div>
+        )}
+        {hasTokens && (
+          <div className="flex items-center gap-1.5">
+            <Text as="span" className="font-bold" variant="small">
+              tokens:
+            </Text>
+            <div className="flex items-center gap-2">
+              {inputTokens && inputTokens > 0 && (
+                <Text as="span" className="flex items-center gap-1 text-muted-foreground" variant="small">
+                  <ArrowUpIcon className="size-3" />
+                  {formatTokenCount(inputTokens)}
+                </Text>
+              )}
+              {outputTokens && outputTokens > 0 && (
+                <Text as="span" className="flex items-center gap-1 text-muted-foreground" variant="small">
+                  <ArrowDownIcon className="size-3" />
+                  {formatTokenCount(outputTokens)}
+                </Text>
+              )}
+            </div>
           </div>
         )}
         <div className="flex gap-1.5">
-          <span className="font-medium">time:</span>
-          <span>{time}</span>
+          <Text as="span" className="font-bold" variant="small">
+            time:
+          </Text>
+          <Text as="span" className="text-muted-foreground" variant="small">
+            {time}
+          </Text>
         </div>
       </div>
     </div>
@@ -114,7 +151,7 @@ export const TaskStatusUpdateBlock = ({
             </div>
           </ArtifactHeader>
         </CollapsibleTrigger>
-        <CollapsibleContent>
+        <CollapsibleContent transition={{ duration: 0 }}>
           <ArtifactContent>
             <Response>{text}</Response>
           </ArtifactContent>

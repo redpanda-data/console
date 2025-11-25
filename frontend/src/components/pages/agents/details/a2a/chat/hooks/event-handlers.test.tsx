@@ -25,6 +25,7 @@ describe('artifact duplication bug', () => {
     capturedTaskState: undefined,
     previousTaskState: undefined,
     taskIdCapturedAtBlockIndex: undefined,
+    latestUsage: undefined,
   });
 
   const createMockMessage = (): ChatMessage => ({

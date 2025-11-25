@@ -64,6 +64,14 @@ export type ContentBlock =
       messageId?: string;
       final: boolean;
       timestamp: string;
+      usage?: {
+        input_tokens: number;
+        output_tokens: number;
+        total_tokens: number;
+        max_input_tokens?: number;
+        cached_tokens?: number;
+        reasoning_tokens?: number;
+      };
     };
 
 export type ChatMessage = {
@@ -82,6 +90,14 @@ export type ChatMessage = {
   toolCalls?: ToolCall[]; // Tool calls made during task execution
   taskStartIndex?: number; // Index in contentBlocks where task-related content starts
   contentBlocks?: ContentBlock[]; // NEW: Store complete temporal structure from streaming (timestamps as ISO strings for JSON serialization)
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+    max_input_tokens?: number;
+    cached_tokens?: number;
+    reasoning_tokens?: number;
+  };
 };
 
 class ChatDatabase extends Dexie {

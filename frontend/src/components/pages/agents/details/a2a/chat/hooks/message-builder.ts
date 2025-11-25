@@ -37,6 +37,7 @@ export type BuildMessageParams = {
   taskId: string | undefined;
   taskState: ChatMessage['taskState'] | undefined;
   taskStartIndex?: number | undefined;
+  usage?: ChatMessage['usage'];
 };
 
 /**
@@ -49,6 +50,7 @@ export const buildMessageWithContentBlocks = ({
   taskId,
   taskState,
   taskStartIndex,
+  usage,
 }: BuildMessageParams): ChatMessage => {
   // Sort blocks by timestamp for strict temporal ordering
   const sortedBlocks = sortContentBlocksByTimestamp(contentBlocks);
@@ -59,6 +61,7 @@ export const buildMessageWithContentBlocks = ({
     taskId,
     taskState,
     taskStartIndex,
+    usage,
   };
 };
 

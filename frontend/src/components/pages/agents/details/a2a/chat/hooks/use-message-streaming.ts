@@ -91,6 +91,7 @@ export const streamMessage = async ({
       capturedTaskState: undefined,
       previousTaskState: undefined,
       taskIdCapturedAtBlockIndex: undefined,
+      latestUsage: undefined,
     };
 
     // Consume the full stream and process events
@@ -150,6 +151,7 @@ export const streamMessage = async ({
       taskId: state.capturedTaskId,
       taskState: state.capturedTaskState,
       taskStartIndex: state.taskIdCapturedAtBlockIndex,
+      usage: state.latestUsage,
     });
 
     // Extract artifacts and toolCalls from content blocks for DB compatibility
@@ -185,6 +187,7 @@ export const streamMessage = async ({
       artifacts,
       toolCalls,
       contentBlocks: state.contentBlocks, // Store new format
+      usage: state.latestUsage, // Store usage metadata
     });
 
     return {

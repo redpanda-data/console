@@ -54,7 +54,26 @@ export type ContentBlock =
       messageId?: string;
       final: boolean;
       timestamp: Date;
+      usage?: MessageUsageMetadata;
     };
+
+// Message-level usage metadata (stored in database)
+export type MessageUsageMetadata = {
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  max_input_tokens?: number;
+  cached_tokens?: number;
+  reasoning_tokens?: number;
+};
+
+// Usage metadata with cumulative totals (computed for display)
+export type UsageMetadata = MessageUsageMetadata & {
+  cumulativeInputTokens: number;
+  cumulativeOutputTokens: number;
+  cumulativeReasoningTokens: number;
+  cumulativeCachedTokens: number;
+};
 
 export type ChatMessage = {
   id: string;
@@ -72,6 +91,10 @@ export type ChatMessage = {
    * Content before this index should be rendered above the Task box
    */
   taskStartIndex?: number;
+  /**
+   * Usage metadata from the final status-update event
+   */
+  usage?: MessageUsageMetadata;
 };
 
 export type AIAgentChatProps = {
