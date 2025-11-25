@@ -78,28 +78,28 @@ export const TaskStatusUpdateBlock = ({
       <div className="flex flex-col gap-0.5">
         {messageId && (
           <div className="flex gap-1.5">
-            <Text as="span" variant="label">
+            <Text as="span" variant="small" className="font-bold">
               message_id:
             </Text>
-            <Text as="span" className="font-mono">
+            <Text as="span" variant="small" className="font-mono text-muted-foreground">
               {messageId}
             </Text>
           </div>
         )}
         {hasTokens && (
           <div className="flex items-center gap-1.5">
-            <Text as="span" variant="label">
+            <Text as="span" variant="small" className="font-bold">
               tokens:
             </Text>
             <div className="flex items-center gap-2">
               {inputTokens && inputTokens > 0 && (
-                <Text as="span" className="flex items-center gap-1">
+                <Text as="span" variant="small" className="flex items-center gap-1 text-muted-foreground">
                   <ArrowUpIcon className="size-3" />
                   {formatTokenCount(inputTokens)}
                 </Text>
               )}
               {outputTokens && outputTokens > 0 && (
-                <Text as="span" className="flex items-center gap-1">
+                <Text as="span" variant="small" className="flex items-center gap-1 text-muted-foreground">
                   <ArrowDownIcon className="size-3" />
                   {formatTokenCount(outputTokens)}
                 </Text>
@@ -108,10 +108,12 @@ export const TaskStatusUpdateBlock = ({
           </div>
         )}
         <div className="flex gap-1.5">
-          <Text as="span" variant="label">
+          <Text as="span" variant="small" className="font-bold">
             time:
           </Text>
-          <Text as="span">{time}</Text>
+          <Text as="span" variant="small" className="text-muted-foreground">
+            {time}
+          </Text>
         </div>
       </div>
     </div>
