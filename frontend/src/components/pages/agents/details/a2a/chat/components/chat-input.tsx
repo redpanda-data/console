@@ -41,6 +41,7 @@ import type { AIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_
 import { memo, useMemo } from 'react';
 
 import { AIAgentModel } from '../../../../ai-agent-model';
+import { useContextUsage } from '../hooks/use-context-usage';
 import type { UsageMetadata } from '../types';
 
 type ChatInputProps = {
@@ -81,22 +82,8 @@ const ChatInputComponent = ({
     return `${provider}:${agent.model}`;
   }, [agent.provider?.provider.case, agent.model]);
 
-  // Memoize usage object to prevent recalculation on every render
-  const contextUsage = useMemo(
-    () => ({
-      inputTokens: usage.cumulativeInputTokens,
-      outputTokens: usage.cumulativeOutputTokens,
-      reasoningTokens: usage.cumulativeReasoningTokens,
-      cachedInputTokens: usage.cumulativeCachedTokens,
-      totalTokens: usage.cumulativeInputTokens + usage.cumulativeOutputTokens,
-    }),
-    [
-      usage.cumulativeInputTokens,
-      usage.cumulativeOutputTokens,
-      usage.cumulativeReasoningTokens,
-      usage.cumulativeCachedTokens,
-    ]
-  );
+  // Transform usage metadata for Context component
+  const contextUsage = useContextUsage(usage);
 
   return (
     <div className="shrink-0 bg-background px-4 pt-4 pb-8">
