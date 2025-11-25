@@ -15,7 +15,6 @@ import { useParams } from 'react-router-dom';
 
 import { AIAgentStateBadge } from './ai-agent-state-badge';
 import { AIAgentToggleButton } from './ai-agent-toggle-button';
-import { AIAgentBackButton } from '../ai-agent-back-button';
 
 export const AIAgentDetailsHeader = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,15 +27,9 @@ export const AIAgentDetailsHeader = () => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-4">
-        <AIAgentBackButton />
-      </div>
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-4">
-          <Heading level={1}>{aiAgentData.aiAgent.displayName}</Heading>
-          <AIAgentStateBadge />
-          <AIAgentToggleButton />
-        </div>
-        {aiAgentData.aiAgent.description && <Text variant="lead">{aiAgentData.aiAgent.description}</Text>}
+        <Heading level={1}>{aiAgentData.aiAgent.displayName}</Heading>
+        <AIAgentStateBadge />
+        <AIAgentToggleButton />
       </div>
     </div>
   );

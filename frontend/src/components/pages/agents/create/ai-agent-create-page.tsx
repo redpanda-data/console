@@ -69,7 +69,6 @@ import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { FormSchema, type FormValues, initialValues } from './schemas';
-import { AIAgentBackButton } from '../ai-agent-back-button';
 import { MODEL_OPTIONS_BY_PROVIDER, PROVIDER_INFO } from '../ai-agent-model';
 
 /**
@@ -333,11 +332,7 @@ export const AIAgentCreatePage = () => {
     <div className="flex flex-col gap-4">
       {/* Header */}
       <div className="space-y-4">
-        <AIAgentBackButton />
-        <div className="space-y-2">
-          <Heading level={1}>Create New Agent</Heading>
-          <Text variant="muted">Set up a new AI agent from scratch</Text>
-        </div>
+        <Heading level={1}>Create New Agent</Heading>
       </div>
 
       <Form {...form}>
