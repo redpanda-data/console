@@ -14,6 +14,7 @@ import { TaskState } from 'components/ai-elements/task';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, MoveRightIcon } from 'lucide-react';
+import { formatTokenCount } from 'utils/format-token-count';
 
 type TaskStatusUpdateBlockProps = {
   taskState?: string;
@@ -29,14 +30,6 @@ type TaskStatusUpdateBlockProps = {
  * Unified component for task status updates and agent messages
  * Shows state badge (only if actual state change), collapsible message text (if present)
  */
-// Format token count with compact notation (e.g., "1.2K", "5.6M")
-function formatTokenCount(tokens: number): string {
-  return new Intl.NumberFormat('en-US', {
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(tokens);
-}
-
 export const TaskStatusUpdateBlock = ({
   taskState,
   previousState,

@@ -8,6 +8,7 @@ import type { UIMessage } from "ai";
 import { cva, type VariantProps } from "class-variance-authority";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import type { ComponentProps, HTMLAttributes } from "react";
+import { formatTokenCount } from "utils/format-token-count";
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
@@ -115,14 +116,6 @@ export const MessageTimestamp = ({
     </p>
   );
 };
-
-// Format token count with compact notation (e.g., "1.2K", "5.6M")
-function formatTokenCount(tokens: number): string {
-  return new Intl.NumberFormat('en-US', {
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(tokens);
-}
 
 type MessageData = {
   role: UIMessage["role"];
