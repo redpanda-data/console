@@ -126,14 +126,14 @@ const ChatInputComponent = ({
                 </PromptInputModelSelectContent>
               </PromptInputModelSelect>
             )}
-            {usage.max_input_tokens && (
-              <Context
-                maxTokens={usage.max_input_tokens}
-                modelId={modelId}
-                usage={contextUsage}
-                usedTokens={usage.input_tokens}
-              >
-                <ContextTrigger />
+            <Context
+              maxTokens={usage.max_input_tokens || 1}
+              modelId={modelId}
+              usage={contextUsage}
+              usedTokens={usage.input_tokens}
+            >
+              <ContextTrigger />
+              {usage.max_input_tokens && (
                 <ContextContent align="start" side="top">
                   <ContextContentHeader />
                   <ContextContentBody>
@@ -141,8 +141,8 @@ const ChatInputComponent = ({
                     <ContextOutputUsage />
                   </ContextContentBody>
                 </ContextContent>
-              </Context>
-            )}
+              )}
+            </Context>
             <Button
               disabled={!hasMessages}
               onClick={() => {
