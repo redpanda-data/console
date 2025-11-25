@@ -879,12 +879,7 @@
       "linter": {
         "rules": {
           "suspicious": {
-            "noConsole": "off",
-            "useAwait": "off",
-            "noEmptyBlockStatements": "off"
-          },
-          "nursery": {
-            "noShadow": "off"
+            "noConsole": "off"
           },
           "style": {
             "noProcessEnv": "off"
