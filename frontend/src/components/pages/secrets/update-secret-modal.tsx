@@ -101,6 +101,7 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
     { label: 'Redpanda Cluster', value: Scope.REDPANDA_CLUSTER },
     { label: 'MCP Server', value: Scope.MCP_SERVER },
     { label: 'AI Agent', value: Scope.AI_AGENT },
+    { label: 'AI Gateway', value: Scope.AI_GATEWAY },
   ];
 
   return (
