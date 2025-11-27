@@ -2,7 +2,54 @@
 
 This directory contains the E2E test setup that uses Docker containers and Playwright's lifecycle hooks to provide a complete test environment.
 
+## Playwright Test Agents
+
+This project uses Playwright's test agents for AI-assisted test creation and maintenance:
+
+- **Planner Agent** - Explores the application and creates detailed test plans in `specs/`
+- **Generator Agent** - Converts test plans into executable Playwright tests
+- **Healer Agent** - Automatically debugs and fixes failing tests
+
+### Test Plans
+
+Test plans are stored in the `specs/` directory as markdown files. Each plan contains:
+- Application overview and features
+- Detailed test scenarios with step-by-step instructions
+- Expected results and success criteria
+- Reference to seed test for environment setup
+
+**Available test plans:**
+- `specs/topics.md` - Comprehensive test plan for Topics page (78 scenarios)
+
+### Using Test Agents
+
+To use the test agents, describe what you need in natural language:
+
+```bash
+# Create a test plan
+"Create a test plan for the /connectors page"
+
+# Generate tests from a plan
+"Generate tests from specs/topics.md"
+
+# Fix failing tests
+"Fix the failing tests in tests/console/topic.spec.ts"
+```
+
+The agents run autonomously and will create test files in the `tests/` directory.
+
+### Seed Test
+
+The `tests/seed.spec.ts` file establishes the baseline environment for test agents:
+- Navigates to application homepage
+- Verifies basic application functionality
+- Provides context for test planning and generation
+
+Agents reference this seed test to understand your application's setup.
+
 ## Quick Start
+
+### Run All Tests (Full Automation)
 
 Simply run the E2E tests as usual:
 
@@ -16,6 +63,33 @@ Playwright's globalSetup will automatically:
 3. Start backend and frontend servers
 4. Run the Playwright tests
 5. Clean up everything after tests complete (via globalTeardown)
+
+### Run Individual Tests (Development Workflow)
+
+For faster development iterations, set up the environment once and run specific tests:
+
+```bash
+# 1. Start all services (Docker, backend, frontend)
+bun run e2e-test:setup
+
+# 2. Run individual tests without global setup/teardown
+npx playwright test tests/console/topic-list.spec.ts --config playwright.config.ts
+
+# Or run specific test
+npx playwright test tests/console/topic-list.spec.ts:21 --config playwright.config.ts
+
+# Or use UI mode for debugging
+npx playwright test tests/console/topic-list.spec.ts --ui --config playwright.config.ts
+
+# 3. When done, clean up everything
+bun run e2e-test:teardown
+```
+
+**Benefits:**
+- ⚡ Faster test iterations (no 30-40s setup per run)
+- 🔍 Better for debugging specific tests
+- 🎯 Run only the tests you're working on
+- 🖥️ Keep services running between test runs
 
 ## Services
 
@@ -73,10 +147,38 @@ cd tests && node -e "import('./global-teardown.mjs').then(m => m.default())"
 
 ### Check status
 ```bash
+# Check Docker containers
 docker ps | grep -E "redpanda|connect|owlshop"
-lsof -i :9090  # Backend
-lsof -i :3000  # Frontend
+
+# Check backend (Go server on port 9090)
+lsof -i :9090
+
+# Check frontend (Bun/Rsbuild on port 3000)
+lsof -i :3000
+
+# Check if services are responding
+curl http://localhost:9090/api/cluster/overview  # Backend API
+curl http://localhost:3000  # Frontend
 ```
+
+### Development Tips
+
+When using `e2e-test:setup` for development:
+
+1. **Keep services running** - No need to tear down between test runs
+2. **Watch logs** - Terminal shows backend/frontend logs for debugging
+3. **Restart services** - If something breaks, run teardown then setup again
+4. **Check state files** - Process IDs stored in `tests/state/`
+5. **Manual cleanup** - If teardown fails, use:
+   ```bash
+   # Stop processes
+   pkill -f "go run"
+   pkill -f "bun.*start"
+
+   # Stop containers
+   docker stop redpanda owlshop kafka-connect 2>/dev/null
+   docker rm redpanda owlshop kafka-connect 2>/dev/null
+   ```
 
 ## Troubleshooting
 

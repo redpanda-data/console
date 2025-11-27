@@ -16,9 +16,9 @@ import {
   ResourceTypeTopic,
   ResourceTypeTransactionalId,
   type Rule,
-} from '../../src/components/pages/acls/new-acl/acl.model';
-import { ACLPage } from './pages/ACLPage';
-import { RolePage } from './pages/RolePage';
+} from '../../../src/components/pages/acls/new-acl/acl.model';
+import { ACLPage } from '../utils/ACLPage';
+import { RolePage } from '../utils/RolePage';
 
 /**
  * Generates a unique principal name for testing

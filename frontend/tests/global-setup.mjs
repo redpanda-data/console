@@ -433,8 +433,8 @@ async function cleanupOnFailure(state) {
   }
 }
 
-export default async function globalSetup(config) {
-  const isEnterprise = config.metadata?.isEnterprise ?? false;
+export default async function globalSetup(config = {}) {
+  const isEnterprise = config?.metadata?.isEnterprise ?? false;
 
   console.log('\n\n========================================');
   console.log(`🚀 GLOBAL SETUP STARTED ${isEnterprise ? '(ENTERPRISE MODE)' : '(OSS MODE)'}`);

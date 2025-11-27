@@ -161,6 +161,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
           <Box>{response}</Box>
           <Button
             colorScheme="brand"
+            data-testid="create-topic-success__close-button"
             onClick={() => {
               state.modalProps?.afterClose?.();
             }}
