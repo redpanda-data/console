@@ -13,7 +13,6 @@ import { CheckIcon } from '@chakra-ui/icons';
 import { TrashIcon } from '@heroicons/react/outline';
 import { Box, Button, createStandaloneToast, DataTable, Flex, Image, SearchField, Text } from '@redpanda-data/ui';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
-import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { FaRegStopCircle } from 'react-icons/fa';
@@ -22,7 +21,6 @@ import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 
 import { openDeleteModal } from './modals';
-import { PipelineListPage } from './pipeline/list';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/app-global';
@@ -167,10 +165,6 @@ class RpConnectPipelinesList extends PageComponent<{}> {
   }
 
   render() {
-    if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
-      return <PipelineListPage />;
-    }
-
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }

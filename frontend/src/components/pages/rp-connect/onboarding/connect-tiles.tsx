@@ -18,9 +18,9 @@ import { Heading, Link, Text } from 'components/redpanda-ui/components/typograph
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { SearchIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
+import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useListComponentsQuery } from 'react-query/api/connect';
 
 import { ConnectTile } from './connect-tile';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
@@ -151,6 +151,8 @@ const ConnectTilesSkeleton = memo(
 ConnectTilesSkeleton.displayName = 'ConnectTilesSkeleton';
 
 export type ConnectTilesProps = {
+  components?: ComponentList;
+  isLoading?: boolean;
   additionalComponents?: ExtendedConnectComponentSpec[];
   componentTypeFilter?: ConnectComponentType[];
   onChange?: (connectionName: string, connectionType: ConnectComponentType) => void;
@@ -172,6 +174,8 @@ export const ConnectTiles = memo(
   forwardRef<BaseStepRef<ConnectTilesListFormData>, ConnectTilesProps & MotionProps>(
     (
       {
+        components,
+        isLoading,
         additionalComponents,
         componentTypeFilter,
         onChange,
@@ -224,11 +228,7 @@ export const ConnectTiles = memo(
         defaultValues,
       });
 
-      const { data: componentListResponse, isLoading: isLoadingComponents } = useListComponentsQuery();
-      const builtInComponents = useMemo(
-        () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
-        [componentListResponse]
-      );
+      const builtInComponents = useMemo(() => (components ? parseSchema(components) : []), [components]);
       const allComponents = useMemo(
         () => [...builtInComponents, ...(additionalComponents || [])],
         [builtInComponents, additionalComponents]
@@ -384,9 +384,10 @@ export const ConnectTiles = memo(
                           );
                         });
 
-                      const hasNoResults = !isLoadingComponents && filteredComponents.length === 0;
                       const hasResults = filteredComponents.length > 0;
-                      const showSkeleton = hasResults && isLoadingComponents;
+                      const showSkeleton = isLoading;
+                      // biome-ignore lint/complexity/useSimplifiedLogicExpression: Logic is intentionally explicit for clarity
+                      const hasNoResults = !showSkeleton && !hasResults;
 
                       let content: React.ReactNode;
 

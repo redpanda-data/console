@@ -16,19 +16,25 @@ import { flexRender, getCoreRowModel, getPaginationRowModel, useReactTable } fro
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
+import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { Link as ExternalLink, Text } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { AlertCircle, Check, Loader2, Pause, Plus, Trash2 } from 'lucide-react';
 import { DeletePipelineRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import type { Pipeline as APIPipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Pipeline_State as PipelineState } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useMemo, useState } from 'react';
+import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
 import { useDeletePipelineMutation, useListPipelinesQuery } from 'react-query/api/pipeline';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useResetOnboardingWizardStore } from 'state/onboarding-wizard-store';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+
+import { TabKafkaConnect } from '../../connect/overview';
 
 type Pipeline = {
   id: string;
@@ -43,6 +49,46 @@ const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => ({
   description: apiPipeline.description,
   state: apiPipeline.state,
 });
+
+const PipelineTableSkeleton = () => (
+  <div className="flex flex-col gap-4">
+    <div className="flex items-center justify-end gap-4">
+      <Skeleton className="h-9 w-40" />
+    </div>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>ID</TableHead>
+          <TableHead>Pipeline Name</TableHead>
+          <TableHead>Description</TableHead>
+          <TableHead>State</TableHead>
+          <TableHead />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <TableRow key={i}>
+            <TableCell>
+              <Skeleton className="h-4 w-24" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-40" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-64" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-6 w-20" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-8 w-8" />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </div>
+);
 
 const PipelineStatusBadge = ({ state }: { state: Pipeline_State }) => {
   const statusConfig = useMemo(() => {
@@ -243,6 +289,10 @@ const PipelineListPageContent = () => {
     },
   });
 
+  if (isLoading) {
+    return <PipelineTableSkeleton />;
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-end gap-4">
@@ -265,16 +315,7 @@ const PipelineListPageContent = () => {
         <TableBody>
           {(() => {
             if (isLoading) {
-              return (
-                <TableRow>
-                  <TableCell className="h-24 text-center" colSpan={columns.length}>
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading pipelines...
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
+              return <PipelineTableSkeleton />;
             }
             if (error) {
               return (
@@ -317,4 +358,86 @@ const PipelineListPageContent = () => {
   );
 };
 
-export const PipelineListPage = () => <PipelineListPageContent />;
+export const PipelineListPage = () => {
+  // Don't block on Kafka Connect query - it's optional and additive
+  // If query fails or is loading, we just don't show the Kafka Connect tab (fail gracefully)
+  const { data: kafkaConnectors, isLoading: isLoadingKafkaConnect } = useKafkaConnectConnectorsQuery();
+
+  // Only show Kafka Connect tab if it's explicitly configured
+  // This check is intentionally strict (=== true) to avoid showing the tab on errors/undefined
+  const isKafkaConnectEnabled = kafkaConnectors?.isConfigured === true;
+
+  // Show that we're checking for Kafka Connect in the background
+  // This is subtle and doesn't block the user experience
+  const showKafkaConnectLoadingHint = isLoadingKafkaConnect && !kafkaConnectors;
+
+  // Always show Redpanda Connect content - don't block on Kafka Connect availability
+  const redpandaConnectContent = (
+    <div className="flex flex-col gap-6">
+      <Text>
+        Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that drive
+        real-time analytics and actionable business insights. Integrate data across systems with hundreds of prebuilt
+        connectors, change data capture (CDC) capabilities, and YAML-configurable pipelines.{' '}
+        <ExternalLink href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
+          Learn more
+        </ExternalLink>
+      </Text>
+      <PipelineListPageContent />
+    </div>
+  );
+
+  // If Kafka Connect is not enabled, just show Redpanda Connect content
+  if (!isKafkaConnectEnabled) {
+    return (
+      <div className="flex flex-col gap-4">
+        {showKafkaConnectLoadingHint ? (
+          <div className="flex min-h-10 items-center gap-2 text-muted-foreground text-sm">
+            <Spinner />
+            <Text variant="muted">Checking for Kafka Connect availability...</Text>
+          </div>
+        ) : (
+          <div className="h-10" />
+        )}
+        {redpandaConnectContent}
+      </div>
+    );
+  }
+
+  // If Kafka Connect is enabled, show tabs with intro text
+  return (
+    <div className="flex flex-col gap-6">
+      <Text>
+        There are two ways to integrate your Redpanda data with data from external systems: Redpanda Connect and Kafka
+        Connect.
+      </Text>
+      <Tabs defaultValue="redpanda-connect">
+        <TabsList variant="underline">
+          <TabsTrigger value="redpanda-connect" variant="underline">
+            Redpanda Connect
+          </TabsTrigger>
+          <TabsTrigger value="kafka-connect" variant="underline">
+            Kafka Connect
+          </TabsTrigger>
+        </TabsList>
+        <TabsContents className="p-6">
+          <TabsContent value="redpanda-connect">{redpandaConnectContent}</TabsContent>
+          <TabsContent value="kafka-connect">
+            <div className="flex flex-col gap-6">
+              <Text>
+                Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data with
+                different data systems.{' '}
+                <ExternalLink
+                  href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/"
+                  target="_blank"
+                >
+                  Learn more
+                </ExternalLink>
+              </Text>
+              <TabKafkaConnect />
+            </div>
+          </TabsContent>
+        </TabsContents>
+      </Tabs>
+    </div>
+  );
+};
