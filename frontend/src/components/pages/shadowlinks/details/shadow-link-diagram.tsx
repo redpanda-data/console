@@ -13,7 +13,7 @@ import { Background, type Edge, Handle, type Node, Position, ReactFlow, ReactFlo
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Item, ItemContent, ItemTitle } from 'components/redpanda-ui/components/item';
 import { Text } from 'components/redpanda-ui/components/typography';
-import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 import type { CSSProperties } from 'react';
 
 interface ShadowLinkDiagramProps {

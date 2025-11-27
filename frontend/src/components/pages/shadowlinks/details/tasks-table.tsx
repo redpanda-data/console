@@ -17,7 +17,7 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { RefreshCw } from 'lucide-react';
-import type { ShadowLinkTaskStatus } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import type { ShadowLinkTaskStatus } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 import { useMemo } from 'react';
 
 import { TaskStatusBadge } from './task-status-badge';

@@ -18,19 +18,43 @@ import (
 // ShadowLinkServiceGatewayServer implements the gRPC server API for the ShadowLinkService service.
 type ShadowLinkServiceGatewayServer struct {
 	v1alpha3.UnimplementedShadowLinkServiceServer
-	failOver connect_gateway.UnaryHandler[v2.FailOverRequest, v1alpha3.FailOverResponse]
+	failOver             connect_gateway.UnaryHandler[v2.FailOverRequest, v1alpha3.FailOverResponse]
+	listShadowLinkTopics connect_gateway.UnaryHandler[v1alpha3.ListShadowLinkTopicsRequest, v1alpha3.ListShadowLinkTopicsResponse]
+	getShadowTopic       connect_gateway.UnaryHandler[v1alpha3.GetShadowTopicRequest, v1alpha3.GetShadowTopicResponse]
+	getShadowMetrics     connect_gateway.UnaryHandler[v1alpha3.GetShadowMetricsRequest, v1alpha3.GetShadowMetricsResponse]
+	getShadowLink        connect_gateway.UnaryHandler[v1alpha3.GetShadowLinkRequest, v1alpha3.GetShadowLinkResponse]
 }
 
 // NewShadowLinkServiceGatewayServer constructs a Connect-Gateway gRPC server for the
 // ShadowLinkService service.
 func NewShadowLinkServiceGatewayServer(svc ShadowLinkServiceHandler, opts ...connect_gateway.HandlerOption) *ShadowLinkServiceGatewayServer {
 	return &ShadowLinkServiceGatewayServer{
-		failOver: connect_gateway.NewUnaryHandler(ShadowLinkServiceFailOverProcedure, svc.FailOver, opts...),
+		failOver:             connect_gateway.NewUnaryHandler(ShadowLinkServiceFailOverProcedure, svc.FailOver, opts...),
+		listShadowLinkTopics: connect_gateway.NewUnaryHandler(ShadowLinkServiceListShadowLinkTopicsProcedure, svc.ListShadowLinkTopics, opts...),
+		getShadowTopic:       connect_gateway.NewUnaryHandler(ShadowLinkServiceGetShadowTopicProcedure, svc.GetShadowTopic, opts...),
+		getShadowMetrics:     connect_gateway.NewUnaryHandler(ShadowLinkServiceGetShadowMetricsProcedure, svc.GetShadowMetrics, opts...),
+		getShadowLink:        connect_gateway.NewUnaryHandler(ShadowLinkServiceGetShadowLinkProcedure, svc.GetShadowLink, opts...),
 	}
 }
 
 func (s *ShadowLinkServiceGatewayServer) FailOver(ctx context.Context, req *v2.FailOverRequest) (*v1alpha3.FailOverResponse, error) {
 	return s.failOver(ctx, req)
+}
+
+func (s *ShadowLinkServiceGatewayServer) ListShadowLinkTopics(ctx context.Context, req *v1alpha3.ListShadowLinkTopicsRequest) (*v1alpha3.ListShadowLinkTopicsResponse, error) {
+	return s.listShadowLinkTopics(ctx, req)
+}
+
+func (s *ShadowLinkServiceGatewayServer) GetShadowTopic(ctx context.Context, req *v1alpha3.GetShadowTopicRequest) (*v1alpha3.GetShadowTopicResponse, error) {
+	return s.getShadowTopic(ctx, req)
+}
+
+func (s *ShadowLinkServiceGatewayServer) GetShadowMetrics(ctx context.Context, req *v1alpha3.GetShadowMetricsRequest) (*v1alpha3.GetShadowMetricsResponse, error) {
+	return s.getShadowMetrics(ctx, req)
+}
+
+func (s *ShadowLinkServiceGatewayServer) GetShadowLink(ctx context.Context, req *v1alpha3.GetShadowLinkRequest) (*v1alpha3.GetShadowLinkResponse, error) {
+	return s.getShadowLink(ctx, req)
 }
 
 // RegisterShadowLinkServiceHandlerGatewayServer registers the Connect handlers for the

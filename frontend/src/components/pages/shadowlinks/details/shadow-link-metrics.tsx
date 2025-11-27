@@ -13,7 +13,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Loader2, RefreshCw } from 'lucide-react';
-import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useGetShadowMetricsQuery } from 'react-query/api/shadowlink';
 

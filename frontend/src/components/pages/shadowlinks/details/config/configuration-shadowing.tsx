@@ -15,7 +15,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { Item, ItemGroup } from 'components/redpanda-ui/components/item';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 import type { ACLFilter, NameFilter } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import {

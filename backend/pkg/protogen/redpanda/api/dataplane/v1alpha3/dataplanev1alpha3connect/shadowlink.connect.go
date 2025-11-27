@@ -39,18 +39,38 @@ const (
 	// ShadowLinkServiceFailOverProcedure is the fully-qualified name of the ShadowLinkService's
 	// FailOver RPC.
 	ShadowLinkServiceFailOverProcedure = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/FailOver"
+	// ShadowLinkServiceListShadowLinkTopicsProcedure is the fully-qualified name of the
+	// ShadowLinkService's ListShadowLinkTopics RPC.
+	ShadowLinkServiceListShadowLinkTopicsProcedure = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/ListShadowLinkTopics"
+	// ShadowLinkServiceGetShadowTopicProcedure is the fully-qualified name of the ShadowLinkService's
+	// GetShadowTopic RPC.
+	ShadowLinkServiceGetShadowTopicProcedure = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/GetShadowTopic"
+	// ShadowLinkServiceGetShadowMetricsProcedure is the fully-qualified name of the ShadowLinkService's
+	// GetShadowMetrics RPC.
+	ShadowLinkServiceGetShadowMetricsProcedure = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/GetShadowMetrics"
+	// ShadowLinkServiceGetShadowLinkProcedure is the fully-qualified name of the ShadowLinkService's
+	// GetShadowLink RPC.
+	ShadowLinkServiceGetShadowLinkProcedure = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/GetShadowLink"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	shadowLinkServiceServiceDescriptor        = v1alpha3.File_redpanda_api_dataplane_v1alpha3_shadowlink_proto.Services().ByName("ShadowLinkService")
-	shadowLinkServiceFailOverMethodDescriptor = shadowLinkServiceServiceDescriptor.Methods().ByName("FailOver")
+	shadowLinkServiceServiceDescriptor                    = v1alpha3.File_redpanda_api_dataplane_v1alpha3_shadowlink_proto.Services().ByName("ShadowLinkService")
+	shadowLinkServiceFailOverMethodDescriptor             = shadowLinkServiceServiceDescriptor.Methods().ByName("FailOver")
+	shadowLinkServiceListShadowLinkTopicsMethodDescriptor = shadowLinkServiceServiceDescriptor.Methods().ByName("ListShadowLinkTopics")
+	shadowLinkServiceGetShadowTopicMethodDescriptor       = shadowLinkServiceServiceDescriptor.Methods().ByName("GetShadowTopic")
+	shadowLinkServiceGetShadowMetricsMethodDescriptor     = shadowLinkServiceServiceDescriptor.Methods().ByName("GetShadowMetrics")
+	shadowLinkServiceGetShadowLinkMethodDescriptor        = shadowLinkServiceServiceDescriptor.Methods().ByName("GetShadowLink")
 )
 
 // ShadowLinkServiceClient is a client for the redpanda.api.dataplane.v1alpha3.ShadowLinkService
 // service.
 type ShadowLinkServiceClient interface {
 	FailOver(context.Context, *connect.Request[v2.FailOverRequest]) (*connect.Response[v1alpha3.FailOverResponse], error)
+	ListShadowLinkTopics(context.Context, *connect.Request[v1alpha3.ListShadowLinkTopicsRequest]) (*connect.Response[v1alpha3.ListShadowLinkTopicsResponse], error)
+	GetShadowTopic(context.Context, *connect.Request[v1alpha3.GetShadowTopicRequest]) (*connect.Response[v1alpha3.GetShadowTopicResponse], error)
+	GetShadowMetrics(context.Context, *connect.Request[v1alpha3.GetShadowMetricsRequest]) (*connect.Response[v1alpha3.GetShadowMetricsResponse], error)
+	GetShadowLink(context.Context, *connect.Request[v1alpha3.GetShadowLinkRequest]) (*connect.Response[v1alpha3.GetShadowLinkResponse], error)
 }
 
 // NewShadowLinkServiceClient constructs a client for the
@@ -70,12 +90,40 @@ func NewShadowLinkServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			connect.WithSchema(shadowLinkServiceFailOverMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		listShadowLinkTopics: connect.NewClient[v1alpha3.ListShadowLinkTopicsRequest, v1alpha3.ListShadowLinkTopicsResponse](
+			httpClient,
+			baseURL+ShadowLinkServiceListShadowLinkTopicsProcedure,
+			connect.WithSchema(shadowLinkServiceListShadowLinkTopicsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		getShadowTopic: connect.NewClient[v1alpha3.GetShadowTopicRequest, v1alpha3.GetShadowTopicResponse](
+			httpClient,
+			baseURL+ShadowLinkServiceGetShadowTopicProcedure,
+			connect.WithSchema(shadowLinkServiceGetShadowTopicMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		getShadowMetrics: connect.NewClient[v1alpha3.GetShadowMetricsRequest, v1alpha3.GetShadowMetricsResponse](
+			httpClient,
+			baseURL+ShadowLinkServiceGetShadowMetricsProcedure,
+			connect.WithSchema(shadowLinkServiceGetShadowMetricsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		getShadowLink: connect.NewClient[v1alpha3.GetShadowLinkRequest, v1alpha3.GetShadowLinkResponse](
+			httpClient,
+			baseURL+ShadowLinkServiceGetShadowLinkProcedure,
+			connect.WithSchema(shadowLinkServiceGetShadowLinkMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // shadowLinkServiceClient implements ShadowLinkServiceClient.
 type shadowLinkServiceClient struct {
-	failOver *connect.Client[v2.FailOverRequest, v1alpha3.FailOverResponse]
+	failOver             *connect.Client[v2.FailOverRequest, v1alpha3.FailOverResponse]
+	listShadowLinkTopics *connect.Client[v1alpha3.ListShadowLinkTopicsRequest, v1alpha3.ListShadowLinkTopicsResponse]
+	getShadowTopic       *connect.Client[v1alpha3.GetShadowTopicRequest, v1alpha3.GetShadowTopicResponse]
+	getShadowMetrics     *connect.Client[v1alpha3.GetShadowMetricsRequest, v1alpha3.GetShadowMetricsResponse]
+	getShadowLink        *connect.Client[v1alpha3.GetShadowLinkRequest, v1alpha3.GetShadowLinkResponse]
 }
 
 // FailOver calls redpanda.api.dataplane.v1alpha3.ShadowLinkService.FailOver.
@@ -83,10 +131,35 @@ func (c *shadowLinkServiceClient) FailOver(ctx context.Context, req *connect.Req
 	return c.failOver.CallUnary(ctx, req)
 }
 
+// ListShadowLinkTopics calls
+// redpanda.api.dataplane.v1alpha3.ShadowLinkService.ListShadowLinkTopics.
+func (c *shadowLinkServiceClient) ListShadowLinkTopics(ctx context.Context, req *connect.Request[v1alpha3.ListShadowLinkTopicsRequest]) (*connect.Response[v1alpha3.ListShadowLinkTopicsResponse], error) {
+	return c.listShadowLinkTopics.CallUnary(ctx, req)
+}
+
+// GetShadowTopic calls redpanda.api.dataplane.v1alpha3.ShadowLinkService.GetShadowTopic.
+func (c *shadowLinkServiceClient) GetShadowTopic(ctx context.Context, req *connect.Request[v1alpha3.GetShadowTopicRequest]) (*connect.Response[v1alpha3.GetShadowTopicResponse], error) {
+	return c.getShadowTopic.CallUnary(ctx, req)
+}
+
+// GetShadowMetrics calls redpanda.api.dataplane.v1alpha3.ShadowLinkService.GetShadowMetrics.
+func (c *shadowLinkServiceClient) GetShadowMetrics(ctx context.Context, req *connect.Request[v1alpha3.GetShadowMetricsRequest]) (*connect.Response[v1alpha3.GetShadowMetricsResponse], error) {
+	return c.getShadowMetrics.CallUnary(ctx, req)
+}
+
+// GetShadowLink calls redpanda.api.dataplane.v1alpha3.ShadowLinkService.GetShadowLink.
+func (c *shadowLinkServiceClient) GetShadowLink(ctx context.Context, req *connect.Request[v1alpha3.GetShadowLinkRequest]) (*connect.Response[v1alpha3.GetShadowLinkResponse], error) {
+	return c.getShadowLink.CallUnary(ctx, req)
+}
+
 // ShadowLinkServiceHandler is an implementation of the
 // redpanda.api.dataplane.v1alpha3.ShadowLinkService service.
 type ShadowLinkServiceHandler interface {
 	FailOver(context.Context, *connect.Request[v2.FailOverRequest]) (*connect.Response[v1alpha3.FailOverResponse], error)
+	ListShadowLinkTopics(context.Context, *connect.Request[v1alpha3.ListShadowLinkTopicsRequest]) (*connect.Response[v1alpha3.ListShadowLinkTopicsResponse], error)
+	GetShadowTopic(context.Context, *connect.Request[v1alpha3.GetShadowTopicRequest]) (*connect.Response[v1alpha3.GetShadowTopicResponse], error)
+	GetShadowMetrics(context.Context, *connect.Request[v1alpha3.GetShadowMetricsRequest]) (*connect.Response[v1alpha3.GetShadowMetricsResponse], error)
+	GetShadowLink(context.Context, *connect.Request[v1alpha3.GetShadowLinkRequest]) (*connect.Response[v1alpha3.GetShadowLinkResponse], error)
 }
 
 // NewShadowLinkServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -101,10 +174,42 @@ func NewShadowLinkServiceHandler(svc ShadowLinkServiceHandler, opts ...connect.H
 		connect.WithSchema(shadowLinkServiceFailOverMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	shadowLinkServiceListShadowLinkTopicsHandler := connect.NewUnaryHandler(
+		ShadowLinkServiceListShadowLinkTopicsProcedure,
+		svc.ListShadowLinkTopics,
+		connect.WithSchema(shadowLinkServiceListShadowLinkTopicsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	shadowLinkServiceGetShadowTopicHandler := connect.NewUnaryHandler(
+		ShadowLinkServiceGetShadowTopicProcedure,
+		svc.GetShadowTopic,
+		connect.WithSchema(shadowLinkServiceGetShadowTopicMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	shadowLinkServiceGetShadowMetricsHandler := connect.NewUnaryHandler(
+		ShadowLinkServiceGetShadowMetricsProcedure,
+		svc.GetShadowMetrics,
+		connect.WithSchema(shadowLinkServiceGetShadowMetricsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	shadowLinkServiceGetShadowLinkHandler := connect.NewUnaryHandler(
+		ShadowLinkServiceGetShadowLinkProcedure,
+		svc.GetShadowLink,
+		connect.WithSchema(shadowLinkServiceGetShadowLinkMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ShadowLinkServiceFailOverProcedure:
 			shadowLinkServiceFailOverHandler.ServeHTTP(w, r)
+		case ShadowLinkServiceListShadowLinkTopicsProcedure:
+			shadowLinkServiceListShadowLinkTopicsHandler.ServeHTTP(w, r)
+		case ShadowLinkServiceGetShadowTopicProcedure:
+			shadowLinkServiceGetShadowTopicHandler.ServeHTTP(w, r)
+		case ShadowLinkServiceGetShadowMetricsProcedure:
+			shadowLinkServiceGetShadowMetricsHandler.ServeHTTP(w, r)
+		case ShadowLinkServiceGetShadowLinkProcedure:
+			shadowLinkServiceGetShadowLinkHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -116,4 +221,20 @@ type UnimplementedShadowLinkServiceHandler struct{}
 
 func (UnimplementedShadowLinkServiceHandler) FailOver(context.Context, *connect.Request[v2.FailOverRequest]) (*connect.Response[v1alpha3.FailOverResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.ShadowLinkService.FailOver is not implemented"))
+}
+
+func (UnimplementedShadowLinkServiceHandler) ListShadowLinkTopics(context.Context, *connect.Request[v1alpha3.ListShadowLinkTopicsRequest]) (*connect.Response[v1alpha3.ListShadowLinkTopicsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.ShadowLinkService.ListShadowLinkTopics is not implemented"))
+}
+
+func (UnimplementedShadowLinkServiceHandler) GetShadowTopic(context.Context, *connect.Request[v1alpha3.GetShadowTopicRequest]) (*connect.Response[v1alpha3.GetShadowTopicResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.ShadowLinkService.GetShadowTopic is not implemented"))
+}
+
+func (UnimplementedShadowLinkServiceHandler) GetShadowMetrics(context.Context, *connect.Request[v1alpha3.GetShadowMetricsRequest]) (*connect.Response[v1alpha3.GetShadowMetricsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.ShadowLinkService.GetShadowMetrics is not implemented"))
+}
+
+func (UnimplementedShadowLinkServiceHandler) GetShadowLink(context.Context, *connect.Request[v1alpha3.GetShadowLinkRequest]) (*connect.Response[v1alpha3.GetShadowLinkResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.ShadowLinkService.GetShadowLink is not implemented"))
 }

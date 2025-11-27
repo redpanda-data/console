@@ -6,12 +6,9 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
 import { file_buf_validate_validate } from "../../../../buf/validate/validate_pb";
 import { file_google_api_annotations } from "../../../../google/api/annotations_pb";
-import { file_google_api_field_behavior } from "../../../../google/api/field_behavior_pb";
-import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_protoc_gen_openapiv2_options_annotations } from "../../../../protoc-gen-openapiv2/options/annotations_pb";
 import { file_redpanda_api_auth_v1_authorization } from "../../auth/v1/authorization_pb";
-import type { CreateShadowLinkRequestSchema, DeleteShadowLinkRequestSchema, ShadowLinkConfigurations, ShadowLinkState, ShadowTopicState, UpdateShadowLinkRequestSchema } from "../../../core/admin/v2/shadow_link_pb";
+import type { CreateShadowLinkRequestSchema, DeleteShadowLinkRequestSchema, ShadowLinkConfigurations, ShadowLinkState, UpdateShadowLinkRequestSchema } from "../../../core/admin/v2/shadow_link_pb";
 import { file_redpanda_core_admin_v2_shadow_link } from "../../../core/admin/v2/shadow_link_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -19,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/api/console/v1alpha1/shadowlink.proto.
  */
 export const file_redpanda_api_console_v1alpha1_shadowlink: GenFile = /*@__PURE__*/
-  fileDesc("Ci5yZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9zaGFkb3dsaW5rLnByb3RvEh1yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMSJaChhDcmVhdGVTaGFkb3dMaW5rUmVzcG9uc2USPgoLc2hhZG93X2xpbmsYASABKAsyKS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5TaGFkb3dMaW5rIi8KFEdldFNoYWRvd0xpbmtSZXF1ZXN0EhcKBG5hbWUYASABKAlCCeBBArpIA8gBASJXChVHZXRTaGFkb3dMaW5rUmVzcG9uc2USPgoLc2hhZG93X2xpbmsYASABKAsyKS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5TaGFkb3dMaW5rIpIBChRTaGFkb3dMaW5rVGFza1N0YXR1cxIMCgRuYW1lGAEgASgJEjcKBXN0YXRlGAIgASgOMigucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuVGFza1N0YXRlEg4KBnJlYXNvbhgDIAEoCRIRCglicm9rZXJfaWQYBCABKAUSEAoIc2hhcmRfaWQYBSABKAUinAIKClNoYWRvd0xpbmsSDAoEbmFtZRgBIAEoCRILCgN1aWQYAiABKAkSSAoOY29uZmlndXJhdGlvbnMYAyABKAsyMC5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNoYWRvd0xpbmtDb25maWd1cmF0aW9ucxI2CgVzdGF0ZRgEIAEoDjInLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2hhZG93TGlua1N0YXRlEkkKDHRhc2tzX3N0YXR1cxgFIAMoCzIzLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlNoYWRvd0xpbmtUYXNrU3RhdHVzEiYKHnN5bmNlZF9zaGFkb3dfdG9waWNfcHJvcGVydGllcxgGIAMoCSLbAgoWTGlzdFNoYWRvd0xpbmtzUmVxdWVzdBJMCgZmaWx0ZXIYASABKAsyPC5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0U2hhZG93TGlua3NSZXF1ZXN0LkZpbHRlchKfAQoJcGFnZV9zaXplGAIgASgFQosBkkF1MmFMaW1pdCB0aGUgcGFnaW5hdGVkIHJlc3BvbnNlIHRvIGEgbnVtYmVyIG9mIGl0ZW1zLiBEZWZhdWx0cyB0byAxMDAuIFVzZSAtMSB0byBkaXNhYmxlIHBhZ2luYXRpb24uWQAAAAAAQI9AaQAAAAAAAPC/ukgQGg4Y6Aco////////////ARISCgpwYWdlX3Rva2VuGAMgASgJGj0KBkZpbHRlchIzCg1uYW1lX2NvbnRhaW5zGAEgASgJQhy6SBlyFxiAATISXlthLXpBLVowLTkuX1wtXSokIvoBChdMaXN0U2hhZG93TGlua3NSZXNwb25zZRJXCgxzaGFkb3dfbGlua3MYASADKAsyQS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0U2hhZG93TGlua3NSZXNwb25zZS5TaGFkb3dMaW5rEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCRptCgpTaGFkb3dMaW5rEgwKBG5hbWUYASABKAkSNgoFc3RhdGUYAiABKA4yJy5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNoYWRvd0xpbmtTdGF0ZRIZChFib290c3RyYXBfc2VydmVycxgDIAMoCSIaChhVcGRhdGVTaGFkb3dMaW5rUmVzcG9uc2UiGgoYRGVsZXRlU2hhZG93TGlua1Jlc3BvbnNlIpADChtMaXN0U2hhZG93TGlua1RvcGljc1JlcXVlc3QSIwoQc2hhZG93X2xpbmtfbmFtZRgBIAEoCUIJ4EECukgDyAEBElEKBmZpbHRlchgCIAEoCzJBLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkxpc3RTaGFkb3dMaW5rVG9waWNzUmVxdWVzdC5GaWx0ZXISnwEKCXBhZ2Vfc2l6ZRgDIAEoBUKLAZJBdTJhTGltaXQgdGhlIHBhZ2luYXRlZCByZXNwb25zZSB0byBhIG51bWJlciBvZiBpdGVtcy4gRGVmYXVsdHMgdG8gMTAwLiBVc2UgLTEgdG8gZGlzYWJsZSBwYWdpbmF0aW9uLlkAAAAAAECPQGkAAAAAAADwv7pIEBoOGOgHKP///////////wESEgoKcGFnZV90b2tlbhgEIAEoCRpDCgZGaWx0ZXISOQoTdG9waWNfbmFtZV9jb250YWlucxgBIAEoCUIcukgZchcY+QEyEl5bYS16QS1aMC05Ll9cLV0qJCKHAQoLU2hhZG93VG9waWMSEgoKdG9waWNfbmFtZRgBIAEoCRI3CgVzdGF0ZRgCIAEoDjIoLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2hhZG93VG9waWNTdGF0ZRIRCgl0b3RhbF9sYWcYAyABKAMSGAoQdG90YWxfcGFydGl0aW9ucxgEIAEoBSJ6ChxMaXN0U2hhZG93TGlua1RvcGljc1Jlc3BvbnNlEkEKDXNoYWRvd190b3BpY3MYASADKAsyKi5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5TaGFkb3dUb3BpYxIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkiWwoVR2V0U2hhZG93VG9waWNSZXF1ZXN0EiMKEHNoYWRvd19saW5rX25hbWUYASABKAlCCeBBArpIA8gBARIdCgp0b3BpY19uYW1lGAIgASgJQgngQQK6SAPIAQEivQMKFkdldFNoYWRvd1RvcGljUmVzcG9uc2USEgoKdG9waWNfbmFtZRgBIAEoCRI3CgVzdGF0ZRgCIAEoDjIoLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2hhZG93VG9waWNTdGF0ZRIRCgl0b3RhbF9sYWcYAyABKAMSGAoQdG90YWxfcGFydGl0aW9ucxgEIAEoBRJXCgpwYXJ0aXRpb25zGAUgAygLMkMucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuR2V0U2hhZG93VG9waWNSZXNwb25zZS5QYXJ0aXRpb25JbmZvGs8BCg1QYXJ0aXRpb25JbmZvEhQKDHBhcnRpdGlvbl9pZBgBIAEoBRIhChlzb3VyY2VfbGFzdF9zdGFibGVfb2Zmc2V0GAIgASgDEhYKDmhpZ2hfd2F0ZXJtYXJrGAMgASgDEh0KFXNvdXJjZV9oaWdoX3dhdGVybWFyaxgEIAEoAxILCgNsYWcYBSABKAMSQQodc291cmNlX2xhc3RfdXBkYXRlZF90aW1lc3RhbXAYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjIKF0dldFNoYWRvd01ldHJpY3NSZXF1ZXN0EhcKBG5hbWUYASABKAlCCeBBArpIA8gBASJtChhHZXRTaGFkb3dNZXRyaWNzUmVzcG9uc2USHwoXdG90YWxfdG9waWNzX3JlcGxpY2F0ZWQYASABKAQSGgoSZmFpbGVkX292ZXJfdG9waWNzGAIgASgEEhQKDGVycm9yX3RvcGljcxgDIAEoBCqqAQoJVGFza1N0YXRlEhoKFlRBU0tfU1RBVEVfVU5TUEVDSUZJRUQQABIVChFUQVNLX1NUQVRFX0FDVElWRRABEhUKEVRBU0tfU1RBVEVfUEFVU0VEEAISHwobVEFTS19TVEFURV9MSU5LX1VOQVZBSUxBQkxFEAMSGgoWVEFTS19TVEFURV9OT1RfUlVOTklORxAEEhYKElRBU0tfU1RBVEVfRkFVTFRFRBAFMoEXChFTaGFkb3dMaW5rU2VydmljZRLoAgoQQ3JlYXRlU2hhZG93TGluaxIvLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuQ3JlYXRlU2hhZG93TGlua1JlcXVlc3QaNy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5DcmVhdGVTaGFkb3dMaW5rUmVzcG9uc2Ui6QGSQbQBEhJDcmVhdGUgU2hhZG93IExpbmsaQ0NyZWF0ZSBhIG5ldyBzaGFkb3cgbGluayB0byByZXBsaWNhdGUgdG9waWNzIGZyb20gYSBzb3VyY2UgY2x1c3Rlci5KWQoDMjAxElIKE1NoYWRvdyBsaW5rIGNyZWF0ZWQSOwo5GjcucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuQ3JlYXRlU2hhZG93TGlua1Jlc3BvbnNliqYdBAgDEAOC0+STAiM6C3NoYWRvd19saW5rIhQvdjFhbHBoYTEvc2hhZG93bGluaxK5AgoNR2V0U2hhZG93TGluaxIzLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkdldFNoYWRvd0xpbmtSZXF1ZXN0GjQucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuR2V0U2hhZG93TGlua1Jlc3BvbnNlIrwBkkGNARIPR2V0IFNoYWRvdyBMaW5rGjNSZXRyaWV2ZSBkZXRhaWxzIG9mIGEgc3BlY2lmaWMgc2hhZG93IGxpbmsgYnkgbmFtZS5KRQoDMjAwEj4KAk9LEjgKNho0LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkdldFNoYWRvd0xpbmtSZXNwb25zZYqmHQQIARADgtPkkwIdEhsvdjFhbHBoYTEvc2hhZG93bGluay97bmFtZX0S2gIKD0xpc3RTaGFkb3dMaW5rcxI1LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkxpc3RTaGFkb3dMaW5rc1JlcXVlc3QaNi5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0U2hhZG93TGlua3NSZXNwb25zZSLXAZJBrwESEUxpc3QgU2hhZG93IExpbmtzGlFMaXN0IGFsbCBzaGFkb3cgbGlua3MgaW4gdGhlIGNsdXN0ZXIuIE9wdGlvbmFsOiBmaWx0ZXIgYmFzZWQgb24gc2hhZG93IGxpbmsgbmFtZS5KRwoDMjAwEkAKAk9LEjoKOBo2LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkxpc3RTaGFkb3dMaW5rc1Jlc3BvbnNliqYdBAgBEAOC0+STAhYSFC92MWFscGhhMS9zaGFkb3dsaW5rEuUCChBVcGRhdGVTaGFkb3dMaW5rEi8ucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5VcGRhdGVTaGFkb3dMaW5rUmVxdWVzdBo3LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlVwZGF0ZVNoYWRvd0xpbmtSZXNwb25zZSLmAZJBngESElVwZGF0ZSBTaGFkb3cgTGluaxotVXBkYXRlIGFuIGV4aXN0aW5nIHNoYWRvdyBsaW5rIGNvbmZpZ3VyYXRpb24uSlkKAzIwMBJSChNTaGFkb3cgbGluayB1cGRhdGVkEjsKORo3LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlVwZGF0ZVNoYWRvd0xpbmtSZXNwb25zZYqmHQQIAxADgtPkkwI2OgtzaGFkb3dfbGluazInL3YxYWxwaGExL3NoYWRvd2xpbmsve3NoYWRvd19saW5rLm5hbWV9Ev0BChBEZWxldGVTaGFkb3dMaW5rEi8ucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5EZWxldGVTaGFkb3dMaW5rUmVxdWVzdBo3LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkRlbGV0ZVNoYWRvd0xpbmtSZXNwb25zZSJ/kkFREhJEZWxldGUgU2hhZG93IExpbmsaHURlbGV0ZSBhIHNoYWRvdyBsaW5rIGJ5IG5hbWUuShwKAzIwNBIVChNTaGFkb3cgbGluayBkZWxldGVkiqYdBAgDEAOC0+STAh0qGy92MWFscGhhMS9zaGFkb3dsaW5rL3tuYW1lfRKiAwoUTGlzdFNoYWRvd0xpbmtUb3BpY3MSOi5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0U2hhZG93TGlua1RvcGljc1JlcXVlc3QaOy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0U2hhZG93TGlua1RvcGljc1Jlc3BvbnNlIpACkkHPARIXTGlzdCBTaGFkb3cgTGluayBUb3BpY3MaZkxpc3Qgc2hhZG93IHRvcGljIHN0YXR1cyBpbmZvcm1hdGlvbiBmb3IgYSBzcGVjaWZpYyBzaGFkb3cgbGluay4gT3B0aW9uYWw6IGZpbHRlciBiYXNlZCBvbiB0b3BpYyBuYW1lLkpMCgMyMDASRQoCT0sSPwo9GjsucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdFNoYWRvd0xpbmtUb3BpY3NSZXNwb25zZYqmHQQIARADgtPkkwIvEi0vdjFhbHBoYTEvc2hhZG93bGluay97c2hhZG93X2xpbmtfbmFtZX0vdG9waWMS6wIKDkdldFNoYWRvd1RvcGljEjQucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuR2V0U2hhZG93VG9waWNSZXF1ZXN0GjUucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuR2V0U2hhZG93VG9waWNSZXNwb25zZSLrAZJBnQESEEdldCBTaGFkb3cgVG9waWMaQVJldHJpZXZlIGRldGFpbHMgb2YgYSBzcGVjaWZpYyBzaGFkb3cgdG9waWMgd2l0aGluIGEgc2hhZG93IGxpbmsuSkYKAzIwMBI/CgJPSxI5CjcaNS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5HZXRTaGFkb3dUb3BpY1Jlc3BvbnNliqYdBAgBEAOC0+STAjwSOi92MWFscGhhMS9zaGFkb3dsaW5rL3tzaGFkb3dfbGlua19uYW1lfS90b3BpYy97dG9waWNfbmFtZX0SlwMKEEdldFNoYWRvd01ldHJpY3MSNi5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5HZXRTaGFkb3dNZXRyaWNzUmVxdWVzdBo3LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkdldFNoYWRvd01ldHJpY3NSZXNwb25zZSKRApJB2gESF0dldCBTaGFkb3cgTGluayBNZXRyaWNzGnVSZXRyaWV2ZSBtZXRyaWNzIGZvciBhIHNwZWNpZmljIHNoYWRvdyBsaW5rLCBpbmNsdWRpbmcgdG90YWwgdG9waWNzIHJlcGxpY2F0ZWQsIGZhaWxlZCBvdmVyIHRvcGljcywgYW5kIGVycm9yIHRvcGljcy5KSAoDMjAwEkEKAk9LEjsKORo3LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkdldFNoYWRvd01ldHJpY3NSZXNwb25zZYqmHQQIARADgtPkkwIlEiMvdjFhbHBoYTEvc2hhZG93bGluay97bmFtZX0vbWV0cmljcxpTkkFQCgxTaGFkb3cgTGlua3MSQE1hbmFnZSBSZWRwYW5kYSBzaGFkb3cgbGlua3MgZm9yIGRpc2FzdGVyIHJlY292ZXJ5IGFuZCBmYWlsb3Zlci5CsAIKIWNvbS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMUIPU2hhZG93bGlua1Byb3RvUAFaY2dpdGh1Yi5jb20vcmVkcGFuZGEtZGF0YS9jb25zb2xlL2JhY2tlbmQvcGtnL3Byb3RvZ2VuL3JlZHBhbmRhL2FwaS9jb25zb2xlL3YxYWxwaGExO2NvbnNvbGV2MWFscGhhMaICA1JBQ6oCHVJlZHBhbmRhLkFwaS5Db25zb2xlLlYxYWxwaGExygIdUmVkcGFuZGFcQXBpXENvbnNvbGVcVjFhbHBoYTHiAilSZWRwYW5kYVxBcGlcQ29uc29sZVxWMWFscGhhMVxHUEJNZXRhZGF0YeoCIFJlZHBhbmRhOjpBcGk6OkNvbnNvbGU6OlYxYWxwaGExYgZwcm90bzM", [file_buf_validate_validate, file_google_api_annotations, file_google_api_field_behavior, file_google_protobuf_timestamp, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization, file_redpanda_core_admin_v2_shadow_link]);
+  fileDesc("Ci5yZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9zaGFkb3dsaW5rLnByb3RvEh1yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMSJaChhDcmVhdGVTaGFkb3dMaW5rUmVzcG9uc2USPgoLc2hhZG93X2xpbmsYASABKAsyKS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5TaGFkb3dMaW5rIpIBChRTaGFkb3dMaW5rVGFza1N0YXR1cxIMCgRuYW1lGAEgASgJEjcKBXN0YXRlGAIgASgOMigucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuVGFza1N0YXRlEg4KBnJlYXNvbhgDIAEoCRIRCglicm9rZXJfaWQYBCABKAUSEAoIc2hhcmRfaWQYBSABKAUinAIKClNoYWRvd0xpbmsSDAoEbmFtZRgBIAEoCRILCgN1aWQYAiABKAkSSAoOY29uZmlndXJhdGlvbnMYAyABKAsyMC5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNoYWRvd0xpbmtDb25maWd1cmF0aW9ucxI2CgVzdGF0ZRgEIAEoDjInLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuU2hhZG93TGlua1N0YXRlEkkKDHRhc2tzX3N0YXR1cxgFIAMoCzIzLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlNoYWRvd0xpbmtUYXNrU3RhdHVzEiYKHnN5bmNlZF9zaGFkb3dfdG9waWNfcHJvcGVydGllcxgGIAMoCSLbAgoWTGlzdFNoYWRvd0xpbmtzUmVxdWVzdBJMCgZmaWx0ZXIYASABKAsyPC5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0U2hhZG93TGlua3NSZXF1ZXN0LkZpbHRlchKfAQoJcGFnZV9zaXplGAIgASgFQosBkkF1MmFMaW1pdCB0aGUgcGFnaW5hdGVkIHJlc3BvbnNlIHRvIGEgbnVtYmVyIG9mIGl0ZW1zLiBEZWZhdWx0cyB0byAxMDAuIFVzZSAtMSB0byBkaXNhYmxlIHBhZ2luYXRpb24uWQAAAAAAQI9AaQAAAAAAAPC/ukgQGg4Y6Aco////////////ARISCgpwYWdlX3Rva2VuGAMgASgJGj0KBkZpbHRlchIzCg1uYW1lX2NvbnRhaW5zGAEgASgJQhy6SBlyFxiAATISXlthLXpBLVowLTkuX1wtXSokIvoBChdMaXN0U2hhZG93TGlua3NSZXNwb25zZRJXCgxzaGFkb3dfbGlua3MYASADKAsyQS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0U2hhZG93TGlua3NSZXNwb25zZS5TaGFkb3dMaW5rEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCRptCgpTaGFkb3dMaW5rEgwKBG5hbWUYASABKAkSNgoFc3RhdGUYAiABKA4yJy5yZWRwYW5kYS5jb3JlLmFkbWluLnYyLlNoYWRvd0xpbmtTdGF0ZRIZChFib290c3RyYXBfc2VydmVycxgDIAMoCSIaChhVcGRhdGVTaGFkb3dMaW5rUmVzcG9uc2UiGgoYRGVsZXRlU2hhZG93TGlua1Jlc3BvbnNlKqoBCglUYXNrU3RhdGUSGgoWVEFTS19TVEFURV9VTlNQRUNJRklFRBAAEhUKEVRBU0tfU1RBVEVfQUNUSVZFEAESFQoRVEFTS19TVEFURV9QQVVTRUQQAhIfChtUQVNLX1NUQVRFX0xJTktfVU5BVkFJTEFCTEUQAxIaChZUQVNLX1NUQVRFX05PVF9SVU5OSU5HEAQSFgoSVEFTS19TVEFURV9GQVVMVEVEEAUymAsKEVNoYWRvd0xpbmtTZXJ2aWNlEugCChBDcmVhdGVTaGFkb3dMaW5rEi8ucmVkcGFuZGEuY29yZS5hZG1pbi52Mi5DcmVhdGVTaGFkb3dMaW5rUmVxdWVzdBo3LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkNyZWF0ZVNoYWRvd0xpbmtSZXNwb25zZSLpAZJBtAESEkNyZWF0ZSBTaGFkb3cgTGluaxpDQ3JlYXRlIGEgbmV3IHNoYWRvdyBsaW5rIHRvIHJlcGxpY2F0ZSB0b3BpY3MgZnJvbSBhIHNvdXJjZSBjbHVzdGVyLkpZCgMyMDESUgoTU2hhZG93IGxpbmsgY3JlYXRlZBI7CjkaNy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5DcmVhdGVTaGFkb3dMaW5rUmVzcG9uc2WKph0ECAMQA4LT5JMCIzoLc2hhZG93X2xpbmsiFC92MWFscGhhMS9zaGFkb3dsaW5rEtoCCg9MaXN0U2hhZG93TGlua3MSNS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0U2hhZG93TGlua3NSZXF1ZXN0GjYucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdFNoYWRvd0xpbmtzUmVzcG9uc2Ui1wGSQa8BEhFMaXN0IFNoYWRvdyBMaW5rcxpRTGlzdCBhbGwgc2hhZG93IGxpbmtzIGluIHRoZSBjbHVzdGVyLiBPcHRpb25hbDogZmlsdGVyIGJhc2VkIG9uIHNoYWRvdyBsaW5rIG5hbWUuSkcKAzIwMBJACgJPSxI6CjgaNi5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0U2hhZG93TGlua3NSZXNwb25zZYqmHQQIARADgtPkkwIWEhQvdjFhbHBoYTEvc2hhZG93bGluaxLlAgoQVXBkYXRlU2hhZG93TGluaxIvLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuVXBkYXRlU2hhZG93TGlua1JlcXVlc3QaNy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5VcGRhdGVTaGFkb3dMaW5rUmVzcG9uc2Ui5gGSQZ4BEhJVcGRhdGUgU2hhZG93IExpbmsaLVVwZGF0ZSBhbiBleGlzdGluZyBzaGFkb3cgbGluayBjb25maWd1cmF0aW9uLkpZCgMyMDASUgoTU2hhZG93IGxpbmsgdXBkYXRlZBI7CjkaNy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5VcGRhdGVTaGFkb3dMaW5rUmVzcG9uc2WKph0ECAMQA4LT5JMCNjoLc2hhZG93X2xpbmsyJy92MWFscGhhMS9zaGFkb3dsaW5rL3tzaGFkb3dfbGluay5uYW1lfRL9AQoQRGVsZXRlU2hhZG93TGluaxIvLnJlZHBhbmRhLmNvcmUuYWRtaW4udjIuRGVsZXRlU2hhZG93TGlua1JlcXVlc3QaNy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5EZWxldGVTaGFkb3dMaW5rUmVzcG9uc2Uif5JBURISRGVsZXRlIFNoYWRvdyBMaW5rGh1EZWxldGUgYSBzaGFkb3cgbGluayBieSBuYW1lLkocCgMyMDQSFQoTU2hhZG93IGxpbmsgZGVsZXRlZIqmHQQIAxADgtPkkwIdKhsvdjFhbHBoYTEvc2hhZG93bGluay97bmFtZX0aU5JBUAoMU2hhZG93IExpbmtzEkBNYW5hZ2UgUmVkcGFuZGEgc2hhZG93IGxpbmtzIGZvciBkaXNhc3RlciByZWNvdmVyeSBhbmQgZmFpbG92ZXIuQrACCiFjb20ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTFCD1NoYWRvd2xpbmtQcm90b1ABWmNnaXRodWIuY29tL3JlZHBhbmRhLWRhdGEvY29uc29sZS9iYWNrZW5kL3BrZy9wcm90b2dlbi9yZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMTtjb25zb2xldjFhbHBoYTGiAgNSQUOqAh1SZWRwYW5kYS5BcGkuQ29uc29sZS5WMWFscGhhMcoCHVJlZHBhbmRhXEFwaVxDb25zb2xlXFYxYWxwaGEx4gIpUmVkcGFuZGFcQXBpXENvbnNvbGVcVjFhbHBoYTFcR1BCTWV0YWRhdGHqAiBSZWRwYW5kYTo6QXBpOjpDb25zb2xlOjpWMWFscGhhMWIGcHJvdG8z", [file_buf_validate_validate, file_google_api_annotations, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization, file_redpanda_core_admin_v2_shadow_link]);
 
 /**
  * @generated from message redpanda.api.console.v1alpha1.CreateShadowLinkResponse
@@ -37,40 +34,6 @@ export type CreateShadowLinkResponse = Message<"redpanda.api.console.v1alpha1.Cr
  */
 export const CreateShadowLinkResponseSchema: GenMessage<CreateShadowLinkResponse> = /*@__PURE__*/
   messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 0);
-
-/**
- * @generated from message redpanda.api.console.v1alpha1.GetShadowLinkRequest
- */
-export type GetShadowLinkRequest = Message<"redpanda.api.console.v1alpha1.GetShadowLinkRequest"> & {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name: string;
-};
-
-/**
- * Describes the message redpanda.api.console.v1alpha1.GetShadowLinkRequest.
- * Use `create(GetShadowLinkRequestSchema)` to create a new message.
- */
-export const GetShadowLinkRequestSchema: GenMessage<GetShadowLinkRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 1);
-
-/**
- * @generated from message redpanda.api.console.v1alpha1.GetShadowLinkResponse
- */
-export type GetShadowLinkResponse = Message<"redpanda.api.console.v1alpha1.GetShadowLinkResponse"> & {
-  /**
-   * @generated from field: redpanda.api.console.v1alpha1.ShadowLink shadow_link = 1;
-   */
-  shadowLink?: ShadowLink;
-};
-
-/**
- * Describes the message redpanda.api.console.v1alpha1.GetShadowLinkResponse.
- * Use `create(GetShadowLinkResponseSchema)` to create a new message.
- */
-export const GetShadowLinkResponseSchema: GenMessage<GetShadowLinkResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 2);
 
 /**
  * Status of a task
@@ -119,7 +82,7 @@ export type ShadowLinkTaskStatus = Message<"redpanda.api.console.v1alpha1.Shadow
  * Use `create(ShadowLinkTaskStatusSchema)` to create a new message.
  */
 export const ShadowLinkTaskStatusSchema: GenMessage<ShadowLinkTaskStatus> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 3);
+  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 1);
 
 /**
  * @generated from message redpanda.api.console.v1alpha1.ShadowLink
@@ -163,7 +126,7 @@ export type ShadowLink = Message<"redpanda.api.console.v1alpha1.ShadowLink"> & {
  * Use `create(ShadowLinkSchema)` to create a new message.
  */
 export const ShadowLinkSchema: GenMessage<ShadowLink> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 4);
+  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 2);
 
 /**
  * @generated from message redpanda.api.console.v1alpha1.ListShadowLinksRequest
@@ -193,7 +156,7 @@ export type ListShadowLinksRequest = Message<"redpanda.api.console.v1alpha1.List
  * Use `create(ListShadowLinksRequestSchema)` to create a new message.
  */
 export const ListShadowLinksRequestSchema: GenMessage<ListShadowLinksRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 5);
+  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 3);
 
 /**
  * @generated from message redpanda.api.console.v1alpha1.ListShadowLinksRequest.Filter
@@ -212,7 +175,7 @@ export type ListShadowLinksRequest_Filter = Message<"redpanda.api.console.v1alph
  * Use `create(ListShadowLinksRequest_FilterSchema)` to create a new message.
  */
 export const ListShadowLinksRequest_FilterSchema: GenMessage<ListShadowLinksRequest_Filter> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 5, 0);
+  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 3, 0);
 
 /**
  * @generated from message redpanda.api.console.v1alpha1.ListShadowLinksResponse
@@ -234,7 +197,7 @@ export type ListShadowLinksResponse = Message<"redpanda.api.console.v1alpha1.Lis
  * Use `create(ListShadowLinksResponseSchema)` to create a new message.
  */
 export const ListShadowLinksResponseSchema: GenMessage<ListShadowLinksResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 6);
+  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 4);
 
 /**
  * @generated from message redpanda.api.console.v1alpha1.ListShadowLinksResponse.ShadowLink
@@ -261,7 +224,7 @@ export type ListShadowLinksResponse_ShadowLink = Message<"redpanda.api.console.v
  * Use `create(ListShadowLinksResponse_ShadowLinkSchema)` to create a new message.
  */
 export const ListShadowLinksResponse_ShadowLinkSchema: GenMessage<ListShadowLinksResponse_ShadowLink> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 6, 0);
+  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 4, 0);
 
 /**
  * @generated from message redpanda.api.console.v1alpha1.UpdateShadowLinkResponse
@@ -274,7 +237,7 @@ export type UpdateShadowLinkResponse = Message<"redpanda.api.console.v1alpha1.Up
  * Use `create(UpdateShadowLinkResponseSchema)` to create a new message.
  */
 export const UpdateShadowLinkResponseSchema: GenMessage<UpdateShadowLinkResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 7);
+  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 5);
 
 /**
  * @generated from message redpanda.api.console.v1alpha1.DeleteShadowLinkResponse
@@ -287,266 +250,7 @@ export type DeleteShadowLinkResponse = Message<"redpanda.api.console.v1alpha1.De
  * Use `create(DeleteShadowLinkResponseSchema)` to create a new message.
  */
 export const DeleteShadowLinkResponseSchema: GenMessage<DeleteShadowLinkResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 8);
-
-/**
- * @generated from message redpanda.api.console.v1alpha1.ListShadowLinkTopicsRequest
- */
-export type ListShadowLinkTopicsRequest = Message<"redpanda.api.console.v1alpha1.ListShadowLinkTopicsRequest"> & {
-  /**
-   * @generated from field: string shadow_link_name = 1;
-   */
-  shadowLinkName: string;
-
-  /**
-   * @generated from field: redpanda.api.console.v1alpha1.ListShadowLinkTopicsRequest.Filter filter = 2;
-   */
-  filter?: ListShadowLinkTopicsRequest_Filter;
-
-  /**
-   * @generated from field: int32 page_size = 3;
-   */
-  pageSize: number;
-
-  /**
-   * Value of the next_page_token field returned by the previous response.
-   * If not provided, the system assumes the first page is requested.
-   *
-   * @generated from field: string page_token = 4;
-   */
-  pageToken: string;
-};
-
-/**
- * Describes the message redpanda.api.console.v1alpha1.ListShadowLinkTopicsRequest.
- * Use `create(ListShadowLinkTopicsRequestSchema)` to create a new message.
- */
-export const ListShadowLinkTopicsRequestSchema: GenMessage<ListShadowLinkTopicsRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 9);
-
-/**
- * @generated from message redpanda.api.console.v1alpha1.ListShadowLinkTopicsRequest.Filter
- */
-export type ListShadowLinkTopicsRequest_Filter = Message<"redpanda.api.console.v1alpha1.ListShadowLinkTopicsRequest.Filter"> & {
-  /**
-   * Substring match on shadow topic name. Case-sensitive.
-   *
-   * @generated from field: string topic_name_contains = 1;
-   */
-  topicNameContains: string;
-};
-
-/**
- * Describes the message redpanda.api.console.v1alpha1.ListShadowLinkTopicsRequest.Filter.
- * Use `create(ListShadowLinkTopicsRequest_FilterSchema)` to create a new message.
- */
-export const ListShadowLinkTopicsRequest_FilterSchema: GenMessage<ListShadowLinkTopicsRequest_Filter> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 9, 0);
-
-/**
- * @generated from message redpanda.api.console.v1alpha1.ShadowTopic
- */
-export type ShadowTopic = Message<"redpanda.api.console.v1alpha1.ShadowTopic"> & {
-  /**
-   * @generated from field: string topic_name = 1;
-   */
-  topicName: string;
-
-  /**
-   * @generated from field: redpanda.core.admin.v2.ShadowTopicState state = 2;
-   */
-  state: ShadowTopicState;
-
-  /**
-   * @generated from field: int64 total_lag = 3;
-   */
-  totalLag: bigint;
-
-  /**
-   * @generated from field: int32 total_partitions = 4;
-   */
-  totalPartitions: number;
-};
-
-/**
- * Describes the message redpanda.api.console.v1alpha1.ShadowTopic.
- * Use `create(ShadowTopicSchema)` to create a new message.
- */
-export const ShadowTopicSchema: GenMessage<ShadowTopic> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 10);
-
-/**
- * @generated from message redpanda.api.console.v1alpha1.ListShadowLinkTopicsResponse
- */
-export type ListShadowLinkTopicsResponse = Message<"redpanda.api.console.v1alpha1.ListShadowLinkTopicsResponse"> & {
-  /**
-   * Shadow topic status information
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.ShadowTopic shadow_topics = 1;
-   */
-  shadowTopics: ShadowTopic[];
-
-  /**
-   * Token to retrieve the next page
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
-};
-
-/**
- * Describes the message redpanda.api.console.v1alpha1.ListShadowLinkTopicsResponse.
- * Use `create(ListShadowLinkTopicsResponseSchema)` to create a new message.
- */
-export const ListShadowLinkTopicsResponseSchema: GenMessage<ListShadowLinkTopicsResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 11);
-
-/**
- * @generated from message redpanda.api.console.v1alpha1.GetShadowTopicRequest
- */
-export type GetShadowTopicRequest = Message<"redpanda.api.console.v1alpha1.GetShadowTopicRequest"> & {
-  /**
-   * @generated from field: string shadow_link_name = 1;
-   */
-  shadowLinkName: string;
-
-  /**
-   * @generated from field: string topic_name = 2;
-   */
-  topicName: string;
-};
-
-/**
- * Describes the message redpanda.api.console.v1alpha1.GetShadowTopicRequest.
- * Use `create(GetShadowTopicRequestSchema)` to create a new message.
- */
-export const GetShadowTopicRequestSchema: GenMessage<GetShadowTopicRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 12);
-
-/**
- * @generated from message redpanda.api.console.v1alpha1.GetShadowTopicResponse
- */
-export type GetShadowTopicResponse = Message<"redpanda.api.console.v1alpha1.GetShadowTopicResponse"> & {
-  /**
-   * @generated from field: string topic_name = 1;
-   */
-  topicName: string;
-
-  /**
-   * @generated from field: redpanda.core.admin.v2.ShadowTopicState state = 2;
-   */
-  state: ShadowTopicState;
-
-  /**
-   * @generated from field: int64 total_lag = 3;
-   */
-  totalLag: bigint;
-
-  /**
-   * @generated from field: int32 total_partitions = 4;
-   */
-  totalPartitions: number;
-
-  /**
-   * @generated from field: repeated redpanda.api.console.v1alpha1.GetShadowTopicResponse.PartitionInfo partitions = 5;
-   */
-  partitions: GetShadowTopicResponse_PartitionInfo[];
-};
-
-/**
- * Describes the message redpanda.api.console.v1alpha1.GetShadowTopicResponse.
- * Use `create(GetShadowTopicResponseSchema)` to create a new message.
- */
-export const GetShadowTopicResponseSchema: GenMessage<GetShadowTopicResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 13);
-
-/**
- * Partition-level information
- *
- * @generated from message redpanda.api.console.v1alpha1.GetShadowTopicResponse.PartitionInfo
- */
-export type GetShadowTopicResponse_PartitionInfo = Message<"redpanda.api.console.v1alpha1.GetShadowTopicResponse.PartitionInfo"> & {
-  /**
-   * @generated from field: int32 partition_id = 1;
-   */
-  partitionId: number;
-
-  /**
-   * @generated from field: int64 source_last_stable_offset = 2;
-   */
-  sourceLastStableOffset: bigint;
-
-  /**
-   * @generated from field: int64 high_watermark = 3;
-   */
-  highWatermark: bigint;
-
-  /**
-   * @generated from field: int64 source_high_watermark = 4;
-   */
-  sourceHighWatermark: bigint;
-
-  /**
-   * @generated from field: int64 lag = 5;
-   */
-  lag: bigint;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp source_last_updated_timestamp = 6;
-   */
-  sourceLastUpdatedTimestamp?: Timestamp;
-};
-
-/**
- * Describes the message redpanda.api.console.v1alpha1.GetShadowTopicResponse.PartitionInfo.
- * Use `create(GetShadowTopicResponse_PartitionInfoSchema)` to create a new message.
- */
-export const GetShadowTopicResponse_PartitionInfoSchema: GenMessage<GetShadowTopicResponse_PartitionInfo> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 13, 0);
-
-/**
- * @generated from message redpanda.api.console.v1alpha1.GetShadowMetricsRequest
- */
-export type GetShadowMetricsRequest = Message<"redpanda.api.console.v1alpha1.GetShadowMetricsRequest"> & {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name: string;
-};
-
-/**
- * Describes the message redpanda.api.console.v1alpha1.GetShadowMetricsRequest.
- * Use `create(GetShadowMetricsRequestSchema)` to create a new message.
- */
-export const GetShadowMetricsRequestSchema: GenMessage<GetShadowMetricsRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 14);
-
-/**
- * @generated from message redpanda.api.console.v1alpha1.GetShadowMetricsResponse
- */
-export type GetShadowMetricsResponse = Message<"redpanda.api.console.v1alpha1.GetShadowMetricsResponse"> & {
-  /**
-   * @generated from field: uint64 total_topics_replicated = 1;
-   */
-  totalTopicsReplicated: bigint;
-
-  /**
-   * @generated from field: uint64 failed_over_topics = 2;
-   */
-  failedOverTopics: bigint;
-
-  /**
-   * @generated from field: uint64 error_topics = 3;
-   */
-  errorTopics: bigint;
-};
-
-/**
- * Describes the message redpanda.api.console.v1alpha1.GetShadowMetricsResponse.
- * Use `create(GetShadowMetricsResponseSchema)` to create a new message.
- */
-export const GetShadowMetricsResponseSchema: GenMessage<GetShadowMetricsResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 15);
+  messageDesc(file_redpanda_api_console_v1alpha1_shadowlink, 6);
 
 /**
  * Task states
@@ -614,14 +318,6 @@ export const ShadowLinkService: GenService<{
     output: typeof CreateShadowLinkResponseSchema;
   },
   /**
-   * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.GetShadowLink
-   */
-  getShadowLink: {
-    methodKind: "unary";
-    input: typeof GetShadowLinkRequestSchema;
-    output: typeof GetShadowLinkResponseSchema;
-  },
-  /**
    * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.ListShadowLinks
    */
   listShadowLinks: {
@@ -644,30 +340,6 @@ export const ShadowLinkService: GenService<{
     methodKind: "unary";
     input: typeof DeleteShadowLinkRequestSchema;
     output: typeof DeleteShadowLinkResponseSchema;
-  },
-  /**
-   * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.ListShadowLinkTopics
-   */
-  listShadowLinkTopics: {
-    methodKind: "unary";
-    input: typeof ListShadowLinkTopicsRequestSchema;
-    output: typeof ListShadowLinkTopicsResponseSchema;
-  },
-  /**
-   * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.GetShadowTopic
-   */
-  getShadowTopic: {
-    methodKind: "unary";
-    input: typeof GetShadowTopicRequestSchema;
-    output: typeof GetShadowTopicResponseSchema;
-  },
-  /**
-   * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.GetShadowMetrics
-   */
-  getShadowMetrics: {
-    methodKind: "unary";
-    input: typeof GetShadowMetricsRequestSchema;
-    output: typeof GetShadowMetricsResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_redpanda_api_console_v1alpha1_shadowlink, 0);
