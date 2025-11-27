@@ -40,14 +40,9 @@ export const LintHintList: React.FC<LintHintListProps> = memo(({ className, lint
           {Object.entries(lintHints).map(([toolName, hint]) => (
             <div className="flex-col flex gap-1.5" key={toolName}>
               {hint.line > 0 ? (
-                <div className="flex flex-col gap-1">
                   <Pre variant="dense">
-                    Line {hint.line}, Col {hint.column}
+                    Line {hint.line}, Col {hint.column}: {hint.hint}
                   </Pre>
-                  <Pre variant="dense">
-                    {hint.hint}
-                  </Pre>
-                </div>
               ) : (
                 <Pre variant="dense">
                   {hint.hint}

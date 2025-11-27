@@ -47,7 +47,7 @@ yes | bunx @fumadocs/cli add --dir https://redpanda-ui-registry.netlify.app/r bu
 yes | bunx @fumadocs/cli add --dir https://redpanda-ui-registry.netlify.app/r card dialog form
 
 # Then generate yarn.lock
-bun i --yarn
+bun i && bun i --yarn
 ```
 
 ### 3. Write Component
@@ -90,7 +90,7 @@ export function MyComponent({ title, onSubmit }: Props) {
 **Performance:**
 
 - Hoist static content outside component
-- Use `useMemo` for expensive computations
+- Use `useMemo` for expensive computations - but only when there's a noticeable performance impact
 - Use `memo` for components receiving props
 
 ### 4. Write Tests
@@ -117,17 +117,40 @@ describe("formatNumber", () => {
 
 ```typescript
 // component.test.tsx
-import { render, screen, fireEvent } from 'test-utils';
+import { render, screen, fireEvent, waitFor } from 'test-utils';
+import { createRouterTransport } from '@connectrpc/connect';
+import { createPipeline } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import { MyComponent } from './component';
 
 describe('MyComponent', () => {
-  test('should call onSubmit when button clicked', () => {
-    const onSubmit = vi.fn();
-    render(<MyComponent onSubmit={onSubmit} />);
+  test('should trigger gRPC mutation when form is submitted', async () => {
+    // Mock the gRPC service method
+    const mockCreatePipeline = vi.fn(() =>
+      Promise.resolve({ id: '123', name: 'test-pipeline' })
+    );
 
-    fireEvent.click(screen.getByRole('button'));
+    // Create a mocked transport
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(createPipeline, mockCreatePipeline);
+    });
 
-    expect(onSubmit).toHaveBeenCalled();
+    // Render with the mocked transport
+    render(<MyComponent />, { transport });
+
+    // Fill out the form
+    fireEvent.change(screen.getByLabelText('Pipeline Name'), {
+      target: { value: 'test-pipeline' }
+    });
+
+    // Submit the form
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    // Verify the mutation was called with correct data
+    await waitFor(() => {
+      expect(mockCreatePipeline).toHaveBeenCalledWith({
+        name: 'test-pipeline'
+      });
+    });
   });
 });
 ```
@@ -150,11 +173,11 @@ const mockFunction = vi.mocked(functionToMock);
 
 ```bash
 # Run in order
-bun run type:check    # TypeScript errors
-bun run test          # All tests
-bun run lint          # Code quality
-bun run build         # Production build
-bun run start         # Dev server - check browser
+bun run type:check            # TypeScript errors
+bun run test                  # All tests
+bun run lint                  # Code quality
+bun run build                 # Production build
+bun run start2 --port=3004    # Dev server - check browser
 ```
 
 **Success criteria:**
@@ -172,7 +195,6 @@ bun run test                 # All tests (unit + integration)
 bun run test:unit            # Unit tests only (.test.ts)
 bun run test:integration     # Integration tests only (.test.tsx)
 bun run test:watch           # Watch mode
-bun run test:ui              # Interactive UI
 bun run test:coverage        # Coverage report
 ```
 
@@ -284,7 +306,7 @@ yes | bunx @fumadocs/cli add --dir https://redpanda-ui-registry.netlify.app/r \
 **After package install:**
 
 ```bash
-bun i --yarn  # ALWAYS run this
+bun i && bun i --yarn  # ALWAYS run this
 ```
 
 **Testing shortcuts:**

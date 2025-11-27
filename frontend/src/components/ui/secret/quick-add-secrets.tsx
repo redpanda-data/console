@@ -39,6 +39,7 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useCreateSecretMutation } from 'react-query/api/secret';
 import { toast } from 'sonner';
+import { ALPHANUMERIC_WITH_HYPHENS } from 'utils/regex';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { z } from 'zod';
@@ -99,7 +100,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
    */
   const normalizeSecretName = (name: string): string => {
     // Convert to uppercase and replace invalid characters with underscores
-    return name.toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+    return name.toUpperCase().replace(ALPHANUMERIC_WITH_HYPHENS, '_');
   };
   
   // Create sets of uppercase normalized names for efficient lookup
@@ -149,7 +150,6 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
     });
 
     if (secretEntries.length === 0) {
-      toast.info('All secrets have already been created');
       return;
     }
 

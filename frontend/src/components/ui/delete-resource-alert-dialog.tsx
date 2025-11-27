@@ -22,6 +22,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from 'components/redpanda-ui/components/alert-dialog';
+import type { ButtonProps } from 'components/redpanda-ui/components/button';
+import { Button } from 'components/redpanda-ui/components/button';
 import { DropdownMenuItem } from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
@@ -37,6 +39,12 @@ export type DeleteResourceAlertDialogProps = {
   isDeleting?: boolean;
   // Optional: Additional content to show in the dialog
   children?: ReactNode;
+  // Trigger variant: "dropdown" renders a DropdownMenuItem, "button" renders a Button
+  triggerVariant?: 'dropdown' | 'button';
+  // Button-specific props when triggerVariant is "button"
+  buttonVariant?: ButtonProps['variant'];
+  buttonIcon?: React.ReactNode;
+  buttonText?: string;
 };
 
 export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps> = ({
@@ -47,6 +55,10 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
   onOpenChange,
   isDeleting,
   children,
+  triggerVariant = 'dropdown',
+  buttonVariant = 'destructiveOutline',
+  buttonIcon,
+  buttonText = 'Delete',
 }) => {
   const [confirmationText, setConfirmationText] = React.useState('');
   const isDeleteConfirmed = confirmationText.toLowerCase() === 'delete';
@@ -58,21 +70,45 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
     }
   };
 
-  return (
-    <AlertDialog onOpenChange={onOpenChange}>
-      <AlertDialogTrigger asChild>
-        <DropdownMenuItem className="text-red-600 focus:text-red-600" onSelect={(e) => e.preventDefault()}>
-          {isDeleting ? (
-            <div className="flex items-center gap-4">
-              <Loader2 className="h-4 w-4 animate-spin" /> Deleting
-            </div>
-          ) : (
-            <div className="flex items-center gap-4">
-              <Trash2 className="h-4 w-4" /> Delete
-            </div>
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setConfirmationText('');
+    }
+    onOpenChange?.(open);
+  };
+
+  const renderTrigger = () => {
+    if (triggerVariant === 'button') {
+      return (
+        <Button disabled={isDeleting} icon={buttonIcon} variant={buttonVariant}>
+          {buttonText && !isDeleting && buttonText}
+          {isDeleting && (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Deleting...
+            </>
           )}
-        </DropdownMenuItem>
-      </AlertDialogTrigger>
+        </Button>
+      );
+    }
+
+    return (
+      <DropdownMenuItem className="text-red-600 focus:text-red-600" onSelect={(e) => e.preventDefault()}>
+        {isDeleting ? (
+          <div className="flex items-center gap-4">
+            <Loader2 className="h-4 w-4 animate-spin" /> Deleting
+          </div>
+        ) : (
+          <div className="flex items-center gap-4">
+            <Trash2 className="h-4 w-4" /> Delete
+          </div>
+        )}
+      </DropdownMenuItem>
+    );
+  };
+
+  return (
+    <AlertDialog onOpenChange={handleOpenChange}>
+      <AlertDialogTrigger asChild>{renderTrigger()}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader className="text-left">
           <AlertDialogTitle>Delete {resourceType}</AlertDialogTitle>
@@ -94,10 +130,10 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
           <AlertDialogCancel onClick={() => setConfirmationText('')}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             className="bg-red-600 hover:bg-red-700 focus:ring-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!isDeleteConfirmed}
+            disabled={!isDeleteConfirmed || isDeleting}
             onClick={handleDelete}
           >
-            Delete
+            {isDeleting ? 'Deleting...' : 'Delete'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

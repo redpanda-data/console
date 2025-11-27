@@ -16,16 +16,20 @@ export const REDPANDA_TOPIC_AND_USER_COMPONENTS = [
 
 /**
  * Fields that are critical for connection and should always be shown
- * even when they have defaults
+ * even when they have defaults.
+ *
+ * Note: These fields are only shown if they exist in the component's schema.
+ * The existence check happens naturally through schema iteration.
  */
-export const CRITICAL_CONNECTION_FIELDS = new Set(['sasl', 'consumer_group', 'topics']);
-
-/**
- * Configuration object fields that should be hidden for REDPANDA_SECRET_COMPONENTS
- * when wizard data exists (unless showOptionalFields is true)
- * Note: 'tls' is NOT included here because Redpanda Cloud always requires TLS enabled
- */
-export const NON_CRITICAL_CONFIG_OBJECTS = new Set(['metadata', 'batching', 'backoff', 'retry']);
+export const CRITICAL_CONNECTION_FIELDS = new Set([
+  'sasl',
+  'consumer_group',
+  'topics',
+  'topic',
+  'key',
+  'partition',
+  'label',
+]);
 
 export const REDPANDA_CONTEXTUAL_VARIABLES = {
   REDPANDA_BROKERS: {
@@ -102,3 +106,5 @@ export const stepMotionProps: MotionProps = {
 };
 
 export const HANDLED_ARRAY_MERGE_PATHS = ['pipeline.processors', 'cache_resources', 'rate_limit_resources'];
+
+export type PipelineMode = 'create' | 'edit' | 'view';

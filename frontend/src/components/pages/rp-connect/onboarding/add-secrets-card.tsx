@@ -23,7 +23,7 @@ export const AddSecretsCard = ({
   const [isSecretsDialogOpen, setIsSecretsDialogOpen] = useState(false);
 
   // Fetch secrets
-  const { data: secretsResponse, refetch: refetchSecrets } = useListSecretsQuery({});
+  const { data: secretsResponse } = useListSecretsQuery({});
   const existingSecrets = useMemo(
     () => (secretsResponse?.secrets ? secretsResponse.secrets.map((s) => s?.id || '') : []),
     [secretsResponse]
@@ -106,15 +106,6 @@ export const AddSecretsCard = ({
     },
     [editorInstance]
   );
-
-  const handleSecretsCreated = useCallback(() => {
-    refetchSecrets();
-    setIsSecretsDialogOpen(false);
-  }, [refetchSecrets]);
-
-  const handleOpenDialog = useCallback(() => {
-    setIsSecretsDialogOpen(true);
-  }, []);
 
   const handleUpdateEditorContent = useCallback(
     (oldName: string, newName: string) => {
@@ -210,7 +201,7 @@ export const AddSecretsCard = ({
                   <Badge
                     className="cursor-pointer text-sm hover:opacity-80"
                     key={secret}
-                    onClick={handleOpenDialog}
+                    onClick={() => setIsSecretsDialogOpen(true)}
                     variant="red"
                   >
                     Create <InlineCode className="bg-transparent">$secrets.{secret}</InlineCode>
@@ -220,7 +211,11 @@ export const AddSecretsCard = ({
               </div>
             </div>
           )}
-          <Button onClick={handleOpenDialog} size={existingSecrets.length > 0 ? 'sm' : 'default'} variant="outline">
+          <Button
+            onClick={() => setIsSecretsDialogOpen(true)}
+            size={existingSecrets.length > 0 ? 'sm' : 'default'}
+            variant="outline"
+          >
             {existingSecrets.length > 0 ? 'Add more secrets' : 'Add secret'}
             <PlusIcon className="h-4 w-4" />
           </Button>
@@ -231,7 +226,7 @@ export const AddSecretsCard = ({
         isOpen={isSecretsDialogOpen}
         missingSecrets={missingSecrets}
         onClose={() => setIsSecretsDialogOpen(false)}
-        onSecretsCreated={handleSecretsCreated}
+        onSecretsCreated={() => setIsSecretsDialogOpen(false)}
         onUpdateEditorContent={handleUpdateEditorContent}
       />
     </Card>

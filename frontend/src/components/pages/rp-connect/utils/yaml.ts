@@ -1,4 +1,6 @@
+import { ConnectError } from '@connectrpc/connect';
 import { toast } from 'sonner';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { Document, parseDocument, stringify as yamlStringify } from 'yaml';
 
 import { schemaToConfig } from './schema';
@@ -270,10 +272,13 @@ export const mergeConnectConfigs = (
   try {
     doc = parseDocument(existingYaml);
   } catch (error) {
-    const description = error instanceof Error ? error.message : String(error);
-    toast.error('Cannot merge: YAML has structural errors', {
-      description,
-    });
+    toast.error(
+      formatToastErrorMessageGRPC({
+        error: ConnectError.from(error),
+        action: 'Parse existing YAML',
+        entity: 'mergeConnectConfigs',
+      })
+    );
     return undefined; // Keep existing YAML in editor
   }
 
@@ -282,10 +287,13 @@ export const mergeConnectConfigs = (
   try {
     mergeByComponentType(componentType, doc, newConfigObject);
   } catch (error) {
-    const description = error instanceof Error ? error.message : String(error);
-    toast.error('Cannot merge: Merge operation failed', {
-      description,
-    });
+    toast.error(
+      formatToastErrorMessageGRPC({
+        error: ConnectError.from(error),
+        action: 'Merge selected component into existing config',
+        entity: 'mergeConnectConfigs',
+      })
+    );
     return undefined; // Keep existing YAML in editor
   }
 
@@ -430,10 +438,13 @@ export const configToYaml = (
     yamlString = addRootSpacing(yamlString);
     return yamlString;
   } catch (error) {
-    const description = error instanceof Error ? error.message : String(error);
-    toast.error('Failed to generate YAML', {
-      description,
-    });
+    toast.error(
+      formatToastErrorMessageGRPC({
+        error: ConnectError.from(error),
+        action: 'Convert connect config to YAML',
+        entity: 'configToYaml',
+      })
+    );
 
     // Return empty string - the existing YAML in the editor will be preserved
     // This prevents JSON output from appearing

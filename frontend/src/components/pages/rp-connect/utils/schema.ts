@@ -5,13 +5,19 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { onboardingWizardStore } from 'state/onboarding-wizard-store';
 
-import { isConsumerGroupField, isPasswordField, isSchemaRegistryUrlField, isTopicField, isUserField } from './wizard';
+import {
+  hasWizardRelevantFields,
+  isConsumerGroupField,
+  isPasswordField,
+  isSchemaRegistryUrlField,
+  isTopicField,
+  isUserField,
+} from './wizard';
 import {
   CRITICAL_CONNECTION_FIELDS,
   convertToScreamingSnakeCase,
   getContextualVariableSyntax,
   getSecretSyntax,
-  NON_CRITICAL_CONFIG_OBJECTS,
   REDPANDA_TOPIC_AND_USER_COMPONENTS,
 } from '../types/constants';
 import type {
@@ -149,6 +155,11 @@ export const schemaToConfig = (
   switch (componentSpec.type) {
     case 'input':
     case 'output':
+      config[typeToYamlConfigKey[componentSpec.type]] = {
+        label: '',
+        [componentSpec.name]: connectionConfig,
+      };
+      break;
     case 'buffer':
     case 'metrics':
     case 'tracer':
@@ -289,15 +300,33 @@ function shouldShowField(params: {
 }): boolean {
   const { spec, showOptionalFields, showAdvancedFields, componentName } = params;
 
-  // Critical fields always visible
+  // Critical fields always visible (for REDPANDA_TOPIC_AND_USER_COMPONENTS)
   const isRedpandaComponent = componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName);
   const isCriticalField = isRedpandaComponent && spec.name && CRITICAL_CONNECTION_FIELDS.has(spec.name);
+
+  // Special case: SASL only shows if wizard user data exists
+  if (isCriticalField && spec.name === 'sasl') {
+    const userData = onboardingWizardStore.getUserData();
+    return !!userData?.username;
+  }
+
   if (isCriticalField) {
+    return true;
+  }
+
+  // Show fields that can be populated by wizard data
+  if (hasWizardRelevantFields(spec, componentName)) {
     return true;
   }
 
   const isAdvanced = spec.advanced === true;
   const isOptional = spec.optional === true;
+  const hasNonEmptyDefault = spec.defaultValue !== undefined && spec.defaultValue !== '';
+
+  // Show fields with defaults that aren't explicitly optional or advanced
+  if (hasNonEmptyDefault && !isOptional && !isAdvanced) {
+    return true;
+  }
 
   // Don't show advanced fields unless explicitly requested
   if (isAdvanced && !showAdvancedFields) {
@@ -306,12 +335,6 @@ function shouldShowField(params: {
 
   // Don't show optional fields unless explicitly requested
   if (isOptional && !showOptionalFields) {
-    return false;
-  }
-
-  // Don't show non-critical config objects for Redpanda components unless showing optional fields
-  const isNonCriticalConfigObject = isRedpandaComponent && spec.name && NON_CRITICAL_CONFIG_OBJECTS.has(spec.name);
-  if (isNonCriticalConfigObject && !showOptionalFields) {
     return false;
   }
 
@@ -377,7 +400,30 @@ function generateArrayValue(params: {
     }
   }
 
-  return [];
+  // Handle object arrays (arrays with children)
+  // Check for non-empty children array (empty arrays are truthy!)
+  if (spec.children && spec.children.length > 0) {
+    const obj = generateObjectValue(spec, showOptionalFields, showAdvancedFields, componentName);
+    // Return array with placeholder object only if object has fields
+    return obj && Object.keys(obj).length > 0 ? [obj] : [];
+  }
+
+  // Handle primitive arrays (string, int, float, bool, unknown)
+  // Always return array with placeholder element for proper YAML/Bloblang formatting
+  switch (spec.type) {
+    case 'string':
+      return [''];
+    case 'int':
+    case 'float':
+      return [0];
+    case 'bool':
+      return [false];
+    case 'unknown':
+      return [null];
+    default:
+      // Fallback for any other type (component types, etc.)
+      return [''];
+  }
 }
 
 function generateScalarValue(spec: RawFieldSpec, options: GenerateDefaultValueOptions): unknown {
@@ -390,6 +436,8 @@ function generateScalarValue(spec: RawFieldSpec, options: GenerateDefaultValueOp
       return 0;
     case 'bool':
       return false;
+    case 'unknown':
+      return null;
     case 'object': {
       const obj = generateObjectValue(spec, showOptionalFields, showAdvancedFields, componentName);
       return obj && Object.keys(obj).length > 0 ? obj : undefined;
@@ -406,36 +454,33 @@ interface GenerateDefaultValueOptions {
   parentName?: string;
 }
 
+/**
+ * Converts string default values to their proper types
+ */
+function convertDefaultValue(defaultValue: string, type: string): unknown {
+  if (type === 'bool') {
+    return defaultValue === 'true';
+  }
+  if (type === 'int' || type === 'float') {
+    const num = Number(defaultValue);
+    return Number.isNaN(num) ? defaultValue : num;
+  }
+  return defaultValue;
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex field generation logic with many conditions
 export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefaultValueOptions): unknown {
   const { showOptionalFields, showAdvancedFields, componentName, parentName } = options || {};
 
-  const isCriticalField = spec.name ? CRITICAL_CONNECTION_FIELDS.has(spec.name) : false;
+  const isRedpandaComponent = componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName);
+  const isCriticalField = spec.name && isRedpandaComponent && CRITICAL_CONNECTION_FIELDS.has(spec.name);
   const isExplicitlyRequired = spec.optional === false;
   const isExplicitlyOptional = spec.optional === true;
   const isImplicitlyRequired = spec.optional === undefined && spec.defaultValue === undefined;
   const hasNonEmptyDefault = spec.defaultValue !== undefined && spec.defaultValue !== '';
 
-  const shouldShow = shouldShowField({
-    spec,
-    showOptionalFields: !!showOptionalFields,
-    showAdvancedFields: !!showAdvancedFields,
-    componentName,
-  });
-
-  if (hasNonEmptyDefault && isExplicitlyRequired) {
-    spec.comment = `Required (default: ${JSON.stringify(spec.defaultValue)})`;
-  } else if ((isExplicitlyRequired || isImplicitlyRequired) && spec.name !== 'seed_brokers') {
-    spec.comment = 'Required';
-  } else if (hasNonEmptyDefault && isExplicitlyOptional) {
-    spec.comment = `Optional (default: ${JSON.stringify(spec.defaultValue)})`;
-  } else if (isExplicitlyOptional || isCriticalField) {
-    spec.comment = 'Optional';
-  } else if (spec.name === 'seed_brokers') {
-    spec.comment = 'Optional';
-  }
-
   // Try wizard data population first for Redpanda secret components
+  // If these succeed, the field is relevant regardless of optional/advanced flags
   if (componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)) {
     const wizardValue = populateWizardFields(spec, componentName);
     if (wizardValue !== undefined) {
@@ -455,15 +500,60 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
     }
   }
 
-  // Check if field should be shown
+  const shouldShow = shouldShowField({
+    spec,
+    showOptionalFields: !!showOptionalFields,
+    showAdvancedFields: !!showAdvancedFields,
+    componentName,
+  });
+
+  // Early exit if field should not be shown (and wasn't auto-populated above)
   if (!shouldShow) {
     return undefined;
   }
 
-  // Return default if available, but skip empty string defaults for object types
-  // (empty string is a placeholder, we want to generate the actual object from children)
-  if (spec.defaultValue !== undefined && !(spec.defaultValue === '' && spec.type === 'object')) {
-    return spec.defaultValue;
+  // Special comment handling for conditional and optional fields
+  if (spec.name === 'topics') {
+    spec.comment = 'Required if regexp_topics and regexp_topics_include are not configured';
+  } else if (spec.name === 'regexp_topics') {
+    spec.comment = 'Required if topics is not configured';
+  } else if (spec.name === 'regexp_topics_include') {
+    spec.comment = 'Required if topics is not configured';
+  } else if (spec.name === 'consumer_group') {
+    spec.comment = 'Required if topic partition is not specified';
+  } else if (spec.name === 'key' || spec.name === 'partition') {
+    spec.comment = 'Optional';
+  } else if (hasNonEmptyDefault) {
+    // Always show default if present, regardless of required/optional status
+    const convertedValue = convertDefaultValue(spec.defaultValue, spec.type);
+    const formattedDefault =
+      spec.type === 'bool' || spec.type === 'int' || spec.type === 'float'
+        ? convertedValue
+        : JSON.stringify(spec.defaultValue);
+
+    if (isExplicitlyRequired || isImplicitlyRequired) {
+      spec.comment = `Required (default: ${formattedDefault})`;
+    } else if (isExplicitlyOptional) {
+      spec.comment = `Optional (default: ${formattedDefault})`;
+    } else {
+      // Neither explicitly required nor optional - just show the default
+      spec.comment = `Default: ${formattedDefault}`;
+    }
+  } else if (isExplicitlyRequired || isImplicitlyRequired) {
+    spec.comment = 'Required';
+  } else if (isExplicitlyOptional || isCriticalField) {
+    spec.comment = 'Optional';
+  }
+
+  // Return default if available, but skip empty string defaults for object/array types
+  // (empty string is a placeholder, we want to generate the actual structure from children)
+  // Arrays need to generate their structure even with empty defaultValue
+  if (
+    spec.defaultValue !== undefined &&
+    !(spec.defaultValue === '' && (spec.type === 'object' || spec.kind === 'array'))
+  ) {
+    // Apply type conversion
+    return convertDefaultValue(spec.defaultValue, spec.type);
   }
 
   // Generate value based on field kind
@@ -483,10 +573,58 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
       break;
     }
     case '2darray':
-      generatedValue = [];
+      // Generate array of arrays with placeholder for proper YAML/Bloblang formatting
+      if (spec.children) {
+        const obj = generateObjectValue(spec, showOptionalFields, showAdvancedFields, componentName);
+        generatedValue = obj && Object.keys(obj).length > 0 ? [[obj]] : [[]];
+      } else {
+        // Primitive 2darray based on type
+        switch (spec.type) {
+          case 'string':
+            generatedValue = [['']];
+            break;
+          case 'int':
+          case 'float':
+            generatedValue = [[0]];
+            break;
+          case 'bool':
+            generatedValue = [[false]];
+            break;
+          case 'unknown':
+            generatedValue = [[null]];
+            break;
+          default:
+            generatedValue = [['']];
+        }
+      }
       break;
     case 'map':
-      generatedValue = {};
+      // Generate map with single placeholder entry for better YAML visibility
+      switch (spec.type) {
+        case 'string':
+          generatedValue = { key: '' };
+          break;
+        case 'int':
+        case 'float':
+          generatedValue = { key: 0 };
+          break;
+        case 'bool':
+          generatedValue = { key: false };
+          break;
+        case 'unknown':
+          generatedValue = { key: null };
+          break;
+        case 'object':
+          if (spec.children) {
+            const obj = generateObjectValue(spec, showOptionalFields, showAdvancedFields, componentName);
+            generatedValue = obj && Object.keys(obj).length > 0 ? { key: obj } : {};
+          } else {
+            generatedValue = {};
+          }
+          break;
+        default:
+          generatedValue = { key: '' };
+      }
       break;
     default:
       generatedValue = undefined;
