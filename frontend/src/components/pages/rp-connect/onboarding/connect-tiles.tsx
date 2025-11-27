@@ -369,11 +369,13 @@ export const ConnectTiles = memo(
                                 if (isChecked) {
                                   // Unselect if already selected
                                   field.onChange('');
-                                  form.setValue('connectionType', '' as ConnectComponentType);
+                                  form.setValue('connectionType', '' as ConnectComponentType, { shouldValidate: true });
                                 } else {
                                   // Select the component
                                   field.onChange(component.name);
-                                  form.setValue('connectionType', component.type as ConnectComponentType);
+                                  form.setValue('connectionType', component.type as ConnectComponentType, {
+                                    shouldValidate: true,
+                                  });
                                   onChange?.(component.name, component.type as ConnectComponentType);
                                 }
                               }}
