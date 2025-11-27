@@ -115,13 +115,30 @@ export function Details({ readonly = false }: DetailsProps) {
                   <FormItem>
                     <FormLabel>Compute Units: {field.value}</FormLabel>
                     <FormControl>
-                      <Slider
-                        max={MAX_TASKS}
-                        min={MIN_TASKS}
-                        onValueChange={(values) => field.onChange(values[0])}
-                        step={1}
-                        value={[field.value]}
-                      />
+                      <div className="flex items-center gap-2">
+                        <Slider
+                          max={MAX_TASKS}
+                          min={MIN_TASKS}
+                          onValueChange={(values) => field.onChange(values[0])}
+                          step={1}
+                          value={[field.value]}
+                        />
+                        <Input
+                          className="w-12"
+                          max={MAX_TASKS}
+                          min={MIN_TASKS}
+                          onChange={(e) => {
+                            const value = Number(e.target.value);
+                            if (!Number.isNaN(value) && value >= MIN_TASKS && value <= MAX_TASKS) {
+                              field.onChange(value);
+                            }
+                          }}
+                          showStepControls
+                          step={1}
+                          type="number"
+                          value={field.value}
+                        />
+                      </div>
                     </FormControl>
                     <FormDescription className="text-muted-foreground text-sm">
                       One compute unit = 0.1 CPU and 400 MB memory

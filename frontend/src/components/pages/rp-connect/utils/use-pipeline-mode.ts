@@ -11,7 +11,7 @@
 
 import { useLocation, useParams } from 'react-router-dom';
 
-type PipelineMode = 'create' | 'edit' | 'view';
+export type PipelineMode = 'create' | 'edit' | 'view';
 
 export function usePipelineMode(): { mode: PipelineMode; pipelineId?: string } {
   const { pipelineId } = useParams<{ pipelineId: string }>();

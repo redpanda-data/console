@@ -10,18 +10,11 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { useToast } from '@redpanda-data/ui';
+import { ConnectError } from '@connectrpc/connect';
 import { Button } from 'components/redpanda-ui/components/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from 'components/redpanda-ui/components/dialog';
 import { Group } from 'components/redpanda-ui/components/group';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { Pause, Pencil, Play } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
@@ -30,11 +23,11 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import type { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Pipeline_State as PipelineState } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useDeletePipelineMutation, useStartPipelineMutation, useStopPipelineMutation } from 'react-query/api/pipeline';
 import { useNavigate } from 'react-router-dom';
-
-import { formatPipelineError } from '../errors';
+import { toast } from 'sonner';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 interface ToolbarProps {
   pipelineId: string;
@@ -44,56 +37,40 @@ interface ToolbarProps {
 
 export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: ToolbarProps) => {
   const navigate = useNavigate();
-  const toast = useToast();
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const deleteMutation = useDeletePipelineMutation();
-  const startMutation = useStartPipelineMutation();
-  const stopMutation = useStopPipelineMutation();
+  const { mutate: deleteMutation, isPending: isDeletePending } = useDeletePipelineMutation();
+  const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
+  const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
 
-  const isRunning = useMemo(() => pipelineState === PipelineState.RUNNING, [pipelineState]);
-  const isTransitioning = useMemo(
-    () => pipelineState === PipelineState.STARTING || pipelineState === PipelineState.STOPPING,
-    [pipelineState]
+  const isRunning = pipelineState === PipelineState.RUNNING;
+  const isTransitioning = pipelineState === PipelineState.STARTING || pipelineState === PipelineState.STOPPING;
+  const isActionLoading = isStartPending || isStopPending || isDeletePending;
+  const isLoading = isActionLoading || isTransitioning;
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      const deleteRequest = create(DeletePipelineRequestSchema, {
+        request: { id },
+      });
+
+      deleteMutation(deleteRequest, {
+        onSuccess: () => {
+          toast.success('Pipeline deleted');
+          navigate('/connect-clusters');
+        },
+        onError: (err) => {
+          toast.error(
+            formatToastErrorMessageGRPC({
+              error: ConnectError.from(err),
+              action: 'delete',
+              entity: 'pipeline',
+            })
+          );
+        },
+      });
+    },
+    [deleteMutation, navigate]
   );
-  const isActionLoading = useMemo(
-    () => startMutation.isPending || stopMutation.isPending || deleteMutation.isPending,
-    [startMutation.isPending, stopMutation.isPending, deleteMutation.isPending]
-  );
-  const isLoading = useMemo(() => isActionLoading || isTransitioning, [isActionLoading, isTransitioning]);
-
-  const handleDeleteClick = useCallback(() => {
-    setIsDeleteDialogOpen(true);
-  }, []);
-
-  const handleDeleteConfirm = useCallback(() => {
-    const deleteRequest = create(DeletePipelineRequestSchema, {
-      request: { id: pipelineId },
-    });
-
-    deleteMutation.mutate(deleteRequest, {
-      onSuccess: () => {
-        setIsDeleteDialogOpen(false);
-        toast({
-          status: 'success',
-          title: 'Pipeline deleted',
-          duration: 4000,
-          isClosable: false,
-        });
-        navigate('/connect-clusters');
-      },
-      onError: (err) => {
-        setIsDeleteDialogOpen(false);
-        toast({
-          status: 'error',
-          title: 'Failed to delete pipeline',
-          description: formatPipelineError(err),
-          duration: null,
-          isClosable: true,
-        });
-      },
-    });
-  }, [pipelineId, deleteMutation, toast, navigate]);
 
   const handleStartStop = useCallback(() => {
     if (isRunning) {
@@ -101,23 +78,18 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
         request: { id: pipelineId },
       });
 
-      stopMutation.mutate(stopRequest, {
+      stopMutation(stopRequest, {
         onSuccess: () => {
-          toast({
-            status: 'success',
-            title: 'Pipeline stopped',
-            duration: 4000,
-            isClosable: false,
-          });
+          toast.success('Pipeline stopped');
         },
         onError: (err) => {
-          toast({
-            status: 'error',
-            title: 'Failed to stop pipeline',
-            description: formatPipelineError(err),
-            duration: null,
-            isClosable: true,
-          });
+          toast.error(
+            formatToastErrorMessageGRPC({
+              error: ConnectError.from(err),
+              action: 'stop',
+              entity: 'pipeline',
+            })
+          );
         },
       });
     } else {
@@ -125,78 +97,66 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
         request: { id: pipelineId },
       });
 
-      startMutation.mutate(startRequest, {
+      startMutation(startRequest, {
         onSuccess: () => {
-          toast({
-            status: 'success',
-            title: 'Pipeline started',
-            duration: 4000,
-            isClosable: false,
-          });
+          toast.success('Pipeline started');
         },
         onError: (err) => {
-          toast({
-            status: 'error',
-            title: 'Failed to start pipeline',
-            description: formatPipelineError(err),
-            duration: null,
-            isClosable: true,
-          });
+          toast.error(
+            formatToastErrorMessageGRPC({
+              error: ConnectError.from(err),
+              action: 'start',
+              entity: 'pipeline',
+            })
+          );
         },
       });
     }
-  }, [pipelineId, isRunning, startMutation, stopMutation, toast]);
+  }, [pipelineId, isRunning, startMutation, stopMutation]);
 
   const handleEdit = useCallback(() => {
     navigate(`/rp-connect/${pipelineId}/edit`);
   }, [navigate, pipelineId]);
 
+  const primaryButtonProps = useMemo(() => {
+    if (isLoading) {
+      return {
+        icon: <Spinner size="sm" />,
+        children: isRunning ? 'Stopping...' : 'Starting...',
+      };
+    }
+    if (isRunning) {
+      return {
+        icon: <Pause />,
+        children: 'Stop',
+      };
+    }
+    return {
+      icon: <Play />,
+      children: 'Start',
+    };
+  }, [isRunning, isLoading]);
+
   return (
-    <>
-      <div className="mb-4 flex items-center justify-between border-b pb-4">
-        <Button
-          disabled={isLoading}
-          // biome-ignore lint/style/noNestedTernary: because I said so
-          icon={isLoading ? <Spinner size="sm" /> : isRunning ? <Pause /> : <Play />}
-          onClick={handleStartStop}
-          variant="secondary"
-        >
-          {/** biome-ignore lint/style/noNestedTernary: because I said so */}
-          {isLoading ? (isRunning ? 'Stopping...' : 'Starting...') : isRunning ? 'Stop' : 'Start'}
-        </Button>
+    <div className="flex items-center justify-between">
+      <Button disabled={isLoading} onClick={handleStartStop} variant="secondary" {...primaryButtonProps} />
 
-        <div>
-          <Group>
-            <Button icon={<Pencil />} onClick={handleEdit} variant="outline">
-              Edit
-            </Button>
-            <Button onClick={handleDeleteClick} variant="destructiveOutline">
-              Delete
-            </Button>
-          </Group>
-        </div>
+      <div>
+        <Group>
+          <Button icon={<Pencil />} onClick={handleEdit} variant="outline">
+            Edit
+          </Button>
+          <DeleteResourceAlertDialog
+            isDeleting={isDeletePending}
+            onDelete={handleDelete}
+            resourceId={pipelineId}
+            resourceName={pipelineName || 'this pipeline'}
+            resourceType="Pipeline"
+            triggerVariant="button"
+          />
+        </Group>
       </div>
-
-      {/* Delete confirmation dialog */}
-      <Dialog onOpenChange={setIsDeleteDialogOpen} open={isDeleteDialogOpen}>
-        <DialogContent size="md" variant="destructive">
-          <DialogHeader>
-            <DialogTitle>Delete Pipeline</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete <strong>{pipelineName}</strong>? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setIsDeleteDialogOpen(false)} variant="outline">
-              Cancel
-            </Button>
-            <Button disabled={deleteMutation.isPending} onClick={handleDeleteConfirm} variant="destructive">
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    </div>
   );
 });
 

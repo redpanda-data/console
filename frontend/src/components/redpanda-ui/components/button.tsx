@@ -38,16 +38,19 @@ const buttonVariants = cva(
   },
 );
 
+export type ButtonProps = 
+React.ComponentProps<'button'> &
+  VariantProps<typeof buttonVariants> & {
+    asChild?: boolean;
+    testId?: string;
+    as?: ElementType;
+    to?: string;
+    icon?: React.ReactNode;
+  }
+
 const Button = React.forwardRef<
   HTMLButtonElement,
-  React.ComponentProps<'button'> &
-    VariantProps<typeof buttonVariants> & {
-      asChild?: boolean;
-      testId?: string;
-      as?: ElementType;
-      to?: string;
-      icon?: React.ReactNode;
-    }
+  ButtonProps
 >(({ className, variant, size, asChild = false, testId, as, to, icon, children, ...props }, ref) => {
   const Comp = as ?? (asChild ? SlotPrimitive.Slot : 'button');
   const { attached, position } = useGroup();

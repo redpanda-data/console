@@ -12,15 +12,13 @@
 import { create } from '@bufbuild/protobuf';
 import { Button, type CreateToastFnReturn, Flex, FormField, Input, NumberInput, useToast } from '@redpanda-data/ui';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
-import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
-import { isFeatureFlagEnabled } from 'config';
+import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { type Pipeline_ServiceAccount, PipelineUpdateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Link } from 'react-router-dom';
-import { onboardingWizardStore } from 'state/onboarding-wizard-store';
 
-import { extractLintHintsFromError, formatPipelineError } from './errors';
+import { formatPipelineError } from './errors';
 import PipelinePage from './pipeline';
 import { PipelineEditor } from './pipelines-create';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
@@ -67,7 +65,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   }
 
   render() {
-    if (isFeatureFlagEnabled('enableRpcnTiles')) {
+    if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
       return <PipelinePage />;
     }
     if (!pipelinesApi.pipelines) {
@@ -169,12 +167,6 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
           <PipelineEditor onChange={(x) => (this.editorContent = x)} secrets={this.secrets} yaml={this.editorContent} />
         </div>
 
-        {isFeatureFlagEnabled('enableRpcnTiles') && this.lintResults && Object.keys(this.lintResults).length > 0 && (
-          <div className="mt-4">
-            <LintHintList lintHints={this.lintResults} />
-          </div>
-        )}
-
         <Flex alignItems="center" gap="4">
           <UpdateButton />
           <Link to={`/rp-connect/${pipelineId}`}>
@@ -188,7 +180,6 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   updatePipeline(toast: CreateToastFnReturn) {
     this.isUpdating = true;
     const pipelineId = this.props.pipelineId;
-    const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
     pipelinesApi
       .updatePipeline(
@@ -209,17 +200,13 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
       )
       .then(
         action(async (r) => {
-          if (enableRpcnTiles) {
-            this.lintResults = {};
-            onboardingWizardStore.reset();
-          } else {
-            toast({
-              status: 'success',
-              duration: 4000,
-              isClosable: false,
-              title: 'Pipeline updated',
-            });
-          }
+          toast({
+            status: 'success',
+            duration: 4000,
+            isClosable: false,
+            title: 'Pipeline updated',
+          });
+
           const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
           if (retUnits && this.tasks !== retUnits) {
             toast({
@@ -235,17 +222,13 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
       )
       .catch(
         action((err) => {
-          if (enableRpcnTiles) {
-            this.lintResults = extractLintHintsFromError(err);
-          } else {
-            toast({
-              status: 'error',
-              duration: null,
-              isClosable: true,
-              title: 'Failed to update pipeline',
-              description: formatPipelineError(err),
-            });
-          }
+          toast({
+            status: 'error',
+            duration: null,
+            isClosable: true,
+            title: 'Failed to update pipeline',
+            description: formatPipelineError(err),
+          });
         })
       )
       .finally(() => {

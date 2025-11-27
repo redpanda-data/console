@@ -10,14 +10,15 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { ConnectError } from '@connectrpc/connect';
 import type { Monaco } from '@monaco-editor/react';
-import { Button, Flex, FormField, Input, NumberInput, useDisclosure, useToast } from '@redpanda-data/ui';
+import { Flex, FormField, Input, NumberInput, useDisclosure } from '@redpanda-data/ui';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
-import { Button as NewButton } from 'components/redpanda-ui/components/button';
+import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
-import { isFeatureFlagEnabled } from 'config';
+import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { AlertCircle, PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -25,6 +26,7 @@ import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import { formatPipelineError } from './errors';
 import PipelinePage from './pipeline';
@@ -75,7 +77,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   }
 
   render() {
-    if (isFeatureFlagEnabled('enableRpcnTiles')) {
+    if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
       return <PipelinePage />;
     }
     if (!pipelinesApi.pipelines) {
@@ -88,20 +90,16 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     const alreadyExists = pipelinesApi.pipelines.any((x) => x.id === this.fileName);
     const isNameEmpty = this.fileName.trim().length === 0;
 
-    const CreateButton = () => {
-      const toast = useToast();
-
-      return (
-        <NewButton
-          disabled={alreadyExists || isNameEmpty || this.isCreating}
-          onClick={action(() => this.createPipeline(toast))}
-          variant="secondary"
-        >
-          {this.isCreating && <Spinner />}
-          {this.isCreating ? 'Creating...' : 'Create'}
-        </NewButton>
-      );
-    };
+    const CreateButton = () => (
+      <Button
+        disabled={alreadyExists || isNameEmpty || this.isCreating}
+        onClick={action(() => this.createPipeline())}
+        variant="secondary"
+      >
+        {this.isCreating && <Spinner />}
+        {this.isCreating ? 'Creating...' : 'Create'}
+      </Button>
+    );
 
     return (
       <PageContent>
@@ -175,7 +173,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   }
 
   // biome-ignore lint/suspicious/useAwait: async needed for error handling in MobX action
-  async createPipeline(toast: ReturnType<typeof useToast>) {
+  async createPipeline() {
     this.isCreating = true;
 
     pipelinesApi
@@ -196,34 +194,19 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
       )
       .then(
         action(async (r) => {
-          toast({
-            status: 'success',
-            duration: 4000,
-            isClosable: false,
-            title: 'Pipeline created',
-          });
+          toast.success('Pipeline created');
           const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
           if (retUnits && this.tasks !== retUnits) {
-            toast({
-              status: 'warning',
-              duration: 6000,
-              isClosable: false,
-              title: `Pipeline has been resized to use ${retUnits} compute units`,
-            });
+            toast.warning(`Pipeline has been resized to use ${retUnits} compute units`);
           }
-
           await pipelinesApi.refreshPipelines(true);
           appGlobal.historyPush('/connect-clusters');
         })
       )
       .catch(
         action((err) => {
-          toast({
-            status: 'error',
-            duration: null,
-            isClosable: true,
-            title: 'Failed to create pipeline',
-            description: formatPipelineError(err),
+          toast.error('Failed to create pipeline', {
+            description: formatPipelineError(ConnectError.from(err)),
           });
         })
       )
@@ -267,10 +250,10 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
           <CardDescription>Add a reference to a new or existing secret value, such as a key.</CardDescription>
         </CardHeader>
         <CardContent>
-          <NewButton onClick={openAddSecret} variant="secondary">
+          <Button onClick={openAddSecret} variant="secondary">
             <PlusIcon className="size-4" color="white" />
             Add secrets
-          </NewButton>
+          </Button>
         </CardContent>
       </Card>
       <SecretsQuickAdd isOpen={isAddSecretOpen} onAdd={onAddSecret} onCloseAddSecret={closeAddSecret} />
@@ -401,10 +384,10 @@ export const PipelineEditor = observer(
                   {!p.isDisabled && (
                     <QuickActions
                       editorInstance={editorInstance}
-                      resetAutocompleteSecrets={() => {
+                      resetAutocompleteSecrets={async () => {
                         if (secretAutocomplete && monaco) {
                           secretAutocomplete.dispose();
-                          void registerSecretsAutocomplete(monaco, setSecretAutocomplete);
+                          await registerSecretsAutocomplete(monaco, setSecretAutocomplete);
                         }
                       }}
                     />

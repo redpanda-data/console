@@ -14,7 +14,7 @@ import 'monaco-editor';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 export type YamlEditorProps = EditorProps & {
   'data-testid'?: string;
@@ -76,7 +76,8 @@ const defaultFallbackSchema: MonacoYamlOptions = {
 export const YamlEditor = (props: YamlEditorProps) => {
   const { options: givenOptions, schema, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
-  const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
+  const monacoRef = useRef<Monaco | null>(null);
+  const yamlRef = useRef<MonacoYaml | null>(null);
 
   // Build Monaco YAML options with schema from props or fallback
   const monacoYamlOptions = useMemo<MonacoYamlOptions>(() => {
@@ -102,27 +103,34 @@ export const YamlEditor = (props: YamlEditorProps) => {
     return defaultFallbackSchema;
   }, [schema]);
 
-  useEffect(
-    () => () => {
-      if (yaml) {
-        yaml.dispose();
+  // Reconfigure Monaco YAML when schema changes
+  useEffect(() => {
+    if (monacoRef.current) {
+      // Dispose previous YAML configuration
+      if (yamlRef.current) {
+        yamlRef.current.dispose();
       }
-    },
-    [yaml]
-  );
 
+      // Create new YAML configuration with updated schema
+      yamlRef.current = configureMonacoYaml(monacoRef.current, monacoYamlOptions);
+    }
+  }, [monacoYamlOptions]);
 
-  const setMonacoOptions = useCallback(
-    (monaco: Monaco) => {
-      const yamlConfig = configureMonacoYaml(monaco, monacoYamlOptions);
-      setYaml(yamlConfig);
-    },
-    [monacoYamlOptions]
-  );
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (yamlRef.current) {
+        yamlRef.current.dispose();
+      }
+    };
+  }, []);
 
   return (
     <Editor
-      beforeMount={(monaco) => setMonacoOptions(monaco)}
+      onMount={(_, monaco) => {
+        monacoRef.current = monaco;
+        yamlRef.current = configureMonacoYaml(monaco, monacoYamlOptions);
+      }}
       defaultLanguage="yaml"
       loading={<LoadingPlaceholder />}
       options={options}
