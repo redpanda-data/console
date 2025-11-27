@@ -203,7 +203,7 @@ export default function PipelinePage() {
 
   const pipeline = useMemo(() => pipelineResponse?.response?.pipeline, [pipelineResponse]);
 
-  const { data: componentListResponse } = useListComponentsQuery();
+  const { data: componentListResponse, isLoading: isComponentListLoading } = useListComponentsQuery();
 
   const components = useMemo(
     () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
@@ -495,9 +495,10 @@ export default function PipelinePage() {
       </div>
       {(mode === 'create' || mode === 'edit') && (
         <CreatePipelineSidebar
-          components={components}
+          componentList={componentListResponse?.components}
           editorContent={yamlContent}
           editorInstance={editorInstance}
+          isComponentListLoading={isComponentListLoading}
           setYamlContent={handleSetYamlContent}
         />
       )}

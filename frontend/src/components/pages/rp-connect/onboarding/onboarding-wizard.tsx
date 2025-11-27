@@ -65,7 +65,7 @@ export const ConnectOnboardingWizard = ({
 }: ConnectOnboardingWizardProps = {}) => {
   const navigate = useNavigate();
 
-  const { data: componentListResponse } = useListComponentsQuery();
+  const { data: componentListResponse, isLoading: isComponentListLoading } = useListComponentsQuery();
   const components = useMemo(
     () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
     [componentListResponse]
@@ -362,6 +362,8 @@ export const ConnectOnboardingWizard = ({
                 {methods.switch({
                   [WizardStep.ADD_INPUT]: () => (
                     <ConnectTiles
+                      components={componentListResponse?.components}
+                      isLoading={isComponentListLoading}
                       {...stepMotionProps}
                       additionalComponents={additionalComponents}
                       componentTypeFilter={['input', 'custom']}
@@ -376,6 +378,8 @@ export const ConnectOnboardingWizard = ({
                   ),
                   [WizardStep.ADD_OUTPUT]: () => (
                     <ConnectTiles
+                      components={componentListResponse?.components}
+                      isLoading={isComponentListLoading}
                       {...stepMotionProps}
                       additionalComponents={additionalComponents}
                       componentTypeFilter={['output', 'custom']}

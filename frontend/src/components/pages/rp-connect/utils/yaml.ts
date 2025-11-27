@@ -474,6 +474,13 @@ export const getConnectTemplate = ({
       : undefined;
 
   if (!componentSpec) {
+    toast.error(
+      formatToastErrorMessageGRPC({
+        error: new ConnectError('Component spec not found'),
+        action: 'Get connect template',
+        entity: 'getConnectTemplate',
+      })
+    );
     return;
   }
 

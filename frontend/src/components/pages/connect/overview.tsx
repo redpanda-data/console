@@ -29,7 +29,7 @@ import {
   TaskState,
   TasksColumn,
 } from './helper';
-import { isServerless } from '../../../config';
+import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../../../config';
 import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/app-global';
 import { api, rpcnSecretManagerApi } from '../../../state/backend-api';
@@ -42,6 +42,7 @@ import SearchBar from '../../misc/search-bar';
 import Section from '../../misc/section';
 import Tabs, { type Tab } from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper } from '../page';
+import { PipelineListPage } from '../rp-connect/pipeline/list';
 import RpConnectPipelinesList from '../rp-connect/pipelines-list';
 import { RedpandaConnectIntro } from '../rp-connect/redpanda-connect-intro';
 
@@ -84,17 +85,24 @@ const WrapKafkaConnectOverview: FunctionComponent<{ matchedPath: string }> = (pr
 
   const { data: kafkaConnectors, isLoading: isLoadingKafkaConnectors } = useKafkaConnectConnectorsQuery();
 
-  if (isLoadingKafkaConnectors) {
-    return <WaitingRedpanda />;
-  }
+  const isKafkaConnectEnabled = kafkaConnectors?.isConfigured === true;
 
-  const isKafkaConnectEnabled = kafkaConnectors?.isConfigured ?? false;
-
-  return <KafkaConnectOverview defaultView={defaultTab} isKafkaConnectEnabled={isKafkaConnectEnabled} {...props} />;
+  return (
+    <KafkaConnectOverview
+      defaultView={defaultTab}
+      isKafkaConnectEnabled={isKafkaConnectEnabled}
+      isLoadingKafkaConnectors={isLoadingKafkaConnectors}
+      {...props}
+    />
+  );
 };
 
 @observer
-class KafkaConnectOverview extends PageComponent<{ defaultView: string; isKafkaConnectEnabled: boolean }> {
+class KafkaConnectOverview extends PageComponent<{
+  defaultView: string;
+  isKafkaConnectEnabled: boolean;
+  isLoadingKafkaConnectors: boolean;
+}> {
   initPage(p: PageInitHelper): void {
     p.title = 'Overview';
     p.addBreadcrumb('Connect', '/connect-clusters');
@@ -122,6 +130,12 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string; isKafkaC
   }
 
   render() {
+    if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
+      return <PipelineListPage />;
+    }
+    if (this.props.isLoadingKafkaConnectors) {
+      return <WaitingRedpanda />;
+    }
     const tabs = [
       {
         key: ConnectView.RedpandaConnect,
@@ -422,7 +436,7 @@ class TabTasks extends Component {
 }
 
 // biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
-const TabKafkaConnect = observer((_p: {}) => {
+export const TabKafkaConnect = observer((_p: {}) => {
   const settings = uiSettings.kafkaConnect;
 
   if (api.connectConnectorsError) {
