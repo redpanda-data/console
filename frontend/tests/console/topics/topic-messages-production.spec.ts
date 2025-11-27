@@ -71,6 +71,12 @@ test.describe('Produce Messages', () => {
 
         const valueEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').first();
         await valueEditor.click();
+
+        // Clear any existing content before inserting new text
+        await page.keyboard.press('Meta+A'); // Select all (Mac)
+        await page.keyboard.press('Control+A'); // Select all (Windows/Linux)
+        await page.keyboard.press('Backspace');
+
         await page.keyboard.insertText(message);
         await page.getByTestId('produce-button').click();
 

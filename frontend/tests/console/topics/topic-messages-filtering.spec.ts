@@ -221,16 +221,16 @@ test.describe('View and Filter Messages', () => {
     await test.step('Apply filter and check URL', async () => {
       await page.goto(`/topics/${topicName}`);
 
-      const searchInput = page.getByPlaceholder(/search|filter/i);
-      if (await searchInput.isVisible()) {
-        await searchInput.fill('test-search');
-        await page.keyboard.press('Enter');
-        await page.waitForTimeout(500);
+      // Use the specific testId for message quick search
+      const searchInput = page.getByTestId('message-quick-search-input');
+      await expect(searchInput).toBeVisible({ timeout: 5000 });
+      await searchInput.fill('test-search');
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(500);
 
-        // URL should contain filter parameters (quick search uses 'q' param)
-        const currentUrl = page.url();
-        expect(currentUrl).toContain('q=test-search');
-      }
+      // URL should contain filter parameters (quick search uses 'q' param)
+      const currentUrl = page.url();
+      expect(currentUrl).toContain('q=test-search');
     });
 
     await test.step('Reload page and verify filter persists', async () => {
