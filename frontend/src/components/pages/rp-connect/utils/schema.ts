@@ -1,9 +1,12 @@
+import { ConnectError } from '@connectrpc/connect';
 import {
   type ComponentList,
   type ComponentSpec,
   ComponentStatus,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { toast } from 'sonner';
 import { onboardingWizardStore } from 'state/onboarding-wizard-store';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import {
   hasWizardRelevantFields,
@@ -74,15 +77,28 @@ const typeToYamlConfigKey: Record<Exclude<ConnectComponentType, 'custom'>, Conne
 /**
  * Parses ComponentList from API response into ConnectComponentSpec array.
  * Converts proto ComponentSpec to strongly-typed ConnectComponentSpec by overriding the type field.
+ * Returns empty array and shows toast notification on error.
  */
-export const parseSchema = (componentList: ComponentList): ConnectComponentSpec[] =>
-  Object.entries(COMPONENT_TYPE_MAPPINGS).flatMap(([componentType, { listKey }]) =>
-    ((componentList[listKey] as ComponentSpec[]) || []).map((comp) => ({
-      ...comp,
-      type: componentType as Exclude<ConnectComponentType, 'custom'>,
-      config: comp.config,
-    }))
-  );
+export function parseSchema(componentList: ComponentList): ConnectComponentSpec[] {
+  try {
+    return Object.entries(COMPONENT_TYPE_MAPPINGS).flatMap(([componentType, { listKey }]) =>
+      ((componentList[listKey] as ComponentSpec[]) || []).map((comp) => ({
+        ...comp,
+        type: componentType as Exclude<ConnectComponentType, 'custom'>,
+        config: comp.config,
+      }))
+    );
+  } catch (error) {
+    toast.error(
+      formatToastErrorMessageGRPC({
+        error: ConnectError.from(error),
+        action: 'Parse component schema',
+        entity: 'Component list',
+      })
+    );
+    return [];
+  }
+}
 
 const generateRedpandaTopLevelConfig = (): Record<string, unknown> => {
   const userData = onboardingWizardStore.getUserData();
