@@ -27,18 +27,10 @@ import {
   FormMessage,
 } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from 'components/redpanda-ui/components/select';
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { ChatModelSelect } from 'components/ui/ai/chat-model-select';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
@@ -71,19 +63,6 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { FormSchema, type FormValues, initialValues } from './schemas';
 import { AIAgentBackButton } from '../ai-agent-back-button';
 import { MODEL_OPTIONS_BY_PROVIDER, PROVIDER_INFO } from '../ai-agent-model';
-
-/**
- * Detects the provider for a given model name using pattern matching
- * Allows handling any model from supported providers (e.g., gpt-4, gpt-4-turbo, o1-preview, claude-3-opus, etc.)
- */
-const detectProvider = (modelName: string): (typeof PROVIDER_INFO)[keyof typeof PROVIDER_INFO] | null => {
-  for (const provider of Object.values(PROVIDER_INFO)) {
-    if (provider.modelPattern.test(modelName)) {
-      return provider;
-    }
-  }
-  return null;
-};
 
 export const AIAgentCreatePage = () => {
   const navigate = useNavigate();
@@ -426,6 +405,8 @@ export const AIAgentCreatePage = () => {
                               onChange={field.onChange}
                               placeholder="Select from secrets store or create new"
                               scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
+                              secretNamePlaceholder="e.g., OPENAI_API_KEY"
+                              secretValueDescription="Your OpenAI API key"
                               value={field.value}
                             />
                           </FormControl>
@@ -437,74 +418,30 @@ export const AIAgentCreatePage = () => {
                     <FormField
                       control={form.control}
                       name="model"
-                      render={({ field }) => {
-                        // Use pattern matching to detect provider (works for ANY model from that provider)
-                        const detectedProvider = field.value ? detectProvider(field.value) : null;
-
-                        return (
-                          <FormItem>
-                            <FormLabel required>Model</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select AI model">
-                                    {field.value && detectedProvider ? (
-                                      <div className="flex items-center gap-2">
-                                        <img
-                                          alt={detectedProvider.label}
-                                          className="h-4 w-4"
-                                          src={detectedProvider.icon}
-                                        />
-                                        <span>{field.value}</span>
-                                      </div>
-                                    ) : (
-                                      'Select AI model'
-                                    )}
-                                  </SelectValue>
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([providerId, provider]) => {
-                                  const logoSrc = provider.icon;
-                                  return (
-                                    <SelectGroup key={providerId}>
-                                      <SelectLabel>
-                                        <div className="flex items-center gap-2">
-                                          <img alt={provider.label} className="h-4 w-4" src={logoSrc} />
-                                          <span>{provider.label}</span>
-                                        </div>
-                                      </SelectLabel>
-                                      {provider.models.map((model) => (
-                                        <SelectItem key={model.value} value={model.value}>
-                                          <div className="flex flex-col gap-0.5">
-                                            <Text className="font-medium">{model.name}</Text>
-                                            <Text className="text-xs" variant="muted">
-                                              {model.description}
-                                            </Text>
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectGroup>
-                                  );
-                                })}
-                              </SelectContent>
-                            </Select>
-                            <Text variant="muted">
-                              See{' '}
-                              <a
-                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
-                                href="https://platform.openai.com/docs/models/overview"
-                                rel="noopener noreferrer"
-                                target="_blank"
-                              >
-                                OpenAI models <ExternalLink className="h-3 w-3" />
-                              </a>{' '}
-                              for available models.
-                            </Text>
-                            <FormMessage />
-                          </FormItem>
-                        );
-                      }}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel required>Model</FormLabel>
+                          <ChatModelSelect
+                            onValueChange={field.onChange}
+                            providerGroups={MODEL_OPTIONS_BY_PROVIDER}
+                            providerInfo={PROVIDER_INFO}
+                            value={field.value}
+                          />
+                          <Text variant="muted">
+                            See{' '}
+                            <a
+                              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                              href="https://platform.openai.com/docs/models/overview"
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
+                              OpenAI models <ExternalLink className="h-3 w-3" />
+                            </a>{' '}
+                            for available models.
+                          </Text>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
 
                     <FormField

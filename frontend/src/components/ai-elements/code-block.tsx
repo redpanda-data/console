@@ -44,7 +44,7 @@ export const CodeBlock = ({
     >
       <div className="relative">
         <SyntaxHighlighter
-          className="dark:hidden [&_pre]:whitespace-pre-wrap [&_pre]:break-words"
+          className="dark:hidden [&_pre]:whitespace-pre-wrap [&_pre]:wrap-break-word"
           codeTagProps={{
             className: "font-mono text-sm",
           }}
@@ -70,7 +70,7 @@ export const CodeBlock = ({
           {code}
         </SyntaxHighlighter>
         <SyntaxHighlighter
-          className="hidden dark:block [&_pre]:whitespace-pre-wrap [&_pre]:break-words"
+          className="hidden dark:block [&_pre]:whitespace-pre-wrap [&_pre]:wrap-break-word"
           codeTagProps={{
             className: "font-mono text-sm",
           }}

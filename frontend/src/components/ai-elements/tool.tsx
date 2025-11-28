@@ -202,7 +202,7 @@ export const ToolOutput = ({
             : "bg-muted/50 text-foreground"
         )}
       >
-        {errorText && <div className="break-words p-3">{errorText}</div>}
+        {errorText && <div className="wrap-break-word p-3">{errorText}</div>}
         {hasOutput && Output}
       </div>
     </div>

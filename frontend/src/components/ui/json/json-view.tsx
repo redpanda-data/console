@@ -16,7 +16,7 @@ type JSONViewProps = {
   isError?: boolean;
 };
 
-const JSONView = memo(
+export const JSONView = memo(
   ({ data, name, initialExpandDepth = 3, className, withCopyButton = true, isError = false }: JSONViewProps) => {
     const normalizedData = useMemo(
       () => (typeof data === 'string' ? (tryParseJSON(data).success ? tryParseJSON(data).data : data) : data),
@@ -201,5 +201,3 @@ const JSONNode = memo(({ data, name, depth = 0, initialExpandDepth, isError = fa
 });
 
 JSONNode.displayName = 'JSONNode';
-
-export default JSONView;

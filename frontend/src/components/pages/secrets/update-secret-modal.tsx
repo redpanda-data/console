@@ -61,15 +61,27 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
         .map(([key, value]) => ({ key, value }))
     : [{ key: '', value: '' }];
 
+  // Form type - value is optional for updates
+  type UpdateSecret = {
+    id: string;
+    value?: string;
+    scopes: Scope[];
+    labels: { key: string; value: string }[];
+  };
+
+  const updateSecretSchema = secretSchema(z.string().optional());
+
+  const defaultValues: UpdateSecret = {
+    id: secretId,
+    value: '',
+    scopes: matchingSecret?.scopes ?? [],
+    labels: existingLabels.length > 0 ? existingLabels : [],
+  };
+
   const formOpts = formOptions({
-    defaultValues: {
-      id: secretId,
-      value: '',
-      scopes: matchingSecret?.scopes ?? [],
-      labels: existingLabels.length > 0 ? existingLabels : [],
-    },
+    defaultValues,
     validators: {
-      onChange: secretSchema(z.string().optional()),
+      onChange: updateSecretSchema,
     },
     onSubmit: async ({ value }) => {
       const labelsMap: { [key: string]: string } = {};
@@ -140,8 +152,8 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
                         state?.meta.errors?.length > 0 && (
                           <FormErrorMessage>
                             <UnorderedList>
-                              {state.meta.errors?.map((error) => (
-                                <li key={error.path}>
+                              {state.meta.errors.filter(Boolean).map((error, index) => (
+                                <li key={error.path ?? index}>
                                   <Text color="red.500">{error.message}</Text>
                                 </li>
                               ))}

@@ -86,7 +86,6 @@ describe('CreateSecretModal', () => {
         create(CreateSecretRequestSchema, {
           request: create(CreateSecretRequestSchemaDataPlane, {
             id: secretId,
-            // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
             secretData: base64ToUInt8Array(encodeBase64(secretValue)),
             scopes: [Scope.REDPANDA_CONNECT],
             labels: {
