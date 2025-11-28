@@ -24,16 +24,18 @@ interface MessageSearchFilterBarProps {
 
 export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filters, onEdit, onToggle, onRemove }) => {
   return (
-    <GridItem display="flex" gridColumn="-1/1" justifyContent="space-between">
+    <GridItem data-testid="message-filter-bar" display="flex" gridColumn="-1/1" justifyContent="space-between">
       <Box columnGap="8px" display="inline-flex" flexWrap="wrap" rowGap="2px" width="calc(100% - 200px)">
         {/* Existing Tags List  */}
         {filters?.map((e) => (
           <Tag
             className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
+            data-testid={`message-filter-tag-${e.id}`}
             key={e.id}
             style={{ userSelect: 'none' }}
           >
             <MdOutlineSettings
+              data-testid={`message-filter-edit-${e.id}`}
               onClick={() => {
                 onEdit(e);
               }}
@@ -43,6 +45,7 @@ export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filter
               alignItems="center"
               border="0px solid hsl(0 0% 85% / 1)"
               borderWidth="0px 1px"
+              data-testid={`message-filter-toggle-${e.id}`}
               display="inline-flex"
               height="100%"
               mx="2"
@@ -52,7 +55,13 @@ export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filter
             >
               {e.name || e.code || 'New Filter'}
             </TagLabel>
-            <TagCloseButton m="0" onClick={() => onRemove(e.id)} opacity={1} px="1" />
+            <TagCloseButton
+              data-testid={`message-filter-remove-${e.id}`}
+              m="0"
+              onClick={() => onRemove(e.id)}
+              opacity={1}
+              px="1"
+            />
           </Tag>
         ))}
       </Box>

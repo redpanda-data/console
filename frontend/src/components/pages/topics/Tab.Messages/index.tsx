@@ -946,6 +946,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
           <Label text="Max Results">
             <SingleSelect<number>
+              data-testid="max-results-select"
               onChange={(c) => {
                 setMaxResults(c);
               }}
@@ -1035,9 +1036,15 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
         <GridItem alignItems="flex-end" display="flex" gap={3} justifyContent="flex-end">
           <Menu>
-            <MenuButton as={IconButton} icon={<MdOutlineSettings size="1.5rem" />} variant="outline" />
+            <MenuButton
+              as={IconButton}
+              data-testid="message-settings-button"
+              icon={<MdOutlineSettings size="1.5rem" />}
+              variant="outline"
+            />
             <MenuList>
               <MenuItem
+                data-testid="deserialization-settings-menu-item"
                 onClick={() => {
                   setShowDeserializersModal(true);
                 }}
@@ -1045,6 +1052,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                 Deserialization
               </MenuItem>
               <MenuItem
+                data-testid="column-settings-menu-item"
                 onClick={() => {
                   setShowColumnSettingsModal(true);
                 }}
@@ -1052,6 +1060,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                 Column settings
               </MenuItem>
               <MenuItem
+                data-testid="preview-fields-menu-item"
                 onClick={() => {
                   setShowPreviewFieldsModal(true);
                 }}
@@ -1066,6 +1075,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
               <Tooltip hasArrow label="Repeat current search" placement="top">
                 <IconButton
                   aria-label="Repeat current search"
+                  data-testid="refresh-messages-button"
                   icon={<SyncIcon />}
                   onClick={() => searchFunc('manual')}
                   variant="outline"
@@ -1077,6 +1087,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                 <IconButton
                   aria-label="Stop searching"
                   colorScheme="red"
+                  data-testid="stop-search-button"
                   icon={<XCircleIcon />}
                   onClick={() => {
                     if (abortControllerRef.current) {
@@ -1107,6 +1118,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         <GridItem display="flex" gap={4} gridColumn="1/-1" mt={4}>
           {/* Quick Search */}
           <Input
+            data-testid="message-quick-search-input"
             onChange={(x) => {
               setQuickSearch(x.target.value);
             }}
@@ -1175,6 +1187,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           <DataTable<TopicMessage>
             columns={columns}
             data={filteredMessages}
+            data-testid="messages-table"
             emptyText="No messages"
             isLoading={searchPhase !== null}
             onPaginationChange={onPaginationChange(
@@ -1214,6 +1227,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             )}
           />
           <Button
+            data-testid="save-messages-button"
             isDisabled={messages.length === 0}
             mt={4}
             onClick={() => {

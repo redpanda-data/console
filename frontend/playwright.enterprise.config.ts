@@ -12,8 +12,6 @@ dotenv.config();
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  // Entire test timeout (default is 30s)
-  timeout: 60 * 1000,
   expect: {
     timeout: 60 * 1000,
   },
@@ -28,9 +26,17 @@ export default defineConfig({
   workers: process.env.CI ? 4 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
+  /* Global setup and teardown */
+  globalSetup: './tests/global-setup.mjs',
+  globalTeardown: './tests/global-teardown.mjs',
+  /* Custom metadata for setup/teardown */
+  metadata: {
+    isEnterprise: true,
+  },
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    navigationTimeout: 15 * 1000,
+    navigationTimeout: 30 * 1000,
+    actionTimeout: 30 * 1000,
     viewport: { width: 1920, height: 1080 },
     headless: !!process.env.CI,
     /* Base URL to use in actions like `await page.goto('/')`. */
@@ -42,41 +48,18 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
-    { name: 'authenticate', testMatch: /auth\.setup\.ts/ },
-
     {
-      name: 'Console Enterprise',
-      testMatch: 'tests/console-enterprise/**/*',
+      name: 'authenticate',
+      testMatch: /auth\.setup\.ts/,
+    },
+    {
+      name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
         // Use prepared auth state.
         storageState: 'playwright/.auth/user.json',
-        // baseURL: '// console console-enterprise URL'
       },
       dependencies: ['authenticate'],
-    },
-  ],
-
-  /* Run your local dev server before starting the tests */
-  webServer: [
-    {
-      cwd: process.env.CI ? '../../backend/cmd' : '../../console-enterprise/backend/cmd',
-      command: process.env.CI
-        ? 'go run . --config.filepath=../../console-oss/frontend/tests/config/console.enterprise.config.yaml'
-        : 'go run . --config.filepath=../../../console/frontend/tests/config/console.enterprise.config.yaml',
-      url: 'http://localhost:9090/admin/startup',
-      reuseExistingServer: !process.env.CI,
-      stdout: 'pipe',
-      stderr: 'pipe',
-      timeout: 180 * 1000,
-    },
-    {
-      command: 'NODE_ENV=production bun run start2',
-      url: 'http://localhost:3000',
-      timeout: 180 * 1000,
-      reuseExistingServer: !process.env.CI,
-      stdout: 'pipe',
-      stderr: 'pipe',
     },
   ],
 });

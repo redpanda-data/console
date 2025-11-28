@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/performance/useTopLevelRegex: this is a test */
-import { expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 import { ACLPage } from './ACLPage';
 
@@ -127,5 +127,52 @@ export class RolePage extends ACLPage {
     // The member should not appear in the matching users card
     const memberElement = this.page.locator('.text-left').filter({ hasText: username });
     await memberElement.waitFor({ state: 'hidden', timeout: 5000 });
+  }
+
+  /**
+   * High-level convenience methods
+   * These combine multiple operations for common workflows
+   */
+
+  /**
+   * Creates a role with the given name through the UI
+   * Uses allow-all-operations for simplicity
+   */
+  async createRole(roleName: string) {
+    return await test.step('Create role', async () => {
+      await this.gotoList();
+      await this.page.getByTestId('create-role-button').click({
+        force: true,
+      });
+
+      await this.page.waitForURL('/security/roles/create', {
+        waitUntil: 'domcontentloaded',
+      });
+      await this.page.getByLabel('Role name').fill(roleName);
+      await this.page.getByTestId('roles-allow-all-operations').click({
+        force: true,
+      });
+      await this.page.getByRole('button').getByText('Create').click({
+        force: true,
+      });
+      await this.page.waitForURL(`/security/roles/${roleName}/details`);
+    });
+  }
+
+  /**
+   * Deletes a role with the given name through the UI
+   */
+  async deleteRole(roleName: string) {
+    return await test.step('Delete role', async () => {
+      await this.gotoDetail(roleName);
+      await this.page.getByRole('button').getByText('Delete').click();
+      await this.page.getByPlaceholder(`Type "${roleName}" to confirm`).fill(roleName);
+      await this.page.getByTestId('test-delete-item').click({
+        force: true,
+      });
+      await this.page.waitForURL(`/security/roles/${roleName}/details`, {
+        waitUntil: 'domcontentloaded',
+      });
+    });
   }
 }
