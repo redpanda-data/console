@@ -88,7 +88,7 @@ const ServiceAccountSelectorComponent = forwardRef<ServiceAccountSelectorRef, Se
                     : RoleBinding_ScopeResourceType.CLUSTER,
                   resourceId: config.clusterId,
                 }),
-                roleName: 'Admin',
+                roleName: 'Writer',
               }),
             ],
           }),
