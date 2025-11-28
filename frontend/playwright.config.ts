@@ -26,9 +26,17 @@ export default defineConfig({
   workers: process.env.CI ? 4 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
+  /* Global setup and teardown */
+  globalSetup: './tests/global-setup.mjs',
+  globalTeardown: './tests/global-teardown.mjs',
+  /* Custom metadata for setup/teardown */
+  metadata: {
+    isEnterprise: false,
+  },
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    navigationTimeout: 15 * 1000,
+    navigationTimeout: 30 * 1000,
+    actionTimeout: 30 * 1000,
     viewport: { width: 1920, height: 1080 },
     headless: !!process.env.CI,
     /* Base URL to use in actions like `await page.goto('/')`. */
@@ -47,27 +55,6 @@ export default defineConfig({
         // Use prepared auth state.
         // storageState: 'playwright/.auth/user.json',
       },
-    },
-  ],
-
-  /* Run your local dev server before starting the tests */
-  webServer: [
-    {
-      cwd: '../backend/cmd/api',
-      command: 'go run . --config.filepath=../../../frontend/tests/config/console.config.yaml',
-      url: 'http://localhost:9090/admin/startup',
-      reuseExistingServer: !process.env.CI,
-      stdout: 'pipe',
-      stderr: 'pipe',
-      timeout: 180 * 1000,
-    },
-    {
-      command: 'NODE_ENV=production bun run start',
-      url: 'http://localhost:3000',
-      timeout: 180 * 1000,
-      reuseExistingServer: !process.env.CI,
-      stdout: 'pipe',
-      stderr: 'pipe',
     },
   ],
 });
