@@ -91,6 +91,11 @@ message MCPServer {
   // URL to connect to the MCP server
   string url = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  ServiceAccount service_account = 10 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
   // State of the MCP server.
   enum State {
     STATE_UNSPECIFIED = 0;
@@ -109,6 +114,18 @@ message MCPServer {
   // MCP server status may contain an error message.
   message Status {
     string error = 1;
+  }
+
+  message ServiceAccount {
+    string client_id = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true
+    ];
+    string client_secret = 2 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"
+    ];
   }
 }
 
@@ -407,6 +424,11 @@ message MCPServerCreate {
       string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
     }
   }];
+
+  MCPServer.ServiceAccount service_account = 6 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
 }
 
 // CreateMCPServerRequest is the request of CreateMCPServer.
@@ -522,6 +544,8 @@ message MCPServerUpdate {
       string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
     }
   }];
+
+  MCPServer.ServiceAccount service_account = 6;
 }
 
 message UpdateMCPServerRequest {
