@@ -74,6 +74,8 @@ require (
 )
 
 require (
+	buf.build/gen/go/bufbuild/registry/connectrpc/go v1.19.1-20251027152159-f1066ce064ca.2 // indirect
+	buf.build/gen/go/bufbuild/registry/protocolbuffers/go v1.36.10-20251027152159-f1066ce064ca.1 // indirect
 	cel.dev/expr v0.24.0 // indirect
 	cuelang.org/go v0.14.2 // indirect
 	dario.cat/mergo v1.0.2 // indirect
