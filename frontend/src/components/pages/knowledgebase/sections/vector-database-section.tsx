@@ -9,47 +9,52 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
 import { Database } from 'lucide-react';
+import { Controller, useFormContext } from 'react-hook-form';
 
 import { Scope } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
-import type { KnowledgeBase } from '../../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import type {
+  KnowledgeBase,
+  KnowledgeBaseUpdate,
+} from '../../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import {
+  KnowledgeBaseUpdate_VectorDatabase_PostgresSchema,
+  KnowledgeBaseUpdate_VectorDatabaseSchema,
+} from '../../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { useListSecretsQuery } from '../../../../react-query/api/secret';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
-import { FormControl, FormItem, FormLabel } from '../../../redpanda-ui/components/form';
+import { Field, FieldDescription, FieldError, FieldLabel } from '../../../redpanda-ui/components/field';
+import { FormItem, FormLabel } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Text } from '../../../redpanda-ui/components/typography';
 import { GENERIC_SECRET_VALUE_PATTERN, SecretSelector } from '../../../ui/secret/secret-selector';
+import { extractSecretName, formatSecretTemplate } from '../utils/secret-utils';
+
+type KnowledgeBaseUpdateForm = KnowledgeBaseUpdate & {
+  indexer?: KnowledgeBaseUpdate['indexer'] & {
+    exactTopics?: string[];
+    regexPatterns?: string[];
+  };
+};
 
 type VectorDatabaseSectionProps = {
   knowledgeBase: KnowledgeBase;
   isEditMode: boolean;
-  postgresDsn: string;
-  availableSecrets: Array<{ id: string; name: string }>;
-  onPostgresDsnChange: (secretId: string) => void;
 };
 
-/**
- * Regex pattern to extract secret name from template string: ${secrets.SECRET_NAME}
- */
-const SECRET_TEMPLATE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
+export const VectorDatabaseSection = ({ knowledgeBase, isEditMode }: VectorDatabaseSectionProps) => {
+  const { control } = useFormContext<KnowledgeBaseUpdateForm>();
+  const { data: secretsData } = useListSecretsQuery();
 
-/**
- * Extracts the secret name from the template string format: ${secrets.SECRET_NAME} -> SECRET_NAME
- */
-const extractSecretName = (secretTemplate: string): string => {
-  if (!secretTemplate) {
-    return '';
-  }
-  const match = secretTemplate.match(SECRET_TEMPLATE_REGEX);
-  return match ? match[1] : secretTemplate; // Return original if no match (in case it's already just the ID)
-};
+  const availableSecrets =
+    secretsData?.secrets
+      ?.filter((secret) => secret !== undefined)
+      .map((secret) => ({
+        id: secret.id,
+        name: secret.id,
+      })) || [];
 
-export const VectorDatabaseSection = ({
-  knowledgeBase,
-  isEditMode,
-  postgresDsn,
-  availableSecrets,
-  onPostgresDsnChange,
-}: VectorDatabaseSectionProps) => {
   const postgres =
     knowledgeBase.vectorDatabase?.vectorDatabase.case === 'postgres'
       ? knowledgeBase.vectorDatabase.vectorDatabase.value
@@ -66,27 +71,44 @@ export const VectorDatabaseSection = ({
       <CardContent className="px-4 pb-4">
         <div className="flex flex-col gap-4">
           {isEditMode ? (
-            <FormItem>
-              <FormLabel required>PostgreSQL DSN</FormLabel>
-              <p className="mb-2 text-muted-foreground text-sm">
-                All credentials are securely stored in your Secrets Store
-              </p>
-              <FormControl>
-                <SecretSelector
-                  availableSecrets={availableSecrets}
-                  dialogDescription="Create a new secret for your PostgreSQL connection string"
-                  dialogTitle="Create PostgreSQL DSN Secret"
-                  onChange={onPostgresDsnChange}
-                  placeholder="Select PostgreSQL DSN secret"
-                  scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
-                  secretNamePlaceholder="e.g., POSTGRES_DSN"
-                  secretValueDescription="PostgreSQL connection string (e.g., postgresql://user:password@host:port/database)"
-                  secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
-                  secretValuePlaceholder="postgresql://user:password@host:port/database"
-                  value={postgresDsn}
-                />
-              </FormControl>
-            </FormItem>
+            <Controller
+              control={control}
+              name="vectorDatabase"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel>PostgreSQL DSN *</FieldLabel>
+                  <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
+                  <SecretSelector
+                    availableSecrets={availableSecrets}
+                    dialogDescription="Create a new secret for your PostgreSQL connection string"
+                    dialogTitle="Create PostgreSQL DSN Secret"
+                    onChange={(secretId) => {
+                      // Rebuild discriminated union with new secret
+                      field.onChange(
+                        create(KnowledgeBaseUpdate_VectorDatabaseSchema, {
+                          vectorDatabase: {
+                            case: 'postgres',
+                            value: create(KnowledgeBaseUpdate_VectorDatabase_PostgresSchema, {
+                              dsn: formatSecretTemplate(secretId),
+                            }),
+                          },
+                        })
+                      );
+                    }}
+                    placeholder="Select PostgreSQL DSN secret"
+                    scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
+                    secretNamePlaceholder="e.g., POSTGRES_DSN"
+                    secretValueDescription="PostgreSQL connection string (e.g., postgresql://user:password@host:port/database)"
+                    secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
+                    secretValuePlaceholder="postgresql://user:password@host:port/database"
+                    value={extractSecretName(
+                      field.value?.vectorDatabase.case === 'postgres' ? field.value.vectorDatabase.value.dsn : ''
+                    )}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
           ) : (
             <div className="space-y-2">
               <FormLabel>PostgreSQL DSN</FormLabel>

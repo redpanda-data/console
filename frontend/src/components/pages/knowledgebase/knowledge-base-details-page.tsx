@@ -251,18 +251,6 @@ export const KnowledgeBaseDetailsPage = () => {
     }
   }, [knowledgeBase, form]);
 
-  /**
-   * Get current knowledge base data initialized from server data.
-   * This ensures secrets are always available for display by reading directly from the knowledge base prop.
-   */
-  const getCurrentData = useCallback((): KnowledgeBaseUpdateForm | null => {
-    if (knowledgeBase) {
-      return initializeFormData(knowledgeBase);
-    }
-
-    return null;
-  }, [knowledgeBase]);
-
   useEffect(() => {
     if (knowledgebaseId) {
       updatePageTitle(knowledgebaseId);
@@ -495,7 +483,6 @@ export const KnowledgeBaseDetailsPage = () => {
           <TabsContent value="configuration">
             <KnowledgeBaseConfigurationTab
               formHasChanges={formHasChanges}
-              getCurrentData={getCurrentData}
               isEditMode={isEditMode}
               isUpdating={isUpdating}
               knowledgeBase={knowledgeBase}

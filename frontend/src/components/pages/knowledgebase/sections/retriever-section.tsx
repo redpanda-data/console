@@ -12,7 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { Shuffle } from 'lucide-react';
 import { useEffect } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { Controller, useFormContext } from 'react-hook-form';
 
 import { Scope } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -23,14 +23,17 @@ import {
   KnowledgeBaseUpdate_Retriever_RerankerSchema,
   KnowledgeBaseUpdate_RetrieverSchema,
 } from '../../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { useListSecretsQuery } from '../../../../react-query/api/secret';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Checkbox } from '../../../redpanda-ui/components/checkbox';
+import { Field, FieldDescription, FieldError, FieldLabel } from '../../../redpanda-ui/components/field';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Text } from '../../../redpanda-ui/components/typography';
 import { RerankerModelSelect } from '../../../ui/ai/reranker-model-select';
 import { GENERIC_SECRET_VALUE_PATTERN, SecretSelector } from '../../../ui/secret/secret-selector';
 import { COHERE_RERANKER_MODELS } from '../constants';
+import { extractSecretName, formatSecretTemplate } from '../utils/secret-utils';
 
 type KnowledgeBaseUpdateForm = KnowledgeBaseUpdate & {
   indexer?: KnowledgeBaseUpdate['indexer'] & {
@@ -42,36 +45,20 @@ type KnowledgeBaseUpdateForm = KnowledgeBaseUpdate & {
 type RetrieverSectionProps = {
   knowledgeBase: KnowledgeBase;
   isEditMode: boolean;
-  rerankerApiKey: string;
-  availableSecrets: Array<{ id: string; name: string }>;
-  onRerankerApiKeyChange: (secretId: string) => void;
 };
 
-/**
- * Regex pattern to extract secret name from template string: ${secrets.SECRET_NAME}
- */
-const SECRET_TEMPLATE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
-
-/**
- * Extracts the secret name from the template string format: ${secrets.SECRET_NAME} -> SECRET_NAME
- */
-const extractSecretName = (secretTemplate: string): string => {
-  if (!secretTemplate) {
-    return '';
-  }
-  const match = secretTemplate.match(SECRET_TEMPLATE_REGEX);
-  return match ? match[1] : secretTemplate; // Return original if no match (in case it's already just the ID)
-};
-
-export const RetrieverSection = ({
-  knowledgeBase,
-  isEditMode,
-  rerankerApiKey,
-  availableSecrets,
-  onRerankerApiKeyChange,
-}: RetrieverSectionProps) => {
+export const RetrieverSection = ({ knowledgeBase, isEditMode }: RetrieverSectionProps) => {
   const { control, watch, setValue, getValues } = useFormContext<KnowledgeBaseUpdateForm>();
   const formData = watch();
+  const { data: secretsData } = useListSecretsQuery();
+
+  const availableSecrets =
+    secretsData?.secrets
+      ?.filter((secret) => secret !== undefined)
+      .map((secret) => ({
+        id: secret.id,
+        name: secret.id,
+      })) || [];
 
   const retriever = knowledgeBase.retriever;
   const reranker = retriever?.reranker;
@@ -228,27 +215,59 @@ export const RetrieverSection = ({
                     <FormMessage />
                   </FormItem>
 
-                  <FormItem>
-                    <FormLabel required>API Key</FormLabel>
-                    <p className="mb-2 text-muted-foreground text-sm">
-                      All credentials are securely stored in your Secrets Store
-                    </p>
-                    <FormControl>
-                      <SecretSelector
-                        availableSecrets={availableSecrets}
-                        dialogDescription="Create a new secret for your Cohere API key"
-                        dialogTitle="Create Cohere API Key Secret"
-                        onChange={onRerankerApiKeyChange}
-                        placeholder="Select Cohere API key from secrets"
-                        scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
-                        secretNamePlaceholder="e.g., COHERE_API_KEY"
-                        secretValueDescription="Your Cohere API key"
-                        secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
-                        secretValuePlaceholder="Enter API key"
-                        value={rerankerApiKey}
-                      />
-                    </FormControl>
-                  </FormItem>
+                  <Controller
+                    control={control}
+                    name="retriever"
+                    render={({ field, fieldState }) => {
+                      const currentApiKey =
+                        field.value?.reranker?.provider?.provider.case === 'cohere'
+                          ? field.value.reranker.provider.provider.value.apiKey
+                          : '';
+                      const currentModel =
+                        field.value?.reranker?.provider?.provider.case === 'cohere'
+                          ? field.value.reranker.provider.provider.value.model
+                          : '';
+
+                      return (
+                        <Field data-invalid={fieldState.invalid}>
+                          <FieldLabel>API Key *</FieldLabel>
+                          <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
+                          <SecretSelector
+                            availableSecrets={availableSecrets}
+                            dialogDescription="Create a new secret for your Cohere API key"
+                            dialogTitle="Create Cohere API Key Secret"
+                            onChange={(secretId) => {
+                              // Rebuild retriever structure with new API key
+                              field.onChange(
+                                create(KnowledgeBaseUpdate_RetrieverSchema, {
+                                  reranker: create(KnowledgeBaseUpdate_Retriever_RerankerSchema, {
+                                    enabled: true,
+                                    provider: create(KnowledgeBaseUpdate_Retriever_Reranker_ProviderSchema, {
+                                      provider: {
+                                        case: 'cohere',
+                                        value: create(KnowledgeBaseUpdate_Retriever_Reranker_Provider_CohereSchema, {
+                                          model: currentModel || '',
+                                          apiKey: formatSecretTemplate(secretId),
+                                        }),
+                                      },
+                                    }),
+                                  }),
+                                })
+                              );
+                            }}
+                            placeholder="Select Cohere API key from secrets"
+                            scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
+                            secretNamePlaceholder="e.g., COHERE_API_KEY"
+                            secretValueDescription="Your Cohere API key"
+                            secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
+                            secretValuePlaceholder="Enter API key"
+                            value={extractSecretName(currentApiKey || '')}
+                          />
+                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                        </Field>
+                      );
+                    }}
+                  />
                 </>
               )}
             </>

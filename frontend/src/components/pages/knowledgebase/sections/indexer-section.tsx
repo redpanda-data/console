@@ -11,7 +11,7 @@
 
 import { RegexPatternsField } from 'components/ui/regex/regex-patterns-field';
 import { TableOfContents } from 'lucide-react';
-import { useFormContext } from 'react-hook-form';
+import { Controller, useFormContext } from 'react-hook-form';
 
 import { Scope } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
@@ -19,7 +19,9 @@ import type {
   KnowledgeBase,
   KnowledgeBaseUpdate,
 } from '../../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { useListSecretsQuery } from '../../../../react-query/api/secret';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
+import { Field, FieldDescription, FieldError, FieldLabel } from '../../../redpanda-ui/components/field';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
@@ -28,6 +30,7 @@ import { GENERIC_SECRET_VALUE_PATTERN, SecretSelector } from '../../../ui/secret
 import { UserDropdown } from '../components/form-fields/user-dropdown';
 import { isRegexPattern } from '../schemas';
 import { TopicSelector } from '../topic-selector';
+import { extractSecretName, formatSecretTemplate } from '../utils/secret-utils';
 
 type KnowledgeBaseUpdateForm = KnowledgeBaseUpdate & {
   indexer?: KnowledgeBaseUpdate['indexer'] & {
@@ -39,43 +42,19 @@ type KnowledgeBaseUpdateForm = KnowledgeBaseUpdate & {
 type IndexerSectionProps = {
   knowledgeBase: KnowledgeBase;
   isEditMode: boolean;
-  exactTopics: string[];
-  regexPatterns: string[];
-  redpandaPassword: string;
-  availableSecrets: Array<{ id: string; name: string }>;
-  onExactTopicsChange: (topics: string[]) => void;
-  onRegexPatternsChange: (patterns: string[]) => void;
-  onRedpandaPasswordChange: (secretId: string) => void;
 };
 
-/**
- * Regex pattern to extract secret name from template string: ${secrets.SECRET_NAME}
- */
-const SECRET_TEMPLATE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
-
-/**
- * Extracts the secret name from the template string format: ${secrets.SECRET_NAME} -> SECRET_NAME
- */
-const extractSecretName = (secretTemplate: string): string => {
-  if (!secretTemplate) {
-    return '';
-  }
-  const match = secretTemplate.match(SECRET_TEMPLATE_REGEX);
-  return match ? match[1] : secretTemplate; // Return original if no match (in case it's already just the ID)
-};
-
-export const IndexerSection = ({
-  knowledgeBase,
-  isEditMode,
-  exactTopics,
-  regexPatterns,
-  redpandaPassword,
-  availableSecrets,
-  onExactTopicsChange,
-  onRegexPatternsChange,
-  onRedpandaPasswordChange,
-}: IndexerSectionProps) => {
+export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProps) => {
   const { control } = useFormContext<KnowledgeBaseUpdateForm>();
+  const { data: secretsData } = useListSecretsQuery();
+
+  const availableSecrets =
+    secretsData?.secrets
+      ?.filter((secret) => secret !== undefined)
+      .map((secret) => ({
+        id: secret.id,
+        name: secret.id,
+      })) || [];
 
   const indexer = knowledgeBase.indexer;
 
@@ -128,17 +107,31 @@ export const IndexerSection = ({
                 />
               </div>
 
-              <FormItem>
-                <FormLabel>Exact Topics</FormLabel>
-                <Text className="mb-2 text-muted-foreground text-sm">Select specific topic names</Text>
-                <TopicSelector onTopicsChange={onExactTopicsChange} selectedTopics={exactTopics} />
-              </FormItem>
+              <Controller
+                control={control}
+                name="indexer.exactTopics"
+                render={({ field }) => (
+                  <Field>
+                    <FieldLabel>Exact Topics</FieldLabel>
+                    <FieldDescription>Select specific topic names</FieldDescription>
+                    <TopicSelector onTopicsChange={field.onChange} selectedTopics={field.value || []} />
+                  </Field>
+                )}
+              />
 
-              <RegexPatternsField
-                helperText="Match topics dynamically using regex patterns"
-                label="Regex Patterns"
-                onChange={onRegexPatternsChange}
-                patterns={regexPatterns}
+              <Controller
+                control={control}
+                name="indexer.regexPatterns"
+                render={({ field }) => (
+                  <Field>
+                    <RegexPatternsField
+                      helperText="Match topics dynamically using regex patterns"
+                      label="Regex Patterns"
+                      onChange={field.onChange}
+                      patterns={field.value || []}
+                    />
+                  </Field>
+                )}
               />
 
               <Text className="text-muted-foreground text-xs">
@@ -169,27 +162,32 @@ export const IndexerSection = ({
                 )}
               />
 
-              <FormItem>
-                <FormLabel required>Redpanda Password</FormLabel>
-                <p className="mb-2 text-muted-foreground text-sm">
-                  All credentials are securely stored in your Secrets Store
-                </p>
-                <FormControl>
-                  <SecretSelector
-                    availableSecrets={availableSecrets}
-                    dialogDescription="Create a new secret for your Redpanda password"
-                    dialogTitle="Create Redpanda Password Secret"
-                    onChange={onRedpandaPasswordChange}
-                    placeholder="Enter password or select from secrets"
-                    scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
-                    secretNamePlaceholder="e.g., REDPANDA_PASSWORD"
-                    secretValueDescription="Your Redpanda user password"
-                    secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
-                    secretValuePlaceholder="Enter password"
-                    value={redpandaPassword}
-                  />
-                </FormControl>
-              </FormItem>
+              <Controller
+                control={control}
+                name="indexer.redpandaPassword"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel>Redpanda Password *</FieldLabel>
+                    <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
+                    <SecretSelector
+                      availableSecrets={availableSecrets}
+                      dialogDescription="Create a new secret for your Redpanda password"
+                      dialogTitle="Create Redpanda Password Secret"
+                      onChange={(secretId) => {
+                        field.onChange(formatSecretTemplate(secretId));
+                      }}
+                      placeholder="Enter password or select from secrets"
+                      scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
+                      secretNamePlaceholder="e.g., REDPANDA_PASSWORD"
+                      secretValueDescription="Your Redpanda user password"
+                      secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
+                      secretValuePlaceholder="Enter password"
+                      value={extractSecretName(field.value || '')}
+                    />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
 
               <FormField
                 control={control}

@@ -14,7 +14,7 @@ import { CohereLogo } from 'assets/connectors/logos/cohere-logo';
 import { OpenAILogo } from 'assets/connectors/logos/openai-logo';
 import { Combine, ExternalLink } from 'lucide-react';
 import { useEffect } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { Controller, useFormContext } from 'react-hook-form';
 
 import { Scope } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -24,13 +24,16 @@ import {
   KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAISchema,
   KnowledgeBaseUpdate_EmbeddingGenerator_ProviderSchema,
 } from '../../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { useListSecretsQuery } from '../../../../react-query/api/secret';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
-import { FormControl, FormItem, FormLabel } from '../../../redpanda-ui/components/form';
+import { Field, FieldDescription, FieldError, FieldLabel } from '../../../redpanda-ui/components/field';
+import { FormItem, FormLabel } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Heading, Text } from '../../../redpanda-ui/components/typography';
 import { EmbeddingModelSelect } from '../../../ui/ai/embedding-model-select';
 import { GENERIC_SECRET_VALUE_PATTERN, SecretSelector } from '../../../ui/secret/secret-selector';
 import { COHERE_MODELS, OPENAI_MODELS } from '../constants';
+import { extractSecretName, formatSecretTemplate } from '../utils/secret-utils';
 
 type KnowledgeBaseUpdateForm = KnowledgeBaseUpdate & {
   indexer?: KnowledgeBaseUpdate['indexer'] & {
@@ -42,36 +45,20 @@ type KnowledgeBaseUpdateForm = KnowledgeBaseUpdate & {
 type EmbeddingGeneratorSectionProps = {
   knowledgeBase: KnowledgeBase;
   isEditMode: boolean;
-  embeddingApiKey: string;
-  availableSecrets: Array<{ id: string; name: string }>;
-  onEmbeddingApiKeyChange: (secretId: string) => void;
 };
 
-/**
- * Regex pattern to extract secret name from template string: ${secrets.SECRET_NAME}
- */
-const SECRET_TEMPLATE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
-
-/**
- * Extracts the secret name from the template string format: ${secrets.SECRET_NAME} -> SECRET_NAME
- */
-const extractSecretName = (secretTemplate: string): string => {
-  if (!secretTemplate) {
-    return '';
-  }
-  const match = secretTemplate.match(SECRET_TEMPLATE_REGEX);
-  return match ? match[1] : secretTemplate; // Return original if no match (in case it's already just the ID)
-};
-
-export const EmbeddingGeneratorSection = ({
-  knowledgeBase,
-  isEditMode,
-  embeddingApiKey,
-  availableSecrets,
-  onEmbeddingApiKeyChange,
-}: EmbeddingGeneratorSectionProps) => {
-  const { watch, setValue } = useFormContext<KnowledgeBaseUpdateForm>();
+export const EmbeddingGeneratorSection = ({ knowledgeBase, isEditMode }: EmbeddingGeneratorSectionProps) => {
+  const { watch, setValue, control } = useFormContext<KnowledgeBaseUpdateForm>();
   const formData = watch();
+  const { data: secretsData } = useListSecretsQuery();
+
+  const availableSecrets =
+    secretsData?.secrets
+      ?.filter((secret) => secret !== undefined)
+      .map((secret) => ({
+        id: secret.id,
+        name: secret.id,
+      })) || [];
 
   const embeddingGen = knowledgeBase.embeddingGenerator;
 
@@ -151,27 +138,66 @@ export const EmbeddingGeneratorSection = ({
                 <Input disabled type="number" value={embeddingGen?.dimensions?.toString() || 'Not configured'} />
               </FormItem>
 
-              <FormItem>
-                <FormLabel required>API Key</FormLabel>
-                <p className="mb-2 text-muted-foreground text-sm">
-                  All credentials are securely stored in your Secrets Store
-                </p>
-                <FormControl>
-                  <SecretSelector
-                    availableSecrets={availableSecrets}
-                    dialogDescription={`Create a new secret for your ${formData.embeddingGenerator?.provider?.provider.case === 'openai' ? 'OpenAI' : 'Cohere'} API key`}
-                    dialogTitle={`Create ${formData.embeddingGenerator?.provider?.provider.case === 'openai' ? 'OpenAI' : 'Cohere'} API Key Secret`}
-                    onChange={onEmbeddingApiKeyChange}
-                    placeholder={`Select ${formData.embeddingGenerator?.provider?.provider.case === 'openai' ? 'OpenAI' : 'Cohere'} API key from secrets`}
-                    scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
-                    secretNamePlaceholder={`e.g., ${formData.embeddingGenerator?.provider?.provider.case === 'openai' ? 'OPENAI' : 'COHERE'}_API_KEY`}
-                    secretValueDescription={`Your ${formData.embeddingGenerator?.provider?.provider.case === 'openai' ? 'OpenAI' : 'Cohere'} API key`}
-                    secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
-                    secretValuePlaceholder="Enter API key"
-                    value={embeddingApiKey}
-                  />
-                </FormControl>
-              </FormItem>
+              <Controller
+                control={control}
+                name="embeddingGenerator.provider"
+                render={({ field, fieldState }) => {
+                  const currentProvider = field.value?.provider.case;
+                  let currentApiKey = '';
+                  if (currentProvider === 'openai') {
+                    currentApiKey = field.value?.provider.value.apiKey || '';
+                  } else if (currentProvider === 'cohere') {
+                    currentApiKey = field.value?.provider.value.apiKey || '';
+                  }
+
+                  return (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel>API Key *</FieldLabel>
+                      <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
+                      <SecretSelector
+                        availableSecrets={availableSecrets}
+                        dialogDescription={`Create a new secret for your ${currentProvider === 'openai' ? 'OpenAI' : 'Cohere'} API key`}
+                        dialogTitle={`Create ${currentProvider === 'openai' ? 'OpenAI' : 'Cohere'} API Key Secret`}
+                        onChange={(secretId) => {
+                          if (currentProvider === 'openai') {
+                            field.onChange(
+                              create(KnowledgeBaseUpdate_EmbeddingGenerator_ProviderSchema, {
+                                provider: {
+                                  case: 'openai',
+                                  value: create(KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAISchema, {
+                                    apiKey: formatSecretTemplate(secretId),
+                                  }),
+                                },
+                              })
+                            );
+                          } else if (currentProvider === 'cohere') {
+                            const baseUrl = field.value?.provider.value.baseUrl || '';
+                            field.onChange(
+                              create(KnowledgeBaseUpdate_EmbeddingGenerator_ProviderSchema, {
+                                provider: {
+                                  case: 'cohere',
+                                  value: create(KnowledgeBaseUpdate_EmbeddingGenerator_Provider_CohereSchema, {
+                                    baseUrl,
+                                    apiKey: formatSecretTemplate(secretId),
+                                  }),
+                                },
+                              })
+                            );
+                          }
+                        }}
+                        placeholder={`Select ${currentProvider === 'openai' ? 'OpenAI' : 'Cohere'} API key from secrets`}
+                        scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
+                        secretNamePlaceholder={`e.g., ${currentProvider === 'openai' ? 'OPENAI' : 'COHERE'}_API_KEY`}
+                        secretValueDescription={`Your ${currentProvider === 'openai' ? 'OpenAI' : 'Cohere'} API key`}
+                        secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
+                        secretValuePlaceholder="Enter API key"
+                        value={extractSecretName(currentApiKey || '')}
+                      />
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                    </Field>
+                  );
+                }}
+              />
             </>
           ) : (
             <>

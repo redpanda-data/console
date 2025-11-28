@@ -1,0 +1,41 @@
+label: get_chuck_norris_joke
+processors:
+- label: prepare_parameters
+  mutation: |
+    meta category = this.category.string() | ""
+- label: fetch_chuck_norris_joke
+  http:
+    url: 'https://api.chucknorris.io/jokes/random${! if @category != "" { "?category=" + @category } else { "" } }'
+    verb: GET
+    headers:
+      Accept: "application/json"
+      User-Agent: "redpanda-mcp-server/1.0"
+    timeout: "30s"
+    retries: 3
+    retry_period: "5s"
+- label: format_response
+  mutation: |
+    root = {
+      "joke": this.value.string() | "",
+      "id": this.id.string() | "",
+      "url": this.url.string() | "",
+      "icon_url": this.icon_url.string() | "",
+      "categories": if this.categories != null { this.categories } else { [] },
+      "created_at": this.created_at.string() | "",
+      "updated_at": this.updated_at.string() | "",
+      "metadata": {
+        "source": "Chuck Norris API",
+        "fetched_at": now().ts_format("2006-01-02T15:04:05.000Z"),
+        "endpoint": "random_joke"
+      }
+    }
+
+meta:
+  mcp:
+    enabled: true
+    description: "Fetches random Chuck Norris jokes from the Chuck Norris API with optional category filtering"
+    properties:
+      - name: category
+        type: string
+        description: "Category filter for jokes (animal, career, celebrity, dev, explicit, fashion, food, history, money, movie, music, political, religion, science, sport, travel)"
+        required: false
