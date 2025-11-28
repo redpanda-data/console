@@ -12,11 +12,16 @@
 import Editor, { type EditorProps, type Monaco } from '@monaco-editor/react';
 import 'monaco-editor';
 import type { editor } from 'monaco-editor';
+import type { JSONSchema } from 'monaco-yaml';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 export type YamlEditorProps = EditorProps & {
   'data-testid'?: string;
+  schema?: {
+    definitions?: Record<string, JSONSchema>;
+    properties?: Record<string, JSONSchema>;
+  };
 };
 
 const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
@@ -32,7 +37,7 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   scrollBeyondLastLine: false,
   cursorBlinking: 'phase',
   lineNumbersMinChars: 3,
-  lineDecorationsWidth: 0,
+  lineDecorationsWidth: 8,
   overviewRulerBorder: false,
   scrollbar: {
     alwaysConsumeMouseWheel: false,
@@ -52,7 +57,7 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   },
 } as const;
 
-const monacoYamlOptions: MonacoYamlOptions = {
+const defaultFallbackSchema: MonacoYamlOptions = {
   enableSchemaRequest: false,
   format: true,
   completion: true,
@@ -66,35 +71,70 @@ const monacoYamlOptions: MonacoYamlOptions = {
       uri: 'http://example.com/yaml-schema.json',
     },
   ],
-} as MonacoYamlOptions;
+};
 
 export const YamlEditor = (props: YamlEditorProps) => {
-  const { options: givenOptions, ...rest } = props;
+  const { options: givenOptions, schema, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
-  const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
+  const monacoRef = useRef<Monaco | null>(null);
+  const yamlRef = useRef<MonacoYaml | null>(null);
 
-  useEffect(
-    () => () => {
-      if (yaml) {
-        yaml.dispose();
+  // Build Monaco YAML options with schema from props or fallback
+  const monacoYamlOptions = useMemo<MonacoYamlOptions>(() => {
+    if (schema?.definitions || schema?.properties) {
+      return {
+        enableSchemaRequest: false,
+        format: true,
+        completion: true,
+        validate: true,
+        schemas: [
+          {
+            fileMatch: ['**/*.yaml', '**/*.yml'],
+            schema: {
+              type: 'object',
+              ...(schema.definitions && { definitions: schema.definitions }),
+              ...(schema.properties && { properties: schema.properties }),
+            },
+            uri: 'https://redpanda-connect-schema.json',
+          },
+        ],
+      };
+    }
+    return defaultFallbackSchema;
+  }, [schema]);
+
+  // Reconfigure Monaco YAML when schema changes
+  useEffect(() => {
+    if (monacoRef.current) {
+      // Dispose previous YAML configuration
+      if (yamlRef.current) {
+        yamlRef.current.dispose();
       }
-    },
-    [yaml]
-  );
 
-  const setMonacoOptions = useCallback((monaco: Monaco) => {
-    const yamlConfig = configureMonacoYaml(monaco, monacoYamlOptions);
-    setYaml(yamlConfig);
+      // Create new YAML configuration with updated schema
+      yamlRef.current = configureMonacoYaml(monacoRef.current, monacoYamlOptions);
+    }
+  }, [monacoYamlOptions]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (yamlRef.current) {
+        yamlRef.current.dispose();
+      }
+    };
   }, []);
 
   return (
     <Editor
-      beforeMount={(monaco) => setMonacoOptions(monaco)}
+      onMount={(_, monaco) => {
+        monacoRef.current = monaco;
+        yamlRef.current = configureMonacoYaml(monaco, monacoYamlOptions);
+      }}
       defaultLanguage="yaml"
       loading={<LoadingPlaceholder />}
       options={options}
       wrapperProps={{
-        className: 'kowlEditor',
         style: {
           minWidth: 0,
           width: '100%',
