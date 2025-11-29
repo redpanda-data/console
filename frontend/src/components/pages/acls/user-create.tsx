@@ -363,7 +363,11 @@ const CreateUserConfirmationModal = observer((p: { state: CreateUserModalState; 
 
       <Flex gap={4} mt={8}>
         <Button onClick={p.closeModal}>Done</Button>
-        <Button as={ReactRouterLink} to="/security/acls" variant="link">
+        <Button
+          as={ReactRouterLink}
+          to={`/security/acls/create?principalType=User&principalName=${encodeURIComponent(p.state.username)}`}
+          variant="link"
+        >
           Create ACLs
         </Button>
       </Flex>
