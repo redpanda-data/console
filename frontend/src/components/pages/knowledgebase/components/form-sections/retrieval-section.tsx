@@ -11,19 +11,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from 'components/redpanda-ui/components/form';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { RerankerModelSelect } from 'components/ui/ai/reranker-model-select';
 import { GENERIC_SECRET_VALUE_PATTERN, SecretSelector } from 'components/ui/secret/secret-selector';
 import { ExternalLink } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import type { UseFormReturn } from 'react-hook-form';
+import { Controller, type UseFormReturn } from 'react-hook-form';
 
 import { COHERE_RERANKER_MODELS } from '../../constants';
 import type { KnowledgeBaseCreateFormValues } from '../../schemas';
@@ -41,38 +34,36 @@ export const RetrievalSection: React.FC<RetrievalSectionProps> = ({ form, availa
     </CardHeader>
     <CardContent>
       <div className="space-y-4">
-        <FormField
+        <Controller
           control={form.control}
           name="rerankerEnabled"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-              </FormControl>
+            <div className="flex flex-row items-start space-x-3 space-y-0">
+              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
               <div className="space-y-1 leading-none">
-                <FormLabel>Enable Reranker (Recommended)</FormLabel>
-                <FormDescription>
+                <FieldLabel>Enable Reranker (Recommended)</FieldLabel>
+                <FieldDescription>
                   Reranker improves search quality by reordering retrieved documents based on relevance.
-                </FormDescription>
+                </FieldDescription>
               </div>
-            </FormItem>
+            </div>
           )}
         />
 
         {rerankerEnabled && (
           <>
-            <FormField
+            <Controller
               control={form.control}
               name="rerankerModel"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel required>Model</FormLabel>
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel required>Model</FieldLabel>
                   <RerankerModelSelect
                     models={COHERE_RERANKER_MODELS}
                     onValueChange={field.onChange}
                     value={field.value || ''}
                   />
-                  <FormDescription>
+                  <FieldDescription>
                     See{' '}
                     <a
                       className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
@@ -83,37 +74,35 @@ export const RetrievalSection: React.FC<RetrievalSectionProps> = ({ form, availa
                       Cohere rerank models <ExternalLink className="h-3 w-3" />
                     </a>{' '}
                     for available models.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
+                  </FieldDescription>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
               )}
             />
 
-            <FormField
+            <Controller
               control={form.control}
               name="rerankerApiKey"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel required>API Key</FormLabel>
-                  <FormControl>
-                    <SecretSelector
-                      availableSecrets={availableSecrets}
-                      dialogDescription="Create a new secret for your Cohere API key for reranking. The secret will be stored securely."
-                      dialogTitle="Create Cohere API key secret"
-                      emptyStateMessage="Create a secret to securely store your Cohere API key"
-                      onChange={field.onChange}
-                      placeholder="Select Cohere API key from secrets"
-                      scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
-                      secretNamePlaceholder="e.g., COHERE_API_KEY"
-                      secretValueDescription="Your Cohere API key"
-                      secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
-                      secretValuePlaceholder="Enter Cohere API key"
-                      value={field.value || ''}
-                    />
-                  </FormControl>
-                  <FormDescription>All credentials are securely stored in your Secrets Store</FormDescription>
-                  <FormMessage />
-                </FormItem>
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel required>API Key</FieldLabel>
+                  <SecretSelector
+                    availableSecrets={availableSecrets}
+                    dialogDescription="Create a new secret for your Cohere API key for reranking. The secret will be stored securely."
+                    dialogTitle="Create Cohere API key secret"
+                    emptyStateMessage="Create a secret to securely store your Cohere API key"
+                    onChange={field.onChange}
+                    placeholder="Select Cohere API key from secrets"
+                    scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
+                    secretNamePlaceholder="e.g., COHERE_API_KEY"
+                    secretValueDescription="Your Cohere API key"
+                    secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
+                    secretValuePlaceholder="Enter Cohere API key"
+                    value={field.value || ''}
+                  />
+                  <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
               )}
             />
           </>

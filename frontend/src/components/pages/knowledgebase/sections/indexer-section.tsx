@@ -27,9 +27,9 @@ import { Input } from '../../../redpanda-ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
 import { Text } from '../../../redpanda-ui/components/typography';
 import { GENERIC_SECRET_VALUE_PATTERN, SecretSelector } from '../../../ui/secret/secret-selector';
-import { UserDropdown } from '../components/form-fields/user-dropdown';
+import { TopicSelector } from '../../../ui/topic/topic-selector';
+import { UserSelector } from '../../../ui/user/user-selector';
 import { isRegexPattern } from '../schemas';
-import { TopicSelector } from '../topic-selector';
 import { extractSecretName, formatSecretTemplate } from '../utils/secret-utils';
 
 type KnowledgeBaseUpdateForm = KnowledgeBaseUpdate & {
@@ -152,7 +152,7 @@ export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProp
                 control={control}
                 name="indexer.redpandaUsername"
                 render={({ field }) => (
-                  <UserDropdown
+                  <UserSelector
                     helperText="Select from existing Redpanda users"
                     isRequired
                     label="Redpanda Username"
@@ -167,7 +167,7 @@ export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProp
                 name="indexer.redpandaPassword"
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel>Redpanda Password *</FieldLabel>
+                    <FieldLabel required>Redpanda Password</FieldLabel>
                     <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
                     <SecretSelector
                       availableSecrets={availableSecrets}
@@ -265,7 +265,7 @@ export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProp
                 );
               })()}
 
-              <UserDropdown
+              <UserSelector
                 helperText="Select from existing Redpanda users"
                 isDisabled
                 isRequired

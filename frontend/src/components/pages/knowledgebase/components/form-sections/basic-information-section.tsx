@@ -10,11 +10,17 @@
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
+import { Field, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
-import type { FieldArrayWithId, UseFieldArrayAppend, UseFieldArrayRemove, UseFormReturn } from 'react-hook-form';
+import {
+  Controller,
+  type FieldArrayWithId,
+  type UseFieldArrayAppend,
+  type UseFieldArrayRemove,
+  type UseFormReturn,
+} from 'react-hook-form';
 
 import type { KnowledgeBaseCreateFormValues } from '../../schemas';
 
@@ -37,31 +43,27 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
     </CardHeader>
     <CardContent>
       <div className="space-y-4">
-        <FormField
+        <Controller
           control={form.control}
           name="displayName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel required>Display Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter display name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel required>Display Name</FieldLabel>
+              <Input placeholder="Enter display name" {...field} />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
         />
 
-        <FormField
+        <Controller
           control={form.control}
           name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Enter description" rows={3} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel>Description</FieldLabel>
+              <Textarea placeholder="Enter description" rows={3} {...field} />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
         />
 

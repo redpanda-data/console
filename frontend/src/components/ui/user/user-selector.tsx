@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Redpanda Data, Inc.
+ * Copyright 2025 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -19,9 +19,9 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Text } from 'components/redpanda-ui/components/typography';
 
-import { useListUsersQuery } from '../../../../../react-query/api/user';
+import { useListUsersQuery } from '../../../react-query/api/user';
 
-type UserDropdownProps = {
+type UserSelectorProps = {
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -31,7 +31,7 @@ type UserDropdownProps = {
   isDisabled?: boolean;
 };
 
-export const UserDropdown = ({
+export const UserSelector = ({
   label,
   value,
   onChange,
@@ -39,7 +39,7 @@ export const UserDropdown = ({
   errorMessage,
   helperText,
   isDisabled = false,
-}: UserDropdownProps) => {
+}: UserSelectorProps) => {
   const { data: usersData, isLoading } = useListUsersQuery();
 
   const users = usersData?.users || [];

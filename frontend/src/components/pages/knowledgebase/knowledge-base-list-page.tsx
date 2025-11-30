@@ -31,6 +31,7 @@ import OpenAILogo from 'assets/openai.svg';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   DataTableColumnHeader,
+  DataTableFacetedFilter,
   DataTablePagination,
   DataTableViewOptions,
 } from 'components/redpanda-ui/components/data-table';
@@ -48,10 +49,32 @@ import { toast } from 'sonner';
 import { Features } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
 
+import { ALL_EMBEDDING_MODELS, COHERE_RERANKER_MODELS } from './constants';
 import { KnowledgeBaseActionsCell } from './knowledge-base-actions';
 
 const REGEX_SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/;
 const isRegexPattern = (str: string) => REGEX_SPECIAL_CHARS.test(str);
+
+// Icon wrapper components for provider logos
+const OpenAIIcon = ({ className }: { className?: string }) => (
+  <img alt="OpenAI" className={className} src={OpenAILogo} />
+);
+
+const CohereIcon = ({ className }: { className?: string }) => (
+  <img alt="Cohere" className={className} src={CohereLogo} />
+);
+
+const embeddingModelOptions = ALL_EMBEDDING_MODELS.map((model) => ({
+  value: model.name,
+  label: model.name,
+  icon: model.provider === 'openai' ? OpenAIIcon : CohereIcon,
+}));
+
+const rerankerModelOptions = COHERE_RERANKER_MODELS.map((model) => ({
+  value: model.name,
+  label: model.name,
+  icon: CohereIcon,
+}));
 
 /**
  * Get all existing topics that match the given patterns (exact or regex).
@@ -216,6 +239,13 @@ export const createColumns = (
       const value = row.getValue('embeddingGenerator') as { provider: string; model: string };
       return <ModelCell model={value.model} provider={value.provider} />;
     },
+    filterFn: (row, id, value) => {
+      const embeddingGenerator = row.getValue(id) as { provider: string; model: string };
+      if (!embeddingGenerator.model) {
+        return false;
+      }
+      return value.includes(embeddingGenerator.model);
+    },
   },
   {
     accessorKey: 'rerankerModel',
@@ -223,6 +253,13 @@ export const createColumns = (
     cell: ({ row }) => {
       const value = row.getValue('rerankerModel') as { provider: string; model: string };
       return <ModelCell model={value.model} provider={value.provider} />;
+    },
+    filterFn: (row, id, value) => {
+      const rerankerModel = row.getValue(id) as { provider: string; model: string };
+      if (!rerankerModel.model) {
+        return false;
+      }
+      return value.includes(rerankerModel.model);
     },
   },
   {
@@ -242,10 +279,26 @@ function KnowledgeBaseDataTableToolbar({ table }: { table: TanstackTable<Knowled
       <div className="flex flex-1 items-center gap-1">
         <Input
           className="h-8 w-[200px]"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => table.setGlobalFilter(event.target.value)}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            table.getColumn('displayName')?.setFilterValue(event.target.value)
+          }
           placeholder="Filter knowledge bases..."
-          value={(table.getState().globalFilter as string) ?? ''}
+          value={(table.getColumn('displayName')?.getFilterValue() as string) ?? ''}
         />
+        {table.getColumn('embeddingGenerator') && (
+          <DataTableFacetedFilter
+            column={table.getColumn('embeddingGenerator')}
+            options={embeddingModelOptions}
+            title="Embedding Model"
+          />
+        )}
+        {table.getColumn('rerankerModel') && (
+          <DataTableFacetedFilter
+            column={table.getColumn('rerankerModel')}
+            options={rerankerModelOptions}
+            title="Reranker Model"
+          />
+        )}
         {isFiltered && (
           <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
             Reset
@@ -276,7 +329,6 @@ export const KnowledgeBaseListPage = () => {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-  const [globalFilter, setGlobalFilter] = React.useState('');
 
   const {
     data: knowledgeBasesData,
@@ -350,14 +402,6 @@ export const KnowledgeBaseListPage = () => {
     getFacetedUniqueValues: getFacetedUniqueValues(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    onGlobalFilterChange: setGlobalFilter,
-    globalFilterFn: (row, _columnId, filterValue) => {
-      const search = filterValue.toLowerCase();
-      const displayName = String(row.getValue('displayName')).toLowerCase();
-      const description = String(row.getValue('description')).toLowerCase();
-
-      return displayName.includes(search) || description.includes(search);
-    },
     initialState: {
       pagination: {
         pageSize: 10,
@@ -368,7 +412,6 @@ export const KnowledgeBaseListPage = () => {
       columnFilters,
       columnVisibility,
       rowSelection,
-      globalFilter,
     },
   });
 

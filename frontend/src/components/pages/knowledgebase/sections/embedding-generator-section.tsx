@@ -152,7 +152,7 @@ export const EmbeddingGeneratorSection = ({ knowledgeBase, isEditMode }: Embeddi
 
                   return (
                     <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel>API Key *</FieldLabel>
+                      <FieldLabel required>API Key</FieldLabel>
                       <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
                       <SecretSelector
                         availableSecrets={availableSecrets}

@@ -63,13 +63,13 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
       <AlertDialogTrigger asChild>
         <DropdownMenuItem className="text-red-600 focus:text-red-600" onSelect={(e) => e.preventDefault()}>
           {isDeleting ? (
-            <div className="flex items-center gap-4">
+            <>
               <Loader2 className="h-4 w-4 animate-spin" /> Deleting
-            </div>
+            </>
           ) : (
-            <div className="flex items-center gap-4">
+            <>
               <Trash2 className="h-4 w-4" /> Delete
-            </div>
+            </>
           )}
         </DropdownMenuItem>
       </AlertDialogTrigger>

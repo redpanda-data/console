@@ -76,7 +76,7 @@ export const VectorDatabaseSection = ({ knowledgeBase, isEditMode }: VectorDatab
               name="vectorDatabase"
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel>PostgreSQL DSN *</FieldLabel>
+                  <FieldLabel required>PostgreSQL DSN</FieldLabel>
                   <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
                   <SecretSelector
                     availableSecrets={availableSecrets}

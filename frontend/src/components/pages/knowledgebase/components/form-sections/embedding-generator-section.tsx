@@ -12,14 +12,7 @@
 import CohereLogo from 'assets/cohere.svg';
 import OpenAILogo from 'assets/openai.svg';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from 'components/redpanda-ui/components/form';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { EmbeddingModelSelect } from 'components/ui/ai/embedding-model-select';
@@ -30,7 +23,7 @@ import {
 } from 'components/ui/secret/secret-selector';
 import { ExternalLink } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import type { UseFormReturn } from 'react-hook-form';
+import { Controller, type UseFormReturn } from 'react-hook-form';
 
 import { COHERE_MODELS, detectEmbeddingProvider, OPENAI_MODELS } from '../../constants';
 import type { KnowledgeBaseCreateFormValues } from '../../schemas';
@@ -52,12 +45,12 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
     </CardHeader>
     <CardContent>
       <div className="space-y-4">
-        <FormField
+        <Controller
           control={form.control}
           name="embeddingModel"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel required>Model</FormLabel>
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel required>Model</FieldLabel>
               <EmbeddingModelSelect
                 models={{
                   openai: OPENAI_MODELS,
@@ -80,7 +73,7 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
                 value={field.value}
               />
               {embeddingProvider === 'openai' && (
-                <FormDescription>
+                <FieldDescription>
                   See{' '}
                   <a
                     className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
@@ -91,10 +84,10 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
                     OpenAI embedding models <ExternalLink className="h-3 w-3" />
                   </a>{' '}
                   for available models and dimensions.
-                </FormDescription>
+                </FieldDescription>
               )}
               {embeddingProvider === 'cohere' && (
-                <FormDescription>
+                <FieldDescription>
                   See{' '}
                   <a
                     className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
@@ -105,96 +98,90 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
                     Cohere embedding models <ExternalLink className="h-3 w-3" />
                   </a>{' '}
                   for available models and dimensions.
-                </FormDescription>
+                </FieldDescription>
               )}
-              <FormMessage />
-            </FormItem>
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
         />
 
-        <FormField
+        <Controller
           control={form.control}
           name="embeddingDimensions"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel required>Dimensions</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="1536"
-                  type="number"
-                  {...field}
-                  onChange={(e) => field.onChange(Number.parseInt(e.target.value, 10) || 1536)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel required>Dimensions</FieldLabel>
+              <Input
+                placeholder="1536"
+                type="number"
+                {...field}
+                onChange={(e) => field.onChange(Number.parseInt(e.target.value, 10) || 1536)}
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
         />
 
         {embeddingProvider === 'openai' && (
-          <FormField
+          <Controller
             control={form.control}
             name="openaiApiKey"
-            render={({ field }) => (
-              <FormItem>
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
                 <div className="flex items-center gap-2">
                   <img alt="OpenAI" className="h-4 w-4" src={OpenAILogo} />
                   <Text className="font-medium text-sm">OpenAI Configuration</Text>
                 </div>
-                <FormLabel required>API Key</FormLabel>
-                <FormControl>
-                  <SecretSelector
-                    availableSecrets={availableSecrets}
-                    dialogDescription="Create a new secret for your OpenAI API key. The secret will be stored securely."
-                    dialogTitle="Create OpenAI API key secret"
-                    emptyStateMessage="Create a secret to securely store your OpenAI API key"
-                    onChange={field.onChange}
-                    placeholder="Select OpenAI API key from secrets"
-                    scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
-                    secretNamePlaceholder="e.g., OPENAI_API_KEY"
-                    secretValueDescription="Your OpenAI API key"
-                    secretValuePattern={OPENAI_API_KEY_PATTERN}
-                    secretValuePlaceholder="Enter OpenAI API key (e.g., sk-...)"
-                    value={field.value || ''}
-                  />
-                </FormControl>
-                <FormDescription>All credentials are securely stored in your Secrets Store</FormDescription>
-                <FormMessage />
-              </FormItem>
+                <FieldLabel required>API Key</FieldLabel>
+                <SecretSelector
+                  availableSecrets={availableSecrets}
+                  dialogDescription="Create a new secret for your OpenAI API key. The secret will be stored securely."
+                  dialogTitle="Create OpenAI API key secret"
+                  emptyStateMessage="Create a secret to securely store your OpenAI API key"
+                  onChange={field.onChange}
+                  placeholder="Select OpenAI API key from secrets"
+                  scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
+                  secretNamePlaceholder="e.g., OPENAI_API_KEY"
+                  secretValueDescription="Your OpenAI API key"
+                  secretValuePattern={OPENAI_API_KEY_PATTERN}
+                  secretValuePlaceholder="Enter OpenAI API key (e.g., sk-...)"
+                  value={field.value || ''}
+                />
+                <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
             )}
           />
         )}
 
         {embeddingProvider === 'cohere' && (
-          <FormField
+          <Controller
             control={form.control}
             name="cohereApiKey"
-            render={({ field }) => (
-              <FormItem>
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
                 <div className="flex items-center gap-2">
                   <img alt="Cohere" className="h-4 w-4" src={CohereLogo} />
                   <Text className="font-medium text-sm">Cohere Configuration</Text>
                 </div>
-                <FormLabel required>API Key</FormLabel>
-                <FormControl>
-                  <SecretSelector
-                    availableSecrets={availableSecrets}
-                    dialogDescription="Create a new secret for your Cohere API key. The secret will be stored securely."
-                    dialogTitle="Create Cohere API key secret"
-                    emptyStateMessage="Create a secret to securely store your Cohere API key"
-                    onChange={field.onChange}
-                    placeholder="Select Cohere API key from secrets"
-                    scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
-                    secretNamePlaceholder="e.g., COHERE_API_KEY"
-                    secretValueDescription="Your Cohere API key"
-                    secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
-                    secretValuePlaceholder="Enter Cohere API key"
-                    value={field.value || ''}
-                  />
-                </FormControl>
-                <FormDescription>All credentials are securely stored in your Secrets Store</FormDescription>
-                <FormMessage />
-              </FormItem>
+                <FieldLabel required>API Key</FieldLabel>
+                <SecretSelector
+                  availableSecrets={availableSecrets}
+                  dialogDescription="Create a new secret for your Cohere API key. The secret will be stored securely."
+                  dialogTitle="Create Cohere API key secret"
+                  emptyStateMessage="Create a secret to securely store your Cohere API key"
+                  onChange={field.onChange}
+                  placeholder="Select Cohere API key from secrets"
+                  scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
+                  secretNamePlaceholder="e.g., COHERE_API_KEY"
+                  secretValueDescription="Your Cohere API key"
+                  secretValuePattern={GENERIC_SECRET_VALUE_PATTERN}
+                  secretValuePlaceholder="Enter Cohere API key"
+                  value={field.value || ''}
+                />
+                <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
             )}
           />
         )}
