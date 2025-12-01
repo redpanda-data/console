@@ -1,4 +1,4 @@
-import type { MCPServer } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
+import type { MCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import type { HTMLAttributes } from 'react';
 import { useMemo } from 'react';
 

@@ -26,13 +26,17 @@ import {
 } from 'components/ui/service-account/service-account-selector';
 import { ExpandedYamlDialog } from 'components/ui/yaml/expanded-yaml-dialog';
 import { useYamlLabelSync } from 'components/ui/yaml/use-yaml-label-sync';
-import { config } from 'config';
+import { config, isFeatureFlagEnabled } from 'config';
 import { ArrowLeft, FileText, Hammer, Loader2 } from 'lucide-react';
 import {
-  CreateMCPServerRequestSchema,
-  LintMCPConfigRequestSchema,
+  CreateMCPServerRequestSchema as CreateMCPServerRequestSchemaV1,
+  LintMCPConfigRequestSchema as LintMCPConfigRequestSchemaV1,
   MCPServer_ServiceAccountSchema,
 } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
+import {
+  CreateMCPServerRequestSchema as CreateMCPServerRequestSchemaV1Alpha3,
+  LintMCPConfigRequestSchema as LintMCPConfigRequestSchemaV1Alpha3,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useCreateMCPServerMutation, useLintMCPConfigMutation } from 'react-query/api/remote-mcp';
@@ -155,7 +159,11 @@ export const RemoteMCPCreatePage: React.FC = () => {
 
   const handleNext = async (isOnMetadataStep: boolean, goNext: () => void) => {
     if (isOnMetadataStep) {
-      const valid = await form.trigger(['displayName', 'description', 'resourcesTier', 'tags', 'serviceAccountName']);
+      const fieldsToValidate = ['displayName', 'description', 'resourcesTier', 'tags'];
+      if (isFeatureFlagEnabled('enableMcpServiceAccount')) {
+        fieldsToValidate.push('serviceAccountName');
+      }
+      const valid = await form.trigger(fieldsToValidate);
       if (!valid) {
         return;
       }
@@ -170,6 +178,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
       return;
     }
 
+    const useMcpV1 = isFeatureFlagEnabled('enableMcpServiceAccount');
     const toolsMap: Record<string, { componentType: number; configYaml: string }> = {
       [tool.name.trim()]: {
         componentType: tool.componentType,
@@ -178,7 +187,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
     };
 
     const response = await lintConfig(
-      create(LintMCPConfigRequestSchema, {
+      create(useMcpV1 ? LintMCPConfigRequestSchemaV1 : LintMCPConfigRequestSchemaV1Alpha3, {
         tools: toolsMap,
       })
     );
@@ -297,36 +306,43 @@ export const RemoteMCPCreatePage: React.FC = () => {
       };
     }
 
-    // Create service account if needed
-    const serviceAccountResult = await createServiceAccountIfNeeded(values.displayName);
-    if (!serviceAccountResult) {
-      return; // Error already shown by createServiceAccountIfNeeded
+    const useMcpServiceAccount = isFeatureFlagEnabled('enableMcpServiceAccount');
+    let serviceAccountConfig;
+
+    // Create service account if feature flag is enabled
+    if (useMcpServiceAccount) {
+      const serviceAccountResult = await createServiceAccountIfNeeded(values.displayName);
+      if (!serviceAccountResult) {
+        return; // Error already shown by createServiceAccountIfNeeded
+      }
+
+      const { secretName, serviceAccountId } = serviceAccountResult;
+
+      // Add service_account_id and secret_id to tags for easy deletion
+      tagsMap.service_account_id = serviceAccountId;
+      tagsMap.secret_id = secretName;
+
+      serviceAccountConfig = create(MCPServer_ServiceAccountSchema, {
+        clientId: `\${secrets.${secretName}.client_id}`,
+        clientSecret: `\${secrets.${secretName}.client_secret}`,
+      });
     }
 
-    const { secretName, serviceAccountId } = serviceAccountResult;
-
-    // Add service_account_id and secret_id to tags for easy deletion
-    tagsMap.service_account_id = serviceAccountId;
-    tagsMap.secret_id = secretName;
-
-    const serviceAccountConfig = create(MCPServer_ServiceAccountSchema, {
-      clientId: `\${secrets.${secretName}.client_id}`,
-      clientSecret: `\${secrets.${secretName}.client_secret}`,
-    });
+    const mcpServerPayload = {
+      displayName: values.displayName.trim(),
+      description: values.description?.trim() ?? '',
+      tools: toolsMap,
+      tags: tagsMap,
+      resources: {
+        cpuShares: tier?.cpu ?? '200m',
+        memoryShares: tier?.memory ?? '800M',
+      },
+      ...(useMcpServiceAccount && { serviceAccount: serviceAccountConfig }),
+    };
 
     await createServer(
-      create(CreateMCPServerRequestSchema, {
-        mcpServer: {
-          displayName: values.displayName.trim(),
-          description: values.description?.trim() ?? '',
-          tools: toolsMap,
-          tags: tagsMap,
-          resources: {
-            cpuShares: tier?.cpu ?? '200m',
-            memoryShares: tier?.memory ?? '800M',
-          },
-          serviceAccount: serviceAccountConfig,
-        },
+      create(useMcpServiceAccount ? CreateMCPServerRequestSchemaV1 : CreateMCPServerRequestSchemaV1Alpha3, {
+        mcpServer: mcpServerPayload,
       }),
       {
         onError: handleValidationError,
@@ -449,13 +465,15 @@ export const RemoteMCPCreatePage: React.FC = () => {
                 )}
               </Stepper.Controls>
             </Form>
-            <ServiceAccountSelector
-              createSecret={createSecret}
-              onPendingChange={setIsCreateServiceAccountPending}
-              ref={serviceAccountSelectorRef}
-              resourceType="MCP server"
-              serviceAccountName={serviceAccountName}
-            />
+            {isFeatureFlagEnabled('enableMcpServiceAccount') && (
+              <ServiceAccountSelector
+                createSecret={createSecret}
+                onPendingChange={setIsCreateServiceAccountPending}
+                ref={serviceAccountSelectorRef}
+                resourceType="MCP server"
+                serviceAccountName={serviceAccountName}
+              />
+            )}
 
             {/* Expanded YAML Editor Dialog */}
             {expandedTool && (

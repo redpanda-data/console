@@ -10,7 +10,7 @@
  */
 import { Button } from 'components/redpanda-ui/components/button';
 import { Loader2, Play, Square } from 'lucide-react';
-import { MCPServer_State } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
+import { MCPServer_State } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useGetMCPServerQuery, useStartMCPServerMutation, useStopMCPServerMutation } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';

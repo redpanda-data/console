@@ -34,6 +34,7 @@ import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/sec
 import { ServiceAccountSection } from 'components/ui/service-account/service-account-section';
 import { ExpandedYamlDialog } from 'components/ui/yaml/expanded-yaml-dialog';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
+import { isFeatureFlagEnabled } from 'config';
 import { Edit, FileText, Hammer, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -42,7 +43,7 @@ import {
   type MCPServer_State,
   MCPServer_Tool_ComponentType,
   UpdateMCPServerRequestSchema,
-} from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
+} from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   useGetMCPServerQuery,
@@ -940,26 +941,28 @@ export const RemoteMCPConfigurationTab = () => {
           )}
         </div>
 
-        {/* Service Account - Always visible */}
-        {displayData?.tags && displayData.tags.find((tag) => tag.key === 'service_account_id') && (
-          <Card className="px-0 py-0" size="full">
-            <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
-              <CardTitle className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4" />
-                <Text className="font-semibold">Service Account</Text>
-              </CardTitle>
-              <Text className="text-sm" variant="muted">
-                The service account is used by the MCP server to authenticate to other systems within the Redpanda
-                Cloud platform (e.g. Redpanda broker).
-              </Text>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              <ServiceAccountSection
-                serviceAccountId={displayData.tags.find((tag) => tag.key === 'service_account_id')?.value || ''}
-              />
-            </CardContent>
-          </Card>
-        )}
+        {/* Service Account - Show only if feature flag is enabled */}
+        {isFeatureFlagEnabled('enableMcpServiceAccount') &&
+          displayData?.tags &&
+          displayData.tags.find((tag) => tag.key === 'service_account_id') && (
+            <Card className="px-0 py-0" size="full">
+              <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4" />
+                  <Text className="font-semibold">Service Account</Text>
+                </CardTitle>
+                <Text className="text-sm" variant="muted">
+                  The service account is used by the MCP server to authenticate to other systems within the Redpanda
+                  Cloud platform (e.g. Redpanda broker).
+                </Text>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <ServiceAccountSection
+                  serviceAccountId={displayData.tags.find((tag) => tag.key === 'service_account_id')?.value || ''}
+                />
+              </CardContent>
+            </Card>
+          )}
       </div>
 
       {/* Expanded YAML Editor Dialog */}

@@ -27,11 +27,6 @@ export function useMetadataValidation(form: UseFormReturn<FormValues>) {
       return false;
     }
 
-    // Check serviceAccountName (required)
-    if (!formValues.serviceAccountName?.trim()) {
-      return false;
-    }
-
     // Check for any validation errors in metadata fields
     const hasMetadataErrors = !!(
       form.formState.errors.displayName ||

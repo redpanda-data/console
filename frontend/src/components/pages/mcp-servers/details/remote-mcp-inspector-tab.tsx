@@ -29,7 +29,7 @@ import {
   CreateTopicRequest_TopicSchema,
   CreateTopicRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
-import { MCPServer_State, MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
+import { MCPServer_State, MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useEffect, useRef, useState } from 'react';
 import { useCallMCPServerToolMutation, useGetMCPServerQuery, useListMCPServerTools } from 'react-query/api/remote-mcp';
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
