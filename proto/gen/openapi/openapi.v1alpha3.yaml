@@ -40,7 +40,7 @@ components:
         - ACL_OPERATION_DESCRIBE_CONFIGS
         - ACL_OPERATION_ALTER_CONFIGS
         - ACL_OPERATION_IDEMPOTENT_WRITE
-      title: / The ACL operation to match
+      title: The ACL operation to match
       type: string
     ACLPattern:
       description: |-
@@ -54,14 +54,14 @@ components:
         - ACL_PATTERN_LITERAL
         - ACL_PATTERN_PREFIXED
         - ACL_PATTERN_MATCH
-      title: / The ACL pattern type
+      title: The ACL pattern type
       type: string
     ACLPermissionType:
       enum:
         - ACL_PERMISSION_TYPE_ANY
         - ACL_PERMISSION_TYPE_ALLOW
         - ACL_PERMISSION_TYPE_DENY
-      title: / ACL permission types
+      title: ACL permission types
       type: string
     ACLResource:
       description: |-
@@ -82,7 +82,7 @@ components:
         - ACL_RESOURCE_SR_SUBJECT
         - ACL_RESOURCE_SR_REGISTRY
         - ACL_RESOURCE_SR_ANY
-      title: / The ACL resource types
+      title: The ACL resource types
       type: string
     ACLResourceFilter:
       properties:
@@ -369,11 +369,14 @@ components:
       type: object
     AuthenticationConfiguration:
       properties:
+        plain_configuration:
+          $ref: '#/components/schemas/PlainConfig'
         scram_configuration:
           $ref: '#/components/schemas/ScramConfig'
       title: |-
-        Authentication config.  Currently only supporting SASL/SCRAM,
-        however made as a oneof for expansion
+        Authentication config.  Supports:
+        * SASL/SCRAM
+        * SASL/PLAIN
       type: object
     ComponentType:
       description: Component type for this tool.
@@ -397,9 +400,6 @@ components:
           readOnly: true
           title: The effective interval for the task
           type: string
-        enabled:
-          title: Whether it's enabled
-          type: boolean
         group_filters:
           items:
             $ref: '#/components/schemas/NameFilter'
@@ -410,6 +410,12 @@ components:
             Sync interval
             If 0 provided, defaults to 30 seconds
           type: string
+        paused:
+          title: |-
+            Allows user to pause the consumer offset sync task.  If paused, then
+            the task will enter the 'paused' state and not sync consumer offsets from
+            the source cluster
+          type: boolean
       title: Options for syncing consumer offsets
       type: object
     CreateAIAgentResponse:
@@ -1186,6 +1192,27 @@ components:
         - PATTERN_TYPE_PREFIX
       title: The matching pattern type
       type: string
+    PlainConfig:
+      properties:
+        password:
+          title: Password
+          type: string
+        password_set:
+          readOnly: true
+          title: Indicates that the password has been set
+          type: boolean
+        password_set_at:
+          format: date-time
+          readOnly: true
+          title: |-
+            Timestamp of when the password was last set - only valid if password_set
+            is true
+          type: string
+        username:
+          title: PLAIN username
+          type: string
+      title: PLAIN settings
+      type: object
     Resources:
       properties:
         cpu_shares:
@@ -1271,14 +1298,17 @@ components:
           readOnly: true
           title: The effective interval for the task
           type: string
-        enabled:
-          title: Whether or not it's enabled
-          type: boolean
         interval:
           title: |-
             Sync interval
             If 0 provided, defaults to 30 seconds
           type: string
+        paused:
+          title: |-
+            Allows user to pause the security settings sync task.  If paused,
+            then the task will enter the 'paused' state and will not sync security
+            settings from the source cluster
+          type: boolean
       title: Options for syncing security settings
       type: object
     ShadowLinkClientOptions:
@@ -1353,7 +1383,7 @@ components:
           format: int32
           title: |-
             Fetch partition max bytes.
-            If 0 is provided, defaults to 1 MiB
+            If 0 is provided, defaults to 5 MiB
           type: integer
         fetch_wait_max_ms:
           format: int32
@@ -1409,6 +1439,26 @@ components:
         - SHADOW_LINK_STATE_PAUSED
       title: State of the shadow link
       type: string
+    ShadowLinkTaskStatus:
+      properties:
+        broker_id:
+          format: int32
+          title: The broker the task is running on
+          type: integer
+        name:
+          title: Name of the task
+          type: string
+        reason:
+          title: Reason for task being in state
+          type: string
+        shard:
+          format: int32
+          title: The shard the task is running on
+          type: integer
+        state:
+          $ref: '#/components/schemas/TaskState'
+      title: Status of a task
+      type: object
     ShadowSchemaRegistryTopic:
       description: |-
         Shadow the entire source cluster's Schema Registry byte-for-byte.
@@ -1522,6 +1572,21 @@ components:
           $ref: '#/components/schemas/TLSPEMSettings'
       title: TLS settings
       type: object
+    TaskState:
+      description: |-
+        - TASK_STATE_ACTIVE: Task is active
+         - TASK_STATE_PAUSED: Task was paused
+         - TASK_STATE_LINK_UNAVAILABLE: Task is unable to communicate with source cluster
+         - TASK_STATE_NOT_RUNNING: Task is not running
+         - TASK_STATE_FAULTED: Task is faulted
+      enum:
+        - TASK_STATE_ACTIVE
+        - TASK_STATE_PAUSED
+        - TASK_STATE_LINK_UNAVAILABLE
+        - TASK_STATE_NOT_RUNNING
+        - TASK_STATE_FAULTED
+      title: Task states
+      type: string
     Tool:
       description: A configuration tool for the MCP server.
       properties:
@@ -1551,8 +1616,6 @@ components:
           items:
             $ref: '#/components/schemas/NameFilter'
           type: array
-        earliest:
-          $ref: '#/components/schemas/EarliestOffset'
         effective_interval:
           readOnly: true
           title: The effective interval for the task
@@ -1576,8 +1639,23 @@ components:
             How often to sync metadata
             If 0 provided, defaults to 30 seconds
           type: string
-        latest:
+        paused:
+          title: |-
+            Allows user to pause the topic sync task.  If paused, then
+            the task will enter the 'paused' state and not sync topics or their
+            properties from the source cluster
+          type: boolean
+        start_at_earliest:
+          $ref: '#/components/schemas/EarliestOffset'
+        start_at_latest:
           $ref: '#/components/schemas/LatestOffset'
+        start_at_timestamp:
+          description: |-
+            Enables data replication from the first offset on the
+            source topic/partition where the record's timestamp is
+            at or after the specified timestamp.
+          format: date-time
+          type: string
         synced_shadow_topic_properties:
           description: |-
             The following properties are not allowed to be replicated and adding them
@@ -1601,13 +1679,6 @@ components:
             - `cleanup.policy`
             - `timestamp.type`
           type: array
-        timestamp:
-          description: |-
-            Enables data replication from the first offset on the
-            source topic/partition where the record's timestamp is
-            at or after the specified timestamp.
-          format: date-time
-          type: string
       title: Options for syncing topic metadata
       type: object
     UpdateAIAgentResponse:
@@ -1732,30 +1803,10 @@ components:
           type: array
         tasks_status:
           items:
-            $ref: '#/components/schemas/v1alpha3.ShadowLinkTaskStatus'
+            $ref: '#/components/schemas/ShadowLinkTaskStatus'
           type: array
         uid:
           type: string
-      type: object
-    v1alpha3.ShadowLinkTaskStatus:
-      properties:
-        broker_id:
-          format: int32
-          title: The broker the task is running on
-          type: integer
-        name:
-          title: Name of the task
-          type: string
-        reason:
-          title: Reason for task being in state
-          type: string
-        shard_id:
-          format: int32
-          title: The shard the task is running on
-          type: integer
-        state:
-          $ref: '#/components/schemas/v1alpha3.TaskState'
-      title: Status of a task
       type: object
     v1alpha3.ShadowTopic:
       properties:
@@ -1770,21 +1821,6 @@ components:
           format: int32
           type: integer
       type: object
-    v1alpha3.TaskState:
-      description: |-
-        - TASK_STATE_ACTIVE: Task is active
-         - TASK_STATE_PAUSED: Task was paused
-         - TASK_STATE_LINK_UNAVAILABLE: Task is unable to communicate with source cluster
-         - TASK_STATE_NOT_RUNNING: Task is not running
-         - TASK_STATE_FAULTED: Task is faulted
-      enum:
-        - TASK_STATE_ACTIVE
-        - TASK_STATE_PAUSED
-        - TASK_STATE_LINK_UNAVAILABLE
-        - TASK_STATE_NOT_RUNNING
-        - TASK_STATE_FAULTED
-      title: Task states
-      type: string
   securitySchemes:
     auth0:
       description: RedpandaCloud

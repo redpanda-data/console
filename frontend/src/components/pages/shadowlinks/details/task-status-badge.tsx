@@ -10,7 +10,7 @@
  */
 
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { TaskState } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
+import { TaskState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 type TaskStatusBadgeProps = {
   state: TaskState;
