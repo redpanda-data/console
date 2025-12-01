@@ -30,9 +30,9 @@ import {
   ShadowLinkClientOptionsSchema,
   ShadowLinkConfigurationsSchema,
   ShadowLinkSchema,
-  TLSSettingsSchema,
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { TLSSettingsSchema } from 'protogen/redpanda/core/common/v1/tls_pb';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -47,7 +47,7 @@ import {
   ACLPattern,
   ACLPermissionType,
   ACLResource,
-} from '../../../../protogen/redpanda/core/common/acl_pb';
+} from '../../../../protogen/redpanda/core/common/v1/acl_pb';
 import { useCreateShadowLinkMutation } from '../../../../react-query/api/shadowlink';
 import { buildTLSSettings } from '../edit/shadowlink-edit-utils';
 

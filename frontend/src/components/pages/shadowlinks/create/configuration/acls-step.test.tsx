@@ -11,7 +11,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from 'components/redpanda-ui/components/form';
-import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/acl_pb';
+import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 import { useForm } from 'react-hook-form';
 import { fireEvent, render, screen, waitFor, within } from 'test-utils';
 
