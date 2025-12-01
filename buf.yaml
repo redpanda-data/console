@@ -30,3 +30,5 @@ breaking:
     - proto/redpanda/api/dataplane/v1alpha1
     - proto/redpanda/api/dataplane/v1alpha3
     - proto/redpanda/api/dataplane/v1/mcp.proto
+    - proto/redpanda/api/dataplane/v1/secret.proto
+  ignore_unstable_packages: true
