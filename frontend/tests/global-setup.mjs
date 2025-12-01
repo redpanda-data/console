@@ -128,6 +128,7 @@ async function startRedpandaContainer(network, state) {
       'start',
       '--smp',
       '1',
+      '--mode dev-container',
       '--overprovisioned',
       '--kafka-addr',
       'internal://0.0.0.0:9092,external://0.0.0.0:19092',
