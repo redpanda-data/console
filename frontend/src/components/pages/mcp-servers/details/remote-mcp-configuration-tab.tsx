@@ -31,9 +31,10 @@ import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resour
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
+import { ServiceAccountSection } from 'components/ui/service-account/service-account-section';
 import { ExpandedYamlDialog } from 'components/ui/yaml/expanded-yaml-dialog';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
-import { Edit, FileText, Hammer, Plus, Save, Settings, Trash2 } from 'lucide-react';
+import { Edit, FileText, Hammer, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -938,6 +939,27 @@ export const RemoteMCPConfigurationTab = () => {
             </div>
           )}
         </div>
+
+        {/* Service Account - Always visible */}
+        {displayData?.tags && displayData.tags.find((tag) => tag.key === 'service_account_id') && (
+          <Card className="px-0 py-0" size="full">
+            <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4" />
+                <Text className="font-semibold">Service Account</Text>
+              </CardTitle>
+              <Text className="text-sm" variant="muted">
+                The service account is used by the MCP server to authenticate to other systems within the Redpanda
+                Cloud platform (e.g. Redpanda broker).
+              </Text>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <ServiceAccountSection
+                serviceAccountId={displayData.tags.find((tag) => tag.key === 'service_account_id')?.value || ''}
+              />
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Expanded YAML Editor Dialog */}
