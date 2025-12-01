@@ -15,7 +15,7 @@ import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { Plus } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
 
 import type { FormValues } from './schemas';

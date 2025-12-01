@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 
 import memoryCacheTemplate from './cache/memory.yaml';
 import redpandaCacheTemplate from './cache/redpanda.yaml';

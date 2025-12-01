@@ -27,22 +27,30 @@ export function useMetadataValidation(form: UseFormReturn<FormValues>) {
       return false;
     }
 
+    // Check serviceAccountName (required)
+    if (!formValues.serviceAccountName?.trim()) {
+      return false;
+    }
+
     // Check for any validation errors in metadata fields
     const hasMetadataErrors = !!(
       form.formState.errors.displayName ||
       form.formState.errors.description ||
       form.formState.errors.resourcesTier ||
-      form.formState.errors.tags
+      form.formState.errors.tags ||
+      form.formState.errors.serviceAccountName
     );
 
     return !hasMetadataErrors;
   }, [
     formValues.displayName,
     formValues.resourcesTier,
+    formValues.serviceAccountName,
     form.formState.errors.displayName,
     form.formState.errors.description,
     form.formState.errors.resourcesTier,
     form.formState.errors.tags,
+    form.formState.errors.serviceAccountName,
   ]);
 
   return { isMetadataComplete, isMetadataInvalid: !isMetadataComplete };

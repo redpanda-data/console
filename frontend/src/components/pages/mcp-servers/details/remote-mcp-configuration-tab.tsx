@@ -41,7 +41,7 @@ import {
   type MCPServer_State,
   MCPServer_Tool_ComponentType,
   UpdateMCPServerRequestSchema,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+} from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   useGetMCPServerQuery,

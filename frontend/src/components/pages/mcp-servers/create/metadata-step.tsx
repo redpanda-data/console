@@ -94,6 +94,25 @@ export const MetadataStep: React.FC<MetadataStepProps> = ({ form, tagFields, app
                 </FormItem>
               )}
             />
+
+            <div className="space-y-2">
+              <FormLabel required>Service Account Name</FormLabel>
+              <FormField
+                control={form.control}
+                name="serviceAccountName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input placeholder="e.g., cluster-abc123-mcp-my-server-sa" {...field} />
+                    </FormControl>
+                    <Text className="text-sm" variant="muted">
+                      This service account will be created automatically when you create the MCP server.
+                    </Text>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
         </FormContainer>
       </div>

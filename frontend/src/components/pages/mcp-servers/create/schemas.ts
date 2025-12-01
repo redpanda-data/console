@@ -9,7 +9,7 @@
  */
 
 import { RESOURCE_TIERS } from 'components/ui/connect/resource-tier-select';
-import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import { parse } from 'yaml';
 import { z } from 'zod';
 
@@ -85,6 +85,11 @@ export const FormSchema = z
         },
         { message: 'Tool names must be unique' }
       ),
+    serviceAccountName: z
+      .string()
+      .min(3, 'Service account name must be at least 3 characters')
+      .max(128, 'Service account name must be at most 128 characters')
+      .regex(/^[^<>]+$/, 'Service account name cannot contain < or > characters'),
   })
   .strict();
 
@@ -103,4 +108,5 @@ export const initialValues: FormValues = {
       config: '',
     },
   ],
+  serviceAccountName: '',
 };

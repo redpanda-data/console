@@ -19,7 +19,7 @@ import {
   type MCPServer,
   MCPServer_State,
   MCPServerService,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+} from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import {
   createMCPServer,
   deleteMCPServer,
@@ -30,7 +30,7 @@ import {
   startMCPServer,
   stopMCPServer,
   updateMCPServer,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/mcp-MCPServerService_connectquery';
+} from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 

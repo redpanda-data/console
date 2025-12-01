@@ -47,8 +47,8 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { AlertCircle, Check, Copy, Loader2, MoreHorizontal, Pause, Play, Plus, X } from 'lucide-react';
 import { runInAction } from 'mobx';
-import type { MCPServer as APIMCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { MCPServer_State } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import type { MCPServer as APIMCPServer } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
+import { MCPServer_State } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import React, { useEffect } from 'react';
 import {
   useDeleteMCPServerMutation,
