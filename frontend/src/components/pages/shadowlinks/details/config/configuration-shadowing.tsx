@@ -174,7 +174,7 @@ const SchemaRegistrySection = ({ isEnabled }: { isEnabled: boolean }) => (
     </CardHeader>
     <CardContent className="flex flex-row justify-between">
       <Text className="mt-2 text-muted-foreground text-sm">
-        The _schemas topic is being replicated byte-for-byte from the source cluster.
+        Replicate the source cluster's _schema topic, which replaces the shadow cluster's Schema Registry.
       </Text>
       <Badge testId="schema-registry-status-badge" variant={isEnabled ? 'green' : 'gray'}>
         {isEnabled ? 'Enabled' : 'Disabled'}
