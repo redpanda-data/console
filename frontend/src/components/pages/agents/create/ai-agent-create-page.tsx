@@ -53,6 +53,8 @@ import { ExternalLink, Loader2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
   AIAgent_MCPServerSchema,
+  AIAgent_Provider_AnthropicSchema,
+  AIAgent_Provider_GoogleSchema,
   AIAgent_Provider_OpenAISchema,
   AIAgent_ProviderSchema,
   AIAgent_ServiceAccountSchema,
@@ -151,21 +153,31 @@ export const AIAgentCreatePage = () => {
       }));
   }, [secretsData]);
 
-  // Auto-detect and prefill OpenAI secret
+  // Auto-detect and prefill API key secret based on provider
+  const selectedProvider = form.watch('provider');
   useEffect(() => {
     // Only auto-select if the field is currently empty
     if (form.getValues('apiKeySecret')) {
       return;
     }
 
-    // Find the first secret with "OPENAI" in its name (case-insensitive)
-    const openAISecret = availableSecrets.find((secret) => secret.id.toUpperCase().includes('OPENAI'));
+    // Find the first secret matching the selected provider
+    const providerKeyword = selectedProvider.toUpperCase();
+    const providerSecret = availableSecrets.find((secret) => secret.id.toUpperCase().includes(providerKeyword));
 
     // If found, set it as the default value
-    if (openAISecret) {
-      form.setValue('apiKeySecret', openAISecret.id);
+    if (providerSecret) {
+      form.setValue('apiKeySecret', providerSecret.id);
     }
-  }, [availableSecrets, form]);
+  }, [availableSecrets, selectedProvider, form]);
+
+  // Auto-update model when provider changes
+  useEffect(() => {
+    const providerModels = MODEL_OPTIONS_BY_PROVIDER[selectedProvider];
+    if (providerModels.models.length > 0) {
+      form.setValue('model', providerModels.models[0].value);
+    }
+  }, [selectedProvider, form]);
 
   // Get available MCP servers (all servers, regardless of state)
   const availableMcpServers = useMemo(() => {
@@ -212,7 +224,11 @@ export const AIAgentCreatePage = () => {
               message: description,
             });
             toast.error(`Model: ${description}`);
-          } else if (field === 'ai_agent.provider.openai.api_key') {
+          } else if (
+            field === 'ai_agent.provider.openai.api_key' ||
+            field === 'ai_agent.provider.anthropic.api_key' ||
+            field === 'ai_agent.provider.google.api_key'
+          ) {
             form.setError('apiKeySecret', {
               type: 'server',
               message: description,
@@ -291,6 +307,45 @@ export const AIAgentCreatePage = () => {
       clientSecret: `\${secrets.${secretName}.client_secret}`,
     });
 
+    // Build provider configuration based on selected provider
+    const apiKeyRef = `\${secrets.${values.apiKeySecret}}`;
+    let providerConfig;
+
+    switch (values.provider) {
+      case 'anthropic':
+        providerConfig = create(AIAgent_ProviderSchema, {
+          provider: {
+            case: 'anthropic',
+            value: create(AIAgent_Provider_AnthropicSchema, {
+              apiKey: apiKeyRef,
+              baseUrl: values.baseUrl || undefined,
+            }),
+          },
+        });
+        break;
+      case 'google':
+        providerConfig = create(AIAgent_ProviderSchema, {
+          provider: {
+            case: 'google',
+            value: create(AIAgent_Provider_GoogleSchema, {
+              apiKey: apiKeyRef,
+              baseUrl: values.baseUrl || undefined,
+            }),
+          },
+        });
+        break;
+      default: // openai
+        providerConfig = create(AIAgent_ProviderSchema, {
+          provider: {
+            case: 'openai',
+            value: create(AIAgent_Provider_OpenAISchema, {
+              apiKey: apiKeyRef,
+              baseUrl: values.baseUrl || undefined,
+            }),
+          },
+        });
+    }
+
     await createAgent(
       create(CreateAIAgentRequestSchema, {
         aiAgent: create(AIAgentCreateSchema, {
@@ -298,14 +353,7 @@ export const AIAgentCreatePage = () => {
           description: values.description?.trim() ?? '',
           systemPrompt: values.systemPrompt.trim(),
           model: values.model.trim(),
-          provider: create(AIAgent_ProviderSchema, {
-            provider: {
-              case: 'openai',
-              value: create(AIAgent_Provider_OpenAISchema, {
-                apiKey: `\${secrets.${values.apiKeySecret}}`,
-              }),
-            },
-          }),
+          provider: providerConfig,
           maxIterations: values.maxIterations,
           mcpServers: mcpServersMap,
           tags: tagsMap,
@@ -401,20 +449,48 @@ export const AIAgentCreatePage = () => {
                 </CardContent>
               </Card>
 
-              {/* OpenAI Configuration */}
+              {/* LLM Provider Configuration */}
               <Card size="full">
                 <CardHeader>
-                  <CardTitle>OpenAI Configuration</CardTitle>
+                  <CardTitle>LLM Provider Configuration</CardTitle>
                   <Text variant="muted">Configure the AI model and authentication</Text>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <FormField
                       control={form.control}
+                      name="provider"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel required>Provider</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select provider" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([providerId, provider]) => (
+                                <SelectItem key={providerId} value={providerId}>
+                                  <div className="flex items-center gap-2">
+                                    <img alt={provider.label} className="h-4 w-4" src={provider.icon} />
+                                    <span>{provider.label}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
                       name="apiKeySecret"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel required>OpenAI API Token</FormLabel>
+                          <FormLabel required>API Token</FormLabel>
                           <FormControl>
                             <SecretSelector
                               availableSecrets={availableSecrets}
@@ -433,7 +509,8 @@ export const AIAgentCreatePage = () => {
                       control={form.control}
                       name="model"
                       render={({ field }) => {
-                        // Use pattern matching to detect provider (works for ANY model from that provider)
+                        const selectedProvider = form.watch('provider');
+                        const providerModels = MODEL_OPTIONS_BY_PROVIDER[selectedProvider];
                         const detectedProvider = field.value ? detectProvider(field.value) : null;
 
                         return (
@@ -459,47 +536,45 @@ export const AIAgentCreatePage = () => {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([providerId, provider]) => {
-                                  const logoSrc = provider.icon;
-                                  return (
-                                    <SelectGroup key={providerId}>
-                                      <SelectLabel>
-                                        <div className="flex items-center gap-2">
-                                          <img alt={provider.label} className="h-4 w-4" src={logoSrc} />
-                                          <span>{provider.label}</span>
-                                        </div>
-                                      </SelectLabel>
-                                      {provider.models.map((model) => (
-                                        <SelectItem key={model.value} value={model.value}>
-                                          <div className="flex flex-col gap-0.5">
-                                            <Text className="font-medium">{model.name}</Text>
-                                            <Text className="text-xs" variant="muted">
-                                              {model.description}
-                                            </Text>
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectGroup>
-                                  );
-                                })}
+                                <SelectGroup>
+                                  <SelectLabel>
+                                    <div className="flex items-center gap-2">
+                                      <img alt={providerModels.label} className="h-4 w-4" src={providerModels.icon} />
+                                      <span>{providerModels.label}</span>
+                                    </div>
+                                  </SelectLabel>
+                                  {providerModels.models.map((model) => (
+                                    <SelectItem key={model.value} value={model.value}>
+                                      <div className="flex flex-col gap-0.5">
+                                        <Text className="font-medium">{model.name}</Text>
+                                        <Text className="text-xs" variant="muted">
+                                          {model.description}
+                                        </Text>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
                               </SelectContent>
                             </Select>
-                            <Text variant="muted">
-                              See{' '}
-                              <a
-                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
-                                href="https://platform.openai.com/docs/models/overview"
-                                rel="noopener noreferrer"
-                                target="_blank"
-                              >
-                                OpenAI models <ExternalLink className="h-3 w-3" />
-                              </a>{' '}
-                              for available models.
-                            </Text>
                             <FormMessage />
                           </FormItem>
                         );
                       }}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="baseUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Base URL (optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://api.example.com" {...field} />
+                          </FormControl>
+                          <Text variant="muted">Override the default API endpoint for this provider</Text>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
 
                     <FormField

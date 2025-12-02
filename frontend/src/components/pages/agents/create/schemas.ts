@@ -34,8 +34,10 @@ export const FormSchema = z.object({
       { message: 'Tags must have unique keys' }
     ),
   triggerType: z.enum(['http', 'slack', 'kafka']).default('http'),
-  apiKeySecret: z.string().min(1, 'OpenAI API Token is required'),
+  provider: z.enum(['openai', 'anthropic', 'google']).default('openai'),
+  apiKeySecret: z.string().min(1, 'API Token is required'),
   model: z.string().min(1, 'Model is required'),
+  baseUrl: z.string().url('Must be a valid URL').optional().or(z.literal('')),
   maxIterations: z
     .number()
     .min(10, 'Max iterations must be at least 10')
@@ -60,8 +62,10 @@ export const initialValues: FormValues = {
   description: '',
   tags: [],
   triggerType: 'http',
+  provider: 'openai',
   apiKeySecret: '',
   model: 'gpt-5',
+  baseUrl: '',
   maxIterations: 30,
   individualTools: [],
   selectedMcpServers: [],
