@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -6,6 +7,7 @@ import { Heading } from 'components/redpanda-ui/components/typography';
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { AnimatePresence } from 'motion/react';
+import { ComponentSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useListComponentsQuery } from 'react-query/api/connect';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -47,7 +49,7 @@ export type ConnectOnboardingWizardProps = {
 export const ConnectOnboardingWizard = ({
   className,
   additionalComponents = [
-    {
+    create(ComponentSpecSchema, {
       name: 'custom',
       type: 'custom',
       status: 0,
@@ -57,8 +59,7 @@ export const ConnectOnboardingWizard = ({
       version: '',
       examples: [],
       footnotes: '',
-      $typeName: 'redpanda.api.dataplane.v1.ComponentSpec',
-    },
+    }) as ExtendedConnectComponentSpec,
   ],
   onChange,
   onCancel: onCancelProp,
