@@ -1,6 +1,5 @@
 import { useDisclosure } from '@redpanda-data/ui';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
-import { cn } from 'components/redpanda-ui/lib/utils';
 import type { editor } from 'monaco-editor';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { memo, useCallback, useMemo, useState } from 'react';
@@ -13,8 +12,6 @@ import { AddSecretsCard } from './add-secrets-card';
 import type { ConnectComponentType } from '../types/schema';
 import { parseSchema } from '../utils/schema';
 import { getConnectTemplate } from '../utils/yaml';
-
-const sidebarClassNames = 'w-[260px]';
 
 type CreatePipelineSidebarProps = {
   editorInstance: editor.IStandaloneCodeEditor | null;
@@ -67,7 +64,7 @@ export const CreatePipelineSidebar = memo(
     );
 
     if (editorInstance === null) {
-      return <div className={sidebarClassNames} />;
+      return null;
     }
 
     const handleConnectorTypeChange = (connectorType: ConnectComponentType) => {
@@ -77,7 +74,7 @@ export const CreatePipelineSidebar = memo(
 
     if (isComponentListLoading) {
       return (
-        <div className={cn(sidebarClassNames, 'flex flex-col gap-4')}>
+        <div className="flex flex-col gap-4">
           <SkeletonGroup direction="vertical" spacing="default">
             <Skeleton variant="heading" width="full" />
             <Skeleton className="h-10 w-full" />
@@ -87,7 +84,7 @@ export const CreatePipelineSidebar = memo(
     }
 
     return (
-      <div className={cn(sidebarClassNames, 'flex flex-col gap-4')}>
+      <div className="flex flex-col gap-4">
         <AddConnectorsCard
           editorContent={editorContent}
           hasInput={hasInput}

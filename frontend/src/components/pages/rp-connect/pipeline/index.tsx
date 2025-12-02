@@ -10,7 +10,6 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -63,9 +62,10 @@ interface FooterProps {
   onSave?: () => void;
   onCancel: () => void;
   isSaving?: boolean;
+  disabled?: boolean;
 }
 
-const Footer = memo(({ mode, onSave, onCancel, isSaving }: FooterProps) => {
+const Footer = memo(({ mode, onSave, onCancel, isSaving, disabled }: FooterProps) => {
   if (mode === 'view') {
     return (
       <div className="flex items-center justify-between gap-2 border-t pt-4">
@@ -81,7 +81,7 @@ const Footer = memo(({ mode, onSave, onCancel, isSaving }: FooterProps) => {
       <Button disabled={isSaving} onClick={onCancel} variant="outline">
         Cancel
       </Button>
-      <Button className="min-w-[70px]" disabled={isSaving} onClick={onSave}>
+      <Button className="min-w-[70px]" disabled={isSaving || disabled} onClick={onSave}>
         {mode === 'create' ? 'Create Pipeline' : 'Update Pipeline'}
         {isSaving && <Spinner size="sm" />}
       </Button>
@@ -384,7 +384,7 @@ export default function PipelinePage() {
           setLintHints(extractLintHintsFromError(err));
           toast.error(
             formatToastErrorMessageGRPC({
-              error: ConnectError.from(err),
+              error: err,
               action: 'create',
               entity: 'pipeline',
             })
@@ -426,7 +426,7 @@ export default function PipelinePage() {
           setLintHints(extractLintHintsFromError(err));
           toast.error(
             formatToastErrorMessageGRPC({
-              error: ConnectError.from(err),
+              error: err,
               action: 'update',
               entity: 'pipeline',
             })
@@ -481,12 +481,18 @@ export default function PipelinePage() {
           </Alert>
         </div>
       )}
-      <Footer isSaving={isSaving} mode={mode} onCancel={handleCancel} onSave={handleSave} />
+      <Footer
+        disabled={Object.keys(lintHints).length > 0}
+        isSaving={isSaving}
+        mode={mode}
+        onCancel={handleCancel}
+        onSave={handleSave}
+      />
     </>
   );
 
   return (
-    <div className="flex w-full gap-4">
+    <div className="grid grid-cols-[minmax(auto,_950px)_260px] gap-4">
       <div className="flex flex-1 flex-col gap-4">
         {mode === 'view' && pipelineId && (
           <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />

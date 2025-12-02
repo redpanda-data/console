@@ -8,8 +8,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Pre, Text } from 'components/redpanda-ui/components/typography';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { PencilRuler } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
@@ -40,13 +41,9 @@ export const LintHintList: React.FC<LintHintListProps> = memo(({ className, lint
           {Object.entries(lintHints).map(([toolName, hint]) => (
             <div className="flex-col flex gap-1.5" key={toolName}>
               {hint.line > 0 ? (
-                  <Pre variant="dense">
-                    Line {hint.line}, Col {hint.column}: {hint.hint}
-                  </Pre>
+                  <SimpleCodeBlock code={`Line ${hint.line}, Col ${hint.column}: ${hint.hint}`} width="full" className="my-0"/>
               ) : (
-                <Pre variant="dense">
-                  {hint.hint}
-                </Pre>
+                <SimpleCodeBlock code={hint.hint} width="full" className="my-0"/>
               )}
               {hint.lintType && (
                 <Text className="font-medium text-gray-500 text-xs uppercase tracking-wide">{hint.lintType}</Text>
