@@ -9,7 +9,7 @@
  */
 
 import { RESOURCE_TIERS } from 'components/ui/connect/resource-tier-select';
-import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import { MCPServer_Tool_ComponentType } from 'react-query/api/remote-mcp';
 import { parse } from 'yaml';
 import { z } from 'zod';
 

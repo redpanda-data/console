@@ -43,10 +43,9 @@ import {
   AIAgentUpdateSchema,
   UpdateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
-import type { MCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useCallback, useMemo, useState } from 'react';
 import { useGetAIAgentQuery, useUpdateAIAgentMutation } from 'react-query/api/ai-agent';
-import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
+import { type MCPServer, useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';

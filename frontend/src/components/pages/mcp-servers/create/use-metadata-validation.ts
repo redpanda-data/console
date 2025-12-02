@@ -8,6 +8,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { isFeatureFlagEnabled } from 'config';
 import { useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
@@ -15,6 +16,7 @@ import type { FormValues } from './schemas';
 
 export function useMetadataValidation(form: UseFormReturn<FormValues>) {
   const formValues = form.watch();
+  const isServiceAccountEnabled = isFeatureFlagEnabled('enableMcpServiceAccount');
 
   const isMetadataComplete = useMemo(() => {
     // Check displayName (required)
@@ -33,13 +35,14 @@ export function useMetadataValidation(form: UseFormReturn<FormValues>) {
       form.formState.errors.description ||
       form.formState.errors.resourcesTier ||
       form.formState.errors.tags ||
-      form.formState.errors.serviceAccountName
+      (isServiceAccountEnabled && form.formState.errors.serviceAccountName)
     );
 
     return !hasMetadataErrors;
   }, [
     formValues.displayName,
     formValues.resourcesTier,
+    isServiceAccountEnabled,
     form.formState.errors.displayName,
     form.formState.errors.description,
     form.formState.errors.resourcesTier,

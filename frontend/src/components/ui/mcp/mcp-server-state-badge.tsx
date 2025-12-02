@@ -11,11 +11,10 @@
 
 import { Badge, type BadgeVariant } from 'components/redpanda-ui/components/badge';
 import { AlertCircle, Check, Clock, Loader2, StopCircle } from 'lucide-react';
-import { MCPServer_State } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
+import { MCPServer_State, useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
 
-const getMCPServerStatus = (state: MCPServer_State): { icon: React.ReactNode; text: string; variant: BadgeVariant } => {
+const getMCPServerStatus = (state: typeof MCPServer_State[keyof typeof MCPServer_State]): { icon: React.ReactNode; text: string; variant: BadgeVariant } => {
   switch (state) {
     case MCPServer_State.RUNNING:
       return {

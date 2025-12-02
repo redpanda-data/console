@@ -28,15 +28,7 @@ import { ExpandedYamlDialog } from 'components/ui/yaml/expanded-yaml-dialog';
 import { useYamlLabelSync } from 'components/ui/yaml/use-yaml-label-sync';
 import { config, isFeatureFlagEnabled } from 'config';
 import { ArrowLeft, FileText, Hammer, Loader2 } from 'lucide-react';
-import {
-  CreateMCPServerRequestSchema as CreateMCPServerRequestSchemaV1,
-  LintMCPConfigRequestSchema as LintMCPConfigRequestSchemaV1,
-  MCPServer_ServiceAccountSchema,
-} from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
-import {
-  CreateMCPServerRequestSchema as CreateMCPServerRequestSchemaV1Alpha3,
-  LintMCPConfigRequestSchema as LintMCPConfigRequestSchemaV1Alpha3,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import { MCPServer_ServiceAccountSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useCreateMCPServerMutation, useLintMCPConfigMutation } from 'react-query/api/remote-mcp';
@@ -120,6 +112,13 @@ export const RemoteMCPCreatePage: React.FC = () => {
     }
   }, [displayName, form]);
 
+  // Clear cached service account when service account name changes
+  useEffect(() => {
+    if (serviceAccountInfo && serviceAccountName) {
+      setServiceAccountInfo(null);
+    }
+  }, [serviceAccountName, serviceAccountInfo]);
+
   const {
     fields: tagFields,
     append: appendTag,
@@ -159,7 +158,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
 
   const handleNext = async (isOnMetadataStep: boolean, goNext: () => void) => {
     if (isOnMetadataStep) {
-      const fieldsToValidate = ['displayName', 'description', 'resourcesTier', 'tags'];
+      const fieldsToValidate: Array<keyof FormValues> = ['displayName', 'description', 'resourcesTier', 'tags'];
       if (isFeatureFlagEnabled('enableMcpServiceAccount')) {
         fieldsToValidate.push('serviceAccountName');
       }
@@ -178,7 +177,6 @@ export const RemoteMCPCreatePage: React.FC = () => {
       return;
     }
 
-    const useMcpV1 = isFeatureFlagEnabled('enableMcpServiceAccount');
     const toolsMap: Record<string, { componentType: number; configYaml: string }> = {
       [tool.name.trim()]: {
         componentType: tool.componentType,
@@ -186,11 +184,9 @@ export const RemoteMCPCreatePage: React.FC = () => {
       },
     };
 
-    const response = await lintConfig(
-      create(useMcpV1 ? LintMCPConfigRequestSchemaV1 : LintMCPConfigRequestSchemaV1Alpha3, {
-        tools: toolsMap,
-      })
-    );
+    const response = await lintConfig({
+      tools: toolsMap,
+    });
 
     // Update lint hints for this tool
     setLintHints((prev) => ({
@@ -310,6 +306,9 @@ export const RemoteMCPCreatePage: React.FC = () => {
     let serviceAccountConfig: ReturnType<typeof create<typeof MCPServer_ServiceAccountSchema>> | undefined;
 
     // Create service account if feature flag is enabled
+    // NOTE: Service account and secret are created before MCP server creation.
+    // If server creation fails, these resources will not be automatically cleaned up.
+    // This matches the AI agents implementation pattern.
     if (useMcpServiceAccount) {
       const serviceAccountResult = await createServiceAccountIfNeeded(values.displayName);
       if (!serviceAccountResult) {
@@ -341,9 +340,9 @@ export const RemoteMCPCreatePage: React.FC = () => {
     };
 
     await createServer(
-      create(useMcpServiceAccount ? CreateMCPServerRequestSchemaV1 : CreateMCPServerRequestSchemaV1Alpha3, {
+      {
         mcpServer: mcpServerPayload,
-      }),
+      },
       {
         onError: handleValidationError,
         onSuccess: (data) => {

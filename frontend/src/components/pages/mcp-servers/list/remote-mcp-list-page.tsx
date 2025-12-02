@@ -47,10 +47,10 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { AlertCircle, Check, Copy, Loader2, MoreHorizontal, Pause, Play, Plus, X } from 'lucide-react';
 import { runInAction } from 'mobx';
-import type { MCPServer as APIMCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { MCPServer_State } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import React, { useEffect } from 'react';
 import {
+  type MCPServer as APIMCPServer,
+  MCPServer_State,
   useDeleteMCPServerMutation,
   useListMCPServersQuery,
   useStartMCPServerMutation,
@@ -72,13 +72,21 @@ export type MCPServer = {
   id: string;
   name: string;
   url: string;
-  state: MCPServer_State;
+  state: (typeof MCPServer_State)[keyof typeof MCPServer_State];
   tools: string[];
   lastConnected?: string;
 };
 
-const StatusIcon = ({ state }: { state: MCPServer_State }) => {
-  const statusProps = {
+const StatusIcon = ({ state }: { state: (typeof MCPServer_State)[keyof typeof MCPServer_State] }) => {
+  const statusPropsMap: Record<
+    number,
+    {
+      text: string;
+      icon: React.ComponentType<{ className?: string }>;
+      iconColor: string;
+      animate?: boolean;
+    }
+  > = {
     [MCPServer_State.RUNNING]: {
       text: 'Running',
       icon: Check,
@@ -111,7 +119,9 @@ const StatusIcon = ({ state }: { state: MCPServer_State }) => {
       icon: AlertCircle,
       iconColor: 'text-gray-500',
     },
-  }[state] || {
+  };
+
+  const statusProps = statusPropsMap[state] || {
     text: 'Unknown',
     icon: AlertCircle,
     iconColor: 'text-red-600',
