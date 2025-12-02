@@ -19,6 +19,8 @@ import {
   FilterType,
   NameFilterSchema,
   PatternType,
+  SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema,
+  SchemaRegistrySyncOptionsSchema,
   ScramConfigSchema,
   SecuritySettingsSyncOptionsSchema,
   type ShadowLinkClientOptions,
@@ -637,5 +639,38 @@ export const buildDefaultACLsValues = (shadowLink: ShadowLink): Pick<FormValues,
           permissionType: filter.accessFilter?.permissionType,
           host: filter.accessFilter?.host,
         })),
+  };
+};
+
+/**
+ * Get update values for Schema Registry category
+ * Compares form values with original values and returns schema + field mask paths
+ */
+export const getUpdateValuesForSchemaRegistry = (
+  values: FormValues,
+  originalValues: FormValues
+): UpdateResult<ReturnType<typeof create<typeof SchemaRegistrySyncOptionsSchema>> | undefined> => {
+  const fieldMaskPaths: string[] = [];
+
+  // Compare schema registry sync enabled state
+  const schemaRegistryChanged = values.enableSchemaRegistrySync !== originalValues.enableSchemaRegistrySync;
+
+  if (schemaRegistryChanged) {
+    fieldMaskPaths.push('configurations.schema_registry_sync_options');
+  }
+
+  // Build schema registry sync options (only set if enabled)
+  const schemaRegistrySyncOptions = values.enableSchemaRegistrySync
+    ? create(SchemaRegistrySyncOptionsSchema, {
+        schemaRegistryShadowingMode: {
+          case: 'shadowSchemaRegistryTopic',
+          value: create(SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema, {}),
+        },
+      })
+    : undefined;
+
+  return {
+    value: schemaRegistrySyncOptions,
+    fieldMaskPaths,
   };
 };

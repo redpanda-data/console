@@ -63,7 +63,7 @@ export const TopicsStep = () => {
     <Collapsible onOpenChange={setIsOpen} open={isOpen}>
       <Card className="gap-0" size="full">
         <CardHeader>
-          <CardTitle>Topic shadowing</CardTitle>
+          <CardTitle>Shadow topics</CardTitle>
           <CardAction>
             <CollapsibleTrigger asChild>
               <Button className="w-fit p-0" data-testid="topics-toggle-button" size="sm" variant="ghost">

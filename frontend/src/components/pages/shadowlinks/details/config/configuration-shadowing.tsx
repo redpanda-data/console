@@ -166,15 +166,37 @@ const ACLFilterSection = ({ filters }: { filters: ACLFilter[] }) => {
   );
 };
 
+// Component to display Schema Registry sync status
+const SchemaRegistrySection = ({ isEnabled }: { isEnabled: boolean }) => (
+  <Card size="full" testId="schema-registry-card">
+    <CardHeader>
+      <Heading level={3}>Schema Registry</Heading>
+    </CardHeader>
+    <CardContent className="flex flex-row justify-between">
+      <Text className="mt-2 text-muted-foreground text-sm">
+        The _schemas topic is being replicated byte-for-byte from the source cluster.
+      </Text>
+      <Badge testId="schema-registry-status-badge" variant={isEnabled ? 'green' : 'gray'}>
+        {isEnabled ? 'Enabled' : 'Disabled'}
+      </Badge>
+    </CardContent>
+  </Card>
+);
+
 export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingProps) => {
   const topicSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
   const consumerSyncOptions = shadowLink.configurations?.consumerOffsetSyncOptions;
   const securitySyncOptions = shadowLink.configurations?.securitySyncOptions;
+  const schemaRegistrySyncOptions = shadowLink.configurations?.schemaRegistrySyncOptions;
 
   // Get filters
   const topicFilters = topicSyncOptions?.autoCreateShadowTopicFilters || [];
   const consumerFilters = consumerSyncOptions?.groupFilters || [];
   const aclFilters = securitySyncOptions?.aclFilters || [];
+
+  // Check if schema registry sync is enabled
+  const isSchemaRegistrySyncEnabled =
+    schemaRegistrySyncOptions?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic';
 
   return (
     <div className="flex flex-col gap-6">
@@ -200,6 +222,9 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
         testId="consumer-group-replication"
         title="Consumer group replication"
       />
+
+      {/* Schema Registry Section */}
+      <SchemaRegistrySection isEnabled={isSchemaRegistrySyncEnabled} />
     </div>
   );
 };

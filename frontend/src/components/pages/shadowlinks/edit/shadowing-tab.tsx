@@ -11,6 +11,7 @@
 
 import { AclsStep } from '../create/configuration/acls-step';
 import { ConsumerOffsetStep } from '../create/configuration/consumer-offset-step';
+import { SchemaRegistryStep } from '../create/configuration/schema-registry-step';
 import { TopicsStep } from '../create/configuration/topics-step';
 
 export const ShadowingTab = () => (
@@ -18,5 +19,6 @@ export const ShadowingTab = () => (
     <TopicsStep />
     <AclsStep />
     <ConsumerOffsetStep />
+    <SchemaRegistryStep />
   </div>
 );

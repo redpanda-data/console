@@ -94,7 +94,8 @@ type CreateAction =
   | { type: 'navigateToConfiguration' }
   | { type: 'addTopicFilterCreate'; name: string; options?: { patternType?: PatternType; filterType?: FilterType } }
   | { type: 'addConsumerFilterCreate'; name: string }
-  | { type: 'addACLFilterCreate'; principal: string };
+  | { type: 'addACLFilterCreate'; principal: string }
+  | { type: 'enableSchemaRegistrySync' };
 
 /**
  * Perform action for create form
@@ -217,6 +218,11 @@ const performCreateAction = async (
     case 'addACLFilterCreate':
       await addACLFilterCreate(user, scr, action.principal);
       break;
+    case 'enableSchemaRegistrySync': {
+      const schemaRegistrySwitch = scr.getByTestId('sr-enable-switch');
+      await user.click(schemaRegistrySwitch);
+      break;
+    }
     default:
       throw new Error(`Unknown action type: ${JSON.stringify(action)}`);
   }
@@ -367,6 +373,24 @@ const testCases: CreateTestCase[] = [
       exp(createRequest.shadowLink.configurations.clientOptions.tlsSettings.tlsSettings.case).toBe('tlsPemSettings');
       exp(createRequest.shadowLink.configurations.clientOptions.tlsSettings.tlsSettings.value.ca).toBe(
         '-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----'
+      );
+    },
+  },
+  {
+    description: 'creates shadow link with schema registry sync enabled',
+    actions: [
+      { type: 'fillName', value: 'test-shadow-link' },
+      { type: 'fillBootstrapServer', index: 0, value: 'server1.example.com:9092' },
+      { type: 'fillScramUsername', value: 'admin' },
+      { type: 'fillScramPassword', value: 'admin-secret' },
+      { type: 'navigateToConfiguration' },
+      { type: 'enableSchemaRegistrySync' },
+    ],
+    verify: (createRequest, exp) => {
+      exp(createRequest.shadowLink.name).toBe('test-shadow-link');
+      exp(createRequest.shadowLink.configurations.schemaRegistrySyncOptions).toBeDefined();
+      exp(createRequest.shadowLink.configurations.schemaRegistrySyncOptions.schemaRegistryShadowingMode.case).toBe(
+        'shadowSchemaRegistryTopic'
       );
     },
   },
