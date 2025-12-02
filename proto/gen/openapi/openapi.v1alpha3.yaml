@@ -1740,6 +1740,8 @@ components:
           type: array
         state:
           $ref: '#/components/schemas/ShadowTopicState'
+        topic_id:
+          type: string
         topic_name:
           type: string
         total_lag:
@@ -1812,6 +1814,8 @@ components:
       properties:
         state:
           $ref: '#/components/schemas/ShadowTopicState'
+        topic_id:
+          type: string
         topic_name:
           type: string
         total_lag:

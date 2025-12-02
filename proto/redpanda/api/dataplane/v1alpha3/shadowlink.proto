@@ -55,9 +55,10 @@ message ListShadowLinkTopicsRequest {
 
 message ShadowTopic {
   string topic_name = 1;
-  core.admin.v2.ShadowTopicState state = 2;
-  int64 total_lag = 3;
-  int32 total_partitions = 4;
+  string topic_id = 2;
+  core.admin.v2.ShadowTopicState state = 3;
+  int64 total_lag = 4;
+  int32 total_partitions = 5;
 }
 
 message ListShadowLinkTopicsResponse {
@@ -92,10 +93,11 @@ message GetShadowTopicResponse {
   }
 
   string topic_name = 1;
-  core.admin.v2.ShadowTopicState state = 2;
-  int64 total_lag = 3;
-  int32 total_partitions = 4;
-  repeated PartitionInfo partitions = 5;
+  string topic_id = 2;
+  core.admin.v2.ShadowTopicState state = 3;
+  int64 total_lag = 4;
+  int32 total_partitions = 5;
+  repeated PartitionInfo partitions = 6;
 }
 
 message GetShadowMetricsRequest {
