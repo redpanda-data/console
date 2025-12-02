@@ -76,10 +76,7 @@ const NewSecretFormSchema = z.object({
   value: z
     .string()
     .min(1, 'Secret value is required')
-    .regex(
-      /^sk-(proj-)?[A-Za-z0-9-_]{20,}$/,
-      'Invalid OpenAI API key format. Must start with "sk-" or "sk-proj-" followed by at least 20 alphanumeric characters'
-    ),
+    .min(20, 'Secret value must be at least 20 characters'),
 });
 
 type NewSecretFormData = z.infer<typeof NewSecretFormSchema>;
