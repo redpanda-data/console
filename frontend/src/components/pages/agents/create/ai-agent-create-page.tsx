@@ -49,10 +49,11 @@ import {
 } from 'components/ui/service-account/service-account-selector';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { config } from 'config';
-import { ExternalLink, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
   AIAgent_MCPServerSchema,
+  type AIAgent_Provider,
   AIAgent_Provider_AnthropicSchema,
   AIAgent_Provider_GoogleSchema,
   AIAgent_Provider_OpenAISchema,
@@ -309,7 +310,7 @@ export const AIAgentCreatePage = () => {
 
     // Build provider configuration based on selected provider
     const apiKeyRef = `\${secrets.${values.apiKeySecret}}`;
-    let providerConfig;
+    let providerConfig: AIAgent_Provider;
 
     switch (values.provider) {
       case 'anthropic':
@@ -509,8 +510,8 @@ export const AIAgentCreatePage = () => {
                       control={form.control}
                       name="model"
                       render={({ field }) => {
-                        const selectedProvider = form.watch('provider');
-                        const providerModels = MODEL_OPTIONS_BY_PROVIDER[selectedProvider];
+                        const formProvider = form.watch('provider');
+                        const providerModels = MODEL_OPTIONS_BY_PROVIDER[formProvider];
                         const detectedProvider = field.value ? detectProvider(field.value) : null;
 
                         return (
