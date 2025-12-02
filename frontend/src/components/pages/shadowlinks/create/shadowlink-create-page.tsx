@@ -25,6 +25,8 @@ import {
   FilterType,
   NameFilterSchema,
   PatternType,
+  SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema,
+  SchemaRegistrySyncOptionsSchema,
   ScramConfigSchema,
   SecuritySettingsSyncOptionsSchema,
   ShadowLinkClientOptionsSchema,
@@ -185,12 +187,23 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
         ),
   });
 
+  // Build schema registry sync options (only set if enabled)
+  const schemaRegistrySyncOptions = values.enableSchemaRegistrySync
+    ? create(SchemaRegistrySyncOptionsSchema, {
+        schemaRegistryShadowingMode: {
+          case: 'shadowSchemaRegistryTopic',
+          value: create(SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema, {}),
+        },
+      })
+    : undefined;
+
   // Build configurations
   const configurations = create(ShadowLinkConfigurationsSchema, {
     clientOptions,
     topicMetadataSyncOptions,
     consumerOffsetSyncOptions,
     securitySyncOptions,
+    schemaRegistrySyncOptions,
   });
 
   // Build shadow link
@@ -250,7 +263,8 @@ export const ShadowLinkCreatePage = () => {
       <div className="space-y-2">
         <Heading level={1}>Create shadow link</Heading>
         <Text variant="muted">
-          Set up a shadow link to replicate topics from a source cluster for disaster recovery.
+          Shadowing copies data at the byte level, ensuring shadow topics contain identical copies of source topics with
+          preserved offsets and timestamps. Select the replicated content for this shadow link.
         </Text>
       </div>
 

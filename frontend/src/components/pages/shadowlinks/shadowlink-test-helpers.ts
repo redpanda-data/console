@@ -34,7 +34,8 @@ export type Action =
   | { type: 'addTopicFilterWithPattern'; options: { name: string; patternType: PatternType; filterType: FilterType } }
   | { type: 'addConsumerFilter'; name: string }
   | { type: 'addACLFilter'; principal: string }
-  | { type: 'toggleExcludeDefault' };
+  | { type: 'toggleExcludeDefault' }
+  | { type: 'enableSchemaRegistrySync' };
 
 /**
  * Add a bootstrap server to the form
@@ -612,4 +613,25 @@ export const addTopicFilterWithPattern = async (
 
   const patternTab = scr.getByTestId(tabTestId);
   await user.click(patternTab);
+};
+
+/**
+ * Enable schema registry sync (edit form - with tab navigation)
+ */
+export const enableSchemaRegistrySync = async (
+  user: ReturnType<typeof userEvent.setup>,
+  scr: typeof import('@testing-library/react').screen
+) => {
+  // Navigate to Shadowing tab (may already be there)
+  const shadowingTab = scr.queryByTestId('tab-shadowing');
+  if (shadowingTab) {
+    await user.click(shadowingTab);
+  }
+
+  await waitFor(() => {
+    expect(scr.getByTestId('sr-enable-switch')).toBeInTheDocument();
+  });
+
+  const schemaRegistrySwitch = scr.getByTestId('sr-enable-switch');
+  await user.click(schemaRegistrySwitch);
 };

@@ -108,7 +108,7 @@ export const AclsStep = () => {
     <Collapsible onOpenChange={setIsOpen} open={isOpen}>
       <Card className="gap-0" size="full">
         <CardHeader>
-          <CardTitle>ACLs</CardTitle>
+          <CardTitle>Shadow ACLs</CardTitle>
           <CardAction>
             <CollapsibleTrigger asChild>
               <Button className="w-fit p-0" data-testid="acls-toggle-button" size="sm" variant="ghost">

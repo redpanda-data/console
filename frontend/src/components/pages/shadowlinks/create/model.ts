@@ -129,6 +129,9 @@ export const FormSchema = z
         })
       )
       .optional(),
+
+    // Schema Registry sync
+    enableSchemaRegistrySync: z.boolean(),
   })
   .superRefine((data, ctx) => {
     // If SCRAM is enabled, username and password are required
@@ -213,4 +216,5 @@ export const initialValues: FormValues = {
   consumers: [],
   aclsMode: 'all',
   aclFilters: [], // No default filter - user adds as needed
+  enableSchemaRegistrySync: false,
 };
