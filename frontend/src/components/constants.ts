@@ -15,4 +15,5 @@ export const FEATURE_FLAGS = {
   enableAiAgentsInConsole: false,
   enableAiAgentsInspectorInConsole: false,
   enableAiAgentsInConsoleServerless: false,
+  enableMcpServiceAccount: false,
 };
