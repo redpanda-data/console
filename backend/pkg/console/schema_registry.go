@@ -11,10 +11,12 @@ package console
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -589,8 +591,47 @@ type SchemaRegistrySchemaValidation struct {
 // SchemaRegistrySchemaValidationCompatibility is the response to the compatibility check
 // performed by the schema registry.
 type SchemaRegistrySchemaValidationCompatibility struct {
-	IsCompatible bool   `json:"isCompatible"`
-	Error        string `json:"error,omitempty"`
+	IsCompatible bool                     `json:"isCompatible"`
+	Error        schemaRegValidationError `json:"error,omitempty"`
+}
+
+// schemaRegValidationError represents the structure of compatibility messages from schema registry
+type schemaRegValidationError struct {
+	ErrorType   string `json:"errorType"`
+	Description string `json:"description"`
+}
+
+// parseCompatibilityError parses schema registry messages and returns formatted user-friendly messages.
+// Schema registry may return JSON with unquoted keys that we need to fix before parsing.
+func (s *Service) parseCompatibilityError(messages []string) schemaRegValidationError {
+	if len(messages) == 0 {
+		return schemaRegValidationError{}
+	}
+
+	// Iterate through all messages to extract errorType and description
+	data := schemaRegValidationError{}
+	for _, msg := range messages {
+		// Schema registry may return invalid JSON with unquoted keys like: {errorType:"...", description:"..."}
+		// Use regex to quote unquoted keys: word: becomes "word":
+		fixedMsg := regexp.MustCompile(`(\w+):`).ReplaceAllString(msg, `"$1":`)
+
+		err := json.Unmarshal([]byte(fixedMsg), &data)
+		if err != nil {
+			s.logger.Warn("failed to parse schema registry compatibility error message",
+				slog.String("original_message", msg),
+				slog.String("fixed_message", fixedMsg),
+				slog.String("error", err.Error()))
+			continue
+		}
+
+		// Stop once we have either error type or Description we can exit
+		if data.ErrorType != "" || data.Description != "" {
+			break
+		}
+	}
+
+	// Return empty if we couldn't parse anything useful
+	return data
 }
 
 // ValidateSchemaRegistrySchema validates a given schema by checking:
@@ -608,23 +649,27 @@ func (s *Service) ValidateSchemaRegistrySchema(
 	}
 
 	// Compatibility check from schema registry
-	var compatErr string
+	var compatErr schemaRegValidationError
 	var isCompatible bool
-	compatRes, err := srClient.CheckCompatibility(ctx, subjectName, version, sch)
+	// Use Verbose parameter to get detailed error messages from schema registry
+	compatRes, err := srClient.CheckCompatibility(sr.WithParams(ctx, sr.Verbose), subjectName, version, sch)
 	if err != nil {
-		compatErr = err.Error()
+		compatErr.ErrorType = "Client Error"
+		compatErr.Description = err.Error()
 
 		// If subject doesn't exist, we will reset the error, because new subject schemas
 		// don't have any existing schema and therefore can't be incompatible.
 		var schemaErr *sr.ResponseError
 		if errors.As(err, &schemaErr) {
 			if schemaErr.ErrorCode == 40401 { // Subject not found error code
-				compatErr = ""
+				compatErr = schemaRegValidationError{}
 				isCompatible = true
 			}
 		}
 	} else {
 		isCompatible = compatRes.Is
+		// Parse the messages from schema registry to extract only errorType and description
+		compatErr = s.parseCompatibilityError(compatRes.Messages)
 	}
 
 	var parsingErr string

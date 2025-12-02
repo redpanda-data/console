@@ -15,14 +15,14 @@
   resolved "https://registry.npmjs.org/@adobe/css-tools/-/css-tools-4.4.4.tgz"
   integrity sha512-Elp+iwUx5rN5+Y8xLt5/GRoG20WGoDCQ/1Fb+1LiGtvwbDavuSk0jhD/eZdckHAuzcDzccnkv+rEjyWfRx18gg==
 
-"@ai-sdk/gateway@2.0.9":
-  version "2.0.9"
-  resolved "https://registry.npmjs.org/@ai-sdk/gateway/-/gateway-2.0.9.tgz"
-  integrity sha512-E6x4h5CPPPJ0za1r5HsLtHbeI+Tp3H+YFtcH8G3dSSPFE6w+PZINzB4NxLZmg1QqSeA5HTP3ZEzzsohp0o2GEw==
+"@ai-sdk/gateway@2.0.15":
+  version "2.0.15"
+  resolved "https://registry.npmjs.org/@ai-sdk/gateway/-/gateway-2.0.15.tgz"
+  integrity sha512-i1YVKzC1dg9LGvt+GthhD7NlRhz9J4+ZRj3KELU14IZ/MHPsOBiFeEoCCIDLR+3tqT8/+5nIsK3eZ7DFRfMfdw==
   dependencies:
     "@ai-sdk/provider" "2.0.0"
     "@ai-sdk/provider-utils" "3.0.17"
-    "@vercel/oidc" "3.0.3"
+    "@vercel/oidc" "3.0.5"
 
 "@ai-sdk/provider@2.0.0":
   version "2.0.0"
@@ -3509,6 +3509,33 @@
     copy-to-clipboard "^3.3.3"
     zustand "^4.5.5"
 
+"@tokenlens/core@1.3.0":
+  version "1.3.0"
+  resolved "https://registry.npmjs.org/@tokenlens/core/-/core-1.3.0.tgz"
+  integrity sha512-d8YNHNC+q10bVpi95fELJwJyPVf1HfvBEI18eFQxRSZTdByXrP+f/ZtlhSzkx0Jl0aEmYVeBA5tPeeYRioLViQ==
+
+"@tokenlens/fetch@1.3.0":
+  version "1.3.0"
+  resolved "https://registry.npmjs.org/@tokenlens/fetch/-/fetch-1.3.0.tgz"
+  integrity sha512-RONDRmETYly9xO8XMKblmrZjKSwCva4s5ebJwQNfNlChZoA5kplPoCgnWceHnn1J1iRjLVlrCNB43ichfmGBKQ==
+  dependencies:
+    "@tokenlens/core" "1.3.0"
+
+"@tokenlens/helpers@1.3.1":
+  version "1.3.1"
+  resolved "https://registry.npmjs.org/@tokenlens/helpers/-/helpers-1.3.1.tgz"
+  integrity sha512-t6yL8N6ES8337E6eVSeH4hCKnPdWkZRFpupy9w5E66Q9IeqQ9IO7XQ6gh12JKjvWiRHuyyJ8MBP5I549Cr41EQ==
+  dependencies:
+    "@tokenlens/core" "1.3.0"
+    "@tokenlens/fetch" "1.3.0"
+
+"@tokenlens/models@1.3.0":
+  version "1.3.0"
+  resolved "https://registry.npmjs.org/@tokenlens/models/-/models-1.3.0.tgz"
+  integrity sha512-9mx7ZGeewW4ndXAiD7AT1bbCk4OpJeortbjHHyNkgap+pMPPn1chY6R5zqe1ggXIUzZ2l8VOAKfPqOvpcrisJw==
+  dependencies:
+    "@tokenlens/core" "1.3.0"
+
 "@tootallnate/once@1":
   version "1.1.2"
   resolved "https://registry.npmjs.org/@tootallnate/once/-/once-1.1.2.tgz"
@@ -3959,6 +3986,11 @@
   dependencies:
     "@types/node" "*"
 
+"@types/json-bigint@^1.0.4":
+  version "1.0.4"
+  resolved "https://registry.npmjs.org/@types/json-bigint/-/json-bigint-1.0.4.tgz"
+  integrity sha512-ydHooXLbOmxBbubnA7Eh+RpBzuaIiQjh8WGJYQB50JFGFrdxW7JzVlyEV7fAXw0T2sqJ1ysTneJbiyNLqZRAag==
+
 "@types/json-schema@*", "@types/json-schema@^7.0.15", "@types/json-schema@^7.0.9":
   version "7.0.15"
   resolved "https://registry.npmjs.org/@types/json-schema/-/json-schema-7.0.15.tgz"
@@ -4232,10 +4264,10 @@
   resolved "https://registry.npmjs.org/@ungap/structured-clone/-/structured-clone-1.3.0.tgz"
   integrity sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==
 
-"@vercel/oidc@3.0.3":
-  version "3.0.3"
-  resolved "https://registry.npmjs.org/@vercel/oidc/-/oidc-3.0.3.tgz"
-  integrity sha512-yNEQvPcVrK9sIe637+I0jD6leluPxzwJKx/Haw6F4H77CdDsszUn5V3o96LPziXkSNE2B83+Z3mjqGKBK/R6Gg==
+"@vercel/oidc@3.0.5":
+  version "3.0.5"
+  resolved "https://registry.npmjs.org/@vercel/oidc/-/oidc-3.0.5.tgz"
+  integrity sha512-fnYhv671l+eTTp48gB4zEsTW/YtRgRPnkI2nT7x6qw5rkI1Lq2hTmQIpHPgyThI0znLK+vX2n9XxKdXZ7BUbbw==
 
 "@vitejs/plugin-react@^5.1.1":
   version "5.1.1"
@@ -4589,12 +4621,12 @@ agent-base@6:
   dependencies:
     debug "4"
 
-ai@^5.0.92:
-  version "5.0.93"
-  resolved "https://registry.npmjs.org/ai/-/ai-5.0.93.tgz"
-  integrity sha512-9eGcu+1PJgPg4pRNV4L7tLjRR3wdJC9CXQoNMvtqvYNOLZHFCzjHtVIOr2SIkoJJeu2+sOy3hyiSuTmy2MA40g==
+ai@^5.0.101:
+  version "5.0.101"
+  resolved "https://registry.npmjs.org/ai/-/ai-5.0.101.tgz"
+  integrity sha512-/P4fgs2PGYTBaZi192YkPikOudsl9vccA65F7J7LvoNTOoP5kh1yAsJPsKAy6FXU32bAngai7ft1UDyC3u7z5g==
   dependencies:
-    "@ai-sdk/gateway" "2.0.9"
+    "@ai-sdk/gateway" "2.0.15"
     "@ai-sdk/provider" "2.0.0"
     "@ai-sdk/provider-utils" "3.0.17"
     "@opentelemetry/api" "1.9.0"
@@ -4926,6 +4958,11 @@ big.js@^5.2.2:
   version "5.2.2"
   resolved "https://registry.npmjs.org/big.js/-/big.js-5.2.2.tgz"
   integrity sha512-vyL2OymJxmarO8gxMr0mhChsO9QGwhynfuu4+MHTAW6czfq9humCB7rKpUjDd9YUiDPU4mzpyupFSvOClAwbmQ==
+
+bignumber.js@^9.0.0:
+  version "9.3.1"
+  resolved "https://registry.npmjs.org/bignumber.js/-/bignumber.js-9.3.1.tgz"
+  integrity sha512-Ko0uX15oIUS7wJ3Rb30Fs6SkVbLmPBAKdlm7q9+ak9bbIeFf0MwuBsQV6z7+X768/cHsfg+WlysDWJcmthjsjQ==
 
 binary-extensions@^2.0.0:
   version "2.3.0"
@@ -8280,6 +8317,13 @@ jsesc@^3.0.2:
   version "3.1.0"
   resolved "https://registry.npmjs.org/jsesc/-/jsesc-3.1.0.tgz"
   integrity sha512-/sM3dO2FOzXjKQhJuo0Q173wf2KOo8t4I8vHy6lF9poUp7bKT0/NHE8fPX23PwfhnykfqnC2xRxOnVw5XuGIaA==
+
+json-bigint@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.npmjs.org/json-bigint/-/json-bigint-1.0.0.tgz"
+  integrity sha512-SiPv/8VpZuWbvLSMtTDU8hEfrZWg/mH/nV/b4o0CYbSxu1UIQPLdwKOCIyLQX+VIPO5vrLX3i8qtqFyhdPSUSQ==
+  dependencies:
+    bignumber.js "^9.0.0"
 
 json-parse-even-better-errors@^2.3.0, json-parse-even-better-errors@^2.3.1:
   version "2.3.1"
@@ -12605,6 +12649,16 @@ toidentifier@1.0.1:
   version "1.0.1"
   resolved "https://registry.npmjs.org/toidentifier/-/toidentifier-1.0.1.tgz"
   integrity sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==
+
+tokenlens@^1.3.1:
+  version "1.3.1"
+  resolved "https://registry.npmjs.org/tokenlens/-/tokenlens-1.3.1.tgz"
+  integrity sha512-7oxmsS5PNCX3z+b+z07hL5vCzlgHKkCGrEQjQmWl5l+v5cUrtL7S1cuST4XThaL1XyjbTX8J5hfP0cjDJRkaLA==
+  dependencies:
+    "@tokenlens/core" "1.3.0"
+    "@tokenlens/fetch" "1.3.0"
+    "@tokenlens/helpers" "1.3.1"
+    "@tokenlens/models" "1.3.0"
 
 toposort@^2.0.2:
   version "2.0.2"

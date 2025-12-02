@@ -37,7 +37,6 @@ export type ToolCall = {
 };
 
 export type ContentBlock =
-  | { type: 'text'; text: string; timestamp: string }
   | {
       type: 'tool';
       toolCallId: string;
@@ -57,7 +56,23 @@ export type ContentBlock =
       parts: ArtifactPart[];
       timestamp: string;
     }
-  | { type: 'status-update'; taskState: string; timestamp: string };
+  | {
+      type: 'task-status-update';
+      taskState?: string;
+      previousState?: string;
+      text?: string;
+      messageId?: string;
+      final: boolean;
+      timestamp: string;
+      usage?: {
+        input_tokens: number;
+        output_tokens: number;
+        total_tokens: number;
+        max_input_tokens?: number;
+        cached_tokens?: number;
+        reasoning_tokens?: number;
+      };
+    };
 
 export type ChatMessage = {
   id: string;
@@ -75,6 +90,14 @@ export type ChatMessage = {
   toolCalls?: ToolCall[]; // Tool calls made during task execution
   taskStartIndex?: number; // Index in contentBlocks where task-related content starts
   contentBlocks?: ContentBlock[]; // NEW: Store complete temporal structure from streaming (timestamps as ISO strings for JSON serialization)
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+    max_input_tokens?: number;
+    cached_tokens?: number;
+    reasoning_tokens?: number;
+  };
 };
 
 class ChatDatabase extends Dexie {

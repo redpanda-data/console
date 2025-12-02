@@ -156,6 +156,7 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
                           },
                           { label: 'MCP Server', value: Scope.MCP_SERVER },
                           { label: 'AI Agent', value: Scope.AI_AGENT },
+                          { label: 'AI Gateway', value: Scope.AI_GATEWAY },
                         ]}
                         placeholder="Select scopes"
                       />

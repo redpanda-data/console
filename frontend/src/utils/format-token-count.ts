@@ -9,15 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { Response } from 'components/ai-elements/response';
-
-type TextBlockProps = {
-  text: string;
-  timestamp?: Date;
-};
-
 /**
- * Renders a text content block (Jupyter-style cell)
- * Displays text segment from the agent's response
+ * Format token count with compact notation (e.g., "1.2K", "5.6M")
  */
-export const TextBlock = ({ text }: TextBlockProps) => <Response>{text}</Response>;
+export function formatTokenCount(tokens: number): string {
+  return new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(tokens);
+}

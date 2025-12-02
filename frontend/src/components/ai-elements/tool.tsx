@@ -27,7 +27,7 @@ export type ToolProps = ComponentProps<typeof Collapsible>;
 
 export const Tool = ({ className, ...props }: ToolProps) => (
   <Collapsible
-    className={cn("mb-4 w-full rounded-md border", className)}
+    className={cn("mb-4 w-full rounded-md border group", className)}
     {...props}
   />
 );
@@ -38,34 +38,47 @@ export type ToolHeaderProps = {
   state: ToolUIPart["state"];
   className?: string;
   toolCallId?: string;
+  durationMs?: number;
 };
 
 const getStatusBadge = (status: ToolUIPart["state"]) => {
   if (status === "output-available") {
     return (
       <Badge variant="green" className="rounded-full">
-        <Text variant="small" className="flex items-center gap-2"><CheckIcon className="size-4" />Completed</Text>
+        <Text variant="small" className="flex items-center gap-2">
+          <CheckIcon className="size-4" />
+          Completed
+        </Text>
       </Badge>
     );
   }
   if (status === "input-available") {
     return (
       <Badge variant="blue" className="rounded-full">
-        <Text variant="small" className="flex items-center gap-2"><LoaderIcon className="size-4 animate-spin" />Working</Text>
+        <Text variant="small" className="flex items-center gap-2">
+          <LoaderIcon className="size-4 animate-spin" />
+          Working
+        </Text>
       </Badge>
     );
   }
   if (status === "output-error") {
     return (
       <Badge variant="red" className="rounded-full">
-        <Text variant="small" className="flex items-center gap-2"><XIcon className="size-4" />Error</Text>
+        <Text variant="small" className="flex items-center gap-2">
+          <XIcon className="size-4" />
+          Error
+        </Text>
       </Badge>
     );
   }
   if (status === "input-streaming") {
     return (
       <Badge variant="gray" className="rounded-full">
-        <Text variant="small" className="flex items-center gap-2"><ClockIcon className="size-4" />Pending</Text>
+        <Text variant="small" className="flex items-center gap-2">
+          <ClockIcon className="size-4" />
+          Pending
+        </Text>
       </Badge>
     );
   }
@@ -78,10 +91,18 @@ export const ToolHeader = ({
   type,
   state,
   toolCallId,
+  durationMs,
   ...props
 }: ToolHeaderProps) => {
   const toolName = title ?? type.split("-").slice(1).join("-");
   const textToCopy = toolCallId ? `${toolName} (${toolCallId})` : toolName;
+
+  const formatDuration = (ms: number): string => {
+    if (ms < 1000) {
+      return `${ms}ms`;
+    }
+    return `${(ms / 1000).toFixed(2)}s`;
+  };
 
   return (
     <CollapsibleTrigger asChild>
@@ -98,6 +119,11 @@ export const ToolHeader = ({
             {toolName}
           </Text>
           {getStatusBadge(state)}
+          {durationMs !== undefined && (state === 'output-available' || state === 'output-error') && (
+            <Text as="span" className="text-muted-foreground/50 text-[0.75rem]">
+              {formatDuration(durationMs)}
+            </Text>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {toolCallId && (
@@ -125,9 +151,10 @@ export type ToolContentProps = ComponentProps<typeof CollapsibleContent>;
 export const ToolContent = ({ className, ...props }: ToolContentProps) => (
   <CollapsibleContent
     className={cn(
-      "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 text-popover-foreground outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
+      "text-popover-foreground outline-none",
       className
     )}
+    transition={{ duration: 0 }}
     {...props}
   />
 );
@@ -194,15 +221,8 @@ export const ToolOutput = ({
       <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
         {errorText ? "Error" : "Result"}
       </h4>
-      <div
-        className={cn(
-          "rounded-md text-xs [&_table]:w-full",
-          errorText
-            ? "bg-destructive/10 text-destructive"
-            : "bg-muted/50 text-foreground"
-        )}
-      >
-        {errorText && <div className="break-words p-3">{errorText}</div>}
+      <div className={cn("rounded-md", errorText ? "bg-muted/50" : "bg-muted/50")}>
+        {errorText && <CodeBlock code={errorText} language="text" />}
         {hasOutput && Output}
       </div>
     </div>

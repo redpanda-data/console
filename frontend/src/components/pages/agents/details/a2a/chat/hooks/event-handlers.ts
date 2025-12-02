@@ -9,18 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { ConnectError } from '@connectrpc/connect';
-import { toast } from 'sonner';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import type { Task, TaskArtifactUpdateEvent, TaskStatusUpdateEvent } from '@a2a-js/sdk';
 
 import { buildMessageWithContentBlocks, closeActiveTextBlock } from './message-builder';
-import type {
-  RawArtifactUpdateEvent,
-  RawStatusUpdateEvent,
-  RawTaskEvent,
-  ResponseMetadataEvent,
-  StreamingState,
-} from './streaming-types';
+import type { ResponseMetadataEvent, StreamingState } from './streaming-types';
 import type { ChatMessage, ContentBlock } from '../types';
 
 /**
@@ -60,8 +52,8 @@ export const handleResponseMetadataEvent = (
 /**
  * Handle raw task event to capture taskId and initial state
  */
-export const handleRawTaskEvent = (
-  event: RawTaskEvent,
+export const handleTaskEvent = (
+  event: Task,
   state: StreamingState,
   assistantMessage: ChatMessage,
   onMessageUpdate: (message: ChatMessage) => void
@@ -97,132 +89,193 @@ export const handleRawTaskEvent = (
 };
 
 /**
- * Parse llm_message metadata to extract tool calls
+ * Extract message text from parts (only agent role)
+ * Also extracts tool request information to show in TaskStatusUpdateBlock
  */
-const parseToolCallFromMetadata = (metadata: {
-  llm_message?: string;
-}): {
-  toolCallData?: {
-    id: string;
-    name: string;
-    input?: unknown;
-    output?: unknown;
-    isRequest: boolean;
-    isResponse: boolean;
-  };
-} => {
-  if (!metadata?.llm_message) {
-    return {};
+const extractMessageText = (
+  message: TaskStatusUpdateEvent['status']['message']
+): { text: string; messageId?: string } => {
+  if (!message?.parts || message.role !== 'agent') {
+    return { text: '' };
   }
 
-  try {
-    const llmMessage = JSON.parse(metadata.llm_message);
-    const content = llmMessage.content?.[0];
+  // Extract text parts
+  const text = message.parts
+    .filter(
+      (part): part is Extract<typeof part, { kind: 'text' }> =>
+        part.kind === 'text' && 'text' in part && part.text !== undefined
+    )
+    .map((part) => part.text)
+    .join('');
 
-    if (!content) {
-      return {};
-    }
+  // Extract tool requests from data parts
+  const toolRequests = message.parts
+    .filter((part): part is Extract<typeof part, { kind: 'data' }> => {
+      if (part.kind !== 'data') {
+        return false;
+      }
+      const metadata = part.metadata as Record<string, unknown> | undefined;
+      const data = part.data as Record<string, unknown> | undefined;
+      return metadata?.data_type === 'tool_request' && !!data?.name;
+    })
+    .map((part) => (part.data as Record<string, unknown>).name as string);
 
-    // Tool request (kind: 1)
-    if (content.kind === 1 && content.tool_request) {
-      return {
-        toolCallData: {
-          id: content.tool_request.id,
-          name: content.tool_request.name,
-          input: content.tool_request.arguments,
-          isRequest: true,
-          isResponse: false,
-        },
-      };
-    }
-
-    // Tool response (kind: 2)
-    if (content.kind === 2 && content.tool_response) {
-      return {
-        toolCallData: {
-          id: content.tool_response.id,
-          name: content.tool_response.name,
-          output: content.tool_response.result,
-          isRequest: false,
-          isResponse: true,
-        },
-      };
-    }
-  } catch (parseToolCallFromMetadataError) {
-    toast.error(
-      formatToastErrorMessageGRPC({
-        error: ConnectError.from(parseToolCallFromMetadataError),
-        action: 'parse',
-        entity: 'tool call',
-      })
+  // Build tool summary if tool requests exist
+  let toolSummary = '';
+  if (toolRequests.length === 1) {
+    toolSummary = `Calling tool: ${toolRequests[0]}`;
+  } else if (toolRequests.length > 1) {
+    // Group tool names by count for compact display
+    const toolCounts = toolRequests.reduce(
+      (acc, tool) => {
+        acc[tool] = (acc[tool] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
     );
+
+    // Format: "tool1 (3×), tool2 (2×)" or just "tool1, tool2" if all unique
+    const toolList = Object.entries(toolCounts)
+      .map(([tool, count]) => (count > 1 ? `${tool} (${count}×)` : tool))
+      .join(', ');
+
+    toolSummary = `Calling ${toolRequests.length} tools: ${toolList}`;
   }
 
-  return {};
+  // Combine text and tool summary
+  let combinedText = text;
+  if (text && toolSummary) {
+    combinedText = `${text}\n\n${toolSummary}`;
+  } else if (!text && toolSummary) {
+    combinedText = toolSummary;
+  }
+
+  return { text: combinedText, messageId: message.messageId };
 };
 
 /**
- * Extract and add text messages from status.message.parts
- * These are important messages like "Your bar chart has been created..." that appear between artifacts
+ * Create a status update block if conditions are met
  */
-const extractAndAddTextFromStatusMessage = (
-  message: NonNullable<RawStatusUpdateEvent['status']>['message'],
-  timestamp: string,
-  state: StreamingState
+const createStatusUpdateBlock = (
+  state: StreamingState,
+  options: {
+    newState: ChatMessage['taskState'] | undefined;
+    hasStateChange: boolean;
+    messageText: string;
+    messageIdValue: string | undefined;
+    timestamp: string | undefined;
+    final: boolean;
+    usage?: ChatMessage['usage'];
+  }
 ): void => {
-  if (!message?.parts || message?.role !== 'agent') {
+  const { newState, hasStateChange, messageText, messageIdValue, timestamp, final, usage } = options;
+
+  // Create block if: state changed, has message text, or has usage data to display
+  if (!hasStateChange && (!messageText || messageText.trim().length === 0) && !usage) {
     return;
   }
 
-  // Skip artifact messages - artifacts are handled by handleArtifactUpdateEvent
-  if (message.kind === 'artifact-update') {
+  closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+  state.activeTextBlock = null;
+
+  const eventTimestamp = timestamp ? new Date(timestamp) : new Date();
+  state.lastEventTimestamp = eventTimestamp;
+
+  const statusUpdateBlock: ContentBlock = {
+    type: 'task-status-update',
+    taskState: newState,
+    previousState: state.previousTaskState,
+    text: messageText.trim().length > 0 ? messageText : undefined,
+    messageId: messageIdValue,
+    final,
+    timestamp: eventTimestamp,
+    usage: usage ? { ...usage } : undefined,
+  };
+  state.contentBlocks.push(statusUpdateBlock);
+};
+
+/**
+ * Process tool request from data part
+ */
+const processToolRequest = (
+  state: StreamingState,
+  data: Record<string, unknown>,
+  eventTimestamp: Date,
+  messageId: string
+): void => {
+  closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+  state.activeTextBlock = null;
+
+  const toolBlock: ContentBlock = {
+    type: 'tool',
+    toolCallId: data.id as string,
+    toolName: data.name as string,
+    state: 'input-available',
+    input: 'arguments' in data ? data.arguments : undefined,
+    timestamp: eventTimestamp,
+    messageId,
+  };
+  state.contentBlocks.push(toolBlock);
+};
+
+/**
+ * Process tool response from data part
+ */
+const processToolResponse = (state: StreamingState, data: Record<string, unknown>, endTimestamp: Date): void => {
+  const existingToolBlock = state.contentBlocks.find(
+    (block) => block.type === 'tool' && block.toolCallId === (data.id as string)
+  );
+
+  if (existingToolBlock && existingToolBlock.type === 'tool') {
+    const hasError = 'error' in data && data.error;
+    existingToolBlock.state = hasError ? 'output-error' : 'output-available';
+
+    if (hasError) {
+      existingToolBlock.output = undefined;
+      existingToolBlock.errorText = data.error as string;
+    } else {
+      existingToolBlock.output = 'result' in data ? data.result : undefined;
+      existingToolBlock.errorText = undefined;
+    }
+
+    existingToolBlock.endTimestamp = endTimestamp;
+  }
+};
+
+/**
+ * Process tool calls from message parts
+ */
+const processToolCalls = (
+  state: StreamingState,
+  message: TaskStatusUpdateEvent['status']['message'],
+  timestamp: string
+): void => {
+  if (!message?.parts) {
     return;
   }
 
   const eventTimestamp = new Date(timestamp);
-  state.lastEventTimestamp = eventTimestamp;
+  for (const part of message.parts) {
+    if (part.kind !== 'data' || !part.metadata?.data_type) {
+      continue;
+    }
 
-  // Extract text from message parts, but skip tool-related messages
-  const textParts = message.parts
-    .filter((part: { kind: string; text?: string }) => part.kind === 'text' && part.text)
-    .map((part: { kind: string; text?: string }) => part.text)
-    .filter((text: string | undefined): text is string => !!text);
+    const dataType = part.metadata.data_type;
+    const data = part.data;
 
-  if (textParts.length === 0) {
-    return;
-  }
-
-  const combinedText = textParts.join('');
-
-  // Skip tool request/response messages - they're already displayed by ToolBlock
-  const isToolMessage = combinedText.startsWith('Tool request:') || combinedText.startsWith('Tool response:');
-
-  // Check for exact duplicates to avoid re-adding the same text
-  const textAlreadyExists = state.contentBlocks.some((block) => block.type === 'text' && block.text === combinedText);
-
-  if (!(isToolMessage || textAlreadyExists) && combinedText.trim().length > 0) {
-    // Close active text block before adding new text from status message
-    closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
-    state.activeTextBlock = null;
-
-    // Add new text block
-    const textBlock: ContentBlock = {
-      type: 'text',
-      text: combinedText,
-      timestamp: eventTimestamp,
-    };
-    state.contentBlocks.push(textBlock);
+    if (dataType === 'tool_request' && data?.id && data?.name) {
+      processToolRequest(state, data, eventTimestamp, message.messageId);
+    } else if (dataType === 'tool_response' && data?.id && data?.name) {
+      processToolResponse(state, data, eventTimestamp);
+    }
   }
 };
 
 /**
  * Handle status-update event to capture/update task state, tool calls, status updates, and message text
- * NEW: Updates tool blocks in-place (request → response state transition)
- * NEW: Creates status-update blocks on state transitions
- * FIXED: Now extracts and displays text messages from status.message.parts
  */
 export const handleStatusUpdateEvent = (
-  event: RawStatusUpdateEvent,
+  event: TaskStatusUpdateEvent,
   state: StreamingState,
   assistantMessage: ChatMessage,
   onMessageUpdate: (message: ChatMessage) => void
@@ -230,94 +283,58 @@ export const handleStatusUpdateEvent = (
   // Capture taskId if not already captured
   if (event.taskId && !state.capturedTaskId) {
     state.capturedTaskId = event.taskId;
-    // Record the block index where taskId was captured
     state.taskIdCapturedAtBlockIndex = state.contentBlocks.length;
   }
 
-  // Parse tool calls from message metadata
   const message = event.status?.message;
-  const timestamp = event.status?.timestamp; // Timestamp is at status level, not message level
+  const timestamp = event.status?.timestamp;
 
-  if (message?.messageId && message?.metadata && timestamp) {
-    const { toolCallData } = parseToolCallFromMetadata(message.metadata);
-
-    if (toolCallData) {
-      const eventTimestamp = new Date(timestamp);
-      state.lastEventTimestamp = eventTimestamp;
-
-      if (toolCallData.isRequest) {
-        // Close active text block before adding tool
-        closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
-        state.activeTextBlock = null;
-
-        // Add new tool block with 'input-available' state
-        const toolBlock: ContentBlock = {
-          type: 'tool',
-          toolCallId: toolCallData.id,
-          toolName: toolCallData.name,
-          state: 'input-available',
-          input: toolCallData.input,
-          timestamp: eventTimestamp,
-          messageId: message.messageId,
-        };
-        state.contentBlocks.push(toolBlock);
-      } else if (toolCallData.isResponse) {
-        // Find existing tool block and update it in-place
-        const existingToolBlock = state.contentBlocks.find(
-          (block) => block.type === 'tool' && block.toolCallId === toolCallData.id
-        );
-
-        if (existingToolBlock && existingToolBlock.type === 'tool') {
-          // Update existing tool block to show output
-          existingToolBlock.state = 'output-available';
-          existingToolBlock.output = toolCallData.output;
-          existingToolBlock.errorText = undefined;
-        }
-        // Note: If tool block doesn't exist, we don't create it here (should have been created on request)
-      }
-    }
+  if (!(event.status?.state || message)) {
+    return;
   }
 
-  // Extract text messages from status.message.parts
+  const newState = event.status?.state as ChatMessage['taskState'] | undefined;
+  const hasStateChange = !!(newState && (!state.previousTaskState || state.previousTaskState !== newState));
+
+  const { text: messageText, messageId: messageIdValue } = extractMessageText(message);
+
+  // Capture per-message usage from message metadata (not event.metadata which is task-level)
+  const currentUsage = message?.metadata?.usage as ChatMessage['usage'] | undefined;
+
+  createStatusUpdateBlock(state, {
+    newState,
+    hasStateChange,
+    messageText,
+    messageIdValue,
+    timestamp,
+    final: event.final ?? false,
+    usage: currentUsage,
+  });
+
   if (timestamp) {
-    extractAndAddTextFromStatusMessage(message, timestamp, state);
+    processToolCalls(state, message, timestamp);
   }
 
-  // Always capture the latest task state from status-update events
-  if (event.status?.state) {
-    const newState = event.status.state as ChatMessage['taskState'];
-
-    // Check if state has changed - create status-update block
-    if (newState && state.previousTaskState && state.previousTaskState !== newState) {
-      // Close active text block before adding status update
-      closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
-      state.activeTextBlock = null;
-
-      const eventTimestamp = new Date();
-      state.lastEventTimestamp = eventTimestamp;
-
-      // Create status-update content block (newState is guaranteed non-undefined here)
-      const statusUpdateBlock: ContentBlock = {
-        type: 'status-update',
-        taskState: newState as string,
-        timestamp: eventTimestamp,
-      };
-      state.contentBlocks.push(statusUpdateBlock);
-    }
-
-    // Update tracked states
+  if (newState) {
     state.previousTaskState = newState;
     state.capturedTaskState = newState;
-
-    const updatedMessage = buildMessageWithContentBlocks({
-      baseMessage: assistantMessage,
-      contentBlocks: state.contentBlocks,
-      taskId: state.capturedTaskId,
-      taskState: state.capturedTaskState,
-      taskStartIndex: state.taskIdCapturedAtBlockIndex,
-    });
-    onMessageUpdate(updatedMessage);
   }
+
+  // Capture per-message usage from message metadata for context widget calculation
+  // (event.metadata.usage will be task-level cumulative - we ignore that)
+  if (message?.metadata?.usage) {
+    state.latestUsage = message.metadata.usage as ChatMessage['usage'];
+  }
+
+  const updatedMessage = buildMessageWithContentBlocks({
+    baseMessage: assistantMessage,
+    contentBlocks: state.contentBlocks,
+    taskId: state.capturedTaskId,
+    taskState: state.capturedTaskState,
+    taskStartIndex: state.taskIdCapturedAtBlockIndex,
+    usage: state.latestUsage,
+  });
+  onMessageUpdate(updatedMessage);
 };
 
 /**
@@ -326,7 +343,7 @@ export const handleStatusUpdateEvent = (
  * Supports text and file parts (e.g., images)
  */
 export const handleArtifactUpdateEvent = (
-  event: RawArtifactUpdateEvent,
+  event: TaskArtifactUpdateEvent,
   state: StreamingState,
   assistantMessage: ChatMessage,
   onMessageUpdate: (message: ChatMessage) => void
@@ -338,7 +355,6 @@ export const handleArtifactUpdateEvent = (
   // Capture taskId if not already captured
   if (event.taskId && !state.capturedTaskId) {
     state.capturedTaskId = event.taskId;
-    // Record the block index where taskId was captured
     state.taskIdCapturedAtBlockIndex = state.contentBlocks.length;
   }
 
@@ -346,141 +362,45 @@ export const handleArtifactUpdateEvent = (
   const eventTimestamp = new Date();
   state.lastEventTimestamp = eventTimestamp;
 
-  // Smart deduplication: artifact content may have arrived via text-delta before artifact-update
-  // We need to remove duplicate artifact content but preserve legitimate pre-artifact text
-  if (state.activeTextBlock?.type === 'text') {
-    const artifactText = artifact.parts
-      .filter((part) => part.kind === 'text')
-      .map((part) => part.text || '')
-      .join('');
+  // Extract text from artifact parts
+  const textChunk = (artifact.parts || [])
+    .filter((part) => part.kind === 'text')
+    .map((part) => part.text || '')
+    .join('');
 
-    // Check if active text block exactly matches or ends with artifact content
-    if (state.activeTextBlock.text === artifactText) {
-      state.activeTextBlock = null;
-    } else if (state.activeTextBlock.text.endsWith(artifactText)) {
-      // Ends with artifact - strip artifact part, keep legitimate pre-artifact text
-      const legitimateText = state.activeTextBlock.text.slice(0, -artifactText.length);
-      if (legitimateText.trim().length > 0) {
-        state.activeTextBlock.text = legitimateText;
-        closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
-      }
-      state.activeTextBlock = null;
-    } else {
-      closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
-      state.activeTextBlock = null;
-    }
-  } else {
-    state.activeTextBlock = null;
-  }
-
-  // Convert artifact parts from raw event to ContentBlock format
-  const parts = artifact.parts.map((part) => {
-    if (part.kind === 'text') {
-      return { kind: 'text' as const, text: part.text || '' };
-    }
-    // Handle file parts (e.g., images, plots)
-    if (part.kind === 'file' && part.file) {
-      return {
-        kind: 'file' as const,
-        file: {
-          name: part.file.name,
-          mimeType: part.file.mimeType || 'application/octet-stream',
-          bytes: part.file.bytes || '',
-        },
-      };
-    }
-    // Fallback for unknown part types - treat as empty text
-    return { kind: 'text' as const, text: '' };
-  });
-
-  // Check if artifact block already exists (for streaming updates)
-  const existingIndex = state.contentBlocks.findIndex(
-    (block) => block.type === 'artifact' && block.artifactId === artifact.artifactId
-  );
-
-  if (existingIndex >= 0) {
-    // Update existing artifact block (append parts for streaming)
-    const existingBlock = state.contentBlocks[existingIndex];
-    if (existingBlock.type === 'artifact') {
-      existingBlock.parts.push(...parts);
-      existingBlock.name = artifact.name || existingBlock.name;
-      existingBlock.description = artifact.description || existingBlock.description;
-    }
-  } else {
-    // Add new artifact block
-    const artifactBlock: ContentBlock = {
+  // Stream into active artifact block (similar to activeTextBlock pattern)
+  if (!state.activeTextBlock || state.activeTextBlock.type !== 'artifact') {
+    // Create new active artifact block
+    state.activeTextBlock = {
       type: 'artifact',
       artifactId: artifact.artifactId,
       name: artifact.name,
       description: artifact.description,
-      parts,
+      parts: textChunk ? [{ kind: 'text' as const, text: textChunk }] : [],
       timestamp: eventTimestamp,
     };
-    state.contentBlocks.push(artifactBlock);
-  }
-
-  const updatedMessage = buildMessageWithContentBlocks({
-    baseMessage: assistantMessage,
-    contentBlocks: state.contentBlocks,
-    taskId: state.capturedTaskId,
-    taskState: state.capturedTaskState,
-    taskStartIndex: state.taskIdCapturedAtBlockIndex,
-  });
-  onMessageUpdate(updatedMessage);
-};
-
-/**
- * Handle text-delta event to accumulate streaming text
- * NEW: Accumulates text in activeTextBlock (closed when non-text event arrives)
- * DEDUP: Skip if text-delta matches recent artifact content (artifact may arrive before text-delta)
- */
-export const handleTextDeltaEvent = (
-  textDelta: string,
-  state: StreamingState,
-  assistantMessage: ChatMessage,
-  onMessageUpdate: (message: ChatMessage) => void
-): void => {
-  const eventTimestamp = new Date();
-  state.lastEventTimestamp = eventTimestamp;
-
-  // Check if this text-delta is duplicate artifact content
-  // (artifact-update may have arrived before text-delta events)
-  const lastArtifact = [...state.contentBlocks].reverse().find((b) => b.type === 'artifact');
-  if (lastArtifact && lastArtifact.type === 'artifact') {
-    const artifactText = lastArtifact.parts
-      .filter((p) => p.kind === 'text')
-      .map((p) => p.text || '')
-      .join('');
-
-    // If we're starting a new text block and it matches artifact content, skip it
-    if (!state.activeTextBlock && textDelta === artifactText) {
-      return;
+  } else if (state.activeTextBlock.type === 'artifact' && state.activeTextBlock.artifactId === artifact.artifactId) {
+    // Append to existing active artifact block
+    const existingTextPart = state.activeTextBlock.parts.find((p) => p.kind === 'text');
+    if (existingTextPart && existingTextPart.kind === 'text') {
+      existingTextPart.text += textChunk;
+    } else if (textChunk) {
+      state.activeTextBlock.parts.push({ kind: 'text' as const, text: textChunk });
     }
-
-    // If appending would create exact artifact match, skip
-    if (state.activeTextBlock?.type === 'text') {
-      const wouldBe = state.activeTextBlock.text + textDelta;
-      if (wouldBe === artifactText) {
-        return;
-      }
-    }
+    // Update metadata
+    state.activeTextBlock.name = artifact.name || state.activeTextBlock.name;
+    state.activeTextBlock.description = artifact.description || state.activeTextBlock.description;
   }
 
-  // If no active text block, create one
-  if (!state.activeTextBlock || state.activeTextBlock.type !== 'text') {
-    state.activeTextBlock = {
-      type: 'text',
-      text: textDelta,
-      timestamp: eventTimestamp,
-    };
-  } else {
-    // Append to existing active text block
-    state.activeTextBlock.text += textDelta;
+  // If this is the last chunk, close the active artifact block
+  if (event.lastChunk && state.activeTextBlock?.type === 'artifact') {
+    state.contentBlocks.push(state.activeTextBlock);
+    state.activeTextBlock = null;
   }
 
-  // Build message with current content blocks + active text block
+  // Build message with current blocks + active artifact block (if streaming)
   const currentBlocks = [...state.contentBlocks];
-  if (state.activeTextBlock && state.activeTextBlock.text.length > 0) {
+  if (state.activeTextBlock && state.activeTextBlock.type === 'artifact') {
     currentBlocks.push(state.activeTextBlock);
   }
 
@@ -492,4 +412,21 @@ export const handleTextDeltaEvent = (
     taskStartIndex: state.taskIdCapturedAtBlockIndex,
   });
   onMessageUpdate(updatedMessage);
+};
+
+/**
+ * Handle text-delta event to accumulate streaming text
+ * NOTE: Text-delta is now only for artifacts (protocol compliant)
+ * Regular messages come via status-update events with message.parts
+ */
+export const handleTextDeltaEvent = (
+  _textDelta: string,
+  _state: StreamingState,
+  _assistantMessage: ChatMessage,
+  _onMessageUpdate: (message: ChatMessage) => void
+): void => {
+  // Text-delta events are deprecated for regular messages
+  // They are only used for artifact streaming now (handled separately)
+  // If we receive text-delta, it's likely duplicate artifact content
+  // Skip processing to avoid duplicate text blocks
 };

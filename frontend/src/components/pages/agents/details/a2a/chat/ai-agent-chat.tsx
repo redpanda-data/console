@@ -13,48 +13,88 @@
 
 import { Conversation, ConversationContent, ConversationEmptyState } from 'components/ai-elements/conversation';
 import { Loader } from 'components/ai-elements/loader';
-import { motion } from 'framer-motion';
-import { useChatScroll } from 'hooks/use-chat-scroll';
-import { useMemo, useRef } from 'react';
-import { getAgentCardUrl } from 'utils/ai-agent.utils';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { ChatInput } from './components/chat-input';
 import { ChatMessage } from './components/chat-message';
 import { useChatActions } from './hooks/use-chat-actions';
 import { useChatMessages } from './hooks/use-chat-messages';
+import { useCumulativeUsage } from './hooks/use-cumulative-usage';
 import type { AIAgentChatProps } from './types';
 
 export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Get the agent card URL for the a2a provider
-  const agentCardUrl = useMemo(() => getAgentCardUrl({ agentUrl: agent.url }), [agent.url]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Manage chat messages and context
   const { messages, setMessages, contextId, setContextSeed, isLoadingHistory } = useChatMessages(agent.id);
 
-  // Manage chat actions (submit, clear)
-  const { isLoading, editingMessageId, handleSubmit, cancelEdit, clearChat, setInput, input } = useChatActions({
-    agentId: agent.id,
-    agentCardUrl,
-    model: agent.model,
-    contextId,
-    messages,
-    setMessages,
-    setContextSeed,
-  });
+  // Manage chat actions (submit, clear, cancel)
+  // Pass agent.url directly so the A2A client can try multiple agent card URLs
+  const { isLoading, editingMessageId, handleSubmit, cancelEdit, clearChat, handleCancelTask, setInput, input } =
+    useChatActions({
+      agentId: agent.id,
+      agentCardUrl: agent.url,
+      model: agent.model,
+      contextId,
+      messages,
+      setMessages,
+      setContextSeed,
+    });
 
-  // Manage scroll behavior
-  const { endRef, autoScrollPaused, setAutoScrollPaused, onViewportEnter, onViewportLeave } = useChatScroll({
-    agentId: agent.id,
-    isLoading,
-    isStreaming: isLoading, // Use isLoading as streaming indicator
-    messages,
-  });
+  // Stable callback references to prevent ChatInput re-renders
+  const handleCancel = useCallback(() => {
+    const lastMessage = messages.at(-1);
+    if (lastMessage?.taskId) {
+      void handleCancelTask(lastMessage.taskId);
+    }
+  }, [messages, handleCancelTask]);
+
+  const handleSubmitMessage = useCallback(
+    (message: Parameters<typeof handleSubmit>[0], event: React.FormEvent) => {
+      event.preventDefault();
+      void handleSubmit(message);
+    },
+    [handleSubmit]
+  );
+
+  // Focus textarea when container becomes visible (tab switch)
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // Use requestAnimationFrame to ensure DOM is ready
+          requestAnimationFrame(() => {
+            textareaRef.current?.focus();
+          });
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Calculate cumulative token usage from messages
+  const latestUsage = useCumulativeUsage(messages);
 
   return (
-    <div className="flex h-full w-full flex-col">
-      <Conversation className="relative flex flex-1 flex-col">
+    <div className="flex h-[calc(100vh-210px)] flex-col" ref={containerRef}>
+      {/* Context ID header */}
+      {contextId && (
+        <div className="shrink-0 border-b bg-muted/30 px-4 py-2">
+          <div className="flex gap-1.5 text-muted-foreground text-xs">
+            <span className="font-medium">context_id:</span>
+            <span className="font-mono">{contextId}</span>
+          </div>
+        </div>
+      )}
+
+      <Conversation className="min-h-0 flex-1" initial="instant" resize="instant">
         <ConversationContent>
           {isLoadingHistory && (
             <div className="flex h-full items-center justify-center">
@@ -62,7 +102,7 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
             </div>
           )}
 
-          {!isLoadingHistory && messages.length === 0 && <ConversationEmptyState />}
+          {!isLoadingHistory && messages.length === 0 && <ConversationEmptyState title="No messages yet" />}
 
           {!isLoadingHistory &&
             messages.length > 0 &&
@@ -70,35 +110,28 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
               // Only show loading indicator on the last assistant message to avoid duplicates
               const isLastAssistant = message.role === 'assistant' && index === messages.length - 1;
 
-              return <ChatMessage isLoading={isLoading && isLastAssistant} key={message.id} message={message} />;
+              return (
+                <div key={message.id}>
+                  <ChatMessage isLoading={isLoading && isLastAssistant} message={message} />
+                </div>
+              );
             })}
-
-          {/* Invisible anchor element at bottom with viewport detection */}
-          <motion.div
-            className="min-h-[24px] min-w-[24px] shrink-0"
-            onViewportEnter={onViewportEnter}
-            onViewportLeave={onViewportLeave}
-            ref={endRef}
-          />
         </ConversationContent>
       </Conversation>
 
       <ChatInput
-        autoScrollEnabled={!autoScrollPaused}
+        agent={agent}
         editingMessageId={editingMessageId}
         hasMessages={messages.length > 0}
         input={input}
         isLoading={isLoading}
-        model={agent.model}
-        onAutoScrollChange={(enabled) => setAutoScrollPaused(!enabled)}
+        onCancel={handleCancel}
         onCancelEdit={cancelEdit}
         onClearHistory={clearChat}
         onInputChange={setInput}
-        onSubmit={(message, event) => {
-          event.preventDefault();
-          void handleSubmit(message);
-        }}
+        onSubmit={handleSubmitMessage}
         textareaRef={textareaRef}
+        usage={latestUsage}
       />
     </div>
   );

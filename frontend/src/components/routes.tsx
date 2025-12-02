@@ -24,6 +24,7 @@ import {
   UserCircleIcon,
 } from '@heroicons/react/outline';
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
+import { Shield } from 'lucide-react';
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v6';
 import React, { Fragment, type FunctionComponent, useEffect } from 'react';
 import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
@@ -593,7 +594,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/shadowlinks',
     ShadowLinkListPage,
     'Shadow Links',
-    LinkIcon,
+    (props) => <Shield {...props} />,
     true,
     routeVisibility(() => !isEmbedded(), [Feature.ShadowLinkService])
   ),

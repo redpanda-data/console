@@ -11,6 +11,7 @@
 
 'use client';
 
+import { Code } from '@connectrpc/connect';
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
@@ -24,7 +25,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
-import { ShadowLinkEmptyState } from './shadowlink-empty-state';
+import { ShadowLinkEmptyState, ShadowLinkFeatureDisabledState } from './shadowlink-empty-state';
 import { getShadowLinkStateLabel } from '../model';
 
 // Extracted component for table body content
@@ -115,9 +116,9 @@ export const ShadowLinkListPage = () => {
     uiState.pageTitle = 'Shadow Links';
   }, []);
 
-  // Show toast on error
+  // Show toast on error (except for feature-disabled errors)
   useEffect(() => {
-    if (error) {
+    if (error && error.code !== Code.FailedPrecondition) {
       toast.error('Failed to load shadowlinks', {
         description: error.message,
       });
@@ -135,6 +136,15 @@ export const ShadowLinkListPage = () => {
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  // Feature disabled state
+  if (error?.code === Code.FailedPrecondition && error.message.includes('Cluster link feature is disabled')) {
+    return (
+      <div className="my-2 flex justify-center gap-2">
+        <ShadowLinkFeatureDisabledState />
+      </div>
+    );
+  }
 
   // Empty state when no shadowlinks exist
   if (!(isLoading || error) && shadowLinks.length === 0) {

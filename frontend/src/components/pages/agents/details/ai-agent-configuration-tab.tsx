@@ -33,7 +33,8 @@ import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resour
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
-import { Edit, Plus, Save, Settings, Trash2 } from 'lucide-react';
+import { ServiceAccountSection } from 'components/ui/service-account/service-account-section';
+import { Edit, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
   AIAgent_MCPServerSchema,
@@ -42,10 +43,9 @@ import {
   AIAgentUpdateSchema,
   UpdateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
-import type { MCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useCallback, useMemo, useState } from 'react';
 import { useGetAIAgentQuery, useUpdateAIAgentMutation } from 'react-query/api/ai-agent';
-import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
+import { type MCPServer, useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -415,14 +415,14 @@ export const AIAgentConfigurationTab = () => {
             <CardContent className="px-4 pb-4">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Agent ID</Label>
+                  <Label>ID</Label>
                   <div className="w-full">
                     <DynamicCodeBlock code={agent.id} lang="text" />
                   </div>
                 </div>
                 {agent.url && (
                   <div className="space-y-2">
-                    <Label>Agent URL</Label>
+                    <Label>URL</Label>
                     <div className="flex-1">
                       <DynamicCodeBlock code={agent.url} lang="text" />
                     </div>
@@ -518,6 +518,25 @@ export const AIAgentConfigurationTab = () => {
               }}
               selectedMcpServers={displayData.selectedMcpServers}
             />
+          )}
+
+          {/* Service Account - Always visible */}
+          {agent.tags.service_account_id && (
+            <Card className="px-0 py-0" size="full">
+              <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4" />
+                  <Text className="font-semibold">Service Account</Text>
+                </CardTitle>
+                <Text variant="muted">
+                  The service account is used by the agent to authenticate to other systems within the Redpanda Cloud
+                  Platform (e.g. MCP servers, Redpanda broker).
+                </Text>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <ServiceAccountSection serviceAccountId={agent.tags.service_account_id} />
+              </CardContent>
+            </Card>
           )}
         </div>
 

@@ -502,6 +502,7 @@ func (api *API) Routes() *chi.Mux {
 // All the routes for the application are defined in one place.
 func (api *API) routes() *chi.Mux {
 	baseRouter := chi.NewRouter()
+	baseRouter.Use(createHSTSHeaderMiddleware(api.Cfg.REST.TLS.Enabled))
 	baseRouter.NotFound(rest.HandleNotFound(api.Logger))
 	baseRouter.MethodNotAllowed(rest.HandleMethodNotAllowed(api.Logger))
 

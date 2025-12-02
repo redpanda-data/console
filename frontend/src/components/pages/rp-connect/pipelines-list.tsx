@@ -74,7 +74,7 @@ const LegacyEmptyState = () => (
   <Flex alignItems="center" flexDirection="column" gap="4" justifyContent="center" mb="4">
     <Image src={EmptyConnectors} />
     <Box>You have no Redpanda Connect pipelines.</Box>
-    <LegacyCreatePipelineButton />
+    {isFeatureFlagEnabled('enableRpcnTiles') ? <WizardCreatePipelineButton /> : <LegacyCreatePipelineButton />}
   </Flex>
 );
 
