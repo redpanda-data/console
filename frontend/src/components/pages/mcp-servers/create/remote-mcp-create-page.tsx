@@ -307,7 +307,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
     }
 
     const useMcpServiceAccount = isFeatureFlagEnabled('enableMcpServiceAccount');
-    let serviceAccountConfig;
+    let serviceAccountConfig: ReturnType<typeof create<typeof MCPServer_ServiceAccountSchema>> | undefined;
 
     // Create service account if feature flag is enabled
     if (useMcpServiceAccount) {

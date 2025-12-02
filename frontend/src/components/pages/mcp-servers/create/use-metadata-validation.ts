@@ -40,7 +40,6 @@ export function useMetadataValidation(form: UseFormReturn<FormValues>) {
   }, [
     formValues.displayName,
     formValues.resourcesTier,
-    formValues.serviceAccountName,
     form.formState.errors.displayName,
     form.formState.errors.description,
     form.formState.errors.resourcesTier,

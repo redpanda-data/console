@@ -40,12 +40,12 @@ import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
   LintMCPConfigRequestSchema,
-  type MCPServer_State,
-  MCPServer_Tool_ComponentType,
   UpdateMCPServerRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  type MCPServer_State,
+  MCPServer_Tool_ComponentType,
   useGetMCPServerQuery,
   useLintMCPConfigMutation,
   useListMCPServerTools,
