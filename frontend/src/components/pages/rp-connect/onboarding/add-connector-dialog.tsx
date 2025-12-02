@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
+import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 import { ConnectTiles } from './connect-tiles';
 import type { ConnectComponentType } from '../types/schema';
@@ -15,11 +16,13 @@ export const AddConnectorDialog = ({
   onCloseAddConnector,
   connectorType,
   onAddConnector,
+  components,
 }: {
   isOpen: boolean;
   onCloseAddConnector: () => void;
   connectorType?: ConnectComponentType;
   onAddConnector: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
+  components: ComponentList;
 }) => (
   <Dialog onOpenChange={onCloseAddConnector} open={isOpen}>
     <DialogContent size="xl">
@@ -30,6 +33,7 @@ export const AddConnectorDialog = ({
       <DialogBody>
         <ConnectTiles
           className="px-0 pt-0"
+          components={components}
           componentTypeFilter={connectorType ? [connectorType] : undefined}
           gridCols={3}
           hideHeader

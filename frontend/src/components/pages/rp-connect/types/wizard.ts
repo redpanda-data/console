@@ -12,8 +12,8 @@ import { z } from 'zod';
 import { CONNECT_COMPONENT_TYPE } from './schema';
 
 export const connectTilesListFormSchema = z.object({
-  connectionName: z.optional(z.string().min(1, { message: 'Please select a connection method.' })),
-  connectionType: z.optional(z.enum(CONNECT_COMPONENT_TYPE)),
+  connectionName: z.string().min(1, { message: 'Please select a connection method.' }),
+  connectionType: z.enum(CONNECT_COMPONENT_TYPE),
 });
 
 export type ConnectTilesListFormData = z.infer<typeof connectTilesListFormSchema>;
@@ -93,8 +93,8 @@ export const addUserFormSchema = z.object({
 export type AddUserFormData = z.infer<typeof addUserFormSchema>;
 
 const onboardingWizardFormSchema = z.object({
-  input: connectTilesListFormSchema,
-  output: connectTilesListFormSchema,
+  input: connectTilesListFormSchema.optional(),
+  output: connectTilesListFormSchema.optional(),
   topicName: z.optional(addTopicFormSchema.shape.topicName),
   username: z.optional(addUserFormSchema.shape.username),
 });

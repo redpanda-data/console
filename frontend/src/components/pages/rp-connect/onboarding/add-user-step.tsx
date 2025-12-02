@@ -34,7 +34,7 @@ import type { MotionProps } from 'motion/react';
 import { ACL_ResourceType } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useListUsersQuery } from 'react-query/api/user';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
@@ -62,6 +62,7 @@ interface AddUserStepProps {
   topicName?: string;
   defaultConsumerGroup?: string;
   showConsumerGroupFields?: boolean;
+  onValidityChange?: (isValid: boolean) => void;
 }
 
 export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProps>(
@@ -72,6 +73,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       topicName,
       defaultConsumerGroup,
       showConsumerGroupFields = false,
+      onValidityChange,
       ...motionProps
     },
     ref
@@ -113,6 +115,11 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     const watchedSpecialCharacters = form.watch('specialCharactersEnabled');
     const watchedPasswordLength = form.watch('passwordLength');
     const watchedConsumerGroup = form.watch('consumerGroup');
+
+    // Notify parent when validity changes
+    useEffect(() => {
+      onValidityChange?.(form.formState.isValid);
+    }, [form.formState.isValid, onValidityChange]);
 
     const existingUserSelected = useMemo(() => {
       // Only check if the CURRENT form username matches an existing user
