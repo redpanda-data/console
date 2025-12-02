@@ -44,16 +44,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Buf – lint & format
+      - name: Buf – lint, format & breaking
         uses: bufbuild/buf-action@v1
         with:
           lint: true
           format: true
-          breaking: false
+          breaking: true
           push: false
-      - uses: bufbuild/buf-setup-action@v1
-      - name: Buf – breaking (excluding imports)
-        run: buf breaking --against 'https://github.com/redpanda-data/console.git#branch=master' --exclude-imports
+          breaking_against: https://github.com/redpanda-data/console.git#branch=master
 
   # ===========================================================================
   # Job: push-to-registry (push events only - registry operations only)
