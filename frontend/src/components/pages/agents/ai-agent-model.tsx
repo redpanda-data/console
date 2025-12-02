@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import AnthropicLogo from 'assets/anthropic.svg';
+import GeminiLogo from 'assets/gemini.svg';
 import OpenAILogo from 'assets/openai.svg';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
@@ -34,8 +36,17 @@ export const PROVIDER_INFO = {
   openai: {
     label: 'OpenAI',
     icon: OpenAILogo,
-    // Matches: gpt-5, gpt-5-mini etc.
-    modelPattern: /^(gpt-)/i,
+    modelPattern: /^(gpt-|o1-|o3-|o4-)/i,
+  },
+  anthropic: {
+    label: 'Anthropic',
+    icon: AnthropicLogo,
+    modelPattern: /^(claude-)/i,
+  },
+  google: {
+    label: 'Google',
+    icon: GeminiLogo,
+    modelPattern: /^(gemini-)/i,
   },
 } as const;
 
@@ -76,6 +87,48 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
         value: 'gpt-5-mini',
         name: 'gpt-5-mini',
         description: 'A faster, cost-efficient version of gpt-5 for well-defined tasks',
+      },
+    ],
+  },
+  anthropic: {
+    label: 'Anthropic',
+    icon: AnthropicLogo,
+    models: [
+      {
+        value: 'claude-sonnet-4-5',
+        name: 'Claude Sonnet 4.5',
+        description: 'Balanced intelligence and speed for most tasks',
+      },
+      {
+        value: 'claude-opus-4-1',
+        name: 'Claude Opus 4.1',
+        description: 'Most capable for complex reasoning and analysis',
+      },
+      {
+        value: 'claude-haiku-4-5',
+        name: 'Claude Haiku 4.5',
+        description: 'Fast and cost-effective for simpler tasks',
+      },
+    ],
+  },
+  google: {
+    label: 'Google',
+    icon: GeminiLogo,
+    models: [
+      {
+        value: 'gemini-2.5-pro',
+        name: 'Gemini 2.5 Pro',
+        description: 'High-capability model for complex tasks',
+      },
+      {
+        value: 'gemini-2.5-flash',
+        name: 'Gemini 2.5 Flash',
+        description: 'Fast and efficient for most use cases',
+      },
+      {
+        value: 'gemini-2.0-flash',
+        name: 'Gemini 2.0 Flash',
+        description: 'Proven performance and reliability',
       },
     ],
   },
