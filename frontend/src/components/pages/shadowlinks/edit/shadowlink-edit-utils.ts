@@ -25,13 +25,15 @@ import {
   SecuritySettingsSyncOptionsSchema,
   type ShadowLinkClientOptions,
   ShadowLinkClientOptionsSchema,
+  TopicMetadataSyncOptionsSchema,
+} from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
+import {
   TLSFileSettingsSchema,
   TLSPEMSettingsSchema,
   type TLSSettings,
   TLSSettingsSchema,
-  TopicMetadataSyncOptionsSchema,
-} from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/acl_pb';
+} from 'protogen/redpanda/core/common/v1/tls_pb';
 
 import type { FormValues } from '../create/model';
 import { TLS_MODE } from '../create/model';

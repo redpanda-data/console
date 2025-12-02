@@ -26,7 +26,7 @@ import {
   ShadowLinkState,
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/acl_pb';
+import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 

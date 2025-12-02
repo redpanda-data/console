@@ -4489,9 +4489,13 @@ paths:
       parameters:
         - description: |-
             The maximum number of connections to return. If unspecified or 0, a
-            default value may be applied. Note that paging is currently not fully
-            supported, and this field only acts as a limit for the first page of data
-            returned. Subsequent pages of data cannot be requested.
+            default value may be applied. The server may return fewer connections
+            than requested due to memory constraints; the limit is set to allow
+            listing all connections for a single broker. Consider filtering by
+            node_id to view connections for specific brokers. Note that paging is
+            currently not fully supported, and this field only acts as a limit for
+            the first page of data returned. Subsequent pages of data cannot be
+            requested.
           in: query
           name: page_size
           schema:
@@ -6896,7 +6900,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

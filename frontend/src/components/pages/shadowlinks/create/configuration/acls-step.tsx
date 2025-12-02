@@ -30,7 +30,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { ChevronDown, Info, X } from 'lucide-react';
-import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/acl_pb';
+import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 import { useState } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 

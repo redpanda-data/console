@@ -12,42 +12,13 @@ message CreateShadowLinkResponse {
   ShadowLink shadow_link = 1;
 }
 
-// Task states
-enum TaskState {
-  TASK_STATE_UNSPECIFIED = 0;
-  // Task is active
-  TASK_STATE_ACTIVE = 1;
-  // Task was paused
-  TASK_STATE_PAUSED = 2;
-  // Task is unable to communicate with source cluster
-  TASK_STATE_LINK_UNAVAILABLE = 3;
-  // Task is not running
-  TASK_STATE_NOT_RUNNING = 4;
-  // Task is faulted
-  TASK_STATE_FAULTED = 5;
-}
-
-// Status of a task
-message ShadowLinkTaskStatus {
-  // Name of the task
-  string name = 1;
-  // State of the task
-  TaskState state = 2;
-  // Reason for task being in state
-  string reason = 3;
-  // The broker the task is running on
-  int32 broker_id = 4;
-  // The shard the task is running on
-  int32 shard_id = 5;
-}
-
 message ShadowLink {
   // Return name, configuration, and overall state
   string name = 1;
   string uid = 2;
   core.admin.v2.ShadowLinkConfigurations configurations = 3;
   core.admin.v2.ShadowLinkState state = 4;
-  repeated ShadowLinkTaskStatus tasks_status = 5;
+  repeated core.admin.v2.ShadowLinkTaskStatus tasks_status = 5;
   repeated string synced_shadow_topic_properties = 6;
 }
 
