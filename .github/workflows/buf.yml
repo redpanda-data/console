@@ -49,7 +49,7 @@ jobs:
         with:
           lint: true
           format: true
-          breaking: true
+          breaking: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'Buf Skip Breaking') }}
           push: false
           breaking_against: https://github.com/redpanda-data/console.git#branch=master
 
