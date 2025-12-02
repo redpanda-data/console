@@ -38,6 +38,10 @@ import { Edit, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
   AIAgent_MCPServerSchema,
+  type AIAgent_Provider,
+  AIAgent_Provider_AnthropicSchema,
+  AIAgent_Provider_GoogleSchema,
+  AIAgent_Provider_OpenAICompatibleSchema,
   AIAgent_Provider_OpenAISchema,
   AIAgent_ProviderSchema,
   AIAgentUpdateSchema,
@@ -59,7 +63,9 @@ type LocalAIAgent = {
   model: string;
   maxIterations: number;
   systemPrompt: string;
+  provider: AIAgent_Provider;
   apiKeySecret: string;
+  baseUrl: string;
   resources: {
     tier: string;
   };
@@ -90,6 +96,116 @@ const detectProvider = (modelName: string): (typeof PROVIDER_INFO)[keyof typeof 
 const extractSecretName = (apiKeyTemplate: string): string => {
   const match = apiKeyTemplate.match(SECRET_TEMPLATE_REGEX);
   return match ? match[1] : '';
+};
+
+/**
+ * Extracts provider info from AI Agent provider config
+ */
+const extractProviderInfo = (provider: AIAgent_Provider): { apiKeyTemplate: string; baseUrl: string } => {
+  let apiKeyTemplate = '';
+  let baseUrl = '';
+
+  switch (provider.provider.case) {
+    case 'openai':
+      apiKeyTemplate = provider.provider.value.apiKey;
+      baseUrl = provider.provider.value.baseUrl || '';
+      break;
+    case 'anthropic':
+      apiKeyTemplate = provider.provider.value.apiKey;
+      baseUrl = provider.provider.value.baseUrl || '';
+      break;
+    case 'google':
+      apiKeyTemplate = provider.provider.value.apiKey;
+      baseUrl = provider.provider.value.baseUrl || '';
+      break;
+    case 'openaiCompatible':
+      apiKeyTemplate = provider.provider.value.apiKey;
+      baseUrl = provider.provider.value.baseUrl;
+      break;
+    default:
+      break;
+  }
+
+  return { apiKeyTemplate, baseUrl };
+};
+
+/**
+ * Creates updated provider with new API key reference
+ */
+const createUpdatedProvider = (
+  providerCase: 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | undefined,
+  apiKeyRef: string,
+  baseUrl: string
+): AIAgent_Provider => {
+  switch (providerCase) {
+    case 'anthropic':
+      return create(AIAgent_ProviderSchema, {
+        provider: {
+          case: 'anthropic',
+          value: create(AIAgent_Provider_AnthropicSchema, {
+            apiKey: apiKeyRef,
+            baseUrl: baseUrl || undefined,
+          }),
+        },
+      });
+    case 'google':
+      return create(AIAgent_ProviderSchema, {
+        provider: {
+          case: 'google',
+          value: create(AIAgent_Provider_GoogleSchema, {
+            apiKey: apiKeyRef,
+            baseUrl: baseUrl || undefined,
+          }),
+        },
+      });
+    case 'openaiCompatible':
+      return create(AIAgent_ProviderSchema, {
+        provider: {
+          case: 'openaiCompatible',
+          value: create(AIAgent_Provider_OpenAICompatibleSchema, {
+            apiKey: apiKeyRef,
+            baseUrl: baseUrl || undefined,
+          }),
+        },
+      });
+    default: // openai
+      return create(AIAgent_ProviderSchema, {
+        provider: {
+          case: 'openai',
+          value: create(AIAgent_Provider_OpenAISchema, {
+            apiKey: apiKeyRef,
+            baseUrl: baseUrl || undefined,
+          }),
+        },
+      });
+  }
+};
+
+/**
+ * Builds tags map preserving internal tags from original agent
+ */
+const buildTagsMap = (
+  originalTags: { [key: string]: string },
+  userTags: Array<{ key: string; value: string }>
+): { [key: string]: string } => {
+  const tagsMap: { [key: string]: string } = {};
+
+  // Preserve internal tags
+  if (originalTags.service_account_id) {
+    tagsMap.service_account_id = originalTags.service_account_id;
+  }
+  if (originalTags.secret_id) {
+    tagsMap.secret_id = originalTags.secret_id;
+  }
+
+  // Add user-defined tags
+  for (const tag of userTags) {
+    if (tag.key.trim() && tag.value.trim()) {
+      tagsMap[tag.key.trim()] = tag.value.trim();
+    }
+  }
+
+  return tagsMap;
 };
 
 /**
@@ -142,6 +258,7 @@ const MCPServersSection = ({
   );
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Large configuration form with many conditionals - already refactored with helper functions
 export const AIAgentConfigurationTab = () => {
   const { id } = useParams<{ id: string }>();
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
@@ -192,12 +309,9 @@ export const AIAgentConfigurationTab = () => {
       return editedAgentData;
     }
 
-    if (aiAgentData?.aiAgent) {
-      // Extract the secret name from the provider's apiKey template string
-      const apiKeyTemplate =
-        aiAgentData.aiAgent.provider?.provider.case === 'openai'
-          ? aiAgentData.aiAgent.provider.provider.value.apiKey
-          : '';
+    if (aiAgentData?.aiAgent?.provider) {
+      const provider = aiAgentData.aiAgent.provider;
+      const { apiKeyTemplate, baseUrl } = extractProviderInfo(provider);
       const apiKeySecret = extractSecretName(apiKeyTemplate);
 
       return {
@@ -206,7 +320,9 @@ export const AIAgentConfigurationTab = () => {
         model: aiAgentData.aiAgent.model,
         maxIterations: aiAgentData.aiAgent.maxIterations,
         systemPrompt: aiAgentData.aiAgent.systemPrompt,
+        provider: aiAgentData.aiAgent.provider,
         apiKeySecret,
+        baseUrl,
         resources: { tier: getResourceTierFromAgent(aiAgentData.aiAgent.resources) },
         selectedMcpServers: Object.values(aiAgentData.aiAgent.mcpServers).map((server) => server.id),
         tags: Object.entries(aiAgentData.aiAgent.tags)
@@ -217,6 +333,17 @@ export const AIAgentConfigurationTab = () => {
 
     return null;
   }, [editedAgentData, aiAgentData, getResourceTierFromAgent]);
+
+  const updateField = useCallback(
+    (updates: Partial<LocalAIAgent>) => {
+      const currentData = getCurrentData();
+      if (!currentData) {
+        return;
+      }
+      setEditedAgentData({ ...currentData, ...updates });
+    },
+    [getCurrentData]
+  );
 
   const handleAddTag = () => {
     const currentData = getCurrentData();
@@ -276,33 +403,9 @@ export const AIAgentConfigurationTab = () => {
         mcpServersMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
       }
 
-      // Build tags map and preserve internal tags
-      const tagsMap: { [key: string]: string } = {};
-
-      // First, preserve the internal tags from the original agent data
-      if (aiAgentData.aiAgent.tags.service_account_id) {
-        tagsMap.service_account_id = aiAgentData.aiAgent.tags.service_account_id;
-      }
-      if (aiAgentData.aiAgent.tags.secret_id) {
-        tagsMap.secret_id = aiAgentData.aiAgent.tags.secret_id;
-      }
-
-      // Then add user-defined tags
-      for (const tag of currentData.tags) {
-        if (tag.key.trim() && tag.value.trim()) {
-          tagsMap[tag.key.trim()] = tag.value.trim();
-        }
-      }
-
-      // Create provider with updated secret
-      const updatedProvider = create(AIAgent_ProviderSchema, {
-        provider: {
-          case: 'openai',
-          value: create(AIAgent_Provider_OpenAISchema, {
-            apiKey: `\${secrets.${currentData.apiKeySecret}}`,
-          }),
-        },
-      });
+      const tagsMap = buildTagsMap(aiAgentData.aiAgent.tags, currentData.tags);
+      const apiKeyRef = `\${secrets.${currentData.apiKeySecret}}`;
+      const updatedProvider = createUpdatedProvider(currentData.provider.provider.case, apiKeyRef, currentData.baseUrl);
 
       await updateAIAgent(
         create(UpdateAIAgentRequestSchema, {
@@ -433,16 +536,7 @@ export const AIAgentConfigurationTab = () => {
                   {isEditing ? (
                     <Input
                       id="displayName"
-                      onChange={(e) => {
-                        const currentData = getCurrentData();
-                        if (!currentData) {
-                          return;
-                        }
-                        setEditedAgentData({
-                          ...currentData,
-                          displayName: e.target.value,
-                        });
-                      }}
+                      onChange={(e) => updateField({ displayName: e.target.value })}
                       value={displayData.displayName}
                     />
                   ) : (
@@ -456,16 +550,7 @@ export const AIAgentConfigurationTab = () => {
                   {isEditing ? (
                     <Textarea
                       id="description"
-                      onChange={(e) => {
-                        const currentData = getCurrentData();
-                        if (!currentData) {
-                          return;
-                        }
-                        setEditedAgentData({
-                          ...currentData,
-                          description: e.target.value,
-                        });
-                      }}
+                      onChange={(e) => updateField({ description: e.target.value })}
                       value={displayData.description}
                     />
                   ) : (
@@ -479,16 +564,7 @@ export const AIAgentConfigurationTab = () => {
                   {isEditing ? (
                     <Textarea
                       id="systemPrompt"
-                      onChange={(e) => {
-                        const currentData = getCurrentData();
-                        if (!currentData) {
-                          return;
-                        }
-                        setEditedAgentData({
-                          ...currentData,
-                          systemPrompt: e.target.value,
-                        });
-                      }}
+                      onChange={(e) => updateField({ systemPrompt: e.target.value })}
                       rows={8}
                       value={displayData.systemPrompt}
                     />
@@ -506,16 +582,7 @@ export const AIAgentConfigurationTab = () => {
               availableMcpServers={availableMcpServers}
               connectedMcpServers={connectedMcpServers}
               isEditing={isEditing}
-              onServerSelectionChange={(newServers) => {
-                const currentData = getCurrentData();
-                if (!currentData) {
-                  return;
-                }
-                setEditedAgentData({
-                  ...currentData,
-                  selectedMcpServers: newServers,
-                });
-              }}
+              onServerSelectionChange={(newServers) => updateField({ selectedMcpServers: newServers })}
               selectedMcpServers={displayData.selectedMcpServers}
             />
           )}
@@ -557,16 +624,7 @@ export const AIAgentConfigurationTab = () => {
                     <Label htmlFor="resources">Resource Tier</Label>
                     {isEditing ? (
                       <ResourceTierSelect
-                        onValueChange={(value) => {
-                          const currentData = getCurrentData();
-                          if (!currentData) {
-                            return;
-                          }
-                          setEditedAgentData({
-                            ...currentData,
-                            resources: { tier: value },
-                          });
-                        }}
+                        onValueChange={(value) => updateField({ resources: { tier: value } })}
                         value={displayData.resources.tier}
                       />
                     ) : (
@@ -585,19 +643,7 @@ export const AIAgentConfigurationTab = () => {
                     <div className="space-y-2">
                       <Label htmlFor="model">Model</Label>
                       {isEditing ? (
-                        <Select
-                          onValueChange={(value) => {
-                            const currentData = getCurrentData();
-                            if (!currentData) {
-                              return;
-                            }
-                            setEditedAgentData({
-                              ...currentData,
-                              model: value,
-                            });
-                          }}
-                          value={displayData.model}
-                        >
+                        <Select onValueChange={(value) => updateField({ model: value })} value={displayData.model}>
                           <SelectTrigger>
                             <SelectValue>
                               {displayData.model && detectProvider(displayData.model) ? (
@@ -656,16 +702,7 @@ export const AIAgentConfigurationTab = () => {
                           <Slider
                             max={100}
                             min={10}
-                            onValueChange={(values) => {
-                              const currentData = getCurrentData();
-                              if (!currentData) {
-                                return;
-                              }
-                              setEditedAgentData({
-                                ...currentData,
-                                maxIterations: values[0],
-                              });
-                            }}
+                            onValueChange={(values) => updateField({ maxIterations: values[0] })}
                             value={[displayData.maxIterations]}
                           />
                         </>
@@ -681,16 +718,7 @@ export const AIAgentConfigurationTab = () => {
                         <div className="[&>div]:flex-col [&>div]:items-stretch [&>div]:gap-2">
                           <SecretSelector
                             availableSecrets={availableSecrets}
-                            onChange={(value) => {
-                              const currentData = getCurrentData();
-                              if (!currentData) {
-                                return;
-                              }
-                              setEditedAgentData({
-                                ...currentData,
-                                apiKeySecret: value,
-                              });
-                            }}
+                            onChange={(value) => updateField({ apiKeySecret: value })}
                             placeholder="Select from secrets store or create new"
                             scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
                             value={displayData.apiKeySecret}
@@ -706,7 +734,10 @@ export const AIAgentConfigurationTab = () => {
                       <Label>Provider</Label>
                       <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
                         <Text variant="default">
-                          {agent.provider?.provider.case === 'openai' ? 'OpenAI' : 'Unknown'}
+                          {agent.provider?.provider.case === 'openai' && 'OpenAI'}
+                          {agent.provider?.provider.case === 'anthropic' && 'Anthropic'}
+                          {agent.provider?.provider.case === 'google' && 'Google'}
+                          {agent.provider?.provider.case === 'openaiCompatible' && 'OpenAI Compatible'}
                         </Text>
                       </div>
                     </div>
