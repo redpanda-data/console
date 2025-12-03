@@ -32,16 +32,6 @@ export default async function globalTeardown(config) {
       await execAsync(`docker rm ${state.backendId}`).catch(() => {});
     }
 
-    // Frontend is now served by backend, no separate process to stop
-    // if (state.frontendPid) {
-    //   console.log(`Stopping frontend server (PID: ${state.frontendPid})...`);
-    //   try {
-    //     await execAsync(`kill ${state.frontendPid}`);
-    //   } catch (error) {
-    //     console.log('Frontend already stopped or not found');
-    //   }
-    // }
-
     // Stop Docker containers (testcontainers)
     if (state.connectId) {
       console.log(`Stopping Kafka Connect container...`);

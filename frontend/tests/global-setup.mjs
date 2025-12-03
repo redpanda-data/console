@@ -59,50 +59,6 @@ async function waitForPort(port, maxAttempts = 30, delayMs = 1000) {
   }
   throw new Error(`Port ${port} failed to become available after ${maxAttempts} attempts`);
 }
-
-async function waitForFrontend(maxAttempts = 60, delayMs = 1000) {
-  console.log('Waiting for frontend to compile and serve...');
-
-  let consecutiveFastResponses = 0;
-  const requiredConsecutiveFast = 3;
-
-  for (let i = 0; i < maxAttempts; i++) {
-    const requestStart = Date.now();
-    try {
-      const { stdout } = await execAsync('curl -s http://localhost:3000/');
-
-      // Check for essential React app elements
-      const hasRootDiv = stdout.includes('id="root"') || stdout.includes("id='root'");
-      const hasScriptTag = stdout.includes('<script');
-      const isHTML = stdout.includes('<!doctype html') || stdout.includes('<!DOCTYPE html') || stdout.includes('<html');
-      const requestTime = Date.now() - requestStart;
-
-      if (hasRootDiv && hasScriptTag && isHTML && requestTime < 1000) {
-        consecutiveFastResponses++;
-        console.log(`  Fast response ${consecutiveFastResponses}/${requiredConsecutiveFast} (${requestTime}ms)`);
-
-        if (consecutiveFastResponses >= requiredConsecutiveFast) {
-          console.log(`✓ Frontend ready and stable (${requiredConsecutiveFast} fast responses)`);
-          return true;
-        }
-      } else {
-        if (consecutiveFastResponses > 0) {
-          console.log(`  Slow response (${requestTime}ms), resetting counter...`);
-        }
-        consecutiveFastResponses = 0;
-      }
-
-      if (requestTime > 2000) {
-        console.log(`  Attempt ${i + 1}: Slow response (${requestTime}ms), compilation in progress...`);
-      }
-    } catch (_error) {
-      consecutiveFastResponses = 0;
-    }
-    await new Promise((resolve) => setTimeout(resolve, delayMs));
-  }
-  throw new Error('Frontend failed to become ready');
-}
-
 async function setupDockerNetwork(state) {
   console.log('Creating Docker network...');
   const network = await new Network().start();
@@ -668,7 +624,6 @@ export default async function globalSetup(config) {
 
     console.log('Waiting for frontend to be ready...');
     await waitForPort(3000, 60, 1000);
-    await waitForFrontend(60, 1000);
 
     writeFileSync(getStateFile(isEnterprise), JSON.stringify(state, null, 2));
 
