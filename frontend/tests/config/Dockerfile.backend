@@ -13,9 +13,13 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the binary
-WORKDIR /app/cmd/api
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/console-api .
+# Build the binary (works for both OSS and Enterprise structure)
+# OSS: cmd/api/main.go, Enterprise: cmd/main.go
+RUN if [ -d "/app/cmd/api" ]; then \
+      cd /app/cmd/api && CGO_ENABLED=0 GOOS=linux go build -o /app/console-api .; \
+    else \
+      cd /app/cmd && CGO_ENABLED=0 GOOS=linux go build -o /app/console-api .; \
+    fi
 
 # Runtime stage
 FROM alpine:3.21

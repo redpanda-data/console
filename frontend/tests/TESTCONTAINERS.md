@@ -50,10 +50,13 @@ All containers run on a shared Docker network created by testcontainers:
 ## Files
 
 ### Dockerfile
-**`tests/config/Dockerfile.backend`** - Multi-stage Docker build:
+**`tests/config/Dockerfile.backend`** - Multi-stage Docker build (supports both OSS and Enterprise):
 1. **Builder stage**:
    - Uses `golang:alpine` with `GOTOOLCHAIN=auto` to support Go 1.25.1+
    - Compiles the Go backend binary (`console-api`)
+   - Handles different directory structures:
+     - OSS: Builds from `cmd/api/main.go`
+     - Enterprise: Builds from `cmd/main.go`
    - CGO disabled for static binary
 2. **Runtime stage**:
    - Minimal Alpine Linux (3.21)
@@ -61,20 +64,31 @@ All containers run on a shared Docker network created by testcontainers:
    - Exposes port 3000
 
 ### Configuration
-**`tests/config/console.config.yaml`** - Backend configuration mounted into container:
+
+**`tests/config/console.config.yaml`** - OSS backend configuration:
 - `serveFrontend: true` - Backend serves compiled frontend assets
 - `server.listenPort: 3000` - Single port for API and frontend
-- Internal Docker network addresses:
-  - `kafka.brokers: ["redpanda:9092"]` - Kafka broker
-  - `schemaRegistry.urls: ["http://redpanda:8081"]` - Schema Registry
-  - `redpanda.adminApi.urls: ["http://redpanda:9644"]` - Admin API
-  - `kafkaConnect.clusters[].url: http://connect:8083` - Kafka Connect
+- Internal Docker network addresses (container-to-container):
+  - `kafka.brokers: ["redpanda:9092"]`
+  - `schemaRegistry.urls: ["http://redpanda:8081"]`
+  - `redpanda.adminApi.urls: ["http://redpanda:9644"]`
+  - `kafkaConnect.clusters[].url: http://connect:8083`
 - SASL authentication: `e2euser:very-secret` (SCRAM-SHA-256)
+
+**`tests/config/console.enterprise.config.yaml`** - Enterprise backend configuration:
+- Same as OSS config, plus:
+  - `authentication.basic.enabled: true` - Basic auth for enterprise features
+  - `licenseFilepath: /etc/console/redpanda.license` - License file path in container
+  - `authorization.roleBindings` - Role-based access control
+- License file sourced from: `console-enterprise/frontend/tests/config/redpanda.license`
 
 ### Setup Script
 **`tests/global-setup.mjs`**:
 1. **Build Phase**:
-   - Builds backend Docker image from source: `console-backend:e2e-test`
+   - Detects OSS vs Enterprise mode from test config
+   - Builds backend Docker image from source:
+     - OSS: `console-backend:e2e-test` from `console/backend`
+     - Enterprise: `console-backend:e2e-test-enterprise` from `console-enterprise/backend`
    - Uses multi-stage Dockerfile for optimized image
 2. **Infrastructure Phase**:
    - Creates shared Docker network via testcontainers
@@ -83,11 +97,14 @@ All containers run on a shared Docker network created by testcontainers:
    - Optionally starts Kafka Connect container
 3. **Application Phase**:
    - Starts backend container on port 3000
-   - Mounts `console.config.yaml` into container
+   - Mounts appropriate config file:
+     - OSS: `console.config.yaml`
+     - Enterprise: `console.enterprise.config.yaml`
+   - For Enterprise mode: Mounts `redpanda.license` from `console-enterprise/`
    - Waits for port 3000 to be ready
    - Waits for frontend to serve HTML
 4. **State Management**:
-   - Saves container IDs to `.testcontainers-state.json`
+   - Saves container IDs to `.testcontainers-state.json` (OSS) or `.testcontainers-state-enterprise.json` (Enterprise)
 
 ### Teardown Script
 **`tests/global-teardown.mjs`**:

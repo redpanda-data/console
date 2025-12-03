@@ -2,7 +2,7 @@ import { GenericContainer, Network, Wait } from 'testcontainers';
 
 import { exec } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
@@ -333,45 +333,238 @@ topic.creation.enable=false
 }
 
 
-async function buildBackendImage() {
-  console.log('Building backend Docker image...');
-  const backendDir = resolve(__dirname, '../../backend');
+async function buildBackendImage(isEnterprise) {
+  console.log(`Building backend Docker image ${isEnterprise ? '(Enterprise)' : '(OSS)'}...`);
+  const backendDir = isEnterprise
+    ? resolve(__dirname, '../../../console-enterprise/backend')
+    : resolve(__dirname, '../../backend');
   const dockerfilePath = resolve(__dirname, 'config/Dockerfile.backend');
+  const imageTag = isEnterprise ? 'console-backend:e2e-test-enterprise' : 'console-backend:e2e-test';
 
-  await execWithOutput(
-    `docker build -f ${dockerfilePath} -t console-backend:e2e-test ${backendDir}`
-  );
-  console.log('✓ Backend image built');
+  console.log(`Building from: ${backendDir}`);
+
+  let embedDir = null;
+
+  try {
+    // For enterprise: copy frontend assets before build
+    if (isEnterprise) {
+      const frontendBuildDir = resolve(__dirname, '../build');
+      embedDir = join(backendDir, 'pkg/embed/frontend');
+
+      console.log('Copying frontend assets to enterprise backend...');
+      console.log(`  From: ${frontendBuildDir}`);
+      console.log(`  To: ${embedDir}`);
+
+      // Copy all files from build/ to pkg/embed/frontend/
+      await execAsync(`cp -r "${frontendBuildDir}"/* "${embedDir}"/`);
+      console.log('✓ Frontend assets copied');
+    }
+
+    // Build Docker image
+    await execWithOutput(
+      `docker build -f ${dockerfilePath} -t ${imageTag} ${backendDir}`
+    );
+    console.log('✓ Backend image built');
+
+    return imageTag;
+  } finally {
+    // Cleanup: remove copied frontend assets from enterprise repo
+    if (isEnterprise && embedDir) {
+      console.log('Cleaning up copied frontend assets...');
+      // Keep .gitignore, remove everything else
+      await execAsync(`find "${embedDir}" -mindepth 1 ! -name '.gitignore' -delete`).catch(() => {});
+      console.log('✓ Cleanup complete');
+    }
+  }
 }
 
-async function startBackendServer(network, isEnterprise, state) {
+async function startBackendServer(network, isEnterprise, imageTag, state) {
   console.log('Starting backend server container...');
+  console.log(`Image tag: ${imageTag}`);
+  console.log(`Enterprise mode: ${isEnterprise}`);
+
   const backendConfigPath = isEnterprise
     ? resolve(__dirname, 'config/console.enterprise.config.yaml')
     : resolve(__dirname, 'config/console.config.yaml');
 
   console.log(`Backend config path: ${backendConfigPath}`);
 
-  const backend = await new GenericContainer('console-backend:e2e-test')
-    .withNetwork(network)
-    .withNetworkAliases('console-backend')
-    .withExposedPorts({ container: 3000, host: 3000 })
-    .withBindMounts([
-      {
-        source: backendConfigPath,
-        target: '/etc/console/config.yaml',
-        mode: 'ro',
-      },
-    ])
-    .withCommand(['--config.filepath=/etc/console/config.yaml'])
-    .withWaitStrategy(Wait.forListeningPorts())
-    .withStartupTimeout(120_000)
-    .start();
+  const bindMounts = [
+    {
+      source: backendConfigPath,
+      target: '/etc/console/config.yaml',
+      mode: 'ro',
+    },
+  ];
 
-  state.backendContainer = backend;
-  state.backendId = backend.getId();
+  // Mount license file for enterprise mode
+  if (isEnterprise) {
+    const licensePath = resolve(__dirname, '../../../console-enterprise/frontend/tests/config/redpanda.license');
+    console.log(`Enterprise license path: ${licensePath}`);
 
-  console.log(`✓ Backend container started: ${state.backendId}`);
+    // Check if license file exists
+    try {
+      const fs = await import('node:fs');
+      if (!fs.existsSync(licensePath)) {
+        throw new Error(`License file not found at: ${licensePath}`);
+      }
+      console.log(`✓ License file found`);
+    } catch (error) {
+      console.error(`License file error:`, error.message);
+      throw error;
+    }
+
+    bindMounts.push({
+      source: licensePath,
+      target: '/etc/console/redpanda.license',
+      mode: 'ro',
+    });
+  }
+
+  console.log('Creating container with bind mounts:');
+  bindMounts.forEach((mount, i) => {
+    console.log(`  [${i}] ${mount.source} -> ${mount.target}`);
+  });
+
+  let backend;
+  let containerId;
+  try {
+    console.log('Starting container...');
+    console.log('Configuration summary:');
+    console.log(`  - Network: ${network.getId ? network.getId() : 'unknown'}`);
+    console.log(`  - Alias: console-backend`);
+    console.log(`  - Port: 3000:3000`);
+    console.log(`  - Command: --config.filepath=/etc/console/config.yaml`);
+
+    // Create container without wait strategy first to get the ID immediately
+    const container = new GenericContainer(imageTag)
+      .withNetwork(network)
+      .withNetworkAliases('console-backend')
+      .withExposedPorts({ container: 3000, host: 3000 })
+      .withBindMounts(bindMounts)
+      .withCommand(['--config.filepath=/etc/console/config.yaml']);
+
+    console.log('Calling container.start()...');
+
+    try {
+      backend = await container.start();
+      containerId = backend.getId();
+      state.backendId = containerId;
+      state.backendContainer = backend;
+      console.log(`✓ Container.start() returned with ID: ${containerId}`);
+    } catch (startError) {
+      console.error('Error during container.start():', startError.message);
+
+      // Extract container ID from error message if available
+      const containerIdMatch = startError.message.match(/container ([a-f0-9]+)/);
+      let failedContainerId = containerIdMatch ? containerIdMatch[1] : null;
+
+      if (failedContainerId) {
+        console.log(`Container ID from error: ${failedContainerId}`);
+        containerId = failedContainerId;
+        state.backendId = failedContainerId;
+
+        try {
+          // Get logs from this container
+          console.log('Fetching logs from failed container...');
+          const { stdout: logs } = await execAsync(`docker logs ${failedContainerId} 2>&1`);
+          console.log('=== CONTAINER LOGS START ===');
+          console.log(logs || '(no logs)');
+          console.log('=== CONTAINER LOGS END ===');
+
+          // Get container state
+          console.log('Fetching container state...');
+          const { stdout: stateJson } = await execAsync(`docker inspect ${failedContainerId} --format='{{json .State}}'`);
+          console.log('Container state:');
+          const state = JSON.parse(stateJson);
+          console.log(JSON.stringify(state, null, 2));
+
+          // Get container config to see the actual command and mounts
+          console.log('Fetching container config...');
+          const { stdout: configJson } = await execAsync(`docker inspect ${failedContainerId} --format='{{json .Config}}'`);
+          const config = JSON.parse(configJson);
+          console.log('Container command:', config.Cmd);
+          console.log('Container entrypoint:', config.Entrypoint);
+
+          // Get mount info
+          console.log('Fetching mount info...');
+          const { stdout: mountsJson } = await execAsync(`docker inspect ${failedContainerId} --format='{{json .Mounts}}'`);
+          const mounts = JSON.parse(mountsJson);
+          console.log('Container mounts:');
+          console.log(JSON.stringify(mounts, null, 2));
+
+        } catch (inspectError) {
+          console.error('Failed to inspect container:', inspectError.message);
+        }
+      } else {
+        console.log('Could not extract container ID from error message');
+        console.log('Full error:', JSON.stringify(startError, null, 2));
+      }
+
+      throw startError;
+    }
+
+    console.log(`Container created with ID: ${containerId}`);
+    console.log('Waiting 2 seconds for container to initialize...');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Check if container is still running
+    const { stdout: inspectOutput } = await execAsync(`docker inspect ${containerId} --format='{{.State.Status}}'`);
+    const containerStatus = inspectOutput.trim();
+    console.log(`Container status: ${containerStatus}`);
+
+    if (containerStatus !== 'running') {
+      console.error(`Container is not running (status: ${containerStatus})`);
+      console.log('Fetching container logs...');
+      const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
+      console.log('Container logs:');
+      console.log(logs);
+
+      // Get exit code
+      const { stdout: exitCode } = await execAsync(`docker inspect ${containerId} --format='{{.State.ExitCode}}'`);
+      console.log(`Container exit code: ${exitCode.trim()}`);
+
+      throw new Error(`Container stopped immediately with status: ${containerStatus}`);
+    }
+
+    console.log(`✓ Backend container started and running: ${containerId}`);
+
+    // Get initial logs to see startup
+    console.log('Fetching initial container logs...');
+    const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1 | tail -30`);
+    if (logs) {
+      console.log('Container logs:');
+      console.log(logs);
+    }
+
+    // Now wait for port to be ready
+    console.log('Waiting for port 3000 to be ready...');
+    await waitForPort(3000, 60, 1000);
+    console.log('✓ Port 3000 is ready');
+
+  } catch (error) {
+    console.error('Failed to start backend container:', error.message);
+
+    // Try to get container logs if container was created but failed
+    if (containerId) {
+      try {
+        console.log('Attempting to fetch logs from failed container...');
+        const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
+        console.log('Full container logs:');
+        console.log(logs);
+
+        // Get container inspect info
+        const { stdout: inspect } = await execAsync(`docker inspect ${containerId}`);
+        console.log('Container inspect (state):');
+        const inspectJson = JSON.parse(inspect);
+        console.log(JSON.stringify(inspectJson[0].State, null, 2));
+      } catch (logError) {
+        console.error('Could not fetch logs:', logError.message);
+      }
+    }
+
+    throw error;
+  }
 }
 
 
@@ -428,7 +621,7 @@ export default async function globalSetup(config) {
 
   try {
     // Build backend Docker image
-    await buildBackendImage();
+    const imageTag = await buildBackendImage(isEnterprise);
 
     // Setup Docker infrastructure
     const network = await setupDockerNetwork(state);
@@ -436,7 +629,7 @@ export default async function globalSetup(config) {
     await verifyRedpandaServices(state);
     await startOwlShop(network, state);
     await createKafkaConnectTopics(state);
-    await startKafkaConnect(network, state);
+    // await startKafkaConnect(network, state);
 
     console.log('');
     console.log('=== Docker Environment Ready ===');
@@ -447,8 +640,8 @@ export default async function globalSetup(config) {
     console.log('  - Kafka Connect: http://localhost:18083');
     console.log('================================\n');
 
-    // Start application servers
-    await startBackendServer(network, isEnterprise, state);
+    // Start backend server (serves both API and frontend)
+    await startBackendServer(network, isEnterprise, imageTag, state);
 
     // Wait for services to be ready
     console.log('Waiting for backend to be ready...');
