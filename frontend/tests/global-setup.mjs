@@ -1,7 +1,7 @@
 import { GenericContainer, Network, Wait } from 'testcontainers';
 
 import { exec } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -346,19 +346,37 @@ async function buildBackendImage(isEnterprise) {
   let embedDir = null;
 
   try {
-    // For enterprise: copy frontend assets before build
+    // Copy frontend assets before build (required for both OSS and Enterprise)
+    // The pkg/embed/frontend/ directory has .gitignore with *, so assets don't exist in CI
     if (isEnterprise) {
-      const frontendBuildDir = resolve(__dirname, '../build');
-      embedDir = join(backendDir, 'pkg/embed/frontend');
-
-      console.log('Copying frontend assets to enterprise backend...');
-      console.log(`  From: ${frontendBuildDir}`);
-      console.log(`  To: ${embedDir}`);
-
-      // Copy all files from build/ to pkg/embed/frontend/
-      await execAsync(`cp -r "${frontendBuildDir}"/* "${embedDir}"/`);
-      console.log('✓ Frontend assets copied');
+      // Check if enterprise backend directory exists
+      if (!existsSync(backendDir)) {
+        throw new Error(
+          `Enterprise backend directory not found: ${backendDir}\n` +
+          'Enterprise E2E tests require console-enterprise repo to be checked out alongside console repo.'
+        );
+      }
     }
+
+    const frontendBuildDir = resolve(__dirname, '../build');
+
+    // Check if frontend build exists
+    if (!existsSync(frontendBuildDir)) {
+      throw new Error(
+        `Frontend build directory not found: ${frontendBuildDir}\n` +
+        'Run "bun run build" before running E2E tests.'
+      );
+    }
+
+    embedDir = join(backendDir, 'pkg/embed/frontend');
+
+    console.log(`Copying frontend assets to ${isEnterprise ? 'enterprise' : 'OSS'} backend...`);
+    console.log(`  From: ${frontendBuildDir}`);
+    console.log(`  To: ${embedDir}`);
+
+    // Copy all files from build/ to pkg/embed/frontend/
+    await execAsync(`cp -r "${frontendBuildDir}"/* "${embedDir}"/`);
+    console.log('✓ Frontend assets copied');
 
     // Build Docker image
     await execWithOutput(
@@ -368,8 +386,8 @@ async function buildBackendImage(isEnterprise) {
 
     return imageTag;
   } finally {
-    // Cleanup: remove copied frontend assets from enterprise repo
-    if (isEnterprise && embedDir) {
+    // Cleanup: remove copied frontend assets (for both OSS and Enterprise)
+    if (embedDir) {
       console.log('Cleaning up copied frontend assets...');
       // Keep .gitignore, remove everything else
       await execAsync(`find "${embedDir}" -mindepth 1 ! -name '.gitignore' -delete`).catch(() => {});

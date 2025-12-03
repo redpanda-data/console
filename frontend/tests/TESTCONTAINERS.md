@@ -86,10 +86,15 @@ All containers run on a shared Docker network created by testcontainers:
 **`tests/global-setup.mjs`**:
 1. **Build Phase**:
    - Detects OSS vs Enterprise mode from test config
+   - **Copies frontend build assets** from `console/frontend/build/` to backend's `pkg/embed/frontend/`:
+     - Required because `pkg/embed/frontend/.gitignore` excludes all files from git
+     - OSS: Copies to `console/backend/pkg/embed/frontend/`
+     - Enterprise: Copies to `console-enterprise/backend/pkg/embed/frontend/`
    - Builds backend Docker image from source:
      - OSS: `console-backend:e2e-test` from `console/backend`
      - Enterprise: `console-backend:e2e-test-enterprise` from `console-enterprise/backend`
    - Uses multi-stage Dockerfile for optimized image
+   - **Cleans up** copied assets after Docker build (keeps `.gitignore`)
 2. **Infrastructure Phase**:
    - Creates shared Docker network via testcontainers
    - Starts Redpanda container with SASL auth
@@ -127,11 +132,17 @@ All containers run on a shared Docker network created by testcontainers:
 
 ## Usage
 
+**Prerequisites:**
+- Run `bun run build` to create frontend build artifacts in `frontend/build/`
+- Frontend build is required because backend embeds these assets via Go's `//go:embed` directive
+
 Run E2E tests (setup and teardown are automatic):
 
 ```bash
-bun run e2e-test              # Run all tests
+bun run build                 # Build frontend first (required!)
+bun run e2e-test              # Run all OSS tests
 bun run e2e-test:ui           # Run with Playwright UI
+bun run e2e-test-enterprise   # Run enterprise tests (requires console-enterprise repo)
 ```
 
 ### First Run
