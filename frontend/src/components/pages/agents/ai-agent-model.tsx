@@ -46,7 +46,7 @@ export const PROVIDER_INFO = {
   google: {
     label: 'Google',
     icon: GeminiLogo,
-    modelPattern: /^(gemini-)/i,
+    modelPattern: /^(gemini-)/i, // Matches gemini-2.x, gemini-3.x, etc.
   },
 } as const;
 
@@ -116,6 +116,11 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     icon: GeminiLogo,
     models: [
       {
+        value: 'gemini-3-pro-preview',
+        name: 'Gemini 3 Pro Preview',
+        description: 'Latest model with reasoning support and 1M context',
+      },
+      {
         value: 'gemini-2.5-pro',
         name: 'Gemini 2.5 Pro',
         description: 'High-capability model for complex tasks',
@@ -146,7 +151,7 @@ type AIAgentModelProps = {
  * This allows the component to work with any model from supported providers,
  * not just the ones explicitly listed in MODEL_OPTIONS_BY_PROVIDER
  */
-const detectProvider = (modelName: string): (typeof PROVIDER_INFO)[keyof typeof PROVIDER_INFO] | null => {
+export const detectProvider = (modelName: string): (typeof PROVIDER_INFO)[keyof typeof PROVIDER_INFO] | null => {
   for (const provider of Object.values(PROVIDER_INFO)) {
     if (provider.modelPattern.test(modelName)) {
       return provider;

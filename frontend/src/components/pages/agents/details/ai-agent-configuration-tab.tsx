@@ -55,7 +55,7 @@ import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-import { AIAgentModel, MODEL_OPTIONS_BY_PROVIDER, PROVIDER_INFO } from '../ai-agent-model';
+import { AIAgentModel, detectProvider, MODEL_OPTIONS_BY_PROVIDER } from '../ai-agent-model';
 
 type LocalAIAgent = {
   displayName: string;
@@ -77,18 +77,6 @@ type LocalAIAgent = {
  * Regex pattern to extract secret name from template string: ${secrets.SECRET_NAME}
  */
 const SECRET_TEMPLATE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
-
-/**
- * Detects the provider for a given model name using pattern matching
- */
-const detectProvider = (modelName: string): (typeof PROVIDER_INFO)[keyof typeof PROVIDER_INFO] | null => {
-  for (const provider of Object.values(PROVIDER_INFO)) {
-    if (provider.modelPattern.test(modelName)) {
-      return provider;
-    }
-  }
-  return null;
-};
 
 /**
  * Extracts the secret name from the template string format: ${secrets.SECRET_NAME} -> SECRET_NAME
@@ -481,13 +469,13 @@ export const AIAgentConfigurationTab = () => {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-4">
         {/* Main Configuration - takes 3/4 width on large screens */}
         <div className="space-y-6 xl:col-span-3">
-          {/* Agent Configuration Card */}
+          {/* Basic Information Card */}
           <Card className="px-0 py-0" size="full">
             <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
-                  <Text className="font-semibold">Agent Configuration</Text>
+                  <Text className="font-semibold">Basic Information</Text>
                 </CardTitle>
                 <div className="flex gap-2">
                   {isEditing ? (
@@ -559,33 +547,88 @@ export const AIAgentConfigurationTab = () => {
                     </div>
                   )}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="systemPrompt">System Prompt</Label>
-                  {isEditing ? (
-                    <Textarea
-                      id="systemPrompt"
-                      onChange={(e) => updateField({ systemPrompt: e.target.value })}
-                      rows={8}
-                      value={displayData.systemPrompt}
-                    />
-                  ) : (
-                    <DynamicCodeBlock code={displayData.systemPrompt} lang="text" />
-                  )}
-                </div>
+
+                {/* Tags - moved from sidebar */}
+                {displayData.tags.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Tags</Label>
+                    <div className="space-y-2">
+                      {displayData.tags.map((tag, index) => (
+                        <div className="flex items-center gap-2" key={`tag-${index}`}>
+                          <div className="flex-1">
+                            <Input
+                              disabled={!isEditing}
+                              onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
+                              placeholder="Key"
+                              value={tag.key}
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <Input
+                              disabled={!isEditing}
+                              onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
+                              placeholder="Value"
+                              value={tag.value}
+                            />
+                          </div>
+                          {isEditing && (
+                            <div className="flex h-9 items-end">
+                              <Button onClick={() => handleRemoveTag(index)} size="sm" variant="outline">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {isEditing && displayData.tags.length === 0 && (
+                  <div className="space-y-2">
+                    <Label>Tags</Label>
+                    <Button className="w-full" onClick={handleAddTag} variant="dashed">
+                      <Plus className="h-4 w-4" />
+                      Add Tag
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* System Prompt Card */}
+          <Card className="px-0 py-0" size="full">
+            <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                <Text className="font-semibold">System Prompt</Text>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <div className="space-y-2">
+                <Label htmlFor="systemPrompt">System Prompt</Label>
+                {isEditing ? (
+                  <Textarea
+                    id="systemPrompt"
+                    onChange={(e) => updateField({ systemPrompt: e.target.value })}
+                    rows={8}
+                    value={displayData.systemPrompt}
+                  />
+                ) : (
+                  <DynamicCodeBlock code={displayData.systemPrompt} lang="text" />
+                )}
               </div>
             </CardContent>
           </Card>
 
           {/* MCP Servers - Always visible */}
-          {(connectedMcpServers.length > 0 || isEditing) && (
-            <MCPServersSection
-              availableMcpServers={availableMcpServers}
-              connectedMcpServers={connectedMcpServers}
-              isEditing={isEditing}
-              onServerSelectionChange={(newServers) => updateField({ selectedMcpServers: newServers })}
-              selectedMcpServers={displayData.selectedMcpServers}
-            />
-          )}
+          <MCPServersSection
+            availableMcpServers={availableMcpServers}
+            connectedMcpServers={connectedMcpServers}
+            isEditing={isEditing}
+            onServerSelectionChange={(newServers) => updateField({ selectedMcpServers: newServers })}
+            selectedMcpServers={displayData.selectedMcpServers}
+          />
 
           {/* Service Account - Always visible */}
           {agent.tags.service_account_id && (
@@ -607,8 +650,9 @@ export const AIAgentConfigurationTab = () => {
           )}
         </div>
 
-        {/* Resources Card */}
-        <div className="xl:col-span-1">
+        {/* Right Sidebar */}
+        <div className="space-y-6 xl:col-span-1">
+          {/* Resources Card */}
           <Card className="px-0 py-0" size="full">
             <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
               <CardTitle className="flex items-center gap-2">
@@ -617,177 +661,214 @@ export const AIAgentConfigurationTab = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
-              <div className="space-y-6">
-                {/* Resources */}
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="resources">Resource Tier</Label>
-                    {isEditing ? (
-                      <ResourceTierSelect
-                        onValueChange={(value) => updateField({ resources: { tier: value } })}
-                        value={displayData.resources.tier}
-                      />
-                    ) : (
-                      <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <code className="font-mono text-sm">
-                          {agent.resources?.cpuShares || '200m'} CPU, {agent.resources?.memoryShares || '800M'} RAM
-                        </code>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Provider Configuration */}
-                <div className="space-y-4">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="model">Model</Label>
-                      {isEditing ? (
-                        <Select onValueChange={(value) => updateField({ model: value })} value={displayData.model}>
-                          <SelectTrigger>
-                            <SelectValue>
-                              {displayData.model && detectProvider(displayData.model) ? (
-                                <div className="flex items-center gap-2">
-                                  <img
-                                    alt={detectProvider(displayData.model)?.label}
-                                    className="h-4 w-4"
-                                    src={detectProvider(displayData.model)?.icon}
-                                  />
-                                  <span>{displayData.model}</span>
-                                </div>
-                              ) : (
-                                displayData.model
-                              )}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([providerId, provider]) => {
-                              const logoSrc = provider.icon;
-                              return (
-                                <SelectGroup key={providerId}>
-                                  <SelectLabel>
-                                    <div className="flex items-center gap-2">
-                                      <img alt={provider.label} className="h-4 w-4" src={logoSrc} />
-                                      <span>{provider.label}</span>
-                                    </div>
-                                  </SelectLabel>
-                                  {provider.models.map((model) => (
-                                    <SelectItem key={model.value} value={model.value}>
-                                      <div className="flex flex-col gap-0.5">
-                                        <Text className="font-medium">{model.name}</Text>
-                                        <Text className="text-xs" variant="muted">
-                                          {model.description}
-                                        </Text>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectGroup>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                          <AIAgentModel model={displayData.model} />
-                        </div>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="maxIterations">Max Iterations</Label>
-                      {isEditing ? (
-                        <>
-                          <div className="flex items-center justify-between pb-2">
-                            <Text className="font-medium text-sm">{displayData.maxIterations}</Text>
-                          </div>
-                          <Slider
-                            max={100}
-                            min={10}
-                            onValueChange={(values) => updateField({ maxIterations: values[0] })}
-                            value={[displayData.maxIterations]}
-                          />
-                        </>
-                      ) : (
-                        <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                          <Text variant="default">{displayData.maxIterations}</Text>
-                        </div>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="apiKeySecret">OpenAI API Token</Label>
-                      {isEditing ? (
-                        <div className="[&>div]:flex-col [&>div]:items-stretch [&>div]:gap-2">
-                          <SecretSelector
-                            availableSecrets={availableSecrets}
-                            onChange={(value) => updateField({ apiKeySecret: value })}
-                            placeholder="Select from secrets store or create new"
-                            scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
-                            value={displayData.apiKeySecret}
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                          <Text variant="default">{displayData.apiKeySecret || 'No secret configured'}</Text>
-                        </div>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Provider</Label>
-                      <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <Text variant="default">
-                          {agent.provider?.provider.case === 'openai' && 'OpenAI'}
-                          {agent.provider?.provider.case === 'anthropic' && 'Anthropic'}
-                          {agent.provider?.provider.case === 'google' && 'Google'}
-                          {agent.provider?.provider.case === 'openaiCompatible' && 'OpenAI Compatible'}
-                        </Text>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tags */}
-                {(displayData.tags.length > 0 || isEditing) && (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Tags</Label>
-                      <div className="space-y-2">
-                        {displayData.tags.map((tag, index) => (
-                          <div className="flex items-center gap-2" key={`tag-${index}`}>
-                            <div className="flex-1">
-                              <Input
-                                disabled={!isEditing}
-                                onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
-                                placeholder="Key"
-                                value={tag.key}
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <Input
-                                disabled={!isEditing}
-                                onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
-                                placeholder="Value"
-                                value={tag.value}
-                              />
-                            </div>
-                            {isEditing && (
-                              <div className="flex h-9 items-end">
-                                <Button onClick={() => handleRemoveTag(index)} size="sm" variant="outline">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                        {isEditing && (
-                          <Button className="w-full" onClick={handleAddTag} variant="dashed">
-                            <Plus className="h-4 w-4" />
-                            Add Tag
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+              <div className="space-y-2">
+                <Label htmlFor="resources">Resource Tier</Label>
+                {isEditing ? (
+                  <ResourceTierSelect
+                    onValueChange={(value) => updateField({ resources: { tier: value } })}
+                    value={displayData.resources.tier}
+                  />
+                ) : (
+                  <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                    <code className="font-mono text-sm">
+                      {agent.resources?.cpuShares || '200m'} CPU, {agent.resources?.memoryShares || '800M'} RAM
+                    </code>
                   </div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* LLM Configuration Card */}
+          <Card className="px-0 py-0" size="full">
+            <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                <Text className="font-semibold">LLM Configuration</Text>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              {isEditing ? (
+                <div className="space-y-4">
+                  {/* Provider - now editable */}
+                  <div className="space-y-2">
+                    <Label htmlFor="provider">Provider</Label>
+                    <Select
+                      onValueChange={(value: 'openai' | 'anthropic' | 'google') => {
+                        const newProviderData = MODEL_OPTIONS_BY_PROVIDER[value];
+                        const firstModel = newProviderData.models[0].value;
+
+                        updateField({
+                          provider: createUpdatedProvider(value, '', displayData.baseUrl || ''),
+                          model: firstModel,
+                          apiKeySecret: '',
+                        });
+                      }}
+                      value={displayData.provider?.provider.case}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select provider">
+                          {displayData.provider?.provider.case && (
+                            <div className="flex items-center gap-2">
+                              <img
+                                alt={MODEL_OPTIONS_BY_PROVIDER[displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER]?.label}
+                                className="h-4 w-4"
+                                src={MODEL_OPTIONS_BY_PROVIDER[displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER]?.icon}
+                              />
+                              <span>
+                                {displayData.provider.provider.case === 'openai' && 'OpenAI'}
+                                {displayData.provider.provider.case === 'anthropic' && 'Anthropic'}
+                                {displayData.provider.provider.case === 'google' && 'Google'}
+                              </span>
+                            </div>
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([providerId, provider]) => (
+                          <SelectItem key={providerId} value={providerId}>
+                            <div className="flex items-center gap-2">
+                              <img alt={provider.label} className="h-4 w-4" src={provider.icon} />
+                              <span>{provider.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Model - filtered by provider */}
+                  <div className="space-y-2">
+                    <Label htmlFor="model">Model</Label>
+                    <Select onValueChange={(value) => updateField({ model: value })} value={displayData.model}>
+                      <SelectTrigger>
+                        <SelectValue>
+                          {displayData.model && detectProvider(displayData.model) ? (
+                            <div className="flex items-center gap-2">
+                              <img
+                                alt={detectProvider(displayData.model)?.label}
+                                className="h-4 w-4"
+                                src={detectProvider(displayData.model)?.icon}
+                              />
+                              <span>{displayData.model}</span>
+                            </div>
+                          ) : (
+                            displayData.model
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(() => {
+                          const providerCase = displayData.provider?.provider.case;
+
+                          if (providerCase === 'openaiCompatible') {
+                            return (
+                              <div className="p-2">
+                                <Text variant="muted">
+                                  For OpenAI Compatible providers, enter the model name directly
+                                </Text>
+                              </div>
+                            );
+                          }
+
+                          const providerData = providerCase
+                            ? MODEL_OPTIONS_BY_PROVIDER[providerCase as keyof typeof MODEL_OPTIONS_BY_PROVIDER]
+                            : null;
+
+                          if (!providerData) {
+                            return (
+                              <div className="p-2">
+                                <Text variant="muted">No models available for this provider</Text>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <SelectGroup>
+                              <SelectLabel>
+                                <div className="flex items-center gap-2">
+                                  <img alt={providerData.label} className="h-4 w-4" src={providerData.icon} />
+                                  <span>{providerData.label}</span>
+                                </div>
+                              </SelectLabel>
+                              {providerData.models.map((model: { value: string; name: string; description: string }) => (
+                                <SelectItem key={model.value} value={model.value}>
+                                  <div className="flex flex-col gap-0.5">
+                                    <Text className="font-medium">{model.name}</Text>
+                                    <Text className="text-xs" variant="muted">
+                                      {model.description}
+                                    </Text>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          );
+                        })()}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* API Token */}
+                  <div className="space-y-2">
+                    <Label htmlFor="apiKeySecret">API Token</Label>
+                    <div className="[&>div]:flex-col [&>div]:items-stretch [&>div]:gap-2">
+                      <SecretSelector
+                        availableSecrets={availableSecrets}
+                        onChange={(value) => updateField({ apiKeySecret: value })}
+                        placeholder="Select from secrets store or create new"
+                        scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
+                        value={displayData.apiKeySecret}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Max Iterations */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="maxIterations">Max Iterations</Label>
+                      <Text className="font-medium text-sm">{displayData.maxIterations}</Text>
+                    </div>
+                    <Slider
+                      max={100}
+                      min={10}
+                      onValueChange={(values) => updateField({ maxIterations: values[0] })}
+                      value={[displayData.maxIterations]}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Provider</Label>
+                    <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                      <Text variant="default">
+                        {agent.provider?.provider.case === 'openai' && 'OpenAI'}
+                        {agent.provider?.provider.case === 'anthropic' && 'Anthropic'}
+                        {agent.provider?.provider.case === 'google' && 'Google'}
+                        {agent.provider?.provider.case === 'openaiCompatible' && 'OpenAI Compatible'}
+                      </Text>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Model</Label>
+                    <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                      <AIAgentModel model={displayData.model} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>API Token</Label>
+                    <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                      <Text variant="default">{displayData.apiKeySecret || 'No secret configured'}</Text>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Max Iterations</Label>
+                    <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                      <Text variant="default">{displayData.maxIterations}</Text>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -27,22 +27,11 @@ import {
   FormMessage,
 } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from 'components/redpanda-ui/components/select';
-import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
-import { SecretSelector } from 'components/ui/secret/secret-selector';
 import {
   ServiceAccountSelector,
   type ServiceAccountSelectorRef,
@@ -72,20 +61,7 @@ import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { FormSchema, type FormValues, initialValues } from './schemas';
-import { MODEL_OPTIONS_BY_PROVIDER, PROVIDER_INFO } from '../ai-agent-model';
-
-/**
- * Detects the provider for a given model name using pattern matching
- * Allows handling any model from supported providers (e.g., gpt-4, gpt-4-turbo, o1-preview, claude-3-opus, etc.)
- */
-const detectProvider = (modelName: string): (typeof PROVIDER_INFO)[keyof typeof PROVIDER_INFO] | null => {
-  for (const provider of Object.values(PROVIDER_INFO)) {
-    if (provider.modelPattern.test(modelName)) {
-      return provider;
-    }
-  }
-  return null;
-};
+import { LLMConfigSection } from 'components/ui/ai-agent/llm-config-section';
 
 export const AIAgentCreatePage = () => {
   const navigate = useNavigate();
@@ -171,14 +147,6 @@ export const AIAgentCreatePage = () => {
       form.setValue('apiKeySecret', providerSecret.id);
     }
   }, [availableSecrets, selectedProvider, form]);
-
-  // Auto-update model when provider changes
-  useEffect(() => {
-    const providerModels = MODEL_OPTIONS_BY_PROVIDER[selectedProvider];
-    if (providerModels.models.length > 0) {
-      form.setValue('model', providerModels.models[0].value);
-    }
-  }, [selectedProvider, form]);
 
   // Get available MCP servers (all servers, regardless of state)
   const availableMcpServers = useMemo(() => {
@@ -457,149 +425,21 @@ export const AIAgentCreatePage = () => {
                   <Text variant="muted">Configure the AI model and authentication</Text>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="provider"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel required>Provider</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select provider" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([providerId, provider]) => (
-                                <SelectItem key={providerId} value={providerId}>
-                                  <div className="flex items-center gap-2">
-                                    <img alt={provider.label} className="h-4 w-4" src={provider.icon} />
-                                    <span>{provider.label}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="apiKeySecret"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel required>API Token</FormLabel>
-                          <FormControl>
-                            <SecretSelector
-                              availableSecrets={availableSecrets}
-                              onChange={field.onChange}
-                              placeholder="Select from secrets store or create new"
-                              scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
-                              value={field.value}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="model"
-                      render={({ field }) => {
-                        const formProvider = form.watch('provider');
-                        const providerModels = MODEL_OPTIONS_BY_PROVIDER[formProvider];
-                        const detectedProvider = field.value ? detectProvider(field.value) : null;
-
-                        return (
-                          <FormItem>
-                            <FormLabel required>Model</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select AI model">
-                                    {field.value && detectedProvider ? (
-                                      <div className="flex items-center gap-2">
-                                        <img
-                                          alt={detectedProvider.label}
-                                          className="h-4 w-4"
-                                          src={detectedProvider.icon}
-                                        />
-                                        <span>{field.value}</span>
-                                      </div>
-                                    ) : (
-                                      'Select AI model'
-                                    )}
-                                  </SelectValue>
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectGroup>
-                                  <SelectLabel>
-                                    <div className="flex items-center gap-2">
-                                      <img alt={providerModels.label} className="h-4 w-4" src={providerModels.icon} />
-                                      <span>{providerModels.label}</span>
-                                    </div>
-                                  </SelectLabel>
-                                  {providerModels.models.map((model) => (
-                                    <SelectItem key={model.value} value={model.value}>
-                                      <div className="flex flex-col gap-0.5">
-                                        <Text className="font-medium">{model.name}</Text>
-                                        <Text className="text-xs" variant="muted">
-                                          {model.description}
-                                        </Text>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        );
-                      }}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="baseUrl"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Base URL (optional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="https://api.example.com" {...field} />
-                          </FormControl>
-                          <Text variant="muted">Override the default API endpoint for this provider</Text>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="maxIterations"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center justify-between">
-                            <FormLabel>Max Iterations</FormLabel>
-                            <Text className="font-medium text-sm">{field.value}</Text>
-                          </div>
-                          <FormControl>
-                            <Slider
-                              max={100}
-                              min={10}
-                              onValueChange={(values) => field.onChange(values[0])}
-                              value={[field.value]}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <LLMConfigSection
+                    mode="create"
+                    form={form}
+                    fieldNames={{
+                      provider: 'provider',
+                      model: 'model',
+                      apiKeySecret: 'apiKeySecret',
+                      baseUrl: 'baseUrl',
+                      maxIterations: 'maxIterations',
+                    }}
+                    availableSecrets={availableSecrets}
+                    scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
+                    showBaseUrl={true}
+                    showMaxIterations={true}
+                  />
                 </CardContent>
               </Card>
             </div>
