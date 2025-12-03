@@ -9,6 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import AnthropicLogo from 'assets/anthropic.svg';
+import ApiGenericLogo from 'assets/api-generic.svg';
+import GeminiLogo from 'assets/gemini.svg';
 import OpenAILogo from 'assets/openai.svg';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
@@ -34,8 +37,22 @@ export const PROVIDER_INFO = {
   openai: {
     label: 'OpenAI',
     icon: OpenAILogo,
-    // Matches: gpt-5, gpt-5-mini etc.
-    modelPattern: /^(gpt-)/i,
+    modelPattern: /^(gpt-|o1-|o3-|o4-)/i,
+  },
+  anthropic: {
+    label: 'Anthropic',
+    icon: AnthropicLogo,
+    modelPattern: /^(claude-)/i,
+  },
+  google: {
+    label: 'Google',
+    icon: GeminiLogo,
+    modelPattern: /^(gemini-)/i, // Matches gemini-2.x, gemini-3.x, etc.
+  },
+  openaiCompatible: {
+    label: 'OpenAI Compatible',
+    icon: ApiGenericLogo,
+    modelPattern: /^$/,
   },
 } as const;
 
@@ -79,10 +96,63 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
       },
     ],
   },
+  anthropic: {
+    label: 'Anthropic',
+    icon: AnthropicLogo,
+    models: [
+      {
+        value: 'claude-sonnet-4-5',
+        name: 'Claude Sonnet 4.5',
+        description: 'Balanced intelligence and speed for most tasks',
+      },
+      {
+        value: 'claude-opus-4-1',
+        name: 'Claude Opus 4.1',
+        description: 'Most capable for complex reasoning and analysis',
+      },
+      {
+        value: 'claude-haiku-4-5',
+        name: 'Claude Haiku 4.5',
+        description: 'Fast and cost-effective for simpler tasks',
+      },
+    ],
+  },
+  google: {
+    label: 'Google',
+    icon: GeminiLogo,
+    models: [
+      {
+        value: 'gemini-3-pro-preview',
+        name: 'Gemini 3 Pro Preview',
+        description: 'Latest model with reasoning support and 1M context',
+      },
+      {
+        value: 'gemini-2.5-pro',
+        name: 'Gemini 2.5 Pro',
+        description: 'High-capability model for complex tasks',
+      },
+      {
+        value: 'gemini-2.5-flash',
+        name: 'Gemini 2.5 Flash',
+        description: 'Fast and efficient for most use cases',
+      },
+      {
+        value: 'gemini-2.0-flash',
+        name: 'Gemini 2.0 Flash',
+        description: 'Proven performance and reliability',
+      },
+    ],
+  },
+  openaiCompatible: {
+    label: 'OpenAI Compatible',
+    icon: ApiGenericLogo,
+    models: [],
+  },
 } as const;
 
 type AIAgentModelProps = {
   model: string;
+  providerType?: 'openai' | 'anthropic' | 'google' | 'openaiCompatible';
   className?: string;
   showLogo?: boolean;
   size?: 'sm' | 'md' | 'lg';
@@ -93,7 +163,7 @@ type AIAgentModelProps = {
  * This allows the component to work with any model from supported providers,
  * not just the ones explicitly listed in MODEL_OPTIONS_BY_PROVIDER
  */
-const detectProvider = (modelName: string): (typeof PROVIDER_INFO)[keyof typeof PROVIDER_INFO] | null => {
+export const detectProvider = (modelName: string): (typeof PROVIDER_INFO)[keyof typeof PROVIDER_INFO] | null => {
   for (const provider of Object.values(PROVIDER_INFO)) {
     if (provider.modelPattern.test(modelName)) {
       return provider;
@@ -107,16 +177,16 @@ const detectProvider = (modelName: string): (typeof PROVIDER_INFO)[keyof typeof 
  * Used in list page, details page, and create page
  *
  * @example
- * // Works with any OpenAI model
- * <AIAgentModel model="gpt-5" />
- * <AIAgentModel model="gpt-5-mini" />
+ * // With explicit provider type (preferred)
+ * <AIAgentModel model="gpt-5" providerType="openai" />
+ * <AIAgentModel model="llama-3.1-70b" providerType="openaiCompatible" />
  *
- * // Future: Works with Anthropic models when added
- * <AIAgentModel model="claude-4-opus" />
+ * // Fallback to detection if provider not provided
+ * <AIAgentModel model="gpt-5" />
  */
-export const AIAgentModel = ({ model, className, showLogo = true, size = 'md' }: AIAgentModelProps) => {
-  // Detect provider using pattern matching
-  const providerInfo = detectProvider(model);
+export const AIAgentModel = ({ model, providerType, className, showLogo = true, size = 'md' }: AIAgentModelProps) => {
+  // Use explicit provider type if provided, otherwise fall back to detection
+  const providerInfo = providerType ? PROVIDER_INFO[providerType] : detectProvider(model);
 
   const sizeClasses = {
     sm: 'h-3 w-3',

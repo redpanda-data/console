@@ -159,12 +159,20 @@ components:
       type: object
     AIAgent.Provider:
       properties:
+        anthropic:
+          $ref: '#/components/schemas/Anthropic'
+        google:
+          $ref: '#/components/schemas/Google'
         openai:
           $ref: '#/components/schemas/AIAgent.Provider.OpenAI'
+        openai_compatible:
+          $ref: '#/components/schemas/OpenAICompatible'
       type: object
     AIAgent.Provider.OpenAI:
       properties:
         api_key:
+          type: string
+        base_url:
           type: string
       required:
         - api_key
@@ -361,6 +369,15 @@ components:
             If a tag's value is empty, the server interprets that as a deletion.
           type: object
       type: object
+    Anthropic:
+      properties:
+        api_key:
+          type: string
+        base_url:
+          type: string
+      required:
+        - api_key
+      type: object
     Any:
       additionalProperties: {}
       properties:
@@ -506,6 +523,15 @@ components:
         total_topics_replicated:
           format: uint64
           type: string
+      type: object
+    Google:
+      properties:
+        api_key:
+          type: string
+        base_url:
+          type: string
+      required:
+        - api_key
       type: object
     KnowledgeBase:
       properties:
@@ -1160,6 +1186,16 @@ components:
         pattern_type:
           $ref: '#/components/schemas/PatternType'
       title: A filter based on the name of a resource
+      type: object
+    OpenAICompatible:
+      properties:
+        api_key:
+          type: string
+        base_url:
+          type: string
+      required:
+        - api_key
+        - base_url
       type: object
     PartitionInfo:
       properties:
