@@ -65,6 +65,7 @@ var (
 
 // ShadowLinkServiceClient is a client for the redpanda.api.dataplane.v1.ShadowLinkService service.
 type ShadowLinkServiceClient interface {
+	// buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
 	FailOver(context.Context, *connect.Request[v2.FailOverRequest]) (*connect.Response[v1.FailOverResponse], error)
 	ListShadowLinkTopics(context.Context, *connect.Request[v1.ListShadowLinkTopicsRequest]) (*connect.Response[v1.ListShadowLinkTopicsResponse], error)
 	GetShadowTopic(context.Context, *connect.Request[v1.GetShadowTopicRequest]) (*connect.Response[v1.GetShadowTopicResponse], error)
@@ -153,6 +154,7 @@ func (c *shadowLinkServiceClient) GetShadowLink(ctx context.Context, req *connec
 // ShadowLinkServiceHandler is an implementation of the redpanda.api.dataplane.v1.ShadowLinkService
 // service.
 type ShadowLinkServiceHandler interface {
+	// buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
 	FailOver(context.Context, *connect.Request[v2.FailOverRequest]) (*connect.Response[v1.FailOverResponse], error)
 	ListShadowLinkTopics(context.Context, *connect.Request[v1.ListShadowLinkTopicsRequest]) (*connect.Response[v1.ListShadowLinkTopicsResponse], error)
 	GetShadowTopic(context.Context, *connect.Request[v1.GetShadowTopicRequest]) (*connect.Response[v1.GetShadowTopicResponse], error)

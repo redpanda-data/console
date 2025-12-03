@@ -32,6 +32,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ShadowLinkServiceClient interface {
+	// buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
 	FailOver(ctx context.Context, in *v2.FailOverRequest, opts ...grpc.CallOption) (*FailOverResponse, error)
 	ListShadowLinkTopics(ctx context.Context, in *ListShadowLinkTopicsRequest, opts ...grpc.CallOption) (*ListShadowLinkTopicsResponse, error)
 	GetShadowTopic(ctx context.Context, in *GetShadowTopicRequest, opts ...grpc.CallOption) (*GetShadowTopicResponse, error)
@@ -101,6 +102,7 @@ func (c *shadowLinkServiceClient) GetShadowLink(ctx context.Context, in *GetShad
 // All implementations must embed UnimplementedShadowLinkServiceServer
 // for forward compatibility.
 type ShadowLinkServiceServer interface {
+	// buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
 	FailOver(context.Context, *v2.FailOverRequest) (*FailOverResponse, error)
 	ListShadowLinkTopics(context.Context, *ListShadowLinkTopicsRequest) (*ListShadowLinkTopicsResponse, error)
 	GetShadowTopic(context.Context, *GetShadowTopicRequest) (*GetShadowTopicResponse, error)

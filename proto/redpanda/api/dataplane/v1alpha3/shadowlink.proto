@@ -140,6 +140,7 @@ service ShadowLinkService {
     description: "Dataplane operations for Redpanda shadow links."
   };
 
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
   rpc FailOver(core.admin.v2.FailOverRequest) returns (FailOverResponse) {
     option (google.api.http) = {
       post: "/v1alpha3/shadowlink/{name}/failover"
