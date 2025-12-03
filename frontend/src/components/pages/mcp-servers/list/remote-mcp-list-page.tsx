@@ -33,32 +33,26 @@ import {
   DataTablePagination,
   DataTableViewOptions,
 } from 'components/redpanda-ui/components/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { AlertCircle, Check, Copy, Loader2, MoreHorizontal, Pause, Play, Plus, X } from 'lucide-react';
+import { AlertCircle, Check, Loader2, Pause, Plus, X } from 'lucide-react';
 import { runInAction } from 'mobx';
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
   type MCPServer as APIMCPServer,
   MCPServer_State,
   useDeleteMCPServerMutation,
   useListMCPServersQuery,
-  useStartMCPServerMutation,
-  useStopMCPServerMutation,
 } from 'react-query/api/remote-mcp';
+import { useDeleteSecretMutation } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
+
+import { MCPActions } from './mcp-actions';
+import { MCPDeleteHandler, type MCPDeleteHandlerRef } from './mcp-delete-handler';
 
 const statusOptions = [
   { value: String(MCPServer_State.RUNNING), label: 'Running', icon: Check },
@@ -75,6 +69,7 @@ export type MCPServer = {
   state: (typeof MCPServer_State)[keyof typeof MCPServer_State];
   tools: string[];
   lastConnected?: string;
+  tags?: Record<string, string>;
 };
 
 const StatusIcon = ({ state }: { state: (typeof MCPServer_State)[keyof typeof MCPServer_State] }) => {
@@ -149,10 +144,20 @@ const transformAPIMCPServer = (apiServer: APIMCPServer): MCPServer => {
     url: apiServer.url,
     state: apiServer.state,
     tools: toolNames,
+    tags: apiServer.tags,
   };
 };
 
-export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): ColumnDef<MCPServer>[] => [
+export const createColumns = (
+  setIsDeleteDialogOpen: (open: boolean) => void,
+  handleDeleteWithServiceAccount: (
+    serverId: string,
+    deleteServiceAccount: boolean,
+    secretName: string | null,
+    serviceAccountId: string | null
+  ) => Promise<void>,
+  isDeletingServer: boolean
+): ColumnDef<MCPServer>[] => [
   {
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
@@ -211,92 +216,14 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
     id: 'actions',
     enableHiding: false,
     cell: ({ row }) => {
-      const { mutate: deleteMCPServer, isPending: isDeleting } = useDeleteMCPServerMutation({
-        onSuccess: () => {
-          toast.success(`MCP server ${row?.original?.name} deleted`);
-        },
-      });
-      const { mutate: startMCPServer, isPending: isStarting } = useStartMCPServerMutation();
-      const { mutate: stopMCPServer, isPending: isStopping } = useStopMCPServerMutation();
-
       const server = row.original;
-
-      const handleDelete = (id: string) => {
-        deleteMCPServer({ id });
-      };
-
-      const handleCopy = () => {
-        navigator.clipboard.writeText(server.url);
-      };
-
-      const handleStart = (event: React.MouseEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        startMCPServer({ id: server.id });
-      };
-
-      const handleStop = (event: React.MouseEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        stopMCPServer({ id: server.id });
-      };
-
-      const canStart = server.state === MCPServer_State.STOPPED || server.state === MCPServer_State.ERROR;
-      const canStop = server.state === MCPServer_State.RUNNING;
-
       return (
-        <div data-actions-column>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="h-8 w-8 data-[state=open]:bg-muted" size="icon" variant="ghost">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[160px]">
-              <DropdownMenuItem data-testid="copy-url-menu-item" onClick={handleCopy}>
-                <div className="flex items-center gap-4">
-                  <Copy className="h-4 w-4" /> Copy URL
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {canStart && (
-                <DropdownMenuItem data-testid="start-server-menu-item" onClick={handleStart}>
-                  {isStarting ? (
-                    <div className="flex items-center gap-4">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Starting
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-4">
-                      <Play className="h-4 w-4" />
-                      Start Server
-                    </div>
-                  )}
-                </DropdownMenuItem>
-              )}
-              {canStop && (
-                <DropdownMenuItem data-testid="stop-server-menu-item" onClick={handleStop}>
-                  {isStopping ? (
-                    <div className="flex items-center gap-4">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Stopping
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-4">
-                      <Pause className="h-4 w-4" /> Stop Server
-                    </div>
-                  )}
-                </DropdownMenuItem>
-              )}
-              {(canStart || canStop) && <DropdownMenuSeparator />}
-              <DeleteResourceAlertDialog
-                isDeleting={isDeleting}
-                onDelete={handleDelete}
-                onOpenChange={setIsDeleteDialogOpen}
-                resourceId={server.id}
-                resourceName={server.name}
-                resourceType="Remote MCP Server"
-              />
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <MCPActions
+          isDeletingServer={isDeletingServer}
+          onDeleteWithServiceAccount={handleDeleteWithServiceAccount}
+          server={server}
+          setIsDeleteDialogOpen={setIsDeleteDialogOpen}
+        />
       );
     },
   },
@@ -340,7 +267,7 @@ export const updatePageTitle = () => {
   });
 };
 
-export const RemoteMCPListPage = () => {
+const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: React.RefObject<MCPDeleteHandlerRef> }) => {
   const navigate = useNavigate();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -350,6 +277,38 @@ export const RemoteMCPListPage = () => {
 
   // React Query hooks
   const { data: mcpServersData, isLoading, error } = useListMCPServersQuery({});
+  const { mutateAsync: deleteMCPServer, isPending: isDeletingServer } = useDeleteMCPServerMutation();
+  const { mutateAsync: deleteSecret } = useDeleteSecretMutation({ skipInvalidation: true });
+
+  // Handler for deleting MCP server with optional service account deletion
+  const handleDeleteWithServiceAccount = useCallback(
+    async (
+      serverId: string,
+      deleteServiceAccountFlag: boolean,
+      secretName: string | null,
+      serviceAccountId: string | null
+    ) => {
+      try {
+        // Delete MCP server (dataplane)
+        await deleteMCPServer({ id: serverId });
+
+        // If requested and we have the info, delete service account and secret
+        if (deleteServiceAccountFlag && serviceAccountId && secretName) {
+          // Delete service account (controlplane - via ref)
+          await deleteHandlerRef.current?.deleteServiceAccount(serviceAccountId);
+
+          // Delete secret (dataplane)
+          await deleteSecret({ request: { id: secretName } });
+        }
+
+        // Show single success toast regardless of what was deleted
+        toast.success('MCP server deleted successfully');
+      } catch (_error) {
+        toast.error('Failed to delete MCP server');
+      }
+    },
+    [deleteMCPServer, deleteSecret, deleteHandlerRef]
+  );
 
   // Transform API data to component format
   const mcpServers = React.useMemo(
@@ -374,7 +333,10 @@ export const RemoteMCPListPage = () => {
     navigate(`/mcp-servers/${serverId}`);
   };
 
-  const columns = React.useMemo(() => createColumns(setIsDeleteDialogOpen), []);
+  const columns = React.useMemo(
+    () => createColumns(setIsDeleteDialogOpen, handleDeleteWithServiceAccount, isDeletingServer),
+    [handleDeleteWithServiceAccount, isDeletingServer]
+  );
 
   const table = useReactTable({
     data: mcpServers,
@@ -481,5 +443,15 @@ export const RemoteMCPListPage = () => {
         <DataTablePagination table={table} />
       </div>
     </TooltipProvider>
+  );
+};
+
+export const RemoteMCPListPage = () => {
+  const deleteHandlerRef = React.useRef<MCPDeleteHandlerRef>(null);
+
+  return (
+    <MCPDeleteHandler ref={deleteHandlerRef}>
+      <RemoteMCPListPageContent deleteHandlerRef={deleteHandlerRef} />
+    </MCPDeleteHandler>
   );
 };
