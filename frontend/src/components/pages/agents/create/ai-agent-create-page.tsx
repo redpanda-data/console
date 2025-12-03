@@ -372,7 +372,7 @@ export const AIAgentCreatePage = () => {
                         <FormItem>
                           <FormLabel required>Agent Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="Customer Support Bot" {...field} />
+                            <Input {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
