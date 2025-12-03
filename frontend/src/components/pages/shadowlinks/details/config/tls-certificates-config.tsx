@@ -10,7 +10,7 @@
  */
 
 import { Text } from 'components/redpanda-ui/components/typography';
-import type { TLSSettings } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import type { TLSSettings } from 'protogen/redpanda/core/common/v1/tls_pb';
 import type React from 'react';
 
 const ConfigField = ({ label, value, testId }: { label: string; value: React.ReactNode; testId?: string }) => (

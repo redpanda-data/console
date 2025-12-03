@@ -10,7 +10,7 @@
  */
 
 import { FilterType, PatternType, ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/acl_pb';
+import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 import { z } from 'zod';
 
 // TLS mode: either file paths or PEM content
@@ -129,6 +129,9 @@ export const FormSchema = z
         })
       )
       .optional(),
+
+    // Schema Registry sync
+    enableSchemaRegistrySync: z.boolean(),
   })
   .superRefine((data, ctx) => {
     // If SCRAM is enabled, username and password are required
@@ -213,4 +216,5 @@ export const initialValues: FormValues = {
   consumers: [],
   aclsMode: 'all',
   aclFilters: [], // No default filter - user adds as needed
+  enableSchemaRegistrySync: false,
 };

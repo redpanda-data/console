@@ -26,7 +26,7 @@ import {
   ShadowLinkState,
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/acl_pb';
+import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -75,6 +75,7 @@ import {
   addTopicFilter,
   addTopicFilterWithPattern,
   enableMTLS,
+  enableSchemaRegistrySync,
   enableTLS,
   toggleExcludeDefault,
   updateAdvancedOption,
@@ -176,6 +177,8 @@ const performAction = async (
       return await addACLFilter(user, scr, action.principal);
     case 'toggleExcludeDefault':
       return await toggleExcludeDefault(user, scr);
+    case 'enableSchemaRegistrySync':
+      return await enableSchemaRegistrySync(user, scr);
     default:
       throw new Error(`Unknown action type: ${JSON.stringify(action)}`);
   }
@@ -417,6 +420,21 @@ const testCases: TestCase[] = [
       );
       exp(updateRequest.shadowLink.configurations.consumerOffsetSyncOptions?.groupFilters).toHaveLength(1);
       exp(updateRequest.updateMask.paths).not.toContain('configurations.security_sync_options');
+    },
+  },
+  {
+    description: 'enables schema registry sync',
+    actions: [{ type: 'enableSchemaRegistrySync' }],
+    expectedFieldMaskPaths: ['configurations.schema_registry_sync_options'],
+    verify: (updateRequest, exp) => {
+      exp(updateRequest.updateMask.paths).toHaveLength(1);
+      exp(updateRequest.shadowLink.configurations.schemaRegistrySyncOptions).toBeDefined();
+      exp(updateRequest.shadowLink.configurations.schemaRegistrySyncOptions?.schemaRegistryShadowingMode?.case).toBe(
+        'shadowSchemaRegistryTopic'
+      );
+      exp(
+        updateRequest.shadowLink.configurations.schemaRegistrySyncOptions?.schemaRegistryShadowingMode?.value
+      ).toBeDefined();
     },
   },
 ];

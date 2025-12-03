@@ -13,10 +13,12 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from 'components/
 import { Input, InputStart } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { SimpleMultiSelect } from 'components/redpanda-ui/components/multi-select';
+import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { SearchIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
+import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -25,7 +27,7 @@ import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectCompone
 import type { BaseStepRef } from '../types/wizard';
 import { type ConnectTilesListFormData, connectTilesListFormSchema } from '../types/wizard';
 import { getAllCategories } from '../utils/categories';
-import { getBuiltInComponents } from '../utils/schema';
+import { parseSchema } from '../utils/schema';
 
 const PRIORITY_COMPONENTS = [
   'redpanda',
@@ -38,8 +40,8 @@ const PRIORITY_COMPONENTS = [
   'mongodb_cdc',
   'snowflake_streaming',
   'redpanda_migrator',
-  'kafka_franz',
-  'gcp_pubsub',
+  'mysql_cdc',
+  'snowflake_put',
   'slack',
   'sftp',
   'nats',
@@ -113,10 +115,48 @@ const searchComponents = (
   return result;
 };
 
+const ConnectTilesSkeleton = memo(
+  ({
+    children,
+    gridCols = 4,
+    tileCount = 12,
+  }: {
+    children?: React.ReactNode;
+    gridCols?: number;
+    tileCount?: number;
+  }) => {
+    const skeletonTiles = Array.from({ length: tileCount }, (_, i) => (
+      <div className="h-[78px] rounded-lg border bg-card p-4" key={`skeleton-tile-${i}`}>
+        <SkeletonGroup direction="horizontal" spacing="default">
+          <SkeletonGroup className="flex-1" direction="vertical" spacing="sm">
+            <Skeleton variant="heading" width="md" />
+            <Skeleton variant="text" width="xs" />
+          </SkeletonGroup>
+          <Skeleton className="size-6" variant="circle" />
+        </SkeletonGroup>
+      </div>
+    ));
+
+    return (
+      <Choicebox>
+        <div className={cn('grid-auto-rows-fr grid gap-2', `grid-cols-${gridCols}`)}>
+          {children}
+          {skeletonTiles}
+        </div>
+      </Choicebox>
+    );
+  }
+);
+
+ConnectTilesSkeleton.displayName = 'ConnectTilesSkeleton';
+
 export type ConnectTilesProps = {
+  components?: ComponentList;
+  isLoading?: boolean;
   additionalComponents?: ExtendedConnectComponentSpec[];
   componentTypeFilter?: ConnectComponentType[];
   onChange?: (connectionName: string, connectionType: ConnectComponentType) => void;
+  onValidityChange?: (isValid: boolean) => void;
   hideHeader?: boolean;
   hideFilters?: boolean;
   defaultConnectionName?: string;
@@ -134,9 +174,12 @@ export const ConnectTiles = memo(
   forwardRef<BaseStepRef<ConnectTilesListFormData>, ConnectTilesProps & MotionProps>(
     (
       {
+        components,
+        isLoading,
         additionalComponents,
         componentTypeFilter,
         onChange,
+        onValidityChange,
         hideHeader,
         hideFilters,
         defaultConnectionName,
@@ -181,13 +224,14 @@ export const ConnectTiles = memo(
 
       const form = useForm<ConnectTilesListFormData>({
         resolver: zodResolver(connectTilesListFormSchema),
-        mode: 'onSubmit',
+        mode: 'onChange',
         defaultValues,
       });
 
+      const builtInComponents = useMemo(() => (components ? parseSchema(components) : []), [components]);
       const allComponents = useMemo(
-        () => [...getBuiltInComponents(), ...(additionalComponents || [])],
-        [additionalComponents]
+        () => [...builtInComponents, ...(additionalComponents || [])],
+        [builtInComponents, additionalComponents]
       );
 
       const categories = useMemo(
@@ -214,6 +258,11 @@ export const ConnectTiles = memo(
           checkScrollable();
         });
       }, [checkScrollable]);
+
+      // Notify parent when validity changes
+      useEffect(() => {
+        onValidityChange?.(form.formState.isValid);
+      }, [form.formState.isValid, onValidityChange]);
 
       useImperativeHandle(ref, () => ({
         triggerSubmit: async () => {
@@ -304,48 +353,76 @@ export const ConnectTiles = memo(
                   <FormField
                     control={form.control}
                     name="connectionName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          {filteredComponents.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-8 text-center">
-                              <Text className="text-muted-foreground">No connections found matching your filters</Text>
-                              <Text className="mt-1 text-muted-foreground text-sm">
-                                Try adjusting your search or category filters
-                              </Text>
-                            </div>
-                          ) : (
-                            <Choicebox>
-                              <div className={cn('grid-auto-rows-fr grid gap-2', `grid-cols-${gridCols}`)}>
-                                {filteredComponents.map((component) => {
-                                  const uniqueKey = `${component.type}-${component.name}`;
-                                  const isChecked =
-                                    field.value === component.name &&
-                                    form.getValues('connectionType') === component.type;
+                    render={({ field }) => {
+                      const renderTiles = () =>
+                        filteredComponents.map((component) => {
+                          const uniqueKey = `${component.type}-${component.name}`;
+                          const isChecked =
+                            field.value === component.name && form.getValues('connectionType') === component.type;
 
-                                  return (
-                                    <ConnectTile
-                                      checked={isChecked}
-                                      component={component}
-                                      key={uniqueKey}
-                                      onChange={() => {
-                                        field.onChange(component.name);
-                                        form.setValue('connectionType', component.type as ConnectComponentType);
-                                        // Only call onChange for non-wizard use cases (e.g., dialog)
-                                        // Wizard saves to session storage only after "Next" is clicked
-                                        onChange?.(component.name, component.type as ConnectComponentType);
-                                      }}
-                                      uniqueKey={uniqueKey}
-                                    />
-                                  );
-                                })}
-                              </div>
-                            </Choicebox>
-                          )}
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                          return (
+                            <ConnectTile
+                              checked={isChecked}
+                              component={component}
+                              key={uniqueKey}
+                              onChange={() => {
+                                if (isChecked) {
+                                  // Unselect if already selected
+                                  field.onChange('');
+                                  form.setValue('connectionType', '' as ConnectComponentType, { shouldValidate: true });
+                                } else {
+                                  // Select the component
+                                  field.onChange(component.name);
+                                  form.setValue('connectionType', component.type as ConnectComponentType, {
+                                    shouldValidate: true,
+                                  });
+                                  onChange?.(component.name, component.type as ConnectComponentType);
+                                }
+                              }}
+                              uniqueKey={uniqueKey}
+                            />
+                          );
+                        });
+
+                      const hasResults = filteredComponents.length > 0;
+                      const showSkeleton = isLoading;
+                      // biome-ignore lint/complexity/useSimplifiedLogicExpression: Logic is intentionally explicit for clarity
+                      const hasNoResults = !showSkeleton && !hasResults;
+
+                      let content: React.ReactNode;
+
+                      if (hasNoResults) {
+                        content = (
+                          <div className="flex flex-col items-center justify-center py-8 text-center">
+                            <Text className="text-muted-foreground">No connections found matching your filters</Text>
+                            <Text className="mt-1 text-muted-foreground text-sm">
+                              Try adjusting your search or category filters
+                            </Text>
+                          </div>
+                        );
+                      } else if (showSkeleton) {
+                        content = (
+                          <ConnectTilesSkeleton gridCols={gridCols} tileCount={PRIORITY_COMPONENTS.length}>
+                            {renderTiles()}
+                          </ConnectTilesSkeleton>
+                        );
+                      } else {
+                        content = (
+                          <Choicebox>
+                            <div className={cn('grid-auto-rows-fr grid gap-2', `grid-cols-${gridCols}`)}>
+                              {renderTiles()}
+                            </div>
+                          </Choicebox>
+                        );
+                      }
+
+                      return (
+                        <FormItem>
+                          <FormControl>{content}</FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
                   />
                 </div>
                 {/* Gradient overlay to indicate scrollability - only show when not at bottom */}

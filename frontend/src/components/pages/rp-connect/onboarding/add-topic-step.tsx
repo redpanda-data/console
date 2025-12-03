@@ -48,10 +48,11 @@ import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FO
 
 interface AddTopicStepProps {
   defaultTopicName?: string;
+  onValidityChange?: (isValid: boolean) => void;
 }
 
 export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps & MotionProps>(
-  ({ defaultTopicName, ...motionProps }, ref) => {
+  ({ defaultTopicName, onValidityChange, ...motionProps }, ref) => {
     const queryClient = useQueryClient();
 
     const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
@@ -94,6 +95,11 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
     });
 
     const watchedTopicName = form.watch('topicName');
+
+    // Notify parent when validity changes
+    useEffect(() => {
+      onValidityChange?.(form.formState.isValid);
+    }, [form.formState.isValid, onValidityChange]);
 
     const existingTopicSelected = useMemo(() => {
       // Only check if the CURRENT form topic name matches an existing topic

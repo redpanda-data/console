@@ -179,21 +179,21 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             <div className="flex flex-row gap-1">
               <Button
                 type="button"
-                onClick={increment}
-                disabled={props.disabled || readOnly}
-                size={size}
-                variant="outline"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-              <Button
-                type="button"
                 onClick={decrement}
                 disabled={props.disabled || readOnly}
                 size={size}
                 variant="outline"
               >
                 <Minus className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                onClick={increment}
+                disabled={props.disabled || readOnly}
+                size={size}
+                variant="outline"
+              >
+                <Plus className="h-4 w-4" />
               </Button>
             </div>
           )}

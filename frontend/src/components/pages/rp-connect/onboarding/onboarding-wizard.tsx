@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -6,7 +7,9 @@ import { Heading } from 'components/redpanda-ui/components/typography';
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { AnimatePresence } from 'motion/react';
+import { ComponentSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useListComponentsQuery } from 'react-query/api/connect';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useOnboardingTopicDataStore,
@@ -21,7 +24,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { AddTopicStep } from './add-topic-step';
 import { AddUserStep } from './add-user-step';
 import { ConnectTiles } from './connect-tiles';
-import RpConnectPipelinesCreate from '../pipelines-create';
+import PipelinePage from '../pipeline';
 import {
   REDPANDA_TOPIC_AND_USER_COMPONENTS,
   stepMotionProps,
@@ -32,6 +35,7 @@ import {
 } from '../types/constants';
 import type { ExtendedConnectComponentSpec } from '../types/schema';
 import type { AddTopicFormData, BaseStepRef, ConnectTilesListFormData, UserStepRef } from '../types/wizard';
+import { parseSchema } from '../utils/schema';
 import { handleStepResult, regenerateYamlForTopicUserComponents } from '../utils/wizard';
 import { getConnectTemplate } from '../utils/yaml';
 
@@ -45,16 +49,28 @@ export type ConnectOnboardingWizardProps = {
 export const ConnectOnboardingWizard = ({
   className,
   additionalComponents = [
-    {
+    create(ComponentSpecSchema, {
       name: 'custom',
       type: 'custom',
-      plugin: false,
-    },
+      status: 0,
+      summary: 'Build your own pipeline from scratch.',
+      description: '',
+      categories: [],
+      version: '',
+      examples: [],
+      footnotes: '',
+    }) as ExtendedConnectComponentSpec,
   ],
   onChange,
   onCancel: onCancelProp,
 }: ConnectOnboardingWizardProps = {}) => {
   const navigate = useNavigate();
+
+  const { data: componentListResponse, isLoading: isComponentListLoading } = useListComponentsQuery();
+  const components = useMemo(
+    () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
+    [componentListResponse]
+  );
 
   const persistedInputConnectionName = useOnboardingWizardDataStore(useShallow((state) => state.input?.connectionName));
   const persistedOutputConnectionName = useOnboardingWizardDataStore(
@@ -118,6 +134,14 @@ export const ConnectOnboardingWizard = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Track form validity for each step
+  const [stepValidity, setStepValidity] = useState<Record<string, boolean>>({
+    [WizardStep.ADD_INPUT]: false,
+    [WizardStep.ADD_OUTPUT]: false,
+    [WizardStep.ADD_TOPIC]: false,
+    [WizardStep.ADD_USER]: false,
+  });
+
   useEffect(() => {
     runInAction(() => {
       uiState.pageTitle = 'Create Pipeline';
@@ -132,11 +156,6 @@ export const ConnectOnboardingWizard = ({
     if (methods.current.id === WizardStep.ADD_INPUT) {
       resetOnboardingWizardStore();
     } else if (methods.current.id === WizardStep.ADD_OUTPUT) {
-      const { setWizardData: _, ...currentWizardData } = useOnboardingWizardDataStore.getState();
-      setWizardData({
-        input: currentWizardData.input,
-        output: {},
-      });
       setTopicData({});
       setUserData({});
     }
@@ -159,6 +178,7 @@ export const ConnectOnboardingWizard = ({
           const yamlContent = getConnectTemplate({
             connectionName,
             connectionType,
+            components,
             showOptionalFields: false,
             existingYaml: useOnboardingYamlContentStore.getState().yamlContent,
           });
@@ -208,6 +228,7 @@ export const ConnectOnboardingWizard = ({
           const yamlContent = getConnectTemplate({
             connectionName,
             connectionType,
+            components,
             showOptionalFields: false,
             existingYaml: useOnboardingYamlContentStore.getState().yamlContent,
           });
@@ -253,7 +274,7 @@ export const ConnectOnboardingWizard = ({
           const result = await addTopicStepRef.current?.triggerSubmit();
           if (result?.success && result.data) {
             setTopicData({ topicName: result.data.topicName });
-            regenerateYamlForTopicUserComponents();
+            regenerateYamlForTopicUserComponents(components);
           }
           handleStepResult(result, methods.next);
         } finally {
@@ -271,7 +292,7 @@ export const ConnectOnboardingWizard = ({
               saslMechanism: result.data.saslMechanism,
               consumerGroup: result.data.consumerGroup || '',
             });
-            regenerateYamlForTopicUserComponents();
+            regenerateYamlForTopicUserComponents(components);
             methods.next();
           }
         } finally {
@@ -295,6 +316,23 @@ export const ConnectOnboardingWizard = ({
       navigate('/connect-clusters');
     }
   }, [onCancelProp, navigate, resetOnboardingWizardStore, searchParams]);
+
+  // Callbacks to update validity for each step
+  const handleInputValidityChange = useCallback((isValid: boolean) => {
+    setStepValidity((prev) => ({ ...prev, [WizardStep.ADD_INPUT]: isValid }));
+  }, []);
+
+  const handleOutputValidityChange = useCallback((isValid: boolean) => {
+    setStepValidity((prev) => ({ ...prev, [WizardStep.ADD_OUTPUT]: isValid }));
+  }, []);
+
+  const handleTopicValidityChange = useCallback((isValid: boolean) => {
+    setStepValidity((prev) => ({ ...prev, [WizardStep.ADD_TOPIC]: isValid }));
+  }, []);
+
+  const handleUserValidityChange = useCallback((isValid: boolean) => {
+    setStepValidity((prev) => ({ ...prev, [WizardStep.ADD_USER]: isValid }));
+  }, []);
 
   return (
     <PageContent className={className}>
@@ -325,12 +363,15 @@ export const ConnectOnboardingWizard = ({
                 {methods.switch({
                   [WizardStep.ADD_INPUT]: () => (
                     <ConnectTiles
+                      components={componentListResponse?.components}
+                      isLoading={isComponentListLoading}
                       {...stepMotionProps}
                       additionalComponents={additionalComponents}
                       componentTypeFilter={['input', 'custom']}
                       defaultConnectionName={persistedInputConnectionName}
                       defaultConnectionType="input"
                       key={`input-connector-tiles-${persistedInputConnectionName || 'empty'}`}
+                      onValidityChange={handleInputValidityChange}
                       ref={addInputStepRef}
                       tileWrapperClassName="min-h-[300px] max-h-[35vh]"
                       title="Stream data to your pipeline"
@@ -338,12 +379,15 @@ export const ConnectOnboardingWizard = ({
                   ),
                   [WizardStep.ADD_OUTPUT]: () => (
                     <ConnectTiles
+                      components={componentListResponse?.components}
+                      isLoading={isComponentListLoading}
                       {...stepMotionProps}
                       additionalComponents={additionalComponents}
                       componentTypeFilter={['output', 'custom']}
                       defaultConnectionName={persistedOutputConnectionName}
                       defaultConnectionType="output"
                       key={`output-connector-tiles-${persistedOutputConnectionName || 'empty'}`}
+                      onValidityChange={handleOutputValidityChange}
                       ref={addOutputStepRef}
                       tileWrapperClassName="min-h-[300px] max-h-[35vh]"
                       title="Stream data from your pipeline"
@@ -354,6 +398,7 @@ export const ConnectOnboardingWizard = ({
                       {...stepMotionProps}
                       defaultTopicName={persistedTopicName}
                       key="add-topic-step"
+                      onValidityChange={handleTopicValidityChange}
                       ref={addTopicStepRef}
                     />
                   ),
@@ -364,6 +409,7 @@ export const ConnectOnboardingWizard = ({
                       defaultSaslMechanism={persistedUserSaslMechanism}
                       defaultUsername={persistedUsername}
                       key="add-user-step"
+                      onValidityChange={handleUserValidityChange}
                       ref={addUserStepRef}
                       showConsumerGroupFields={persistedInputIsRedpandaComponent}
                       topicName={persistedTopicName}
@@ -377,7 +423,7 @@ export const ConnectOnboardingWizard = ({
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <RpConnectPipelinesCreate matchedPath="/rp-connect/wizard" />
+                        <PipelinePage />
                       </CardContent>
                     </Card>
                   ),
@@ -405,7 +451,11 @@ export const ConnectOnboardingWizard = ({
                   </Button>
                 )}
                 {!methods.isLast && (
-                  <Button className="min-w-[70px]" disabled={isSubmitting} onClick={() => handleNext(methods)}>
+                  <Button
+                    className="min-w-[70px]"
+                    disabled={isSubmitting || !stepValidity[methods.current.id]}
+                    onClick={() => handleNext(methods)}
+                  >
                     {isSubmitting ? (
                       <Spinner />
                     ) : (

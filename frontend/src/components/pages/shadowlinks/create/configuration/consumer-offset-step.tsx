@@ -63,7 +63,7 @@ export const ConsumerOffsetStep = () => {
     <Collapsible onOpenChange={setIsOpen} open={isOpen}>
       <Card className="gap-0" size="full">
         <CardHeader>
-          <CardTitle>Consumer groups</CardTitle>
+          <CardTitle>Shadow consumer groups</CardTitle>
           <CardAction>
             <CollapsibleTrigger asChild>
               <Button className="w-fit p-0" data-testid="consumers-toggle-button" size="sm" variant="ghost">
