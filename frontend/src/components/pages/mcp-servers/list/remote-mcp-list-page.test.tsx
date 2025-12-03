@@ -35,8 +35,10 @@ import { render, screen, waitFor, within } from 'test-utils';
 vi.mock('config', () => ({
   config: {
     jwt: 'test-jwt-token',
+    controlplaneUrl: 'http://localhost:9090',
   },
   isFeatureFlagEnabled: vi.fn(() => false),
+  addBearerTokenInterceptor: vi.fn((next) => async (request) => await next(request)),
 }));
 
 vi.mock('state/ui-state', () => ({
