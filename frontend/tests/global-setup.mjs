@@ -1,6 +1,6 @@
 import { GenericContainer, Network, Wait } from 'testcontainers';
 
-import { exec, spawn } from 'node:child_process';
+import { exec } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -332,82 +332,57 @@ topic.creation.enable=false
   }
 }
 
-function setupProcessStreaming(processInstance, prefix) {
-  processInstance.stdout.on('data', (data) => {
-    process.stdout.write(`[${prefix}] ${data}`);
-  });
-  processInstance.stderr.on('data', (data) => {
-    process.stderr.write(`[${prefix}] ${data}`);
-  });
-  processInstance.on('error', (error) => {
-    console.error(`[${prefix}] Process error:`, error);
-  });
-  processInstance.on('exit', (code) => {
-    if (code !== 0 && code !== null) {
-      console.error(`[${prefix}] Process exited with code ${code}`);
-    }
-  });
+
+async function buildBackendImage() {
+  console.log('Building backend Docker image...');
+  const backendDir = resolve(__dirname, '../../backend');
+  const dockerfilePath = resolve(__dirname, 'config/Dockerfile.backend');
+
+  await execWithOutput(
+    `docker build -f ${dockerfilePath} -t console-backend:e2e-test ${backendDir}`
+  );
+  console.log('✓ Backend image built');
 }
 
-async function startBackendServer(isEnterprise, state) {
-  console.log('Starting backend server...');
-  const backendCwd = isEnterprise
-    ? resolve(__dirname, '../../../console-enterprise/backend/cmd')
-    : resolve(__dirname, '../../backend/cmd/api');
+async function startBackendServer(network, isEnterprise, state) {
+  console.log('Starting backend server container...');
   const backendConfigPath = isEnterprise
     ? resolve(__dirname, 'config/console.enterprise.config.yaml')
     : resolve(__dirname, 'config/console.config.yaml');
-  console.log(`Backend working directory: ${backendCwd}`);
+
   console.log(`Backend config path: ${backendConfigPath}`);
 
-  const backendProcess = spawn('go', ['run', '.', `--config.filepath=${backendConfigPath}`], {
-    cwd: backendCwd,
-    stdio: 'pipe',
-  });
+  const backend = await new GenericContainer('console-backend:e2e-test')
+    .withNetwork(network)
+    .withNetworkAliases('console-backend')
+    .withExposedPorts({ container: 3000, host: 3000 })
+    .withBindMounts([
+      {
+        source: backendConfigPath,
+        target: '/etc/console/config.yaml',
+        mode: 'ro',
+      },
+    ])
+    .withCommand(['--config.filepath=/etc/console/config.yaml'])
+    .withWaitStrategy(Wait.forListeningPorts())
+    .withStartupTimeout(120_000)
+    .start();
 
-  if (!backendProcess.pid) {
-    throw new Error('Failed to start backend process - no PID assigned');
-  }
+  state.backendContainer = backend;
+  state.backendId = backend.getId();
 
-  state.backendPid = backendProcess.pid.toString();
-  console.log(`Backend started with PID: ${state.backendPid}`);
-
-  setupProcessStreaming(backendProcess, 'BACKEND');
+  console.log(`✓ Backend container started: ${state.backendId}`);
 }
 
-async function startFrontendServer(isEnterprise, state) {
-  console.log('Starting frontend server...');
-  const frontendCwd = resolve(__dirname, '..');
-  const frontendCommand = isEnterprise ? 'start2' : 'start';
-  console.log(`Frontend working directory: ${frontendCwd}`);
-  console.log(`Frontend command: bun run ${frontendCommand}`);
-
-  const frontendProcess = spawn('bun', ['run', frontendCommand], {
-    cwd: frontendCwd,
-    stdio: 'pipe',
-  });
-
-  if (!frontendProcess.pid) {
-    throw new Error('Failed to start frontend process - no PID assigned');
-  }
-
-  state.frontendPid = frontendProcess.pid.toString();
-  console.log(`Frontend started with PID: ${state.frontendPid}`);
-
-  setupProcessStreaming(frontendProcess, 'FRONTEND');
-}
 
 async function cleanupOnFailure(state) {
-  if (state.backendPid) {
-    try {
-      process.kill(Number.parseInt(state.backendPid, 10));
-    } catch (_) {}
+  if (state.backendContainer) {
+    console.log('Stopping backend container using testcontainers API...');
+    await state.backendContainer.stop().catch((error) => {
+      console.log(`Failed to stop backend container: ${error.message}`);
+    });
   }
-  if (state.frontendPid) {
-    try {
-      process.kill(Number.parseInt(state.frontendPid, 10));
-    } catch (_) {}
-  }
+
   if (state.connectContainer) {
     console.log('Stopping Kafka Connect container using testcontainers API...');
     await state.connectContainer.stop().catch((error) => {
@@ -447,12 +422,14 @@ export default async function globalSetup(config) {
     redpandaId: '',
     owlshopId: '',
     connectId: '',
-    backendPid: '',
-    frontendPid: '',
+    backendId: '',
     isEnterprise,
   };
 
   try {
+    // Build backend Docker image
+    await buildBackendImage();
+
     // Setup Docker infrastructure
     const network = await setupDockerNetwork(state);
     await startRedpandaContainer(network, state);
@@ -471,12 +448,11 @@ export default async function globalSetup(config) {
     console.log('================================\n');
 
     // Start application servers
-    await startBackendServer(isEnterprise, state);
-    await startFrontendServer(isEnterprise, state);
+    await startBackendServer(network, isEnterprise, state);
 
     // Wait for services to be ready
     console.log('Waiting for backend to be ready...');
-    await waitForPort(9090, 60, 1000);
+    await waitForPort(3000, 60, 1000);
     console.log('Backend is ready');
 
     console.log('Waiting for frontend to be ready...');

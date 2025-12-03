@@ -1,0 +1,35 @@
+# Build stage
+FROM golang:alpine AS builder
+
+WORKDIR /app
+
+# Set GOTOOLCHAIN to auto to allow Go to download the required version
+ENV GOTOOLCHAIN=auto
+
+# Copy go.mod and go.sum first for better caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the binary
+WORKDIR /app/cmd/api
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/console-api .
+
+# Runtime stage
+FROM alpine:3.21
+
+# Install ca-certificates and wget for HTTPS support and healthcheck
+RUN apk --no-cache add ca-certificates wget
+
+WORKDIR /app
+
+# Copy binary from builder
+COPY --from=builder /app/console-api .
+
+# Expose the server port (serves both API and frontend)
+EXPOSE 3000
+
+# Run the application
+ENTRYPOINT ["/app/console-api"]

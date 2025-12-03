@@ -25,25 +25,22 @@ export default async function globalTeardown(config) {
 
     const state = JSON.parse(fs.readFileSync(CONTAINER_STATE_FILE, 'utf8'));
 
-    // Stop backend server
-    if (state.backendPid) {
-      console.log(`Stopping backend server (PID: ${state.backendPid})...`);
-      try {
-        await execAsync(`kill ${state.backendPid}`);
-      } catch (error) {
-        console.log('Backend already stopped or not found');
-      }
+    // Stop backend container
+    if (state.backendId) {
+      console.log(`Stopping backend container...`);
+      await execAsync(`docker stop ${state.backendId}`).catch(() => {});
+      await execAsync(`docker rm ${state.backendId}`).catch(() => {});
     }
 
-    // Stop frontend server
-    if (state.frontendPid) {
-      console.log(`Stopping frontend server (PID: ${state.frontendPid})...`);
-      try {
-        await execAsync(`kill ${state.frontendPid}`);
-      } catch (error) {
-        console.log('Frontend already stopped or not found');
-      }
-    }
+    // Frontend is now served by backend, no separate process to stop
+    // if (state.frontendPid) {
+    //   console.log(`Stopping frontend server (PID: ${state.frontendPid})...`);
+    //   try {
+    //     await execAsync(`kill ${state.frontendPid}`);
+    //   } catch (error) {
+    //     console.log('Frontend already stopped or not found');
+    //   }
+    // }
 
     // Stop Docker containers (testcontainers)
     if (state.connectId) {
