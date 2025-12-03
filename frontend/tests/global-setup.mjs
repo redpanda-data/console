@@ -13,29 +13,6 @@ const __dirname = dirname(__filename);
 const getStateFile = (isEnterprise) =>
   resolve(__dirname, isEnterprise ? '.testcontainers-state-enterprise.json' : '.testcontainers-state.json');
 
-// Helper to run exec and log all output
-async function execWithOutput(command, options = {}) {
-  console.log(`\n> ${command}`);
-  try {
-    const { stdout, stderr } = await execAsync(command, options);
-    if (stdout) {
-      console.log(stdout);
-    }
-    if (stderr) {
-      console.error(stderr);
-    }
-    return { stdout, stderr };
-  } catch (error) {
-    if (error.stdout) {
-      console.log(error.stdout);
-    }
-    if (error.stderr) {
-      console.error(error.stderr);
-    }
-    throw error;
-  }
-}
-
 async function waitForPort(port, maxAttempts = 30, delayMs = 1000) {
   for (let i = 0; i < maxAttempts; i++) {
     try {
@@ -294,7 +271,6 @@ async function buildBackendImage(isEnterprise) {
   const backendDir = isEnterprise
     ? resolve(__dirname, '../../../console-enterprise/backend')
     : resolve(__dirname, '../../backend');
-  const dockerfilePath = resolve(__dirname, 'config/Dockerfile.backend');
   const imageTag = isEnterprise ? 'console-backend:e2e-test-enterprise' : 'console-backend:e2e-test';
 
   console.log(`Building from: ${backendDir}`);
@@ -334,11 +310,27 @@ async function buildBackendImage(isEnterprise) {
     await execAsync(`cp -r "${frontendBuildDir}"/* "${embedDir}"/`);
     console.log('✓ Frontend assets copied');
 
-    // Build Docker image
-    await execWithOutput(
-      `docker build -f ${dockerfilePath} -t ${imageTag} ${backendDir}`
-    );
-    console.log('✓ Backend image built');
+    // Build Docker image using testcontainers
+    // Docker doesn't allow Dockerfiles to reference files outside build context,
+    // so we temporarily copy the Dockerfile into the build context
+    const dockerfilePath = resolve(__dirname, 'config/Dockerfile.backend');
+    const tempDockerfile = join(backendDir, '.dockerfile.e2e.tmp');
+
+    console.log('Building Docker image with testcontainers...');
+    await execAsync(`cp "${dockerfilePath}" "${tempDockerfile}"`);
+
+    try {
+      await GenericContainer
+        .fromDockerfile(backendDir, '.dockerfile.e2e.tmp')
+        .withBuildArgs({
+          BUILDKIT_INLINE_CACHE: '1',
+        })
+        .build(imageTag, { deleteOnExit: false });
+      console.log('✓ Backend image built');
+    } finally {
+      // Clean up temporary Dockerfile
+      await execAsync(`rm -f "${tempDockerfile}"`).catch(() => {});
+    }
 
     return imageTag;
   } finally {
