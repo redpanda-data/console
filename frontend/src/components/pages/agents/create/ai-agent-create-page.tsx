@@ -45,6 +45,7 @@ import {
   type AIAgent_Provider,
   AIAgent_Provider_AnthropicSchema,
   AIAgent_Provider_GoogleSchema,
+  AIAgent_Provider_OpenAICompatibleSchema,
   AIAgent_Provider_OpenAISchema,
   AIAgent_ProviderSchema,
   AIAgent_ServiceAccountSchema,
@@ -196,7 +197,8 @@ export const AIAgentCreatePage = () => {
           } else if (
             field === 'ai_agent.provider.openai.api_key' ||
             field === 'ai_agent.provider.anthropic.api_key' ||
-            field === 'ai_agent.provider.google.api_key'
+            field === 'ai_agent.provider.google.api_key' ||
+            field === 'ai_agent.provider.openai_compatible.api_key'
           ) {
             form.setError('apiKeySecret', {
               type: 'server',
@@ -299,6 +301,17 @@ export const AIAgentCreatePage = () => {
             value: create(AIAgent_Provider_GoogleSchema, {
               apiKey: apiKeyRef,
               baseUrl: values.baseUrl || undefined,
+            }),
+          },
+        });
+        break;
+      case 'openaiCompatible':
+        providerConfig = create(AIAgent_ProviderSchema, {
+          provider: {
+            case: 'openaiCompatible',
+            value: create(AIAgent_Provider_OpenAICompatibleSchema, {
+              apiKey: apiKeyRef,
+              baseUrl: values.baseUrl,
             }),
           },
         });
@@ -437,7 +450,7 @@ export const AIAgentCreatePage = () => {
                     }}
                     availableSecrets={availableSecrets}
                     scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
-                    showBaseUrl={true}
+                    showBaseUrl={form.watch('provider') === 'openaiCompatible'}
                     showMaxIterations={true}
                   />
                 </CardContent>

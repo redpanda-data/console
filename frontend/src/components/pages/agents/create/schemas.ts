@@ -34,7 +34,7 @@ export const FormSchema = z.object({
       { message: 'Tags must have unique keys' }
     ),
   triggerType: z.enum(['http', 'slack', 'kafka']).default('http'),
-  provider: z.enum(['openai', 'anthropic', 'google']).default('openai'),
+  provider: z.enum(['openai', 'anthropic', 'google', 'openaiCompatible']).default('openai'),
   apiKeySecret: z.string().min(1, 'API Token is required'),
   model: z.string().min(1, 'Model is required'),
   baseUrl: z.string().url('Must be a valid URL').optional().or(z.literal('')),
@@ -52,6 +52,33 @@ export const FormSchema = z.object({
     .min(3, 'Service account name must be at least 3 characters')
     .max(128, 'Service account name must be at most 128 characters')
     .regex(/^[^<>]+$/, 'Service account name cannot contain < or > characters'),
+}).superRefine((data, ctx) => {
+  if (data.provider === 'openaiCompatible') {
+    if (!data.baseUrl || data.baseUrl.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Base URL is required for OpenAI-compatible provider',
+        path: ['baseUrl'],
+      });
+    } else {
+      try {
+        new URL(data.baseUrl);
+        if (!data.baseUrl.startsWith('http://') && !data.baseUrl.startsWith('https://')) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Base URL must start with http:// or https://',
+            path: ['baseUrl'],
+          });
+        }
+      } catch {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Must be a valid URL',
+          path: ['baseUrl'],
+        });
+      }
+    }
+  }
 });
 
 export type FormValues = z.infer<typeof FormSchema>;

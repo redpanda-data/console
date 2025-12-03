@@ -152,7 +152,7 @@ const createUpdatedProvider = (
           case: 'openaiCompatible',
           value: create(AIAgent_Provider_OpenAICompatibleSchema, {
             apiKey: apiKeyRef,
-            baseUrl: baseUrl || undefined,
+            baseUrl: baseUrl,
           }),
         },
       });
@@ -694,9 +694,9 @@ export const AIAgentConfigurationTab = () => {
                   <div className="space-y-2">
                     <Label htmlFor="provider">Provider</Label>
                     <Select
-                      onValueChange={(value: 'openai' | 'anthropic' | 'google') => {
+                      onValueChange={(value: 'openai' | 'anthropic' | 'google' | 'openaiCompatible') => {
                         const newProviderData = MODEL_OPTIONS_BY_PROVIDER[value];
-                        const firstModel = newProviderData.models[0].value;
+                        const firstModel = newProviderData.models.length > 0 && newProviderData.models[0] ? newProviderData.models[0].value : displayData.model;
 
                         updateField({
                           provider: createUpdatedProvider(value, '', displayData.baseUrl || ''),
@@ -719,6 +719,7 @@ export const AIAgentConfigurationTab = () => {
                                 {displayData.provider.provider.case === 'openai' && 'OpenAI'}
                                 {displayData.provider.provider.case === 'anthropic' && 'Anthropic'}
                                 {displayData.provider.provider.case === 'google' && 'Google'}
+                                {displayData.provider.provider.case === 'openaiCompatible' && 'OpenAI Compatible'}
                               </span>
                             </div>
                           )}
@@ -740,72 +741,70 @@ export const AIAgentConfigurationTab = () => {
                   {/* Model - filtered by provider */}
                   <div className="space-y-2">
                     <Label htmlFor="model">Model</Label>
-                    <Select onValueChange={(value) => updateField({ model: value })} value={displayData.model}>
-                      <SelectTrigger>
-                        <SelectValue>
-                          {displayData.model && detectProvider(displayData.model) ? (
-                            <div className="flex items-center gap-2">
-                              <img
-                                alt={detectProvider(displayData.model)?.label}
-                                className="h-4 w-4"
-                                src={detectProvider(displayData.model)?.icon}
-                              />
-                              <span>{displayData.model}</span>
-                            </div>
-                          ) : (
-                            displayData.model
-                          )}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(() => {
-                          const providerCase = displayData.provider?.provider.case;
-
-                          if (providerCase === 'openaiCompatible') {
-                            return (
-                              <div className="p-2">
-                                <Text variant="muted">
-                                  For OpenAI Compatible providers, enter the model name directly
-                                </Text>
+                    {displayData.provider?.provider.case === 'openaiCompatible' ? (
+                      <Input
+                        placeholder="Enter model name (e.g., llama-3.1-70b)"
+                        value={displayData.model}
+                        onChange={(e) => updateField({ model: e.target.value })}
+                      />
+                    ) : (
+                      <Select onValueChange={(value) => updateField({ model: value })} value={displayData.model}>
+                        <SelectTrigger>
+                          <SelectValue>
+                            {displayData.model && detectProvider(displayData.model) ? (
+                              <div className="flex items-center gap-2">
+                                <img
+                                  alt={detectProvider(displayData.model)?.label}
+                                  className="h-4 w-4"
+                                  src={detectProvider(displayData.model)?.icon}
+                                />
+                                <span>{displayData.model}</span>
                               </div>
-                            );
-                          }
+                            ) : (
+                              displayData.model
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(() => {
+                            const providerCase = displayData.provider?.provider.case;
 
-                          const providerData = providerCase
-                            ? MODEL_OPTIONS_BY_PROVIDER[providerCase as keyof typeof MODEL_OPTIONS_BY_PROVIDER]
-                            : null;
+                            const providerData = providerCase
+                              ? MODEL_OPTIONS_BY_PROVIDER[providerCase as keyof typeof MODEL_OPTIONS_BY_PROVIDER]
+                              : null;
 
-                          if (!providerData) {
-                            return (
-                              <div className="p-2">
-                                <Text variant="muted">No models available for this provider</Text>
-                              </div>
-                            );
-                          }
-
-                          return (
-                            <SelectGroup>
-                              <SelectLabel>
-                                <div className="flex items-center gap-2">
-                                  <img alt={providerData.label} className="h-4 w-4" src={providerData.icon} />
-                                  <span>{providerData.label}</span>
+                            if (!providerData) {
+                              return (
+                                <div className="p-2">
+                                  <Text variant="muted">No models available for this provider</Text>
                                 </div>
-                              </SelectLabel>
-                              {providerData.models.map((model: { value: string; name: string; description: string }) => (
-                                <SelectItem key={model.value} value={model.value}>
-                                  <div className="flex flex-col gap-0.5">
-                                    <Text className="font-medium">{model.name}</Text>
-                                    <Text className="text-xs" variant="muted">
-                                      {model.description}
-                                    </Text>
+                              );
+                            }
+
+                            return (
+                              <SelectGroup>
+                                <SelectLabel>
+                                  <div className="flex items-center gap-2">
+                                    <img alt={providerData.label} className="h-4 w-4" src={providerData.icon} />
+                                    <span>{providerData.label}</span>
                                   </div>
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          );
-                        })()}
-                      </SelectContent>
-                    </Select>
+                                </SelectLabel>
+                                {providerData.models.map((model: { value: string; name: string; description: string }) => (
+                                  <SelectItem key={model.value} value={model.value}>
+                                    <div className="flex flex-col gap-0.5">
+                                      <Text className="font-medium">{model.name}</Text>
+                                      <Text className="text-xs" variant="muted">
+                                        {model.description}
+                                      </Text>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            );
+                          })()}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
 
                   {/* API Token */}
@@ -821,6 +820,19 @@ export const AIAgentConfigurationTab = () => {
                       />
                     </div>
                   </div>
+
+                  {/* Base URL - only show for openaiCompatible */}
+                  {displayData.provider?.provider.case === 'openaiCompatible' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="baseUrl">Base URL (required)</Label>
+                      <Input
+                        placeholder="https://api.example.com/v1"
+                        value={displayData.baseUrl}
+                        onChange={(e) => updateField({ baseUrl: e.target.value })}
+                      />
+                      <Text variant="muted">API endpoint URL for your OpenAI-compatible service</Text>
+                    </div>
+                  )}
 
                   {/* Max Iterations */}
                   <div className="space-y-2">
@@ -861,6 +873,14 @@ export const AIAgentConfigurationTab = () => {
                       <Text variant="default">{displayData.apiKeySecret || 'No secret configured'}</Text>
                     </div>
                   </div>
+                  {agent.provider?.provider.case === 'openaiCompatible' && displayData.baseUrl && (
+                    <div className="space-y-2">
+                      <Label>Base URL</Label>
+                      <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                        <Text variant="default">{displayData.baseUrl}</Text>
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label>Max Iterations</Label>
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">

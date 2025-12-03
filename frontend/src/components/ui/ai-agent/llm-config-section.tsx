@@ -69,7 +69,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
   }, [selectedProvider]);
 
   useEffect(() => {
-    if (mode === 'create' && filteredModels.length > 0) {
+    if (mode === 'create' && filteredModels.length > 0 && filteredModels[0]) {
       const currentModel = form.getValues(fieldNames.model);
       const isValid = filteredModels.some((m: { value: string }) => m.value === currentModel);
 
@@ -117,6 +117,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
               {selectedProvider === 'openai' && 'OpenAI'}
               {selectedProvider === 'anthropic' && 'Anthropic'}
               {selectedProvider === 'google' && 'Google'}
+              {selectedProvider === 'openaiCompatible' && 'OpenAI Compatible'}
               {!selectedProvider && 'Unknown Provider'}
             </Text>
           </div>
@@ -129,6 +130,20 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
         render={({ field }: { field: any }) => {
           const providerData = selectedProvider ? MODEL_OPTIONS_BY_PROVIDER[selectedProvider] : null;
           const detectedProvider = field.value ? detectProvider(field.value as string) : null;
+          const isFreeTextMode = providerData && providerData.models.length === 0;
+
+          if (isFreeTextMode) {
+            return (
+              <FormItem>
+                <FormLabel required>Model</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter model name (e.g., llama-3.1-70b)" {...field} />
+                </FormControl>
+                <Text variant="muted">Enter the model name exactly as supported by your API endpoint</Text>
+                <FormMessage />
+              </FormItem>
+            );
+          }
 
           return (
             <FormItem>
@@ -205,16 +220,23 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
         <FormField
           control={form.control}
           name={fieldNames.baseUrl}
-          render={({ field }: { field: any }) => (
-            <FormItem>
-              <FormLabel>Base URL (optional)</FormLabel>
-              <FormControl>
-                <Input placeholder="https://api.example.com" {...field} />
-              </FormControl>
-              <Text variant="muted">Override the default API endpoint for this provider</Text>
-              <FormMessage />
-            </FormItem>
-          )}
+          render={({ field }: { field: any }) => {
+            const isRequired = selectedProvider === 'openaiCompatible';
+            return (
+              <FormItem>
+                <FormLabel required={isRequired}>Base URL {!isRequired && '(optional)'}</FormLabel>
+                <FormControl>
+                  <Input placeholder="https://api.example.com/v1" {...field} />
+                </FormControl>
+                <Text variant="muted">
+                  {isRequired
+                    ? 'API endpoint URL for your OpenAI-compatible service'
+                    : 'Override the default API endpoint for this provider'}
+                </Text>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
       )}
 

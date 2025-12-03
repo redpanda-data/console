@@ -67,6 +67,7 @@ export type AIAgent = {
   description: string;
   state: AIAgent_State;
   model: string;
+  providerType: 'openai' | 'anthropic' | 'google' | 'openaiCompatible';
   url?: string;
   mcpServers: Record<string, { id: string }>;
   tags: Record<string, string>;
@@ -129,6 +130,7 @@ const transformAPIAIAgent = (apiAgent: APIAIAgent): AIAgent => ({
   description: apiAgent.description,
   state: apiAgent.state,
   model: apiAgent.model,
+  providerType: apiAgent.provider?.provider.case || 'openai',
   url: apiAgent.url,
   mcpServers: apiAgent.mcpServers,
   tags: apiAgent.tags,
@@ -221,7 +223,7 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<AIAgent>
     {
       accessorKey: 'model',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Model" />,
-      cell: ({ row }) => <AIAgentModel model={row.getValue('model')} size="sm" />,
+      cell: ({ row }) => <AIAgentModel model={row.getValue('model')} providerType={row.original.providerType} size="sm" />,
     },
     {
       id: 'actions',

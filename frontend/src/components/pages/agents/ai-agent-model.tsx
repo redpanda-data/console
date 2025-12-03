@@ -10,6 +10,7 @@
  */
 
 import AnthropicLogo from 'assets/anthropic.svg';
+import ApiGenericLogo from 'assets/api-generic.svg';
 import GeminiLogo from 'assets/gemini.svg';
 import OpenAILogo from 'assets/openai.svg';
 import { Text } from 'components/redpanda-ui/components/typography';
@@ -47,6 +48,11 @@ export const PROVIDER_INFO = {
     label: 'Google',
     icon: GeminiLogo,
     modelPattern: /^(gemini-)/i, // Matches gemini-2.x, gemini-3.x, etc.
+  },
+  openaiCompatible: {
+    label: 'OpenAI Compatible',
+    icon: ApiGenericLogo,
+    modelPattern: /^$/,
   },
 } as const;
 
@@ -137,10 +143,16 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
       },
     ],
   },
+  openaiCompatible: {
+    label: 'OpenAI Compatible',
+    icon: ApiGenericLogo,
+    models: [],
+  },
 } as const;
 
 type AIAgentModelProps = {
   model: string;
+  providerType?: 'openai' | 'anthropic' | 'google' | 'openaiCompatible';
   className?: string;
   showLogo?: boolean;
   size?: 'sm' | 'md' | 'lg';
@@ -165,16 +177,16 @@ export const detectProvider = (modelName: string): (typeof PROVIDER_INFO)[keyof 
  * Used in list page, details page, and create page
  *
  * @example
- * // Works with any OpenAI model
- * <AIAgentModel model="gpt-5" />
- * <AIAgentModel model="gpt-5-mini" />
+ * // With explicit provider type (preferred)
+ * <AIAgentModel model="gpt-5" providerType="openai" />
+ * <AIAgentModel model="llama-3.1-70b" providerType="openaiCompatible" />
  *
- * // Future: Works with Anthropic models when added
- * <AIAgentModel model="claude-4-opus" />
+ * // Fallback to detection if provider not provided
+ * <AIAgentModel model="gpt-5" />
  */
-export const AIAgentModel = ({ model, className, showLogo = true, size = 'md' }: AIAgentModelProps) => {
-  // Detect provider using pattern matching
-  const providerInfo = detectProvider(model);
+export const AIAgentModel = ({ model, providerType, className, showLogo = true, size = 'md' }: AIAgentModelProps) => {
+  // Use explicit provider type if provided, otherwise fall back to detection
+  const providerInfo = providerType ? PROVIDER_INFO[providerType] : detectProvider(model);
 
   const sizeClasses = {
     sm: 'h-3 w-3',
