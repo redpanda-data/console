@@ -1,7 +1,7 @@
-serveFrontend: false
+serveFrontend: true
 
 kafka:
-  brokers: ["localhost:19092"]
+  brokers: ["redpanda:9092"]
   sasl:
     enabled: true
     mechanism: SCRAM-SHA-256
@@ -18,24 +18,24 @@ authentication:
 redpanda:
   adminApi:
     enabled: true
-    urls: ["http://localhost:19644"]
+    urls: ["http://redpanda:9644"]
 
 schemaRegistry:
   enabled: true
-  urls: ["http://localhost:18081"]
+  urls: ["http://redpanda:8081"]
 
 kafkaConnect:
   enabled: true
   clusters:
     - name: local-connect-cluster
-      url: http://localhost:18083
+      url: http://connect:8083
     - name: local-connect-cluster2
-      url: http://localhost:18083
+      url: http://connect:8083
 server:
-  listenPort: 9090
+  listenPort: 3000
   allowedOrigins: ["http://localhost:3000", "http://localhost:3001"]
 
-licenseFilepath: ../../frontend/tests/config/redpanda.license
+licenseFilepath: /etc/console/redpanda.license
 
 authorization:
   roleBindings:
