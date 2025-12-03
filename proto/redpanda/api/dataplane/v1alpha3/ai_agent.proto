@@ -410,7 +410,6 @@ message AIAgentCreate {
   ];
   string model = 6 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.field_behavior) = IMMUTABLE,
     (buf.validate.field).required = true,
     (buf.validate.field).string.max_len = 128
   ];

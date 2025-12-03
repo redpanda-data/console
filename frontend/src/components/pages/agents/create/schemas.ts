@@ -93,7 +93,7 @@ export const initialValues: FormValues = {
   triggerType: 'http',
   provider: 'openai',
   apiKeySecret: '',
-  model: 'gpt-5',
+  model: '',
   baseUrl: '',
   maxIterations: 30,
   individualTools: [],
