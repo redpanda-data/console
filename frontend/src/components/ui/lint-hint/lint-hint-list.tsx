@@ -8,44 +8,42 @@
  * by the Apache License, Version 2.0
  */
 
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { PencilRuler } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
+import { memo } from 'react';
 
 type LintHintListProps = {
   lintHints: Record<string, LintHint>;
+  className?: string;
+  isPending?: boolean;
 };
 
-export const LintHintList: React.FC<LintHintListProps> = ({ lintHints }) => {
-  if (!lintHints || Object.keys(lintHints).length === 0) {
+export const LintHintList: React.FC<LintHintListProps> = memo(({ className, lintHints, isPending }) => {
+  if (!lintHints || Object.keys(lintHints).length === 0 && !isPending) {
     return null;
   }
 
   return (
-    <div className="space-y-3">
+    <div className={cn('space-y-3', className)}>
       <div className="flex items-center gap-2">
         <PencilRuler className="h-4 w-4" />
         <Text className="font-medium" variant="label">
           Linting issues
         </Text>
+        {isPending && <Spinner size="sm" />}
       </div>
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-        <div className="space-y-3 p-3">
+        <div className="flex flex-col gap-4 p-3">
           {Object.entries(lintHints).map(([toolName, hint]) => (
-            <div className="space-y-1" key={toolName}>
+            <div className="flex-col flex gap-1.5" key={toolName}>
               {hint.line > 0 ? (
-                <div className="flex flex-col gap-1">
-                  <Text className="font-medium text-gray-600 text-xs">
-                    Line {hint.line}, Col {hint.column}
-                  </Text>
-                  <Text className="rounded border bg-white px-2 py-1 font-mono text-gray-800 text-sm leading-relaxed">
-                    {hint.hint}
-                  </Text>
-                </div>
+                  <SimpleCodeBlock code={`Line ${hint.line}, Col ${hint.column}: ${hint.hint}`} width="full" className="my-0"/>
               ) : (
-                <Text className="rounded border bg-white px-2 py-1 font-mono text-gray-800 text-sm leading-relaxed">
-                  {hint.hint}
-                </Text>
+                <SimpleCodeBlock code={hint.hint} width="full" className="my-0"/>
               )}
               {hint.lintType && (
                 <Text className="font-medium text-gray-500 text-xs uppercase tracking-wide">{hint.lintType}</Text>
@@ -56,4 +54,6 @@ export const LintHintList: React.FC<LintHintListProps> = ({ lintHints }) => {
       </div>
     </div>
   );
-};
+});
+
+LintHintList.displayName = 'LintHintList';

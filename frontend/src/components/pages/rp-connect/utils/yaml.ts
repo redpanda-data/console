@@ -1,7 +1,9 @@
+import { ConnectError } from '@connectrpc/connect';
 import { toast } from 'sonner';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { Document, parseDocument, stringify as yamlStringify } from 'yaml';
 
-import { getBuiltInComponents, schemaToConfig } from './schema';
+import { schemaToConfig } from './schema';
 // import { HANDLED_ARRAY_MERGE_PATHS } from '../types/constants';
 import type { ConnectComponentSpec, ConnectConfigObject, RawFieldSpec } from '../types/schema';
 
@@ -270,23 +272,30 @@ export const mergeConnectConfigs = (
   try {
     doc = parseDocument(existingYaml);
   } catch (error) {
-    const description = error instanceof Error ? error.message : String(error);
-    toast.error('Failed to parse YAML', {
-      description,
-    });
-    return newConfigObject;
+    toast.error(
+      formatToastErrorMessageGRPC({
+        error: ConnectError.from(error),
+        action: 'Parse existing YAML',
+        entity: 'mergeConnectConfigs',
+      })
+    );
+    return undefined; // Keep existing YAML in editor
   }
 
   const componentType = detectComponentType(newConfigObject, doc);
-  // const unhandledArrayPaths = findUnhandledArrayMergePaths(newConfigObject, doc);
 
-  // if (unhandledArrayPaths.length > 0) {
-  //   toast.error('Unable to merge array fields', {
-  //     description: `Existing YAML arrays at ${unhandledArrayPaths.join(', ')} will be replaced by generated values.`,
-  //   });
-  // }
-
-  mergeByComponentType(componentType, doc, newConfigObject);
+  try {
+    mergeByComponentType(componentType, doc, newConfigObject);
+  } catch (error) {
+    toast.error(
+      formatToastErrorMessageGRPC({
+        error: ConnectError.from(error),
+        action: 'Merge selected component into existing config',
+        entity: 'mergeConnectConfigs',
+      })
+    );
+    return undefined; // Keep existing YAML in editor
+  }
 
   return doc;
 };
@@ -405,11 +414,11 @@ export const configToYaml = (
   configObject: Document.Parsed | Partial<ConnectConfigObject> | undefined,
   componentSpec?: ConnectComponentSpec
 ): string => {
-  try {
-    if (!configObject) {
-      return '';
-    }
+  if (!configObject) {
+    return '';
+  }
 
+  try {
     let doc: Document.Parsed | Document;
 
     if (typeof (configObject as Document.Parsed).getIn === 'function') {
@@ -428,32 +437,50 @@ export const configToYaml = (
     let yamlString = yamlStringify(doc, yamlConfig);
     yamlString = addRootSpacing(yamlString);
     return yamlString;
-  } catch (_error) {
-    return JSON.stringify(configObject, null, 2);
+  } catch (error) {
+    toast.error(
+      formatToastErrorMessageGRPC({
+        error: ConnectError.from(error),
+        action: 'Convert connect config to YAML',
+        entity: 'configToYaml',
+      })
+    );
+
+    // Return empty string - the existing YAML in the editor will be preserved
+    // This prevents JSON output from appearing
+    return '';
   }
 };
 
 export const getConnectTemplate = ({
   connectionName,
   connectionType,
+  components,
   showOptionalFields,
   showAdvancedFields,
   existingYaml,
 }: {
   connectionName: string;
   connectionType: string;
+  components: ConnectComponentSpec[];
   showOptionalFields?: boolean;
   showAdvancedFields?: boolean;
   existingYaml?: string;
 }) => {
   // Phase 0: Find the component spec for the selected connectionName and connectionType
-  const builtInComponents = getBuiltInComponents();
   const componentSpec =
     connectionName && connectionType
-      ? builtInComponents.find((comp) => comp.type === connectionType && comp.name === connectionName)
+      ? components.find((comp) => comp.type === connectionType && comp.name === connectionName)
       : undefined;
 
   if (!componentSpec) {
+    toast.error(
+      formatToastErrorMessageGRPC({
+        error: new ConnectError('Component spec not found'),
+        action: 'Get connect template',
+        entity: 'getConnectTemplate',
+      })
+    );
     return;
   }
 
@@ -468,7 +495,20 @@ export const getConnectTemplate = ({
   // Phase 2 & 3: Merge with existing (if any) and convert to YAML
   if (existingYaml) {
     const mergedConfig = mergeConnectConfigs(existingYaml, newConfigObject);
-    return configToYaml(mergedConfig, spec);
+
+    // If merge failed (returned undefined), keep existing YAML
+    if (!mergedConfig) {
+      return existingYaml;
+    }
+
+    const yamlResult = configToYaml(mergedConfig, spec);
+
+    // If YAML conversion failed (returned empty), keep existing YAML
+    if (!yamlResult) {
+      return existingYaml;
+    }
+
+    return yamlResult;
   }
 
   return configToYaml(newConfigObject, spec);

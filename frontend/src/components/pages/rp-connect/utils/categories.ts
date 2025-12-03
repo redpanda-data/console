@@ -1,4 +1,4 @@
-import type { ConnectComponentType, ExtendedConnectComponentSpec, RawComponentSpec } from '../types/schema';
+import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 
 export interface ConnectNodeCategory {
   id: string;
@@ -47,7 +47,7 @@ export const getCategoryDisplayName = (category: string): string =>
   displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' ');
 
 export const getAllCategories = (
-  components: (RawComponentSpec | ExtendedConnectComponentSpec)[],
+  components: (ConnectComponentSpec | ExtendedConnectComponentSpec)[],
   componentType?: ConnectComponentType[]
 ): ConnectNodeCategory[] => {
   const categorySet = new Set<string>();

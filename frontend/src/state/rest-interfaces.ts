@@ -1548,6 +1548,10 @@ export type SchemaRegistryCreateSchemaResponse = {
 export type SchemaRegistryValidateSchemaResponse = {
   compatibility: {
     isCompatible: boolean;
+    error?: {
+      errorType: string;
+      description: string;
+    };
   };
   parsingError?: string;
   isValid: boolean;

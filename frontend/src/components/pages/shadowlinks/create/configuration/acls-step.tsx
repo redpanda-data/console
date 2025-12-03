@@ -30,7 +30,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { ChevronDown, Info, X } from 'lucide-react';
-import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/acl_pb';
+import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 import { useState } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 
@@ -108,7 +108,7 @@ export const AclsStep = () => {
     <Collapsible onOpenChange={setIsOpen} open={isOpen}>
       <Card className="gap-0" size="full">
         <CardHeader>
-          <CardTitle>ACLs</CardTitle>
+          <CardTitle>Shadow ACLs</CardTitle>
           <CardAction>
             <CollapsibleTrigger asChild>
               <Button className="w-fit p-0" data-testid="acls-toggle-button" size="sm" variant="ghost">

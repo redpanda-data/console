@@ -4,8 +4,6 @@ package redpanda.api.console.v1alpha1;
 
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
-import "google/api/field_behavior.proto";
-import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
 import "redpanda/core/admin/v2/shadow_link.proto";
@@ -14,53 +12,13 @@ message CreateShadowLinkResponse {
   ShadowLink shadow_link = 1;
 }
 
-message GetShadowLinkRequest {
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true
-  ];
-}
-
-message GetShadowLinkResponse {
-  ShadowLink shadow_link = 1;
-}
-
-// Task states
-enum TaskState {
-  TASK_STATE_UNSPECIFIED = 0;
-  // Task is active
-  TASK_STATE_ACTIVE = 1;
-  // Task was paused
-  TASK_STATE_PAUSED = 2;
-  // Task is unable to communicate with source cluster
-  TASK_STATE_LINK_UNAVAILABLE = 3;
-  // Task is not running
-  TASK_STATE_NOT_RUNNING = 4;
-  // Task is faulted
-  TASK_STATE_FAULTED = 5;
-}
-
-// Status of a task
-message ShadowLinkTaskStatus {
-  // Name of the task
-  string name = 1;
-  // State of the task
-  TaskState state = 2;
-  // Reason for task being in state
-  string reason = 3;
-  // The broker the task is running on
-  int32 broker_id = 4;
-  // The shard the task is running on
-  int32 shard_id = 5;
-}
-
 message ShadowLink {
   // Return name, configuration, and overall state
   string name = 1;
   string uid = 2;
   core.admin.v2.ShadowLinkConfigurations configurations = 3;
   core.admin.v2.ShadowLinkState state = 4;
-  repeated ShadowLinkTaskStatus tasks_status = 5;
+  repeated core.admin.v2.ShadowLinkTaskStatus tasks_status = 5;
   repeated string synced_shadow_topic_properties = 6;
 }
 
@@ -107,97 +65,6 @@ message UpdateShadowLinkResponse {}
 
 message DeleteShadowLinkResponse {}
 
-message ListShadowLinkTopicsRequest {
-  string shadow_link_name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true
-  ];
-
-  message Filter {
-    // Substring match on shadow topic name. Case-sensitive.
-    string topic_name_contains = 1 [
-      (buf.validate.field).string.max_len = 249,
-      (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
-    ];
-  }
-
-  Filter filter = 2;
-
-  int32 page_size = 3 [
-    (buf.validate.field).int32 = {
-      gte: -1
-      lte: 1000
-    },
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination."
-      minimum: -1
-      maximum: 1000
-    }
-  ];
-
-  // Value of the next_page_token field returned by the previous response.
-  // If not provided, the system assumes the first page is requested.
-  string page_token = 4;
-}
-
-message ShadowTopic {
-  string topic_name = 1;
-  core.admin.v2.ShadowTopicState state = 2;
-  int64 total_lag = 3;
-  int32 total_partitions = 4;
-}
-
-message ListShadowLinkTopicsResponse {
-  // Shadow topic status information
-  repeated ShadowTopic shadow_topics = 1;
-
-  // Token to retrieve the next page
-  string next_page_token = 2;
-}
-
-message GetShadowTopicRequest {
-  string shadow_link_name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true
-  ];
-
-  string topic_name = 2 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true
-  ];
-}
-
-message GetShadowTopicResponse {
-  // Partition-level information
-  message PartitionInfo {
-    int32 partition_id = 1;
-    int64 source_last_stable_offset = 2;
-    int64 high_watermark = 3;
-    int64 source_high_watermark = 4;
-    int64 lag = 5;
-    google.protobuf.Timestamp source_last_updated_timestamp = 6;
-  }
-
-  string topic_name = 1;
-  core.admin.v2.ShadowTopicState state = 2;
-  int64 total_lag = 3;
-  int32 total_partitions = 4;
-  repeated PartitionInfo partitions = 5;
-}
-
-message GetShadowMetricsRequest {
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true
-  ];
-}
-
-message GetShadowMetricsResponse {
-  uint64 total_topics_replicated = 1;
-  uint64 failed_over_topics = 2;
-  uint64 error_topics = 3;
-}
-
 service ShadowLinkService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
     name: "Shadow Links"
@@ -224,27 +91,6 @@ service ShadowLinkService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_ADMIN
-      api: API_REDPANDA_ADMIN
-    };
-  }
-
-  rpc GetShadowLink(GetShadowLinkRequest) returns (GetShadowLinkResponse) {
-    option (google.api.http) = {get: "/v1alpha1/shadowlink/{name}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Get Shadow Link"
-      description: "Retrieve details of a specific shadow link by name."
-      responses: {
-        key: "200"
-        value: {
-          description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.console.v1alpha1.GetShadowLinkResponse"}
-          }
-        }
-      }
-    };
-    option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_VIEW
       api: API_REDPANDA_ADMIN
     };
   }
@@ -306,69 +152,6 @@ service ShadowLinkService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_ADMIN
-      api: API_REDPANDA_ADMIN
-    };
-  }
-
-  rpc ListShadowLinkTopics(ListShadowLinkTopicsRequest) returns (ListShadowLinkTopicsResponse) {
-    option (google.api.http) = {get: "/v1alpha1/shadowlink/{shadow_link_name}/topic"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "List Shadow Link Topics"
-      description: "List shadow topic status information for a specific shadow link. Optional: filter based on topic name."
-      responses: {
-        key: "200"
-        value: {
-          description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.console.v1alpha1.ListShadowLinkTopicsResponse"}
-          }
-        }
-      }
-    };
-    option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_VIEW
-      api: API_REDPANDA_ADMIN
-    };
-  }
-
-  rpc GetShadowTopic(GetShadowTopicRequest) returns (GetShadowTopicResponse) {
-    option (google.api.http) = {get: "/v1alpha1/shadowlink/{shadow_link_name}/topic/{topic_name}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Get Shadow Topic"
-      description: "Retrieve details of a specific shadow topic within a shadow link."
-      responses: {
-        key: "200"
-        value: {
-          description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.console.v1alpha1.GetShadowTopicResponse"}
-          }
-        }
-      }
-    };
-    option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_VIEW
-      api: API_REDPANDA_ADMIN
-    };
-  }
-
-  rpc GetShadowMetrics(GetShadowMetricsRequest) returns (GetShadowMetricsResponse) {
-    option (google.api.http) = {get: "/v1alpha1/shadowlink/{name}/metrics"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Get Shadow Link Metrics"
-      description: "Retrieve metrics for a specific shadow link, including total topics replicated, failed over topics, and error topics."
-      responses: {
-        key: "200"
-        value: {
-          description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.console.v1alpha1.GetShadowMetricsResponse"}
-          }
-        }
-      }
-    };
-    option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_VIEW
       api: API_REDPANDA_ADMIN
     };
   }

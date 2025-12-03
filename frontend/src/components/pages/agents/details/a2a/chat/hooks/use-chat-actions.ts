@@ -12,9 +12,11 @@
 import type { PromptInputMessage } from 'components/ai-elements/prompt-input';
 import { nanoid } from 'nanoid';
 import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 
 import { streamMessage } from './use-message-streaming';
 import type { ChatMessage } from '../types';
+import { createA2AClient } from '../utils/a2a-client';
 import { clearChatHistory, deleteMessages, saveMessage } from '../utils/database-operations';
 import { createErrorMessage, createUserMessage } from '../utils/message-converter';
 
@@ -34,6 +36,7 @@ type UseChatActionsResult = {
   handleSubmit: (message: PromptInputMessage) => Promise<void>;
   cancelEdit: () => void;
   clearChat: () => Promise<void>;
+  handleCancelTask: (taskId: string) => Promise<void>;
   setInput: (input: string) => void;
   input: string;
 };
@@ -133,12 +136,32 @@ export const useChatActions = ({
     setContextSeed(nanoid());
   }, [agentId, contextId, setContextSeed, setMessages]);
 
+  const handleCancelTask = useCallback(
+    async (taskId: string) => {
+      try {
+        // Create A2A client with same fetch implementation as used for messaging
+        const client = await createA2AClient(agentCardUrl);
+
+        // Call A2A cancel API
+        // The event stream will send a TaskStatusUpdateEvent with state 'canceled'
+        // which will be handled by the existing event handlers
+        await client.cancelTask({ id: taskId });
+
+        toast.success('Task cancelled');
+      } catch (_error) {
+        toast.error('Failed to cancel task');
+      }
+    },
+    [agentCardUrl]
+  );
+
   return {
     isLoading,
     editingMessageId,
     handleSubmit,
     cancelEdit,
     clearChat,
+    handleCancelTask,
     setInput,
     input,
   };

@@ -21,7 +21,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 
 export interface ConfigurationTopicReplicationProps {
   shadowLink: ShadowLink;
@@ -97,7 +97,7 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
     return (
       <Card size="full" testId="topic-replication-placeholder-card">
         <CardContent className="py-8 text-center">
-          <Text className="text-muted-foreground">No topic properties configured for replication</Text>
+          <Text className="text-muted-foreground">No topic properties configured for shadowing</Text>
         </CardContent>
       </Card>
     );
@@ -106,7 +106,7 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
   return (
     <div className="flex flex-col gap-6">
       <Heading level={2} testId="shadowing-title">
-        Topic config replication
+        Topic config shadow
       </Heading>
       {sortedCategories.map((category) => {
         const properties = categorizedProperties[category];

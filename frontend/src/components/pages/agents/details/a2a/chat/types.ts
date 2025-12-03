@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import type { TaskState } from '@a2a-js/sdk';
 import type { AIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 
 /**
@@ -25,7 +26,6 @@ export type ArtifactPart =
  * Each block represents a temporal event in the agent's response
  */
 export type ContentBlock =
-  | { type: 'text'; text: string; timestamp: Date }
   | {
       type: 'tool';
       toolCallId: string;
@@ -35,6 +35,7 @@ export type ContentBlock =
       output?: unknown;
       errorText?: string;
       timestamp: Date;
+      endTimestamp?: Date;
       messageId?: string;
     }
   | {
@@ -45,7 +46,34 @@ export type ContentBlock =
       parts: ArtifactPart[];
       timestamp: Date;
     }
-  | { type: 'status-update'; taskState: string; timestamp: Date };
+  | {
+      type: 'task-status-update';
+      taskState?: TaskState;
+      previousState?: TaskState;
+      text?: string;
+      messageId?: string;
+      final: boolean;
+      timestamp: Date;
+      usage?: MessageUsageMetadata;
+    };
+
+// Message-level usage metadata (stored in database)
+export type MessageUsageMetadata = {
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  max_input_tokens?: number;
+  cached_tokens?: number;
+  reasoning_tokens?: number;
+};
+
+// Usage metadata with cumulative totals (computed for display)
+export type UsageMetadata = MessageUsageMetadata & {
+  cumulativeInputTokens: number;
+  cumulativeOutputTokens: number;
+  cumulativeReasoningTokens: number;
+  cumulativeCachedTokens: number;
+};
 
 export type ChatMessage = {
   id: string;
@@ -57,21 +85,16 @@ export type ChatMessage = {
   timestamp: Date;
   contextId?: string;
   taskId?: string;
-  taskState?:
-    | 'submitted'
-    | 'working'
-    | 'input-required'
-    | 'completed'
-    | 'canceled'
-    | 'failed'
-    | 'rejected'
-    | 'auth-required'
-    | 'unknown';
+  taskState?: TaskState;
   /**
    * Index in contentBlocks where task-related content starts
    * Content before this index should be rendered above the Task box
    */
   taskStartIndex?: number;
+  /**
+   * Usage metadata from the final status-update event
+   */
+  usage?: MessageUsageMetadata;
 };
 
 export type AIAgentChatProps = {

@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
-import { Text } from '@redpanda-data/ui';
+import { Text } from 'components/redpanda-ui/components/typography';
 
 import { type LintHint, LintHintSchema } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
 
@@ -10,7 +10,7 @@ import { type LintHint, LintHintSchema } from '../../../protogen/redpanda/api/co
  *
  * Key differences from formatPipelineError:
  * - Returns structured LintHint objects (for LintResults component)
- * - formatPipelineError returns JSX (for legacy toast display)
+ * - formatPipelineError returns JSX (for toast erroring messaging)
  *
  * Leverages ConnectError properties:
  * - err.code: gRPC status code (e.g., "invalid_argument", "not_found")

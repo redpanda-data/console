@@ -49,9 +49,8 @@ jobs:
         with:
           lint: true
           format: true
-          breaking: true
-          push: false  # Only validate, don't push to registry
-          # Compare against the default branch so the whole PR is checked
+          breaking: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'Buf Skip Breaking') }}
+          push: false
           breaking_against: https://github.com/redpanda-data/console.git#branch=master
 
   # ===========================================================================

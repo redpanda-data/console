@@ -22,6 +22,7 @@ import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
+import { isFeatureFlagEnabled } from 'config';
 import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
 
 import type { FormValues } from './schemas';
@@ -94,6 +95,27 @@ export const MetadataStep: React.FC<MetadataStepProps> = ({ form, tagFields, app
                 </FormItem>
               )}
             />
+
+            {isFeatureFlagEnabled('enableMcpServiceAccount') && (
+              <div className="space-y-2">
+                <FormLabel required>Service Account Name</FormLabel>
+                <FormField
+                  control={form.control}
+                  name="serviceAccountName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input placeholder="e.g., cluster-abc123-mcp-my-server-sa" {...field} />
+                      </FormControl>
+                      <Text className="text-sm" variant="muted">
+                        This service account will be created automatically when you create the MCP server.
+                      </Text>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
           </div>
         </FormContainer>
       </div>

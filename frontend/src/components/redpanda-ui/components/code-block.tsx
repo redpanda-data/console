@@ -174,6 +174,10 @@ interface SimpleCodeBlockProps {
   maxHeight?: 'sm' | 'default' | 'lg' | 'none';
   onCopy?: () => void;
   className?: string;
+  /**
+   * Class name for the code block
+   */
+  codeClassName?: string;
   testId?: string;
 }
 
@@ -188,6 +192,7 @@ export const SimpleCodeBlock = ({
   maxHeight = 'default',
   onCopy,
   className,
+  codeClassName,
   testId,
 }: SimpleCodeBlockProps) => {
   return (
@@ -203,7 +208,7 @@ export const SimpleCodeBlock = ({
       testId={testId}
     >
       <Pre>
-        <code className={language}>{code}</code>
+        <code className={cn(language, 'break-all wrap-break-word whitespace-pre-wrap', codeClassName)}>{code}</code>
       </Pre>
     </CodeBlock>
   );

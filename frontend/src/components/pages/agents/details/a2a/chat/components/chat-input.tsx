@@ -10,6 +10,15 @@
  */
 
 import {
+  Context,
+  ContextContent,
+  ContextContentBody,
+  ContextContentHeader,
+  ContextInputUsage,
+  ContextOutputUsage,
+  ContextTrigger,
+} from 'components/ai-elements/context';
+import {
   PromptInput,
   PromptInputAttachment,
   PromptInputAttachments,
@@ -26,83 +35,58 @@ import {
   PromptInputTools,
 } from 'components/ai-elements/prompt-input';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Switch } from 'components/redpanda-ui/components/switch';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { AnimatePresence, motion } from 'framer-motion';
-import { useScrollToBottom } from 'hooks/use-scroll-to-bottom';
-import { ArrowDownIcon, HistoryIcon } from 'lucide-react';
-import { useEffect } from 'react';
+import { HistoryIcon } from 'lucide-react';
+import type { AIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
+import { memo, useMemo } from 'react';
 
 import { AIAgentModel } from '../../../../ai-agent-model';
+import { useContextUsage } from '../hooks/use-context-usage';
+import type { UsageMetadata } from '../types';
 
 type ChatInputProps = {
   input: string;
   isLoading: boolean;
   editingMessageId: string | null;
-  model: string | undefined;
+  agent: AIAgent;
   hasMessages: boolean;
-  autoScrollEnabled: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
+  usage: UsageMetadata;
   onInputChange: (value: string) => void;
   onSubmit: (message: PromptInputMessage, event: React.FormEvent) => void;
   onClearHistory: () => void;
   onCancelEdit: () => void;
-  onAutoScrollChange: (enabled: boolean) => void;
+  onCancel?: () => void;
 };
 
 /**
  * Chat input component with prompt textarea, model selector, and controls
  */
-export const ChatInput = ({
+const ChatInputComponent = ({
   input,
   isLoading,
   editingMessageId,
-  model,
+  agent,
   hasMessages,
-  autoScrollEnabled,
   textareaRef,
+  usage,
   onInputChange,
   onSubmit,
   onClearHistory,
   onCancelEdit,
-  onAutoScrollChange,
+  onCancel,
 }: ChatInputProps) => {
-  const { isAtBottom, scrollToBottom } = useScrollToBottom();
+  // Construct modelId from agent resource: provider:model (e.g., "openai:gpt-5")
+  const modelId = useMemo(() => {
+    const provider = agent.provider?.provider.case || 'openai';
+    return `${provider}:${agent.model}`;
+  }, [agent.provider?.provider.case, agent.model]);
 
-  // Auto-scroll to bottom when message is submitted (isLoading becomes true)
-  useEffect(() => {
-    if (isLoading) {
-      scrollToBottom('smooth');
-    }
-  }, [isLoading, scrollToBottom]);
+  // Transform usage metadata for Context component
+  const contextUsage = useContextUsage(usage);
 
   return (
-    <div className="sticky bottom-0 z-10 border-t bg-background p-4">
-      {/* Scroll to bottom button - appears when not at bottom */}
-      <AnimatePresence>
-        {!isAtBottom && (
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            className="-translate-x-1/2 absolute bottom-28 left-1/2 z-50"
-            exit={{ opacity: 0, y: 10 }}
-            initial={{ opacity: 0, y: 10 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          >
-            <Button
-              onClick={(event) => {
-                event.preventDefault();
-                scrollToBottom('instant');
-              }}
-              size="icon"
-              type="button"
-              variant="outline"
-            >
-              <ArrowDownIcon className="size-4" />
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+    <div className="shrink-0 bg-background px-4 pt-4">
       <PromptInput globalDrop multiple onSubmit={onSubmit}>
         <PromptInputBody>
           <PromptInputAttachments>{(attachment) => <PromptInputAttachment data={attachment} />}</PromptInputAttachments>
@@ -115,37 +99,57 @@ export const ChatInput = ({
         </PromptInputBody>
         <PromptInputFooter>
           <PromptInputTools>
-            {model && (
-              <PromptInputModelSelect disabled value={model}>
+            {agent.model && (
+              <PromptInputModelSelect disabled value={agent.model}>
                 <PromptInputModelSelectTrigger>
                   <PromptInputModelSelectValue>
-                    <AIAgentModel model={model} size="sm" />
+                    <AIAgentModel model={agent.model} size="sm" />
                   </PromptInputModelSelectValue>
                 </PromptInputModelSelectTrigger>
                 <PromptInputModelSelectContent>
-                  <PromptInputModelSelectItem value={model}>
-                    <AIAgentModel model={model} size="sm" />
+                  <PromptInputModelSelectItem value={agent.model}>
+                    <AIAgentModel model={agent.model} size="sm" />
                   </PromptInputModelSelectItem>
                 </PromptInputModelSelectContent>
               </PromptInputModelSelect>
             )}
-            <Button disabled={!hasMessages} onClick={onClearHistory} type="button" variant="ghost">
+            {usage.max_input_tokens && (
+              <Context
+                maxTokens={usage.max_input_tokens}
+                modelId={modelId}
+                usage={contextUsage}
+                usedTokens={usage.input_tokens}
+              >
+                <ContextTrigger />
+                <ContextContent align="start" side="top">
+                  <ContextContentHeader />
+                  <ContextContentBody>
+                    <ContextInputUsage />
+                    <ContextOutputUsage />
+                  </ContextContentBody>
+                </ContextContent>
+              </Context>
+            )}
+            <Button
+              disabled={!hasMessages}
+              onClick={() => {
+                onClearHistory();
+                // Refocus textarea after clearing
+                setTimeout(() => textareaRef.current?.focus(), 0);
+              }}
+              type="button"
+              variant="ghost"
+            >
               <HistoryIcon className="size-3" />
               <Text as="span" className="text-sm">
-                Clear history
+                Clear context
               </Text>
             </Button>
           </PromptInputTools>
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-1.5 whitespace-nowrap">
-              <Switch checked={autoScrollEnabled} onCheckedChange={onAutoScrollChange} testId="auto-scroll-switch" />
-              <Text as="span" className="text-sm">
-                Auto scroll
-              </Text>
-            </div>
+          <div className="flex items-center gap-2">
             {editingMessageId ? (
               <div className="flex gap-2">
-                <Button onClick={onCancelEdit} type="button" variant="outline">
+                <Button onClick={onCancelEdit} size="sm" type="button" variant="outline">
                   Cancel
                 </Button>
                 <PromptInputSubmit disabled={!input} size="sm" status={isLoading ? 'streaming' : 'ready'}>
@@ -153,7 +157,18 @@ export const ChatInput = ({
                 </PromptInputSubmit>
               </div>
             ) : (
-              <PromptInputSubmit disabled={!(input || isLoading)} status={isLoading ? 'streaming' : 'ready'} />
+              <PromptInputSubmit
+                className="size-8"
+                disabled={!(input || isLoading)}
+                onClick={(e) => {
+                  if (isLoading && onCancel) {
+                    e.preventDefault();
+                    onCancel();
+                  }
+                }}
+                size="icon-xs"
+                status={isLoading ? 'streaming' : 'ready'}
+              />
             )}
           </div>
         </PromptInputFooter>
@@ -161,3 +176,7 @@ export const ChatInput = ({
     </div>
   );
 };
+
+ChatInputComponent.displayName = 'ChatInput';
+
+export const ChatInput = memo(ChatInputComponent);

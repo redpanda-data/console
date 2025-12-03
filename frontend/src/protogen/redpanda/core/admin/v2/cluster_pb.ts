@@ -39,9 +39,13 @@ export const file_redpanda_core_admin_v2_cluster: GenFile = /*@__PURE__*/
 export type ListKafkaConnectionsRequest = Message<"redpanda.core.admin.v2.ListKafkaConnectionsRequest"> & {
   /**
    * The maximum number of connections to return. If unspecified or 0, a
-   * default value may be applied. Note that paging is currently not fully
-   * supported, and this field only acts as a limit for the first page of data
-   * returned. Subsequent pages of data cannot be requested.
+   * default value may be applied. The server may return fewer connections
+   * than requested due to memory constraints; the limit is set to allow
+   * listing all connections for a single broker. Consider filtering by
+   * node_id to view connections for specific brokers. Note that paging is
+   * currently not fully supported, and this field only acts as a limit for
+   * the first page of data returned. Subsequent pages of data cannot be
+   * requested.
    *
    * @generated from field: int32 page_size = 1;
    */

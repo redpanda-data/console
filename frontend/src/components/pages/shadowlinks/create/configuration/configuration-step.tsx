@@ -11,6 +11,7 @@
 
 import { AclsStep } from './acls-step';
 import { ConsumerOffsetStep } from './consumer-offset-step';
+import { SchemaRegistryStep } from './schema-registry-step';
 import { TopicsStep } from './topics-step';
 
 export const ConfigurationStep = () => (
@@ -18,5 +19,6 @@ export const ConfigurationStep = () => (
     <TopicsStep />
     <AclsStep />
     <ConsumerOffsetStep />
+    <SchemaRegistryStep />
   </div>
 );

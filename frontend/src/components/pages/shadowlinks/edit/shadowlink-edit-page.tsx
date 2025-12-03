@@ -16,7 +16,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 import {
   ShadowLinkConfigurationsSchema,
   ShadowLinkSchema,
@@ -37,6 +37,7 @@ import {
   getUpdateValuesForACLs,
   getUpdateValuesForConnection,
   getUpdateValuesForConsumerGroups,
+  getUpdateValuesForSchemaRegistry,
   getUpdateValuesForTopics,
 } from './shadowlink-edit-utils';
 import { SourceTab } from './source-tab';
@@ -61,6 +62,7 @@ const buildUpdateShadowLinkRequest = (
   const topicsUpdate = getUpdateValuesForTopics(values, originalValues);
   const consumerGroupsUpdate = getUpdateValuesForConsumerGroups(values, originalValues);
   const aclsUpdate = getUpdateValuesForACLs(values, originalValues);
+  const schemaRegistryUpdate = getUpdateValuesForSchemaRegistry(values, originalValues);
 
   // Build configurations with all category values
   const configurations = create(ShadowLinkConfigurationsSchema, {
@@ -68,6 +70,7 @@ const buildUpdateShadowLinkRequest = (
     topicMetadataSyncOptions: topicsUpdate.value,
     consumerOffsetSyncOptions: consumerGroupsUpdate.value,
     securitySyncOptions: aclsUpdate.value,
+    schemaRegistrySyncOptions: schemaRegistryUpdate.value,
   });
 
   // Build shadow link
@@ -83,6 +86,7 @@ const buildUpdateShadowLinkRequest = (
       ...topicsUpdate.fieldMaskPaths,
       ...consumerGroupsUpdate.fieldMaskPaths,
       ...aclsUpdate.fieldMaskPaths,
+      ...schemaRegistryUpdate.fieldMaskPaths,
     ],
   });
 
@@ -103,12 +107,18 @@ const buildDefaultFormValues = (shadowLink: ShadowLink): FormValues => {
   const consumerGroupsValues = buildDefaultConsumerGroupsValues(shadowLink);
   const aclsValues = buildDefaultACLsValues(shadowLink);
 
+  // Check if schema registry sync is enabled
+  const schemaRegistrySyncOptions = shadowLink.configurations?.schemaRegistrySyncOptions;
+  const enableSchemaRegistrySync =
+    schemaRegistrySyncOptions?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic';
+
   return {
     name: shadowLink.name || '',
     ...connectionValues,
     ...topicsValues,
     ...consumerGroupsValues,
     ...aclsValues,
+    enableSchemaRegistrySync,
   };
 };
 
@@ -133,6 +143,7 @@ const getTabForField = (fieldName: string): string => {
     consumers: 'shadowing',
     aclsMode: 'shadowing',
     aclFilters: 'shadowing',
+    enableSchemaRegistrySync: 'shadowing',
     // Topic config tab fields
     topicProperties: 'topic-config',
     excludeDefault: 'topic-config',

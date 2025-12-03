@@ -15,7 +15,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { Item, ItemGroup } from 'components/redpanda-ui/components/item';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 import type { ACLFilter, NameFilter } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import {
@@ -26,7 +26,7 @@ import {
   getResourceTypeLabel,
 } from '../../shadowlink-helpers';
 
-export interface ConfigurationMirroringProps {
+export interface ConfigurationShadowingProps {
   shadowLink: ShadowLink;
 }
 
@@ -166,15 +166,37 @@ const ACLFilterSection = ({ filters }: { filters: ACLFilter[] }) => {
   );
 };
 
-export const ConfigurationMirroring = ({ shadowLink }: ConfigurationMirroringProps) => {
+// Component to display Schema Registry sync status
+const SchemaRegistrySection = ({ isEnabled }: { isEnabled: boolean }) => (
+  <Card size="full" testId="schema-registry-card">
+    <CardHeader>
+      <Heading level={3}>Schema Registry</Heading>
+    </CardHeader>
+    <CardContent className="flex flex-row justify-between">
+      <Text className="mt-2 text-muted-foreground text-sm">
+        Replicate the source cluster's _schema topic, which replaces the shadow cluster's Schema Registry.
+      </Text>
+      <Badge testId="schema-registry-status-badge" variant={isEnabled ? 'green' : 'gray'}>
+        {isEnabled ? 'Enabled' : 'Disabled'}
+      </Badge>
+    </CardContent>
+  </Card>
+);
+
+export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingProps) => {
   const topicSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
   const consumerSyncOptions = shadowLink.configurations?.consumerOffsetSyncOptions;
   const securitySyncOptions = shadowLink.configurations?.securitySyncOptions;
+  const schemaRegistrySyncOptions = shadowLink.configurations?.schemaRegistrySyncOptions;
 
   // Get filters
   const topicFilters = topicSyncOptions?.autoCreateShadowTopicFilters || [];
   const consumerFilters = consumerSyncOptions?.groupFilters || [];
   const aclFilters = securitySyncOptions?.aclFilters || [];
+
+  // Check if schema registry sync is enabled
+  const isSchemaRegistrySyncEnabled =
+    schemaRegistrySyncOptions?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic';
 
   return (
     <div className="flex flex-col gap-6">
@@ -200,6 +222,9 @@ export const ConfigurationMirroring = ({ shadowLink }: ConfigurationMirroringPro
         testId="consumer-group-replication"
         title="Consumer group replication"
       />
+
+      {/* Schema Registry Section */}
+      <SchemaRegistrySection isEnabled={isSchemaRegistrySyncEnabled} />
     </div>
   );
 };

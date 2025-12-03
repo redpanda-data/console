@@ -10,11 +10,14 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Badge, Box, DataTable, Link, Stack, Text, Tooltip } from '@redpanda-data/ui';
+import { Badge, Box, DataTable, Stack, Tooltip } from '@redpanda-data/ui';
 import ErrorResult from 'components/misc/error-result';
+import { Link, Text } from 'components/redpanda-ui/components/typography';
+import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FunctionComponent } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
+import { useLocation } from 'react-router-dom';
 
 import {
   ConnectorClass,
@@ -26,10 +29,10 @@ import {
   TaskState,
   TasksColumn,
 } from './helper';
-import { isFeatureFlagEnabled, isServerless } from '../../../config';
+import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../../../config';
 import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/app-global';
-import { api, pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
+import { api, rpcnSecretManagerApi } from '../../../state/backend-api';
 import type { ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo } from '../../../state/rest-interfaces';
 import { Features } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
@@ -39,6 +42,7 @@ import SearchBar from '../../misc/search-bar';
 import Section from '../../misc/section';
 import Tabs, { type Tab } from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper } from '../page';
+import { PipelineListPage } from '../rp-connect/pipeline/list';
 import RpConnectPipelinesList from '../rp-connect/pipelines-list';
 import { RedpandaConnectIntro } from '../rp-connect/redpanda-connect-intro';
 
@@ -74,15 +78,31 @@ const getDefaultView = (defaultView: string): { initialTab: ConnectView; redpand
   }
 };
 
-const WrapUseSearchParamsHook: FunctionComponent<{ matchedPath: string }> = (props) => {
+const WrapKafkaConnectOverview: FunctionComponent<{ matchedPath: string }> = (props) => {
   const { search } = useLocation();
   const searchParams = new URLSearchParams(search);
   const defaultTab = searchParams.get('defaultTab') || '';
-  return <KafkaConnectOverview defaultView={defaultTab} {...props} />;
+
+  const { data: kafkaConnectors, isLoading: isLoadingKafkaConnectors } = useKafkaConnectConnectorsQuery();
+
+  const isKafkaConnectEnabled = kafkaConnectors?.isConfigured === true;
+
+  return (
+    <KafkaConnectOverview
+      defaultView={defaultTab}
+      isKafkaConnectEnabled={isKafkaConnectEnabled}
+      isLoadingKafkaConnectors={isLoadingKafkaConnectors}
+      {...props}
+    />
+  );
 };
 
 @observer
-class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
+class KafkaConnectOverview extends PageComponent<{
+  defaultView: string;
+  isKafkaConnectEnabled: boolean;
+  isLoadingKafkaConnectors: boolean;
+}> {
   initPage(p: PageInitHelper): void {
     p.title = 'Overview';
     p.addBreadcrumb('Connect', '/connect-clusters');
@@ -110,11 +130,12 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
   }
 
   render() {
-    // Redirect to wizard if enableRpcnTiles is enabled and there are no existing pipelines
-    if (isFeatureFlagEnabled('enableRpcnTiles') && pipelinesApi.pipelines?.length === 0) {
-      return <Navigate replace to="/rp-connect/wizard" />;
+    if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
+      return <PipelineListPage />;
     }
-
+    if (this.props.isLoadingKafkaConnectors) {
+      return <WaitingRedpanda />;
+    }
     const tabs = [
       {
         key: ConnectView.RedpandaConnect,
@@ -124,26 +145,25 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
           </Box>
         ),
         content: (
-          <Box>
-            {!isFeatureFlagEnabled('enableRpcnTiles') && (
-              <Text mb={4}>
-                Redpanda Connect is an alternative to Kafka Connect. Choose from a growing ecosystem of readily
-                available connectors.{' '}
-                <Link href="https://docs.redpanda.com/redpanda-cloud/develop/connect/about/" target="_blank">
-                  Learn more.
-                </Link>
-              </Text>
-            )}
+          <div className="mb-4 flex flex-col gap-4">
+            <Text>
+              {this.props.isKafkaConnectEnabled
+                ? 'Redpanda Connect is an alternative to Kafka Connect. Choose from a growing ecosystem of readily available connectors.'
+                : 'Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that drive real-time analytics and actionable business insights. Integrate data across systems with hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable pipelines.'}{' '}
+              <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
+                Learn more
+              </Link>
+            </Text>
             {Features.pipelinesApi ? <RpConnectPipelinesList matchedPath="/rp-connect" /> : <RedpandaConnectIntro />}
-          </Box>
+          </div>
         ),
       },
       {
         key: ConnectView.KafkaConnect,
         title: <Box minWidth="180px">Kafka Connect</Box>,
         content: (
-          <Box>
-            <Text mb={4}>
+          <div className="flex flex-col gap-4">
+            <Text>
               Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data with
               different data systems.{' '}
               <Link href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/" target="_blank">
@@ -151,18 +171,18 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
               </Link>
             </Text>
             <TabKafkaConnect />
-          </Box>
+          </div>
         ),
       },
     ] as Tab[];
 
-    if (isServerless()) {
+    if (isServerless() || !this.props.isKafkaConnectEnabled) {
       tabs.removeAll((x) => x.key === ConnectView.KafkaConnect);
     }
 
     return (
       <PageContent>
-        {!isFeatureFlagEnabled('enableRpcnTiles') && (
+        {this.props.isKafkaConnectEnabled && (
           <Text>
             There are two ways to integrate your Redpanda data with data from external systems: Redpanda Connect and
             Kafka Connect.
@@ -182,7 +202,7 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
   }
 }
 
-export default WrapUseSearchParamsHook;
+export default WrapKafkaConnectOverview;
 
 @observer
 class TabClusters extends Component {
@@ -376,14 +396,12 @@ class TabTasks extends Component {
             accessorKey: 'name', // Assuming 'name' is correct based on your initial dataIndex
             cell: ({ row: { original } }) => (
               <Text
-                className="hoverLink"
+                className="hoverLink whitespace-break-spaces break-words"
                 onClick={() =>
                   appGlobal.historyPush(
                     `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`
                   )
                 }
-                whiteSpace="break-spaces"
-                wordBreak="break-word"
               >
                 {original.connectorName}
               </Text>
@@ -418,7 +436,7 @@ class TabTasks extends Component {
 }
 
 // biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
-const TabKafkaConnect = observer((_p: {}) => {
+export const TabKafkaConnect = observer((_p: {}) => {
   const settings = uiSettings.kafkaConnect;
 
   if (api.connectConnectorsError) {

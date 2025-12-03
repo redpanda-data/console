@@ -1,41 +1,70 @@
 import { useDisclosure } from '@redpanda-data/ui';
+import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import type { editor } from 'monaco-editor';
-import { memo, useMemo, useState } from 'react';
+import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { useOnboardingWizardDataStore } from 'state/onboarding-wizard-store';
 
 import { AddConnectorDialog } from './add-connector-dialog';
 import { AddConnectorsCard } from './add-connectors-card';
 import { AddContextualVariablesCard } from './add-contextual-variables-card';
 import { AddSecretsCard } from './add-secrets-card';
-import { AddSecretsDialog } from './add-secrets-dialog';
 import type { ConnectComponentType } from '../types/schema';
+import { parseSchema } from '../utils/schema';
+import { getConnectTemplate } from '../utils/yaml';
 
 type CreatePipelineSidebarProps = {
   editorInstance: editor.IStandaloneCodeEditor | null;
-  onAddConnector: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
-  detectedSecrets: string[];
-  existingSecrets: string[];
-  onSecretsCreated: () => void;
   editorContent: string;
+  setYamlContent: (yaml: string) => void;
+  componentList?: ComponentList;
+  isComponentListLoading?: boolean;
 };
 
 export const CreatePipelineSidebar = memo(
   ({
     editorInstance,
-    onAddConnector,
-    detectedSecrets,
-    existingSecrets,
-    onSecretsCreated,
     editorContent,
+    setYamlContent,
+    componentList: rawComponentList,
+    isComponentListLoading,
   }: CreatePipelineSidebarProps) => {
     const { isOpen: isAddConnectorOpen, onOpen: openAddConnector, onClose: closeAddConnector } = useDisclosure();
     const [selectedConnector, setSelectedConnector] = useState<ConnectComponentType | undefined>(undefined);
-    const [isSecretsDialogOpen, setIsSecretsDialogOpen] = useState(false);
+    const components = useMemo(() => (rawComponentList ? parseSchema(rawComponentList) : []), [rawComponentList]);
 
     const hasInput = useMemo(() => editorContent.includes('input:'), [editorContent]);
     const hasOutput = useMemo(() => editorContent.includes('output:'), [editorContent]);
 
+    const handleAddConnector = useCallback(
+      (connectionName: string, connectionType: ConnectComponentType) => {
+        const template = getConnectTemplate({
+          connectionName,
+          connectionType,
+          existingYaml: editorContent,
+          components,
+        });
+
+        if (template) {
+          setYamlContent(template);
+
+          // Sync wizard data to Zustand store
+          const wizardData = useOnboardingWizardDataStore.getState();
+          wizardData.setWizardData({
+            ...wizardData,
+            [connectionType]: {
+              connectionName,
+              connectionType,
+            },
+          });
+        }
+        closeAddConnector();
+      },
+      [editorContent, components, setYamlContent, closeAddConnector]
+    );
+
     if (editorInstance === null) {
-      return <div className="min-w-[300px]" />;
+      return null;
     }
 
     const handleConnectorTypeChange = (connectorType: ConnectComponentType) => {
@@ -43,18 +72,16 @@ export const CreatePipelineSidebar = memo(
       openAddConnector();
     };
 
-    const handleAddConnector = (connectionName: string, connectionType: ConnectComponentType) => {
-      onAddConnector?.(connectionName, connectionType);
-      closeAddConnector();
-    };
-
-    const existingSecretsSet = new Set(existingSecrets);
-    const missingSecrets = detectedSecrets.filter((secret) => !existingSecretsSet.has(secret));
-
-    const handleSecretsCreated = () => {
-      onSecretsCreated();
-      setIsSecretsDialogOpen(false);
-    };
+    if (isComponentListLoading) {
+      return (
+        <div className="flex flex-col gap-4">
+          <SkeletonGroup direction="vertical" spacing="default">
+            <Skeleton variant="heading" width="full" />
+            <Skeleton className="h-10 w-full" />
+          </SkeletonGroup>
+        </div>
+      );
+    }
 
     return (
       <div className="flex flex-col gap-4">
@@ -64,28 +91,18 @@ export const CreatePipelineSidebar = memo(
           hasOutput={hasOutput}
           onAddConnector={handleConnectorTypeChange}
         />
-        <AddSecretsCard
-          detectedSecrets={detectedSecrets}
-          editorInstance={editorInstance}
-          existingSecrets={existingSecrets}
-          missingSecrets={missingSecrets}
-          onOpenDialog={() => setIsSecretsDialogOpen(true)}
-        />
+        <AddSecretsCard editorContent={editorContent} editorInstance={editorInstance} />
         <AddContextualVariablesCard editorContent={editorContent} editorInstance={editorInstance} />
 
-        <AddSecretsDialog
-          existingSecrets={existingSecrets}
-          isOpen={isSecretsDialogOpen}
-          missingSecrets={missingSecrets}
-          onClose={() => setIsSecretsDialogOpen(false)}
-          onSecretsCreated={handleSecretsCreated}
-        />
-        <AddConnectorDialog
-          connectorType={selectedConnector}
-          isOpen={isAddConnectorOpen}
-          onAddConnector={handleAddConnector}
-          onCloseAddConnector={closeAddConnector}
-        />
+        {rawComponentList && (
+          <AddConnectorDialog
+            components={rawComponentList}
+            connectorType={selectedConnector}
+            isOpen={isAddConnectorOpen}
+            onAddConnector={handleAddConnector}
+            onCloseAddConnector={closeAddConnector}
+          />
+        )}
       </div>
     );
   }

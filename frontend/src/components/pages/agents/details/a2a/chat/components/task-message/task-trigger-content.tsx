@@ -10,7 +10,7 @@
  */
 
 import { TaskState } from 'components/ai-elements/task';
-import { ChevronDownIcon, SearchIcon } from 'lucide-react';
+import { ChevronDownIcon } from 'lucide-react';
 
 type TaskTriggerContentProps = {
   title: string;
@@ -31,7 +31,6 @@ type TaskTriggerContentProps = {
  */
 export const TaskTriggerContent = ({ title, taskState }: TaskTriggerContentProps) => (
   <div className="flex w-full cursor-pointer items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground">
-    <SearchIcon className="size-4" />
     <p className="flex-1 font-mono text-sm">{title}</p>
     {taskState && <TaskState state={taskState} />}
     <ChevronDownIcon className="size-4 transition-transform group-data-[state=open]:rotate-180" />

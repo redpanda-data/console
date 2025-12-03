@@ -10,7 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 import {
   type ACLFilter,
   ACLFilterSchema,
@@ -19,17 +19,21 @@ import {
   FilterType,
   NameFilterSchema,
   PatternType,
+  SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema,
+  SchemaRegistrySyncOptionsSchema,
   ScramConfigSchema,
   SecuritySettingsSyncOptionsSchema,
   type ShadowLinkClientOptions,
   ShadowLinkClientOptionsSchema,
+  TopicMetadataSyncOptionsSchema,
+} from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
+import {
   TLSFileSettingsSchema,
   TLSPEMSettingsSchema,
   type TLSSettings,
   TLSSettingsSchema,
-  TopicMetadataSyncOptionsSchema,
-} from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/acl_pb';
+} from 'protogen/redpanda/core/common/v1/tls_pb';
 
 import type { FormValues } from '../create/model';
 import { TLS_MODE } from '../create/model';
@@ -637,5 +641,38 @@ export const buildDefaultACLsValues = (shadowLink: ShadowLink): Pick<FormValues,
           permissionType: filter.accessFilter?.permissionType,
           host: filter.accessFilter?.host,
         })),
+  };
+};
+
+/**
+ * Get update values for Schema Registry category
+ * Compares form values with original values and returns schema + field mask paths
+ */
+export const getUpdateValuesForSchemaRegistry = (
+  values: FormValues,
+  originalValues: FormValues
+): UpdateResult<ReturnType<typeof create<typeof SchemaRegistrySyncOptionsSchema>> | undefined> => {
+  const fieldMaskPaths: string[] = [];
+
+  // Compare schema registry sync enabled state
+  const schemaRegistryChanged = values.enableSchemaRegistrySync !== originalValues.enableSchemaRegistrySync;
+
+  if (schemaRegistryChanged) {
+    fieldMaskPaths.push('configurations.schema_registry_sync_options');
+  }
+
+  // Build schema registry sync options (only set if enabled)
+  const schemaRegistrySyncOptions = values.enableSchemaRegistrySync
+    ? create(SchemaRegistrySyncOptionsSchema, {
+        schemaRegistryShadowingMode: {
+          case: 'shadowSchemaRegistryTopic',
+          value: create(SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema, {}),
+        },
+      })
+    : undefined;
+
+  return {
+    value: schemaRegistrySyncOptions,
+    fieldMaskPaths,
   };
 };

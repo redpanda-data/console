@@ -20,17 +20,19 @@ import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { useLintHints } from 'components/ui/lint-hint/use-lint-hints';
 import { useSecretDetection } from 'components/ui/secret/use-secret-detection';
+import {
+  ServiceAccountSelector,
+  type ServiceAccountSelectorRef,
+} from 'components/ui/service-account/service-account-selector';
 import { ExpandedYamlDialog } from 'components/ui/yaml/expanded-yaml-dialog';
 import { useYamlLabelSync } from 'components/ui/yaml/use-yaml-label-sync';
+import { config, isFeatureFlagEnabled } from 'config';
 import { ArrowLeft, FileText, Hammer, Loader2 } from 'lucide-react';
-import {
-  CreateMCPServerRequestSchema,
-  LintMCPConfigRequestSchema,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import React, { useMemo, useState } from 'react';
+import { MCPServer_ServiceAccountSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useCreateMCPServerMutation, useLintMCPConfigMutation } from 'react-query/api/remote-mcp';
-import { useListSecretsQuery } from 'react-query/api/secret';
+import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -64,6 +66,9 @@ export const RemoteMCPCreatePage: React.FC = () => {
   const navigate = useNavigate();
   const { mutateAsync: createServer, isPending: isCreateMCPServerPending } = useCreateMCPServerMutation();
   const { mutateAsync: lintConfig, isPending: isLintConfigPending } = useLintMCPConfigMutation();
+  const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation({
+    skipInvalidation: true,
+  });
 
   // State for expanded YAML dialog
   const [expandedTool, setExpandedTool] = useState<{ index: number; isOpen: boolean } | null>(null);
@@ -71,12 +76,48 @@ export const RemoteMCPCreatePage: React.FC = () => {
   // Query existing secrets
   const { data: secretsData } = useListSecretsQuery();
 
+  // Ref to ServiceAccountSelector to call createServiceAccount
+  const serviceAccountSelectorRef = useRef<ServiceAccountSelectorRef>(null);
+
+  // Track the created service account info and pending state
+  const [serviceAccountInfo, setServiceAccountInfo] = useState<{
+    secretName: string;
+    serviceAccountId: string;
+  } | null>(null);
+  const [isCreateServiceAccountPending, setIsCreateServiceAccountPending] = useState(false);
+
   // Form setup
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: initialValues,
     mode: 'onChange',
   });
+
+  // Track the display name to auto-generate service account name
+  const displayName = form.watch('displayName');
+  const serviceAccountName = form.watch('serviceAccountName');
+
+  // Auto-generate service account name when MCP server name changes
+  useEffect(() => {
+    if (displayName) {
+      const clusterType = config.isServerless ? 'serverless' : 'cluster';
+      const sanitizedServerName = displayName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+      const generatedName = `${clusterType}-${config.clusterId}-mcp-${sanitizedServerName}-sa`;
+
+      // Only update if the field is empty or matches the previous auto-generated pattern
+      const currentValue = form.getValues('serviceAccountName');
+      if (!currentValue || currentValue.startsWith(`${clusterType}-${config.clusterId}-mcp-`)) {
+        form.setValue('serviceAccountName', generatedName, { shouldValidate: false });
+      }
+    }
+  }, [displayName, form]);
+
+  // Clear cached service account when service account name changes
+  useEffect(() => {
+    if (serviceAccountInfo && serviceAccountName) {
+      setServiceAccountInfo(null);
+    }
+  }, [serviceAccountName, serviceAccountInfo]);
 
   const {
     fields: tagFields,
@@ -117,7 +158,11 @@ export const RemoteMCPCreatePage: React.FC = () => {
 
   const handleNext = async (isOnMetadataStep: boolean, goNext: () => void) => {
     if (isOnMetadataStep) {
-      const valid = await form.trigger(['displayName', 'description', 'resourcesTier', 'tags']);
+      const fieldsToValidate: Array<keyof FormValues> = ['displayName', 'description', 'resourcesTier', 'tags'];
+      if (isFeatureFlagEnabled('enableMcpServiceAccount')) {
+        fieldsToValidate.push('serviceAccountName');
+      }
+      const valid = await form.trigger(fieldsToValidate);
       if (!valid) {
         return;
       }
@@ -139,17 +184,39 @@ export const RemoteMCPCreatePage: React.FC = () => {
       },
     };
 
-    const response = await lintConfig(
-      create(LintMCPConfigRequestSchema, {
-        tools: toolsMap,
-      })
-    );
+    const response = await lintConfig({
+      tools: toolsMap,
+    });
 
     // Update lint hints for this tool
     setLintHints((prev) => ({
       ...prev,
       [toolIndex]: response.lintHints || {},
     }));
+  };
+
+  const createServiceAccountIfNeeded = async (
+    serverName: string
+  ): Promise<{ secretName: string; serviceAccountId: string } | null> => {
+    // If we already created one in this session, use it
+    if (serviceAccountInfo) {
+      return serviceAccountInfo;
+    }
+
+    // Call the ServiceAccountSelector to create the service account
+    if (!serviceAccountSelectorRef.current) {
+      toast.error('Service account selector not initialized');
+      return null;
+    }
+
+    // The pending state is automatically tracked via onPendingChange callback
+    const result = await serviceAccountSelectorRef.current.createServiceAccount(serverName);
+
+    if (result) {
+      setServiceAccountInfo(result);
+    }
+
+    return result;
   };
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 56, refactor later
@@ -235,19 +302,47 @@ export const RemoteMCPCreatePage: React.FC = () => {
       };
     }
 
+    const useMcpServiceAccount = isFeatureFlagEnabled('enableMcpServiceAccount');
+    let serviceAccountConfig: ReturnType<typeof create<typeof MCPServer_ServiceAccountSchema>> | undefined;
+
+    // Create service account if feature flag is enabled
+    // NOTE: Service account and secret are created before MCP server creation.
+    // If server creation fails, these resources will not be automatically cleaned up.
+    // This matches the AI agents implementation pattern.
+    if (useMcpServiceAccount) {
+      const serviceAccountResult = await createServiceAccountIfNeeded(values.displayName);
+      if (!serviceAccountResult) {
+        return; // Error already shown by createServiceAccountIfNeeded
+      }
+
+      const { secretName, serviceAccountId } = serviceAccountResult;
+
+      // Add service_account_id and secret_id to tags for easy deletion
+      tagsMap.service_account_id = serviceAccountId;
+      tagsMap.secret_id = secretName;
+
+      serviceAccountConfig = create(MCPServer_ServiceAccountSchema, {
+        clientId: `\${secrets.${secretName}.client_id}`,
+        clientSecret: `\${secrets.${secretName}.client_secret}`,
+      });
+    }
+
+    const mcpServerPayload = {
+      displayName: values.displayName.trim(),
+      description: values.description?.trim() ?? '',
+      tools: toolsMap,
+      tags: tagsMap,
+      resources: {
+        cpuShares: tier?.cpu ?? '200m',
+        memoryShares: tier?.memory ?? '800M',
+      },
+      ...(useMcpServiceAccount && { serviceAccount: serviceAccountConfig }),
+    };
+
     await createServer(
-      create(CreateMCPServerRequestSchema, {
-        mcpServer: {
-          displayName: values.displayName.trim(),
-          description: values.description?.trim() ?? '',
-          tools: toolsMap,
-          tags: tagsMap,
-          resources: {
-            cpuShares: tier?.cpu ?? '200m',
-            memoryShares: tier?.memory ?? '800M',
-          },
-        },
-      }),
+      {
+        mcpServer: mcpServerPayload,
+      },
       {
         onError: handleValidationError,
         onSuccess: (data) => {
@@ -329,17 +424,28 @@ export const RemoteMCPCreatePage: React.FC = () => {
 
               <Stepper.Controls className={methods.isFirst ? 'flex justify-end' : 'flex justify-between'}>
                 {!methods.isFirst && (
-                  <Button disabled={isCreateMCPServerPending} onClick={methods.prev} variant="outline">
+                  <Button
+                    disabled={isCreateMCPServerPending || isCreateServiceAccountPending}
+                    onClick={methods.prev}
+                    variant="outline"
+                  >
                     <ArrowLeft className="h-4 w-4" />
                     Previous
                   </Button>
                 )}
                 {methods.isLast ? (
                   <Button
-                    disabled={isCreateMCPServerPending || hasFormErrors || hasLintingIssues || hasSecretWarnings}
+                    disabled={
+                      isCreateMCPServerPending ||
+                      isCreateServiceAccountPending ||
+                      isCreateSecretPending ||
+                      hasFormErrors ||
+                      hasLintingIssues ||
+                      hasSecretWarnings
+                    }
                     onClick={form.handleSubmit(onSubmit)}
                   >
-                    {isCreateMCPServerPending ? (
+                    {isCreateMCPServerPending || isCreateServiceAccountPending || isCreateSecretPending ? (
                       <div className="flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <Text as="span">Creating...</Text>
@@ -358,6 +464,15 @@ export const RemoteMCPCreatePage: React.FC = () => {
                 )}
               </Stepper.Controls>
             </Form>
+            {isFeatureFlagEnabled('enableMcpServiceAccount') && (
+              <ServiceAccountSelector
+                createSecret={createSecret}
+                onPendingChange={setIsCreateServiceAccountPending}
+                ref={serviceAccountSelectorRef}
+                resourceType="MCP server"
+                serviceAccountName={serviceAccountName}
+              />
+            )}
 
             {/* Expanded YAML Editor Dialog */}
             {expandedTool && (

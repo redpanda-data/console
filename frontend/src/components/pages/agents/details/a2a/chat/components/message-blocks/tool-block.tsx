@@ -10,7 +10,6 @@
  */
 
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from 'components/ai-elements/tool';
-import { useEffect, useState } from 'react';
 
 type ToolBlockProps = {
   toolCallId: string;
@@ -20,27 +19,31 @@ type ToolBlockProps = {
   output?: unknown;
   errorText?: string;
   timestamp: Date;
+  endTimestamp?: Date;
   messageId?: string;
   isLastBlock: boolean;
 };
 
 /**
  * Renders a tool block that transitions from request → response state
- * Spawns open initially, then syncs with isLastBlock (open when last, closed when not)
- * User can manually toggle, but isLastBlock changes override manual state
+ * Spawns closed by default, user can manually toggle
  */
-export const ToolBlock = ({ toolCallId, toolName, state, input, output, errorText, isLastBlock }: ToolBlockProps) => {
-  // Always spawn open
-  const [isOpen, setIsOpen] = useState(true);
-
-  // Sync with isLastBlock changes
-  useEffect(() => {
-    setIsOpen(isLastBlock);
-  }, [isLastBlock]);
+export const ToolBlock = ({
+  toolCallId,
+  toolName,
+  state,
+  input,
+  output,
+  errorText,
+  timestamp,
+  endTimestamp,
+}: ToolBlockProps) => {
+  const durationMs = endTimestamp && timestamp ? endTimestamp.getTime() - timestamp.getTime() : undefined;
 
   return (
-    <Tool key={toolCallId} onOpenChange={setIsOpen} open={isOpen}>
+    <Tool defaultOpen={false} key={toolCallId}>
       <ToolHeader
+        durationMs={durationMs}
         state={state}
         title={toolName || 'Tool'}
         toolCallId={toolCallId}

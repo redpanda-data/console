@@ -123,4 +123,45 @@ func (s *APIIntegrationTestSuite) TestValidateSchema() {
 		assert.False(validationResponse.IsValid)
 		assert.NotEmpty(validationResponse.ParsingError, "parsing error should be set")
 	})
+
+	t.Run("incompatible schema change (protobuf)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+		defer cancel()
+
+		// First, register a schema with string year field
+		originalSchema := "syntax = \"proto3\";\n\npackage test.v1;\n\nmessage Car {\n  string make = 1;\n  string model = 2;\n  string year = 3;\n}\n"
+		registerReq := struct {
+			Schema string `json:"schema"`
+			Type   string `json:"schemaType"`
+		}{
+			Schema: originalSchema,
+			Type:   sr.TypeProtobuf.String(),
+		}
+		registerRes, _ := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/test-car-compat/versions", registerReq)
+		require.Equal(200, registerRes.StatusCode)
+
+		// Now try to validate an incompatible change: year field changed from string to int32
+		incompatibleSchema := "syntax = \"proto3\";\n\npackage test.v1;\n\nmessage Car {\n  string make = 1;\n  string model = 2;\n  int32 year = 3;\n}\n"
+		validateReq := struct {
+			Schema string `json:"schema"`
+			Type   string `json:"schemaType"`
+		}{
+			Schema: incompatibleSchema,
+			Type:   sr.TypeProtobuf.String(),
+		}
+		res, body := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/test-car-compat/versions/latest/validate", validateReq)
+		require.Equal(200, res.StatusCode)
+
+		validationResponse := console.SchemaRegistrySchemaValidation{}
+		err := json.Unmarshal(body, &validationResponse)
+		require.NoError(err)
+
+		// Schema should parse correctly but fail compatibility check
+		assert.False(validationResponse.IsValid, "schema should be invalid due to compatibility")
+		assert.Empty(validationResponse.ParsingError, "parsing error should not be set for valid protobuf")
+		assert.False(validationResponse.Compatibility.IsCompatible, "schema should not be compatible")
+		assert.NotEmpty(validationResponse.Compatibility.Error.ErrorType, "error type should be set")
+		assert.NotEmpty(validationResponse.Compatibility.Error.Description, "error description should be set")
+		assert.Contains(validationResponse.Compatibility.Error.ErrorType, "FIELD_SCALAR_KIND_CHANGED", "error type should indicate field type change")
+	})
 }

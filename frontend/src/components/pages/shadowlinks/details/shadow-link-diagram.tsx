@@ -13,7 +13,7 @@ import { Background, type Edge, Handle, type Node, Position, ReactFlow, ReactFlo
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Item, ItemContent, ItemTitle } from 'components/redpanda-ui/components/item';
 import { Text } from 'components/redpanda-ui/components/typography';
-import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 import type { CSSProperties } from 'react';
 
 interface ShadowLinkDiagramProps {
@@ -26,7 +26,7 @@ const SourceClusterNode = ({ data }: { data: { brokers: string[] } }) => (
       <ItemTitle>Source cluster</ItemTitle>
       <div className="flex flex-col gap-1 text-muted-foreground text-xs">
         {data.brokers.map((broker) => (
-          <Text key={broker} variant={'muted'}>
+          <Text className="max-w-[240px] truncate" key={broker} variant={'muted'}>
             {broker}
           </Text>
         ))}
@@ -105,6 +105,7 @@ export const ShadowLinkDiagram = ({ shadowLink }: ShadowLinkDiagramProps) => {
               nodeTypes={nodeTypes}
               panOnDrag={false}
               preventScrolling={false}
+              proOptions={{ hideAttribution: true }}
               zoomOnPinch={false}
               zoomOnScroll={false}
             >

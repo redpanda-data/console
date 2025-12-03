@@ -63,7 +63,7 @@ export const TopicsStep = () => {
     <Collapsible onOpenChange={setIsOpen} open={isOpen}>
       <Card className="gap-0" size="full">
         <CardHeader>
-          <CardTitle>Topic mirroring</CardTitle>
+          <CardTitle>Shadow topics</CardTitle>
           <CardAction>
             <CollapsibleTrigger asChild>
               <Button className="w-fit p-0" data-testid="topics-toggle-button" size="sm" variant="ghost">
@@ -111,7 +111,7 @@ export const TopicsStep = () => {
               <TabsContent value="all">
                 <Alert>
                   <AlertDescription>
-                    All topics from the source cluster will be mirrored to the destination cluster.
+                    All topics from the source cluster will be shadowed to the destination cluster.
                   </AlertDescription>
                 </Alert>
               </TabsContent>

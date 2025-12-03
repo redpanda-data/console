@@ -13,15 +13,12 @@ import { CheckIcon } from '@chakra-ui/icons';
 import { TrashIcon } from '@heroicons/react/outline';
 import { Box, Button, createStandaloneToast, DataTable, Flex, Image, SearchField, Text } from '@redpanda-data/ui';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
-import { isFeatureFlagEnabled } from 'config';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { useCallback } from 'react';
 import { FaRegStopCircle } from 'react-icons/fa';
 import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
-import { Link, useNavigate } from 'react-router-dom';
-import { useResetOnboardingWizardStore } from 'state/onboarding-wizard-store';
+import { Link } from 'react-router-dom';
 
 import { openDeleteModal } from './modals';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
@@ -47,25 +44,6 @@ const LegacyCreatePipelineButton = () => (
     </NewButton>
   </div>
 );
-
-/**
- * Navigates to wizard and clears session storage
- */
-const WizardCreatePipelineButton = () => {
-  const resetOnboardingWizardStore = useResetOnboardingWizardStore();
-  const navigate = useNavigate();
-
-  const handleClick = useCallback(() => {
-    resetOnboardingWizardStore();
-    navigate('/rp-connect/wizard');
-  }, [resetOnboardingWizardStore, navigate]);
-
-  return (
-    <div>
-      <NewButton onClick={handleClick}>Create pipeline</NewButton>
-    </div>
-  );
-};
 
 /**
  * Shows image, text, and create button
@@ -217,22 +195,17 @@ class RpConnectPipelinesList extends PageComponent<{}> {
         <ToastContainer />
         {/* Pipeline List */}
 
-        {pipelinesApi.pipelines.length !== 0 &&
-          (isFeatureFlagEnabled('enableRpcnTiles') ? (
-            <div className="my-5">
-              <WizardCreatePipelineButton />
-            </div>
-          ) : (
-            <div className="my-5 flex flex-col gap-2">
-              <LegacyCreatePipelineButton />
-              <SearchField
-                placeholderText="Enter search term / regex..."
-                searchText={uiSettings.pipelinesList.quickSearch}
-                setSearchText={(x) => (uiSettings.pipelinesList.quickSearch = x)}
-                width="350px"
-              />
-            </div>
-          ))}
+        {pipelinesApi.pipelines.length !== 0 && (
+          <div className="my-5 flex flex-col gap-2">
+            <LegacyCreatePipelineButton />
+            <SearchField
+              placeholderText="Enter search term / regex..."
+              searchText={uiSettings.pipelinesList.quickSearch}
+              setSearchText={(x) => (uiSettings.pipelinesList.quickSearch = x)}
+              width="350px"
+            />
+          </div>
+        )}
 
         {(pipelinesApi.pipelines ?? []).length === 0 ? (
           <LegacyEmptyState />

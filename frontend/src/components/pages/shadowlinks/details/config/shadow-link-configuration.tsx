@@ -12,9 +12,9 @@
 'use client';
 
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import type { ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 
-import { ConfigurationMirroring } from './configuration-mirroring';
+import { ConfigurationShadowing } from './configuration-shadowing';
 import { ConfigurationSource } from './configuration-source';
 import { ConfigurationTopicReplication } from './configuration-topic-replication';
 
@@ -31,7 +31,7 @@ export const ShadowLinkConfiguration = ({ shadowLink }: ShadowLinkConfigurationP
       <TabsTrigger testId="source-tab" value="source" variant="underline">
         Source
       </TabsTrigger>
-      <TabsTrigger testId="mirroring-tab" value="mirroring" variant="underline">
+      <TabsTrigger testId="shadowing-tab" value="shadowing" variant="underline">
         Shadowing
       </TabsTrigger>
       <TabsTrigger testId="topic-config-replication-tab" value="topic-config-replication" variant="underline">
@@ -43,7 +43,7 @@ export const ShadowLinkConfiguration = ({ shadowLink }: ShadowLinkConfigurationP
       <TabsContent testId="all-content" value="all">
         <div className="flex flex-col gap-6">
           <ConfigurationSource shadowLink={shadowLink} />
-          <ConfigurationMirroring shadowLink={shadowLink} />
+          <ConfigurationShadowing shadowLink={shadowLink} />
           <ConfigurationTopicReplication shadowLink={shadowLink} />
         </div>
       </TabsContent>
@@ -52,8 +52,8 @@ export const ShadowLinkConfiguration = ({ shadowLink }: ShadowLinkConfigurationP
         <ConfigurationSource shadowLink={shadowLink} />
       </TabsContent>
 
-      <TabsContent testId="mirroring-content" value="mirroring">
-        <ConfigurationMirroring shadowLink={shadowLink} />
+      <TabsContent testId="shadowing-content" value="shadowing">
+        <ConfigurationShadowing shadowLink={shadowLink} />
       </TabsContent>
 
       <TabsContent testId="topic-config-replication-content" value="topic-config-replication">
