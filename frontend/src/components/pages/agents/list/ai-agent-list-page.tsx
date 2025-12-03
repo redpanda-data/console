@@ -223,7 +223,9 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<AIAgent>
     {
       accessorKey: 'model',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Model" />,
-      cell: ({ row }) => <AIAgentModel model={row.getValue('model')} providerType={row.original.providerType} size="sm" />,
+      cell: ({ row }) => (
+        <AIAgentModel model={row.getValue('model')} providerType={row.original.providerType} size="sm" />
+      ),
     },
     {
       id: 'actions',

@@ -29,6 +29,7 @@ import {
 import { Input } from 'components/redpanda-ui/components/input';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { LLMConfigSection } from 'components/ui/ai-agent/llm-config-section';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
@@ -62,7 +63,6 @@ import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { FormSchema, type FormValues, initialValues } from './schemas';
-import { LLMConfigSection } from 'components/ui/ai-agent/llm-config-section';
 
 export const AIAgentCreatePage = () => {
   const navigate = useNavigate();
@@ -439,8 +439,7 @@ export const AIAgentCreatePage = () => {
                 </CardHeader>
                 <CardContent>
                   <LLMConfigSection
-                    mode="create"
-                    form={form}
+                    availableSecrets={availableSecrets}
                     fieldNames={{
                       provider: 'provider',
                       model: 'model',
@@ -448,7 +447,8 @@ export const AIAgentCreatePage = () => {
                       baseUrl: 'baseUrl',
                       maxIterations: 'maxIterations',
                     }}
-                    availableSecrets={availableSecrets}
+                    form={form}
+                    mode="create"
                     scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
                     showBaseUrl={form.watch('provider') === 'openaiCompatible'}
                     showMaxIterations={true}

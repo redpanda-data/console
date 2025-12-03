@@ -152,7 +152,7 @@ const createUpdatedProvider = (
           case: 'openaiCompatible',
           value: create(AIAgent_Provider_OpenAICompatibleSchema, {
             apiKey: apiKeyRef,
-            baseUrl: baseUrl,
+            baseUrl,
           }),
         },
       });
@@ -696,7 +696,10 @@ export const AIAgentConfigurationTab = () => {
                     <Select
                       onValueChange={(value: 'openai' | 'anthropic' | 'google' | 'openaiCompatible') => {
                         const newProviderData = MODEL_OPTIONS_BY_PROVIDER[value];
-                        const firstModel = newProviderData.models.length > 0 && newProviderData.models[0] ? newProviderData.models[0].value : displayData.model;
+                        const firstModel =
+                          newProviderData.models.length > 0 && newProviderData.models[0]
+                            ? newProviderData.models[0].value
+                            : displayData.model;
 
                         updateField({
                           provider: createUpdatedProvider(value, '', displayData.baseUrl || ''),
@@ -711,9 +714,17 @@ export const AIAgentConfigurationTab = () => {
                           {displayData.provider?.provider.case && (
                             <div className="flex items-center gap-2">
                               <img
-                                alt={MODEL_OPTIONS_BY_PROVIDER[displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER]?.label}
+                                alt={
+                                  MODEL_OPTIONS_BY_PROVIDER[
+                                    displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
+                                  ]?.label
+                                }
                                 className="h-4 w-4"
-                                src={MODEL_OPTIONS_BY_PROVIDER[displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER]?.icon}
+                                src={
+                                  MODEL_OPTIONS_BY_PROVIDER[
+                                    displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
+                                  ]?.icon
+                                }
                               />
                               <span>
                                 {displayData.provider.provider.case === 'openai' && 'OpenAI'}
@@ -743,9 +754,9 @@ export const AIAgentConfigurationTab = () => {
                     <Label htmlFor="model">Model</Label>
                     {displayData.provider?.provider.case === 'openaiCompatible' ? (
                       <Input
+                        onChange={(e) => updateField({ model: e.target.value })}
                         placeholder="Enter model name (e.g., llama-3.1-70b)"
                         value={displayData.model}
-                        onChange={(e) => updateField({ model: e.target.value })}
                       />
                     ) : (
                       <Select onValueChange={(value) => updateField({ model: value })} value={displayData.model}>
@@ -789,16 +800,18 @@ export const AIAgentConfigurationTab = () => {
                                     <span>{providerData.label}</span>
                                   </div>
                                 </SelectLabel>
-                                {providerData.models.map((model: { value: string; name: string; description: string }) => (
-                                  <SelectItem key={model.value} value={model.value}>
-                                    <div className="flex flex-col gap-0.5">
-                                      <Text className="font-medium">{model.name}</Text>
-                                      <Text className="text-xs" variant="muted">
-                                        {model.description}
-                                      </Text>
-                                    </div>
-                                  </SelectItem>
-                                ))}
+                                {providerData.models.map(
+                                  (model: { value: string; name: string; description: string }) => (
+                                    <SelectItem key={model.value} value={model.value}>
+                                      <div className="flex flex-col gap-0.5">
+                                        <Text className="font-medium">{model.name}</Text>
+                                        <Text className="text-xs" variant="muted">
+                                          {model.description}
+                                        </Text>
+                                      </div>
+                                    </SelectItem>
+                                  )
+                                )}
                               </SelectGroup>
                             );
                           })()}
@@ -826,9 +839,9 @@ export const AIAgentConfigurationTab = () => {
                     <div className="space-y-2">
                       <Label htmlFor="baseUrl">Base URL (required)</Label>
                       <Input
+                        onChange={(e) => updateField({ baseUrl: e.target.value })}
                         placeholder="https://api.example.com/v1"
                         value={displayData.baseUrl}
-                        onChange={(e) => updateField({ baseUrl: e.target.value })}
                       />
                       <Text variant="muted">API endpoint URL for your OpenAI-compatible service</Text>
                     </div>
