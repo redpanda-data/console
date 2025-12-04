@@ -49,6 +49,7 @@ import {
 import {
   type GetShadowLinkRequest,
   GetShadowLinkRequestSchema,
+  type GetShadowLinkResponseSchema,
   type GetShadowMetricsRequest,
   GetShadowMetricsRequestSchema,
   type GetShadowMetricsResponse,
@@ -86,11 +87,13 @@ export const useListShadowLinksQuery = (request: MessageInit<ListShadowLinksRequ
 
   return useQuery(listShadowLinks, listShadowLinksRequest, opts && { enabled: opts?.enabled });
 };
-
-export const useGetShadowLinkQuery = (request: MessageInit<GetShadowLinkRequest>, opts?: { enabled?: boolean }) => {
+export const useGetShadowLinkQuery = (
+  request: MessageInit<GetShadowLinkRequest>,
+  options?: QueryOptions<typeof GetShadowLinkResponseSchema>
+) => {
   const getShadowLinkRequest = create(GetShadowLinkRequestSchema, request);
 
-  return useQuery(getShadowLink, getShadowLinkRequest, { enabled: opts?.enabled ?? true });
+  return useQuery(getShadowLink, getShadowLinkRequest, options);
 };
 
 export const useGetShadowMetricsQuery = (
@@ -272,7 +275,8 @@ export type UnifiedShadowLinkResult = {
 export const useGetShadowLinkUnified = (params: { name: string }): UnifiedShadowLinkResult => {
   const embedded = isEmbedded();
 
-  const dataplaneQuery = useGetShadowLinkQuery({ name: params.name });
+  // In embedded mode, use retry: 1 to fail fast and fallback to controlplane data sooner
+  const dataplaneQuery = useGetShadowLinkQuery({ name: params.name }, { retry: embedded ? 1 : undefined });
 
   // In embedded mode, also fetch controlplane to get the correct state
   const controlplaneQuery = useControlplaneGetShadowLinkByNameQuery({ name: params.name }, { enabled: embedded });

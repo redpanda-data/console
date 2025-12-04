@@ -230,10 +230,14 @@ describe('useGetShadowLinkUnified', () => {
 
     const { result } = renderHook(() => useGetShadowLinkUnified({ name: 'test-shadow-link' }), { wrapper });
 
-    // Wait for data to load (dataplane will fail, but controlplane succeeds)
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
-    });
+    // Wait for data to load (dataplane will fail after retry, but controlplane succeeds)
+    // Increased timeout to account for retry: 1 in embedded mode
+    await waitFor(
+      () => {
+        expect(result.current.isLoading).toBe(false);
+      },
+      { timeout: 3000 }
+    );
 
     // Verify dataplane query was called (and failed)
     expect(mockGetShadowLink).toHaveBeenCalledWith(expect.objectContaining({ name: 'test-shadow-link' }));
