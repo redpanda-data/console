@@ -1,10 +1,11 @@
 syntax = "proto3";
 
-package redpanda.api.dataplane.v1alpha3;
+package redpanda.api.dataplane.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "google/api/visibility.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
@@ -135,6 +136,7 @@ message ShadowLink {
 }
 
 service ShadowLinkService {
+  option (google.api.api_visibility).restriction = "PREVIEW";
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
     name: "Shadow Links (Dataplane)"
     description: "Dataplane operations for Redpanda shadow links."
@@ -143,7 +145,7 @@ service ShadowLinkService {
   // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
   rpc FailOver(core.admin.v2.FailOverRequest) returns (FailOverResponse) {
     option (google.api.http) = {
-      post: "/v1alpha3/shadowlink/{name}/failover"
+      post: "/v1/shadow-links/{name}/failover"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -154,7 +156,7 @@ service ShadowLinkService {
         value: {
           description: "Failover accepted and initiated"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.FailOverResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.FailOverResponse"}
           }
         }
       }
@@ -166,7 +168,7 @@ service ShadowLinkService {
   }
 
   rpc ListShadowLinkTopics(ListShadowLinkTopicsRequest) returns (ListShadowLinkTopicsResponse) {
-    option (google.api.http) = {get: "/v1alpha3/shadowlink/{shadow_link_name}/topic"};
+    option (google.api.http) = {get: "/v1/shadow-links/{shadow_link_name}/topic"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List Shadow Link Topics"
       description: "List shadow topic status information for a specific shadow link. Optional: filter based on topic name."
@@ -175,7 +177,7 @@ service ShadowLinkService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListShadowLinkTopicsResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.ListShadowLinkTopicsResponse"}
           }
         }
       }
@@ -187,7 +189,7 @@ service ShadowLinkService {
   }
 
   rpc GetShadowTopic(GetShadowTopicRequest) returns (GetShadowTopicResponse) {
-    option (google.api.http) = {get: "/v1alpha3/shadowlink/{shadow_link_name}/topic/{topic_name}"};
+    option (google.api.http) = {get: "/v1/shadow-links/{shadow_link_name}/topic/{topic_name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get Shadow Topic"
       description: "Retrieve details of a specific shadow topic within a shadow link."
@@ -196,7 +198,7 @@ service ShadowLinkService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.GetShadowTopicResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetShadowTopicResponse"}
           }
         }
       }
@@ -208,7 +210,7 @@ service ShadowLinkService {
   }
 
   rpc GetShadowMetrics(GetShadowMetricsRequest) returns (GetShadowMetricsResponse) {
-    option (google.api.http) = {get: "/v1alpha3/shadowlink/{name}/metrics"};
+    option (google.api.http) = {get: "/v1/shadow-links/{name}/metrics"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get Shadow Link Metrics"
       description: "Retrieve metrics for a specific shadow link, including total topics replicated, failed over topics, and error topics."
@@ -217,7 +219,7 @@ service ShadowLinkService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.GetShadowMetricsResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetShadowMetricsResponse"}
           }
         }
       }
@@ -229,7 +231,7 @@ service ShadowLinkService {
   }
 
   rpc GetShadowLink(GetShadowLinkRequest) returns (GetShadowLinkResponse) {
-    option (google.api.http) = {get: "/v1alpha3/shadowlink/{name}"};
+    option (google.api.http) = {get: "/v1/shadow-links/{name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get Shadow Link"
       description: "Retrieve details of a specific shadow link by name."
@@ -238,7 +240,7 @@ service ShadowLinkService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.GetShadowLinkResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetShadowLinkResponse"}
           }
         }
       }

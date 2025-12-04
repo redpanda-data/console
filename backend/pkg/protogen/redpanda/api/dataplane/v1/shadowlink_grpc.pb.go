@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             (unknown)
-// source: redpanda/api/dataplane/v1alpha3/shadowlink.proto
+// source: redpanda/api/dataplane/v1/shadowlink.proto
 
-package dataplanev1alpha3
+package dataplanev1
 
 import (
 	context "context"
@@ -21,11 +21,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ShadowLinkService_FailOver_FullMethodName             = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/FailOver"
-	ShadowLinkService_ListShadowLinkTopics_FullMethodName = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/ListShadowLinkTopics"
-	ShadowLinkService_GetShadowTopic_FullMethodName       = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/GetShadowTopic"
-	ShadowLinkService_GetShadowMetrics_FullMethodName     = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/GetShadowMetrics"
-	ShadowLinkService_GetShadowLink_FullMethodName        = "/redpanda.api.dataplane.v1alpha3.ShadowLinkService/GetShadowLink"
+	ShadowLinkService_FailOver_FullMethodName             = "/redpanda.api.dataplane.v1.ShadowLinkService/FailOver"
+	ShadowLinkService_ListShadowLinkTopics_FullMethodName = "/redpanda.api.dataplane.v1.ShadowLinkService/ListShadowLinkTopics"
+	ShadowLinkService_GetShadowTopic_FullMethodName       = "/redpanda.api.dataplane.v1.ShadowLinkService/GetShadowTopic"
+	ShadowLinkService_GetShadowMetrics_FullMethodName     = "/redpanda.api.dataplane.v1.ShadowLinkService/GetShadowMetrics"
+	ShadowLinkService_GetShadowLink_FullMethodName        = "/redpanda.api.dataplane.v1.ShadowLinkService/GetShadowLink"
 )
 
 // ShadowLinkServiceClient is the client API for ShadowLinkService service.
@@ -248,7 +248,7 @@ func _ShadowLinkService_GetShadowLink_Handler(srv interface{}, ctx context.Conte
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ShadowLinkService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "redpanda.api.dataplane.v1alpha3.ShadowLinkService",
+	ServiceName: "redpanda.api.dataplane.v1.ShadowLinkService",
 	HandlerType: (*ShadowLinkServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -273,5 +273,5 @@ var ShadowLinkService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "redpanda/api/dataplane/v1alpha3/shadowlink.proto",
+	Metadata: "redpanda/api/dataplane/v1/shadowlink.proto",
 }
