@@ -21,9 +21,10 @@ import {
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { describe, expect, it, test } from 'vitest';
 
-import { buildDefaultTopicsValues, getUpdateValuesForTopics } from './shadowlink-edit-utils';
+import { getUpdateValuesForTopics } from './shadowlink-edit-utils';
 import type { FormValues } from '../create/model';
 import { TLS_MODE } from '../create/model';
+import { buildDefaultTopicsValues } from '../mappers/dataplane';
 
 // Base form values for testing
 const baseFormValues: FormValues = {

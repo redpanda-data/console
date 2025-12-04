@@ -11,15 +11,16 @@
 
 'use client';
 
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, Edit, Loader2, Trash2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Edit, Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   useDeleteShadowLinkMutation,
   useFailoverShadowLinkMutation,
-  useGetShadowLinkQuery,
+  useGetShadowLinkUnified,
 } from 'react-query/api/shadowlink';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -48,11 +49,17 @@ export const ShadowLinkDetailsPage = () => {
     }
   }, [name]);
 
-  // Fetch shadow links data
-  const { data: shadowLinksData, isLoading, error: errorGetShadowLink, refetch } = useGetShadowLinkQuery({ name });
+  // Fetch shadow link data using unified hook (works in both embedded and non-embedded modes)
+  const {
+    data: shadowLink,
+    isLoading,
+    error: errorGetShadowLink,
+    dataplaneError,
+    refetch,
+  } = useGetShadowLinkUnified({ name: name ?? '' });
 
-  // Find the specific shadow link by name
-  const shadowLink = shadowLinksData?.shadowLink;
+  // When dataplane fails but we have controlplane data (fallback scenario)
+  const hasPartialData = Boolean(shadowLink && dataplaneError);
 
   const { mutate: deleteShadowLink, isPending: isDeleting } = useDeleteShadowLinkMutation({
     onSuccess: () => {
@@ -143,6 +150,17 @@ export const ShadowLinkDetailsPage = () => {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Partial Data Warning Banner */}
+      {hasPartialData && (
+        <Alert testId="partial-data-warning" variant="warning">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Limited data available</AlertTitle>
+          <AlertDescription>
+            Some shadow link details could not be loaded. Task status and topic properties may be unavailable.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Action Buttons */}
       <div className="flex justify-end gap-3">
         <Button onClick={() => openFailoverDialog()} size="sm" variant="outline">
@@ -193,7 +211,7 @@ export const ShadowLinkDetailsPage = () => {
           </TabsContent>
 
           <TabsContent testId="tasks-content" value="tasks">
-            <TasksTable onRefresh={refetch} tasks={shadowLink.tasksStatus} />
+            <TasksTable dataUnavailable={hasPartialData} onRefresh={refetch} tasks={shadowLink.tasksStatus} />
           </TabsContent>
 
           <TabsContent testId="configuration-content" value="configuration">

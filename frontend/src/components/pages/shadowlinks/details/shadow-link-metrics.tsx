@@ -13,20 +13,12 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Loader2, RefreshCw } from 'lucide-react';
-import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
-import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useGetShadowMetricsQuery } from 'react-query/api/shadowlink';
 
 import { SHORT_LIVED_CACHE_STALE_TIME } from '../../../../react-query/react-query.utils';
+import { type UnifiedShadowLink, type UnifiedShadowLinkState, UnifiedShadowLinkStateLabel } from '../model';
 
-const getStateDisplay = (state: ShadowLinkState): string => {
-  const stateMap = {
-    [ShadowLinkState.UNSPECIFIED]: 'Unknown',
-    [ShadowLinkState.ACTIVE]: 'Active',
-    [ShadowLinkState.PAUSED]: 'Paused',
-  };
-  return stateMap[state] || 'Unknown';
-};
+const getStateDisplay = (state: UnifiedShadowLinkState): string => UnifiedShadowLinkStateLabel[state] || 'Unknown';
 
 const MetricCardRefreshButton = ({ isFetching, onRefresh }: { isFetching: boolean; onRefresh: () => void }) =>
   isFetching ? (
@@ -43,7 +35,7 @@ const MetricCardRefreshButton = ({ isFetching, onRefresh }: { isFetching: boolea
   );
 
 interface ShadowLinkMetricsProps {
-  shadowLink: ShadowLink;
+  shadowLink: UnifiedShadowLink;
 }
 
 export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
