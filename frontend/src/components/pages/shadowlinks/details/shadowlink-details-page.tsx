@@ -150,17 +150,6 @@ export const ShadowLinkDetailsPage = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Partial Data Warning Banner */}
-      {hasPartialData && (
-        <Alert testId="partial-data-warning" variant="warning">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Limited data available</AlertTitle>
-          <AlertDescription>
-            Some shadow link details could not be loaded. Task status and topic properties may be unavailable.
-          </AlertDescription>
-        </Alert>
-      )}
-
       {/* Action Buttons */}
       <div className="flex justify-end gap-3">
         <Button onClick={() => openFailoverDialog()} size="sm" variant="outline">
@@ -186,6 +175,17 @@ export const ShadowLinkDetailsPage = () => {
           )}
         </Button>
       </div>
+
+      {/* Partial Data Warning Banner */}
+      {hasPartialData && (
+        <Alert testId="partial-data-warning" variant="warning">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Limited data available</AlertTitle>
+          <AlertDescription>
+            Some shadow link details could not be loaded. Task status and topic properties may be unavailable.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Tabs */}
       <Tabs defaultValue="overview">
