@@ -25,9 +25,11 @@ import { TaskStatusBadge } from './task-status-badge';
 type TasksTableProps = {
   tasks: ShadowLinkTaskStatus[];
   onRefresh?: () => void;
+  /** When true, shows "Data unavailable" instead of "No tasks found" for empty state */
+  dataUnavailable?: boolean;
 };
 
-export const TasksTable = ({ tasks, onRefresh }: TasksTableProps) => {
+export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProps) => {
   const columnHelper = createColumnHelper<ShadowLinkTaskStatus>();
 
   const columns = useMemo(
@@ -85,8 +87,10 @@ export const TasksTable = ({ tasks, onRefresh }: TasksTableProps) => {
       </CardHeader>
       <CardContent>
         {tasks?.length === 0 ? (
-          <div className="flex items-center justify-center py-8">
-            <Text className="text-muted-foreground">No tasks found</Text>
+          <div className="flex items-center justify-center py-8" data-testid="tasks-empty-state">
+            <Text className="text-muted-foreground">
+              {dataUnavailable ? 'Task data unavailable' : 'No tasks found'}
+            </Text>
           </div>
         ) : (
           <Table testId="tasks-table">

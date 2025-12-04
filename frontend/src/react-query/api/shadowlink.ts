@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
+import { timestampDate } from '@bufbuild/protobuf/wkt';
 import type { ConnectError } from '@connectrpc/connect';
 import {
   createConnectQueryKey,
@@ -21,6 +22,18 @@ import {
   useQuery,
 } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
+import type { FormValues } from 'components/pages/shadowlinks/create/model';
+import {
+  buildControlplaneUpdateRequest,
+  buildDataplaneUpdateRequest,
+} from 'components/pages/shadowlinks/edit/shadowlink-edit-utils';
+import {
+  buildDefaultFormValuesFromControlplane,
+  fromControlplaneShadowLink,
+} from 'components/pages/shadowlinks/mappers/controlplane';
+import { buildDefaultFormValues, fromDataplaneShadowLink } from 'components/pages/shadowlinks/mappers/dataplane';
+import { mapControlplaneStateToUnified, type UnifiedShadowLink } from 'components/pages/shadowlinks/model';
+import { isEmbedded } from 'config';
 import {
   type CreateShadowLinkResponseSchema,
   type ListShadowLinksRequest,
@@ -57,7 +70,13 @@ import type {
   CreateShadowLinkRequestSchema,
   UpdateShadowLinkRequestSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { useCallback, useMemo } from 'react';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
+
+import {
+  useControlplaneGetShadowLinkByNameQuery,
+  useControlplaneUpdateShadowLinkMutation,
+} from './controlplane/shadowlink';
 
 /**
  * Hook to list all shadow links
@@ -68,10 +87,10 @@ export const useListShadowLinksQuery = (request: MessageInit<ListShadowLinksRequ
   return useQuery(listShadowLinks, listShadowLinksRequest, opts && { enabled: opts?.enabled });
 };
 
-export const useGetShadowLinkQuery = (request: MessageInit<GetShadowLinkRequest>) => {
+export const useGetShadowLinkQuery = (request: MessageInit<GetShadowLinkRequest>, opts?: { enabled?: boolean }) => {
   const getShadowLinkRequest = create(GetShadowLinkRequestSchema, request);
 
-  return useQuery(getShadowLink, getShadowLinkRequest);
+  return useQuery(getShadowLink, getShadowLinkRequest, { enabled: opts?.enabled ?? true });
 };
 
 export const useGetShadowMetricsQuery = (
@@ -223,4 +242,159 @@ export const useFailoverShadowLinkMutation = (options?: {
       options?.onError?.(error);
     },
   });
+};
+
+/* ==================== UNIFIED HOOK ==================== */
+
+export type UnifiedShadowLinkResult = {
+  data: UnifiedShadowLink | undefined;
+  isLoading: boolean;
+  /** Combined error - null if we have usable data */
+  error: ConnectError | null;
+  /** Dataplane-specific error */
+  dataplaneError: ConnectError | null;
+  /** Controlplane-specific error (embedded mode only) */
+  controlplaneError: ConnectError | null;
+  refetch: () => Promise<void>;
+};
+
+/**
+ * Unified hook to get shadow link data that works in both console and controlplane modes.
+ * Automatically uses the appropriate API based on embedded mode.
+ * No TransportProvider wrapper needed - controlplane transport is created internally.
+ *
+ * In embedded mode: uses dataplane data but overrides state from controlplane API.
+ * If dataplane fails but controlplane succeeds, returns controlplane data with partial info.
+ *
+ * @param params.name - The shadow link name
+ * @returns Unified shadow link data with granular error information
+ */
+export const useGetShadowLinkUnified = (params: { name: string }): UnifiedShadowLinkResult => {
+  const embedded = isEmbedded();
+
+  const dataplaneQuery = useGetShadowLinkQuery({ name: params.name });
+
+  // In embedded mode, also fetch controlplane to get the correct state
+  const controlplaneQuery = useControlplaneGetShadowLinkByNameQuery({ name: params.name }, { enabled: embedded });
+
+  const shadowLink = dataplaneQuery.data?.shadowLink;
+  let unifiedData = shadowLink ? fromDataplaneShadowLink(shadowLink) : undefined;
+
+  // In embedded mode, override state from controlplane
+  if (embedded && unifiedData && controlplaneQuery.data) {
+    unifiedData.state = mapControlplaneStateToUnified(controlplaneQuery.data.state);
+    unifiedData.resourceGroupId = controlplaneQuery.data.resourceGroupId;
+    unifiedData.shadowRedpandaId = controlplaneQuery.data.shadowRedpandaId;
+    unifiedData.createdAt = controlplaneQuery.data.createdAt
+      ? timestampDate(controlplaneQuery.data.createdAt)
+      : undefined;
+    unifiedData.updatedAt = controlplaneQuery.data.updatedAt
+      ? timestampDate(controlplaneQuery.data.updatedAt)
+      : undefined;
+  }
+
+  // In embedded mode: if dataplane fails but controlplane succeeds, use controlplane data
+  if (embedded && !unifiedData && controlplaneQuery.data) {
+    unifiedData = fromControlplaneShadowLink(controlplaneQuery.data);
+  }
+
+  // Combined error: only error if we have no data at all
+  const combinedError = unifiedData ? null : dataplaneQuery.error || controlplaneQuery.error;
+
+  return {
+    data: unifiedData,
+    isLoading: dataplaneQuery.isLoading || (embedded && controlplaneQuery.isLoading),
+    error: combinedError,
+    dataplaneError: dataplaneQuery.error,
+    controlplaneError: controlplaneQuery.error,
+    refetch: async () => {
+      await dataplaneQuery.refetch();
+      if (embedded) {
+        await controlplaneQuery.refetch();
+      }
+    },
+  };
+};
+
+/* ==================== EDIT SHADOW LINK HOOK ==================== */
+
+/**
+ * Unified hook for editing shadow links that works in both console and controlplane modes.
+ * Automatically uses the appropriate API based on embedded mode.
+ *
+ * Encapsulates:
+ * - Data fetching (controlplane vs dataplane)
+ * - Form values building
+ * - Update mutation
+ * - Loading/error states
+ *
+ * @param name - The shadow link name
+ * @returns Unified edit interface with form values and update function
+ */
+export const useEditShadowLink = (name: string) => {
+  const embedded = isEmbedded();
+
+  // Queries - in embedded mode, also fetch controlplane for state override
+  const dataplaneQuery = useGetShadowLinkQuery({ name });
+  const controlplaneQuery = useControlplaneGetShadowLinkByNameQuery({ name }, { enabled: embedded });
+
+  const shadowLink = dataplaneQuery.data?.shadowLink;
+  const controlplaneShadowLink = controlplaneQuery.data;
+  const shadowLinkId = controlplaneShadowLink?.id;
+
+  // Mutations
+  const dataplaneUpdate = useUpdateShadowLinkMutation();
+  const controlplaneUpdate = useControlplaneUpdateShadowLinkMutation();
+
+  // Build form values based on data source
+  const formValues = useMemo((): FormValues | undefined => {
+    if (embedded && controlplaneShadowLink) {
+      return buildDefaultFormValuesFromControlplane(controlplaneShadowLink);
+    }
+    if (shadowLink) {
+      return buildDefaultFormValues(shadowLink);
+    }
+    return undefined;
+  }, [embedded, controlplaneShadowLink, shadowLink]);
+
+  // Unified update function
+  const submitUpdate = useCallback(
+    (values: FormValues) => {
+      if (embedded && shadowLinkId && controlplaneShadowLink) {
+        // Use controlplane API with ID
+        const originalValues = buildDefaultFormValuesFromControlplane(controlplaneShadowLink);
+        const request = buildControlplaneUpdateRequest(shadowLinkId, values, originalValues);
+        return controlplaneUpdate.mutateAsync(request);
+      }
+      if (shadowLink) {
+        // Use dataplane API with name
+        const request = buildDataplaneUpdateRequest(name, values, shadowLink);
+        return dataplaneUpdate.mutateAsync(request);
+      }
+      return Promise.reject(new Error('No shadow link data available for update'));
+    },
+    [embedded, shadowLinkId, controlplaneShadowLink, shadowLink, name, controlplaneUpdate, dataplaneUpdate]
+  );
+
+  // Check if data is available based on mode
+  const hasData = embedded ? !!controlplaneShadowLink : !!shadowLink;
+
+  return {
+    /** Form values built from the current shadow link data */
+    formValues,
+    /** Whether data is currently loading */
+    isLoading: embedded ? controlplaneQuery.isLoading : dataplaneQuery.isLoading,
+    /** Any error that occurred during data fetching */
+    error: embedded ? controlplaneQuery.error : dataplaneQuery.error,
+    /** Whether an update is currently in progress */
+    isUpdating: embedded ? controlplaneUpdate.isPending : dataplaneUpdate.isPending,
+    /** Whether shadow link data is available */
+    hasData,
+    /** Function to update the shadow link */
+    updateShadowLink: submitUpdate,
+    /** The dataplane mutation result (for success/error callbacks) */
+    dataplaneUpdate,
+    /** The controlplane mutation result (for success/error callbacks) */
+    controlplaneUpdate,
+  };
 };

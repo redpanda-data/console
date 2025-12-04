@@ -20,14 +20,14 @@ import {
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import type React from 'react';
 
 import { TlsCertificatesConfig } from './tls-certificates-config';
+import type { UnifiedShadowLink } from '../../model';
 
 export interface ConfigurationSourceProps {
-  shadowLink: ShadowLink;
+  shadowLink: UnifiedShadowLink;
 }
 
 const ConfigField = ({ label, value, testId }: { label: string; value: React.ReactNode; testId?: string }) => (

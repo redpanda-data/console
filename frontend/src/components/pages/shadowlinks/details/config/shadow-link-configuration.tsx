@@ -12,14 +12,14 @@
 'use client';
 
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 
 import { ConfigurationShadowing } from './configuration-shadowing';
 import { ConfigurationSource } from './configuration-source';
 import { ConfigurationTopicReplication } from './configuration-topic-replication';
+import type { UnifiedShadowLink } from '../../model';
 
 export interface ShadowLinkConfigurationProps {
-  shadowLink: ShadowLink;
+  shadowLink: UnifiedShadowLink;
 }
 
 export const ShadowLinkConfiguration = ({ shadowLink }: ShadowLinkConfigurationProps) => (
