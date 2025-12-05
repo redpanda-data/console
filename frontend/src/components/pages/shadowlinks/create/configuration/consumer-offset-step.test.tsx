@@ -44,7 +44,7 @@ describe('ConsumerOffsetStep', () => {
         consumers: [
           {
             name: '',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -82,7 +82,7 @@ describe('ConsumerOffsetStep', () => {
         consumers: [
           {
             name: '',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -120,12 +120,12 @@ describe('ConsumerOffsetStep', () => {
         consumers: [
           {
             name: 'consumer-1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
           {
             name: 'consumer-2',
-            patterType: PatternType.PREFIX,
+            patternType: PatternType.PREFIX,
             filterType: FilterType.INCLUDE,
           },
         ],

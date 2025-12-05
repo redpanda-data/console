@@ -36,7 +36,6 @@ const baseFormValues: FormValues = {
     mechanism: ScramMechanism.SCRAM_SHA_256,
   },
   useTls: true,
-  useMtls: false,
   mtlsMode: TLS_MODE.PEM,
   mtls: {
     ca: undefined,
@@ -63,7 +62,7 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'consumer-group-1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -85,7 +84,7 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'consumer-group-1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -110,7 +109,7 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'consumer-group-1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -121,12 +120,12 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'consumer-group-1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
           {
             name: 'consumer-group-2',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -147,12 +146,12 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'consumer-group-1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
           {
             name: 'consumer-group-2',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -163,7 +162,7 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'consumer-group-1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -183,7 +182,7 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'consumer-group-1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -194,7 +193,7 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'consumer-group-1-renamed',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -216,7 +215,7 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'consumer-group-1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -227,7 +226,7 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'consumer-group-1',
-            patterType: PatternType.PREFIX,
+            patternType: PatternType.PREFIX,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -249,7 +248,7 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'consumer-group-1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -260,7 +259,7 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'consumer-group-1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.EXCLUDE,
           },
         ],
@@ -289,12 +288,12 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'consumer-group-1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
           {
             name: 'consumer-group-2',
-            patterType: PatternType.PREFIX,
+            patternType: PatternType.PREFIX,
             filterType: FilterType.EXCLUDE,
           },
         ],
@@ -339,7 +338,7 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'my-consumer-group',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -360,12 +359,12 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'consumer-group-1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
           {
             name: 'consumer-group-2',
-            patterType: PatternType.PREFIX,
+            patternType: PatternType.PREFIX,
             filterType: FilterType.EXCLUDE,
           },
         ],
@@ -389,12 +388,12 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'exact-match',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
           {
             name: 'prefix-',
-            patterType: PatternType.PREFIX,
+            patternType: PatternType.PREFIX,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -414,12 +413,12 @@ describe('getUpdateValuesForConsumerGroups', () => {
         consumers: [
           {
             name: 'included-group',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
           {
             name: 'excluded-group',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.EXCLUDE,
           },
         ],

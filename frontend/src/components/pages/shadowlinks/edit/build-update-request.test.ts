@@ -53,7 +53,7 @@ const baseFormValues: FormValues = {
     clientKey: undefined,
   },
   topicsMode: 'specify',
-  topics: [{ name: 'my-topic', patterType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+  topics: [{ name: 'my-topic', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
   topicProperties: [],
   enableConsumerOffsetSync: false,
   consumersMode: 'all',
@@ -154,7 +154,7 @@ describe('buildControlplaneUpdateRequest', () => {
         description: 'topic filters change',
         changes: {
           topicsMode: 'specify' as const,
-          topics: [{ name: 'test-topic', patterType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+          topics: [{ name: 'test-topic', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
         },
         expectedPathContains: 'topic_metadata_sync_options',
         shouldNotContain: 'configurations.topic_metadata_sync_options',
@@ -163,7 +163,7 @@ describe('buildControlplaneUpdateRequest', () => {
         description: 'consumer groups change',
         changes: {
           consumersMode: 'specify' as const,
-          consumers: [{ name: 'test-group', patterType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+          consumers: [{ name: 'test-group', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
         },
         expectedPathContains: 'consumer_offset_sync_options',
         shouldNotContain: 'configurations.consumer_offset_sync_options',
@@ -249,7 +249,7 @@ describe('buildControlplaneUpdateRequest', () => {
         ...baseFormValues,
         bootstrapServers: [{ value: 'new:9092' }],
         topicsMode: 'specify' as const,
-        topics: [{ name: 'topic1', patterType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+        topics: [{ name: 'topic1', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
       };
 
       const result = buildControlplaneUpdateRequest('test-id', updatedValues, baseFormValues);
@@ -269,9 +269,9 @@ describe('buildControlplaneUpdateRequest', () => {
         ...baseFormValues,
         bootstrapServers: [{ value: 'new:9092' }],
         topicsMode: 'specify' as const,
-        topics: [{ name: 'topic1', patterType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+        topics: [{ name: 'topic1', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
         consumersMode: 'specify' as const,
-        consumers: [{ name: 'group1', patterType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+        consumers: [{ name: 'group1', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
         aclsMode: 'specify' as const,
         aclFilters: [
           {
@@ -342,7 +342,7 @@ describe('buildDataplaneUpdateRequest', () => {
         description: 'topic filters change',
         changes: {
           topicsMode: 'specify' as const,
-          topics: [{ name: 'test-topic', patterType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+          topics: [{ name: 'test-topic', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
         },
         expectedPath: 'configurations.topic_metadata_sync_options',
       },
@@ -350,7 +350,7 @@ describe('buildDataplaneUpdateRequest', () => {
         description: 'consumer groups change',
         changes: {
           consumersMode: 'specify' as const,
-          consumers: [{ name: 'test-group', patterType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+          consumers: [{ name: 'test-group', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
         },
         expectedPath: 'configurations.consumer_offset_sync_options',
       },
@@ -422,7 +422,7 @@ describe('buildDataplaneUpdateRequest', () => {
         changes: {
           bootstrapServers: [{ value: 'new:9092' }],
           topicsMode: 'specify' as const,
-          topics: [{ name: 'topic1', patterType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+          topics: [{ name: 'topic1', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
         },
         expectedPathCount: 2,
       },
@@ -431,9 +431,9 @@ describe('buildDataplaneUpdateRequest', () => {
         changes: {
           bootstrapServers: [{ value: 'new:9092' }],
           topicsMode: 'specify' as const,
-          topics: [{ name: 'topic1', patterType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+          topics: [{ name: 'topic1', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
           consumersMode: 'specify' as const,
-          consumers: [{ name: 'group1', patterType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+          consumers: [{ name: 'group1', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
           aclsMode: 'specify' as const,
           aclFilters: [
             {

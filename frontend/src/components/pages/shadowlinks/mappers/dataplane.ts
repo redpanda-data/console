@@ -442,7 +442,7 @@ export const buildDefaultTopicsValues = (
       ? []
       : filters.map((filter) => ({
           name: filter.name,
-          patterType: filter.patternType,
+          patternType: filter.patternType,
           filterType: filter.filterType,
         })),
     // Use the computed list from shadowLink which includes defaults merged with custom properties
@@ -470,7 +470,7 @@ export const buildDefaultConsumerGroupsValues = (
       ? []
       : groupFilters.map((filter) => ({
           name: filter.name,
-          patterType: filter.patternType,
+          patternType: filter.patternType,
           filterType: filter.filterType,
         })),
   };
