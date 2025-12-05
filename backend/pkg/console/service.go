@@ -107,8 +107,8 @@ func NewService(
 	}
 
 	var bsrClient *bsr.Client
-	if cfg.BSR.Enabled {
-		bsrClient, err = bsr.NewClient(cfg.BSR, loggerpkg.Named(logger, "bsr_client"))
+	if cfg.Serde.Protobuf.BufSchemaRegistry.Enabled {
+		bsrClient, err = bsr.NewClient(cfg.Serde.Protobuf.BufSchemaRegistry, loggerpkg.Named(logger, "bsr_client"))
 		if err != nil {
 			return nil, fmt.Errorf("failed to create BSR client: %w", err)
 		}

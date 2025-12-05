@@ -42,7 +42,6 @@ type Config struct {
 	Kafka          Kafka        `yaml:"kafka"`
 	Serde          Serde        `yaml:"serde"`
 	SchemaRegistry Schema       `yaml:"schemaRegistry"`
-	BSR            BSR          `yaml:"bsr"`
 	Logger         Logging      `yaml:"logger"`
 	Analytics      Analytics    `yaml:"analytics"`
 }
@@ -95,11 +94,6 @@ func (c *Config) Validate() error {
 	err = c.SchemaRegistry.Validate()
 	if err != nil {
 		return err
-	}
-
-	err = c.BSR.Validate()
-	if err != nil {
-		return fmt.Errorf("failed to validate BSR config: %w", err)
 	}
 
 	err = c.Analytics.Validate()
