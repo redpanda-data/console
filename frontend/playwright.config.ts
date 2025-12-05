@@ -52,6 +52,8 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+        // Grant clipboard permissions for tests
+        permissions: ['clipboard-read', 'clipboard-write'],
         // Use prepared auth state.
         // storageState: 'playwright/.auth/user.json',
       },

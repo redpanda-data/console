@@ -375,6 +375,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
           <Flex gap={2} mb={4}>
             <Button
+              data-testid="produce-record-button"
               onClick={() => {
                 appGlobal.historyPush(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
               }}
@@ -392,6 +393,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
           {/* Tabs:  Messages, Configuration */}
           <Section>
             <Tabs
+              data-testid="topic-details-tabs"
               isFitted
               onChange={this.setTabPage}
               selectedTabKey={this.selectedTabId}

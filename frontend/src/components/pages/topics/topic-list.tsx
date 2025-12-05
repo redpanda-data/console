@@ -231,100 +231,107 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
   const paginationParams = usePaginationParams(topics.length, uiSettings.topicList.pageSize);
 
   return (
-    <DataTable<Topic>
-      columns={[
-        {
-          header: 'Name',
-          accessorKey: 'topicName',
-          cell: ({ row: { original: topic } }) => {
-            const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? []).find(
-              ({ topicName }) => topicName === topic.topicName
-            )?.partitionIds;
-            const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? []).find(
-              ({ topicName }) => topicName === topic.topicName
-            )?.partitionIds;
+    <div data-testid="topics-table">
+      <DataTable<Topic>
+        columns={[
+          {
+            header: 'Name',
+            accessorKey: 'topicName',
+            cell: ({ row: { original: topic } }) => {
+              const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? []).find(
+                ({ topicName }) => topicName === topic.topicName
+              )?.partitionIds;
+              const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? []).find(
+                ({ topicName }) => topicName === topic.topicName
+              )?.partitionIds;
 
-            return (
-              <Flex alignItems="center" gap={2} whiteSpace="break-spaces" wordBreak="break-word">
-                <Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link>
-                {!!leaderLessPartitions && (
-                  <Tooltip
-                    hasArrow
-                    label={`This topic has ${leaderLessPartitions.length} ${leaderLessPartitions.length === 1 ? 'a leaderless partition' : 'leaderless partitions'}`}
-                    placement="top"
+              return (
+                <Flex alignItems="center" gap={2} whiteSpace="break-spaces" wordBreak="break-word">
+                  <Link
+                    data-testid={`topic-link-${topic.topicName}`}
+                    to={`/topics/${encodeURIComponent(topic.topicName)}`}
                   >
-                    <Box>
-                      <MdError color={colors.brandError} size={18} />
-                    </Box>
-                  </Tooltip>
-                )}
-                {!!underReplicatedPartitions && (
-                  <Tooltip
-                    hasArrow
-                    label={`This topic has ${underReplicatedPartitions.length} ${underReplicatedPartitions.length === 1 ? 'an under-replicated partition' : 'under-replicated partitions'}`}
-                    placement="top"
-                  >
-                    <Box>
-                      <MdOutlineWarning color={colors.brandWarning} size={18} />
-                    </Box>
-                  </Tooltip>
-                )}
-              </Flex>
-            );
+                    {renderName(topic)}
+                  </Link>
+                  {!!leaderLessPartitions && (
+                    <Tooltip
+                      hasArrow
+                      label={`This topic has ${leaderLessPartitions.length} ${leaderLessPartitions.length === 1 ? 'a leaderless partition' : 'leaderless partitions'}`}
+                      placement="top"
+                    >
+                      <Box>
+                        <MdError color={colors.brandError} size={18} />
+                      </Box>
+                    </Tooltip>
+                  )}
+                  {!!underReplicatedPartitions && (
+                    <Tooltip
+                      hasArrow
+                      label={`This topic has ${underReplicatedPartitions.length} ${underReplicatedPartitions.length === 1 ? 'an under-replicated partition' : 'under-replicated partitions'}`}
+                      placement="top"
+                    >
+                      <Box>
+                        <MdOutlineWarning color={colors.brandWarning} size={18} />
+                      </Box>
+                    </Tooltip>
+                  )}
+                </Flex>
+              );
+            },
+            size: Number.POSITIVE_INFINITY,
           },
-          size: Number.POSITIVE_INFINITY,
-        },
-        {
-          header: 'Partitions',
-          accessorKey: 'partitionCount',
-          enableResizing: true,
-          cell: ({ row: { original: topic } }) => topic.partitionCount,
-        },
-        {
-          header: 'Replicas',
-          accessorKey: 'replicationFactor',
-        },
-        {
-          header: 'CleanupPolicy',
-          accessorKey: 'cleanupPolicy',
-        },
-        {
-          header: 'Size',
-          accessorKey: 'logDirSummary.totalSizeBytes',
-          cell: ({ row: { original: topic } }) => renderLogDirSummary(topic.logDirSummary),
-        },
-        {
-          id: 'action',
-          header: '',
-          cell: ({ row: { original: record } }) => (
-            <Flex gap={1}>
-              <DeleteDisabledTooltip topic={record}>
-                <button
-                  data-testid={`delete-topic-button-${record.topicName}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onDelete(record);
-                  }}
-                  type="button"
-                >
-                  <Icon as={HiOutlineTrash} />
-                </button>
-              </DeleteDisabledTooltip>
-            </Flex>
-          ),
-        },
-      ]}
-      data={topics}
-      onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
-        uiSettings.topicList.pageSize = pageSize;
-        editQuery((query) => {
-          query.page = String(pageIndex);
-          query.pageSize = String(pageSize);
-        });
-      })}
-      pagination={paginationParams}
-      sorting={true}
-    />
+          {
+            header: 'Partitions',
+            accessorKey: 'partitionCount',
+            enableResizing: true,
+            cell: ({ row: { original: topic } }) => topic.partitionCount,
+          },
+          {
+            header: 'Replicas',
+            accessorKey: 'replicationFactor',
+          },
+          {
+            header: 'CleanupPolicy',
+            accessorKey: 'cleanupPolicy',
+          },
+          {
+            header: 'Size',
+            accessorKey: 'logDirSummary.totalSizeBytes',
+            cell: ({ row: { original: topic } }) => renderLogDirSummary(topic.logDirSummary),
+          },
+          {
+            id: 'action',
+            header: '',
+            cell: ({ row: { original: record } }) => (
+              <Flex gap={1}>
+                <DeleteDisabledTooltip topic={record}>
+                  <button
+                    data-testid={`delete-topic-button-${record.topicName}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDelete(record);
+                    }}
+                    type="button"
+                  >
+                    <Icon as={HiOutlineTrash} />
+                  </button>
+                </DeleteDisabledTooltip>
+              </Flex>
+            ),
+          },
+        ]}
+        data={topics}
+        onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
+          uiSettings.topicList.pageSize = pageSize;
+          editQuery((query) => {
+            query.page = String(pageIndex);
+            query.pageSize = String(pageSize);
+          });
+        })}
+        pagination={paginationParams}
+        sorting={true}
+      />
+    </div>
   );
 };
 

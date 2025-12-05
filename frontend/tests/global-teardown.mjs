@@ -11,8 +11,8 @@ const __dirname = dirname(__filename);
 const getStateFile = (isEnterprise) =>
   resolve(__dirname, isEnterprise ? '.testcontainers-state-enterprise.json' : '.testcontainers-state.json');
 
-export default async function globalTeardown(config) {
-  const isEnterprise = config.metadata?.isEnterprise ?? false;
+export default async function globalTeardown(config = {}) {
+  const isEnterprise = config?.metadata?.isEnterprise ?? false;
   const CONTAINER_STATE_FILE = getStateFile(isEnterprise);
 
   console.log(`\n🛑 Stopping test environment ${isEnterprise ? '(ENTERPRISE MODE)' : '(OSS MODE)'}...`);
