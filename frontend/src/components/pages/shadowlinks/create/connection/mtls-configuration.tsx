@@ -13,7 +13,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { SecretSelector } from 'components/ui/secret/secret-selector';
+import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
 import { isEmbedded } from 'config';
 import { Pencil, Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -28,6 +28,15 @@ import type { FormValues } from '../model';
 
 // Regex to extract secret ID from ${secrets.SECRET_NAME} format
 const SECRET_REFERENCE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
+
+/** Custom text for mTLS client key secret */
+const MTLS_CLIENT_KEY_SECRET_TEXT: SecretSelectorCustomText = {
+  dialogDescription: 'Create a new secret for your mTLS client private key. The secret will be stored securely.',
+  secretNamePlaceholder: 'e.g., MTLS_CLIENT_KEY',
+  secretValuePlaceholder: 'Paste PEM-encoded private key...',
+  secretValueDescription: 'Your mTLS client private key (PEM format)',
+  emptyStateDescription: 'Create a secret to securely store your mTLS client private key',
+};
 
 interface MtlsCertificatesUploadProps {
   control: Control<FormValues>;
@@ -318,6 +327,7 @@ export const MtlsConfiguration = () => {
                     <FormControl>
                       <SecretSelector
                         availableSecrets={availableSecrets}
+                        customText={MTLS_CLIENT_KEY_SECRET_TEXT}
                         onChange={(secretId) => {
                           // Store the complete secret reference structure: ${secrets.<NAME>}
                           field.onChange(secretId ? { pemContent: `\${secrets.${secretId}}` } : undefined);

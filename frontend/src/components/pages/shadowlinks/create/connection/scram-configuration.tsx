@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Switch } from 'components/redpanda-ui/components/switch';
-import { SecretSelector } from 'components/ui/secret/secret-selector';
+import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
 import { isEmbedded } from 'config';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
@@ -32,6 +32,15 @@ import type { FormValues } from '../model';
 
 // Regex to extract secret ID from ${secrets.SECRET_NAME} format
 const SECRET_REFERENCE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
+
+/** Custom text for SCRAM password secret */
+const SCRAM_PASSWORD_SECRET_TEXT: SecretSelectorCustomText = {
+  dialogDescription: 'Create a new secret for your SCRAM authentication password. The secret will be stored securely.',
+  secretNamePlaceholder: 'e.g., SCRAM_PASSWORD',
+  secretValuePlaceholder: 'Enter password...',
+  secretValueDescription: 'Your SCRAM authentication password',
+  emptyStateDescription: 'Create a secret to securely store your SCRAM password',
+};
 
 export const ScramConfiguration = () => {
   const { control, setValue, getValues } = useFormContext<FormValues>();
@@ -121,6 +130,7 @@ export const ScramConfiguration = () => {
                   {isEmbedded() ? (
                     <SecretSelector
                       availableSecrets={availableSecrets}
+                      customText={SCRAM_PASSWORD_SECRET_TEXT}
                       onChange={(secretId) => {
                         // Store the complete secret reference structure: ${secrets.<NAME>}
                         field.onChange(secretId ? `\${secrets.${secretId}}` : '');
