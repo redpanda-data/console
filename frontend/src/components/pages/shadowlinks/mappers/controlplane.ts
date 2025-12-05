@@ -16,15 +16,10 @@
 
 import type { ShadowLink as ControlplaneShadowLink } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
+import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 
-import {
-  buildDefaultACLsValues,
-  buildDefaultConnectionValues,
-  buildDefaultConsumerGroupsValues,
-  buildDefaultSchemaRegistryValues,
-  buildDefaultTopicsValues,
-} from './dataplane';
-import type { FormValues } from '../create/model';
+import { type FormValues, TLS_MODE } from '../create/model';
 import {
   mapControlplaneStateToUnified,
   type UnifiedAuthenticationConfiguration,
@@ -278,46 +273,175 @@ const extractControlplaneAuthSettings = (
 };
 
 /**
- * Build form values from controlplane shadow link data
- * Maps the flat controlplane structure to form fields
- *
- * Note: Controlplane uses different auth structure (direct scramConfiguration vs oneof),
- * so we need to handle auth extraction separately.
+ * Check if name filters represent "all" mode (single filter with name='*')
  */
-export const buildDefaultFormValuesFromControlplane = (shadowLink: ControlplaneShadowLink): FormValues => {
-  // Create a compatible structure that matches the dataplane ShadowLink format
-  // This allows us to reuse the existing category builder functions
-  const compatibleShadowLink = {
-    name: shadowLink.name,
-    uid: shadowLink.id,
-    state: 0, // Not used for form values
-    configurations: {
-      clientOptions: shadowLink.clientOptions,
-      topicMetadataSyncOptions: shadowLink.topicMetadataSyncOptions,
-      consumerOffsetSyncOptions: shadowLink.consumerOffsetSyncOptions,
-      securitySyncOptions: shadowLink.securitySyncOptions,
-      schemaRegistrySyncOptions: shadowLink.schemaRegistrySyncOptions,
-    },
-    tasksStatus: [],
-    // Use synced properties from topic metadata sync options
-    syncedShadowTopicProperties: shadowLink.topicMetadataSyncOptions?.syncedShadowTopicProperties || [],
-  } as unknown as Parameters<typeof buildDefaultConnectionValues>[0];
+const isAllNameFilter = (filters: { name: string; patternType: PatternType; filterType: FilterType }[]): boolean =>
+  filters.length === 1 &&
+  filters[0].name === '*' &&
+  filters[0].patternType === PatternType.LITERAL &&
+  filters[0].filterType === FilterType.INCLUDE;
 
-  // Reuse existing category builder functions for most fields
-  const connectionValues = buildDefaultConnectionValues(compatibleShadowLink);
-  const topicsValues = buildDefaultTopicsValues(compatibleShadowLink);
-  const consumerGroupsValues = buildDefaultConsumerGroupsValues(compatibleShadowLink);
-  const aclsValues = buildDefaultACLsValues(compatibleShadowLink);
-  const schemaRegistryValues = buildDefaultSchemaRegistryValues(compatibleShadowLink);
+/**
+ * Check if ACL filters represent "all" mode (single filter matching any ACL)
+ */
+const isAllACLFilter = (filters: ControlplaneShadowLink['securitySyncOptions']): boolean => {
+  const aclFilters = filters?.aclFilters ?? [];
+  if (aclFilters.length !== 1) {
+    return false;
+  }
 
-  // Extract auth settings using controlplane-specific function
-  // (controlplane uses different structure than dataplane)
-  const authSettings = extractControlplaneAuthSettings(shadowLink.clientOptions);
+  const filter = aclFilters[0];
+  const resourceFilter = filter.resourceFilter;
+  const accessFilter = filter.accessFilter;
+
+  return (
+    resourceFilter?.resourceType === ACLResource.ACL_RESOURCE_ANY &&
+    resourceFilter?.patternType === ACLPattern.ACL_PATTERN_ANY &&
+    resourceFilter?.name === '' &&
+    accessFilter?.principal === '' &&
+    accessFilter?.operation === ACLOperation.ACL_OPERATION_ANY &&
+    accessFilter?.permissionType === ACLPermissionType.ACL_PERMISSION_TYPE_ANY &&
+    accessFilter?.host === ''
+  );
+};
+
+/**
+ * Build connection form values from controlplane shadow link
+ */
+const buildControlplaneConnectionValues = (
+  shadowLink: ControlplaneShadowLink
+): Pick<FormValues, 'bootstrapServers' | 'useTls' | 'mtlsMode' | 'mtls' | 'advanceClientOptions'> => {
+  const clientOptions = shadowLink.clientOptions;
+  const tlsSettings = clientOptions?.tlsSettings;
+
+  const bootstrapServers = (clientOptions?.bootstrapServers ?? []).map((server) => ({ value: server }));
 
   return {
-    name: shadowLink.name || '',
+    bootstrapServers: bootstrapServers.length > 0 ? bootstrapServers : [{ value: '' }],
+    useTls: Boolean(tlsSettings?.enabled),
+    mtlsMode: TLS_MODE.PEM,
+    mtls: {
+      ca: tlsSettings?.ca ? { pemContent: tlsSettings.ca } : undefined,
+      clientCert: tlsSettings?.cert ? { pemContent: tlsSettings.cert } : undefined,
+      clientKey: tlsSettings?.key ? { pemContent: tlsSettings.key } : undefined,
+    },
+    advanceClientOptions: {
+      metadataMaxAgeMs: clientOptions?.metadataMaxAgeMs ?? 10_000,
+      connectionTimeoutMs: clientOptions?.connectionTimeoutMs ?? 1000,
+      retryBackoffMs: clientOptions?.retryBackoffMs ?? 100,
+      fetchWaitMaxMs: clientOptions?.fetchWaitMaxMs ?? 500,
+      fetchMinBytes: clientOptions?.fetchMinBytes ?? 5_242_880,
+      fetchMaxBytes: clientOptions?.fetchMaxBytes ?? 20_971_520,
+      fetchPartitionMaxBytes: clientOptions?.fetchPartitionMaxBytes ?? 1_048_576,
+    },
+  };
+};
+
+/**
+ * Build topics form values from controlplane shadow link
+ */
+const buildControlplaneTopicsValues = (
+  shadowLink: ControlplaneShadowLink
+): Pick<FormValues, 'topicsMode' | 'topics' | 'topicProperties' | 'excludeDefault'> => {
+  const topicMetadataSyncOptions = shadowLink.topicMetadataSyncOptions;
+  const filters = topicMetadataSyncOptions?.autoCreateShadowTopicFilters ?? [];
+
+  const isAllMode = isAllNameFilter(filters);
+
+  return {
+    topicsMode: isAllMode ? 'all' : 'specify',
+    topics: isAllMode
+      ? []
+      : filters.map((filter) => ({
+          name: filter.name,
+          patterType: filter.patternType,
+          filterType: filter.filterType,
+        })),
+    topicProperties: topicMetadataSyncOptions?.syncedShadowTopicProperties ?? [],
+    excludeDefault: topicMetadataSyncOptions?.excludeDefault ?? false,
+  };
+};
+
+/**
+ * Build consumer groups form values from controlplane shadow link
+ */
+const buildControlplaneConsumerGroupsValues = (
+  shadowLink: ControlplaneShadowLink
+): Pick<FormValues, 'enableConsumerOffsetSync' | 'consumersMode' | 'consumers'> => {
+  const consumerOffsetSyncOptions = shadowLink.consumerOffsetSyncOptions;
+  const groupFilters = consumerOffsetSyncOptions?.groupFilters ?? [];
+
+  const isAllMode = isAllNameFilter(groupFilters);
+
+  return {
+    enableConsumerOffsetSync: false,
+    consumersMode: isAllMode ? 'all' : 'specify',
+    consumers: isAllMode
+      ? []
+      : groupFilters.map((filter) => ({
+          name: filter.name,
+          patterType: filter.patternType,
+          filterType: filter.filterType,
+        })),
+  };
+};
+
+/**
+ * Build ACLs form values from controlplane shadow link
+ */
+const buildControlplaneACLsValues = (
+  shadowLink: ControlplaneShadowLink
+): Pick<FormValues, 'aclsMode' | 'aclFilters'> => {
+  const securitySyncOptions = shadowLink.securitySyncOptions;
+  const aclFilters = securitySyncOptions?.aclFilters ?? [];
+
+  const isAllMode = isAllACLFilter(securitySyncOptions);
+
+  return {
+    aclsMode: isAllMode ? 'all' : 'specify',
+    aclFilters: isAllMode
+      ? []
+      : aclFilters.map((filter) => ({
+          resourceType: filter.resourceFilter?.resourceType,
+          resourcePattern: filter.resourceFilter?.patternType,
+          resourceName: filter.resourceFilter?.name,
+          principal: filter.accessFilter?.principal,
+          operation: filter.accessFilter?.operation,
+          permissionType: filter.accessFilter?.permissionType,
+          host: filter.accessFilter?.host,
+        })),
+  };
+};
+
+/**
+ * Build schema registry form values from controlplane shadow link
+ */
+const buildControlplaneSchemaRegistryValues = (
+  shadowLink: ControlplaneShadowLink
+): Pick<FormValues, 'enableSchemaRegistrySync'> => {
+  const schemaRegistrySyncOptions = shadowLink.schemaRegistrySyncOptions;
+  const isEnabled = schemaRegistrySyncOptions?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic';
+
+  return {
+    enableSchemaRegistrySync: isEnabled,
+  };
+};
+
+/**
+ * Build form values from controlplane shadow link data
+ * Maps the controlplane structure to form fields without type casts
+ */
+export const buildDefaultFormValuesFromControlplane = (shadowLink: ControlplaneShadowLink): FormValues => {
+  const connectionValues = buildControlplaneConnectionValues(shadowLink);
+  const authSettings = extractControlplaneAuthSettings(shadowLink.clientOptions);
+  const topicsValues = buildControlplaneTopicsValues(shadowLink);
+  const consumerGroupsValues = buildControlplaneConsumerGroupsValues(shadowLink);
+  const aclsValues = buildControlplaneACLsValues(shadowLink);
+  const schemaRegistryValues = buildControlplaneSchemaRegistryValues(shadowLink);
+
+  return {
+    name: shadowLink.name ?? '',
     ...connectionValues,
-    // Override auth settings with controlplane-specific extraction
     ...authSettings,
     ...topicsValues,
     ...consumerGroupsValues,
