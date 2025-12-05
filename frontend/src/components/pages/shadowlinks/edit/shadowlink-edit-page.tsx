@@ -9,19 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
-import { type FieldMask, FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
-import {
-  ShadowLinkConfigurationsSchema,
-  ShadowLinkSchema,
-  UpdateShadowLinkRequestSchema,
-} from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useEffect, useState } from 'react';
 import { type FieldErrors, useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -29,98 +21,10 @@ import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
 import { ShadowingTab } from './shadowing-tab';
-import {
-  buildDefaultACLsValues,
-  buildDefaultConnectionValues,
-  buildDefaultConsumerGroupsValues,
-  buildDefaultTopicsValues,
-  getUpdateValuesForACLs,
-  getUpdateValuesForConnection,
-  getUpdateValuesForConsumerGroups,
-  getUpdateValuesForSchemaRegistry,
-  getUpdateValuesForTopics,
-} from './shadowlink-edit-utils';
 import { SourceTab } from './source-tab';
 import { TopicConfigTab } from './topic-config-tab';
-import { useGetShadowLinkQuery, useUpdateShadowLinkMutation } from '../../../../react-query/api/shadowlink';
+import { useEditShadowLink } from '../../../../react-query/api/shadowlink';
 import { FormSchema, type FormValues } from '../create/model';
-
-/**
- * Transform form values to UpdateShadowLinkRequest protobuf message
- * Only includes fields that have changed from the original shadow link
- */
-const buildUpdateShadowLinkRequest = (
-  name: string,
-  values: FormValues,
-  originalShadowLink: Exclude<NonNullable<ReturnType<typeof useGetShadowLinkQuery>['data']>['shadowLink'], undefined>
-) => {
-  // Build original form values for comparison
-  const originalValues = buildDefaultFormValues(originalShadowLink);
-
-  // Get update values for all categories
-  const connectionUpdate = getUpdateValuesForConnection(values, originalValues);
-  const topicsUpdate = getUpdateValuesForTopics(values, originalValues);
-  const consumerGroupsUpdate = getUpdateValuesForConsumerGroups(values, originalValues);
-  const aclsUpdate = getUpdateValuesForACLs(values, originalValues);
-  const schemaRegistryUpdate = getUpdateValuesForSchemaRegistry(values, originalValues);
-
-  // Build configurations with all category values
-  const configurations = create(ShadowLinkConfigurationsSchema, {
-    clientOptions: connectionUpdate.value,
-    topicMetadataSyncOptions: topicsUpdate.value,
-    consumerOffsetSyncOptions: consumerGroupsUpdate.value,
-    securitySyncOptions: aclsUpdate.value,
-    schemaRegistrySyncOptions: schemaRegistryUpdate.value,
-  });
-
-  // Build shadow link
-  const shadowLink = create(ShadowLinkSchema, {
-    name,
-    configurations,
-  });
-
-  // Build field mask with all changed field paths from all categories
-  const updateMask: FieldMask = create(FieldMaskSchema, {
-    paths: [
-      ...connectionUpdate.fieldMaskPaths,
-      ...topicsUpdate.fieldMaskPaths,
-      ...consumerGroupsUpdate.fieldMaskPaths,
-      ...aclsUpdate.fieldMaskPaths,
-      ...schemaRegistryUpdate.fieldMaskPaths,
-    ],
-  });
-
-  // Build final request
-  return create(UpdateShadowLinkRequestSchema, {
-    shadowLink,
-    updateMask,
-  });
-};
-
-/**
- * Build default form values from existing shadow link data
- * Orchestrates category-specific builders
- */
-const buildDefaultFormValues = (shadowLink: ShadowLink): FormValues => {
-  const connectionValues = buildDefaultConnectionValues(shadowLink);
-  const topicsValues = buildDefaultTopicsValues(shadowLink);
-  const consumerGroupsValues = buildDefaultConsumerGroupsValues(shadowLink);
-  const aclsValues = buildDefaultACLsValues(shadowLink);
-
-  // Check if schema registry sync is enabled
-  const schemaRegistrySyncOptions = shadowLink.configurations?.schemaRegistrySyncOptions;
-  const enableSchemaRegistrySync =
-    schemaRegistrySyncOptions?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic';
-
-  return {
-    name: shadowLink.name || '',
-    ...connectionValues,
-    ...topicsValues,
-    ...consumerGroupsValues,
-    ...aclsValues,
-    enableSchemaRegistrySync,
-  };
-};
 
 /**
  * Map form field to its corresponding tab
@@ -170,20 +74,37 @@ export const ShadowLinkEditPage = () => {
     throw new Error('Shadow link name is required');
   }
 
-  const { data: shadowLinkData, isLoading } = useGetShadowLinkQuery({ name });
-  const shadowLink = shadowLinkData?.shadowLink;
+  // Use the unified edit hook that handles embedded/dataplane logic
+  const { formValues, isLoading, isUpdating, hasData, updateShadowLink, dataplaneUpdate, controlplaneUpdate } =
+    useEditShadowLink(name);
 
-  const { mutateAsync: updateShadowLink, isPending: isUpdating } = useUpdateShadowLinkMutation({
-    onSuccess: () => {
+  // Set up mutation callbacks
+  useEffect(() => {
+    const unsubscribeDataplane = dataplaneUpdate.reset;
+    const unsubscribeControlplane = controlplaneUpdate.reset;
+
+    return () => {
+      unsubscribeDataplane?.();
+      unsubscribeControlplane?.();
+    };
+  }, [dataplaneUpdate.reset, controlplaneUpdate.reset]);
+
+  // Handle success/error for mutations
+  useEffect(() => {
+    if (dataplaneUpdate.isSuccess || controlplaneUpdate.isSuccess) {
       toast.success('Shadow link updated successfully');
       navigate(`/shadowlinks/${name}`);
-    },
-    onError: (error) => {
+    }
+  }, [dataplaneUpdate.isSuccess, controlplaneUpdate.isSuccess, navigate, name]);
+
+  useEffect(() => {
+    const error = dataplaneUpdate.error || controlplaneUpdate.error;
+    if (error) {
       toast.error('Shadow link update failed', {
         description: error.message,
       });
-    },
-  });
+    }
+  }, [dataplaneUpdate.error, controlplaneUpdate.error]);
 
   // Track current active tab
   const [currentTab, setCurrentTab] = useState<string>('source');
@@ -191,16 +112,12 @@ export const ShadowLinkEditPage = () => {
   // Initialize form with values that automatically update when shadowLink data changes
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
-    values: shadowLink ? buildDefaultFormValues(shadowLink) : undefined,
+    values: formValues,
     mode: 'onChange',
   });
 
   const onSubmit = (values: FormValues) => {
-    if (!shadowLink) {
-      return; // Guard clause - should never happen since form is only rendered when shadowLink exists
-    }
-    const request = buildUpdateShadowLinkRequest(name, values, shadowLink);
-    void updateShadowLink(request);
+    void updateShadowLink(values);
   };
 
   /**
@@ -243,7 +160,7 @@ export const ShadowLinkEditPage = () => {
     }
   }, [name]);
 
-  if (!(isLoading || shadowLink)) {
+  if (!(isLoading || hasData)) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-8">
         <Text variant="large">Shadow link not found</Text>

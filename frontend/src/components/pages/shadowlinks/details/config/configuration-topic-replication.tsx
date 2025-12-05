@@ -21,10 +21,11 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
+
+import type { UnifiedShadowLink } from '../../model';
 
 export interface ConfigurationTopicReplicationProps {
-  shadowLink: ShadowLink;
+  shadowLink: UnifiedShadowLink;
 }
 
 // Default properties that are synced when excludeDefault is false

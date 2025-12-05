@@ -10,8 +10,9 @@
  */
 
 import { Text } from 'components/redpanda-ui/components/typography';
-import type { TLSSettings } from 'protogen/redpanda/core/common/v1/tls_pb';
 import type React from 'react';
+
+import type { UnifiedTLSSettings } from '../../model';
 
 const ConfigField = ({ label, value, testId }: { label: string; value: React.ReactNode; testId?: string }) => (
   <div className="flex items-start justify-between border-b py-3 last:border-b-0">
@@ -32,7 +33,7 @@ const CertificateValue = ({ value, isFilePath }: { value: string; isFilePath: bo
 };
 
 export interface TlsCertificatesConfigProps {
-  tlsSettings?: TLSSettings;
+  tlsSettings?: UnifiedTLSSettings;
 }
 
 export const TlsCertificatesConfig = ({ tlsSettings }: TlsCertificatesConfigProps) => {
