@@ -248,7 +248,7 @@ export const getUpdateValuesForTopics = (
     values.topics.some(
       (topic, idx) =>
         topic.name !== originalValues.topics[idx]?.name ||
-        topic.patterType !== originalValues.topics[idx]?.patterType ||
+        topic.patternType !== originalValues.topics[idx]?.patternType ||
         topic.filterType !== originalValues.topics[idx]?.filterType
     );
 
@@ -284,7 +284,7 @@ export const getUpdateValuesForTopics = (
         ? allNameFilter
         : values.topics.map((topic) =>
             create(NameFilterSchema, {
-              patternType: topic.patterType,
+              patternType: topic.patternType,
               filterType: topic.filterType,
               name: topic.name,
             })
@@ -316,7 +316,7 @@ export const getUpdateValuesForConsumerGroups = (
     values.consumers.some(
       (consumer, idx) =>
         consumer.name !== originalValues.consumers[idx]?.name ||
-        consumer.patterType !== originalValues.consumers[idx]?.patterType ||
+        consumer.patternType !== originalValues.consumers[idx]?.patternType ||
         consumer.filterType !== originalValues.consumers[idx]?.filterType
     );
 
@@ -339,7 +339,7 @@ export const getUpdateValuesForConsumerGroups = (
         ? allNameFilter
         : values.consumers.map((consumer) =>
             create(NameFilterSchema, {
-              patternType: consumer.patterType,
+              patternType: consumer.patternType,
               filterType: consumer.filterType,
               name: consumer.name,
             })

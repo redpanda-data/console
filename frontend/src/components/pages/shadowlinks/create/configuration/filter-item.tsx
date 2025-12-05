@@ -44,7 +44,7 @@ export const FilterItem = <TFieldValues extends FieldValues>({
   'data-testid': dataTestId,
   errorMessage,
 }: FilterItemProps<TFieldValues>) => {
-  const patternFieldName = `${fieldNamePrefix}.${index}.patterType` as FieldPath<TFieldValues>;
+  const patternFieldName = `${fieldNamePrefix}.${index}.patternType` as FieldPath<TFieldValues>;
   const filterFieldName = `${fieldNamePrefix}.${index}.filterType` as FieldPath<TFieldValues>;
   const nameFieldName = `${fieldNamePrefix}.${index}.name` as FieldPath<TFieldValues>;
 
