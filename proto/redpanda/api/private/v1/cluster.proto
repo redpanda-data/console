@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package redpanda.api.private.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/api/dataplane/v1/common.proto";
+
+message BrokerConfigEntry {
+  string name = 1;
+  optional string value = 2;
+  redpanda.api.dataplane.v1.ConfigSource source = 3;
+  redpanda.api.dataplane.v1.ConfigType type = 4;
+  bool is_explicitly_set = 5 [json_name = "is_explicitly_set"];
+  bool is_default_value = 6 [json_name = "is_default_value"];
+  bool is_read_only = 7 [json_name = "is_read_only"];
+  bool is_sensitive = 8 [json_name = "is_sensitive"];
+  string documentation = 9;
+  repeated redpanda.api.dataplane.v1.ConfigSynonym synonyms = 10;
+}
+
+message BrokerConfig {
+  repeated BrokerConfigEntry values = 1;
+  string error = 2;
+}
+
+message Broker {
+  int32 id = 1;
+  int64 log_dir_size = 2 [json_name = "log_dir_size"];
+  string address = 3;
+  optional string rack = 4;
+  BrokerConfig config = 5;
+}
+
+message Cluster {
+  int32 controller_id = 1 [json_name = "controller_id"];
+  string kafka_version = 2 [json_name = "kafka_version"];
+  repeated Broker brokers = 3;
+}
+
+message GetClusterRequest {}
+message GetClusterResponse {
+  Cluster cluster = 1;
+}
+
+service ClusterService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Cluster"
+    description: "Cluster operations for Redpanda."
+  };
+
+  rpc GetCluster(GetClusterRequest) returns (GetClusterResponse) {
+    option (google.api.http) = {get: "/v1/cluster"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Cluster Information"
+      description: "Describe the current cluster, including attached brokers and config."
+      responses: {
+        key: "200"
+        value: {
+          description: "Cluster information"
+          schema: {
+            json_schema: {ref: ".redpanda.api.private.v1.Cluster"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+}
