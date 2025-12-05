@@ -401,6 +401,8 @@ export const ShadowLinkSchema: GenMessage<ShadowLink> = /*@__PURE__*/
  */
 export const ShadowLinkService: GenService<{
   /**
+   * buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+   *
    * @generated from rpc redpanda.api.dataplane.v1alpha3.ShadowLinkService.FailOver
    */
   failOver: {
