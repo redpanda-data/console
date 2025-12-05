@@ -18,7 +18,7 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, AlertTriangle, Edit, Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
-  useDeleteShadowLinkMutation,
+  useDeleteShadowLinkUnified,
   useFailoverShadowLinkMutation,
   useGetShadowLinkUnified,
 } from 'react-query/api/shadowlink';
@@ -61,15 +61,8 @@ export const ShadowLinkDetailsPage = () => {
   // When dataplane fails but we have controlplane data (fallback scenario)
   const hasPartialData = Boolean(shadowLink && dataplaneError);
 
-  const { mutate: deleteShadowLink, isPending: isDeleting } = useDeleteShadowLinkMutation({
-    onSuccess: () => {
-      toast.success(`Shadowlink ${name} deleted`);
-      navigate('/shadowlinks');
-    },
-    onError: (error) => {
-      toast.error(formatToastErrorMessageGRPC({ error, action: 'delete', entity: 'shadowlink' }));
-    },
-  });
+  // Use unified delete hook (works in both embedded and non-embedded modes)
+  const { deleteShadowLink, isPending: isDeleting } = useDeleteShadowLinkUnified({ name: name ?? '' });
 
   const { mutate: failoverShadowLink, isPending: isFailingOver } = useFailoverShadowLinkMutation({
     onSuccess: () => {
@@ -90,9 +83,16 @@ export const ShadowLinkDetailsPage = () => {
   });
 
   const handleDelete = () => {
-    if (name) {
-      deleteShadowLink({ name, force: false } as Parameters<typeof deleteShadowLink>[0]);
-    }
+    deleteShadowLink({
+      force: false,
+      onSuccess: () => {
+        toast.success(`Shadowlink ${name} deleted`);
+        navigate('/shadowlinks');
+      },
+      onError: (error) => {
+        toast.error(formatToastErrorMessageGRPC({ error, action: 'delete', entity: 'shadowlink' }));
+      },
+    });
   };
 
   const handleFailover = () => {

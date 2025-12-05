@@ -75,6 +75,7 @@ import { useCallback, useMemo } from 'react';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 
 import {
+  useControlplaneDeleteShadowLinkMutation,
   useControlplaneGetShadowLinkByNameQuery,
   useControlplaneUpdateShadowLinkMutation,
 } from './controlplane/shadowlink';
@@ -219,6 +220,57 @@ export const useDeleteShadowLinkMutation = (options?: {
       options?.onError?.(error);
     },
   });
+};
+
+/**
+ * Unified hook to delete a shadow link that works in both console and controlplane modes.
+ * Automatically uses the appropriate API based on embedded mode.
+ *
+ * In embedded mode: uses controlplane API with ID-based deletion
+ * In non-embedded mode: uses dataplane API with name-based deletion
+ *
+ * @param params.name - The shadow link name
+ * @returns Unified delete interface with delete function and loading states
+ */
+export const useDeleteShadowLinkUnified = (params: { name: string }) => {
+  const embedded = isEmbedded();
+
+  // Get shadowlink ID for embedded mode (controlplane uses ID-based deletion)
+  const controlplaneQuery = useControlplaneGetShadowLinkByNameQuery({ name: params.name }, { enabled: embedded });
+  const shadowLinkId = controlplaneQuery.data?.id;
+
+  // Mutations
+  const dataplaneDelete = useDeleteShadowLinkMutation();
+  const controlplaneDelete = useControlplaneDeleteShadowLinkMutation();
+
+  const deleteShadowLinkUnified = useCallback(
+    (options?: { force?: boolean; onSuccess?: () => void; onError?: (error: ConnectError) => void }) => {
+      if (embedded && shadowLinkId) {
+        return controlplaneDelete.mutate(
+          { id: shadowLinkId },
+          { onSuccess: options?.onSuccess, onError: options?.onError }
+        );
+      }
+      if (!embedded) {
+        return dataplaneDelete.mutate(
+          { name: params.name, force: options?.force ?? false },
+          { onSuccess: options?.onSuccess, onError: options?.onError }
+        );
+      }
+    },
+    [embedded, shadowLinkId, params.name, controlplaneDelete, dataplaneDelete]
+  );
+
+  return {
+    /** Function to delete the shadow link */
+    deleteShadowLink: deleteShadowLinkUnified,
+    /** Whether a delete operation is currently in progress */
+    isPending: embedded ? controlplaneDelete.isPending : dataplaneDelete.isPending,
+    /** Whether the shadowlink ID is being loaded (only relevant in embedded mode) */
+    isLoadingId: embedded && controlplaneQuery.isLoading,
+    /** Whether the delete can be performed (ID is available in embedded mode, or always true in non-embedded mode) */
+    canDelete: embedded ? !!shadowLinkId : true,
+  };
 };
 
 /**

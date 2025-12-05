@@ -10,12 +10,15 @@
  */
 
 import {
+  type DeleteShadowLinkOperationSchema as CpDeleteShadowLinkOperationSchema,
+  type DeleteShadowLinkRequestSchema as CpDeleteShadowLinkRequestSchema,
   GetShadowLinkRequestSchema as CpGetShadowLinkRequestSchema,
   ListShadowLinksRequestSchema as CpListShadowLinksRequestSchema,
   type UpdateShadowLinkOperationSchema as CpUpdateShadowLinkOperationSchema,
   type UpdateShadowLinkRequestSchema as CpUpdateShadowLinkRequestSchema,
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import {
+  deleteShadowLink as cpDeleteShadowLink,
   getShadowLink as cpGetShadowLink,
   listShadowLinks as cpListShadowLinks,
   updateShadowLink as cpUpdateShadowLink,
@@ -93,6 +96,40 @@ export const useControlplaneUpdateShadowLinkMutation = (
   const queryClient = useQueryClient();
 
   return useMutation(cpUpdateShadowLink, {
+    transport,
+    onSuccess: async () => {
+      // Invalidate controlplane list query
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: cpListShadowLinks,
+          cardinality: 'finite',
+        }),
+        exact: false,
+      });
+      // Invalidate controlplane get query
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: cpGetShadowLink,
+          cardinality: 'finite',
+        }),
+        exact: false,
+      });
+    },
+    ...options,
+  });
+};
+
+/**
+ * Hook to delete a shadow link using controlplane API
+ * Creates its own controlplane transport, no TransportProvider needed
+ */
+export const useControlplaneDeleteShadowLinkMutation = (
+  options?: UseMutationOptions<typeof CpDeleteShadowLinkRequestSchema, typeof CpDeleteShadowLinkOperationSchema>
+) => {
+  const transport = useControlplaneTransport();
+  const queryClient = useQueryClient();
+
+  return useMutation(cpDeleteShadowLink, {
     transport,
     onSuccess: async () => {
       // Invalidate controlplane list query

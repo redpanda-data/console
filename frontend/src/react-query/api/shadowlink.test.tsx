@@ -14,6 +14,8 @@ import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 import { createRouterTransport } from '@connectrpc/connect';
 import { renderHook, waitFor } from '@testing-library/react';
 import { UnifiedShadowLinkState } from 'components/pages/shadowlinks/model';
+import { DeleteShadowLinkResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import { deleteShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { GetShadowLinkResponseSchema, ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 import { getShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink-ShadowLinkService_connectquery';
 import { ShadowLinkConfigurationsSchema, ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
@@ -32,6 +34,10 @@ vi.mock('./controlplane/shadowlink', () => ({
     mutateAsync: vi.fn(),
     isPending: false,
   })),
+  useControlplaneDeleteShadowLinkMutation: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+  })),
 }));
 
 // Mock the controlplane mapper for fallback scenario
@@ -44,12 +50,16 @@ import { fromControlplaneShadowLink } from 'components/pages/shadowlinks/mappers
 // Import after mocks are set up
 import { isEmbedded } from 'config';
 
-import { useControlplaneGetShadowLinkByNameQuery } from './controlplane/shadowlink';
-import { useGetShadowLinkUnified } from './shadowlink';
+import {
+  useControlplaneDeleteShadowLinkMutation,
+  useControlplaneGetShadowLinkByNameQuery,
+} from './controlplane/shadowlink';
+import { useDeleteShadowLinkUnified, useGetShadowLinkUnified } from './shadowlink';
 
 const mockIsEmbedded = vi.mocked(isEmbedded);
 const mockUseControlplaneGetShadowLinkByNameQuery = vi.mocked(useControlplaneGetShadowLinkByNameQuery);
 const mockFromControlplaneShadowLink = vi.mocked(fromControlplaneShadowLink);
+const mockUseControlplaneDeleteShadowLinkMutation = vi.mocked(useControlplaneDeleteShadowLinkMutation);
 
 // Test data factories
 const createMockDataplaneShadowLink = () =>
@@ -262,5 +272,125 @@ describe('useGetShadowLinkUnified', () => {
 
     // No combined error since we have data from controlplane fallback
     expect(result.current.error).toBeNull();
+  });
+});
+
+describe('useDeleteShadowLinkUnified', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test('calls controlplane delete mutation when in embedded mode and does NOT call dataplane', () => {
+    // Setup: embedded mode
+    mockIsEmbedded.mockReturnValue(true);
+
+    const mockControlplaneMutate = vi.fn();
+    const mockDataplaneDelete = vi.fn();
+
+    // Mock controlplane query to return shadowlink with ID
+    mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
+      data: { id: 'cp-shadow-link-id-123', name: 'test-shadow-link' },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
+
+    // Mock controlplane delete mutation
+    mockUseControlplaneDeleteShadowLinkMutation.mockReturnValue({
+      mutate: mockControlplaneMutate,
+      isPending: false,
+    } as any);
+
+    // Create transport with dataplane delete mock to verify it's NOT called
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(getShadowLink, () => create(GetShadowLinkResponseSchema, {}));
+      rpc(deleteShadowLink, (request) => {
+        mockDataplaneDelete(request);
+        return create(DeleteShadowLinkResponseSchema, {});
+      });
+    });
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+
+    const { result } = renderHook(() => useDeleteShadowLinkUnified({ name: 'test-shadow-link' }), { wrapper });
+
+    // Verify controlplane query was called with enabled: true
+    expect(mockUseControlplaneGetShadowLinkByNameQuery).toHaveBeenCalledWith(
+      { name: 'test-shadow-link' },
+      { enabled: true }
+    );
+
+    // Verify canDelete is true (ID is available)
+    expect(result.current.canDelete).toBe(true);
+
+    // Call delete function
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    result.current.deleteShadowLink({ force: false, onSuccess, onError });
+
+    // Verify controlplane mutation was called with the ID
+    expect(mockControlplaneMutate).toHaveBeenCalledWith({ id: 'cp-shadow-link-id-123' }, { onSuccess, onError });
+
+    // Verify dataplane delete was NOT called
+    expect(mockDataplaneDelete).not.toHaveBeenCalled();
+  });
+
+  test('calls dataplane delete mutation when not in embedded mode and does NOT call controlplane', async () => {
+    // Setup: non-embedded mode
+    mockIsEmbedded.mockReturnValue(false);
+
+    const mockDataplaneDelete = vi.fn();
+    const mockControlplaneMutate = vi.fn();
+
+    // Mock controlplane query to return nothing (not enabled)
+    mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
+
+    // Mock controlplane delete mutation to verify it's NOT called
+    mockUseControlplaneDeleteShadowLinkMutation.mockReturnValue({
+      mutate: mockControlplaneMutate,
+      isPending: false,
+    } as any);
+
+    // Create transport with dataplane delete mock
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(getShadowLink, () => create(GetShadowLinkResponseSchema, {}));
+      rpc(deleteShadowLink, (request) => {
+        mockDataplaneDelete(request);
+        return create(DeleteShadowLinkResponseSchema, {});
+      });
+    });
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+
+    const { result } = renderHook(() => useDeleteShadowLinkUnified({ name: 'test-shadow-link' }), { wrapper });
+
+    // Verify controlplane query was called with enabled: false
+    expect(mockUseControlplaneGetShadowLinkByNameQuery).toHaveBeenCalledWith(
+      { name: 'test-shadow-link' },
+      { enabled: false }
+    );
+
+    // Verify canDelete is true (always true in non-embedded mode)
+    expect(result.current.canDelete).toBe(true);
+
+    // Call delete function
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    result.current.deleteShadowLink({ force: true, onSuccess, onError });
+
+    // Wait for the dataplane delete mutation to be called
+    await waitFor(() => {
+      expect(mockDataplaneDelete).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'test-shadow-link', force: true })
+      );
+    });
+
+    // Verify controlplane mutation was NOT called
+    expect(mockControlplaneMutate).not.toHaveBeenCalled();
   });
 });
