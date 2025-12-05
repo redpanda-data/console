@@ -55,6 +55,28 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { z } from 'zod';
 
+export type SecretSelectorCustomText = {
+  /** Dialog description shown when creating a new secret */
+  dialogDescription: string;
+  /** Placeholder for the secret name input */
+  secretNamePlaceholder: string;
+  /** Placeholder for the secret value input */
+  secretValuePlaceholder: string;
+  /** Description shown below the secret value input */
+  secretValueDescription: string;
+  /** Description shown in empty state when no secrets are available */
+  emptyStateDescription: string;
+};
+
+/** Default text for AI agent API key secrets */
+export const AI_AGENT_SECRET_TEXT: SecretSelectorCustomText = {
+  dialogDescription: 'Create a new secret for your OpenAI API key. The secret will be stored securely.',
+  secretNamePlaceholder: 'e.g., OPENAI_API_KEY',
+  secretValuePlaceholder: 'sk-...',
+  secretValueDescription: 'Your OpenAI API key',
+  emptyStateDescription: 'Create a secret to securely store your OpenAI API key',
+};
+
 type SecretSelectorProps = {
   value: string;
   onChange: (value: string) => void;
@@ -62,6 +84,8 @@ type SecretSelectorProps = {
   placeholder?: string;
   onSecretCreated?: (secretId: string) => void;
   scopes: Scope[];
+  /** Custom text for dialog and form fields */
+  customText: SecretSelectorCustomText;
 };
 
 const NewSecretFormSchema = z.object({
@@ -88,6 +112,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
   placeholder = 'Select from secrets store or create new',
   onSecretCreated,
   scopes,
+  customText,
 }) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation();
@@ -147,7 +172,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
             No secrets available
           </Text>
           <Text className="mb-4 text-center" variant="muted">
-            Create a secret to securely store your OpenAI API key
+            {customText.emptyStateDescription}
           </Text>
           <Button onClick={() => setIsCreateDialogOpen(true)} type="button" variant="outline">
             <div className="flex items-center gap-2">
@@ -184,9 +209,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create new secret</DialogTitle>
-            <DialogDescription>
-              Create a new secret for your OpenAI API key. The secret will be stored securely.
-            </DialogDescription>
+            <DialogDescription>{customText.dialogDescription}</DialogDescription>
           </DialogHeader>
 
           <Form {...form}>
@@ -199,7 +222,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
                     <FormLabel>Secret name</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="e.g., OPENAI_API_KEY"
+                        placeholder={customText.secretNamePlaceholder}
                         {...field}
                         onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                       />
@@ -217,9 +240,9 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
                   <FormItem>
                     <FormLabel>Secret value</FormLabel>
                     <FormControl>
-                      <Input placeholder="sk-..." type="password" {...field} />
+                      <Input placeholder={customText.secretValuePlaceholder} type="password" {...field} />
                     </FormControl>
-                    <FormDescription>Your OpenAI API key</FormDescription>
+                    <FormDescription>{customText.secretValueDescription}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

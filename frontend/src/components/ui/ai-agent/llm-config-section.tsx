@@ -28,7 +28,7 @@ import {
   FormLabel,
   FormMessage,
 } from 'components/redpanda-ui/components/form';
-import { SecretSelector } from 'components/ui/secret/secret-selector';
+import { AI_AGENT_SECRET_TEXT, SecretSelector } from 'components/ui/secret/secret-selector';
 import { type Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect, useMemo } from 'react';
 import { type UseFormReturn } from 'react-hook-form';
@@ -205,6 +205,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
             <FormControl>
               <SecretSelector
                 availableSecrets={availableSecrets}
+                customText={AI_AGENT_SECRET_TEXT}
                 onChange={field.onChange}
                 placeholder="Select from secrets store or create new"
                 scopes={scopes}

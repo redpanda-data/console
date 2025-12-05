@@ -32,7 +32,7 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
-import { SecretSelector } from 'components/ui/secret/secret-selector';
+import { AI_AGENT_SECRET_TEXT, SecretSelector } from 'components/ui/secret/secret-selector';
 import { ServiceAccountSection } from 'components/ui/service-account/service-account-section';
 import { Edit, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -826,6 +826,7 @@ export const AIAgentConfigurationTab = () => {
                     <div className="[&>div]:flex-col [&>div]:items-stretch [&>div]:gap-2">
                       <SecretSelector
                         availableSecrets={availableSecrets}
+                        customText={AI_AGENT_SECRET_TEXT}
                         onChange={(value) => updateField({ apiKeySecret: value })}
                         placeholder="Select from secrets store or create new"
                         scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
