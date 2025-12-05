@@ -61,6 +61,7 @@ const baseFormValues: FormValues = {
   consumers: [],
   aclsMode: 'all',
   aclFilters: [],
+  enableSchemaRegistrySync: false,
 };
 
 describe('getUpdateValuesForTopics', () => {

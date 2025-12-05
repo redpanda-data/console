@@ -50,6 +50,8 @@ const baseFormValues: FormValues = {
   consumers: [],
   aclsMode: 'all',
   aclFilters: [],
+  enableSchemaRegistrySync: false,
+  excludeDefault: false,
 };
 
 describe('getUpdateValuesForConsumerGroups', () => {
