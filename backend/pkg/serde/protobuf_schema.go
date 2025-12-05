@@ -11,7 +11,6 @@ package serde
 
 import (
 	"context"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -60,24 +59,10 @@ func (d ProtobufSchemaSerde) DeserializePayload(ctx context.Context, record *kgo
 		return &RecordPayload{}, fmt.Errorf("decoding schema id: %w", err)
 	}
 
-	// Quick sanity check whether the number of indexes that denote the to be used
-	// protobuf types is a reasonable number. It may not be because we are just
-	// guessing that this piece of binary data may be protobuf data in wire format.
-	arrLength, n := binary.Varint(remainingData)
-	if n <= 0 {
-		var err error
-		if n == 0 {
-			err = errors.New("buffer is too small")
-		} else {
-			err = errors.New("buffer overflow")
-		}
-		return &RecordPayload{}, fmt.Errorf("failed decoding protobuf index path (unexpected arr length): %w", err)
-	}
-	if arrLength > 128 || arrLength < 0 {
-		return nil, errors.New("arrLength is out of expected bounds, unlikely a legit envelope")
-	}
-
-	indexPath, binaryPayload, err := srSerde.DecodeIndex(remainingData, int(arrLength))
+	// Decode the index path. DecodeIndex handles the special case where a single
+	// 0x00 byte represents index [0] (shortcut for top-level message).
+	// We pass maxLength=128 as a sanity check for reasonable index depths.
+	indexPath, binaryPayload, err := srSerde.DecodeIndex(remainingData, 128)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("failed decoding protobuf index path: %w", err)
 	}
