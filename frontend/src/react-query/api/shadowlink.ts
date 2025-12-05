@@ -339,7 +339,7 @@ export const useEditShadowLink = (name: string) => {
   const embedded = isEmbedded();
 
   // Queries - in embedded mode, also fetch controlplane for state override
-  const dataplaneQuery = useGetShadowLinkQuery({ name });
+  const dataplaneQuery = useGetShadowLinkQuery({ name }, { retry: embedded ? 1 : undefined, enabled: !embedded });
   const controlplaneQuery = useControlplaneGetShadowLinkByNameQuery({ name }, { enabled: embedded });
 
   const shadowLink = dataplaneQuery.data?.shadowLink;
@@ -355,7 +355,7 @@ export const useEditShadowLink = (name: string) => {
     if (embedded && controlplaneShadowLink) {
       return buildDefaultFormValuesFromControlplane(controlplaneShadowLink);
     }
-    if (shadowLink) {
+    if (!embedded && shadowLink) {
       return buildDefaultFormValues(shadowLink);
     }
     return undefined;
