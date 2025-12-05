@@ -30,6 +30,9 @@ type Proto struct {
 	// if multiple import paths relative to the baseDir shall be used. The
 	// behavior is similar to the `-I` flag of protoc.
 	ImportPaths []string `yaml:"importPaths"`
+
+	// BufSchemaRegistry (BSR) configuration for using Buf Schema Registry as a protobuf schema source
+	BufSchemaRegistry BSR `yaml:"bufSchemaRegistry"`
 }
 
 // RegisterFlags registers all nested config flags.
@@ -39,16 +42,22 @@ func (c *Proto) RegisterFlags(f *flag.FlagSet) {
 
 // Validate the Proto configuration options.
 func (c *Proto) Validate() error {
+	// Validate BSR configuration if enabled
+	if err := c.BufSchemaRegistry.Validate(); err != nil {
+		return err
+	}
+
 	if !c.Enabled {
 		return nil
 	}
 
-	if !c.Git.Enabled && !c.FileSystem.Enabled {
-		return errors.New("protobuf deserializer is enabled, at least one source provider for proto files must be configured")
+	if !c.Git.Enabled && !c.FileSystem.Enabled && !c.BufSchemaRegistry.Enabled {
+		return errors.New("protobuf deserializer is enabled, at least one source provider for proto files must be configured (git, fileSystem, or bufSchemaRegistry)")
 	}
 
-	if len(c.Mappings) == 0 {
-		return errors.New("protobuf deserializer is enabled, but no topic mappings have been configured")
+	// Topic mappings are only required for git/filesystem sources, not for BSR
+	if (c.Git.Enabled || c.FileSystem.Enabled) && len(c.Mappings) == 0 {
+		return errors.New("protobuf deserializer with git or filesystem is enabled, but no topic mappings have been configured")
 	}
 
 	return nil

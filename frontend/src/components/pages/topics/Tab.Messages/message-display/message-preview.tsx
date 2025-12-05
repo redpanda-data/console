@@ -106,7 +106,7 @@ export const MessagePreview = observer(
             </span>
           </code>
           <Text color="gray.500">
-            {value.encoding.toUpperCase()} - {prettyBytes(value.size)}
+            {value.encoding?.toUpperCase() || 'UNKNOWN'} - {prettyBytes(value.size)}
           </Text>
         </Flex>
       );

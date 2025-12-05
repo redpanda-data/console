@@ -23,6 +23,8 @@ const (
 	PayloadEncodingProtobuf PayloadEncoding = "protobuf"
 	// PayloadEncodingProtobufSchema is the enum of protobuf encoded types using schema registry.
 	PayloadEncodingProtobufSchema PayloadEncoding = "protobufSchema"
+	// PayloadEncodingProtobufBSR is the enum of protobuf encoded types using Buf Schema Registry.
+	PayloadEncodingProtobufBSR PayloadEncoding = "protobufBSR"
 	// PayloadEncodingJSON is the enum of JSON encoded types.
 	PayloadEncodingJSON PayloadEncoding = "json"
 	// PayloadEncodingJSONSchema is the enum of JSON encoded types using schema registry.

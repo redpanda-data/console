@@ -98,6 +98,7 @@ const (
 	PayloadEncoding_PAYLOAD_ENCODING_UINT             PayloadEncoding = 13
 	PayloadEncoding_PAYLOAD_ENCODING_CONSUMER_OFFSETS PayloadEncoding = 14
 	PayloadEncoding_PAYLOAD_ENCODING_CBOR             PayloadEncoding = 15
+	PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF_BSR     PayloadEncoding = 16
 )
 
 // Enum value maps for PayloadEncoding.
@@ -119,6 +120,7 @@ var (
 		13: "PAYLOAD_ENCODING_UINT",
 		14: "PAYLOAD_ENCODING_CONSUMER_OFFSETS",
 		15: "PAYLOAD_ENCODING_CBOR",
+		16: "PAYLOAD_ENCODING_PROTOBUF_BSR",
 	}
 	PayloadEncoding_value = map[string]int32{
 		"PAYLOAD_ENCODING_UNSPECIFIED":      0,
@@ -137,6 +139,7 @@ var (
 		"PAYLOAD_ENCODING_UINT":             13,
 		"PAYLOAD_ENCODING_CONSUMER_OFFSETS": 14,
 		"PAYLOAD_ENCODING_CBOR":             15,
+		"PAYLOAD_ENCODING_PROTOBUF_BSR":     16,
 	}
 )
 
