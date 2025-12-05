@@ -1197,28 +1197,6 @@ components:
         - api_key
         - base_url
       type: object
-    PartitionInfo:
-      properties:
-        high_watermark:
-          format: int64
-          type: string
-        lag:
-          format: int64
-          type: string
-        partition_id:
-          format: int32
-          type: integer
-        source_high_watermark:
-          format: int64
-          type: string
-        source_last_stable_offset:
-          format: int64
-          type: string
-        source_last_updated_timestamp:
-          format: date-time
-          type: string
-      title: Partition-level information
-      type: object
     PatternType:
       description: |-
         - PATTERN_TYPE_LITERAL: Must match the filter exactly
@@ -1511,6 +1489,28 @@ components:
         `_schemas` topic, unset this field, then either fail-over the topic or
         delete it.
       type: object
+    ShadowTopicPartitionInfo:
+      properties:
+        high_watermark:
+          format: int64
+          type: string
+        lag:
+          format: int64
+          type: string
+        partition_id:
+          format: int32
+          type: integer
+        source_high_watermark:
+          format: int64
+          type: string
+        source_last_stable_offset:
+          format: int64
+          type: string
+        source_last_updated_timestamp:
+          format: date-time
+          type: string
+      title: Partition-level information for shadow topics
+      type: object
     ShadowTopicState:
       description: |-
         - SHADOW_TOPIC_STATE_ACTIVE: Shadow topic is active
@@ -1770,22 +1770,8 @@ components:
       type: object
     v1alpha3.GetShadowTopicResponse:
       properties:
-        partitions:
-          items:
-            $ref: '#/components/schemas/PartitionInfo'
-          type: array
-        state:
-          $ref: '#/components/schemas/ShadowTopicState'
-        topic_id:
-          type: string
-        topic_name:
-          type: string
-        total_lag:
-          format: int64
-          type: string
-        total_partitions:
-          format: int32
-          type: integer
+        shadow_topic:
+          $ref: '#/components/schemas/v1alpha3.ShadowTopic'
       type: object
     v1alpha3.MCPServer:
       description: Defines the MCP server resource.
@@ -1848,6 +1834,10 @@ components:
       type: object
     v1alpha3.ShadowTopic:
       properties:
+        partitions:
+          items:
+            $ref: '#/components/schemas/ShadowTopicPartitionInfo'
+          type: array
         state:
           $ref: '#/components/schemas/ShadowTopicState'
         topic_id:
