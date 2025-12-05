@@ -354,7 +354,7 @@ const buildControlplaneTopicsValues = (
       ? []
       : filters.map((filter) => ({
           name: filter.name,
-          patterType: filter.patternType,
+          patternType: filter.patternType,
           filterType: filter.filterType,
         })),
     topicProperties: topicMetadataSyncOptions?.syncedShadowTopicProperties ?? [],
@@ -380,7 +380,7 @@ const buildControlplaneConsumerGroupsValues = (
       ? []
       : groupFilters.map((filter) => ({
           name: filter.name,
-          patterType: filter.patternType,
+          patternType: filter.patternType,
           filterType: filter.filterType,
         })),
   };

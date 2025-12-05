@@ -44,7 +44,7 @@ describe('TopicsStep', () => {
         topics: [
           {
             name: '',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -76,7 +76,7 @@ describe('TopicsStep', () => {
         topics: [
           {
             name: '',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -114,12 +114,12 @@ describe('TopicsStep', () => {
         topics: [
           {
             name: 'topic-1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
           {
             name: 'topic-2',
-            patterType: PatternType.PREFIX,
+            patternType: PatternType.PREFIX,
             filterType: FilterType.INCLUDE,
           },
         ],

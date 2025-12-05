@@ -144,7 +144,7 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
         ? allNameFilter
         : values.topics.map((topic) =>
             create(NameFilterSchema, {
-              patternType: topic.patterType,
+              patternType: topic.patternType,
               filterType: topic.filterType,
               name: topic.name,
             })
@@ -159,7 +159,7 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
         ? allNameFilter
         : values.consumers.map((consumer) =>
             create(NameFilterSchema, {
-              patternType: consumer.patterType,
+              patternType: consumer.patternType,
               filterType: consumer.filterType,
               name: consumer.name,
             })
