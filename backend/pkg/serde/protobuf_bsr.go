@@ -79,7 +79,7 @@ func (d ProtobufBSRSerde) DeserializePayload(ctx context.Context, record *kgo.Re
 	protoMessage := dynamicpb.NewMessage(messageDescriptor)
 	err = proto.Unmarshal(payload, protoMessage)
 	if err != nil {
-		return nil, fmt.Errorf("unable to unmarshal protobuf encoded record: %w", err)
+		return &RecordPayload{}, fmt.Errorf("unable to unmarshal protobuf encoded record: %w", err)
 	}
 
 	// Get file descriptor set for resolver
@@ -97,7 +97,7 @@ func (d ProtobufBSRSerde) DeserializePayload(ctx context.Context, record *kgo.Re
 	}
 	jsonBytes, err := o.Marshal(protoMessage)
 	if err != nil {
-		return nil, fmt.Errorf("unable to marshal protobuf message as JSON: %w", err)
+		return &RecordPayload{}, fmt.Errorf("unable to marshal protobuf message as JSON: %w", err)
 	}
 
 	var native any
