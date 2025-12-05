@@ -15,13 +15,13 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"sync"
 	"time"
 
 	modulev1connect "buf.build/gen/go/bufbuild/registry/connectrpc/go/buf/registry/module/v1/modulev1connect"
 	modulev1 "buf.build/gen/go/bufbuild/registry/protocolbuffers/go/buf/registry/module/v1"
 	"connectrpc.com/connect"
 	"github.com/bufbuild/protocompile/linker"
+	"github.com/twmb/go-cache/cache"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -37,9 +37,15 @@ type Client struct {
 	// Connect RPC client for FileDescriptorSetService
 	fileDescriptorSetClient modulev1connect.FileDescriptorSetServiceClient
 
-	// Cache for file descriptor sets to avoid repeated API calls
-	cache      map[cacheKey]*cacheEntry
-	cacheMutex sync.RWMutex
+	// Cache for BSR responses containing both file descriptor sets and message descriptors
+	cache *cache.Cache[string, *bsrCacheEntry]
+}
+
+// bsrCacheEntry holds both the file descriptor set and message descriptor
+// returned from a single BSR API call
+type bsrCacheEntry struct {
+	files       linker.Files
+	messageDesc protoreflect.MessageDescriptor
 }
 
 type cacheKey struct {
@@ -47,20 +53,10 @@ type cacheKey struct {
 	commit      string
 }
 
-type cacheEntry struct {
-	files          linker.Files
-	messageDesc    protoreflect.MessageDescriptor
-	cachedAt       time.Time
-	err            error
-	negativeExpiry time.Time // for error caching
+// String returns the cache key as a string for use with twmb/go-cache
+func (k cacheKey) String() string {
+	return k.messageName + "@" + k.commit
 }
-
-const (
-	// Cache entries for 1 hour
-	cacheTTL = 1 * time.Hour
-	// Negative cache (errors) for 1 minute
-	negativeCacheTTL = 1 * time.Minute
-)
 
 // bearerTokenInterceptor creates a Connect interceptor that adds Authorization header
 func bearerTokenInterceptor(token string) connect.UnaryInterceptorFunc {
@@ -96,11 +92,20 @@ func NewClient(cfg config.BSR, logger *slog.Logger) (*Client, error) {
 		connect.WithInterceptors(bearerTokenInterceptor(cfg.Token)),
 	)
 
+	// Create cache with 1 hour TTL and 1 minute error TTL
+	// AutoCleanInterval ensures expired entries are actually removed from memory
+	// to prevent unbounded cache growth
+	cacheSettings := []cache.Opt{
+		cache.MaxAge(1 * time.Hour),
+		cache.MaxErrorAge(1 * time.Minute),
+		cache.AutoCleanInterval(30 * time.Minute), // Clean expired entries every 30 minutes
+	}
+
 	return &Client{
 		cfg:                     cfg,
 		logger:                  logger,
 		fileDescriptorSetClient: fileDescriptorSetClient,
-		cache:                   make(map[cacheKey]*cacheEntry),
+		cache:                   cache.New[string, *bsrCacheEntry](cacheSettings...),
 	}, nil
 }
 
@@ -115,48 +120,20 @@ func (c *Client) GetMessageDescriptor(ctx context.Context, messageName, commit s
 
 	key := cacheKey{messageName: messageName, commit: commit}
 
-	// Check cache first
-	c.cacheMutex.RLock()
-	entry, exists := c.cache[key]
-	c.cacheMutex.RUnlock()
-
-	if exists {
-		if entry.err != nil {
-			// Return cached error if within negative cache window
-			if time.Now().Before(entry.negativeExpiry) {
-				return nil, entry.err
-			}
-		} else if time.Since(entry.cachedAt) < cacheTTL {
-			// Return cached success
-			return entry.messageDesc, nil
+	// Use cache.Get which handles cache lookup and only calls the function on cache miss
+	entry, err, _ := c.cache.Get(key.String(), func() (*bsrCacheEntry, error) {
+		// This function is only called on cache miss
+		files, desc, fetchErr := c.fetchFromBSR(ctx, messageName, commit)
+		if fetchErr != nil {
+			return nil, fetchErr
 		}
-	}
+		return &bsrCacheEntry{files: files, messageDesc: desc}, nil
+	})
 
-	// Fetch from BSR
-	_, messageDesc, err := c.fetchFromBSR(ctx, messageName, commit)
-
-	// Update cache
-	c.cacheMutex.Lock()
 	if err != nil {
-		c.cache[key] = &cacheEntry{
-			err:            err,
-			negativeExpiry: time.Now().Add(negativeCacheTTL),
-		}
-	} else {
-		// Update or create cache entry with both files and descriptor
-		if entry, exists := c.cache[key]; exists {
-			entry.messageDesc = messageDesc
-			entry.cachedAt = time.Now()
-		} else {
-			c.cache[key] = &cacheEntry{
-				messageDesc: messageDesc,
-				cachedAt:    time.Now(),
-			}
-		}
+		return nil, err
 	}
-	c.cacheMutex.Unlock()
-
-	return messageDesc, err
+	return entry.messageDesc, nil
 }
 
 // GetFileDescriptorSet fetches the complete file descriptor set from BSR.
@@ -172,24 +149,20 @@ func (c *Client) GetFileDescriptorSet(ctx context.Context, messageName, commit s
 
 	key := cacheKey{messageName: messageName, commit: commit}
 
-	// Check cache first
-	c.cacheMutex.RLock()
-	entry, exists := c.cache[key]
-	c.cacheMutex.RUnlock()
-
-	if exists {
-		if entry.err != nil {
-			if time.Now().Before(entry.negativeExpiry) {
-				return nil, entry.err
-			}
-		} else if time.Since(entry.cachedAt) < cacheTTL {
-			return entry.files, nil
+	// Use cache.Get which handles cache lookup and only calls the function on cache miss
+	entry, err, _ := c.cache.Get(key.String(), func() (*bsrCacheEntry, error) {
+		// This function is only called on cache miss
+		files, desc, fetchErr := c.fetchFromBSR(ctx, messageName, commit)
+		if fetchErr != nil {
+			return nil, fetchErr
 		}
-	}
+		return &bsrCacheEntry{files: files, messageDesc: desc}, nil
+	})
 
-	// Fetch from BSR (this will also populate the cache)
-	files, _, err := c.fetchFromBSR(ctx, messageName, commit)
-	return files, err
+	if err != nil {
+		return nil, err
+	}
+	return entry.files, nil
 }
 
 // fetchFromBSR fetches the file descriptor set from BSR via the Connect API.
@@ -241,15 +214,6 @@ func (c *Client) fetchFromBSR(ctx context.Context, messageName, commit string) (
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to find message descriptor for %q: %w", messageName, err)
 	}
-
-	// Cache both files and message descriptor
-	c.cacheMutex.Lock()
-	c.cache[cacheKey{messageName: messageName, commit: commit}] = &cacheEntry{
-		files:       linkerFiles,
-		messageDesc: messageDesc,
-		cachedAt:    time.Now(),
-	}
-	c.cacheMutex.Unlock()
 
 	return linkerFiles, messageDesc, nil
 }
