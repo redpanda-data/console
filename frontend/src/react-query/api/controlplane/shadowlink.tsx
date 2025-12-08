@@ -26,6 +26,7 @@ import {
 import { create } from '@bufbuild/protobuf';
 import { createConnectQueryKey, type UseMutationOptions, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
+import { config, isEmbedded } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
 
@@ -39,12 +40,22 @@ import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
  */
 export const useControlplaneListShadowLinksQuery = (opts?: { enabled?: boolean }) => {
   const transport = useControlplaneTransport();
+  const embedded = isEmbedded();
+  const clusterId = config.clusterId;
+  const hasValidClusterId = Boolean(clusterId) && clusterId !== 'default';
+
   const request = create(CpListShadowLinksRequestSchema, {
+    filter: {
+      shadowRedpandaId: clusterId ?? '',
+    },
     pageSize: MAX_PAGE_SIZE,
     pageToken: '',
   });
 
-  return useQuery(cpListShadowLinks, request, { enabled: opts?.enabled ?? true, transport });
+  // Only make request in embedded mode with a valid (non-default) clusterId
+  const isEnabled = embedded && hasValidClusterId && (opts?.enabled ?? true);
+
+  return useQuery(cpListShadowLinks, request, { enabled: isEnabled, transport });
 };
 
 /**
