@@ -15,6 +15,7 @@ import (
 	"log/slog"
 
 	"connectrpc.com/connect"
+	"github.com/twmb/franz-go/pkg/kmsg"
 
 	"github.com/redpanda-data/console/backend/pkg/api/connect/service/common/v1"
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -22,7 +23,6 @@ import (
 	dataplanev1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
 	v1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/private/v1"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/private/v1/privatev1connect"
-	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
 var _ privatev1connect.ClusterServiceHandler = (*Service)(nil)
