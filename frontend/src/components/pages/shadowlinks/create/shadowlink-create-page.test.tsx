@@ -13,13 +13,23 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { ShadowLinkCreatePage } from './shadowlink-create-page';
 
 // Mock the hooks
 vi.mock('react-query/api/shadowlink', () => ({
   useCreateShadowLinkMutation: vi.fn(),
+}));
+
+// Mock config module
+vi.mock('../../../../config', () => ({
+  isEmbedded: vi.fn(() => false),
+}));
+
+// Mock env module
+vi.mock('../../../../utils/env', () => ({
+  getBasePath: vi.fn(() => '/console'),
 }));
 
 // Mock hookform devtools
@@ -56,6 +66,8 @@ vi.mock('react-router-dom', async () => {
 import { useCreateShadowLinkMutation } from 'react-query/api/shadowlink';
 import { render } from 'test-utils';
 
+import { isEmbedded } from '../../../../config';
+import { getBasePath } from '../../../../utils/env';
 import {
   addACLFilterCreate,
   addBootstrapServer,
@@ -465,5 +477,77 @@ describe('ShadowLinkCreatePage', () => {
 
     // Verify navigation to shadowlinks list after success
     expect(mockNavigate).toHaveBeenCalledWith('/shadowlinks');
+  });
+});
+
+describe('ShadowLinkCreatePage - Embedded Mode Redirect', () => {
+  const mockMutateAsync = vi.fn();
+  const originalLocation = window.location;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockMutateAsync.mockImplementation(() => Promise.resolve({}));
+
+    vi.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
+      const wrappedMutateAsync = async (request: any) => {
+        const result = await mockMutateAsync(request);
+        options?.onSuccess?.(result, request, undefined);
+        return result;
+      };
+
+      return {
+        mutateAsync: wrappedMutateAsync,
+        isPending: false,
+        isError: false,
+        isSuccess: false,
+        error: null,
+        data: undefined,
+        mutate: vi.fn(),
+        reset: vi.fn(),
+        status: 'idle',
+        variables: undefined,
+        context: undefined,
+        failureCount: 0,
+        failureReason: null,
+        isPaused: false,
+        submittedAt: 0,
+      } as any;
+    });
+
+    // Mock window.location
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, href: '', pathname: '/clusters/abc/shadowlinks/create' },
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: originalLocation,
+    });
+  });
+
+  test('redirects to correct path when in embedded mode', async () => {
+    vi.mocked(isEmbedded).mockReturnValue(true);
+    vi.mocked(getBasePath).mockReturnValue('/console');
+
+    renderCreatePage();
+
+    await waitFor(() => {
+      expect(window.location.href).toBe('/console/shadowlinks/create');
+    });
+  });
+
+  test('does not redirect when not in embedded mode', async () => {
+    vi.mocked(isEmbedded).mockReturnValue(false);
+
+    renderCreatePage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Create shadow link')).toBeInTheDocument();
+    });
+
+    expect(window.location.href).toBe('');
   });
 });
