@@ -25,7 +25,14 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
-import { ShadowLinkEmptyState, ShadowLinkErrorState, ShadowLinkFeatureDisabledState } from './shadowlink-empty-state';
+import {
+  ShadowLinkEmptyState,
+  ShadowLinkEmptyStateCloud,
+  ShadowLinkErrorState,
+  ShadowLinkFeatureDisabledState,
+} from './shadowlink-empty-state';
+import { isEmbedded } from '../../../../config';
+import { getBasePath } from '../../../../utils/env';
 import { getShadowLinkStateLabel } from '../model';
 
 // Extracted component for table body content
@@ -157,6 +164,17 @@ export const ShadowLinkListPage = () => {
 
   // Empty state when no shadowlinks exist
   if (!isLoading && shadowLinks.length === 0) {
+    if (isEmbedded()) {
+      return (
+        <div className="my-2 flex justify-center gap-2">
+          <ShadowLinkEmptyStateCloud
+            onCreateClick={() => {
+              window.location.href = `${getBasePath()}/shadowlinks/create`;
+            }}
+          />
+        </div>
+      );
+    }
     return (
       <div className="my-2 flex justify-center gap-2">
         <ShadowLinkEmptyState onCreateClick={() => navigate('/shadowlinks/create')} />

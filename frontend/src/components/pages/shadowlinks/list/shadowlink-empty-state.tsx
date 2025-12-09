@@ -54,6 +54,23 @@ export const ShadowLinkEmptyState = ({ onCreateClick }: ShadowLinkEmptyStateProp
   </Card>
 );
 
+export const ShadowLinkEmptyStateCloud = ({ onCreateClick }: ShadowLinkEmptyStateProps) => (
+  <Card size={'full'}>
+    <CardHeader>
+      <CardTitle>Shadowing</CardTitle>
+    </CardHeader>
+    <CardContent className="flex flex-col gap-3">
+      <ShadowingDescription />
+      <Text>Create a shadow link to connect your source cluster to your shadow cluster.</Text>
+      <div>
+        <Button onClick={onCreateClick} testId="create-shadowlink-button">
+          Create shadow link in Redpanda Cloud
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+);
+
 export const ShadowLinkFeatureDisabledState = () => (
   <Card data-testid="shadowlink-feature-disabled-card" size="full">
     <CardHeader>
