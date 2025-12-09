@@ -51,19 +51,23 @@ export default class AdminPageDebugBundleProgress extends PageComponent {
   render() {
     return (
       <Box>
-        <Text>
+        <Text data-testid="debug-bundle-description">
           Collect environment data that can help debug and diagnose issues with a Redpanda cluster, a broker, or the
-          machine it’s running on. This will bundle the collected data into a ZIP file.
+          machine it's running on. This will bundle the collected data into a ZIP file.
         </Text>
 
         <Box mt={4}>
-          {api.isDebugBundleInProgress && <Text>Generating bundle...</Text>}
+          {api.isDebugBundleInProgress && <Text data-testid="debug-bundle-generating-text">Generating bundle...</Text>}
           {api.isDebugBundleExpired && (
-            <Text fontWeight="bold">Your previous bundle has expired and cannot be downloaded.</Text>
+            <Text data-testid="debug-bundle-expired-text" fontWeight="bold">
+              Your previous bundle has expired and cannot be downloaded.
+            </Text>
           )}
-          {api.isDebugBundleError && <Text>Your debug bundle was not generated.</Text>}
+          {api.isDebugBundleError && (
+            <Text data-testid="debug-bundle-error-text">Your debug bundle was not generated.</Text>
+          )}
           {api.canDownloadDebugBundle && (
-            <Box>
+            <Box data-testid="debug-bundle-complete-box">
               <Flex gap={2}>
                 <Text fontWeight="bold">Debug bundle complete:</Text>
                 <DebugBundleLink showDatetime={false} statuses={api.debugBundleStatuses} />
@@ -79,6 +83,7 @@ export default class AdminPageDebugBundleProgress extends PageComponent {
             <Box my={2}>
               {api.isDebugBundleInProgress ? (
                 <Button
+                  data-testid="debug-bundle-stop-button"
                   onClick={() => {
                     for (const status of api.debugBundleStatuses) {
                       if (status.value.case === 'bundleStatus') {
@@ -93,7 +98,12 @@ export default class AdminPageDebugBundleProgress extends PageComponent {
                   Stop
                 </Button>
               ) : (
-                <Button as={ReactRouterLink} to="/debug-bundle" variant="outline">
+                <Button
+                  as={ReactRouterLink}
+                  data-testid={api.isDebugBundleError ? 'debug-bundle-try-again-button' : 'debug-bundle-done-button'}
+                  to="/debug-bundle"
+                  variant="outline"
+                >
                   {api.isDebugBundleError ? 'Try again' : 'Done'}
                 </Button>
               )}

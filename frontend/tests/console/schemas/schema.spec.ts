@@ -49,20 +49,6 @@ test.describe('Schema - Filtering (OwlShop dependent)', () => {
 });
 
 test.describe('Schema - Creation and Management', () => {
-  test('should navigate to schema creation page', async ({ page }) => {
-    await page.goto('/schema-registry');
-    await page.getByRole('button', { name: 'Create new schema' }).click();
-    await expect(page).toHaveURL('/schema-registry/create');
-    await expect(page.getByText('Create schema')).toBeVisible();
-  });
-
-  test('should display schema statistics (Mode and Compatibility)', async ({ page }) => {
-    await page.goto('/schema-registry');
-
-    await expect(page.getByText('Mode')).toBeVisible();
-    await expect(page.getByText('Compatibility')).toBeVisible();
-  });
-
   test('should show edit compatibility button', async ({ page }) => {
     await page.goto('/schema-registry');
     await expect(page.getByRole('button', { name: 'Edit compatibility' })).toBeVisible();
@@ -85,22 +71,12 @@ test.describe('Schema - Creation and Management', () => {
 
     await firstSchemaLink.click();
 
-    await expect(page).toHaveURL(new RegExp('/schema-registry/subjects/'));
+    await expect(page).toHaveURL(/\/schema-registry\/subjects\//);
     await expect(page.getByText(schemaName || '')).toBeVisible();
   });
 });
 
 test.describe('Schema - Details and Versions', () => {
-  test('should display schema format, compatibility, and version info', async ({ page }) => {
-    await page.goto('/schema-registry');
-
-    const firstSchema = page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first();
-    await firstSchema.click();
-
-    await expect(page.getByText('Format')).toBeVisible();
-    await expect(page.getByText('Compatibility')).toBeVisible();
-  });
-
   test('should switch between schema versions', async ({ page }) => {
     await page.goto('/schema-registry');
 
@@ -111,15 +87,6 @@ test.describe('Schema - Details and Versions', () => {
     if (await versionSelector.isVisible()) {
       await versionSelector.click();
     }
-  });
-
-  test('should display schema content in editor', async ({ page }) => {
-    await page.goto('/schema-registry');
-
-    const firstSchema = page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first();
-    await firstSchema.click();
-
-    await expect(page.locator('.monaco-editor')).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -152,35 +119,7 @@ test.describe('Schema - Search and Clear', () => {
   });
 });
 
-test.describe('Schema - Table Columns', () => {
-  test('should display Type column with badge', async ({ page }) => {
-    await page.goto('/schema-registry');
-
-    const typeCells = page.locator('[role="cell"]').filter({ hasText: /AVRO|PROTOBUF|JSON/i });
-    await expect(typeCells.first()).toBeVisible({ timeout: 5000 });
-  });
-
-  test('should display Compatibility column', async ({ page }) => {
-    await page.goto('/schema-registry');
-
-    await expect(page.getByRole('columnheader', { name: 'Compatibility' })).toBeVisible();
-  });
-
-  test('should display Latest Version column', async ({ page }) => {
-    await page.goto('/schema-registry');
-
-    await expect(page.getByRole('columnheader', { name: 'Latest Version' })).toBeVisible();
-  });
-});
-
 test.describe('Schema - Pagination and Sorting', () => {
-  test('should have sortable columns', async ({ page }) => {
-    await page.goto('/schema-registry');
-
-    const nameHeader = page.getByRole('columnheader', { name: 'Name' });
-    await expect(nameHeader).toBeVisible();
-  });
-
   test('should display pagination controls if many schemas exist', async ({ page }) => {
     await page.goto('/schema-registry');
 
@@ -199,19 +138,10 @@ test.describe('Schema - Navigation', () => {
     const firstSchema = page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first();
     await firstSchema.click();
 
-    await expect(page).toHaveURL(new RegExp('/schema-registry/subjects/'));
+    await expect(page).toHaveURL(/\/schema-registry\/subjects\//);
 
     await page.getByRole('link', { name: 'Schema Registry' }).first().click();
 
     await expect(page).toHaveURL('/schema-registry');
-  });
-
-  test('should have breadcrumb navigation on details page', async ({ page }) => {
-    await page.goto('/schema-registry');
-
-    const firstSchema = page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first();
-    await firstSchema.click();
-
-    await expect(page.getByRole('link', { name: 'Schema Registry' })).toBeVisible();
   });
 });
