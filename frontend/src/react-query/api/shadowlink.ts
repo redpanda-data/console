@@ -59,14 +59,14 @@ import {
   type ListShadowLinkTopicsRequest,
   ListShadowLinkTopicsRequestSchema,
   type ListShadowLinkTopicsResponseSchema,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
+} from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
   failOver,
   getShadowLink,
   getShadowMetrics,
   getShadowTopic,
   listShadowLinkTopics,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink-ShadowLinkService_connectquery';
+} from 'protogen/redpanda/api/dataplane/v1/shadowlink-ShadowLinkService_connectquery';
 import type {
   CreateShadowLinkRequestSchema,
   UpdateShadowLinkRequestSchema,
@@ -387,7 +387,18 @@ export const useGetShadowLinkUnified = (params: { name: string }): UnifiedShadow
  * @param name - The shadow link name
  * @returns Unified edit interface with form values and update function
  */
-export const useEditShadowLink = (name: string) => {
+export const useEditShadowLink = (
+  name: string
+): {
+  formValues: FormValues | undefined;
+  isLoading: boolean;
+  error: ConnectError | null;
+  isUpdating: boolean;
+  hasData: boolean;
+  updateShadowLink: (values: FormValues) => Promise<unknown>;
+  dataplaneUpdate: ReturnType<typeof useUpdateShadowLinkMutation>;
+  controlplaneUpdate: ReturnType<typeof useControlplaneUpdateShadowLinkMutation>;
+} => {
   const embedded = isEmbedded();
 
   // Queries - in embedded mode, also fetch controlplane for state override
@@ -436,21 +447,13 @@ export const useEditShadowLink = (name: string) => {
   const hasData = embedded ? !!controlplaneShadowLink : !!shadowLink;
 
   return {
-    /** Form values built from the current shadow link data */
     formValues,
-    /** Whether data is currently loading */
     isLoading: embedded ? controlplaneQuery.isLoading : dataplaneQuery.isLoading,
-    /** Any error that occurred during data fetching */
     error: embedded ? controlplaneQuery.error : dataplaneQuery.error,
-    /** Whether an update is currently in progress */
     isUpdating: embedded ? controlplaneUpdate.isPending : dataplaneUpdate.isPending,
-    /** Whether shadow link data is available */
     hasData,
-    /** Function to update the shadow link */
     updateShadowLink: submitUpdate,
-    /** The dataplane mutation result (for success/error callbacks) */
     dataplaneUpdate,
-    /** The controlplane mutation result (for success/error callbacks) */
     controlplaneUpdate,
   };
 };

@@ -10,7 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
+import { ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
   FilterType,
   NameFilterSchema,

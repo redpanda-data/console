@@ -12,7 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { type ShadowLink, ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
+import { type ShadowLink, ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
   ACLFilterSchema,
   AuthenticationConfigurationSchema,

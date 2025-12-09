@@ -16,6 +16,13 @@ import {
   ListShadowLinksRequestSchema as CpListShadowLinksRequestSchema,
   type UpdateShadowLinkOperationSchema as CpUpdateShadowLinkOperationSchema,
   type UpdateShadowLinkRequestSchema as CpUpdateShadowLinkRequestSchema,
+  type DeleteShadowLinkOperation,
+  type DeleteShadowLinkRequest,
+  type GetShadowLinkResponse,
+  type ListShadowLinksResponse,
+  type ShadowLink,
+  type UpdateShadowLinkOperation,
+  type UpdateShadowLinkRequest,
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import {
   deleteShadowLink as cpDeleteShadowLink,
@@ -24,11 +31,12 @@ import {
   updateShadowLink as cpUpdateShadowLink,
 } from '@buf/redpandadata_cloud.connectrpc_query-es/redpanda/api/controlplane/v1/shadow_link-ShadowLinkService_connectquery';
 import { create } from '@bufbuild/protobuf';
+import type { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey, type UseMutationOptions, useMutation, useQuery } from '@connectrpc/connect-query';
-import { useQueryClient } from '@tanstack/react-query';
+import { type UseMutationResult, type UseQueryResult, useQueryClient } from '@tanstack/react-query';
 import { config, isEmbedded } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
-import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
+import { MAX_PAGE_SIZE, type MessageInit } from 'react-query/react-query.utils';
 
 /* ==================== CONTROLPLANE HOOKS ==================== */
 /* These hooks are used when running in embedded mode (cloud UI) */
@@ -38,7 +46,9 @@ import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
  * Hook to list shadow links using controlplane API
  * Creates its own controlplane transport, no TransportProvider needed
  */
-export const useControlplaneListShadowLinksQuery = (opts?: { enabled?: boolean }) => {
+export const useControlplaneListShadowLinksQuery = (opts?: {
+  enabled?: boolean;
+}): UseQueryResult<ListShadowLinksResponse, ConnectError> => {
   const transport = useControlplaneTransport();
   const embedded = isEmbedded();
   const clusterId = config.clusterId;
@@ -62,7 +72,10 @@ export const useControlplaneListShadowLinksQuery = (opts?: { enabled?: boolean }
  * Hook to get a shadow link by ID using controlplane API
  * Creates its own controlplane transport, no TransportProvider needed
  */
-export const useControlplaneGetShadowLinkQuery = (request: { id: string }, opts?: { enabled?: boolean }) => {
+export const useControlplaneGetShadowLinkQuery = (
+  request: { id: string },
+  opts?: { enabled?: boolean }
+): UseQueryResult<GetShadowLinkResponse, ConnectError> => {
   const transport = useControlplaneTransport();
   const getShadowLinkRequest = create(CpGetShadowLinkRequestSchema, {
     id: request.id,
@@ -76,7 +89,15 @@ export const useControlplaneGetShadowLinkQuery = (request: { id: string }, opts?
  * First lists shadow links to find ID by name, then fetches full details
  * Creates its own controlplane transport, no TransportProvider needed
  */
-export const useControlplaneGetShadowLinkByNameQuery = (request: { name: string }, opts?: { enabled?: boolean }) => {
+export const useControlplaneGetShadowLinkByNameQuery = (
+  request: { name: string },
+  opts?: { enabled?: boolean }
+): {
+  data: ShadowLink | undefined;
+  isLoading: boolean;
+  error: ConnectError | null;
+  refetch: () => Promise<void>;
+} => {
   // First, list to find ID by name
   const listQuery = useControlplaneListShadowLinksQuery({ enabled: opts?.enabled });
 
@@ -102,7 +123,7 @@ export const useControlplaneGetShadowLinkByNameQuery = (request: { name: string 
  */
 export const useControlplaneUpdateShadowLinkMutation = (
   options?: UseMutationOptions<typeof CpUpdateShadowLinkRequestSchema, typeof CpUpdateShadowLinkOperationSchema>
-) => {
+): UseMutationResult<UpdateShadowLinkOperation, ConnectError, MessageInit<UpdateShadowLinkRequest>> => {
   const transport = useControlplaneTransport();
   const queryClient = useQueryClient();
 
@@ -136,7 +157,7 @@ export const useControlplaneUpdateShadowLinkMutation = (
  */
 export const useControlplaneDeleteShadowLinkMutation = (
   options?: UseMutationOptions<typeof CpDeleteShadowLinkRequestSchema, typeof CpDeleteShadowLinkOperationSchema>
-) => {
+): UseMutationResult<DeleteShadowLinkOperation, ConnectError, MessageInit<DeleteShadowLinkRequest>> => {
   const transport = useControlplaneTransport();
   const queryClient = useQueryClient();
 
