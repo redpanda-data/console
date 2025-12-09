@@ -67,3 +67,25 @@ export const ShadowLinkFeatureDisabledState = () => (
     </CardContent>
   </Card>
 );
+
+interface ShadowLinkErrorStateProps {
+  errorMessage: string;
+  onRetry: () => void;
+}
+
+export const ShadowLinkErrorState = ({ errorMessage, onRetry }: ShadowLinkErrorStateProps) => (
+  <Card data-testid="shadowlink-error-card" size="full">
+    <CardHeader>
+      <CardTitle>Error loading shadow links</CardTitle>
+    </CardHeader>
+    <CardContent className="flex flex-col gap-3">
+      <Text>An error occurred while loading shadow links:</Text>
+      <Text className="text-destructive">{errorMessage}</Text>
+      <div>
+        <Button data-testid="shadowlink-retry-button" onClick={onRetry} variant="secondary">
+          Retry
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+);

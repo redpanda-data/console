@@ -25,7 +25,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
-import { ShadowLinkEmptyState, ShadowLinkFeatureDisabledState } from './shadowlink-empty-state';
+import { ShadowLinkEmptyState, ShadowLinkErrorState, ShadowLinkFeatureDisabledState } from './shadowlink-empty-state';
 import { getShadowLinkStateLabel } from '../model';
 
 // Extracted component for table body content
@@ -103,7 +103,7 @@ export const ShadowLinkListPage = () => {
   const navigate = useNavigate();
 
   // React Query hooks
-  const { data: shadowLinksData, isLoading, error } = useListShadowLinksQuery({});
+  const { data: shadowLinksData, isLoading, error, refetch } = useListShadowLinksQuery({});
 
   // Get shadowlinks array from response
   const shadowLinks = React.useMemo(() => shadowLinksData?.shadowLinks || [], [shadowLinksData]);
@@ -146,8 +146,17 @@ export const ShadowLinkListPage = () => {
     );
   }
 
+  // Error state for other errors
+  if (error) {
+    return (
+      <div className="my-2 flex justify-center gap-2">
+        <ShadowLinkErrorState errorMessage={error.message} onRetry={() => refetch()} />
+      </div>
+    );
+  }
+
   // Empty state when no shadowlinks exist
-  if (!(isLoading || error) && shadowLinks.length === 0) {
+  if (!isLoading && shadowLinks.length === 0) {
     return (
       <div className="my-2 flex justify-center gap-2">
         <ShadowLinkEmptyState onCreateClick={() => navigate('/shadowlinks/create')} />
