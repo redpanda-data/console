@@ -14,7 +14,7 @@
  * Convert dataplane proto types to plain TypeScript types and form values
  */
 
-import type { ShadowLink as DataplaneShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
+import type { ShadowLink as DataplaneShadowLink } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import type {
   ACLFilter,
   AuthenticationConfiguration,

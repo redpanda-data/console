@@ -59,14 +59,14 @@ import {
   type ListShadowLinkTopicsRequest,
   ListShadowLinkTopicsRequestSchema,
   type ListShadowLinkTopicsResponseSchema,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
+} from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
   failOver,
   getShadowLink,
   getShadowMetrics,
   getShadowTopic,
   listShadowLinkTopics,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink-ShadowLinkService_connectquery';
+} from 'protogen/redpanda/api/dataplane/v1/shadowlink-ShadowLinkService_connectquery';
 import type {
   CreateShadowLinkRequestSchema,
   UpdateShadowLinkRequestSchema,
