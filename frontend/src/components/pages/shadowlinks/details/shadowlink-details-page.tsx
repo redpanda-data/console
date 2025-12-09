@@ -11,11 +11,12 @@
 
 'use client';
 
+import { Code } from '@connectrpc/connect';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, AlertTriangle, Edit, Loader2, Trash2 } from 'lucide-react';
+import { AlertTriangle, Edit, Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   useDeleteShadowLinkUnified,
@@ -32,6 +33,7 @@ import { FailoverDialog } from './failover-dialog';
 import { ShadowLinkDetails } from './shadow-link-details';
 import { TasksTable } from './tasks-table';
 import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
+import { ShadowLinkLoadErrorState, ShadowLinkNotFoundState } from '../list/shadowlink-empty-state';
 
 export const ShadowLinkDetailsPage = () => {
   const { name } = useParams<{ name: string }>();
@@ -121,31 +123,19 @@ export const ShadowLinkDetailsPage = () => {
     );
   }
 
-  // Error state
+  // Not found error state
+  if (errorGetShadowLink?.code === Code.NotFound) {
+    return <ShadowLinkNotFoundState name={name ?? ''} onBackClick={() => navigate('/shadowlinks')} />;
+  }
+
+  // Other error state
   if (errorGetShadowLink) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="flex items-center gap-2 text-red-600">
-          <AlertCircle className="h-6 w-6" />
-          <Text>Error loading shadow link: {errorGetShadowLink.message}</Text>
-        </div>
-      </div>
-    );
+    return <ShadowLinkLoadErrorState errorMessage={errorGetShadowLink.message} />;
   }
 
   // Not found state
   if (!shadowLink) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <AlertCircle className="h-12 w-12 text-gray-400" />
-          <Text variant="large">Shadow link not found</Text>
-          <Button onClick={() => navigate('/shadowlinks')} variant="secondary">
-            Back to Shadow Links
-          </Button>
-        </div>
-      </div>
-    );
+    return <ShadowLinkNotFoundState name={name ?? ''} onBackClick={() => navigate('/shadowlinks')} />;
   }
 
   return (
