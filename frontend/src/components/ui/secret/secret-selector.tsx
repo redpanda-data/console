@@ -213,7 +213,13 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
           </DialogHeader>
 
           <Form {...form}>
-            <form className="space-y-4" onSubmit={form.handleSubmit(handleCreateSecret)}>
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.stopPropagation();
+                form.handleSubmit(handleCreateSecret)(e);
+              }}
+            >
               <FormField
                 control={form.control}
                 name="name"
