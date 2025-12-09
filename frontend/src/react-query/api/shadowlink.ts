@@ -49,6 +49,7 @@ import {
 import {
   type GetShadowLinkRequest,
   GetShadowLinkRequestSchema,
+  type GetShadowLinkResponseSchema,
   type GetShadowMetricsRequest,
   GetShadowMetricsRequestSchema,
   type GetShadowMetricsResponse,
@@ -74,6 +75,7 @@ import { useCallback, useMemo } from 'react';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 
 import {
+  useControlplaneDeleteShadowLinkMutation,
   useControlplaneGetShadowLinkByNameQuery,
   useControlplaneUpdateShadowLinkMutation,
 } from './controlplane/shadowlink';
@@ -86,11 +88,13 @@ export const useListShadowLinksQuery = (request: MessageInit<ListShadowLinksRequ
 
   return useQuery(listShadowLinks, listShadowLinksRequest, opts && { enabled: opts?.enabled });
 };
-
-export const useGetShadowLinkQuery = (request: MessageInit<GetShadowLinkRequest>, opts?: { enabled?: boolean }) => {
+export const useGetShadowLinkQuery = (
+  request: MessageInit<GetShadowLinkRequest>,
+  options?: QueryOptions<typeof GetShadowLinkResponseSchema>
+) => {
   const getShadowLinkRequest = create(GetShadowLinkRequestSchema, request);
 
-  return useQuery(getShadowLink, getShadowLinkRequest, { enabled: opts?.enabled ?? true });
+  return useQuery(getShadowLink, getShadowLinkRequest, options);
 };
 
 export const useGetShadowMetricsQuery = (
@@ -219,6 +223,57 @@ export const useDeleteShadowLinkMutation = (options?: {
 };
 
 /**
+ * Unified hook to delete a shadow link that works in both console and controlplane modes.
+ * Automatically uses the appropriate API based on embedded mode.
+ *
+ * In embedded mode: uses controlplane API with ID-based deletion
+ * In non-embedded mode: uses dataplane API with name-based deletion
+ *
+ * @param params.name - The shadow link name
+ * @returns Unified delete interface with delete function and loading states
+ */
+export const useDeleteShadowLinkUnified = (params: { name: string }) => {
+  const embedded = isEmbedded();
+
+  // Get shadowlink ID for embedded mode (controlplane uses ID-based deletion)
+  const controlplaneQuery = useControlplaneGetShadowLinkByNameQuery({ name: params.name }, { enabled: embedded });
+  const shadowLinkId = controlplaneQuery.data?.id;
+
+  // Mutations
+  const dataplaneDelete = useDeleteShadowLinkMutation();
+  const controlplaneDelete = useControlplaneDeleteShadowLinkMutation();
+
+  const deleteShadowLinkUnified = useCallback(
+    (options?: { force?: boolean; onSuccess?: () => void; onError?: (error: ConnectError) => void }) => {
+      if (embedded && shadowLinkId) {
+        return controlplaneDelete.mutate(
+          { id: shadowLinkId },
+          { onSuccess: options?.onSuccess, onError: options?.onError }
+        );
+      }
+      if (!embedded) {
+        return dataplaneDelete.mutate(
+          { name: params.name, force: options?.force ?? false },
+          { onSuccess: options?.onSuccess, onError: options?.onError }
+        );
+      }
+    },
+    [embedded, shadowLinkId, params.name, controlplaneDelete, dataplaneDelete]
+  );
+
+  return {
+    /** Function to delete the shadow link */
+    deleteShadowLink: deleteShadowLinkUnified,
+    /** Whether a delete operation is currently in progress */
+    isPending: embedded ? controlplaneDelete.isPending : dataplaneDelete.isPending,
+    /** Whether the shadowlink ID is being loaded (only relevant in embedded mode) */
+    isLoadingId: embedded && controlplaneQuery.isLoading,
+    /** Whether the delete can be performed (ID is available in embedded mode, or always true in non-embedded mode) */
+    canDelete: embedded ? !!shadowLinkId : true,
+  };
+};
+
+/**
  * Hook to failover a shadow link
  */
 export const useFailoverShadowLinkMutation = (options?: {
@@ -272,7 +327,8 @@ export type UnifiedShadowLinkResult = {
 export const useGetShadowLinkUnified = (params: { name: string }): UnifiedShadowLinkResult => {
   const embedded = isEmbedded();
 
-  const dataplaneQuery = useGetShadowLinkQuery({ name: params.name });
+  // In embedded mode, use retry: 1 to fail fast and fallback to controlplane data sooner
+  const dataplaneQuery = useGetShadowLinkQuery({ name: params.name }, { retry: embedded ? 1 : undefined });
 
   // In embedded mode, also fetch controlplane to get the correct state
   const controlplaneQuery = useControlplaneGetShadowLinkByNameQuery({ name: params.name }, { enabled: embedded });
@@ -335,7 +391,7 @@ export const useEditShadowLink = (name: string) => {
   const embedded = isEmbedded();
 
   // Queries - in embedded mode, also fetch controlplane for state override
-  const dataplaneQuery = useGetShadowLinkQuery({ name });
+  const dataplaneQuery = useGetShadowLinkQuery({ name }, { retry: embedded ? 1 : undefined, enabled: !embedded });
   const controlplaneQuery = useControlplaneGetShadowLinkByNameQuery({ name }, { enabled: embedded });
 
   const shadowLink = dataplaneQuery.data?.shadowLink;
@@ -351,7 +407,7 @@ export const useEditShadowLink = (name: string) => {
     if (embedded && controlplaneShadowLink) {
       return buildDefaultFormValuesFromControlplane(controlplaneShadowLink);
     }
-    if (shadowLink) {
+    if (!embedded && shadowLink) {
       return buildDefaultFormValues(shadowLink);
     }
     return undefined;
