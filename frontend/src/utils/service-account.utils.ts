@@ -1,7 +1,7 @@
 import { CLOUD_MANAGED_TAG_KEYS } from 'components/constants';
 import { config } from 'config';
 
-export type ServiceAccountResourceType = 'mcp' | 'agent';
+export type ServiceAccountResourceType = 'mcp' | 'agent' | 'pipeline';
 
 /**
  * Adds cloud-managed service account tags to tags map

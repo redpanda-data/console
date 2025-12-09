@@ -155,10 +155,12 @@ export const APIConnectWizard = () => {
         setIsSubmitting(true);
         try {
           const result = await addUserStepRef.current?.triggerSubmit();
-          if (result?.success) {
-            setUsername(result.data?.username);
-            setSaslMechanism(result.data?.saslMechanism);
+          if (result?.success && result.data && 'username' in result.data) {
+            // SASL user data
+            setUsername(result.data.username);
+            setSaslMechanism(result.data.saslMechanism);
           }
+          // Service account data doesn't set username/saslMechanism
           handleStepResult(result, methods.next);
         } finally {
           setIsSubmitting(false);
