@@ -6,7 +6,6 @@ import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/api/visibility.proto";
-import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
 import "redpanda/core/admin/v2/shadow_link.proto";
@@ -54,23 +53,13 @@ message ListShadowLinkTopicsRequest {
   string page_token = 4;
 }
 
-// Partition-level information for shadow topics
-message ShadowTopicPartitionInfo {
-  int32 partition_id = 1;
-  int64 source_last_stable_offset = 2;
-  int64 high_watermark = 3;
-  int64 source_high_watermark = 4;
-  int64 lag = 5;
-  google.protobuf.Timestamp source_last_updated_timestamp = 6;
-}
-
 message ShadowTopic {
   string topic_name = 1;
   string topic_id = 2;
   core.admin.v2.ShadowTopicState state = 3;
   int64 total_lag = 4;
   int32 total_partitions = 5;
-  repeated ShadowTopicPartitionInfo partitions = 6;
+  repeated core.admin.v2.TopicPartitionInformation partitions = 6;
 }
 
 message ListShadowLinkTopicsResponse {
