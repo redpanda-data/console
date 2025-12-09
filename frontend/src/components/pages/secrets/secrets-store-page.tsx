@@ -59,6 +59,8 @@ export const getScopeDisplayValue = (scope: Scope) => {
       return 'MCP Server';
     case Scope.AI_AGENT:
       return 'AI Agent';
+    case Scope.AI_GATEWAY:
+      return 'AI Gateway';
     case Scope.UNSPECIFIED:
       return 'Unspecified';
     default:

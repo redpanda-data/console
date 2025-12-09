@@ -37,4 +37,7 @@ enum Reason {
 
   // Redpanda Schema Registry returned and error.
   REASON_REDPANDA_SCHEMA_REGISTRY_ERROR = 11;
+
+  // Invalid configuration.
+  REASON_INVALID_CONFIGURATION = 12;
 }
