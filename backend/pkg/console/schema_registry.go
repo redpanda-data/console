@@ -561,7 +561,7 @@ func (s *Service) GetSchemaRegistrySchemaTypes(ctx context.Context) (*SchemaRegi
 	return &SchemaRegistrySchemaTypes{SchemaTypes: res}, nil
 }
 
-// CreateSchemaRequestParams
+// CreateSchemaRequestParams contains optional parameters for schema creation.
 type CreateSchemaRequestParams struct {
 	Normalize bool `json:"normalize"`
 }

@@ -121,16 +121,16 @@ func Test_getSubjectFromRequestPath(t *testing.T) {
 
 func Test_handleCreateSchema_NormalizeParam(t *testing.T) {
 	tests := []struct {
-		name             string
-		requestBody      map[string]interface{}
+		name              string
+		requestBody       map[string]any
 		expectedNormalize bool
 	}{
 		{
 			name: "normalize true",
-			requestBody: map[string]interface{}{
+			requestBody: map[string]any{
 				"schema":     `{"type": "record", "name": "test"}`,
 				"schemaType": "AVRO",
-				"params": map[string]interface{}{
+				"params": map[string]any{
 					"normalize": true,
 				},
 			},
@@ -138,10 +138,10 @@ func Test_handleCreateSchema_NormalizeParam(t *testing.T) {
 		},
 		{
 			name: "normalize false",
-			requestBody: map[string]interface{}{
+			requestBody: map[string]any{
 				"schema":     `{"type": "record", "name": "test"}`,
 				"schemaType": "AVRO",
-				"params": map[string]interface{}{
+				"params": map[string]any{
 					"normalize": false,
 				},
 			},
@@ -149,7 +149,7 @@ func Test_handleCreateSchema_NormalizeParam(t *testing.T) {
 		},
 		{
 			name: "params omitted defaults to false",
-			requestBody: map[string]interface{}{
+			requestBody: map[string]any{
 				"schema":     `{"type": "record", "name": "test"}`,
 				"schemaType": "AVRO",
 			},
