@@ -13,6 +13,7 @@ export type SecretReference = {
   secretName: string;
   nestedKey?: string;
   fullReference: string;
+  defaultValue?: string;
 };
 
 /**
@@ -21,6 +22,7 @@ export type SecretReference = {
  * - ${secrets.SECRET_NAME}
  * - ${secrets.SECRET_NAME.key}
  * - ${secrets.SECRET_NAME.nested.key}
+ * - ${secrets.SECRET_NAME.nested.key:default-value}
  */
 export function extractSecretReferences(yamlContent: string): SecretReference[] {
   const secretReferences: SecretReference[] = [];
@@ -31,21 +33,27 @@ export function extractSecretReferences(yamlContent: string): SecretReference[] 
 
   while (match !== null) {
     const fullReference = match[0];
-    const secretPath = match[1];
-
+    let secretPath = match[1];
+    let defaultValue: string | undefined;
+    if (secretPath.includes(":")) {
+      const idx = secretPath.indexOf(":", 2);
+      defaultValue = secretPath.substring(idx + 1);
+      secretPath = secretPath.substring(0, idx);
+    }
     // Split by dot to get secret name and nested keys
     const pathParts = secretPath.split('.');
     const secretName = pathParts[0];
     const nestedKey = pathParts.slice(1).join('.');
 
     // Check if we already have this secret reference
-    const existing = secretReferences.find((ref) => ref.secretName === secretName && ref.nestedKey === nestedKey);
+    const existing = secretReferences.find((ref) => ref.secretName === secretName && (ref.nestedKey ?? "") === nestedKey);
 
     if (!existing) {
       secretReferences.push({
         secretName,
         nestedKey: nestedKey || undefined,
         fullReference,
+        defaultValue,
       });
     }
 
