@@ -10,7 +10,7 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
+import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { describe, expect, test, vi } from 'vitest';
 

@@ -91,7 +91,7 @@ export const FormSchema = z
     topicsMode: z.enum(['all', 'specify']),
     topics: z.array(
       z.object({
-        patterType: z.nativeEnum(PatternType),
+        patternType: z.nativeEnum(PatternType),
         filterType: z.nativeEnum(FilterType),
         name: z.string().trim().min(1, 'name is required'),
       })
@@ -105,7 +105,7 @@ export const FormSchema = z
     consumersMode: z.enum(['all', 'specify']),
     consumers: z.array(
       z.object({
-        patterType: z.nativeEnum(PatternType),
+        patternType: z.nativeEnum(PatternType),
         filterType: z.nativeEnum(FilterType),
         name: z.string().trim().min(1, 'name is required'),
       })

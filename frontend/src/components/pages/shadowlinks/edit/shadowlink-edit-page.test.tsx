@@ -12,7 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { type ShadowLink, ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
+import { type ShadowLink, ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
   ACLFilterSchema,
   AuthenticationConfigurationSchema,
@@ -34,8 +34,7 @@ import { ShadowLinkEditPage } from './shadowlink-edit-page';
 
 // Mock the hooks
 vi.mock('react-query/api/shadowlink', () => ({
-  useGetShadowLinkQuery: vi.fn(),
-  useUpdateShadowLinkMutation: vi.fn(),
+  useEditShadowLink: vi.fn(),
 }));
 
 // Mock ui-state
@@ -64,9 +63,10 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-import { useGetShadowLinkQuery, useUpdateShadowLinkMutation } from 'react-query/api/shadowlink';
+import { useEditShadowLink } from 'react-query/api/shadowlink';
 import { render } from 'test-utils';
 
+import { buildDefaultFormValues } from '../mappers/dataplane';
 import {
   type Action,
   addACLFilter,
@@ -440,49 +440,41 @@ const testCases: TestCase[] = [
 ];
 
 describe('ShadowLinkEditPage', () => {
-  const mockMutateAsync = vi.fn();
+  const mockUpdateShadowLink = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    mockMutateAsync.mockImplementation((_request) => Promise.resolve({}));
-
-    // Mock update mutation
-    vi.mocked(useUpdateShadowLinkMutation).mockImplementation(
-      () =>
-        ({
-          mutateAsync: mockMutateAsync,
-          isPending: false,
-          isError: false,
-          isSuccess: false,
-          error: null,
-          data: undefined,
-          mutate: vi.fn(),
-          reset: vi.fn(),
-          status: 'idle',
-          variables: undefined,
-          context: undefined,
-          failureCount: 0,
-          failureReason: null,
-          isPaused: false,
-          submittedAt: 0,
-        }) as any
-    );
+    mockUpdateShadowLink.mockImplementation((_request) => Promise.resolve({}));
   });
 
   test.each(testCases)('$description', async ({ actions, expectedFieldMaskPaths, verify }) => {
     const user = userEvent.setup();
     const mockShadowLink = createMockShadowLink();
+    const formValues = buildDefaultFormValues(mockShadowLink);
 
-    // Mock get query
-    vi.mocked(useGetShadowLinkQuery).mockReturnValue({
-      data: { shadowLink: mockShadowLink },
+    // Mock useEditShadowLink hook
+    vi.mocked(useEditShadowLink).mockReturnValue({
+      formValues,
       isLoading: false,
       error: null,
-      isError: false,
-      isSuccess: true,
-      status: 'success',
-    } as any);
+      isUpdating: false,
+      hasData: true,
+      updateShadowLink: mockUpdateShadowLink,
+      dataplaneUpdate: {
+        isPending: false,
+        isSuccess: false,
+        isError: false,
+        error: null,
+        reset: vi.fn(),
+      } as any,
+      controlplaneUpdate: {
+        isPending: false,
+        isSuccess: false,
+        isError: false,
+        error: null,
+        reset: vi.fn(),
+      } as any,
+    });
 
     renderEditPage(mockShadowLink);
 
@@ -503,15 +495,20 @@ describe('ShadowLinkEditPage', () => {
     const saveButton = screen.getByText('Save');
     await user.click(saveButton);
 
-    // Verify mutateAsync was called
+    // Verify updateShadowLink was called
     await waitFor(() => {
-      expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+      expect(mockUpdateShadowLink).toHaveBeenCalledTimes(1);
     });
 
-    const updateRequest = mockMutateAsync.mock.calls[0][0];
+    const formValuesArg = mockUpdateShadowLink.mock.calls[0][0];
+
+    // The test verifies form values, but the hook now builds the request internally
+    // We need to build the request from form values to verify the update request structure
+    const { buildDataplaneUpdateRequest } = await import('./shadowlink-edit-utils');
+    const updateRequest = buildDataplaneUpdateRequest('test-shadow-link', formValuesArg, mockShadowLink);
 
     // Verify field mask includes all expected paths
-    const fieldMaskPaths = updateRequest.updateMask.paths;
+    const fieldMaskPaths = updateRequest?.updateMask?.paths;
     for (const expectedPath of expectedFieldMaskPaths) {
       expect(fieldMaskPaths).toContain(expectedPath);
     }

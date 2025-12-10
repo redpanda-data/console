@@ -9,10 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
-import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
 import {
-  type ACLFilter,
+  ShadowLinkUpdateSchema as CpShadowLinkUpdateSchema,
+  UpdateShadowLinkRequestSchema as CpUpdateShadowLinkRequestSchema,
+} from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
+import { create } from '@bufbuild/protobuf';
+import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
+import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
+import {
   ACLFilterSchema,
   AuthenticationConfigurationSchema,
   ConsumerOffsetSyncOptionsSchema,
@@ -23,20 +27,28 @@ import {
   SchemaRegistrySyncOptionsSchema,
   ScramConfigSchema,
   SecuritySettingsSyncOptionsSchema,
-  type ShadowLinkClientOptions,
   ShadowLinkClientOptionsSchema,
+  ShadowLinkConfigurationsSchema,
+  ShadowLinkSchema,
   TopicMetadataSyncOptionsSchema,
+  UpdateShadowLinkRequestSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 import {
   TLSFileSettingsSchema,
   TLSPEMSettingsSchema,
-  type TLSSettings,
   TLSSettingsSchema,
 } from 'protogen/redpanda/core/common/v1/tls_pb';
 
 import type { FormValues } from '../create/model';
 import { TLS_MODE } from '../create/model';
+import { buildDefaultFormValues } from '../mappers/dataplane';
+
+/**
+ * Regex to strip "configurations." prefix from field mask paths
+ * Used when converting dataplane field masks to controlplane format
+ */
+const CONFIGURATIONS_PREFIX_REGEX = /^configurations\./;
 
 /**
  * Type for category update functions
@@ -236,7 +248,7 @@ export const getUpdateValuesForTopics = (
     values.topics.some(
       (topic, idx) =>
         topic.name !== originalValues.topics[idx]?.name ||
-        topic.patterType !== originalValues.topics[idx]?.patterType ||
+        topic.patternType !== originalValues.topics[idx]?.patternType ||
         topic.filterType !== originalValues.topics[idx]?.filterType
     );
 
@@ -272,7 +284,7 @@ export const getUpdateValuesForTopics = (
         ? allNameFilter
         : values.topics.map((topic) =>
             create(NameFilterSchema, {
-              patternType: topic.patterType,
+              patternType: topic.patternType,
               filterType: topic.filterType,
               name: topic.name,
             })
@@ -304,7 +316,7 @@ export const getUpdateValuesForConsumerGroups = (
     values.consumers.some(
       (consumer, idx) =>
         consumer.name !== originalValues.consumers[idx]?.name ||
-        consumer.patterType !== originalValues.consumers[idx]?.patterType ||
+        consumer.patternType !== originalValues.consumers[idx]?.patternType ||
         consumer.filterType !== originalValues.consumers[idx]?.filterType
     );
 
@@ -327,7 +339,7 @@ export const getUpdateValuesForConsumerGroups = (
         ? allNameFilter
         : values.consumers.map((consumer) =>
             create(NameFilterSchema, {
-              patternType: consumer.patterType,
+              patternType: consumer.patternType,
               filterType: consumer.filterType,
               name: consumer.name,
             })
@@ -417,234 +429,6 @@ export const getUpdateValuesForACLs = (
 };
 
 /**
- * Extract TLS settings from shadow link client options
- * mTLS is determined by presence of certificates
- */
-const extractTLSSettings = (
-  tlsCertsSettings: TLSSettings['tlsSettings'] | undefined
-): Pick<FormValues, 'mtlsMode' | 'mtls'> => {
-  if (!tlsCertsSettings) {
-    return {
-      mtlsMode: TLS_MODE.PEM,
-      mtls: {
-        ca: undefined,
-        clientCert: undefined,
-        clientKey: undefined,
-      },
-    };
-  }
-
-  if (tlsCertsSettings.case === 'tlsFileSettings') {
-    const fileSettings = tlsCertsSettings.value;
-    return {
-      mtlsMode: TLS_MODE.FILE_PATH,
-      mtls: {
-        ca: fileSettings.caPath ? { filePath: fileSettings.caPath } : undefined,
-        clientCert: fileSettings.certPath ? { filePath: fileSettings.certPath } : undefined,
-        clientKey: fileSettings.keyPath ? { filePath: fileSettings.keyPath } : undefined,
-      },
-    };
-  }
-
-  // tlsPemSettings case
-  if (tlsCertsSettings.case === 'tlsPemSettings') {
-    const pemSettings = tlsCertsSettings.value;
-    return {
-      mtlsMode: TLS_MODE.PEM,
-      mtls: {
-        ca: pemSettings.ca ? { pemContent: pemSettings.ca } : undefined,
-        clientCert: pemSettings.cert ? { pemContent: pemSettings.cert } : undefined,
-        clientKey: pemSettings.key ? { pemContent: pemSettings.key } : undefined,
-      },
-    };
-  }
-
-  // Fallback for unknown cases
-  return {
-    mtlsMode: TLS_MODE.PEM,
-    mtls: {
-      ca: undefined,
-      clientCert: undefined,
-      clientKey: undefined,
-    },
-  };
-};
-
-/**
- * Extract authentication settings from shadow link client options
- */
-const extractAuthSettings = (
-  clientOptions: ShadowLinkClientOptions | undefined
-): Pick<FormValues, 'useScram' | 'scramCredentials'> => {
-  const authConfig = clientOptions?.authenticationConfiguration;
-  const scramConfig =
-    authConfig?.authentication?.case === 'scramConfiguration' ? authConfig.authentication.value : undefined;
-
-  return {
-    useScram: Boolean(scramConfig),
-    scramCredentials: scramConfig
-      ? {
-          username: scramConfig.username || '',
-          password: scramConfig.password || '',
-          mechanism: scramConfig.scramMechanism,
-        }
-      : undefined,
-  };
-};
-
-/**
- * Extract advanced client options from shadow link client options
- */
-const extractAdvancedClientOptions = (
-  clientOptions: ShadowLinkClientOptions | undefined
-): FormValues['advanceClientOptions'] => ({
-  metadataMaxAgeMs: clientOptions?.metadataMaxAgeMs || 10_000,
-  connectionTimeoutMs: clientOptions?.connectionTimeoutMs || 1000,
-  retryBackoffMs: clientOptions?.retryBackoffMs || 100,
-  fetchWaitMaxMs: clientOptions?.fetchWaitMaxMs || 500,
-  fetchMinBytes: clientOptions?.fetchMinBytes || 5_242_880,
-  fetchMaxBytes: clientOptions?.fetchMaxBytes || 20_971_520,
-  fetchPartitionMaxBytes: clientOptions?.fetchPartitionMaxBytes || 1_048_576,
-});
-
-/**
- * Build default form values for connection category from shadow link client options
- */
-export const buildDefaultConnectionValues = (
-  shadowLink: ShadowLink
-): Pick<
-  FormValues,
-  'bootstrapServers' | 'useTls' | 'mtlsMode' | 'mtls' | 'useScram' | 'scramCredentials' | 'advanceClientOptions'
-> => {
-  const clientOptions = shadowLink.configurations?.clientOptions;
-  const tlsCertsSettings = clientOptions?.tlsSettings?.tlsSettings;
-
-  const tlsSettings = extractTLSSettings(tlsCertsSettings);
-  const authSettings = extractAuthSettings(clientOptions);
-  const advancedOptions = extractAdvancedClientOptions(clientOptions);
-
-  const bootstrapServers = (clientOptions?.bootstrapServers || []).map((server) => ({ value: server }));
-
-  return {
-    bootstrapServers: bootstrapServers.length > 0 ? bootstrapServers : [{ value: '' }],
-    advanceClientOptions: advancedOptions,
-    useTls: Boolean(clientOptions?.tlsSettings?.enabled),
-    ...tlsSettings,
-    ...authSettings,
-  };
-};
-
-/**
- * Check if name filters represent "all" mode (single filter with name='*')
- */
-const isAllNameFilter = (filters: { name: string; patternType: PatternType; filterType: FilterType }[]): boolean =>
-  filters.length === 1 &&
-  filters[0].name === '*' &&
-  filters[0].patternType === PatternType.LITERAL &&
-  filters[0].filterType === FilterType.INCLUDE;
-
-/**
- * Build default form values for topics category from shadow link configurations
- */
-export const buildDefaultTopicsValues = (
-  shadowLink: ShadowLink
-): Pick<FormValues, 'topicsMode' | 'topics' | 'topicProperties' | 'excludeDefault'> => {
-  const topicMetadataSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
-  const filters = topicMetadataSyncOptions?.autoCreateShadowTopicFilters || [];
-
-  // Check if using "all topics" mode
-  const isAllMode = isAllNameFilter(filters);
-
-  return {
-    topicsMode: isAllMode ? 'all' : 'specify',
-    topics: isAllMode
-      ? []
-      : filters.map((filter) => ({
-          name: filter.name,
-          patterType: filter.patternType,
-          filterType: filter.filterType,
-        })),
-    // Use the computed list from shadowLink which includes defaults merged with custom properties
-    topicProperties: shadowLink.syncedShadowTopicProperties || [],
-    excludeDefault: topicMetadataSyncOptions?.excludeDefault ?? false,
-  };
-};
-
-/**
- * Build default form values for consumer groups category from shadow link configurations
- */
-export const buildDefaultConsumerGroupsValues = (
-  shadowLink: ShadowLink
-): Pick<FormValues, 'enableConsumerOffsetSync' | 'consumersMode' | 'consumers'> => {
-  const consumerOffsetSyncOptions = shadowLink.configurations?.consumerOffsetSyncOptions;
-  const groupFilters = consumerOffsetSyncOptions?.groupFilters || [];
-
-  // Check if using "all consumer groups" mode
-  const isAllMode = isAllNameFilter(groupFilters);
-
-  return {
-    enableConsumerOffsetSync: false, // UI-only field, not stored in backend
-    consumersMode: isAllMode ? 'all' : 'specify',
-    consumers: isAllMode
-      ? []
-      : groupFilters.map((filter) => ({
-          name: filter.name,
-          patterType: filter.patternType,
-          filterType: filter.filterType,
-        })),
-  };
-};
-
-/**
- * Check if ACL filters represent "all" mode (single filter matching any ACL)
- */
-const isAllACLFilter = (filters: ACLFilter[]): boolean => {
-  if (filters.length !== 1) {
-    return false;
-  }
-
-  const filter = filters[0];
-  const resourceFilter = filter.resourceFilter;
-  const accessFilter = filter.accessFilter;
-
-  return (
-    resourceFilter?.resourceType === ACLResource.ACL_RESOURCE_ANY &&
-    resourceFilter?.patternType === ACLPattern.ACL_PATTERN_ANY &&
-    resourceFilter?.name === '' &&
-    accessFilter?.principal === '' &&
-    accessFilter?.operation === ACLOperation.ACL_OPERATION_ANY &&
-    accessFilter?.permissionType === ACLPermissionType.ACL_PERMISSION_TYPE_ANY &&
-    accessFilter?.host === ''
-  );
-};
-
-/**
- * Build default form values for ACLs category from shadow link configurations
- */
-export const buildDefaultACLsValues = (shadowLink: ShadowLink): Pick<FormValues, 'aclsMode' | 'aclFilters'> => {
-  const securitySyncOptions = shadowLink.configurations?.securitySyncOptions;
-  const aclFilters = securitySyncOptions?.aclFilters || [];
-
-  // Check if using "all ACLs" mode
-  const isAllMode = isAllACLFilter(aclFilters);
-
-  return {
-    aclsMode: isAllMode ? 'all' : 'specify',
-    aclFilters: isAllMode
-      ? []
-      : aclFilters.map((filter) => ({
-          resourceType: filter.resourceFilter?.resourceType,
-          resourcePattern: filter.resourceFilter?.patternType,
-          resourceName: filter.resourceFilter?.name,
-          principal: filter.accessFilter?.principal,
-          operation: filter.accessFilter?.operation,
-          permissionType: filter.accessFilter?.permissionType,
-          host: filter.accessFilter?.host,
-        })),
-  };
-};
-
-/**
  * Get update values for Schema Registry category
  * Compares form values with original values and returns schema + field mask paths
  */
@@ -675,4 +459,104 @@ export const getUpdateValuesForSchemaRegistry = (
     value: schemaRegistrySyncOptions,
     fieldMaskPaths,
   };
+};
+
+/**
+ * Build controlplane update request from form values
+ * Controlplane uses flat structure with ID (not nested configurations with name)
+ *
+ * Uses create() with buf core schemas to build properly typed Message instances
+ * that are compatible with the controlplane API.
+ */
+export const buildControlplaneUpdateRequest = (
+  shadowLinkId: string,
+  values: FormValues,
+  originalValues: FormValues
+) => {
+  // Get update values from existing category functions (reuse the logic)
+  const connectionUpdate = getUpdateValuesForConnection(values, originalValues);
+  const topicsUpdate = getUpdateValuesForTopics(values, originalValues);
+  const consumerGroupsUpdate = getUpdateValuesForConsumerGroups(values, originalValues);
+  const aclsUpdate = getUpdateValuesForACLs(values, originalValues);
+  const schemaRegistryUpdate = getUpdateValuesForSchemaRegistry(values, originalValues);
+
+  // Build flat shadow link update for controlplane (no nested configurations)
+  // Use local proto schemas with type assertions to work around proto version
+  // differences between local protos and buf packages. Wire format is compatible.
+  const shadowLinkUpdate = create(CpShadowLinkUpdateSchema, {
+    id: shadowLinkId,
+    clientOptions: create(ShadowLinkClientOptionsSchema, connectionUpdate.value),
+    topicMetadataSyncOptions: create(TopicMetadataSyncOptionsSchema, topicsUpdate.value),
+    consumerOffsetSyncOptions: create(ConsumerOffsetSyncOptionsSchema, consumerGroupsUpdate.value),
+    securitySyncOptions: create(SecuritySettingsSyncOptionsSchema, aclsUpdate.value),
+    schemaRegistrySyncOptions: schemaRegistryUpdate.value
+      ? create(SchemaRegistrySyncOptionsSchema, schemaRegistryUpdate.value)
+      : undefined,
+  } as unknown as Parameters<typeof create<typeof CpShadowLinkUpdateSchema>>[1]);
+
+  // Remove "configurations." prefix from field mask paths for controlplane
+  // Dataplane uses: "configurations.client_options.tls_settings"
+  // Controlplane uses: "client_options.tls_settings"
+  const paths = [
+    ...connectionUpdate.fieldMaskPaths,
+    ...topicsUpdate.fieldMaskPaths,
+    ...consumerGroupsUpdate.fieldMaskPaths,
+    ...aclsUpdate.fieldMaskPaths,
+    ...schemaRegistryUpdate.fieldMaskPaths,
+  ].map((path) => path.replace(CONFIGURATIONS_PREFIX_REGEX, ''));
+
+  const updateMask = create(FieldMaskSchema, { paths });
+
+  return create(CpUpdateShadowLinkRequestSchema, {
+    shadowLink: shadowLinkUpdate,
+    updateMask,
+  });
+};
+
+/**
+ * Transform form values to UpdateShadowLinkRequest protobuf message (dataplane)
+ * Only includes fields that have changed from the original shadow link
+ */
+export const buildDataplaneUpdateRequest = (name: string, values: FormValues, originalShadowLink: ShadowLink) => {
+  // Build original form values for comparison
+  const originalValues = buildDefaultFormValues(originalShadowLink);
+
+  // Get update values for all categories
+  const connectionUpdate = getUpdateValuesForConnection(values, originalValues);
+  const topicsUpdate = getUpdateValuesForTopics(values, originalValues);
+  const consumerGroupsUpdate = getUpdateValuesForConsumerGroups(values, originalValues);
+  const aclsUpdate = getUpdateValuesForACLs(values, originalValues);
+  const schemaRegistryUpdate = getUpdateValuesForSchemaRegistry(values, originalValues);
+
+  // Build configurations with all category values
+  const configurations = create(ShadowLinkConfigurationsSchema, {
+    clientOptions: connectionUpdate.value,
+    topicMetadataSyncOptions: topicsUpdate.value,
+    consumerOffsetSyncOptions: consumerGroupsUpdate.value,
+    securitySyncOptions: aclsUpdate.value,
+    schemaRegistrySyncOptions: schemaRegistryUpdate.value,
+  });
+
+  // Build shadow link
+  const shadowLinkProto = create(ShadowLinkSchema, {
+    name,
+    configurations,
+  });
+
+  // Build field mask with all changed field paths from all categories
+  const updateMask = create(FieldMaskSchema, {
+    paths: [
+      ...connectionUpdate.fieldMaskPaths,
+      ...topicsUpdate.fieldMaskPaths,
+      ...consumerGroupsUpdate.fieldMaskPaths,
+      ...aclsUpdate.fieldMaskPaths,
+      ...schemaRegistryUpdate.fieldMaskPaths,
+    ],
+  });
+
+  // Build final request
+  return create(UpdateShadowLinkRequestSchema, {
+    shadowLink: shadowLinkProto,
+    updateMask,
+  });
 };

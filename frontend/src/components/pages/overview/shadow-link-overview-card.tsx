@@ -9,10 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { fromDataplaneShadowLink } from 'components/pages/shadowlinks/mappers/dataplane';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
-import React, { type FC } from 'react';
+import React, { type FC, useMemo } from 'react';
 import { useGetShadowLinkQuery, useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { useNavigate } from 'react-router-dom';
 
@@ -29,6 +30,12 @@ export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ 
 
   // Fetch full shadow link data for metrics component
   const { data: fullShadowLinkData } = useGetShadowLinkQuery({ name: shadowLink.name });
+
+  // Convert to unified model for child components
+  const unifiedShadowLink = useMemo(
+    () => (fullShadowLinkData?.shadowLink ? fromDataplaneShadowLink(fullShadowLinkData.shadowLink) : undefined),
+    [fullShadowLinkData?.shadowLink]
+  );
 
   return (
     <Card size="full" testId="shadow-link-overview-card">
@@ -48,9 +55,9 @@ export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ 
       <CardContent>
         <div className="flex flex-col gap-4">
           {/* Metrics */}
-          {fullShadowLinkData?.shadowLink && <ShadowLinkMetrics shadowLink={fullShadowLinkData.shadowLink} />}
+          {unifiedShadowLink && <ShadowLinkMetrics shadowLink={unifiedShadowLink} />}
           {/* Diagram */}
-          {fullShadowLinkData?.shadowLink && <ShadowLinkDiagram shadowLink={fullShadowLinkData.shadowLink} />}
+          {unifiedShadowLink && <ShadowLinkDiagram shadowLink={unifiedShadowLink} />}
         </div>
       </CardContent>
     </Card>

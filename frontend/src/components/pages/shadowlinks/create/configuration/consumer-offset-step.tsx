@@ -49,7 +49,7 @@ export const ConsumerOffsetStep = () => {
       // Add an empty filter when switching to specify mode
       append({
         name: '',
-        patterType: PatternType.LITERAL,
+        patternType: PatternType.LITERAL,
         filterType: FilterType.INCLUDE,
       });
     }
@@ -152,7 +152,7 @@ export const ConsumerOffsetStep = () => {
                     onClick={() =>
                       append({
                         name: '',
-                        patterType: PatternType.LITERAL,
+                        patternType: PatternType.LITERAL,
                         filterType: FilterType.INCLUDE,
                       })
                     }

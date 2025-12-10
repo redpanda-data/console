@@ -10,7 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
+import { ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
   FilterType,
   NameFilterSchema,
@@ -21,9 +21,10 @@ import {
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { describe, expect, it, test } from 'vitest';
 
-import { buildDefaultTopicsValues, getUpdateValuesForTopics } from './shadowlink-edit-utils';
+import { getUpdateValuesForTopics } from './shadowlink-edit-utils';
 import type { FormValues } from '../create/model';
 import { TLS_MODE } from '../create/model';
+import { buildDefaultTopicsValues } from '../mappers/dataplane';
 
 // Base form values for testing
 const baseFormValues: FormValues = {
@@ -45,7 +46,6 @@ const baseFormValues: FormValues = {
     mechanism: ScramMechanism.SCRAM_SHA_256,
   },
   useTls: true,
-  useMtls: false,
   mtlsMode: TLS_MODE.PEM,
   mtls: {
     ca: undefined,
@@ -61,6 +61,7 @@ const baseFormValues: FormValues = {
   consumers: [],
   aclsMode: 'all',
   aclFilters: [],
+  enableSchemaRegistrySync: false,
 };
 
 describe('getUpdateValuesForTopics', () => {
@@ -92,7 +93,7 @@ describe('getUpdateValuesForTopics', () => {
         topics: [
           {
             name: 'topic1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -103,12 +104,12 @@ describe('getUpdateValuesForTopics', () => {
         topics: [
           {
             name: 'topic1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
           {
             name: 'topic2',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -129,12 +130,12 @@ describe('getUpdateValuesForTopics', () => {
         topics: [
           {
             name: 'topic1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
           {
             name: 'topic2',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -145,7 +146,7 @@ describe('getUpdateValuesForTopics', () => {
         topics: [
           {
             name: 'topic1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -167,7 +168,7 @@ describe('getUpdateValuesForTopics', () => {
         topics: [
           {
             name: 'topic1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -178,7 +179,7 @@ describe('getUpdateValuesForTopics', () => {
         topics: [
           {
             name: 'topic1-renamed',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -200,7 +201,7 @@ describe('getUpdateValuesForTopics', () => {
         topics: [
           {
             name: 'topic1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -211,7 +212,7 @@ describe('getUpdateValuesForTopics', () => {
         topics: [
           {
             name: 'topic1',
-            patterType: PatternType.PREFIX,
+            patternType: PatternType.PREFIX,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -233,7 +234,7 @@ describe('getUpdateValuesForTopics', () => {
         topics: [
           {
             name: 'topic1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -244,7 +245,7 @@ describe('getUpdateValuesForTopics', () => {
         topics: [
           {
             name: 'topic1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.EXCLUDE,
           },
         ],
@@ -337,12 +338,12 @@ describe('getUpdateValuesForTopics', () => {
         topics: [
           {
             name: 'topic1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
           {
             name: 'topic2',
-            patterType: PatternType.PREFIX,
+            patternType: PatternType.PREFIX,
             filterType: FilterType.EXCLUDE,
           },
         ],
@@ -391,12 +392,12 @@ describe('getUpdateValuesForTopics', () => {
         topics: [
           {
             name: 'topic1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
           {
             name: 'topic.*',
-            patterType: PatternType.PREFIX,
+            patternType: PatternType.PREFIX,
             filterType: FilterType.EXCLUDE,
           },
         ],
@@ -439,7 +440,7 @@ describe('getUpdateValuesForTopics', () => {
         topics: [
           {
             name: 'topic1',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ],
@@ -576,7 +577,7 @@ describe('getUpdateValuesForTopics', () => {
         expect(result.topicsMode).toBe('specify');
       });
 
-      it('should map filters correctly with name, patterType, filterType', () => {
+      it('should map filters correctly with name, patternType, filterType', () => {
         const shadowLink = create(ShadowLinkSchema, {
           name: 'test-link',
           uid: 'uid-123',
@@ -599,7 +600,7 @@ describe('getUpdateValuesForTopics', () => {
         expect(result.topics).toEqual([
           {
             name: 'my-topic',
-            patterType: PatternType.LITERAL,
+            patternType: PatternType.LITERAL,
             filterType: FilterType.INCLUDE,
           },
         ]);
@@ -633,12 +634,12 @@ describe('getUpdateValuesForTopics', () => {
         expect(result.topics).toHaveLength(2);
         expect(result.topics[0]).toEqual({
           name: 'topic-1',
-          patterType: PatternType.LITERAL,
+          patternType: PatternType.LITERAL,
           filterType: FilterType.INCLUDE,
         });
         expect(result.topics[1]).toEqual({
           name: 'topic-2',
-          patterType: PatternType.PREFIX,
+          patternType: PatternType.PREFIX,
           filterType: FilterType.EXCLUDE,
         });
       });

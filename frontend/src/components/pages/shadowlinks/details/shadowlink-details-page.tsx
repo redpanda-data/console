@@ -11,15 +11,17 @@
 
 'use client';
 
+import { Code } from '@connectrpc/connect';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, Edit, Loader2, Trash2 } from 'lucide-react';
+import { AlertTriangle, Edit, Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
-  useDeleteShadowLinkMutation,
+  useDeleteShadowLinkUnified,
   useFailoverShadowLinkMutation,
-  useGetShadowLinkQuery,
+  useGetShadowLinkUnified,
 } from 'react-query/api/shadowlink';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -31,6 +33,7 @@ import { FailoverDialog } from './failover-dialog';
 import { ShadowLinkDetails } from './shadow-link-details';
 import { TasksTable } from './tasks-table';
 import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
+import { ShadowLinkLoadErrorState, ShadowLinkNotFoundState } from '../list/shadowlink-empty-state';
 
 export const ShadowLinkDetailsPage = () => {
   const { name } = useParams<{ name: string }>();
@@ -48,21 +51,20 @@ export const ShadowLinkDetailsPage = () => {
     }
   }, [name]);
 
-  // Fetch shadow links data
-  const { data: shadowLinksData, isLoading, error: errorGetShadowLink, refetch } = useGetShadowLinkQuery({ name });
+  // Fetch shadow link data using unified hook (works in both embedded and non-embedded modes)
+  const {
+    data: shadowLink,
+    isLoading,
+    error: errorGetShadowLink,
+    dataplaneError,
+    refetch,
+  } = useGetShadowLinkUnified({ name: name ?? '' });
 
-  // Find the specific shadow link by name
-  const shadowLink = shadowLinksData?.shadowLink;
+  // When dataplane fails but we have controlplane data (fallback scenario)
+  const hasPartialData = Boolean(shadowLink && dataplaneError);
 
-  const { mutate: deleteShadowLink, isPending: isDeleting } = useDeleteShadowLinkMutation({
-    onSuccess: () => {
-      toast.success(`Shadowlink ${name} deleted`);
-      navigate('/shadowlinks');
-    },
-    onError: (error) => {
-      toast.error(formatToastErrorMessageGRPC({ error, action: 'delete', entity: 'shadowlink' }));
-    },
-  });
+  // Use unified delete hook (works in both embedded and non-embedded modes)
+  const { deleteShadowLink, isPending: isDeleting } = useDeleteShadowLinkUnified({ name: name ?? '' });
 
   const { mutate: failoverShadowLink, isPending: isFailingOver } = useFailoverShadowLinkMutation({
     onSuccess: () => {
@@ -83,9 +85,16 @@ export const ShadowLinkDetailsPage = () => {
   });
 
   const handleDelete = () => {
-    if (name) {
-      deleteShadowLink({ name, force: false } as Parameters<typeof deleteShadowLink>[0]);
-    }
+    deleteShadowLink({
+      force: false,
+      onSuccess: () => {
+        toast.success(`Shadowlink ${name} deleted`);
+        navigate('/shadowlinks');
+      },
+      onError: (error) => {
+        toast.error(formatToastErrorMessageGRPC({ error, action: 'delete', entity: 'shadowlink' }));
+      },
+    });
   };
 
   const handleFailover = () => {
@@ -114,31 +123,19 @@ export const ShadowLinkDetailsPage = () => {
     );
   }
 
-  // Error state
+  // Not found error state
+  if (errorGetShadowLink?.code === Code.NotFound) {
+    return <ShadowLinkNotFoundState name={name ?? ''} onBackClick={() => navigate('/shadowlinks')} />;
+  }
+
+  // Other error state
   if (errorGetShadowLink) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="flex items-center gap-2 text-red-600">
-          <AlertCircle className="h-6 w-6" />
-          <Text>Error loading shadow link: {errorGetShadowLink.message}</Text>
-        </div>
-      </div>
-    );
+    return <ShadowLinkLoadErrorState errorMessage={errorGetShadowLink.message} />;
   }
 
   // Not found state
   if (!shadowLink) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <AlertCircle className="h-12 w-12 text-gray-400" />
-          <Text variant="large">Shadow link not found</Text>
-          <Button onClick={() => navigate('/shadowlinks')} variant="secondary">
-            Back to Shadow Links
-          </Button>
-        </div>
-      </div>
-    );
+    return <ShadowLinkNotFoundState name={name ?? ''} onBackClick={() => navigate('/shadowlinks')} />;
   }
 
   return (
@@ -169,6 +166,17 @@ export const ShadowLinkDetailsPage = () => {
         </Button>
       </div>
 
+      {/* Partial Data Warning Banner */}
+      {hasPartialData && (
+        <Alert testId="partial-data-warning" variant="warning">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Limited data available</AlertTitle>
+          <AlertDescription>
+            Some shadow link details could not be loaded. Task status and topic properties may be unavailable.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Tabs */}
       <Tabs defaultValue="overview">
         <TabsList testId="shadowlink-details-tabs" variant="default">
@@ -193,7 +201,7 @@ export const ShadowLinkDetailsPage = () => {
           </TabsContent>
 
           <TabsContent testId="tasks-content" value="tasks">
-            <TasksTable onRefresh={refetch} tasks={shadowLink.tasksStatus} />
+            <TasksTable dataUnavailable={hasPartialData} onRefresh={refetch} tasks={shadowLink.tasksStatus} />
           </TabsContent>
 
           <TabsContent testId="configuration-content" value="configuration">

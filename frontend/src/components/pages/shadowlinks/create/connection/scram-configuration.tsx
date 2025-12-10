@@ -20,27 +20,71 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Switch } from 'components/redpanda-ui/components/switch';
+import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
+import { isEmbedded } from 'config';
+import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
+import { useListSecretsQuery } from 'react-query/api/secret';
 
 import type { FormValues } from '../model';
 
+// Regex to extract secret ID from ${secrets.SECRET_NAME} format
+const SECRET_REFERENCE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
+
+/** Custom text for SCRAM password secret */
+const SCRAM_PASSWORD_SECRET_TEXT: SecretSelectorCustomText = {
+  dialogDescription: 'Create a new secret for your SCRAM authentication password. The secret will be stored securely.',
+  secretNamePlaceholder: 'e.g., SCRAM_PASSWORD',
+  secretValuePlaceholder: 'Enter password...',
+  secretValueDescription: 'Your SCRAM authentication password',
+  emptyStateDescription: 'Create a secret to securely store your SCRAM password',
+};
+
 export const ScramConfiguration = () => {
-  const { control, setValue } = useFormContext<FormValues>();
+  const { control, setValue, getValues } = useFormContext<FormValues>();
   const useScram = useWatch({ control, name: 'useScram' });
+  const scramCredentials = useWatch({ control, name: 'scramCredentials' });
+
+  // Fetch secrets for SecretSelector (embedded mode only)
+  const { data: secretsData } = useListSecretsQuery({}, { enabled: isEmbedded() });
+  const availableSecrets = useMemo(() => {
+    if (!secretsData?.secrets) {
+      return [];
+    }
+    return secretsData.secrets
+      .filter((secret): secret is NonNullable<typeof secret> & { id: string } => !!secret?.id)
+      .map((secret) => ({
+        id: secret.id,
+        name: secret.id,
+      }));
+  }, [secretsData]);
+
+  // Helper to extract secret ID from ${secrets.SECRET_NAME} format
+  const extractSecretId = (password: string | undefined): string => {
+    if (!password) {
+      return '';
+    }
+    const match = password.match(SECRET_REFERENCE_REGEX);
+    return match?.[1] || '';
+  };
 
   useEffect(() => {
     if (useScram) {
-      setValue('scramCredentials', {
-        username: '',
-        password: '',
-        mechanism: ScramMechanism.SCRAM_SHA_256,
-      });
+      // Only set default values if no existing credentials
+      const existingCredentials = getValues('scramCredentials');
+      if (!(existingCredentials?.username || existingCredentials?.password)) {
+        setValue('scramCredentials', {
+          username: '',
+          password: '',
+          mechanism: existingCredentials?.mechanism ?? ScramMechanism.SCRAM_SHA_256,
+        });
+      }
     } else {
       setValue('scramCredentials', undefined);
     }
-  }, [useScram, setValue]);
+  }, [useScram, setValue, getValues]);
 
   return (
     <Card size="full">
@@ -83,7 +127,21 @@ export const ScramConfiguration = () => {
               <FormItem data-testid="scram-password-field">
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input {...field} testId="scram-password-input" type="password" />
+                  {isEmbedded() ? (
+                    <SecretSelector
+                      availableSecrets={availableSecrets}
+                      customText={SCRAM_PASSWORD_SECRET_TEXT}
+                      onChange={(secretId) => {
+                        // Store the complete secret reference structure: ${secrets.<NAME>}
+                        field.onChange(secretId ? `\${secrets.${secretId}}` : '');
+                      }}
+                      placeholder="Select or create password secret"
+                      scopes={[Scope.REDPANDA_CLUSTER]}
+                      value={extractSecretId(scramCredentials?.password)}
+                    />
+                  ) : (
+                    <Input {...field} testId="scram-password-input" type="password" />
+                  )}
                 </FormControl>
                 <FormMessage />
               </FormItem>

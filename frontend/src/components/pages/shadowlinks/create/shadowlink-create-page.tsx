@@ -44,6 +44,7 @@ import { uiState } from 'state/ui-state';
 import { ConfigurationStep } from './configuration/configuration-step';
 import { ConnectionStep } from './connection/connection-step';
 import { FormSchema, type FormValues, initialValues } from './model';
+import { isEmbedded } from '../../../../config';
 import {
   ACLOperation,
   ACLPattern,
@@ -51,6 +52,7 @@ import {
   ACLResource,
 } from '../../../../protogen/redpanda/core/common/v1/acl_pb';
 import { useCreateShadowLinkMutation } from '../../../../react-query/api/shadowlink';
+import { getBasePath } from '../../../../utils/env';
 import { buildTLSSettings } from '../edit/shadowlink-edit-utils';
 
 // Stepper definition
@@ -144,7 +146,7 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
         ? allNameFilter
         : values.topics.map((topic) =>
             create(NameFilterSchema, {
-              patternType: topic.patterType,
+              patternType: topic.patternType,
               filterType: topic.filterType,
               name: topic.name,
             })
@@ -159,7 +161,7 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
         ? allNameFilter
         : values.consumers.map((consumer) =>
             create(NameFilterSchema, {
-              patternType: consumer.patterType,
+              patternType: consumer.patternType,
               filterType: consumer.filterType,
               name: consumer.name,
             })
@@ -220,6 +222,13 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
 
 export const ShadowLinkCreatePage = () => {
   const navigate = useNavigate();
+
+  // Redirect to correct path in embedded mode
+  useEffect(() => {
+    if (isEmbedded()) {
+      window.location.href = `${getBasePath()}/shadowlinks/create`;
+    }
+  }, []);
 
   const { mutateAsync: createShadowLink, isPending: isCreating } = useCreateShadowLinkMutation({
     onSuccess: () => {

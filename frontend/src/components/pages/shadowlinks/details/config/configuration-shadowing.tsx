@@ -15,9 +15,8 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { Item, ItemGroup } from 'components/redpanda-ui/components/item';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1alpha3/shadowlink_pb';
-import type { ACLFilter, NameFilter } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
+import type { UnifiedACLFilter, UnifiedNameFilter, UnifiedShadowLink } from '../../model';
 import {
   getFilterTypeLabel,
   getOperationLabel,
@@ -27,11 +26,11 @@ import {
 } from '../../shadowlink-helpers';
 
 export interface ConfigurationShadowingProps {
-  shadowLink: ShadowLink;
+  shadowLink: UnifiedShadowLink;
 }
 
 // Component to display a single name filter (topic or consumer group)
-const NameFilterDisplay = ({ filter, index }: { filter: NameFilter; index: number }) => {
+const NameFilterDisplay = ({ filter, index }: { filter: UnifiedNameFilter; index: number }) => {
   const filterLabel = getFilterTypeLabel(filter.patternType, filter.filterType);
 
   return (
@@ -60,7 +59,7 @@ const NameFilterSection = ({
   emptyMessage,
 }: {
   title: string;
-  filters: NameFilter[];
+  filters: UnifiedNameFilter[];
   testId: string;
   emptyMessage: string;
 }) => (
@@ -85,7 +84,7 @@ const NameFilterSection = ({
 );
 
 // Component to display a single ACL filter
-const ACLFilterDisplay = ({ filter, index }: { filter: ACLFilter; index: number }) => {
+const ACLFilterDisplay = ({ filter, index }: { filter: UnifiedACLFilter; index: number }) => {
   const resourceFilter = filter.resourceFilter;
   const accessFilter = filter.accessFilter;
 
@@ -141,7 +140,7 @@ const ACLFilterDisplay = ({ filter, index }: { filter: ACLFilter; index: number 
 };
 
 // Reusable component for displaying ACL filter section
-const ACLFilterSection = ({ filters }: { filters: ACLFilter[] }) => {
+const ACLFilterSection = ({ filters }: { filters: UnifiedACLFilter[] }) => {
   const hasAllACLs = filters.length === 0;
 
   return (
