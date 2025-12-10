@@ -1538,6 +1538,9 @@ export type SchemaRegistryCreateSchema = {
   schema: string;
   schemaType: SchemaTypeType;
   references: SchemaReference[];
+  params?: {
+    normalize?: boolean;
+  };
 };
 
 export type SchemaRegistryCreateSchemaResponse = {
