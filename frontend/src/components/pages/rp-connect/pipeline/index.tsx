@@ -17,6 +17,7 @@ import { Card } from 'components/redpanda-ui/components/card';
 import { Form } from 'components/redpanda-ui/components/form';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { useDebounce } from 'hooks/use-debounce';
@@ -52,6 +53,7 @@ import { Details } from './details';
 import { Toolbar } from './toolbar';
 import { extractLintHintsFromError } from '../errors';
 import { CreatePipelineSidebar } from '../onboarding/create-pipeline-sidebar';
+import { LogsTab } from '../pipelines-details';
 import { cpuToTasks, MIN_TASKS, tasksToCPU } from '../tasks';
 import { parseSchema } from '../utils/schema';
 import { type PipelineMode, usePipelineMode } from '../utils/use-pipeline-mode';
@@ -491,13 +493,40 @@ export default function PipelinePage() {
     </>
   );
 
+  const renderContent = () => {
+    if (mode === 'create') {
+      return content;
+    }
+
+    if (mode === 'view' && pipeline) {
+      return (
+        <Card size="full">
+          <Tabs defaultValue="configuration">
+            <TabsList>
+              <TabsTrigger value="configuration">Configuration</TabsTrigger>
+              <TabsTrigger value="logs">Logs</TabsTrigger>
+            </TabsList>
+            <TabsContents>
+              <TabsContent value="configuration">{content}</TabsContent>
+              <TabsContent value="logs">
+                <LogsTab pipeline={pipeline} />
+              </TabsContent>
+            </TabsContents>
+          </Tabs>
+        </Card>
+      );
+    }
+
+    return <Card size="full">{content}</Card>;
+  };
+
   return (
     <div className="grid grid-cols-[minmax(auto,_950px)_260px] gap-4">
       <div className="flex flex-1 flex-col gap-4">
         {mode === 'view' && pipelineId && (
           <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />
         )}
-        {mode === 'create' ? content : <Card size="full">{content}</Card>}
+        {renderContent()}
       </div>
       {(mode === 'create' || mode === 'edit') && (
         <CreatePipelineSidebar

@@ -257,7 +257,7 @@ const PipelineEditor = observer((p: { pipeline: Pipeline }) => {
   );
 });
 
-const LogsTab = observer((p: { pipeline: Pipeline }) => {
+export const LogsTab = observer((p: { pipeline: Pipeline }) => {
   const topicName = '__redpanda.connect.logs';
   const topic = api.topics?.first((x) => x.topicName === topicName);
 
