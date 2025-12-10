@@ -99,7 +99,7 @@ export const MtlsConfiguration = () => {
   const [currentCertType, setCurrentCertType] = useState<CertificateType>('ca');
 
   // Fetch secrets for SecretSelector (embedded mode only)
-  const { data: secretsData } = useListSecretsQuery();
+  const { data: secretsData } = useListSecretsQuery({}, { enabled: isEmbedded() });
   const availableSecrets = useMemo(() => {
     if (!secretsData?.secrets) {
       return [];
