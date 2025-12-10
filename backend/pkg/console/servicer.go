@@ -100,7 +100,7 @@ type SchemaRegistryServicer interface {
 	DeleteSchemaRegistrySubject(ctx context.Context, subjectName string, deletePermanently bool) (*SchemaRegistryDeleteSubjectResponse, error)
 	DeleteSchemaRegistrySubjectVersion(ctx context.Context, subject string, version int, deletePermanently bool) (*SchemaRegistryDeleteSubjectVersionResponse, error)
 	GetSchemaRegistrySchemaTypes(ctx context.Context) (*SchemaRegistrySchemaTypes, error)
-	CreateSchemaRegistrySchema(ctx context.Context, subjectName string, schema sr.Schema) (*CreateSchemaResponse, error)
+	CreateSchemaRegistrySchema(ctx context.Context, subjectName string, schema sr.Schema, params CreateSchemaRequestParams) (*CreateSchemaResponse, error)
 	ValidateSchemaRegistrySchema(ctx context.Context, subjectName string, version int, schema sr.Schema) (*SchemaRegistrySchemaValidation, error)
 	GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]SchemaVersion, error)
 
