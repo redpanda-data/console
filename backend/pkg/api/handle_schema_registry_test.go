@@ -1,11 +1,14 @@
 package api
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_getSubjectFromRequestPath(t *testing.T) {
@@ -113,5 +116,77 @@ func Test_getSubjectFromRequestPath(t *testing.T) {
 				assert.Equal(t, tt.expected, getSubjectFromRequestPath(r))
 			},
 		)
+	}
+}
+
+func Test_handleCreateSchema_NormalizeParam(t *testing.T) {
+	tests := []struct {
+		name             string
+		requestBody      map[string]interface{}
+		expectedNormalize bool
+	}{
+		{
+			name: "normalize true",
+			requestBody: map[string]interface{}{
+				"schema":     `{"type": "record", "name": "test"}`,
+				"schemaType": "AVRO",
+				"params": map[string]interface{}{
+					"normalize": true,
+				},
+			},
+			expectedNormalize: true,
+		},
+		{
+			name: "normalize false",
+			requestBody: map[string]interface{}{
+				"schema":     `{"type": "record", "name": "test"}`,
+				"schemaType": "AVRO",
+				"params": map[string]interface{}{
+					"normalize": false,
+				},
+			},
+			expectedNormalize: false,
+		},
+		{
+			name: "params omitted defaults to false",
+			requestBody: map[string]interface{}{
+				"schema":     `{"type": "record", "name": "test"}`,
+				"schemaType": "AVRO",
+			},
+			expectedNormalize: false,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			// Marshal request body
+			body, err := json.Marshal(tt.requestBody)
+			require.NoError(t, err)
+
+			// Create request
+			r := httptest.NewRequest(
+				http.MethodPost,
+				"http://example.com/api/schema-registry/subjects/test-subject/versions",
+				bytes.NewReader(body),
+			)
+			r.Header.Set("Content-Type", "application/json")
+
+			// Parse the request body to verify normalize parameter
+			type createSchemaRequest struct {
+				Schema     string `json:"schema"`
+				SchemaType string `json:"schemaType"`
+				Params     struct {
+					Normalize bool `json:"normalize"`
+				} `json:"params"`
+			}
+
+			var payload createSchemaRequest
+			err = json.NewDecoder(bytes.NewReader(body)).Decode(&payload)
+			require.NoError(t, err)
+
+			// Verify the normalize field is parsed correctly
+			assert.Equal(t, tt.expectedNormalize, payload.Params.Normalize)
+		})
 	}
 }

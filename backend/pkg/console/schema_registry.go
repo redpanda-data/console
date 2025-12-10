@@ -561,16 +561,26 @@ func (s *Service) GetSchemaRegistrySchemaTypes(ctx context.Context) (*SchemaRegi
 	return &SchemaRegistrySchemaTypes{SchemaTypes: res}, nil
 }
 
+// CreateSchemaRequestParams
+type CreateSchemaRequestParams struct {
+	Normalize bool `json:"normalize"`
+}
+
 // CreateSchemaResponse is the response to creating a new schema.
 type CreateSchemaResponse struct {
 	ID int `json:"id"`
 }
 
 // CreateSchemaRegistrySchema registers a new schema for the given subject in the schema registry.
-func (s *Service) CreateSchemaRegistrySchema(ctx context.Context, subjectName string, schema sr.Schema) (*CreateSchemaResponse, error) {
+func (s *Service) CreateSchemaRegistrySchema(ctx context.Context, subjectName string, schema sr.Schema, params CreateSchemaRequestParams) (*CreateSchemaResponse, error) {
 	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	// Add normalize query parameter if requested
+	if params.Normalize {
+		ctx = sr.WithParams(ctx, sr.Normalize)
 	}
 
 	subjectSchema, err := srClient.CreateSchema(ctx, subjectName, schema)
