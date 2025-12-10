@@ -13,6 +13,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { CodeBlock, Pre } from 'components/redpanda-ui/components/code-block';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { AlertCircle, SearchX } from 'lucide-react';
 
 const ShadowingDescription = () => (
   <>
@@ -47,6 +48,23 @@ export const ShadowLinkEmptyState = ({ onCreateClick }: ShadowLinkEmptyStateProp
       <div>
         <Button onClick={onCreateClick} testId="create-shadowlink-button">
           Create shadow link
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+export const ShadowLinkEmptyStateCloud = ({ onCreateClick }: ShadowLinkEmptyStateProps) => (
+  <Card size={'full'}>
+    <CardHeader>
+      <CardTitle>Shadowing</CardTitle>
+    </CardHeader>
+    <CardContent className="flex flex-col gap-3">
+      <ShadowingDescription />
+      <Text>Create a shadow link to connect your source cluster to your shadow cluster.</Text>
+      <div>
+        <Button onClick={onCreateClick} testId="create-shadowlink-button">
+          Create shadow link in Redpanda Cloud
         </Button>
       </div>
     </CardContent>
@@ -88,4 +106,35 @@ export const ShadowLinkErrorState = ({ errorMessage, onRetry }: ShadowLinkErrorS
       </div>
     </CardContent>
   </Card>
+);
+
+interface ShadowLinkNotFoundStateProps {
+  name: string;
+  onBackClick: () => void;
+}
+
+export const ShadowLinkNotFoundState = ({ name, onBackClick }: ShadowLinkNotFoundStateProps) => (
+  <div className="flex h-64 items-center justify-center">
+    <div className="flex flex-col items-center gap-4">
+      <SearchX className="h-12 w-12 text-muted-foreground" />
+      <Text variant="large">Shadow link "{name}" not found</Text>
+      <Text className="text-muted-foreground">The shadow link may have been deleted or the name is incorrect.</Text>
+      <Button data-testid="shadowlink-back-button" onClick={onBackClick} variant="secondary">
+        Back to Shadow Links
+      </Button>
+    </div>
+  </div>
+);
+
+interface ShadowLinkLoadErrorStateProps {
+  errorMessage: string;
+}
+
+export const ShadowLinkLoadErrorState = ({ errorMessage }: ShadowLinkLoadErrorStateProps) => (
+  <div className="flex h-64 items-center justify-center">
+    <div className="flex items-center gap-2 text-red-600">
+      <AlertCircle className="h-6 w-6" />
+      <Text>Error loading shadow link: {errorMessage}</Text>
+    </div>
+  </div>
 );

@@ -17,7 +17,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, RefreshCw } from 'lucide-react';
 import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import React, { useEffect } from 'react';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
@@ -25,7 +25,14 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
-import { ShadowLinkEmptyState, ShadowLinkErrorState, ShadowLinkFeatureDisabledState } from './shadowlink-empty-state';
+import {
+  ShadowLinkEmptyState,
+  ShadowLinkEmptyStateCloud,
+  ShadowLinkErrorState,
+  ShadowLinkFeatureDisabledState,
+} from './shadowlink-empty-state';
+import { isEmbedded } from '../../../../config';
+import { getBasePath } from '../../../../utils/env';
 import { getShadowLinkStateLabel } from '../model';
 
 // Extracted component for table body content
@@ -157,6 +164,17 @@ export const ShadowLinkListPage = () => {
 
   // Empty state when no shadowlinks exist
   if (!isLoading && shadowLinks.length === 0) {
+    if (isEmbedded()) {
+      return (
+        <div className="my-2 flex justify-center gap-2">
+          <ShadowLinkEmptyStateCloud
+            onCreateClick={() => {
+              window.location.href = `${getBasePath()}/shadowlinks/create`;
+            }}
+          />
+        </div>
+      );
+    }
     return (
       <div className="my-2 flex justify-center gap-2">
         <ShadowLinkEmptyState onCreateClick={() => navigate('/shadowlinks/create')} />
@@ -170,26 +188,39 @@ export const ShadowLinkListPage = () => {
         <Text variant="muted">
           Manage shadow links to replicate topics from source clusters for disaster recovery and high availability.
         </Text>
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>
-            <span className="inline-block">
-              <Button
-                disabled={hasShadowLink}
-                onClick={() => navigate('/shadowlinks/create')}
-                size="sm"
-                variant="secondary"
-              >
-                <Plus className="h-4 w-4" />
-                Create shadow link
-              </Button>
-            </span>
-          </TooltipTrigger>
-          {hasShadowLink && (
-            <TooltipContent>
-              <p>Only one shadowlink can be created at this time</p>
-            </TooltipContent>
-          )}
-        </Tooltip>
+
+        <div className="flex items-center gap-2">
+          <Button
+            data-testid="refresh-shadowlinks-button"
+            disabled={isLoading}
+            onClick={() => refetch()}
+            size="sm"
+            variant="outline"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
+
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <span className="inline-block">
+                <Button
+                  disabled={hasShadowLink}
+                  onClick={() => navigate('/shadowlinks/create')}
+                  size="sm"
+                  variant="secondary"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create shadow link
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {hasShadowLink && (
+              <TooltipContent>
+                <p>Only one shadowlink can be created at this time</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </div>
       </div>
       <Table>
         <TableHeader>
