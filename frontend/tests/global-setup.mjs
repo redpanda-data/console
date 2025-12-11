@@ -149,6 +149,7 @@ schemaRegistry:
 `;
 
   const owlshop = await new GenericContainer('quay.io/cloudhut/owl-shop:master')
+    .withPlatform('linux/amd64')
     .withNetwork(network)
     .withNetworkAliases('owlshop')
     .withEnvironment({
@@ -219,6 +220,7 @@ topic.creation.enable=false
   let connect;
   try {
     connect = await new GenericContainer('docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:latest')
+      .withPlatform('linux/amd64')
       .withNetwork(network)
       .withNetworkAliases('connect')
       .withExposedPorts({ container: 8083, host: 18_083 })
@@ -568,8 +570,8 @@ async function cleanupOnFailure(state) {
   }
 }
 
-export default async function globalSetup(config) {
-  const isEnterprise = config.metadata?.isEnterprise ?? false;
+export default async function globalSetup(config = {}) {
+  const isEnterprise = config?.metadata?.isEnterprise ?? false;
 
   console.log('\n\n========================================');
   console.log(`🚀 GLOBAL SETUP STARTED ${isEnterprise ? '(ENTERPRISE MODE)' : '(OSS MODE)'}`);

@@ -72,10 +72,10 @@ const getSizeUnitLabel = (unitValue: number): string =>
 const getTimeUnitLabel = (unitValue: number): string =>
   TIME_UNITS.find((unit) => unit.value === unitValue)?.label || '';
 
-const Header = () => (
-  <Text>
+const Header: FC<{ mode?: 'default' | 'advanced' }> = ({ mode = 'default' }) => (
+  <Text data-testid={`debug-bundle-description-${mode}-mode`}>
     Collect environment data that can help debug and diagnose issues with a Redpanda cluster, a broker, or the machine
-    it’s running on. This will bundle the collected data into a ZIP file.
+    it's running on. This will bundle the collected data into a ZIP file.
   </Text>
 );
 
@@ -156,7 +156,6 @@ export class AdminDebugBundle extends PageComponent {
 
     return (
       <Box>
-        <Header />
         <Box mt={4}>
           {(api.canDownloadDebugBundle || api.isDebugBundleExpired) && (
             <Text fontWeight="bold">Latest debug bundle:</Text>
@@ -344,10 +343,12 @@ const NewDebugBundleForm: FC<{
 
   return (
     <Box mt={4}>
+      <Header mode={advancedForm ? 'advanced' : 'default'} />
       {advancedForm && (
         <Flex
           flexDirection="column"
           gap={2}
+          mt={4}
           width={{
             base: 'full',
             sm: 500,
@@ -697,6 +698,7 @@ const NewDebugBundleForm: FC<{
           <Flex alignItems="center" gap={1}>
             or
             <Button
+              data-testid="switch-to-default-debug-bundle-form"
               onClick={() => {
                 setAdvancedForm(false);
               }}
@@ -708,6 +710,7 @@ const NewDebugBundleForm: FC<{
           </Flex>
         ) : (
           <Button
+            data-testid="switch-to-custom-debug-bundle-form"
             onClick={() => {
               setAdvancedForm(true);
             }}

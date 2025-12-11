@@ -35,17 +35,17 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
     };
   }, []);
   return (
-    <Box my={4}>
+    <Box data-testid="debug-bundle-overview" my={4}>
       <List>
         {statuses.map((status, idx) => (
-          <ListItem key={idx}>
+          <ListItem data-testid={`debug-bundle-broker-status-${status.brokerId}`} key={idx}>
             <Flex alignItems="center" gap={3} mb={3}>
               {status.value.case === 'bundleStatus' && (
                 <>
                   {StatusIcons[status.value.value.status]}
                   <Stack spacing={0.5}>
                     <Box>
-                      <Text display="inline" fontWeight="bold">
+                      <Text data-testid={`broker-${status.brokerId}-label`} display="inline" fontWeight="bold">
                         Broker {status.brokerId}
                       </Text>
                       <Text display="inline">
@@ -54,7 +54,7 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
                         {status.value.value.createdAt && timestampDate(status.value.value.createdAt).toLocaleString()}
                       </Text>
                     </Box>
-                    <Text color="gray.500" fontSize="sm">
+                    <Text color="gray.500" data-testid={`broker-${status.brokerId}-job-id`} fontSize="sm">
                       {status.value.value.jobId}
                     </Text>
                   </Stack>
@@ -65,11 +65,11 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
                   {StatusIcons[DebugBundleStatus_Status.ERROR]}
                   <Stack spacing={0.5}>
                     <Box>
-                      <Text display="inline" fontWeight="bold">
+                      <Text data-testid={`broker-${status.brokerId}-error-label`} display="inline" fontWeight="bold">
                         Broker {status.brokerId}
                       </Text>
                     </Box>
-                    <Text color="gray.500" fontSize="sm">
+                    <Text color="gray.500" data-testid={`broker-${status.brokerId}-error-message`} fontSize="sm">
                       {status.value.value.message}
                     </Text>
                   </Stack>

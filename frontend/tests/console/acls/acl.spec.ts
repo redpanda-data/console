@@ -1,4 +1,5 @@
-import { type Page, test, expect } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
+
 import {
   getRuleDataTestId,
   ModeAllowAll,
@@ -16,9 +17,9 @@ import {
   ResourceTypeTopic,
   ResourceTypeTransactionalId,
   type Rule,
-} from '../../src/components/pages/acls/new-acl/acl.model';
-import { ACLPage } from './pages/ACLPage';
-import { RolePage } from './pages/RolePage';
+} from '../../../src/components/pages/acls/new-acl/acl.model';
+import { AclPage } from '../utils/acl-page';
+import { RolePage } from '../utils/role-page';
 
 /**
  * Generates a unique principal name for testing
@@ -33,7 +34,7 @@ function generatePrincipalName(): string {
   return `e2e-acl-${dateStr}-${randomStr}`;
 }
 
-const aclPages = [{ type: 'Acl', createPage: (page: Page) => new ACLPage(page) }];
+const aclPages = [{ type: 'Acl', createPage: (page: Page) => new AclPage(page) }];
 if (process.env.TEST_ENTERPRISE) {
   aclPages.push({ type: 'Role', createPage: (page: Page) => new RolePage(page) });
 }
@@ -851,7 +852,7 @@ test.describe('ACL Disable Rules Validation', () => {
       } as Rule,
     ];
 
-    const aclPage = new ACLPage(page);
+    const aclPage = new AclPage(page);
     await aclPage.goto();
 
     await test.step('Set principal and host', async () => {
@@ -1093,10 +1094,10 @@ test.describe('Multiples ACLs to same principal', () => {
   const principal = generatePrincipalName();
 
   test('Create 2 ACLs with same principal, 1 with host * and 1 with host 1.1.1.1', async ({ page }) => {
-    test.setTimeout(180000); // 3 minutes timeout for this complex multi-step test
+    test.setTimeout(180_000); // 3 minutes timeout for this complex multi-step test
 
     await test.step('Create first ACL host *', async () => {
-      const aclPage = new ACLPage(page);
+      const aclPage = new AclPage(page);
       await aclPage.goto();
 
       await test.step('Set principal and host', async () => {
@@ -1121,7 +1122,7 @@ test.describe('Multiples ACLs to same principal', () => {
       });
     });
     await test.step('Create second ACL host 1.1.1.1', async () => {
-      const aclPage = new ACLPage(page);
+      const aclPage = new AclPage(page);
       await aclPage.goto();
 
       await test.step('Set principal and host', async () => {
@@ -1146,7 +1147,7 @@ test.describe('Multiples ACLs to same principal', () => {
       });
     });
     await test.step('Validate both ACLs appear in the list with correct details', async () => {
-      const aclPage = new ACLPage(page);
+      const aclPage = new AclPage(page);
       await aclPage.gotoList();
 
       await page.getByTestId('search-field-input').fill(principal);
@@ -1160,7 +1161,7 @@ test.describe('Multiples ACLs to same principal', () => {
       await expect(secondAclListItem).toBeVisible({ timeout: 1000 });
     });
     await test.step('Validate detail pages for both ACLs from list ACL page', async () => {
-      const aclPage = new ACLPage(page);
+      const aclPage = new AclPage(page);
 
       await aclPage.gotoList();
 
@@ -1225,7 +1226,7 @@ test.describe('Multiples ACLs to same principal', () => {
       await expect(secondHostRow).toBeVisible();
     });
     await test.step('Select first host and verify navigation', async () => {
-      const aclPage = new ACLPage(page);
+      const aclPage = new AclPage(page);
 
       // Click on the first host row
       const firstHostRow = page.getByTestId(`host-selector-row-${firstHost}`);
@@ -1240,7 +1241,7 @@ test.describe('Multiples ACLs to same principal', () => {
       await aclPage.validateAllDetailRules(firstACLRules, principal, firstHost);
     });
     await test.step('Navigate back without host parameter and select second host', async () => {
-      const aclPage = new ACLPage(page);
+      const aclPage = new AclPage(page);
 
       // Navigate back to the detail page without host parameter
       await page.goto(`/security/acls/${encodeURIComponent(principal)}/details`);
@@ -1262,7 +1263,7 @@ test.describe('Multiples ACLs to same principal', () => {
     });
 
     await test.step('Validate if customer need to update one ACL the other one is not affected', async () => {
-      const aclPage = new ACLPage(page);
+      const aclPage = new AclPage(page);
 
       // Navigate to first ACL detail page
       await page.goto(`/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(firstHost)}`);

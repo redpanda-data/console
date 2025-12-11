@@ -15,7 +15,7 @@ import {
  * Page Object Model for ACL (Access Control List) pages
  * Handles both creation and detail view pages
  */
-export class ACLPage {
+export class AclPage {
   readonly page: Page;
 
   constructor(page: Page) {
@@ -373,10 +373,10 @@ export class ACLPage {
     _principal: string,
     operationName: string,
     permission: OperationType,
-    _host = '*',
+    _host = '*'
   ) {
     const detailOperationItem = this.page.getByTestId(
-      `detail-item-op-${getIdFromRule(rule, operationName, permission)}`,
+      `detail-item-op-${getIdFromRule(rule, operationName, permission)}`
     );
     await expect(detailOperationItem).toBeVisible();
 

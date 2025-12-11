@@ -18,6 +18,7 @@
     "e2e-test": "playwright test -c playwright.config.ts tests/console/",
     "e2e-test-enterprise": "playwright test tests/console-enterprise/ -c playwright.enterprise.config.ts",
     "e2e-test:ui": "playwright test tests/console/ -c playwright.config.ts --ui",
+    "e2e-test-enterprise:ui": "playwright test -c playwright.enterprise.config.ts tests/console-enterprise/ --ui",
     "test:ci": "bun run test:unit && bun run test:integration",
     "test": "bun run test:ci",
     "test:unit": "TZ=GMT vitest run --config=vitest.config.unit.mts",
