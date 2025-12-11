@@ -7079,7 +7079,7 @@ paths:
           description: An unexpected error response.
       summary: Get Shadow Link
       tags:
-        - Shadow Links (Dataplane)
+        - Shadow Links (Data Plane)
   /v1/shadow-links/{name}/failover:
     post:
       description: Fail over a shadow link or a specific shadow topic within a link.
@@ -7125,7 +7125,7 @@ paths:
           description: An unexpected error response.
       summary: Fail Over Shadow Link
       tags:
-        - Shadow Links (Dataplane)
+        - Shadow Links (Data Plane)
   /v1/shadow-links/{name}/metrics:
     get:
       description: Retrieve metrics for a specific shadow link, including total topics replicated, failed over topics, and error topics.
@@ -7163,7 +7163,7 @@ paths:
           description: An unexpected error response.
       summary: Get Shadow Link Metrics
       tags:
-        - Shadow Links (Dataplane)
+        - Shadow Links (Data Plane)
   /v1/shadow-links/{shadow_link_name}/topic:
     get:
       description: 'List shadow topic status information for a specific shadow link. Optional: filter based on topic name.'
@@ -7219,7 +7219,7 @@ paths:
           description: An unexpected error response.
       summary: List Shadow Link Topics
       tags:
-        - Shadow Links (Dataplane)
+        - Shadow Links (Data Plane)
   /v1/shadow-links/{shadow_link_name}/topic/{topic_name}:
     get:
       description: Retrieve details of a specific shadow topic within a shadow link.
@@ -7262,7 +7262,7 @@ paths:
           description: An unexpected error response.
       summary: Get Shadow Topic
       tags:
-        - Shadow Links (Dataplane)
+        - Shadow Links (Data Plane)
   /v1/topics:
     get:
       description: 'List topics, with partition count and replication factor. Optional: filter based on topic name.'
@@ -8257,8 +8257,8 @@ tags:
     name: Secrets
   - description: Manage Redpanda roles.
     name: Security
-  - description: Dataplane operations for Redpanda shadow links.
-    name: Shadow Links (Dataplane)
+  - description: Data plane operations for Redpanda shadow links.
+    name: Shadow Links (Data Plane)
   - description: Manage Redpanda topics.
     name: Topics
   - description: Manage Redpanda users. For more information, see [Role-Based Access Control](https://docs.redpanda.com/redpanda-cloud/security/authorization/rbac/).
