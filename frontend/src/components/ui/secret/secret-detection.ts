@@ -36,7 +36,7 @@ export function extractSecretReferences(yamlContent: string): SecretReference[] 
     let secretPath = match[1];
     let defaultValue: string | undefined;
     if (secretPath.includes(":")) {
-      const idx = secretPath.indexOf(":", 2);
+      const idx = secretPath.indexOf(":");
       defaultValue = secretPath.substring(idx + 1);
       secretPath = secretPath.substring(0, idx);
     }
