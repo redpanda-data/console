@@ -122,7 +122,7 @@ message ShadowLink {
 service ShadowLinkService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
     name: "Shadow Links (Data Plane)"
-    description: "Dataplane operations for Redpanda shadow links."
+    description: "Data plane operations for Redpanda shadow links."
   };
 
   // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
