@@ -6,10 +6,6 @@ import { expect, test } from '@playwright/test';
 import fs from 'node:fs';
 import { TopicPage } from '../utils/topic-page';
 
-test.use({
-  permissions: ['clipboard-write', 'clipboard-read'],
-});
-
 test.describe('Message Actions and Export', () => {
   test('should copy message value to clipboard', async ({ page }) => {
     const topicName = `copy-clipboard-${Date.now()}`;

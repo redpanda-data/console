@@ -5,10 +5,6 @@ import { expect, test } from '@playwright/test';
 
 import { TopicPage } from '../utils/topic-page';
 
-test.use({
-  permissions: ['clipboard-write', 'clipboard-read'],
-});
-
 test.describe('Produce Messages', () => {
   test('should produce simple text message', async ({ page }) => {
     const topicName = `text-message-${Date.now()}`;
