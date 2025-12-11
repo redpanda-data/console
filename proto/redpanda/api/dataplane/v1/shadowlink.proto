@@ -5,7 +5,6 @@ package redpanda.api.dataplane.v1;
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "google/api/visibility.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
 import "redpanda/core/admin/v2/shadow_link.proto";
@@ -121,10 +120,9 @@ message ShadowLink {
 }
 
 service ShadowLinkService {
-  option (google.api.api_visibility).restriction = "PREVIEW";
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
-    name: "Shadow Links (Dataplane)"
-    description: "Dataplane operations for Redpanda shadow links."
+    name: "Shadow Links (Data Plane)"
+    description: "Data plane operations for Redpanda shadow links."
   };
 
   // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE

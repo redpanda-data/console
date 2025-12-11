@@ -1061,6 +1061,15 @@ components:
           type: string
       title: ErrorInfo
       type: object
+    FailOverBody:
+      properties:
+        shadow_topic_name:
+          title: |-
+            The name of the shadow topic to fail over, if not set will fail over
+            the entire shadow link
+          type: string
+      title: Request to fail over a shadow link or a single shadow topic
+      type: object
     FailedEntity:
       properties:
         entity_name:
@@ -7033,6 +7042,227 @@ paths:
       summary: Update secret
       tags:
         - Secrets
+  /v1/shadow-links/{name}:
+    get:
+      description: Retrieve details of a specific shadow link by name.
+      operationId: ShadowLinkService_GetShadowLink
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.GetShadowLinkResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Shadow Link
+      tags:
+        - Shadow Links (Dataplane)
+  /v1/shadow-links/{name}/failover:
+    post:
+      description: Fail over a shadow link or a specific shadow topic within a link.
+      operationId: ShadowLinkService_FailOver
+      parameters:
+        - description: The name of the shadow link to fail over
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailOverBody'
+        required: true
+        x-originalParamName: body
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.FailOverResponse'
+          description: Failover accepted and initiated
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Fail Over Shadow Link
+      tags:
+        - Shadow Links (Dataplane)
+  /v1/shadow-links/{name}/metrics:
+    get:
+      description: Retrieve metrics for a specific shadow link, including total topics replicated, failed over topics, and error topics.
+      operationId: ShadowLinkService_GetShadowMetrics
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetShadowMetricsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Shadow Link Metrics
+      tags:
+        - Shadow Links (Dataplane)
+  /v1/shadow-links/{shadow_link_name}/topic:
+    get:
+      description: 'List shadow topic status information for a specific shadow link. Optional: filter based on topic name.'
+      operationId: ShadowLinkService_ListShadowLinkTopics
+      parameters:
+        - in: path
+          name: shadow_link_name
+          required: true
+          schema:
+            type: string
+        - description: Substring match on shadow topic name. Case-sensitive.
+          in: query
+          name: filter.topic_name_contains
+          schema:
+            type: string
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListShadowLinkTopicsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Shadow Link Topics
+      tags:
+        - Shadow Links (Dataplane)
+  /v1/shadow-links/{shadow_link_name}/topic/{topic_name}:
+    get:
+      description: Retrieve details of a specific shadow topic within a shadow link.
+      operationId: ShadowLinkService_GetShadowTopic
+      parameters:
+        - in: path
+          name: shadow_link_name
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: topic_name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.GetShadowTopicResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Shadow Topic
+      tags:
+        - Shadow Links (Dataplane)
   /v1/topics:
     get:
       description: 'List topics, with partition count and replication factor. Optional: filter based on topic name.'
@@ -7599,7 +7829,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
@@ -8027,6 +8257,8 @@ tags:
     name: Secrets
   - description: Manage Redpanda roles.
     name: Security
+  - description: Dataplane operations for Redpanda shadow links.
+    name: Shadow Links (Dataplane)
   - description: Manage Redpanda topics.
     name: Topics
   - description: Manage Redpanda users. For more information, see [Role-Based Access Control](https://docs.redpanda.com/redpanda-cloud/security/authorization/rbac/).
