@@ -1,7 +1,6 @@
-/** biome-ignore-all lint/performance/useTopLevelRegex: this is a test */
 import { expect, test } from '@playwright/test';
 
-import { DebugBundlePage } from '../../console/utils/DebugBundlePage';
+import { DebugBundlePage } from '../../console/utils/debug-bundle-page';
 
 /**
  * Debug Bundle E2E Tests

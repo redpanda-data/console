@@ -3,7 +3,7 @@
 
 import { expect, test } from '@playwright/test';
 
-import { TopicPage } from '../utils/TopicPage';
+import { TopicPage } from '../utils/topic-page';
 
 test.describe('Topic List - Basic Operations', () => {
   test('should view topics list with all elements visible', async ({ page }) => {

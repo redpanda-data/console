@@ -866,6 +866,9 @@
           "complexity": {
             "noExcessiveCognitiveComplexity": "off"
           },
+          "performance": {
+            "useTopLevelRegex": "off"
+          },
           "suspicious": {
             "noConsole": "off",
             "noExplicitAny": "off"

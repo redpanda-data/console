@@ -3,7 +3,7 @@
 
 import { expect, test } from '@playwright/test';
 
-import { TopicPage } from '../utils/TopicPage';
+import { TopicPage } from '../utils/topic-page';
 
 test.use({
   permissions: ['clipboard-write', 'clipboard-read'],

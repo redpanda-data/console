@@ -1,6 +1,5 @@
-/** biome-ignore-all lint/performance/useTopLevelRegex: this is a test */
 import type { Download, Page } from '@playwright/test';
-import { expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 /**
  * Page Object Model for Debug Bundle pages
@@ -160,9 +159,11 @@ export class DebugBundlePage {
   }
 
   async generateBasicBundle() {
-    await this.goto();
-    await this.generate({ confirmOverwrite: true });
-    await expect(this.page.getByText(/generating/i)).toBeVisible({ timeout: 10_000 });
+    return await test.step('Generate basic debug bundle', async () => {
+      await this.goto();
+      await this.generate({ confirmOverwrite: true });
+      await expect(this.page.getByText(/generating/i)).toBeVisible({ timeout: 10_000 });
+    });
   }
 
   async generateAdvancedBundle(options: {
@@ -172,28 +173,32 @@ export class DebugBundlePage {
     metricsIntervalSeconds?: number;
     enableTLS?: boolean;
   }) {
-    await this.goto();
-    await this.fillAdvancedForm(options);
+    return await test.step('Generate advanced debug bundle', async () => {
+      await this.goto();
+      await this.fillAdvancedForm(options);
 
-    const generateButton = this.page.getByRole('button', { name: /generate/i }).first();
-    await expect(generateButton).toBeVisible();
-    await generateButton.click();
+      const generateButton = this.page.getByRole('button', { name: /generate/i }).first();
+      await expect(generateButton).toBeVisible();
+      await generateButton.click();
 
-    await this.waitForProgressPage();
+      await this.waitForProgressPage();
+    });
   }
 
   async cancelGeneration() {
-    const stopButton = this.page.getByTestId('debug-bundle-stop-button');
-    await expect(stopButton).toBeVisible();
-    await stopButton.click();
+    return await test.step('Cancel debug bundle generation', async () => {
+      const stopButton = this.page.getByTestId('debug-bundle-stop-button');
+      await expect(stopButton).toBeVisible();
+      await stopButton.click();
 
-    // Confirm if there's a confirmation dialog
-    const confirmButton = this.page.getByRole('button', { name: /confirm|yes|stop/i });
-    if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await confirmButton.click();
-    }
+      // Confirm if there's a confirmation dialog
+      const confirmButton = this.page.getByRole('button', { name: /confirm|yes|stop/i });
+      if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await confirmButton.click();
+      }
 
-    await this.page.waitForTimeout(1000);
+      await this.page.waitForTimeout(1000);
+    });
   }
 
   async clickDoneButton() {
@@ -227,20 +232,22 @@ export class DebugBundlePage {
   }
 
   async deleteBundle() {
-    const deleteButton = this.page
-      .getByRole('button', { name: /delete/i })
-      .or(this.page.locator('button[aria-label*="delete"]'));
+    return await test.step('Delete debug bundle', async () => {
+      const deleteButton = this.page
+        .getByRole('button', { name: /delete/i })
+        .or(this.page.locator('button[aria-label*="delete"]'));
 
-    await expect(deleteButton).toBeVisible();
-    await deleteButton.click();
+      await expect(deleteButton).toBeVisible();
+      await deleteButton.click();
 
-    // Confirm deletion if modal appears
-    const confirmButton = this.page.getByRole('button', { name: /confirm|yes|delete/i });
-    if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await confirmButton.click();
-    }
+      // Confirm deletion if modal appears
+      const confirmButton = this.page.getByRole('button', { name: /confirm|yes|delete/i });
+      if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await confirmButton.click();
+      }
 
-    await expect(this.page.getByText(/deleted|removed/i)).toBeVisible({ timeout: 5000 });
+      await expect(this.page.getByText(/deleted|removed/i)).toBeVisible({ timeout: 5000 });
+    });
   }
 
   /**
@@ -265,7 +272,7 @@ export class DebugBundlePage {
    * Validation methods
    */
   async verifyBrokerStatus() {
-    await expect(this.page).toHaveURL(/\/debug-bundle\/progress\//);
+    await this.page.waitForURL(/\/debug-bundle\/progress\//);
 
     // Verify the overview component is visible
     const overview = this.page.getByTestId('debug-bundle-overview');

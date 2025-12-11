@@ -1,10 +1,9 @@
 // spec: specs/topics.md
-/** biome-ignore-all lint/performance/useTopLevelRegex: these regexp are called as part of e2e tests and don't slow things down */
 // seed: tests/seed.spec.ts
 
 import { expect, test } from '@playwright/test';
 
-import { TopicPage } from '../utils/TopicPage';
+import { TopicPage } from '../utils/topic-page';
 
 test.describe('View and Filter Messages', () => {
   test('should expand message to view details', async ({ page }) => {

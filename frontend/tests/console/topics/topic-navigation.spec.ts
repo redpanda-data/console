@@ -3,7 +3,7 @@
 
 import { expect, test } from '@playwright/test';
 
-import { TopicPage } from '../utils/TopicPage';
+import { TopicPage } from '../utils/topic-page';
 
 test.describe('Topic Details - Navigation and Tabs', () => {
   test('should navigate to topic details and view basic information', async ({ page }) => {
@@ -84,30 +84,16 @@ test.describe('Topic Details - Navigation and Tabs', () => {
       await page.goto(`/topics/${topicName}#configuration`);
       await expect(page.getByTestId('config-group-table')).toBeVisible();
 
-      // Verify configuration groups are present (in expected order)
-      const expectedGroups = [
-        'Retention',
-        'Compaction',
-        'Replication',
-        'Tiered Storage',
-        'Write Caching',
-        'Iceberg',
-        'Schema Registry and Validation',
-        'Message Handling',
-        'Compression',
-        'Storage Internals',
-      ];
+      // Verify that configuration groups are present
+      // Note: This test is flexible and will pass even if new groups are added
+      const configGroups = page.locator('.configGroupTitle');
+      const groupCount = await configGroups.count();
 
-      // At least Retention group should be visible
+      // At least some configuration groups should be visible
+      expect(groupCount).toBeGreaterThan(0);
+
+      // Verify Retention group is present (a core group that should always exist)
       await expect(page.locator('.configGroupTitle').filter({ hasText: 'Retention' })).toBeVisible();
-
-      // Get all visible groups
-      const visibleGroups = await page.locator('.configGroupTitle').allTextContents();
-      const filteredGroups = visibleGroups.filter((group) => expectedGroups.includes(group));
-
-      // Verify at least some groups are present and in order
-      expect(filteredGroups.length).toBeGreaterThan(0);
-      expect(filteredGroups).toContain('Retention');
     });
 
     await topicPage.deleteTopic(topicName);

@@ -15,7 +15,7 @@ import {
  * Page Object Model for ACL (Access Control List) pages
  * Handles both creation and detail view pages
  */
-export class ACLPage {
+export class AclPage {
   readonly page: Page;
 
   constructor(page: Page) {

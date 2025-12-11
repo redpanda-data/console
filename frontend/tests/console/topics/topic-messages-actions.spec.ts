@@ -4,7 +4,7 @@
 import { expect, test } from '@playwright/test';
 
 import fs from 'node:fs';
-import { TopicPage } from '../utils/TopicPage';
+import { TopicPage } from '../utils/topic-page';
 
 test.use({
   permissions: ['clipboard-write', 'clipboard-read'],

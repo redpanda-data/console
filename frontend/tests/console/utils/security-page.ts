@@ -38,9 +38,7 @@ export class SecurityPage {
   }
 
   async submitUserCreation() {
-    await this.page.getByRole('button').getByText('Create').click({
-      force: true,
-    });
+    await this.page.getByRole('button').getByText('Create').click();
   }
 
   /**
@@ -52,9 +50,7 @@ export class SecurityPage {
 
   async confirmUserDeletion(username: string) {
     await this.page.getByPlaceholder(`Type "${username}" to confirm`).fill(username);
-    await this.page.getByTestId('test-delete-item').click({
-      force: true,
-    });
+    await this.page.getByTestId('test-delete-item').click();
   }
 
   /**

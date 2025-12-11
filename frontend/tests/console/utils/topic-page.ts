@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/performance/useTopLevelRegex: this is a test */
 import { expect, type Page, test } from '@playwright/test';
 
 /**

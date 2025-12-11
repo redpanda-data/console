@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { SecurityPage } from '../console/utils/SecurityPage';
+import { SecurityPage } from '../console/utils/security-page';
 
 test.describe('Users', () => {
   test('should create an user, check that user exists, user can be deleted', async ({ page }) => {

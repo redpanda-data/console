@@ -1,13 +1,12 @@
-/** biome-ignore-all lint/performance/useTopLevelRegex: this is a test */
 import { expect, test } from '@playwright/test';
 
-import { ACLPage } from './ACLPage';
+import { AclPage } from './acl-page';
 
 /**
  * Page Object Model for Role pages
- * Extends ACLPage and overrides navigation and role-specific methods
+ * Extends AclPage and overrides navigation and role-specific methods
  */
-export class RolePage extends ACLPage {
+export class RolePage extends AclPage {
   /**
    * Override navigation methods for Role context
    */
@@ -71,9 +70,6 @@ export class RolePage extends ACLPage {
       const confirmButton = this.page.getByTestId('confirm-add-user-button');
       await confirmButton.click();
 
-      // Wait for the add operation to complete and UI to update
-      await this.page.waitForTimeout(500);
-
       // Verify the user was added by checking if it appears in the list
       await this.validateMemberExists(username);
     }
@@ -111,9 +107,6 @@ export class RolePage extends ACLPage {
       // Click the delete button
       await deleteButton.click();
 
-      // Wait for deletion to complete
-      await this.page.waitForTimeout(500);
-
       // Verify the user was removed
       await this.validateMemberNotExists(username);
     }
@@ -141,20 +134,14 @@ export class RolePage extends ACLPage {
   async createRole(roleName: string) {
     return await test.step('Create role', async () => {
       await this.gotoList();
-      await this.page.getByTestId('create-role-button').click({
-        force: true,
-      });
+      await this.page.getByTestId('create-role-button').click();
 
       await this.page.waitForURL('/security/roles/create', {
         waitUntil: 'domcontentloaded',
       });
       await this.page.getByLabel('Role name').fill(roleName);
-      await this.page.getByTestId('roles-allow-all-operations').click({
-        force: true,
-      });
-      await this.page.getByRole('button').getByText('Create').click({
-        force: true,
-      });
+      await this.page.getByTestId('roles-allow-all-operations').click();
+      await this.page.getByRole('button').getByText('Create').click();
       await this.page.waitForURL(`/security/roles/${roleName}/details`);
     });
   }
@@ -167,9 +154,7 @@ export class RolePage extends ACLPage {
       await this.gotoDetail(roleName);
       await this.page.getByRole('button').getByText('Delete').click();
       await this.page.getByPlaceholder(`Type "${roleName}" to confirm`).fill(roleName);
-      await this.page.getByTestId('test-delete-item').click({
-        force: true,
-      });
+      await this.page.getByTestId('test-delete-item').click();
       await this.page.waitForURL(`/security/roles/${roleName}/details`, {
         waitUntil: 'domcontentloaded',
       });
