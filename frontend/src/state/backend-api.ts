@@ -44,11 +44,11 @@ import {
   type ClusterAdditionalInfo,
   type ClusterConnectors,
   type ClusterInfo,
-  type ClusterInfoResponse,
   type ClusterOverview,
   CompressionType,
   type ConfigEntry,
   ConfigResourceType,
+  type ConfigType,
   type ConnectorValidationResult,
   type CreateACLRequest,
   type CreateSecretResponse,
@@ -277,7 +277,7 @@ function processVersionInfo(headers: Headers) {
 
       return;
     }
-  } catch {} // Catch malformed json (old versions where info is not sent as json yet)
+  } catch { } // Catch malformed json (old versions where info is not sent as json yet)
 }
 
 const cache = new LazyMap<string, CacheEntry>((u) => new CacheEntry(u));
@@ -1061,34 +1061,78 @@ const apiStore = {
     }, addError);
   },
 
-  refreshCluster(force?: boolean) {
-    cachedApiRequest<ClusterInfoResponse>(`${appConfig.restBasePath}/cluster`, force).then((v) => {
-      if (v?.clusterInfo != null) {
-        transaction(() => {
-          // add 'type' to each synonym entry
-          for (const broker of v.clusterInfo.brokers) {
-            if (broker.config && !broker.config.error) {
-              prepareSynonyms(broker.config.configs ?? []);
-            }
-          }
-
-          // don't assign if the value didn't change
-          // we'd re-trigger all observers!
-          // TODO: it would probably be easier to just annotate 'clusterInfo' with a structural comparer
-          if (!comparer.structural(this.clusterInfo, v.clusterInfo)) {
-            this.clusterInfo = v.clusterInfo;
-          }
-
-          for (const b of v.clusterInfo.brokers) {
-            if (b.config.error) {
-              this.brokerConfigs.set(b.brokerId, b.config.error);
-            } else {
-              this.brokerConfigs.set(b.brokerId, b.config.configs ?? []);
-            }
-          }
-        });
+  async refreshCluster(_force?: boolean) {
+    try {
+      const client = appConfig.clusterClient;
+      if (!client) {
+        throw new Error('Cluster client not initialized');
       }
-    }, addError);
+
+      const response = await client.getCluster({});
+      const cluster = response.cluster;
+      if (!cluster) {
+        return;
+      }
+
+      transaction(() => {
+        // Map proto types to REST types
+        const clusterInfo: ClusterInfo = {
+          controllerId: cluster.controllerId,
+          kafkaVersion: cluster.kafkaVersion,
+          brokers: cluster.brokers.map((protoBroker) => ({
+            brokerId: protoBroker.id,
+            logDirSize: Number(protoBroker.logDirSize),
+            address: protoBroker.address,
+            rack: protoBroker.rack ?? null,
+            config: {
+              configs:
+                protoBroker.config?.values.map((entry) => ({
+                  name: entry.name,
+                  value: entry.value ?? null,
+                  source: entry.source.toString(),
+                  type: entry.type.toString() as ConfigType,
+                  isExplicitlySet: entry.isExplicitlySet,
+                  isDefaultValue: entry.isDefaultValue,
+                  isReadOnly: entry.isReadOnly,
+                  isSensitive: entry.isSensitive,
+                  synonyms: entry.synonyms.map((syn) => ({
+                    name: syn.name,
+                    value: syn.value ?? null,
+                    source: syn.source.toString(),
+                    type: null,
+                  })),
+                  documentation: entry.documentation,
+                })) ?? [],
+              error: protoBroker.config?.error ?? undefined,
+            },
+          })),
+        };
+
+        // add 'type' to each synonym entry
+        for (const broker of clusterInfo.brokers) {
+          if (broker.config && !broker.config.error) {
+            prepareSynonyms(broker.config.configs ?? []);
+          }
+        }
+
+        // don't assign if the value didn't change
+        // we'd re-trigger all observers!
+        // TODO: it would probably be easier to just annotate 'clusterInfo' with a structural comparer
+        if (!comparer.structural(this.clusterInfo, clusterInfo)) {
+          this.clusterInfo = clusterInfo;
+        }
+
+        for (const b of clusterInfo.brokers) {
+          if (b.config.error) {
+            this.brokerConfigs.set(b.brokerId, b.config.error);
+          } else {
+            this.brokerConfigs.set(b.brokerId, b.config.configs ?? []);
+          }
+        }
+      });
+    } catch (error) {
+      addError(error instanceof Error ? error : new Error(String(error)));
+    }
   },
 
   refreshBrokerConfig(brokerId: number, force?: boolean) {
@@ -2516,8 +2560,8 @@ export const knowledgebaseApi = observable({
       knowledgeBase: knowledgeBaseUpdate,
       updateMask: updateMask
         ? {
-            paths: updateMask,
-          }
+          paths: updateMask,
+        }
         : undefined,
     });
   },
@@ -2744,12 +2788,12 @@ export function createMessageSearch() {
         ..._searchRequest,
         ...(appConfig.jwt
           ? {
-              enterprise: {
-                redpandaCloud: {
-                  accessToken: appConfig.jwt,
-                },
+            enterprise: {
+              redpandaCloud: {
+                accessToken: appConfig.jwt,
               },
-            }
+            },
+          }
           : {}),
       };
       this.searchRequest = searchRequest;

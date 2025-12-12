@@ -35,6 +35,7 @@ import (
 	apiaclsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/acl/v1"
 	apiaclsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/acl/v1alpha1"
 	apiaclsvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/acl/v1alpha2"
+	clustersvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/cluster/v1"
 	"github.com/redpanda-data/console/backend/pkg/api/connect/service/clusterstatus"
 	consolesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/console"
 	apikafkaconnectsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1"
@@ -57,6 +58,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1/dataplanev1connect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/private/v1/privatev1connect"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
@@ -125,6 +127,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	kafkaConnectSvcV1 := apikafkaconnectsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "kafka_connect_service"), api.ConnectSvc)
 	consoleTransformSvcV1 := &transformsvcv1.ConsoleService{Impl: transformSvcV1}
 	monitoringSvcV1 := monitoringsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "monitoring_service"), api.RedpandaClientProvider)
+	clusterSvcV1 := clustersvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "cluster_service"), api.ConsoleSvc)
 
 	// v1alpha2
 
@@ -188,6 +191,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			dataplanev1connect.CloudStorageServiceName:       dataplanev1connect.UnimplementedCloudStorageServiceHandler{},
 			dataplanev1connect.SecurityServiceName:           dataplanev1connect.UnimplementedSecurityServiceHandler{},
 			dataplanev1connect.MonitoringServiceName:         monitoringSvcV1,
+			privatev1connect.ClusterServiceName:              clusterSvcV1,
 		},
 	})
 
@@ -308,6 +312,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		securitySvcV1,
 		connect.WithInterceptors(hookOutput.Interceptors...))
 	monitoringSvcPathV1, monitoringSvcHandlerV1 := dataplanev1connect.NewMonitoringServiceHandler(monitoringSvcV1, connect.WithInterceptors(hookOutput.Interceptors...))
+	clusterSvcPathV1, clusterSvcHandlerV1 := privatev1connect.NewClusterServiceHandler(clusterSvcV1, connect.WithInterceptors(hookOutput.Interceptors...))
 
 	ossServices := []ConnectService{
 		{
@@ -445,6 +450,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			MountPath:   securitySvcPathV1,
 			Handler:     securitySvcHandlerV1,
 		},
+		{
+			ServiceName: privatev1connect.ClusterServiceName,
+			MountPath:   clusterSvcPathV1,
+			Handler:     clusterSvcHandlerV1,
+		},
 	}
 
 	// Order matters. OSS services first, so Enterprise handlers override OSS.
@@ -486,6 +496,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	dataplanev1connect.RegisterCloudStorageServiceHandlerGatewayServer(gwMux, cloudStorageSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1connect.RegisterSecurityServiceHandlerGatewayServer(gwMux, securitySvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1connect.RegisterMonitoringServiceHandlerGatewayServer(gwMux, monitoringSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
+	privatev1connect.RegisterClusterServiceHandlerGatewayServer(gwMux, clusterSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 
 	// mount
 
