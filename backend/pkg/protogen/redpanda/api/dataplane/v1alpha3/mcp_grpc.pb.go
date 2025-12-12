@@ -35,27 +35,26 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// MCPServer is the service for Redpanda Connect MCP Servers.
-// It exposes the API for creating and managing Redpanda Connect MCP servers and their configurations.
+// MCPServer is the service for MCP servers.
+// It exposes the API for creating and managing MCP servers and their configurations.
 type MCPServerServiceClient interface {
-	// CreateMCPServer creates a Redpanda Connect MCP Server in the Redpanda cluster.
+	// CreateMCPServer creates an MCP server in the Redpanda cluster.
 	CreateMCPServer(ctx context.Context, in *CreateMCPServerRequest, opts ...grpc.CallOption) (*CreateMCPServerResponse, error)
-	// GetMCPServer gets a specific Redpanda Connect MCP Server.
+	// GetMCPServer gets a specific MCP server.
 	GetMCPServer(ctx context.Context, in *GetMCPServerRequest, opts ...grpc.CallOption) (*GetMCPServerResponse, error)
-	// ListMCPServers implements the list mcp_servers method which lists the MCP servers
-	// in the Redpanda cluster.
+	// Lists all MCP servers in the Redpanda cluster.
 	ListMCPServers(ctx context.Context, in *ListMCPServersRequest, opts ...grpc.CallOption) (*ListMCPServersResponse, error)
-	// Update MCPServer updates a specific Redpanda Connect MCP server configuration.
+	// Updates a specific MCP server configuration.
 	UpdateMCPServer(ctx context.Context, in *UpdateMCPServerRequest, opts ...grpc.CallOption) (*UpdateMCPServerResponse, error)
-	// DeleteMCPServer deletes a specific Redpanda Connect MCP server.
+	// DeleteMCPServer deletes a specific MCP server.
 	DeleteMCPServer(ctx context.Context, in *DeleteMCPServerRequest, opts ...grpc.CallOption) (*DeleteMCPServerResponse, error)
-	// StopMCPServer stops a specific Redpanda Connect MCP server.
+	// StopMCPServer stops a specific MCP server.
 	StopMCPServer(ctx context.Context, in *StopMCPServerRequest, opts ...grpc.CallOption) (*StopMCPServerResponse, error)
-	// StartMCPServer starts a specific Redpanda Connect MCP server that has been previously stopped.
+	// StartMCPServer starts a specific MCP server that has been previously stopped.
 	StartMCPServer(ctx context.Context, in *StartMCPServerRequest, opts ...grpc.CallOption) (*StartMCPServerResponse, error)
-	// The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
+	// Returns the configuration schema for MCP server tools, including available components and processors.
 	GetMCPServerServiceConfigSchema(ctx context.Context, in *GetMCPServerServiceConfigSchemaRequest, opts ...grpc.CallOption) (*GetMCPServerServiceConfigSchemaResponse, error)
-	// Lints a Redpanda Connect MCP tools configuration and returns zero or more
+	// Lints a MCP tools configuration and returns zero or more
 	// issues ("hints"). An empty list means the config passed all lint checks.
 	LintMCPConfig(ctx context.Context, in *LintMCPConfigRequest, opts ...grpc.CallOption) (*LintMCPConfigResponse, error)
 }
@@ -162,27 +161,26 @@ func (c *mCPServerServiceClient) LintMCPConfig(ctx context.Context, in *LintMCPC
 // All implementations must embed UnimplementedMCPServerServiceServer
 // for forward compatibility.
 //
-// MCPServer is the service for Redpanda Connect MCP Servers.
-// It exposes the API for creating and managing Redpanda Connect MCP servers and their configurations.
+// MCPServer is the service for MCP servers.
+// It exposes the API for creating and managing MCP servers and their configurations.
 type MCPServerServiceServer interface {
-	// CreateMCPServer creates a Redpanda Connect MCP Server in the Redpanda cluster.
+	// CreateMCPServer creates an MCP server in the Redpanda cluster.
 	CreateMCPServer(context.Context, *CreateMCPServerRequest) (*CreateMCPServerResponse, error)
-	// GetMCPServer gets a specific Redpanda Connect MCP Server.
+	// GetMCPServer gets a specific MCP server.
 	GetMCPServer(context.Context, *GetMCPServerRequest) (*GetMCPServerResponse, error)
-	// ListMCPServers implements the list mcp_servers method which lists the MCP servers
-	// in the Redpanda cluster.
+	// Lists all MCP servers in the Redpanda cluster.
 	ListMCPServers(context.Context, *ListMCPServersRequest) (*ListMCPServersResponse, error)
-	// Update MCPServer updates a specific Redpanda Connect MCP server configuration.
+	// Updates a specific MCP server configuration.
 	UpdateMCPServer(context.Context, *UpdateMCPServerRequest) (*UpdateMCPServerResponse, error)
-	// DeleteMCPServer deletes a specific Redpanda Connect MCP server.
+	// DeleteMCPServer deletes a specific MCP server.
 	DeleteMCPServer(context.Context, *DeleteMCPServerRequest) (*DeleteMCPServerResponse, error)
-	// StopMCPServer stops a specific Redpanda Connect MCP server.
+	// StopMCPServer stops a specific MCP server.
 	StopMCPServer(context.Context, *StopMCPServerRequest) (*StopMCPServerResponse, error)
-	// StartMCPServer starts a specific Redpanda Connect MCP server that has been previously stopped.
+	// StartMCPServer starts a specific MCP server that has been previously stopped.
 	StartMCPServer(context.Context, *StartMCPServerRequest) (*StartMCPServerResponse, error)
-	// The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
+	// Returns the configuration schema for MCP server tools, including available components and processors.
 	GetMCPServerServiceConfigSchema(context.Context, *GetMCPServerServiceConfigSchemaRequest) (*GetMCPServerServiceConfigSchemaResponse, error)
-	// Lints a Redpanda Connect MCP tools configuration and returns zero or more
+	// Lints a MCP tools configuration and returns zero or more
 	// issues ("hints"). An empty list means the config passed all lint checks.
 	LintMCPConfig(context.Context, *LintMCPConfigRequest) (*LintMCPConfigResponse, error)
 	mustEmbedUnimplementedMCPServerServiceServer()
