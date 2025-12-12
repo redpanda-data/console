@@ -38,7 +38,6 @@ import {
   type ServiceAccountSelectorRef,
 } from 'components/ui/service-account/service-account-selector';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
-import { config } from 'config';
 import { Loader2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -60,6 +59,11 @@ import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import {
+  addServiceAccountTags,
+  generateServiceAccountName,
+  getServiceAccountNamePrefix,
+} from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { FormSchema, type FormValues, initialValues } from './schemas';
@@ -97,13 +101,12 @@ export const AIAgentCreatePage = () => {
   // Auto-generate service account name when agent name changes
   useEffect(() => {
     if (displayName) {
-      const clusterType = config.isServerless ? 'serverless' : 'cluster';
-      const sanitizedAgentName = displayName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-      const generatedName = `${clusterType}-${config.clusterId}-agent-${sanitizedAgentName}-sa`;
+      const generatedName = generateServiceAccountName(displayName, 'agent');
+      const currentValue = form.getValues('serviceAccountName');
+      const prefix = getServiceAccountNamePrefix('agent');
 
       // Only update if the field is empty or matches the previous auto-generated pattern
-      const currentValue = form.getValues('serviceAccountName');
-      if (!currentValue || currentValue.startsWith(`${clusterType}-${config.clusterId}-agent-`)) {
+      if (!currentValue || currentValue.startsWith(prefix)) {
         form.setValue('serviceAccountName', generatedName, { shouldValidate: false });
       }
     }
@@ -269,9 +272,8 @@ export const AIAgentCreatePage = () => {
 
     const { secretName, serviceAccountId } = serviceAccountResult;
 
-    // Add service_account_id and secret_id to tags for easy deletion
-    tagsMap.service_account_id = serviceAccountId;
-    tagsMap.secret_id = secretName;
+    // Add system-generated service account tags
+    addServiceAccountTags(tagsMap, serviceAccountId, secretName);
 
     const serviceAccountConfig = create(AIAgent_ServiceAccountSchema, {
       clientId: `\${secrets.${secretName}.client_id}`,

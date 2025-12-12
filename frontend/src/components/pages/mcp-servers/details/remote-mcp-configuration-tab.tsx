@@ -12,6 +12,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
+import { CLOUD_MANAGED_TAG_KEYS, isCloudManagedTagKey } from 'components/constants';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
@@ -118,7 +119,9 @@ export const RemoteMCPConfigurationTab = () => {
         id: mcpServerData.mcpServer.id,
         displayName: mcpServerData.mcpServer.displayName,
         description: mcpServerData.mcpServer.description,
-        tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
+        tags: Object.entries(mcpServerData.mcpServer.tags)
+          .filter(([key]) => !isCloudManagedTagKey(key))
+          .map(([key, value]) => ({ key, value })),
         resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
         tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
           id: name,
@@ -187,7 +190,26 @@ export const RemoteMCPConfigurationTab = () => {
         };
       }
 
+      // Validate that user tags don't use reserved keys
+      for (const tag of currentData.tags) {
+        if (isCloudManagedTagKey(tag.key.trim())) {
+          toast.error(`Tag key "${tag.key.trim()}" is reserved for system use`);
+          return;
+        }
+      }
+
       const tagsMap: { [key: string]: string } = {};
+
+      // Preserve system-generated tags
+      if (mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID]) {
+        tagsMap[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID] =
+          mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID];
+      }
+      if (mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SECRET_ID]) {
+        tagsMap[CLOUD_MANAGED_TAG_KEYS.SECRET_ID] = mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SECRET_ID];
+      }
+
+      // Add user-defined tags
       for (const tag of currentData.tags) {
         if (tag.key.trim() && tag.value.trim()) {
           tagsMap[tag.key.trim()] = tag.value.trim();
