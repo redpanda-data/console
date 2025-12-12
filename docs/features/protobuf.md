@@ -9,11 +9,19 @@ If you have one or more topics with Protobuf serialized messages you can configu
 the binary content into JSON, so that it will be human readable and can also be used in the filter engine
 like a JavaScript object.
 
-To deserialize the binary content Console needs access to the used .proto files, as well as a mapping what
-Prototype (not file!) to use for each Kafka topic. The .proto files can be provided via the schema registry,
-local filesystem or a Git repository that is cloned and periodically pulled again to make sure it'll 
-remain up to date. Messages that have been serialized using Confluent's KafkaProtobufSerializer can
-only be deserialized if the schema registry is configured. All providers can be used together.
+To deserialize the binary content, Console needs access to the protobuf schema definitions. These can be provided through multiple sources:
+
+**Schema Sources:**
+- **Confluent Schema Registry** - Embedded schema IDs in message payload
+- **Buf Schema Registry (BSR)** - Schema metadata in Kafka record headers
+- **Local Filesystem** - .proto files from local directories
+- **Git Repository** - .proto files from a Git repo (cloned and periodically synced)
+
+**Topic Mappings:**
+- **Required for**: Local filesystem and Git repository sources
+- **Not required for**: Schema Registry and BSR (metadata is self-contained in messages)
+
+All providers can be used together, allowing you to support multiple serialization formats across different topics. 
 
 ## Preparation
 
@@ -33,12 +41,57 @@ kafka:
     urls: ["https://my-schema-registry.com"]
     username: console
     password: redacted # Or set via flags/env variable
+serde:
   protobuf:
     enabled: true
     schemaRegistry:
       enabled: true # This tells the proto service to consider the schema registry when deserializing messages
       refreshInterval: 5m # How often the compiled proto schemas in the cache should be updated
 ```
+
+### Buf Schema Registry (BSR)
+
+Redpanda Console supports deserializing Protobuf messages that use [Buf Schema Registry (BSR)](https://buf.build/docs/bsr) for schema management.
+Unlike Confluent Schema Registry, BSR clients store message type and commit information in Kafka record headers rather than embedding
+schema IDs in the message payload.
+
+**Key Differences:**
+- **No topic mappings required** - Schema information is stored in record headers
+- **Plain protobuf payload** - No magic bytes or schema ID prefix
+- **Headers-based metadata** - Message type and version stored in `buf.registry.value.schema.message` and `buf.registry.value.schema.commit` headers
+
+**Configuration:**
+
+```yaml
+serde:
+  protobuf:
+    enabled: true
+    bufSchemaRegistry:
+      enabled: true
+      url: "https://buf.build"  # or your BSR instance URL
+      token: "your-bsr-auth-token"
+```
+
+**Environment Variables:**
+
+```bash
+export SERDE_PROTOBUF_BUFSCHEMAREGISTRY_ENABLED=true
+export SERDE_PROTOBUF_BUFSCHEMAREGISTRY_URL=https://buf.build
+export SERDE_PROTOBUF_BUFSCHEMAREGISTRY_TOKEN=your-bsr-auth-token
+```
+
+**Required Record Headers:**
+
+For BSR deserialization to work, Kafka records must include these headers:
+- `buf.registry.value.schema.message` - Fully qualified message name (e.g., `com.example.v1.Order`)
+- `buf.registry.value.schema.commit` - BSR commit ID for the schema version
+
+**Caching:**
+
+The BSR client implements intelligent caching to minimize API calls:
+- Successfully fetched descriptors are cached for 1 hour
+- Failed lookups are cached for 1 minute to avoid repeated failures
+- Automatic cleanup every 30 minutes to prevent memory growth
 
 ### Local Filesystem
 

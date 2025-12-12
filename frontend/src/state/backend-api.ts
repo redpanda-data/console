@@ -2892,8 +2892,17 @@ export function createMessageSearch() {
                   case PayloadEncoding.JSON:
                     m.key.encoding = 'json';
                     break;
+                  case PayloadEncoding.JSON_SCHEMA:
+                    m.key.encoding = 'jsonSchema';
+                    break;
                   case PayloadEncoding.PROTOBUF:
                     m.key.encoding = 'protobuf';
+                    break;
+                  case PayloadEncoding.PROTOBUF_SCHEMA:
+                    m.key.encoding = 'protobufSchema';
+                    break;
+                  case PayloadEncoding.PROTOBUF_BSR:
+                    m.key.encoding = 'protobufBSR';
                     break;
                   case PayloadEncoding.MESSAGE_PACK:
                     m.key.encoding = 'msgpack';
@@ -2970,8 +2979,17 @@ export function createMessageSearch() {
                   case PayloadEncoding.JSON:
                     m.value.encoding = 'json';
                     break;
+                  case PayloadEncoding.JSON_SCHEMA:
+                    m.value.encoding = 'jsonSchema';
+                    break;
                   case PayloadEncoding.PROTOBUF:
                     m.value.encoding = 'protobuf';
+                    break;
+                  case PayloadEncoding.PROTOBUF_SCHEMA:
+                    m.value.encoding = 'protobufSchema';
+                    break;
+                  case PayloadEncoding.PROTOBUF_BSR:
+                    m.value.encoding = 'protobufBSR';
                     break;
                   case PayloadEncoding.MESSAGE_PACK:
                     m.value.encoding = 'msgpack';

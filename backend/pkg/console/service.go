@@ -21,6 +21,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kversion"
 
 	"github.com/redpanda-data/console/backend/pkg/backoff"
+	"github.com/redpanda-data/console/backend/pkg/bsr"
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
 	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
@@ -104,7 +105,16 @@ func NewService(
 			return nil, fmt.Errorf("failed to create schema client: %w", err)
 		}
 	}
-	serdeSvc, err := serde.NewService(protoSvc, msgPackSvc, cachedSchemaClient, cfg.Serde.Cbor)
+
+	var bsrClient *bsr.Client
+	if cfg.Serde.Protobuf.BufSchemaRegistry.Enabled {
+		bsrClient, err = bsr.NewClient(cfg.Serde.Protobuf.BufSchemaRegistry, loggerpkg.Named(logger, "bsr_client"))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create BSR client: %w", err)
+		}
+	}
+
+	serdeSvc, err := serde.NewService(protoSvc, msgPackSvc, cachedSchemaClient, bsrClient, cfg.Serde.Cbor)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating serde service: %w", err)
 	}
