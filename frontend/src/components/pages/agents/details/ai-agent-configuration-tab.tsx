@@ -17,15 +17,6 @@ import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-d
 import { MCPIcon } from 'components/redpanda-ui/components/icons';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from 'components/redpanda-ui/components/select';
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Text } from 'components/redpanda-ui/components/typography';
@@ -51,6 +42,7 @@ import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
+import { ChatModelSelect } from '../../../ui/ai/chat-model-select';
 import { AIAgentModel, MODEL_OPTIONS_BY_PROVIDER, PROVIDER_INFO } from '../ai-agent-model';
 
 type LocalAIAgent = {
@@ -71,18 +63,6 @@ type LocalAIAgent = {
  * Regex pattern to extract secret name from template string: ${secrets.SECRET_NAME}
  */
 const SECRET_TEMPLATE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
-
-/**
- * Detects the provider for a given model name using pattern matching
- */
-const detectProvider = (modelName: string): (typeof PROVIDER_INFO)[keyof typeof PROVIDER_INFO] | null => {
-  for (const provider of Object.values(PROVIDER_INFO)) {
-    if (provider.modelPattern.test(modelName)) {
-      return provider;
-    }
-  }
-  return null;
-};
 
 /**
  * Extracts the secret name from the template string format: ${secrets.SECRET_NAME} -> SECRET_NAME
@@ -566,7 +546,7 @@ export const AIAgentConfigurationTab = () => {
                     <div className="space-y-2">
                       <Label htmlFor="model">Model</Label>
                       {isEditing ? (
-                        <Select
+                        <ChatModelSelect
                           onValueChange={(value) => {
                             const currentData = getCurrentData();
                             if (!currentData) {
@@ -577,50 +557,11 @@ export const AIAgentConfigurationTab = () => {
                               model: value,
                             });
                           }}
+                          placeholder="Select AI model"
+                          providerGroups={MODEL_OPTIONS_BY_PROVIDER}
+                          providerInfo={PROVIDER_INFO}
                           value={displayData.model}
-                        >
-                          <SelectTrigger>
-                            <SelectValue>
-                              {displayData.model && detectProvider(displayData.model) ? (
-                                <div className="flex items-center gap-2">
-                                  <img
-                                    alt={detectProvider(displayData.model)?.label}
-                                    className="h-4 w-4"
-                                    src={detectProvider(displayData.model)?.icon}
-                                  />
-                                  <span>{displayData.model}</span>
-                                </div>
-                              ) : (
-                                displayData.model
-                              )}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([providerId, provider]) => {
-                              const logoSrc = provider.icon;
-                              return (
-                                <SelectGroup key={providerId}>
-                                  <SelectLabel>
-                                    <div className="flex items-center gap-2">
-                                      <img alt={provider.label} className="h-4 w-4" src={logoSrc} />
-                                      <span>{provider.label}</span>
-                                    </div>
-                                  </SelectLabel>
-                                  {provider.models.map((model) => (
-                                    <SelectItem key={model.value} value={model.value}>
-                                      <div className="flex flex-col gap-0.5">
-                                        <Text className="font-medium">{model.name}</Text>
-                                        <Text className="text-xs" variant="muted">
-                                          {model.description}
-                                        </Text>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectGroup>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
+                        />
                       ) : (
                         <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
                           <AIAgentModel model={displayData.model} />
@@ -659,24 +600,22 @@ export const AIAgentConfigurationTab = () => {
                     <div className="space-y-2">
                       <Label htmlFor="apiKeySecret">OpenAI API Token</Label>
                       {isEditing ? (
-                        <div className="[&>div]:flex-col [&>div]:items-stretch [&>div]:gap-2">
-                          <SecretSelector
-                            availableSecrets={availableSecrets}
-                            onChange={(value) => {
-                              const currentData = getCurrentData();
-                              if (!currentData) {
-                                return;
-                              }
-                              setEditedAgentData({
-                                ...currentData,
-                                apiKeySecret: value,
-                              });
-                            }}
-                            placeholder="Select from secrets store or create new"
-                            scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
-                            value={displayData.apiKeySecret}
-                          />
-                        </div>
+                        <SecretSelector
+                          availableSecrets={availableSecrets}
+                          onChange={(value) => {
+                            const currentData = getCurrentData();
+                            if (!currentData) {
+                              return;
+                            }
+                            setEditedAgentData({
+                              ...currentData,
+                              apiKeySecret: value,
+                            });
+                          }}
+                          placeholder="Select from secrets store or create new"
+                          scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
+                          value={displayData.apiKeySecret}
+                        />
                       ) : (
                         <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
                           <Text variant="default">{displayData.apiKeySecret || 'No secret configured'}</Text>
@@ -686,9 +625,14 @@ export const AIAgentConfigurationTab = () => {
                     <div className="space-y-2">
                       <Label>Provider</Label>
                       <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <Text variant="default">
-                          {agent.provider?.provider.case === 'openai' ? 'OpenAI' : 'Unknown'}
-                        </Text>
+                        {agent.provider?.provider.case === 'openai' ? (
+                          <div className="flex items-center gap-2">
+                            <img alt="OpenAI" className="h-4 w-4" src={PROVIDER_INFO.openai.icon} />
+                            <Text variant="default">OpenAI</Text>
+                          </div>
+                        ) : (
+                          <Text variant="default">Unknown</Text>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
-import { createConnectQueryKey, useMutation } from '@connectrpc/connect-query';
+import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import {
   useQueryClient,
   useMutation as useTanstackMutation,
@@ -15,7 +15,6 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { createTopic, listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
-import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import type { GetTopicsResponse, TopicDescription } from 'state/rest-interfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -89,13 +88,11 @@ export const useListTopicsQuery = (
     ...input,
   });
 
-  const listTopicsResult = useInfiniteQueryWithAllPages(listTopics, listTopicsRequest, {
-    pageParamKey: 'pageToken',
+  const listTopicsResult = useQuery(listTopics, listTopicsRequest, {
     enabled: options?.enabled,
-    getNextPageParam: (lastPage) => lastPage?.nextPageToken,
   });
 
-  const allRetrievedTopics = listTopicsResult?.data?.pages?.flatMap(({ topics }) => topics);
+  const allRetrievedTopics = listTopicsResult?.data?.topics;
 
   const filteredTopics = hideInternalTopics
     ? allRetrievedTopics?.filter((topic) => !(topic.internal || topic.name.startsWith('_')))

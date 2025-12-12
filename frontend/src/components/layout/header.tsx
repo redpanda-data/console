@@ -186,5 +186,10 @@ function useShouldHideHeader() {
     end: false,
   });
 
-  return remoteMcpDetailsMatch !== null || aiAgentDetailsMatch !== null;
+  const knowledgeBaseDetailsMatch = useMatch({
+    path: '/knowledgebases/:knowledgebaseId',
+    end: false,
+  });
+
+  return remoteMcpDetailsMatch !== null || aiAgentDetailsMatch !== null || knowledgeBaseDetailsMatch !== null;
 }

@@ -445,8 +445,8 @@ const useInvalidateAclsList = () => {
   const invalid = async () => {
     await queryClient.invalidateQueries({
       queryKey: createConnectQueryKey({
-        schema: ACLService,
-        cardinality: 'finite',
+        schema: ACLService.method.listACLs,
+        cardinality: 'infinite',
       }),
     });
   };

@@ -548,7 +548,7 @@ export function DataTableViewOptions<TData>({ table, testId }: { table: Table<TD
             View
           </Button>
         </DropdownMenuPrimitive.Trigger>
-        <DropdownMenuContent align="end" className="w-[150px]">
+        <DropdownMenuContent align="end" className="w-auto min-w-[150px] max-w-[300px]">
           <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {table

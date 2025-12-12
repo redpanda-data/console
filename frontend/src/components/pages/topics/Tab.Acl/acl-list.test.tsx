@@ -11,7 +11,6 @@
 
 import { render, screen } from '@testing-library/react';
 import { observable } from 'mobx';
-import React from 'react';
 
 import AclList from './acl-list';
 import type {

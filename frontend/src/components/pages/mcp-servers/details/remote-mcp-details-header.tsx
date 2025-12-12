@@ -14,7 +14,6 @@ import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
 
 import { RemoteMCPToggleButton } from './remote-mcp-toggle-button';
-import { RemoteMCPBackButton } from '../remote-mcp-back-button';
 
 export const RemoteMCPDetailsHeader = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,18 +24,13 @@ export const RemoteMCPDetailsHeader = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       <div className="flex items-center gap-4">
-        <RemoteMCPBackButton />
+        <Heading level={1}>{mcpServerData.mcpServer.displayName}</Heading>
+        <McpServerStateBadge />
+        <RemoteMCPToggleButton />
       </div>
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-4">
-          <Heading level={1}>{mcpServerData.mcpServer.displayName}</Heading>
-          <McpServerStateBadge />
-          <RemoteMCPToggleButton />
-        </div>
-        <Text variant="lead">{mcpServerData.mcpServer.description}</Text>
-      </div>
+      <Text variant="lead">{mcpServerData.mcpServer.description}</Text>
     </div>
   );
 };

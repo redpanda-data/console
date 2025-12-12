@@ -53,11 +53,11 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
     form.reset();
   };
 
-  // Form type
+  // Form type - value is optional because customSecretSchema might make it optional
   type Secret = {
     id: string;
-    value: string;
-    labels: string[];
+    value?: string;
+    labels: { key: string; value: string }[];
     scopes: Scope[];
   };
 
@@ -168,8 +168,8 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
                         state?.meta.errors?.length > 0 && (
                           <FormErrorMessage>
                             <UnorderedList>
-                              {state.meta.errors?.map((error) => (
-                                <li key={error.path}>
+                              {state.meta.errors.filter(Boolean).map((error, index) => (
+                                <li key={error.path ?? index}>
                                   <Text color="red.500">{error.message}</Text>
                                 </li>
                               ))}
