@@ -271,7 +271,7 @@ topic.creation.enable=false
 async function buildBackendImage(isEnterprise) {
   console.log(`Building backend Docker image ${isEnterprise ? '(Enterprise)' : '(OSS)'}...`);
   const backendDir = isEnterprise
-    ? resolve(__dirname, '../../../console-enterprise/backend')
+    ? resolve(__dirname, '../../../backend')
     : resolve(__dirname, '../../backend');
   const imageTag = isEnterprise ? 'console-backend:e2e-test-enterprise' : 'console-backend:e2e-test';
 
@@ -367,7 +367,7 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
 
   // Mount license file for enterprise mode
   if (isEnterprise) {
-    const licensePath = resolve(__dirname, '../../../console-enterprise/frontend/tests/config/redpanda.license');
+    const licensePath = resolve(__dirname, '../../../frontend/tests/config/redpanda.license');
     console.log(`Enterprise license path: ${licensePath}`);
 
     // Check if license file exists
