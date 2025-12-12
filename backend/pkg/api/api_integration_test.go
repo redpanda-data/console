@@ -62,7 +62,7 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 	require := require.New(t)
 
 	ctx := context.Background()
-	container, err := redpanda.Run(ctx, "redpandadata/redpanda:v25.2.10")
+	container, err := redpanda.Run(ctx, "redpandadata/redpanda:v25.3.1")
 	require.NoError(err)
 	s.redpandaContainer = container
 
