@@ -188,23 +188,17 @@ export class SchemaPage {
     if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await confirmButton.click();
     }
-
-    await this.page.waitForTimeout(1000);
   }
 
   async switchVersion(versionNumber: number) {
     const versionSelect = this.page.getByTestId('schema-definition-version-select');
     await selectCustomOption(versionSelect, versionNumber.toString());
-    await this.page.waitForTimeout(500);
   }
 
   async addVersion(schemaDefinition: string) {
     const addVersionButton = this.page.getByTestId('schema-details-add-version-btn');
     await expect(addVersionButton).toBeVisible();
     await addVersionButton.click();
-
-    // Wait for creation modal/page
-    await this.page.waitForTimeout(1000);
 
     // Fill in schema definition
     const schemaEditor = this.page.getByTestId('schema-create-schema-editor');
@@ -213,8 +207,6 @@ export class SchemaPage {
     // Save
     const saveButton = this.page.getByTestId('schema-create-save-btn');
     await saveButton.click();
-
-    await this.page.waitForTimeout(1000);
   }
 
   /**
@@ -240,7 +232,6 @@ export class SchemaPage {
   async saveCompatibility() {
     const saveButton = this.page.getByTestId('edit-compatibility-save-btn');
     await saveButton.click();
-    await this.page.waitForTimeout(1000);
   }
 
   async cancelCompatibilityEdit() {
@@ -255,7 +246,6 @@ export class SchemaPage {
     const searchFieldWrapper = this.page.getByTestId('schema-list-search-field');
     const searchInput = searchFieldWrapper.locator('input');
     await searchInput.fill(query);
-    await this.page.waitForTimeout(500);
   }
 
   async toggleSoftDeleted(enabled: boolean) {
@@ -265,7 +255,6 @@ export class SchemaPage {
     } else {
       await checkbox.uncheck();
     }
-    await this.page.waitForTimeout(500);
   }
 
   async clickCreateButton() {
