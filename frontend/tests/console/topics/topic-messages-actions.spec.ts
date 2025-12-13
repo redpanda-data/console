@@ -30,7 +30,7 @@ test.describe('Message Actions and Export', () => {
       expect(clipboardText).toBe(messageValue);
 
       // Success toast should appear
-      await expect(page.getByText('Value copied to clipboard')).toBeVisible({ timeout: 2000 });
+      await expect(page.getByText('Value copied to clipboard')).toBeVisible({ timeout: 5000 });
     });
 
     await topicPage.deleteTopic(topicName);

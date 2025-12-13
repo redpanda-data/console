@@ -134,10 +134,6 @@ test.describe('ACL Creation', () => {
           await aclPage.validateRulesCount(operation.length);
         });
 
-        await test.step('Add small delay for stability', async () => {
-          await aclPage.waitForStability(100);
-        });
-
         await test.step('Check the Detail page - verify all rules are present', async () => {
           await aclPage.validateAllDetailRules(operation, principal, host);
         });
@@ -1003,10 +999,6 @@ test.describe('Allow all operations', () => {
 
         await test.step('Verify ACL Rules count matches', async () => {
           await aclPage.validateRulesCount(allRules.length);
-        });
-
-        await test.step('Add small delay for stability', async () => {
-          await aclPage.waitForStability(100);
         });
 
         await test.step('Check the Detail page - verify all rules are present', async () => {

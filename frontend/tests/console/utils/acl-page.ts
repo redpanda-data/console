@@ -494,8 +494,4 @@ export class AclPage {
   getRuleContextCard(ruleIndex: number): Locator {
     return this.page.locator(`.card-content-rule-${ruleIndex}`);
   }
-
-  async waitForStability(timeout = 1000) {
-    await this.page.waitForTimeout(timeout);
-  }
 }

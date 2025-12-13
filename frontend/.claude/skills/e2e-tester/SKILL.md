@@ -26,6 +26,7 @@ Write end-to-end tests using Playwright against a full Redpanda Console stack ru
 - Test UI component rendering (that belongs in unit/integration tests)
 - Use brittle CSS selectors like `.class-name` or `#id`
 - Use force:true when calling .click()
+- Use waitForTimeout in e2e tests
 - Hard-code wait times (use `waitFor` with conditions)
 - Leave containers running after test failures
 - Commit test screenshots to git (add to `.gitignore`)

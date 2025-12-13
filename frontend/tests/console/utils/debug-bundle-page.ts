@@ -354,11 +354,4 @@ export class DebugBundlePage {
     await expect(description).toBeVisible();
     await expect(description).toContainText('Collect environment data');
   }
-
-  /**
-   * Helper methods
-   */
-  async waitForStability(timeout = 1000) {
-    await this.page.waitForTimeout(timeout);
-  }
 }
