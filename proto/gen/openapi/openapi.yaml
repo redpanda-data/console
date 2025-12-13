@@ -495,7 +495,7 @@ components:
         component_type:
           $ref: '#/components/schemas/ComponentType'
         config_schema:
-          description: JSON schema of the configuration components that are allowed for MCP Servers.
+          description: JSON schema of the configuration components that are allowed for MCP servers.
           type: string
       type: object
     ConnectCluster:
@@ -1223,7 +1223,7 @@ components:
     GetMCPServerServiceConfigSchemaResponse:
       properties:
         configuration_yamls:
-          description: The configuration schema for the MCP Server.
+          description: The configuration schema for the MCP server.
           items:
             $ref: '#/components/schemas/ConfigurationYAMLSchema'
           type: array
@@ -1484,7 +1484,7 @@ components:
         tools:
           additionalProperties:
             $ref: '#/components/schemas/Tool'
-          description: The Redpanda Connect MCP tools configuration in YAML format.
+          description: Map of tool names to their configurations. Each tool contains YAML configuration.
           type: object
       required:
         - tools
@@ -1494,7 +1494,7 @@ components:
         lint_hints:
           additionalProperties:
             $ref: '#/components/schemas/LintHint'
-          description: A list of linting issues.
+          description: Map of tool names to their linting issues. Empty if no issues are found.
           type: object
       type: object
     LintPipelineConfigRequest:
@@ -1637,15 +1637,15 @@ components:
     ListMCPServersRequest.Filter:
       properties:
         display_name_contains:
-          description: Any MCP Server that partially match this name will be returned.
+          description: Returns MCP servers that partially match this name.
           type: string
         secret_id:
-          description: Match MCP servers that use this secret ID.
+          description: Filters MCP servers that reference this secret ID in their tool configurations.
           type: string
         tags[string]:
           additionalProperties:
             type: string
-          description: MCP servers that match all the provided tags will be returned.
+          description: Filters by tags using exact match. Returns only MCP servers that have all the specified key-value pairs.
           type: object
       type: object
     ListMCPServersResponse:
@@ -1655,6 +1655,7 @@ components:
             $ref: '#/components/schemas/MCPServer'
           type: array
         next_page_token:
+          description: Token to retrieve the next page of results. Empty if there are no more results.
           type: string
       type: object
     ListMountTasksResponse:
@@ -1947,7 +1948,7 @@ components:
           description: User-friendly MCP server name.
           type: string
         id:
-          description: MCP Server ID.
+          description: Unique identifier for the MCP server.
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
@@ -1961,17 +1962,17 @@ components:
           additionalProperties:
             type: string
           description: |-
-            Tags are key-value pairs that can be assigned to a MCP server resource.
+            Tags are key-value pairs that can be assigned to an MCP server resource.
             They help organize MCP servers and enable filtering when listing them.
           type: object
         tools:
           additionalProperties:
             $ref: '#/components/schemas/Tool'
-          description: The Redpanda Connect MCP server configuration.
+          description: Map of tool names to their configurations. Each tool defines a capability that the MCP server exposes.
           type: object
         url:
+          description: URL to connect to the MCP server.
           readOnly: true
-          title: URL to connect to the MCP server
           type: string
       required:
         - id
@@ -2009,13 +2010,14 @@ components:
       description: MCP server status may contain an error message.
       properties:
         error:
+          description: Error message if the MCP server is in an error state. Empty if no error.
           type: string
       type: object
     MCPServerCreate:
-      description: MCPServerCreate contains the details for the MCP Server creation request.
+      description: MCPServerCreate contains the details for the MCP server creation request.
       properties:
         description:
-          description: MCP server description.
+          description: Optional MCP server description.
           type: string
         display_name:
           description: User-friendly MCP server name.
@@ -2027,12 +2029,12 @@ components:
         tags:
           additionalProperties:
             type: string
-          description: Optional list of tags to attach to a MCP server.
+          description: Optional list of tags to attach to an MCP server.
           type: object
         tools:
           additionalProperties:
             $ref: '#/components/schemas/Tool'
-          description: The Redpanda Connect MCP server configuration.
+          description: Map of tool names to their configurations. Each tool defines a capability that the MCP server exposes.
           type: object
       required:
         - display_name
@@ -2045,7 +2047,7 @@ components:
           description: MCP server description.
           type: string
         display_name:
-          description: User-friendly MCP servers name.
+          description: User-friendly MCP server name.
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
@@ -2061,7 +2063,7 @@ components:
         tools:
           additionalProperties:
             $ref: '#/components/schemas/Tool'
-          description: The Redpanda Connect MCP server configuration.
+          description: Map of tool names to their configurations. Each tool defines a capability that the MCP server exposes.
           type: object
       type: object
     MatchingACL:
@@ -5577,10 +5579,10 @@ paths:
         - Redpanda Connect Pipelines
   /v1/redpanda-connect/mcp-servers:
     get:
-      description: 'List Redpanda Connect MCP Servers. Optional: filter based on MCP server name.'
+      description: Lists MCP servers. Optionally filter by display name, tags, or secret ID.
       operationId: MCPServerService_ListMCPServers
       parameters:
-        - description: Any MCP Server that partially match this name will be returned.
+        - description: Returns MCP servers that partially match this name.
           in: query
           name: filter.display_name_contains
           schema:
@@ -5590,7 +5592,7 @@ paths:
           name: filter.tags[string]
           schema:
             type: string
-        - description: Match MCP servers that use this secret ID.
+        - description: Filters MCP servers that reference this secret ID in their tool configurations.
           in: query
           name: filter.secret_id
           schema:
@@ -5633,11 +5635,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: List Redpanda Connect MCP Servers
+      summary: List MCP servers
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
     post:
-      description: Create a new Redpanda Connect MCP Server.
+      description: Create a new MCP server.
       operationId: MCPServerService_CreateMCPServer
       requestBody:
         content:
@@ -5671,15 +5673,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Create Redpanda Connect MCP Server
+      summary: Create MCP server
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
   /v1/redpanda-connect/mcp-servers/{id}:
     delete:
-      description: Delete a Redpanda Connect MCP server.
+      description: Delete an MCP server.
       operationId: MCPServerService_DeleteMCPServer
       parameters:
-        - description: MCP Server ID.
+        - description: MCP server ID.
           in: path
           name: id
           required: true
@@ -5715,11 +5717,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Delete a Redpanda Connect MCP server
+      summary: Delete an MCP server
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
     get:
-      description: Get a specific Redpanda Connect MCP server.
+      description: Get a specific MCP server.
       operationId: MCPServerService_GetMCPServer
       parameters:
         - description: MCP server ID.
@@ -5759,22 +5761,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Get Redpanda Connect MCP server
+      summary: Get MCP server
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
     put:
-      description: Update the configuration of a Redpanda Connect MCP server.
+      description: Update the configuration of an MCP server.
       operationId: MCPServerService_UpdateMCPServer
       parameters:
-        - description: MCP Server ID.
+        - description: MCP server ID.
           in: path
           name: id
           required: true
           schema:
             type: string
-        - description: |-
-            Specifies which fields should be updated. If not provided,
-            all fields will be updated.
+        - description: Specifies which fields to update. If not provided, updates all fields.
           in: query
           name: update_mask
           schema:
@@ -5811,15 +5811,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Update a Redpanda Connect MCP Server
+      summary: Update an MCP server
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
   /v1/redpanda-connect/mcp-servers/{id}:start:
     post:
-      description: Start a stopped Redpanda Connect MCP server.
+      description: Start a stopped MCP server.
       operationId: MCPServerService_StartMCPServer
       parameters:
-        - description: MCP Server ID.
+        - description: MCP server ID.
           in: path
           name: id
           required: true
@@ -5856,15 +5856,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Start a Redpanda Connect MCP server
+      summary: Start an MCP server
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
   /v1/redpanda-connect/mcp-servers/{id}:stop:
     post:
-      description: Stop a running Redpanda Connect MCP server.
+      description: Stop a running MCP server.
       operationId: MCPServerService_StopMCPServer
       parameters:
-        - description: MCP Server ID.
+        - description: MCP server ID.
           in: path
           name: id
           required: true
@@ -5901,12 +5901,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Stops a Redpanda Connect MCP server
+      summary: Stop an MCP server
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
   /v1/redpanda-connect/mcp-servers:getConfigSchema:
     get:
-      description: The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
+      description: Returns the configuration schema for MCP server tools, including available components and processors.
       operationId: MCPServerService_GetMCPServerServiceConfigSchema
       responses:
         "200":
@@ -5933,12 +5933,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Retrieve the schema for Redpanda Connect MCP Servers configurations.
+      summary: Get MCP server configuration schema
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
   /v1/redpanda-connect/mcp-servers:lint-config:
     post:
-      description: Validates a supplied Redpanda Connect MCP tools YAML and returns a list of linting hints. If no problems are found, the list is empty.
+      description: Validates a given MCP tool's configuration and returns linting hints. Each tool's YAML configuration is validated. If no problems are found, the response is empty.
       operationId: MCPServerService_LintMCPConfig
       requestBody:
         content:
@@ -5972,9 +5972,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Lint a Redpanda Connect MCP tools configuration
+      summary: Lint a MCP tools configuration
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
   /v1/redpanda-connect/pipelines:
     get:
       description: 'List Redpanda Connect pipelines. Optional: filter based on pipeline name.'
@@ -8247,8 +8247,8 @@ tags:
     name: Kafka Connect
   - description: Create and manage [Redpanda Connect](https://docs.redpanda.com/redpanda-cloud/develop/connect/about) pipelines and their configurations.
     name: Redpanda Connect Pipelines
-  - description: Create and manage Redpanda Connect MCP servers and their configurations.
-    name: Redpanda Connect MCP servers
+  - description: Create and manage MCP servers and their configurations.
+    name: Remote MCP
   - description: Monitoring operations for Redpanda.
     name: Monitoring
   - description: Manage client throughput limits. See [Redpanda Client Throughput Limits](https://docs.redpanda.com/current/manage/cluster-maintenance/manage-throughput/#client-throughput-limits) for more information.
