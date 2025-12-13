@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { ShadowLinkService } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { RoleBindingService } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/iam/v1/role_binding_pb';
 import { ServiceAccountService } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/iam/v1/service_account_pb';
 import {
@@ -159,6 +160,7 @@ type Config = {
   userClient?: Client<typeof UserService>;
   serviceAccountClient?: Client<typeof ServiceAccountService>;
   roleBindingClient?: Client<typeof RoleBindingService>;
+  shadowLinkClient?: Client<typeof ShadowLinkService>;
   fetch: WindowOrWorkerGlobalScope['fetch'];
   assetsPath: string;
   jwt?: string;
@@ -233,6 +235,7 @@ const setConfig = ({
   /* CONTROLPLANE CLIENTS */
   const serviceAccountClient = createClient(ServiceAccountService, controlplaneTransport);
   const roleBindingClient = createClient(RoleBindingService, controlplaneTransport);
+  const shadowLinkClient = createClient(ShadowLinkService, controlplaneTransport);
 
   Object.assign(config, {
     jwt,
@@ -256,6 +259,7 @@ const setConfig = ({
     userClient: userGrpcClient,
     serviceAccountClient,
     roleBindingClient,
+    shadowLinkClient,
     featureFlags, // Needed for legacy UI purposes where we don't use functional components.
     ...args,
   });

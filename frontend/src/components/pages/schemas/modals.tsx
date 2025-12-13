@@ -143,12 +143,16 @@ export function openInfoModal(p: {
   });
 }
 
-export function openValidationErrorsModal(result: {
-  isValid: boolean;
-  errorDetails?: string | undefined;
-  isCompatible?: boolean | undefined;
-}) {
-  const { isValid, errorDetails, isCompatible } = result;
+export function openValidationErrorsModal(
+  result: {
+    isValid: boolean;
+    errorDetails?: string | undefined;
+    isCompatible?: boolean | undefined;
+    compatibilityError?: { errorType: string; description: string } | undefined;
+  },
+  onClose?: () => void
+) {
+  const { isValid, errorDetails, isCompatible, compatibilityError } = result;
 
   let compatBox: JSX.Element | null = null;
   if (isCompatible !== undefined && isValid !== false) {
@@ -169,8 +173,28 @@ export function openValidationErrorsModal(result: {
     }
   }
 
+  const compatErrorBox =
+    compatibilityError && (compatibilityError.errorType || compatibilityError.description) ? (
+      <Box>
+        <Text fontWeight="semibold" mb="2">
+          Compatibility Error Details:
+        </Text>
+        <Box background="gray.100" maxHeight="400px" overflowY="auto" p="6">
+          {compatibilityError.errorType && (
+            <Text color="red.600" fontWeight="bold" mb="2">
+              Error: {compatibilityError.errorType.replace(/_/g, ' ')}
+            </Text>
+          )}
+          {compatibilityError.description && <Text lineHeight="1.6">{compatibilityError.description}</Text>}
+        </Box>
+      </Box>
+    ) : null;
+
   const errDetailsBox = errorDetails ? (
     <Box>
+      <Text fontWeight="semibold" mb="2">
+        Parsing Error:
+      </Text>
       <Box background="gray.100" fontFamily="monospace" letterSpacing="-0.5px" maxHeight="400px" overflowY="auto" p="6">
         {errorDetails?.trim()}
       </Box>
@@ -191,10 +215,12 @@ export function openValidationErrorsModal(result: {
         <Text mb="3">Schema validation failed due to the following error.</Text>
         <Flex direction="column" gap="4">
           {compatBox}
+          {compatErrorBox}
           {errDetailsBox}
         </Flex>
       </>
     ),
+    onClose,
   });
 }
 

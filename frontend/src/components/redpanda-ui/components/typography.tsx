@@ -215,16 +215,29 @@ export function Link({ className, children, testId, ...props }: LinkProps) {
   );
 }
 
+const preVariants = cva('bg-muted rounded-md text-sm overflow-y-auto', {
+  variants: {
+    variant: {
+      default: 'p-4 my-6',
+      dense: 'p-2',
+    },
+  },
+  defaultVariants: {
+    variant: 'default',
+  },
+});
+
 // Preformatted Code Block Component
 interface PreProps extends React.HTMLAttributes<HTMLPreElement> {
   children: React.ReactNode;
   testId?: string;
+  variant?: 'default' | 'dense';
 }
 
-export function Pre({ className, children, testId, ...props }: PreProps) {
+export function Pre({ className, children, testId, variant, ...props }: PreProps) {
   return (
     <pre
-      className={cn('bg-muted rounded-md p-4 my-6 text-sm overflow-y-auto', className)}
+      className={cn(preVariants({ variant }), className)}
       data-testid={testId}
       {...props}
     >

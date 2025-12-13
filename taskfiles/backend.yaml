@@ -207,3 +207,10 @@ tasks:
       - |
         {{ .PATH_PREFIX }} go-licenses report ./... --ignore github.com/redpanda-data --ignore buf.build/gen >> ../licenses/third_party_go.csv
 
+  upgrade-deps:
+    dir: "{{.BACKEND_ROOT}}"
+    desc: Upgrade backend dependencies
+    cmds:
+      - go get -u github.com/twmb/franz-go/...
+      - go get -u=patch ./...
+      - go mod tidy

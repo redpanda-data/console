@@ -54,7 +54,9 @@ export default defineConfig({
     },
     proxy: {
       context: ['/api', '/redpanda.api', '/auth', '/logout'],
-      target: 'http://localhost:9090',
+      target: process.env.PROXY_TARGET || 'http://localhost:9090',
+      changeOrigin: !!process.env.PROXY_TARGET,
+      secure: process.env.PROXY_TARGET ? false : undefined,
     },
   },
   source: {
@@ -108,16 +110,16 @@ export default defineConfig({
       if (process.env.RSDOCTOR) {
         plugins.push(
           new RsdoctorRspackPlugin({
-            supports: {
-              /**
-               * @see https://rsdoctor.dev/config/options/options#generatetilegraph
-               */
-              generateTileGraph: true,
+            disableClientServer: true,
+            output: {
+              mode: 'brief',
+              options: {
+                type: ['json'],
+              },
             },
           })
         );
       }
-
       appendPlugins(plugins);
     },
   },

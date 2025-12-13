@@ -18,6 +18,104 @@ components:
         - OPERATION_CREATE_TOKENS
         - OPERATION_DESCRIBE_TOKENS
       type: string
+    ACLAccessFilter:
+      properties:
+        host:
+          title: |-
+            The host to match.  If not set, will default to match all hosts
+            with the specified `operation` and `permission_type`. Note that
+            the asterisk `*` is literal and matches hosts that are set to `*`
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACLOperation'
+        permission_type:
+          $ref: '#/components/schemas/ACLPermissionType'
+        principal:
+          title: |-
+            The name of the principal, if not set will default to match
+            all principals with the specified `operation` and `permission_type`
+          type: string
+      title: Filter an ACL based on its access
+      type: object
+    ACLFilter:
+      properties:
+        access_filter:
+          $ref: '#/components/schemas/ACLAccessFilter'
+        resource_filter:
+          $ref: '#/components/schemas/ACLResourceFilter'
+      title: A filter for ACLs
+      type: object
+    ACLOperation:
+      enum:
+        - ACL_OPERATION_ANY
+        - ACL_OPERATION_READ
+        - ACL_OPERATION_WRITE
+        - ACL_OPERATION_CREATE
+        - ACL_OPERATION_REMOVE
+        - ACL_OPERATION_ALTER
+        - ACL_OPERATION_DESCRIBE
+        - ACL_OPERATION_CLUSTER_ACTION
+        - ACL_OPERATION_DESCRIBE_CONFIGS
+        - ACL_OPERATION_ALTER_CONFIGS
+        - ACL_OPERATION_IDEMPOTENT_WRITE
+      title: The ACL operation to match
+      type: string
+    ACLPattern:
+      description: |-
+        - ACL_PATTERN_ANY: Wildcard to match any pattern
+         - ACL_PATTERN_LITERAL: Match a literal string
+         - ACL_PATTERN_PREFIXED: Match a prefix
+         - ACL_PATTERN_MATCH: Match serves as a catch-all for all the names of a topic
+        the principal is authorized to access
+      enum:
+        - ACL_PATTERN_ANY
+        - ACL_PATTERN_LITERAL
+        - ACL_PATTERN_PREFIXED
+        - ACL_PATTERN_MATCH
+      title: The ACL pattern type
+      type: string
+    ACLPermissionType:
+      enum:
+        - ACL_PERMISSION_TYPE_ANY
+        - ACL_PERMISSION_TYPE_ALLOW
+        - ACL_PERMISSION_TYPE_DENY
+      title: ACL permission types
+      type: string
+    ACLResource:
+      description: |-
+        - ACL_RESOURCE_ANY: Wildcard for selecting any ACL resource
+         - ACL_RESOURCE_CLUSTER: Cluster wide resource
+         - ACL_RESOURCE_GROUP: Consumer group resource
+         - ACL_RESOURCE_TOPIC: Topic resource
+         - ACL_RESOURCE_TXN_ID: Transaction ID resource
+         - ACL_RESOURCE_SR_SUBJECT: Schema Registry subject resource
+         - ACL_RESOURCE_SR_REGISTRY: Schema Registry wide resource
+         - ACL_RESOURCE_SR_ANY: Wildcard to match any SR ACL resource
+      enum:
+        - ACL_RESOURCE_ANY
+        - ACL_RESOURCE_CLUSTER
+        - ACL_RESOURCE_GROUP
+        - ACL_RESOURCE_TOPIC
+        - ACL_RESOURCE_TXN_ID
+        - ACL_RESOURCE_SR_SUBJECT
+        - ACL_RESOURCE_SR_REGISTRY
+        - ACL_RESOURCE_SR_ANY
+      title: The ACL resource types
+      type: string
+    ACLResourceFilter:
+      properties:
+        name:
+          title: |-
+            Name, if not given will default to match all items in `resource_type`.
+            Note that asterisk `*` is literal and matches resource ACLs
+            that are named `*`
+          type: string
+        pattern_type:
+          $ref: '#/components/schemas/ACLPattern'
+        resource_type:
+          $ref: '#/components/schemas/ACLResource'
+      title: A filter to match ACLs for resources
+      type: object
     Action:
       enum:
         - ACTION_PREPARE
@@ -72,6 +170,56 @@ components:
           description: The topic name.
           type: string
       type: object
+    AnnotatedOption:
+      properties:
+        description:
+          type: string
+        value:
+          type: string
+      title: AnnotatedOption represents an annotated option
+      type: object
+    AuthenticationConfiguration:
+      properties:
+        plain_configuration:
+          $ref: '#/components/schemas/PlainConfig'
+        scram_configuration:
+          $ref: '#/components/schemas/ScramConfig'
+      title: |-
+        Authentication config.  Supports:
+        * SASL/SCRAM
+        * SASL/PLAIN
+      type: object
+    AuthenticationInfo:
+      properties:
+        mechanism:
+          $ref: '#/components/schemas/AuthenticationMechanism'
+        state:
+          $ref: '#/components/schemas/AuthenticationState'
+        user_principal:
+          title: Authenticated user principal
+          type: string
+      title: Other Messages
+      type: object
+    AuthenticationMechanism:
+      enum:
+        - AUTHENTICATION_MECHANISM_MTLS
+        - AUTHENTICATION_MECHANISM_SASL_SCRAM
+        - AUTHENTICATION_MECHANISM_SASL_OAUTHBEARER
+        - AUTHENTICATION_MECHANISM_SASL_PLAIN
+        - AUTHENTICATION_MECHANISM_SASL_GSSAPI
+      title: |-
+        - AUTHENTICATION_MECHANISM_MTLS: Mutual TLS using client certificates
+         - AUTHENTICATION_MECHANISM_SASL_SCRAM: SASL SCRAM
+         - AUTHENTICATION_MECHANISM_SASL_OAUTHBEARER: SASL OAUTHBEARER (OAuth 2.0 / OpenID Connect)
+         - AUTHENTICATION_MECHANISM_SASL_PLAIN: SASL PLAIN (username/password in plaintext)
+         - AUTHENTICATION_MECHANISM_SASL_GSSAPI: SASL GSSAPI (Kerberos)
+      type: string
+    AuthenticationState:
+      enum:
+        - AUTHENTICATION_STATE_UNAUTHENTICATED
+        - AUTHENTICATION_STATE_SUCCESS
+        - AUTHENTICATION_STATE_FAILURE
+      type: string
     BadRequest:
       description: |-
         Describes violations in a client request. This error type focuses on the
@@ -123,6 +271,144 @@ components:
             $ref: '#/components/schemas/SuccessfulEntity'
           type: array
       type: object
+    BloblangFunctionSpec:
+      description: BloblangFunctionSpec represents a Bloblang function specification.
+      properties:
+        categories:
+          items:
+            type: string
+          type: array
+        description:
+          type: string
+        examples:
+          items:
+            type: string
+          type: array
+        name:
+          type: string
+        params:
+          $ref: '#/components/schemas/ParamSpec'
+        status:
+          type: string
+        version:
+          type: string
+      type: object
+    BloblangMethodSpec:
+      description: BloblangMethodSpec represents a Bloblang method specification.
+      properties:
+        categories:
+          items:
+            type: string
+          type: array
+        description:
+          type: string
+        examples:
+          items:
+            type: string
+          type: array
+        name:
+          type: string
+        params:
+          $ref: '#/components/schemas/ParamSpec'
+        status:
+          type: string
+        version:
+          type: string
+      type: object
+    ComponentList:
+      description: ComponentList contains the structured component data.
+      properties:
+        bloblang_functions:
+          items:
+            $ref: '#/components/schemas/BloblangFunctionSpec'
+          type: array
+        bloblang_methods:
+          items:
+            $ref: '#/components/schemas/BloblangMethodSpec'
+          type: array
+        buffers:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        caches:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        inputs:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        metrics:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        outputs:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        processors:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        rate_limits:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        scanners:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        tracers:
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+          type: array
+        version:
+          type: string
+      type: object
+    ComponentSpec:
+      description: ComponentSpec represents a component specification.
+      properties:
+        categories:
+          items:
+            type: string
+          type: array
+        config:
+          $ref: '#/components/schemas/FieldSpec'
+        description:
+          type: string
+        examples:
+          items:
+            type: string
+          type: array
+        footnotes:
+          type: string
+        name:
+          type: string
+        status:
+          $ref: '#/components/schemas/ComponentStatus'
+        summary:
+          type: string
+        type:
+          type: string
+        version:
+          type: string
+      type: object
+    ComponentStatus:
+      description: ComponentStatus represents the stability level of a component.
+      enum:
+        - COMPONENT_STATUS_STABLE
+        - COMPONENT_STATUS_BETA
+        - COMPONENT_STATUS_EXPERIMENTAL
+        - COMPONENT_STATUS_DEPRECATED
+      type: string
+    ComponentType:
+      description: Component type for this tool.
+      enum:
+        - COMPONENT_TYPE_PROCESSOR
+        - COMPONENT_TYPE_CACHE
+        - COMPONENT_TYPE_INPUT
+        - COMPONENT_TYPE_OUTPUT
+      type: string
     Config:
       properties:
         name:
@@ -202,6 +488,14 @@ components:
         value:
           description: A topic-level config value (e.g. 1073741824).
           nullable: true
+          type: string
+      type: object
+    ConfigurationYAMLSchema:
+      properties:
+        component_type:
+          $ref: '#/components/schemas/ComponentType'
+        config_schema:
+          description: JSON schema of the configuration components that are allowed for MCP Servers.
           type: string
       type: object
     ConnectCluster:
@@ -357,6 +651,30 @@ components:
           description: Type of connector (sink or source).
           type: string
       type: object
+    ConsumerOffsetSyncOptions:
+      properties:
+        effective_interval:
+          readOnly: true
+          title: The effective interval for the task
+          type: string
+        group_filters:
+          items:
+            $ref: '#/components/schemas/NameFilter'
+          title: The filters
+          type: array
+        interval:
+          title: |-
+            Sync interval
+            If 0 provided, defaults to 30 seconds
+          type: string
+        paused:
+          title: |-
+            Allows user to pause the consumer offset sync task.  If paused, then
+            the task will enter the 'paused' state and not sync consumer offsets from
+            the source cluster
+          type: boolean
+      title: Options for syncing consumer offsets
+      type: object
     CreateACLRequest:
       properties:
         host:
@@ -421,6 +739,11 @@ components:
       properties:
         secret:
           $ref: '#/components/schemas/Secret'
+      type: object
+    CreateMCPServerResponse:
+      properties:
+        mcp_server:
+          $ref: '#/components/schemas/MCPServer'
       type: object
     CreatePipelineResponse:
       properties:
@@ -586,6 +909,8 @@ components:
     DeleteKafkaConnectSecretResponse:
       description: DeleteKafkaConnectSecretResponse is the response of DeleteKafkaConnectSecret.
       type: object
+    DeleteMCPServerResponse:
+      type: object
     DeleteMountTaskResponse:
       type: object
     DeletePipelineResponse:
@@ -639,6 +964,9 @@ components:
         - name
         - input_topic_name
         - output_topic_names
+      type: object
+    EarliestOffset:
+      description: Start at the earliest offset in the partition.
       type: object
     Entity:
       properties:
@@ -733,6 +1061,15 @@ components:
           type: string
       title: ErrorInfo
       type: object
+    FailOverBody:
+      properties:
+        shadow_topic_name:
+          title: |-
+            The name of the shadow topic to fail over, if not set will fail over
+            the entire shadow link
+          type: string
+      title: Request to fail over a shadow link or a single shadow topic
+      type: object
     FailedEntity:
       properties:
         entity_name:
@@ -743,6 +1080,44 @@ components:
           format: int32
           type: integer
         error_message:
+          type: string
+      type: object
+    FieldSpec:
+      description: FieldSpec represents a field specification.
+      properties:
+        advanced:
+          type: boolean
+        annotated_options:
+          items:
+            $ref: '#/components/schemas/AnnotatedOption'
+          type: array
+        children:
+          items:
+            $ref: '#/components/schemas/FieldSpec'
+          type: array
+        default_value:
+          type: string
+        deprecated:
+          type: boolean
+        description:
+          type: string
+        examples:
+          items:
+            type: string
+          type: array
+        interpolated:
+          items:
+            type: string
+          type: array
+        kind:
+          type: string
+        name:
+          type: string
+        optional:
+          type: boolean
+        type:
+          type: string
+        version:
           type: string
       type: object
     FieldViolation:
@@ -803,6 +1178,15 @@ components:
             which represents UPPER_SNAKE_CASE.
           type: string
       type: object
+    FilterType:
+      description: |-
+        - FILTER_TYPE_INCLUDE: Include the items that match the filter
+         - FILTER_TYPE_EXCLUDE: Exclude the items that match the filter
+      enum:
+        - FILTER_TYPE_INCLUDE
+        - FILTER_TYPE_EXCLUDE
+      title: What type of filter this is, include or exclude
+      type: string
     GetConnectClusterResponse:
       properties:
         cluster:
@@ -830,6 +1214,19 @@ components:
       properties:
         secret:
           $ref: '#/components/schemas/Secret'
+      type: object
+    GetMCPServerResponse:
+      properties:
+        mcp_server:
+          $ref: '#/components/schemas/MCPServer'
+      type: object
+    GetMCPServerServiceConfigSchemaResponse:
+      properties:
+        configuration_yamls:
+          description: The configuration schema for the MCP Server.
+          items:
+            $ref: '#/components/schemas/ConfigurationYAMLSchema'
+          type: array
       type: object
     GetMountTaskResponse:
       properties:
@@ -876,6 +1273,18 @@ components:
         secret:
           $ref: '#/components/schemas/Secret'
       type: object
+    GetShadowMetricsResponse:
+      properties:
+        error_topics:
+          format: uint64
+          type: string
+        failed_over_topics:
+          format: uint64
+          type: string
+        total_topics_replicated:
+          format: uint64
+          type: string
+      type: object
     GetTopicConfigurationsResponse:
       properties:
         configurations:
@@ -902,6 +1311,145 @@ components:
             $ref: '#/components/schemas/Link'
           type: array
       title: Help
+      type: object
+    InFlightRequests:
+      properties:
+        has_more_requests:
+          description: |-
+            Whether there are more in-flight requests than those in
+            `sampled_in_flight_requests`.
+          type: boolean
+        sampled_in_flight_requests:
+          items:
+            $ref: '#/components/schemas/Request'
+          title: A sample (e.g., the 5 latest) of the currently in-flight requests
+          type: array
+      type: object
+    KafkaConnection:
+      properties:
+        api_versions:
+          additionalProperties:
+            format: int32
+            type: integer
+          description: |-
+            This map records, for each Kafka API, the highest version number observed
+            in requests on this connection. It can be useful for understanding which
+            protocol versions a client supports or has negotiated with the broker.
+            Only APIs that were actually used (i.e. at least one request was seen)
+            are included.
+
+            Example:
+              { 0: 11, 1: 13 }
+            means that for API key 0 (Produce), version 11 was the highest seen,
+            and for API key 1 (Fetch), version 13 was the highest seen.
+
+            Reference:
+            - https://kafka.apache.org/0101/protocol.html#protocol_api_keys
+            - https://kafka.apache.org/0101/protocol.html#protocol_compatibility
+          type: object
+        authentication_info:
+          $ref: '#/components/schemas/AuthenticationInfo'
+        client_id:
+          description: |-
+            Client identifier included in every request sent by the Kafka client.
+            This is typically a configurable property (client.id) set by the
+            application when creating a producer or consumer, and is often used for
+            metrics, quotas, and debugging.
+          type: string
+        client_software_name:
+          description: |-
+            Name of the client library, reported automatically in ApiVersions v3+
+            requests. This is set by the client implementation and is not typically
+            configurable by applications.
+          type: string
+        client_software_version:
+          description: |-
+            Version of the client library, reported automatically in ApiVersions v3+
+            requests. Like client_software_name, this is set by the
+            client and not usually configurable by applications.
+          type: string
+        close_time:
+          description: |-
+            When the connection was closed. This field is set only when the
+            connection state is "closed".
+          format: date-time
+          type: string
+        group_id:
+          description: |-
+            Most recent group ID seen in requests sent over this connection. This
+            typically refers to a consumer group, but the Kafka group protocol is
+            more general and may also be used by other types of clients that
+            coordinate membership and assignments through the broker.
+          type: string
+        group_instance_id:
+          description: |-
+            Most recent group instance ID seen in requests sent over this connection.
+            This is used when static membership is enabled, allowing a specific
+            client instance to retain its group membership across restarts.
+          type: string
+        group_member_id:
+          description: |-
+            Most recent group member ID seen in requests sent over this connection.
+            This is the unique identifier assigned by the broker to a particular
+            member of the group.
+          type: string
+        idle_duration:
+          title: How long the connection has been idle (no in-flight requests)
+          type: string
+        in_flight_requests:
+          $ref: '#/components/schemas/InFlightRequests'
+        listener_name:
+          description: |-
+            Name of the Kafka listener that accepted this connection.
+            A listener is a named broker endpoint (for example, "internal",
+            "external", or "sasl_tls"). Each listener defines its network address and
+            enforces its protocol and authentication policy.
+          type: string
+        node_id:
+          format: int32
+          title: Broker node ID
+          type: integer
+        open_time:
+          format: date-time
+          title: When the broker accepted the connection
+          type: string
+        recent_request_statistics:
+          $ref: '#/components/schemas/RequestStatistics'
+        shard_id:
+          format: int64
+          title: Broker shard that handles the connection
+          type: integer
+        source:
+          $ref: '#/components/schemas/Source'
+        state:
+          $ref: '#/components/schemas/KafkaConnectionState'
+        tls_info:
+          $ref: '#/components/schemas/TLSInfo'
+        total_request_statistics:
+          $ref: '#/components/schemas/RequestStatistics'
+        transactional_id:
+          title: Most recent transactional ID seen in requests sent over this connection
+          type: string
+        uid:
+          title: Kafka connection UUID
+          type: string
+      title: Kafka connection details for a broker
+      type: object
+    KafkaConnectionState:
+      description: |-
+        - KAFKA_CONNECTION_STATE_OPEN: The connection is accepting requests.
+         - KAFKA_CONNECTION_STATE_ABORTING: The connection is aborting ongoing requests and about to be closed.
+        This is a transient state between open and closed that should rarely be
+        observable under normal circumstances.
+         - KAFKA_CONNECTION_STATE_CLOSED: The connection has been closed.
+      enum:
+        - KAFKA_CONNECTION_STATE_OPEN
+        - KAFKA_CONNECTION_STATE_ABORTING
+        - KAFKA_CONNECTION_STATE_CLOSED
+      title: Enums
+      type: string
+    LatestOffset:
+      description: Start at the latest offset in the partition.
       type: object
     Link:
       description: Describes a URL link.
@@ -930,6 +1478,24 @@ components:
         lint_type:
           description: Optional lint type or enum.
           type: string
+      type: object
+    LintMCPConfigRequest:
+      properties:
+        tools:
+          additionalProperties:
+            $ref: '#/components/schemas/Tool'
+          description: The Redpanda Connect MCP tools configuration in YAML format.
+          type: object
+      required:
+        - tools
+      type: object
+    LintMCPConfigResponse:
+      properties:
+        lint_hints:
+          additionalProperties:
+            $ref: '#/components/schemas/LintHint'
+          description: A list of linting issues.
+          type: object
       type: object
     LintPipelineConfigRequest:
       properties:
@@ -981,8 +1547,27 @@ components:
       properties:
         resources:
           items:
-            $ref: '#/components/schemas/Resource'
+            $ref: '#/components/schemas/ListACLsResponse.Resource'
           type: array
+      type: object
+    ListACLsResponse.Resource:
+      properties:
+        acls:
+          items:
+            $ref: '#/components/schemas/Policy'
+          type: array
+        resource_name:
+          description: The name of the resource this ACL targets.
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+      type: object
+    ListComponentsResponse:
+      properties:
+        components:
+          $ref: '#/components/schemas/ComponentList'
       type: object
     ListConnectClustersResponse:
       properties:
@@ -1022,6 +1607,56 @@ components:
             $ref: '#/components/schemas/Secret'
           type: array
       type: object
+    ListKafkaConnectionsResponse:
+      description: |-
+        ListKafkaConnectionsResponse is the response from the ListKafkaConnections
+        RPC.
+      properties:
+        connections:
+          description: |-
+            The list of connections matching the request.
+            Note that in addition to open connections, some recently-closed
+            connections may also be included here. If you don't want to include
+            closed connections, set the filter in the request to `state =
+            KAFKA_CONNECTION_STATE_OPEN`.
+          items:
+            $ref: '#/components/schemas/KafkaConnection'
+          type: array
+        total_size:
+          format: uint64
+          title: |-
+            Total number of connections matching the request.
+            This may be greater than `len(connections)` if some connections were
+            omitted from the response due to the specified (or default) `page_size`.
+            Example:
+              request.page_size = 10
+              response.connections = [<10 items>]
+              response.total_size = 13
+          type: string
+      type: object
+    ListMCPServersRequest.Filter:
+      properties:
+        display_name_contains:
+          description: Any MCP Server that partially match this name will be returned.
+          type: string
+        secret_id:
+          description: Match MCP servers that use this secret ID.
+          type: string
+        tags[string]:
+          additionalProperties:
+            type: string
+          description: MCP servers that match all the provided tags will be returned.
+          type: object
+      type: object
+    ListMCPServersResponse:
+      properties:
+        mcp_servers:
+          items:
+            $ref: '#/components/schemas/MCPServer'
+          type: array
+        next_page_token:
+          type: string
+      type: object
     ListMountTasksResponse:
       properties:
         tasks:
@@ -1040,6 +1675,8 @@ components:
       properties:
         name_contains:
           description: Any pipelines that partially match this name will be returned.
+          type: string
+        secret_id:
           type: string
         tags[string]:
           additionalProperties:
@@ -1077,6 +1714,38 @@ components:
             $ref: '#/components/schemas/QuotaEntry'
           type: array
       type: object
+    ListResourcesRequest.Filter:
+      properties:
+        scopes:
+          items:
+            $ref: '#/components/schemas/Scope'
+          type: array
+        secret_id:
+          type: string
+      type: object
+    ListResourcesResponse:
+      properties:
+        resources:
+          items:
+            $ref: '#/components/schemas/ListResourcesResponse.Resource'
+          type: array
+      type: object
+    ListResourcesResponse.Resource:
+      properties:
+        display_name:
+          type: string
+        id:
+          type: string
+        type:
+          $ref: '#/components/schemas/ListResourcesResponse.Type'
+      type: object
+    ListResourcesResponse.Type:
+      enum:
+        - TYPE_PIPELINE
+        - TYPE_CLUSTER
+        - TYPE_MCP_SERVER
+        - TYPE_AI_AGENT
+      type: string
     ListRoleMembersRequest.Filter:
       description: Filter options.
       properties:
@@ -1159,6 +1828,23 @@ components:
           description: Secrets retrieved.
           items:
             $ref: '#/components/schemas/Secret'
+          type: array
+      type: object
+    ListShadowLinkTopicsRequest.Filter:
+      properties:
+        topic_name_contains:
+          description: Substring match on shadow topic name. Case-sensitive.
+          type: string
+      type: object
+    ListShadowLinkTopicsResponse:
+      properties:
+        next_page_token:
+          title: Token to retrieve the next page
+          type: string
+        shadow_topics:
+          items:
+            $ref: '#/components/schemas/v1.ShadowTopic'
+          title: Shadow topic status information
           type: array
       type: object
     ListTopicsRequest.Filter:
@@ -1251,6 +1937,133 @@ components:
           description: The localized error message in the above locale.
           type: string
       type: object
+    MCPServer:
+      description: Defines the MCP server resource.
+      properties:
+        description:
+          description: Optional MCP server description.
+          type: string
+        display_name:
+          description: User-friendly MCP server name.
+          type: string
+        id:
+          description: MCP Server ID.
+          type: string
+        resources:
+          $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/MCPServer.ServiceAccount'
+        state:
+          $ref: '#/components/schemas/MCPServer.State'
+        status:
+          $ref: '#/components/schemas/MCPServer.Status'
+        tags:
+          additionalProperties:
+            type: string
+          description: |-
+            Tags are key-value pairs that can be assigned to a MCP server resource.
+            They help organize MCP servers and enable filtering when listing them.
+          type: object
+        tools:
+          additionalProperties:
+            $ref: '#/components/schemas/Tool'
+          description: The Redpanda Connect MCP server configuration.
+          type: object
+        url:
+          readOnly: true
+          title: URL to connect to the MCP server
+          type: string
+      required:
+        - id
+        - display_name
+        - tools
+        - service_account
+      type: object
+    MCPServer.ServiceAccount:
+      properties:
+        client_id:
+          type: string
+        client_secret:
+          type: string
+      required:
+        - client_id
+        - client_secret
+      type: object
+    MCPServer.State:
+      description: |-
+        State of the MCP server.
+
+         - STATE_STARTING: The MCP server is starting.
+         - STATE_RUNNING: The MCP server is running.
+         - STATE_STOPPING: The MCP server is in the process of stopping.
+         - STATE_STOPPED: The MCP server is stopped and in paused state.
+         - STATE_ERROR: The MCP server encountered an error.
+      enum:
+        - STATE_STARTING
+        - STATE_RUNNING
+        - STATE_STOPPING
+        - STATE_STOPPED
+        - STATE_ERROR
+      type: string
+    MCPServer.Status:
+      description: MCP server status may contain an error message.
+      properties:
+        error:
+          type: string
+      type: object
+    MCPServerCreate:
+      description: MCPServerCreate contains the details for the MCP Server creation request.
+      properties:
+        description:
+          description: MCP server description.
+          type: string
+        display_name:
+          description: User-friendly MCP server name.
+          type: string
+        resources:
+          $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/MCPServer.ServiceAccount'
+        tags:
+          additionalProperties:
+            type: string
+          description: Optional list of tags to attach to a MCP server.
+          type: object
+        tools:
+          additionalProperties:
+            $ref: '#/components/schemas/Tool'
+          description: The Redpanda Connect MCP server configuration.
+          type: object
+      required:
+        - display_name
+        - tools
+        - service_account
+      type: object
+    MCPServerUpdate:
+      properties:
+        description:
+          description: MCP server description.
+          type: string
+        display_name:
+          description: User-friendly MCP servers name.
+          type: string
+        resources:
+          $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/MCPServer.ServiceAccount'
+        tags:
+          additionalProperties:
+            type: string
+          description: |-
+            A map of tags to add, update or delete.
+            If a tag's value is empty, the server interprets that as a deletion.
+          type: object
+        tools:
+          additionalProperties:
+            $ref: '#/components/schemas/Tool'
+          description: The Redpanda Connect MCP server configuration.
+          type: object
+      type: object
     MatchingACL:
       properties:
         error:
@@ -1339,6 +2152,20 @@ components:
           title: ID of mount
           type: integer
       type: object
+    NameFilter:
+      properties:
+        filter_type:
+          $ref: '#/components/schemas/FilterType'
+        name:
+          title: |-
+            The resource name, or "*"
+            Note if "*", must be the _only_ character
+            and `pattern_type` must be `PATTERN_TYPE_LITERAL`
+          type: string
+        pattern_type:
+          $ref: '#/components/schemas/PatternType'
+      title: A filter based on the name of a resource
+      type: object
     Options:
       properties:
         include_tasks:
@@ -1347,6 +2174,26 @@ components:
         only_failed:
           description: Restart only connectors that have failed.
           type: boolean
+      type: object
+    ParamDefinition:
+      description: ParamDefinition represents a parameter definition.
+      properties:
+        default_value:
+          type: string
+        description:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+      type: object
+    ParamSpec:
+      description: ParamSpec represents parameter specifications.
+      properties:
+        definitions:
+          items:
+            $ref: '#/components/schemas/ParamDefinition'
+          type: array
       type: object
     PartitionStatus:
       enum:
@@ -1369,6 +2216,15 @@ components:
         status:
           $ref: '#/components/schemas/PartitionStatus'
       type: object
+    PatternType:
+      description: |-
+        - PATTERN_TYPE_LITERAL: Must match the filter exactly
+         - PATTERN_TYPE_PREFIX: Will match anything that starts with filter
+      enum:
+        - PATTERN_TYPE_LITERAL
+        - PATTERN_TYPE_PREFIX
+      title: The matching pattern type
+      type: string
     PermissionType:
       description: Whether the operation should be allowed or denied.
       enum:
@@ -1397,7 +2253,7 @@ components:
         resources:
           $ref: '#/components/schemas/Resources'
         service_account:
-          $ref: '#/components/schemas/ServiceAccount'
+          $ref: '#/components/schemas/Pipeline.ServiceAccount'
         state:
           $ref: '#/components/schemas/Pipeline.State'
         status:
@@ -1418,6 +2274,13 @@ components:
         - id
         - display_name
         - config_yaml
+      type: object
+    Pipeline.ServiceAccount:
+      properties:
+        client_id:
+          type: string
+        client_secret:
+          type: string
       type: object
     Pipeline.State:
       description: |-
@@ -1458,7 +2321,7 @@ components:
         resources:
           $ref: '#/components/schemas/Resources'
         service_account:
-          $ref: '#/components/schemas/ServiceAccount'
+          $ref: '#/components/schemas/Pipeline.ServiceAccount'
         tags:
           additionalProperties:
             type: string
@@ -1482,7 +2345,7 @@ components:
         resources:
           $ref: '#/components/schemas/Resources'
         service_account:
-          $ref: '#/components/schemas/ServiceAccount'
+          $ref: '#/components/schemas/Pipeline.ServiceAccount'
         tags:
           additionalProperties:
             type: string
@@ -1502,6 +2365,27 @@ components:
           type: array
         secret_id:
           type: string
+      type: object
+    PlainConfig:
+      properties:
+        password:
+          title: Password
+          type: string
+        password_set:
+          readOnly: true
+          title: Indicates that the password has been set
+          type: boolean
+        password_set_at:
+          format: date-time
+          readOnly: true
+          title: |-
+            Timestamp of when the password was last set - only valid if password_set
+            is true
+          type: string
+        username:
+          title: PLAIN username
+          type: string
+      title: PLAIN settings
       type: object
     Policy:
       properties:
@@ -1685,6 +2569,18 @@ components:
             type: integer
           type: array
       type: object
+    Request:
+      properties:
+        api_key:
+          format: int32
+          title: |-
+            API key for the request type (e.g., produce/fetch/metadata/etc)
+            https://kafka.apache.org/0101/protocol.html#protocol_api_keys
+          type: integer
+        in_flight_duration:
+          title: How long the request has been in-flight since it was received
+          type: string
+      type: object
     RequestQuotaEntity:
       properties:
         entity_name:
@@ -1704,19 +2600,26 @@ components:
         value_type:
           $ref: '#/components/schemas/ValueType'
       type: object
-    Resource:
+    RequestStatistics:
       properties:
-        acls:
-          items:
-            $ref: '#/components/schemas/Policy'
-          type: array
-        resource_name:
-          description: The name of the resource this ACL targets.
+        fetch_bytes:
+          description: Sum of bytes fetched.
+          format: uint64
           type: string
-        resource_pattern_type:
-          $ref: '#/components/schemas/ResourcePatternType'
-        resource_type:
-          $ref: '#/components/schemas/ResourceType'
+        produce_batch_count:
+          format: uint64
+          title: |-
+            Number of produced batches.
+            Average batch size = produce_bytes / produce_batch_count
+          type: string
+        produce_bytes:
+          description: Sum of bytes produced.
+          format: uint64
+          type: string
+        request_count:
+          description: Number of requests the client has made.
+          format: uint64
+          type: string
       type: object
     ResourcePatternType:
       description: |-
@@ -1793,6 +2696,12 @@ components:
         - SASL_MECHANISM_SCRAM_SHA_256
         - SASL_MECHANISM_SCRAM_SHA_512
       type: string
+    SchemaRegistrySyncOptions:
+      description: Options for how the Schema Registry is synced.
+      properties:
+        shadow_schema_registry_topic:
+          $ref: '#/components/schemas/ShadowSchemaRegistryTopic'
+      type: object
     Scope:
       description: Defines the scope of a secret.
       enum:
@@ -1800,6 +2709,39 @@ components:
         - SCOPE_REDPANDA_CLUSTER
         - SCOPE_MCP_SERVER
         - SCOPE_AI_AGENT
+        - SCOPE_AI_GATEWAY
+      type: string
+    ScramConfig:
+      properties:
+        password:
+          title: Password
+          type: string
+        password_set:
+          readOnly: true
+          title: Indicates that the password has been set
+          type: boolean
+        password_set_at:
+          format: date-time
+          readOnly: true
+          title: |-
+            Timestamp of when the password was last set - only valid if password_set
+            is true
+          type: string
+        scram_mechanism:
+          $ref: '#/components/schemas/ScramMechanism'
+        username:
+          title: SCRAM username
+          type: string
+      title: SCRAM settings
+      type: object
+    ScramMechanism:
+      description: |-
+        - SCRAM_MECHANISM_SCRAM_SHA_256: SCRAM-SHA-256
+         - SCRAM_MECHANISM_SCRAM_SHA_512: SCRAM-SHA-512
+      enum:
+        - SCRAM_MECHANISM_SCRAM_SHA_256
+        - SCRAM_MECHANISM_SCRAM_SHA_512
+      title: Valid SCRAM mechanisms
       type: string
     Secret:
       description: Defines the secret resource.
@@ -1819,12 +2761,29 @@ components:
           title: Secret scopes
           type: array
       type: object
-    ServiceAccount:
+    SecuritySettingsSyncOptions:
       properties:
-        client_id:
+        acl_filters:
+          items:
+            $ref: '#/components/schemas/ACLFilter'
+          title: ACL filters
+          type: array
+        effective_interval:
+          readOnly: true
+          title: The effective interval for the task
           type: string
-        client_secret:
+        interval:
+          title: |-
+            Sync interval
+            If 0 provided, defaults to 30 seconds
           type: string
+        paused:
+          title: |-
+            Allows user to pause the security settings sync task.  If paused,
+            then the task will enter the 'paused' state and will not sync security
+            settings from the source cluster
+          type: boolean
+      title: Options for syncing security settings
       type: object
     SetConfiguration:
       properties:
@@ -1888,10 +2847,211 @@ components:
       type: object
     SetTopicPartitionsResponse:
       type: object
+    ShadowLinkClientOptions:
+      properties:
+        authentication_configuration:
+          $ref: '#/components/schemas/AuthenticationConfiguration'
+        bootstrap_servers:
+          items:
+            type: string
+          title: The bootstrap servers to use
+          type: array
+        client_id:
+          readOnly: true
+          title: |-
+            The Client ID for the Kafka RPC requests setn by this cluster to the
+            source cluster
+          type: string
+        connection_timeout_ms:
+          format: int32
+          title: |-
+            Connection timeout.
+            If 0 is provided, defaults to 1 second
+          type: integer
+        effective_connection_timeout_ms:
+          format: int32
+          readOnly: true
+          title: The effective connection timeout in milliseconds
+          type: integer
+        effective_fetch_max_bytes:
+          format: int32
+          readOnly: true
+          title: The effective fetch max bytes
+          type: integer
+        effective_fetch_min_bytes:
+          format: int32
+          readOnly: true
+          title: The effective fetch min bytes
+          type: integer
+        effective_fetch_partition_max_bytes:
+          format: int32
+          readOnly: true
+          title: The effective fetch partition max bytes
+          type: integer
+        effective_fetch_wait_max_ms:
+          format: int32
+          readOnly: true
+          title: The effective fetch wait max in milliseconds
+          type: integer
+        effective_metadata_max_age_ms:
+          format: int32
+          readOnly: true
+          title: The effective metadata max age in milliseconds
+          type: integer
+        effective_retry_backoff_ms:
+          format: int32
+          readOnly: true
+          title: The effective retry backoff in milliseconds
+          type: integer
+        fetch_max_bytes:
+          format: int32
+          title: |-
+            Fetch max bytes.
+            If 0 is provided, defaults to 20 MiB
+          type: integer
+        fetch_min_bytes:
+          format: int32
+          title: |-
+            Fetch min bytes.
+            If 0 is provided, defaults to 5 MiB
+          type: integer
+        fetch_partition_max_bytes:
+          format: int32
+          title: |-
+            Fetch partition max bytes.
+            If 0 is provided, defaults to 5 MiB
+          type: integer
+        fetch_wait_max_ms:
+          format: int32
+          title: |-
+            Fetch request timeout.
+            If 0 is provided, defaults to 500ms
+          type: integer
+        metadata_max_age_ms:
+          format: int32
+          title: |-
+            Max metadata age.
+            If 0 is provided, defaults to 10 seconds
+          type: integer
+        retry_backoff_ms:
+          format: int32
+          title: |-
+            Retry base backoff.
+            If 0 is provided, defaults to 100ms
+          type: integer
+        source_cluster_id:
+          title: |-
+            If provided, this is the expected ID of the source cluster.  If it does
+            not match then the connection will be rejected.  If provided, this value
+            must match the `ClusterId` field returned in the Kafka Metadata response
+            message
+          type: string
+        tls_settings:
+          $ref: '#/components/schemas/TLSSettings'
+      required:
+        - bootstrap_servers
+      title: Options for the client link
+      type: object
+    ShadowLinkConfigurations:
+      properties:
+        client_options:
+          $ref: '#/components/schemas/ShadowLinkClientOptions'
+        consumer_offset_sync_options:
+          $ref: '#/components/schemas/ConsumerOffsetSyncOptions'
+        schema_registry_sync_options:
+          $ref: '#/components/schemas/SchemaRegistrySyncOptions'
+        security_sync_options:
+          $ref: '#/components/schemas/SecuritySettingsSyncOptions'
+        topic_metadata_sync_options:
+          $ref: '#/components/schemas/TopicMetadataSyncOptions'
+      title: ShadowLink options
+      type: object
+    ShadowLinkState:
+      description: |-
+        - SHADOW_LINK_STATE_ACTIVE: Shadow link is active
+         - SHADOW_LINK_STATE_PAUSED: Shadow link was paused
+      enum:
+        - SHADOW_LINK_STATE_ACTIVE
+        - SHADOW_LINK_STATE_PAUSED
+      title: State of the shadow link
+      type: string
+    ShadowLinkTaskStatus:
+      properties:
+        broker_id:
+          format: int32
+          title: The broker the task is running on
+          type: integer
+        name:
+          title: Name of the task
+          type: string
+        reason:
+          title: Reason for task being in state
+          type: string
+        shard:
+          format: int32
+          title: The shard the task is running on
+          type: integer
+        state:
+          $ref: '#/components/schemas/TaskState'
+      title: Status of a task
+      type: object
+    ShadowSchemaRegistryTopic:
+      description: |-
+        Shadow the entire source cluster's Schema Registry byte-for-byte.
+        If set, the Shadow Link will attempt to add the `_schemas`
+        topic to the list of Shadow Topics as long as:
+        1. The `_schemas` topic exists on the source cluster
+        2. The `_schemas` topic does not exist on the shadow cluster, or it is
+        empty.
+        If either of the above conditions are _not_ met, then the `_schemas`
+        topic will _not_ be shadowed by this cluster. Unsetting this flag will
+        _not_ remove the `_schemas` topic from shadowing if it has already been
+        added.  Once made a shadow topic, the
+        `_schemas` topic will be replicated byte-for-byte.  To stop shadowing the
+        `_schemas` topic, unset this field, then either fail-over the topic or
+        delete it.
+      type: object
+    ShadowTopicState:
+      description: |-
+        - SHADOW_TOPIC_STATE_ACTIVE: Shadow topic is active
+         - SHADOW_TOPIC_STATE_FAULTED: Shadow topic has faulted
+         - SHADOW_TOPIC_STATE_PAUSED: Shadow topic has been paused
+         - SHADOW_TOPIC_STATE_FAILING_OVER: Shadow topic is in the process of failing over
+         - SHADOW_TOPIC_STATE_FAILED_OVER: Shadow topic has failed over successfully
+         - SHADOW_TOPIC_STATE_PROMOTING: Shadow topic is in the process of being promoted
+         - SHADOW_TOPIC_STATE_PROMOTED: Shadow topic is promoted successfully
+      enum:
+        - SHADOW_TOPIC_STATE_ACTIVE
+        - SHADOW_TOPIC_STATE_FAULTED
+        - SHADOW_TOPIC_STATE_PAUSED
+        - SHADOW_TOPIC_STATE_FAILING_OVER
+        - SHADOW_TOPIC_STATE_FAILED_OVER
+        - SHADOW_TOPIC_STATE_PROMOTING
+        - SHADOW_TOPIC_STATE_PROMOTED
+      title: State of a shadow topic
+      type: string
+    Source:
+      properties:
+        ip_address:
+          type: string
+        port:
+          format: int64
+          type: integer
+      type: object
+    StartMCPServerResponse:
+      properties:
+        mcp_server:
+          $ref: '#/components/schemas/MCPServer'
+      type: object
     StartPipelineResponse:
       properties:
         pipeline:
           $ref: '#/components/schemas/Pipeline'
+      type: object
+    StopMCPServerResponse:
+      properties:
+        mcp_server:
+          $ref: '#/components/schemas/MCPServer'
       type: object
     StopPipelineResponse:
       properties:
@@ -1905,6 +3065,60 @@ components:
         entity_type:
           $ref: '#/components/schemas/EntityType'
       type: object
+    TLSFileSettings:
+      properties:
+        ca_path:
+          title: Path to the CA
+          type: string
+        cert_path:
+          title: Path to the cert
+          type: string
+        key_path:
+          title: |-
+            Key and Cert are optional but if one is provided, then both must be
+            Path to the key
+          type: string
+      title: TLS file settings
+      type: object
+    TLSInfo:
+      properties:
+        enabled:
+          title: Whether TLS is in use
+          type: boolean
+      type: object
+    TLSPEMSettings:
+      properties:
+        ca:
+          title: The CA
+          type: string
+        cert:
+          title: The cert
+          type: string
+        key:
+          title: |-
+            Key and Cert are optional but if one is provided, then both must be
+            The key
+          type: string
+        key_fingerprint:
+          readOnly: true
+          title: The SHA-256 of the key, in base64 format
+          type: string
+      title: Used when providing the TLS information in PEM format
+      type: object
+    TLSSettings:
+      properties:
+        do_not_set_sni_hostname:
+          title: If true, the SNI hostname will not be provided when TLS is used
+          type: boolean
+        enabled:
+          title: Whether or not TLS is enabled
+          type: boolean
+        tls_file_settings:
+          $ref: '#/components/schemas/TLSFileSettings'
+        tls_pem_settings:
+          $ref: '#/components/schemas/TLSPEMSettings'
+      title: TLS settings
+      type: object
     TaskInfo:
       properties:
         connector:
@@ -1915,6 +3129,21 @@ components:
           format: int32
           type: integer
       type: object
+    TaskState:
+      description: |-
+        - TASK_STATE_ACTIVE: Task is active
+         - TASK_STATE_PAUSED: Task was paused
+         - TASK_STATE_LINK_UNAVAILABLE: Task is unable to communicate with source cluster
+         - TASK_STATE_NOT_RUNNING: Task is not running
+         - TASK_STATE_FAULTED: Task is faulted
+      enum:
+        - TASK_STATE_ACTIVE
+        - TASK_STATE_PAUSED
+        - TASK_STATE_LINK_UNAVAILABLE
+        - TASK_STATE_NOT_RUNNING
+        - TASK_STATE_FAULTED
+      title: Task states
+      type: string
     TaskStatus:
       properties:
         id:
@@ -1931,6 +3160,17 @@ components:
           description: ID of worker that the task is assigned to.
           type: string
       type: object
+    Tool:
+      description: A configuration tool for the MCP server.
+      properties:
+        component_type:
+          $ref: '#/components/schemas/ComponentType'
+        config_yaml:
+          description: The contents of the configuration tool in YAML format.
+          type: string
+      required:
+        - config_yaml
+      type: object
     TopicLocation:
       properties:
         topic_location:
@@ -1942,6 +3182,89 @@ components:
         topic_name:
           description: Topic name.
           type: string
+      type: object
+    TopicMetadataSyncOptions:
+      properties:
+        auto_create_shadow_topic_filters:
+          description: |-
+            List of filters that indicate which topics should be automatically
+            created as shadow topics on the shadow cluster.  This only controls
+            automatic creation of shadow topics and does not effect the state of the
+            mirror topic once it is created.
+            Literal filters for __consumer_offsets, _redpanda.audit_log and _schemas
+            will be rejected as well as prefix filters to match topics prefixed with
+            _redpanda or __redpanda.
+            Wildcard `*` is permitted only for literal filters and will _not_ match
+            any topics that start with _redpanda or __redpanda.  If users wish to
+            shadow topics that start with _redpanda or __redpanda, they should
+            provide a literal filter for those topics.
+          items:
+            $ref: '#/components/schemas/NameFilter'
+          type: array
+        effective_interval:
+          readOnly: true
+          title: The effective interval for the task
+          type: string
+        exclude_default:
+          description: |-
+            If this is true, then only the properties listed in
+            `synced_shadow_topic_properties` will be synced.
+          title: |-
+            If false, then the following topic properties will be synced by default:
+            - `compression.type`
+            - `retention.bytes`
+            - `retention.ms`
+            - `delete.retention.ms`
+            - Replication Factor
+            - `min.compaction.lag.ms`
+            - `max.compaction.lag.ms`
+          type: boolean
+        interval:
+          title: |-
+            How often to sync metadata
+            If 0 provided, defaults to 30 seconds
+          type: string
+        paused:
+          title: |-
+            Allows user to pause the topic sync task.  If paused, then
+            the task will enter the 'paused' state and not sync topics or their
+            properties from the source cluster
+          type: boolean
+        start_at_earliest:
+          $ref: '#/components/schemas/EarliestOffset'
+        start_at_latest:
+          $ref: '#/components/schemas/LatestOffset'
+        start_at_timestamp:
+          description: |-
+            Enables data replication from the first offset on the
+            source topic/partition where the record's timestamp is
+            at or after the specified timestamp.
+          format: date-time
+          type: string
+        synced_shadow_topic_properties:
+          description: |-
+            The following properties are not allowed to be replicated and adding them
+            to this list will result in an error:
+            - `redpanda.remote.readreplica`
+            - `redpanda.remote.recovery`
+            - `redpanda.remote.allowgaps`
+            - `redpanda.virtual.cluster.id`
+            - `redpanda.leaders.preference`
+            - `redpanda.cloud_topic.enabled`
+
+            This list is a list of properties in addition to the default properties
+            that will be synced.  See `exclude_default`.
+          items:
+            type: string
+          title: |-
+            List of topic properties that should be synced from the source topic.
+            The following properties will always be replicated
+            - Partition count
+            - `max.message.bytes`
+            - `cleanup.policy`
+            - `timestamp.type`
+          type: array
+      title: Options for syncing topic metadata
       type: object
     TopicMount:
       description: |-
@@ -1963,6 +3286,30 @@ components:
           type: string
       required:
         - source_topic_reference
+      type: object
+    TopicPartitionInformation:
+      properties:
+        high_watermark:
+          format: int64
+          title: Shadowed partition's HWM
+          type: string
+        partition_id:
+          format: int64
+          title: Partition ID
+          type: string
+        source_high_watermark:
+          format: int64
+          title: Source partition's HWM
+          type: string
+        source_last_stable_offset:
+          format: int64
+          title: Source partition's LSO
+          type: string
+        source_last_updated_timestamp:
+          format: date-time
+          title: Timestamp of the last time the source partition information was updated
+          type: string
+      title: Topic partition information
       type: object
     TransformMetadata:
       properties:
@@ -2026,6 +3373,11 @@ components:
       properties:
         secret:
           $ref: '#/components/schemas/Secret'
+      type: object
+    UpdateMCPServerResponse:
+      properties:
+        mcp_server:
+          $ref: '#/components/schemas/MCPServer'
       type: object
     UpdateMountTaskBody:
       properties:
@@ -2226,6 +3578,69 @@ components:
         message:
           description: Detailed error message. No compatibility guarantees are given for the text contained in this message.
           type: string
+      type: object
+    v1.FailOverResponse:
+      properties:
+        failed_over_topics:
+          items:
+            type: string
+          title: |-
+            List of topics that were failed over
+            If shadow_topic_name was specified in the request, this will contain only that topic
+            If shadow_topic_name was not specified, this will contain all topics in the shadow link
+          type: array
+        name:
+          title: Name of the shadow link that was failed over
+          type: string
+      type: object
+    v1.GetShadowLinkResponse:
+      properties:
+        shadow_link:
+          $ref: '#/components/schemas/v1.ShadowLink'
+      type: object
+    v1.GetShadowTopicResponse:
+      properties:
+        shadow_topic:
+          $ref: '#/components/schemas/v1.ShadowTopic'
+      type: object
+    v1.ShadowLink:
+      properties:
+        configurations:
+          $ref: '#/components/schemas/ShadowLinkConfigurations'
+        name:
+          title: Return name, configuration, and overall state
+          type: string
+        state:
+          $ref: '#/components/schemas/ShadowLinkState'
+        synced_shadow_topic_properties:
+          items:
+            type: string
+          type: array
+        tasks_status:
+          items:
+            $ref: '#/components/schemas/ShadowLinkTaskStatus'
+          type: array
+        uid:
+          type: string
+      type: object
+    v1.ShadowTopic:
+      properties:
+        partitions:
+          items:
+            $ref: '#/components/schemas/TopicPartitionInformation'
+          type: array
+        state:
+          $ref: '#/components/schemas/ShadowTopicState'
+        topic_id:
+          type: string
+        topic_name:
+          type: string
+        total_lag:
+          format: int64
+          type: string
+        total_partitions:
+          format: int32
+          type: integer
       type: object
   securitySchemes:
     auth0:
@@ -3529,6 +4944,7 @@ paths:
                 - SCOPE_REDPANDA_CLUSTER
                 - SCOPE_MCP_SERVER
                 - SCOPE_AI_AGENT
+                - SCOPE_AI_GATEWAY
               type: string
             type: array
         - description: |-
@@ -3774,6 +5190,99 @@ paths:
       summary: Update Connect cluster secret
       tags:
         - Secrets
+  /v1/monitoring/kafka/connections:
+    get:
+      description: List information on recent connections to the cluster.
+      operationId: MonitoringService_ListKafkaConnections
+      parameters:
+        - description: |-
+            The maximum number of connections to return. If unspecified or 0, a
+            default value may be applied. The server may return fewer connections
+            than requested due to memory constraints; the limit is set to allow
+            listing all connections for a single broker. Consider filtering by
+            node_id to view connections for specific brokers. Note that paging is
+            currently not fully supported, and this field only acts as a limit for
+            the first page of data returned. Subsequent pages of data cannot be
+            requested.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: |-
+            Filter expression to apply to the connection list.
+            Uses a subset of AIP-160 filter syntax supporting:
+            - Field comparisons (`=`, `!=`, `<`, `>`, `<=`, `>=`)
+            - Logical AND chaining: condition1 AND condition2
+            - Nested field access: parent.child = value
+            - Escape sequences: field = "string with \"quotes\""
+            - Enum types
+            - RFC3339 timestamps and ISO-like duration
+
+            Limitations (not supported):
+            - Logical OR chaining
+            - Parentheses `(` `)` for grouping
+            - Map and repeated types
+            - HAS (:) operator
+            - Negation (-, NOT)
+            - Bare literal matching
+
+            Example filters:
+            - `state = KAFKA_CONNECTION_STATE_OPEN`
+            - `idle_duration > 30s AND total_request_statistics.request_count > 100`
+            - `authentication_info.user_principal = "my-producer"`
+            - `recent_request_statistics.produce_bytes > 1000 AND
+            client_software_name = "kgo"`
+            - `open_time >= 2025-09-01T10:22:54Z`
+
+            Reference: https://google.aip.dev/160
+          in: query
+          name: filter
+          schema:
+            type: string
+        - description: |-
+            Field-based ordering specification following AIP-132 syntax.
+            Supports multiple fields with `asc`/`desc` direction indicators.
+            Examples:
+            - `idle_duration desc` - longest idle connections first
+            - `open_time desc, total_request_statistics.request_count desc` - newest
+            connections first, then most active
+            - `recent_request_statistics.produce_bytes desc` - connections with
+            highest current produce throughput first
+
+            Reference: https://google.aip.dev/132#ordering
+          in: query
+          name: order_by
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListKafkaConnectionsResponse'
+          description: Recent connections
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Recent Connections
+      tags:
+        - Monitoring
   /v1/quotas:
     get:
       description: List client quotas. Use filter parameters to narrow results by entity type and filter criteria.
@@ -3997,6 +5506,43 @@ paths:
       summary: Delete a quota
       tags:
         - Quotas
+  /v1/redpanda-connect/components:
+    get:
+      description: Returns a JSON list of available [components](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about), filtered by component type.
+      operationId: PipelineService_ListComponents
+      parameters:
+        - in: query
+          name: read_mask
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListComponentsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Retrieve the list of available components
+      tags:
+        - Redpanda Connect Pipelines
   /v1/redpanda-connect/config-schema:
     get:
       description: The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
@@ -4029,6 +5575,406 @@ paths:
       summary: Retrieve the schema for Redpanda Connect pipeline configurations
       tags:
         - Redpanda Connect Pipelines
+  /v1/redpanda-connect/mcp-servers:
+    get:
+      description: 'List Redpanda Connect MCP Servers. Optional: filter based on MCP server name.'
+      operationId: MCPServerService_ListMCPServers
+      parameters:
+        - description: Any MCP Server that partially match this name will be returned.
+          in: query
+          name: filter.display_name_contains
+          schema:
+            type: string
+        - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+          in: query
+          name: filter.tags[string]
+          schema:
+            type: string
+        - description: Match MCP servers that use this secret ID.
+          in: query
+          name: filter.secret_id
+          schema:
+            type: string
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListMCPServersResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Redpanda Connect MCP Servers
+      tags:
+        - Redpanda Connect MCP servers
+    post:
+      description: Create a new Redpanda Connect MCP Server.
+      operationId: MCPServerService_CreateMCPServer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MCPServerCreate'
+        required: true
+        x-originalParamName: mcp_server
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServer'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Create Redpanda Connect MCP Server
+      tags:
+        - Redpanda Connect MCP servers
+  /v1/redpanda-connect/mcp-servers/{id}:
+    delete:
+      description: Delete a Redpanda Connect MCP server.
+      operationId: MCPServerService_DeleteMCPServer
+      parameters:
+        - description: MCP Server ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          content:
+            application/json:
+              schema: {}
+          description: Deleted
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Delete a Redpanda Connect MCP server
+      tags:
+        - Redpanda Connect MCP servers
+    get:
+      description: Get a specific Redpanda Connect MCP server.
+      operationId: MCPServerService_GetMCPServer
+      parameters:
+        - description: MCP server ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServer'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Redpanda Connect MCP server
+      tags:
+        - Redpanda Connect MCP servers
+    put:
+      description: Update the configuration of a Redpanda Connect MCP server.
+      operationId: MCPServerService_UpdateMCPServer
+      parameters:
+        - description: MCP Server ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - description: |-
+            Specifies which fields should be updated. If not provided,
+            all fields will be updated.
+          in: query
+          name: update_mask
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MCPServerUpdate'
+        required: true
+        x-originalParamName: mcp_server
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServer'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Update a Redpanda Connect MCP Server
+      tags:
+        - Redpanda Connect MCP servers
+  /v1/redpanda-connect/mcp-servers/{id}:start:
+    post:
+      description: Start a stopped Redpanda Connect MCP server.
+      operationId: MCPServerService_StartMCPServer
+      parameters:
+        - description: MCP Server ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServer'
+          description: Started
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Start a Redpanda Connect MCP server
+      tags:
+        - Redpanda Connect MCP servers
+  /v1/redpanda-connect/mcp-servers/{id}:stop:
+    post:
+      description: Stop a running Redpanda Connect MCP server.
+      operationId: MCPServerService_StopMCPServer
+      parameters:
+        - description: MCP Server ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServer'
+          description: Stopped
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Stops a Redpanda Connect MCP server
+      tags:
+        - Redpanda Connect MCP servers
+  /v1/redpanda-connect/mcp-servers:getConfigSchema:
+    get:
+      description: The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
+      operationId: MCPServerService_GetMCPServerServiceConfigSchema
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMCPServerServiceConfigSchemaResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Retrieve the schema for Redpanda Connect MCP Servers configurations.
+      tags:
+        - Redpanda Connect MCP servers
+  /v1/redpanda-connect/mcp-servers:lint-config:
+    post:
+      description: Validates a supplied Redpanda Connect MCP tools YAML and returns a list of linting hints. If no problems are found, the list is empty.
+      operationId: MCPServerService_LintMCPConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LintMCPConfigRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LintMCPConfigResponse'
+          description: Linting finished. See `lint_hints` for details.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Lint a Redpanda Connect MCP tools configuration
+      tags:
+        - Redpanda Connect MCP servers
   /v1/redpanda-connect/pipelines:
     get:
       description: 'List Redpanda Connect pipelines. Optional: filter based on pipeline name.'
@@ -4042,6 +5988,10 @@ paths:
         - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
           in: query
           name: filter.tags[string]
+          schema:
+            type: string
+        - in: query
+          name: filter.secret_id
           schema:
             type: string
         - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
@@ -4821,6 +6771,7 @@ paths:
                 - SCOPE_REDPANDA_CLUSTER
                 - SCOPE_MCP_SERVER
                 - SCOPE_AI_AGENT
+                - SCOPE_AI_GATEWAY
               type: string
             type: array
         - description: |-
@@ -4901,6 +6852,55 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Create secret
+      tags:
+        - Secrets
+  /v1/secrets/resources:
+    get:
+      description: Get resources by secret.
+      operationId: SecretService_ListResources
+      parameters:
+        - in: query
+          name: filter.secret_id
+          schema:
+            type: string
+        - in: query
+          name: filter.scopes
+          schema:
+            items:
+              enum:
+                - SCOPE_REDPANDA_CONNECT
+                - SCOPE_REDPANDA_CLUSTER
+                - SCOPE_MCP_SERVER
+                - SCOPE_AI_AGENT
+                - SCOPE_AI_GATEWAY
+              type: string
+            type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResourcesResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get resources by secret
       tags:
         - Secrets
   /v1/secrets/{id}:
@@ -5042,6 +7042,227 @@ paths:
       summary: Update secret
       tags:
         - Secrets
+  /v1/shadow-links/{name}:
+    get:
+      description: Retrieve details of a specific shadow link by name.
+      operationId: ShadowLinkService_GetShadowLink
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.GetShadowLinkResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Shadow Link
+      tags:
+        - Shadow Links (Data Plane)
+  /v1/shadow-links/{name}/failover:
+    post:
+      description: Fail over a shadow link or a specific shadow topic within a link.
+      operationId: ShadowLinkService_FailOver
+      parameters:
+        - description: The name of the shadow link to fail over
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailOverBody'
+        required: true
+        x-originalParamName: body
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.FailOverResponse'
+          description: Failover accepted and initiated
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Fail Over Shadow Link
+      tags:
+        - Shadow Links (Data Plane)
+  /v1/shadow-links/{name}/metrics:
+    get:
+      description: Retrieve metrics for a specific shadow link, including total topics replicated, failed over topics, and error topics.
+      operationId: ShadowLinkService_GetShadowMetrics
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetShadowMetricsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Shadow Link Metrics
+      tags:
+        - Shadow Links (Data Plane)
+  /v1/shadow-links/{shadow_link_name}/topic:
+    get:
+      description: 'List shadow topic status information for a specific shadow link. Optional: filter based on topic name.'
+      operationId: ShadowLinkService_ListShadowLinkTopics
+      parameters:
+        - in: path
+          name: shadow_link_name
+          required: true
+          schema:
+            type: string
+        - description: Substring match on shadow topic name. Case-sensitive.
+          in: query
+          name: filter.topic_name_contains
+          schema:
+            type: string
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListShadowLinkTopicsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Shadow Link Topics
+      tags:
+        - Shadow Links (Data Plane)
+  /v1/shadow-links/{shadow_link_name}/topic/{topic_name}:
+    get:
+      description: Retrieve details of a specific shadow topic within a shadow link.
+      operationId: ShadowLinkService_GetShadowTopic
+      parameters:
+        - in: path
+          name: shadow_link_name
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: topic_name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.GetShadowTopicResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Shadow Topic
+      tags:
+        - Shadow Links (Data Plane)
   /v1/topics:
     get:
       description: 'List topics, with partition count and replication factor. Optional: filter based on topic name.'
@@ -6026,12 +8247,18 @@ tags:
     name: Kafka Connect
   - description: Create and manage [Redpanda Connect](https://docs.redpanda.com/redpanda-cloud/develop/connect/about) pipelines and their configurations.
     name: Redpanda Connect Pipelines
+  - description: Create and manage Redpanda Connect MCP servers and their configurations.
+    name: Redpanda Connect MCP servers
+  - description: Monitoring operations for Redpanda.
+    name: Monitoring
   - description: Manage client throughput limits. See [Redpanda Client Throughput Limits](https://docs.redpanda.com/current/manage/cluster-maintenance/manage-throughput/#client-throughput-limits) for more information.
     name: Quotas
   - description: Manage [secrets](https://docs.redpanda.com/redpanda-cloud/security/secrets) for Redpanda Cloud.
     name: Secrets
   - description: Manage Redpanda roles.
     name: Security
+  - description: Data plane operations for Redpanda shadow links.
+    name: Shadow Links (Data Plane)
   - description: Manage Redpanda topics.
     name: Topics
   - description: Manage Redpanda users. For more information, see [Role-Based Access Control](https://docs.redpanda.com/redpanda-cloud/security/authorization/rbac/).

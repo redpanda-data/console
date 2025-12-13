@@ -1,13 +1,14 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey } from '@connectrpc/connect-query';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { CreateSecretRequestSchema as CreateSecretRequestSchemaConsole } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useCreateACLMutation } from 'react-query/api/acl';
 import { useCreateSecretMutation } from 'react-query/api/secret';
 import { useCreateUserMutation } from 'react-query/api/user';
+import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import type { SaslMechanism } from 'utils/user';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
@@ -24,39 +25,7 @@ import { CreateUserRequestSchema, SASLMechanism } from '../../../../protogen/red
 import { convertToScreamingSnakeCase } from '../types/constants';
 import type { AddUserFormData, OperationResult } from '../types/wizard';
 
-export const saslMechanismToProto = (mechanism: SaslMechanism): SASLMechanism => {
-  const mapping: Record<SaslMechanism, SASLMechanism> = {
-    'SCRAM-SHA-256': SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
-    'SCRAM-SHA-512': SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512,
-  };
-  return mapping[mechanism];
-};
-
-export const createTopicSuperuserACLs = (topicName: string, username: string) => {
-  const operations = [
-    ACL_Operation.ALL,
-    ACL_Operation.READ,
-    ACL_Operation.WRITE,
-    ACL_Operation.CREATE,
-    ACL_Operation.DELETE,
-    ACL_Operation.DESCRIBE,
-    ACL_Operation.DESCRIBE_CONFIGS,
-    ACL_Operation.ALTER,
-    ACL_Operation.ALTER_CONFIGS,
-  ];
-
-  return operations.map((operation) => ({
-    resourceType: ACL_ResourceType.TOPIC,
-    resourceName: topicName,
-    resourcePatternType: ACL_ResourcePatternType.LITERAL,
-    principal: `User:${username}`,
-    host: '*',
-    operation,
-    permissionType: ACL_PermissionType.ALLOW,
-  }));
-};
-
-export const createConsumerGroupACLs = (consumerGroupName: string, username: string) => {
+const createConsumerGroupACLs = (consumerGroupName: string, username: string) => {
   const operations = [ACL_Operation.READ, ACL_Operation.DESCRIBE];
 
   return operations.map((operation) => ({
@@ -70,7 +39,7 @@ export const createConsumerGroupACLs = (consumerGroupName: string, username: str
   }));
 };
 
-export interface TopicPermissionCheck {
+interface TopicPermissionCheck {
   hasPermissions: ACL_Operation[];
   missingPermissions: ACL_Operation[];
 }
@@ -208,23 +177,29 @@ export const checkUserHasConsumerGroupPermissions = (
   };
 };
 
-export const configureUserPermissions = async (
+const configureUserPermissions = async (
   topicName: string,
   username: string,
   createACLMutation: ReturnType<typeof useCreateACLMutation>
 ): Promise<OperationResult> => {
   try {
-    const aclConfigs = createTopicSuperuserACLs(topicName, username);
+    const aclConfigs = {
+      resourceType: ACL_ResourceType.TOPIC,
+      resourceName: topicName,
+      resourcePatternType: ACL_ResourcePatternType.LITERAL,
+      principal: `User:${username}`,
+      host: '*',
+      operation: ACL_Operation.ALL,
+      permissionType: ACL_PermissionType.ALLOW,
+    };
 
-    for (const config of aclConfigs) {
-      const aclRequest = create(CreateACLRequestSchema, config);
-      await createACLMutation.mutateAsync(aclRequest);
-    }
+    const aclRequest = create(CreateACLRequestSchema, aclConfigs);
+    await createACLMutation.mutateAsync(aclRequest);
 
     return {
       operation: 'Configure permissions',
       success: true,
-      message: `Granted full permissions for topic "${topicName}"`,
+      message: `Granted full permissions for user "${username}" on topic "${topicName}"`,
     };
   } catch (error) {
     const connectError = ConnectError.from(error);
@@ -240,7 +215,7 @@ export const configureUserPermissions = async (
   }
 };
 
-export const configureConsumerGroupPermissions = async (
+const configureConsumerGroupPermissions = async (
   consumerGroupName: string,
   username: string,
   createACLMutation: ReturnType<typeof useCreateACLMutation>
@@ -272,7 +247,7 @@ export const configureConsumerGroupPermissions = async (
   }
 };
 
-export const createUsernameSecret = async (
+const createUsernameSecret = async (
   username: string,
   createSecretMutation: ReturnType<typeof useCreateSecretMutation>
 ): Promise<OperationResult> => {
@@ -293,7 +268,7 @@ export const createUsernameSecret = async (
     return {
       operation: 'Store username secret',
       success: true,
-      message: 'Username stored securely for pipeline use',
+      message: `Created secret for username: "${username}"`,
     };
   } catch (error) {
     const connectError = ConnectError.from(error);
@@ -309,7 +284,7 @@ export const createUsernameSecret = async (
   }
 };
 
-export const createPasswordSecret = async (
+const createPasswordSecret = async (
   username: string,
   password: string,
   createSecretMutation: ReturnType<typeof useCreateSecretMutation>
@@ -331,7 +306,7 @@ export const createPasswordSecret = async (
     return {
       operation: 'Store password secret',
       success: true,
-      message: 'Password stored securely for pipeline use',
+      message: `Created secret for ${username}'s password`,
     };
   } catch (error) {
     const connectError = ConnectError.from(error);
@@ -347,7 +322,12 @@ export const createPasswordSecret = async (
   }
 };
 
-export const createKafkaUser = async (
+const saslMechanismToProtoMapping: Record<SaslMechanism, SASLMechanism> = {
+  'SCRAM-SHA-256': SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
+  'SCRAM-SHA-512': SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512,
+};
+
+const createKafkaUser = async (
   userData: AddUserFormData,
   createUserMutation: ReturnType<typeof useCreateUserMutation>
 ): Promise<OperationResult> => {
@@ -356,7 +336,7 @@ export const createKafkaUser = async (
       user: {
         name: userData.username,
         password: userData.password,
-        mechanism: saslMechanismToProto(userData.saslMechanism),
+        mechanism: saslMechanismToProtoMapping[userData.saslMechanism],
       },
     });
 
@@ -380,20 +360,20 @@ export const createKafkaUser = async (
   }
 };
 
-export interface CreateUserWithSecretsParams {
+interface CreateUserWithSecretsParams {
   userData: AddUserFormData;
   topicName?: string;
   consumerGroup?: string;
   existingUserSelected: boolean;
 }
 
-export interface CreateUserWithSecretsResult {
-  success: boolean;
-  message: string;
-  data: AddUserFormData;
-  operations: OperationResult[];
-  error?: string;
-}
+const handleOperationResult = (result: OperationResult) => {
+  if (result.success && result.message) {
+    toast.success(result.message);
+  } else if (!result.success && result.error) {
+    toast.error(result.error);
+  }
+};
 
 export const useCreateUserWithSecretsMutation = () => {
   const createUserMutation = useCreateUserMutation();
@@ -401,172 +381,92 @@ export const useCreateUserWithSecretsMutation = () => {
   const createSecretMutation = useCreateSecretMutation();
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (params: CreateUserWithSecretsParams): Promise<CreateUserWithSecretsResult> => {
-      const { userData, topicName, consumerGroup, existingUserSelected } = params;
-      const operations: OperationResult[] = [];
+  // Aggregate isPending from all mutations
+  const isPending = createUserMutation.isPending || createACLMutation.isPending || createSecretMutation.isPending;
 
-      // If existing user is selected without consumer group, return early
-      if (existingUserSelected && !consumerGroup) {
-        return {
-          success: true,
-          message: `Using existing user "${userData.username}"`,
-          data: userData,
-          operations: [
-            {
-              operation: 'Select existing user',
-              success: true,
-              message: `Using existing user "${userData.username}"`,
-            },
-          ],
-        };
-      }
+  const createUserWithSecrets = async (params: CreateUserWithSecretsParams) => {
+    const { userData, topicName, consumerGroup, existingUserSelected } = params;
 
-      // If existing user with consumer group, skip user creation but configure consumer group ACLs
-      if (existingUserSelected && consumerGroup) {
-        operations.push({
-          operation: 'Select existing user',
-          success: true,
-          message: `Using existing user "${userData.username}"`,
-        });
+    // Early return: existing user without consumer group
+    if (existingUserSelected && !consumerGroup) {
+      toast.success(`Using existing user "${userData.username}"`);
+      return { success: true, data: userData };
+    }
 
-        // Configure consumer group ACL permissions
-        const consumerGroupACLResult = await configureConsumerGroupPermissions(
-          consumerGroup,
-          userData.username,
-          createACLMutation
-        );
-        operations.push(consumerGroupACLResult);
+    // Early return: existing user with consumer group - only configure ACLs
+    if (existingUserSelected && consumerGroup) {
+      toast.info(`Configuring permissions for "${userData.username}"`);
 
-        if (!consumerGroupACLResult.success) {
-          return {
-            success: false,
-            message: 'Failed to configure consumer group permissions for existing user',
-            error: consumerGroupACLResult.error,
-            data: userData,
-            operations,
-          };
-        }
-
-        // Invalidate ACL cache
-        await queryClient.invalidateQueries({
-          queryKey: createConnectQueryKey({
-            schema: listACLs,
-            cardinality: 'finite',
-          }),
-          exact: false,
-        });
-
-        return {
-          success: true,
-          message: `Configured consumer group permissions for existing user "${userData.username}"`,
-          data: userData,
-          operations,
-        };
-      }
-
-      // Step 1: Create user
-      const userResult = await createKafkaUser(userData, createUserMutation);
-      operations.push(userResult);
-
-      if (!userResult.success) {
-        return {
-          success: false,
-          message: 'Failed to create user',
-          error: userResult.error,
-          data: userData,
-          operations,
-        };
-      }
-
-      // Step 2: Configure ACL permissions if topic is provided and user is superuser
-      if (topicName && userData.superuser) {
-        const aclResult = await configureUserPermissions(topicName, userData.username, createACLMutation);
-        operations.push(aclResult);
-
-        if (!aclResult.success) {
-          return {
-            success: false,
-            message: 'User created but failed to configure permissions',
-            error: aclResult.error,
-            data: userData,
-            operations,
-          };
-        }
-
-        // Invalidate ACL cache to ensure fresh data on next query
-        await queryClient.invalidateQueries({
-          queryKey: createConnectQueryKey({
-            schema: listACLs,
-            cardinality: 'finite',
-          }),
-          exact: false,
-        });
-      }
-
-      // Step 2b: Configure consumer group ACL permissions if consumer group is provided
-      if (consumerGroup) {
-        const consumerGroupACLResult = await configureConsumerGroupPermissions(
-          consumerGroup,
-          userData.username,
-          createACLMutation
-        );
-        operations.push(consumerGroupACLResult);
-
-        if (!consumerGroupACLResult.success) {
-          return {
-            success: false,
-            message: 'User created but failed to configure consumer group permissions',
-            error: consumerGroupACLResult.error,
-            data: userData,
-            operations,
-          };
-        }
-
-        // Invalidate ACL cache to ensure fresh data on next query
-        await queryClient.invalidateQueries({
-          queryKey: createConnectQueryKey({
-            schema: listACLs,
-            cardinality: 'finite',
-          }),
-          exact: false,
-        });
-      }
-
-      // Step 3: Create username secret
-      const usernameSecretResult = await createUsernameSecret(userData.username, createSecretMutation);
-      operations.push(usernameSecretResult);
-
-      // Step 4: Create password secret
-      const passwordSecretResult = await createPasswordSecret(
+      const consumerGroupACLResult = await configureConsumerGroupPermissions(
+        consumerGroup,
         userData.username,
-        userData.password,
-        createSecretMutation
+        createACLMutation
       );
-      operations.push(passwordSecretResult);
 
-      // Aggregate results
-      const allSucceeded = operations.every((op) => op.success);
-      const criticalOps = operations.filter(
-        (op) => op.operation.includes('user') || op.operation.includes('permissions')
-      );
-      const criticalSucceeded = criticalOps.length === 0 || criticalOps.every((op) => op.success);
-
-      let message: string;
-      if (allSucceeded) {
-        message = `Created user "${userData.username}" successfully!`;
-      } else if (criticalSucceeded) {
-        message = `User "${userData.username}" created but some non-critical operations failed`;
-      } else {
-        message = 'Failed to complete user creation';
+      if (!consumerGroupACLResult.success) {
+        toast.error(consumerGroupACLResult.error || 'Failed to configure consumer group permissions');
+        return { success: false, data: userData };
       }
 
-      return {
-        success: allSucceeded,
-        message,
-        data: userData,
-        operations,
-      };
-    },
-  });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({ schema: listACLs, cardinality: 'finite' }),
+        exact: false,
+      });
+
+      toast.success(consumerGroupACLResult.message || 'Permissions configured successfully');
+      return { success: true, data: userData };
+    }
+
+    // Step 1: Create user
+    const userResult = await createKafkaUser(userData, createUserMutation);
+    if (!userResult.success) {
+      toast.error(userResult.error || 'Failed to create user');
+      return { success: false, data: userData };
+    }
+    toast.success(userResult.message || `User "${userData.username}" created`);
+
+    // Step 2: Configure topic ACL if needed
+    if (topicName && userData.superuser) {
+      const aclResult = await configureUserPermissions(topicName, userData.username, createACLMutation);
+      if (!aclResult.success) {
+        toast.error(aclResult.error || 'Failed to configure topic permissions');
+        return { success: false, data: userData };
+      }
+      toast.success(aclResult.message || 'Topic permissions configured');
+    }
+
+    // Step 3: Configure consumer group ACL if needed
+    if (consumerGroup) {
+      const consumerGroupACLResult = await configureConsumerGroupPermissions(
+        consumerGroup,
+        userData.username,
+        createACLMutation
+      );
+      if (!consumerGroupACLResult.success) {
+        toast.error(consumerGroupACLResult.error || 'Failed to configure consumer group permissions');
+        return { success: false, data: userData };
+      }
+      toast.success(consumerGroupACLResult.message || 'Consumer group permissions configured');
+
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({ schema: listACLs, cardinality: 'finite' }),
+        exact: false,
+      });
+    }
+
+    // Step 4: Create username secret
+    const usernameSecretResult = await createUsernameSecret(userData.username, createSecretMutation);
+    handleOperationResult(usernameSecretResult);
+
+    // Step 5: Create password secret
+    const passwordSecretResult = await createPasswordSecret(userData.username, userData.password, createSecretMutation);
+    handleOperationResult(passwordSecretResult);
+
+    return { success: true, data: userData };
+  };
+
+  return {
+    createUserWithSecrets,
+    isPending,
+  };
 };

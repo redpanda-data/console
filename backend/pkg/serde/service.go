@@ -13,13 +13,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bufbuild/protocompile/linker"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/msgpack"
 	"github.com/redpanda-data/console/backend/pkg/proto"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 )
+
+// BSRClient is the interface for the BSR client that fetches protobuf descriptors.
+type BSRClient interface {
+	GetMessageDescriptor(ctx context.Context, messageName, commit string) (protoreflect.MessageDescriptor, error)
+	GetFileDescriptorSet(ctx context.Context, messageName, commit string) (linker.Files, error)
+}
 
 // Service is the struct that holds all dependencies that are required to deserialize
 // a record.
@@ -32,25 +40,43 @@ func NewService(
 	protoSvc *proto.Service,
 	msgPackSvc *msgpack.Service,
 	cachedSchemaClient schema.Client,
+	bsrClient BSRClient,
 	cborConfig config.Cbor,
 ) (*Service, error) {
-	return &Service{
-		SerDes: []Serde{
-			NullSerde{},
-			JSONSerde{},
-			JSONSchemaSerde{schemaClient: cachedSchemaClient},
-			XMLSerde{},
-			AvroSerde{schemaClient: cachedSchemaClient},
+	serdes := []Serde{
+		NullSerde{},
+		JSONSerde{},
+		JSONSchemaSerde{schemaClient: cachedSchemaClient},
+		XMLSerde{},
+		AvroSerde{schemaClient: cachedSchemaClient},
+	}
+
+	// Add BSR serde if client is configured - try before other protobuf serdes
+	// since BSR messages have specific headers that identify them
+	if bsrClient != nil {
+		serdes = append(serdes, ProtobufBSRSerde{bsrClient: bsrClient},
 			ProtobufSerde{ProtoSvc: protoSvc},
 			ProtobufSchemaSerde{schemaClient: cachedSchemaClient},
-			MsgPackSerde{MsgPackService: msgPackSvc},
-			SmileSerde{},
-			CborSerde{Config: cborConfig},
-			UTF8Serde{},
-			TextSerde{},
-			UintSerde{},
-			BinarySerde{},
-		},
+		)
+	} else {
+		serdes = append(serdes,
+			ProtobufSerde{ProtoSvc: protoSvc},
+			ProtobufSchemaSerde{schemaClient: cachedSchemaClient},
+		)
+	}
+
+	serdes = append(serdes,
+		MsgPackSerde{MsgPackService: msgPackSvc},
+		SmileSerde{},
+		CborSerde{Config: cborConfig},
+		UTF8Serde{},
+		TextSerde{},
+		UintSerde{},
+		BinarySerde{},
+	)
+
+	return &Service{
+		SerDes: serdes,
 	}, nil
 }
 

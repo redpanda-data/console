@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { useScrollToBottom } from './use-scroll-to-bottom';
 
@@ -20,12 +20,10 @@ import { useScrollToBottom } from './use-scroll-to-bottom';
 export function useChatScroll({
   agentId,
   isLoading,
-  isStreaming,
   messages,
 }: {
   agentId: string;
   isLoading: boolean;
-  isStreaming: boolean;
   messages: unknown[];
 }) {
   const {
@@ -38,27 +36,25 @@ export function useChatScroll({
     onViewportLeave,
   } = useScrollToBottom();
 
-  // Auto-scroll to bottom when agent changes (instant, no animation)
+  // Auto-scroll to bottom when agent changes
   useEffect(() => {
     if (agentId) {
       scrollToBottom('smooth');
     }
   }, [agentId, scrollToBottom]);
 
-  // Auto-scroll on message updates during streaming
-  // When streaming is active and auto-scroll is enabled, always scroll to bottom
-  // When not streaming, only scroll if user is already at bottom
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-scroll on message updates during streaming (including task state updates)
   useEffect(() => {
-    if (messages.length > 0) {
-      if (isStreaming && !autoScrollPaused) {
-        // Force scroll during streaming when auto-scroll is enabled
-        scrollToBottom('smooth');
-      } else if (isLoading && isAtBottom) {
-        // Original behavior for non-streaming updates
-        scrollToBottom('smooth');
+    if (messages.length > 0 && isLoading && !autoScrollPaused) {
+      // Debounce scroll to avoid zigzag - only scroll after changes settle
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
       }
+      scrollTimeoutRef.current = setTimeout(() => scrollToBottom('instant'), 0);
     }
-  }, [messages, isLoading, isStreaming, isAtBottom, autoScrollPaused, scrollToBottom]);
+  }, [messages, isLoading, autoScrollPaused, scrollToBottom]);
 
   return {
     endRef,

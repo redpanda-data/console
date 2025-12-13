@@ -61,12 +61,20 @@ components:
       type: object
     AIAgent.Provider:
       properties:
+        anthropic:
+          $ref: '#/components/schemas/Anthropic'
+        google:
+          $ref: '#/components/schemas/Google'
         openai:
           $ref: '#/components/schemas/AIAgent.Provider.OpenAI'
+        openai_compatible:
+          $ref: '#/components/schemas/OpenAICompatible'
       type: object
     AIAgent.Provider.OpenAI:
       properties:
         api_key:
+          type: string
+        base_url:
           type: string
       required:
         - api_key
@@ -172,6 +180,106 @@ components:
             If a tag's value is empty, the server interprets that as a deletion.
           type: object
       type: object
+    AIGateway:
+      description: Defines the AI Gateway resource.
+      properties:
+        config_yaml:
+          description: YAML configuration that defines the AI gateway's behavior, routing rules, and settings.
+          type: string
+        description:
+          description: Optional AI gateway description.
+          type: string
+        display_name:
+          description: User-friendly AI gateway name.
+          type: string
+        id:
+          description: AI Gateway ID.
+          readOnly: true
+          type: string
+        resources:
+          $ref: '#/components/schemas/Resources'
+        state:
+          $ref: '#/components/schemas/AIGateway.State'
+        tags:
+          additionalProperties:
+            type: string
+          description: |-
+            Tags are key-value pairs that can be assigned to an AI gateway resource.
+            They help organize AI gateways and enable filtering when listing them.
+          type: object
+      required:
+        - display_name
+        - config_yaml
+      type: object
+    AIGateway.State:
+      description: |-
+        State of the AI gateway.
+
+         - STATE_STARTING: The AI gateway is starting.
+         - STATE_RUNNING: The AI gateway is running and ready to handle requests.
+         - STATE_STOPPING: The AI gateway is in the process of stopping.
+         - STATE_STOPPED: The AI gateway is stopped and in paused state.
+         - STATE_ERROR: The AI gateway encountered an error.
+      enum:
+        - STATE_STARTING
+        - STATE_RUNNING
+        - STATE_STOPPING
+        - STATE_STOPPED
+        - STATE_ERROR
+      type: string
+    AIGatewayCreate:
+      description: AIGatewayCreate contains the details for the AI gateway creation request.
+      properties:
+        config_yaml:
+          description: YAML configuration that defines the AI gateway's behavior, routing rules, and settings.
+          type: string
+        description:
+          description: AI gateway description.
+          type: string
+        display_name:
+          description: User-friendly AI gateway name.
+          type: string
+        resources:
+          $ref: '#/components/schemas/Resources'
+        tags:
+          additionalProperties:
+            type: string
+          description: Optional list of tags to attach to an AI gateway.
+          type: object
+      required:
+        - display_name
+        - config_yaml
+      type: object
+    AIGatewayUpdate:
+      properties:
+        config_yaml:
+          description: YAML configuration that defines the AI gateway's behavior, routing rules, and settings.
+          type: string
+        description:
+          description: AI gateway description.
+          type: string
+        display_name:
+          description: User-friendly AI gateway name.
+          type: string
+        resources:
+          $ref: '#/components/schemas/Resources'
+        tags:
+          additionalProperties:
+            type: string
+          description: |-
+            A map of tags to add, update or delete.
+            If a tag's value is empty, the server interprets that as a deletion.
+          type: object
+      type: object
+    Anthropic:
+      properties:
+        api_key:
+          type: string
+        base_url:
+          type: string
+      required:
+        - api_key
+      type: object
     Any:
       additionalProperties: {}
       properties:
@@ -191,13 +299,18 @@ components:
         component_type:
           $ref: '#/components/schemas/ComponentType'
         config_schema:
-          description: JSON schema of the configuration components that are allowed for MCP Servers.
+          description: JSON schema of the configuration components that are allowed for MCP servers.
           type: string
       type: object
     CreateAIAgentResponse:
       properties:
         ai_agent:
           $ref: '#/components/schemas/AIAgent'
+      type: object
+    CreateAIGatewayResponse:
+      properties:
+        ai_gateway:
+          $ref: '#/components/schemas/AIGateway'
       type: object
     CreateKnowledgeBaseResponse:
       properties:
@@ -211,23 +324,21 @@ components:
       type: object
     DeleteAIAgentResponse:
       type: object
+    DeleteAIGatewayResponse:
+      type: object
     DeleteKnowledgeBaseResponse:
       type: object
     DeleteMCPServerResponse:
-      type: object
-    FailOverBody:
-      properties:
-        shadow_topic_name:
-          title: |-
-            The name of the shadow topic to fail over, if not set will fail over
-            the entire shadow link
-          type: string
-      title: Request to fail over a shadow link or a single shadow topic
       type: object
     GetAIAgentResponse:
       properties:
         ai_agent:
           $ref: '#/components/schemas/AIAgent'
+      type: object
+    GetAIGatewayResponse:
+      properties:
+        ai_gateway:
+          $ref: '#/components/schemas/AIGateway'
       type: object
     GetKnowledgeBaseResponse:
       properties:
@@ -242,10 +353,19 @@ components:
     GetMCPServerServiceConfigSchemaResponse:
       properties:
         configuration_yamls:
-          description: The configuration schema for the MCP Server.
+          description: The configuration schema for the MCP server.
           items:
             $ref: '#/components/schemas/ConfigurationYAMLSchema'
           type: array
+      type: object
+    Google:
+      properties:
+        api_key:
+          type: string
+        base_url:
+          type: string
+      required:
+        - api_key
       type: object
     KnowledgeBase:
       properties:
@@ -695,7 +815,7 @@ components:
         tools:
           additionalProperties:
             $ref: '#/components/schemas/Tool'
-          description: The Redpanda Connect MCP tools configuration in YAML format.
+          description: Map of tool names to their configurations. Each tool contains YAML configuration.
           type: object
       required:
         - tools
@@ -705,13 +825,17 @@ components:
         lint_hints:
           additionalProperties:
             $ref: '#/components/schemas/LintHint'
-          description: A list of linting issues.
+          description: Map of tool names to their linting issues. Empty if no issues are found.
           type: object
       type: object
     ListAIAgentsRequest.Filter:
       properties:
+        mcp_server_id:
+          type: string
         name_contains:
           description: Any AI agents that partially match this name will be returned.
+          type: string
+        secret_id:
           type: string
         tags[string]:
           additionalProperties:
@@ -724,6 +848,28 @@ components:
         ai_agents:
           items:
             $ref: '#/components/schemas/AIAgent'
+          type: array
+        next_page_token:
+          type: string
+      type: object
+    ListAIGatewaysRequest.Filter:
+      properties:
+        name_contains:
+          description: Any AI gateways that partially match this name will be returned.
+          type: string
+        secret_id:
+          type: string
+        tags[string]:
+          additionalProperties:
+            type: string
+          description: AI gateways that match all the provided tags will be returned.
+          type: object
+      type: object
+    ListAIGatewaysResponse:
+      properties:
+        ai_gateways:
+          items:
+            $ref: '#/components/schemas/AIGateway'
           type: array
         next_page_token:
           type: string
@@ -751,15 +897,15 @@ components:
     ListMCPServersRequest.Filter:
       properties:
         display_name_contains:
-          description: Any MCP Server that partially match this name will be returned.
+          description: Returns MCP servers that partially match this name.
           type: string
         secret_id:
-          description: Match MCP servers that use this secret ID.
+          description: Filters MCP servers that reference this secret ID in their tool configurations.
           type: string
         tags[string]:
           additionalProperties:
             type: string
-          description: MCP servers that match all the provided tags will be returned.
+          description: Filters by tags using exact match. Returns only MCP servers that have all the specified key-value pairs.
           type: object
       type: object
     ListMCPServersResponse:
@@ -769,6 +915,7 @@ components:
             $ref: '#/components/schemas/v1alpha3.MCPServer'
           type: array
         next_page_token:
+          description: Token to retrieve the next page of results. Empty if there are no more results.
           type: string
       type: object
     MCPServer.State:
@@ -791,13 +938,14 @@ components:
       description: MCP server status may contain an error message.
       properties:
         error:
+          description: Error message if the MCP server is in an error state. Empty if no error.
           type: string
       type: object
     MCPServerCreate:
-      description: MCPServerCreate contains the details for the MCP Server creation request.
+      description: MCPServerCreate contains the details for the MCP server creation request.
       properties:
         description:
-          description: MCP server description.
+          description: Optional MCP server description.
           type: string
         display_name:
           description: User-friendly MCP server name.
@@ -812,7 +960,7 @@ components:
         tools:
           additionalProperties:
             $ref: '#/components/schemas/Tool'
-          description: The Redpanda Connect MCP server configuration.
+          description: Map of tool names to their configurations. Each tool defines a capability that the MCP server exposes.
           type: object
       required:
         - display_name
@@ -824,7 +972,7 @@ components:
           description: MCP server description.
           type: string
         display_name:
-          description: User-friendly MCP servers name.
+          description: User-friendly MCP server name.
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
@@ -838,8 +986,18 @@ components:
         tools:
           additionalProperties:
             $ref: '#/components/schemas/Tool'
-          description: The Redpanda Connect MCP server configuration.
+          description: Map of tool names to their configurations. Each tool defines a capability that the MCP server exposes.
           type: object
+      type: object
+    OpenAICompatible:
+      properties:
+        api_key:
+          type: string
+        base_url:
+          type: string
+      required:
+        - api_key
+        - base_url
       type: object
     Resources:
       properties:
@@ -882,6 +1040,11 @@ components:
         ai_agent:
           $ref: '#/components/schemas/AIAgent'
       type: object
+    StartAIGatewayResponse:
+      properties:
+        ai_gateway:
+          $ref: '#/components/schemas/AIGateway'
+      type: object
     StartMCPServerResponse:
       properties:
         mcp_server:
@@ -891,6 +1054,11 @@ components:
       properties:
         ai_agent:
           $ref: '#/components/schemas/AIAgent'
+      type: object
+    StopAIGatewayResponse:
+      properties:
+        ai_gateway:
+          $ref: '#/components/schemas/AIGateway'
       type: object
     StopMCPServerResponse:
       properties:
@@ -912,6 +1080,11 @@ components:
       properties:
         ai_agent:
           $ref: '#/components/schemas/AIAgent'
+      type: object
+    UpdateAIGatewayResponse:
+      properties:
+        ai_gateway:
+          $ref: '#/components/schemas/AIGateway'
       type: object
     UpdateKnowledgeBaseResponse:
       properties:
@@ -935,8 +1108,6 @@ components:
         message:
           type: string
       type: object
-    v1alpha3.FailOverResponse:
-      type: object
     v1alpha3.MCPServer:
       description: Defines the MCP server resource.
       properties:
@@ -947,7 +1118,7 @@ components:
           description: User-friendly MCP server name.
           type: string
         id:
-          description: MCP Server ID.
+          description: Unique identifier for the MCP server.
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
@@ -965,11 +1136,11 @@ components:
         tools:
           additionalProperties:
             $ref: '#/components/schemas/Tool'
-          description: The Redpanda Connect MCP server configuration.
+          description: Map of tool names to their configurations. Each tool defines a capability that the MCP server exposes.
           type: object
         url:
+          description: URL to connect to the MCP server.
           readOnly: true
-          title: URL to connect to the MCP server
           type: string
       required:
         - id
@@ -1003,6 +1174,14 @@ paths:
         - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
           in: query
           name: filter.tags[string]
+          schema:
+            type: string
+        - in: query
+          name: filter.secret_id
+          schema:
+            type: string
+        - in: query
+          name: filter.mcp_server_id
           schema:
             type: string
         - description: Limit the paginated response to a number of items. Defaults to 50. Use -1 to disable pagination.
@@ -1230,6 +1409,250 @@ paths:
       summary: Stop AI Agent
       tags:
         - AI Agents
+  /v1alpha3/ai-gateways:
+    get:
+      description: 'List AI gateways. Optional: filter based on AI gateway name.'
+      operationId: AIGatewayService_ListAIGateways
+      parameters:
+        - description: Any AI gateways that partially match this name will be returned.
+          in: query
+          name: filter.name_contains
+          schema:
+            type: string
+        - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+          in: query
+          name: filter.tags[string]
+          schema:
+            type: string
+        - in: query
+          name: filter.secret_id
+          schema:
+            type: string
+        - description: Limit the paginated response to a number of items. Defaults to 50. Use -1 to disable pagination.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAIGatewaysResponse'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List AI Gateways
+      tags:
+        - AI Gateways
+    post:
+      description: Create a new AI gateway.
+      operationId: AIGatewayService_CreateAIGateway
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIGatewayCreate'
+        required: true
+        x-originalParamName: ai_gateway
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIGateway'
+          description: Created
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Create AI Gateway
+      tags:
+        - AI Gateways
+  /v1alpha3/ai-gateways/{id}:
+    delete:
+      description: Delete an AI gateway.
+      operationId: AIGatewayService_DeleteAIGateway
+      parameters:
+        - description: AI Gateway ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          content:
+            application/json:
+              schema: {}
+          description: Deleted
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Delete AI Gateway
+      tags:
+        - AI Gateways
+    get:
+      description: Get a specific AI gateway.
+      operationId: AIGatewayService_GetAIGateway
+      parameters:
+        - description: AI Gateway ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIGateway'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get AI Gateway
+      tags:
+        - AI Gateways
+    put:
+      description: Update the configuration of an AI gateway.
+      operationId: AIGatewayService_UpdateAIGateway
+      parameters:
+        - description: AI Gateway ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - description: |-
+            Specifies which fields should be updated. If not provided,
+            all fields will be updated.
+          in: query
+          name: update_mask
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIGatewayUpdate'
+        required: true
+        x-originalParamName: ai_gateway
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIGateway'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Update AI Gateway
+      tags:
+        - AI Gateways
+  /v1alpha3/ai-gateways/{id}:start:
+    put:
+      description: Start a stopped AI gateway.
+      operationId: AIGatewayService_StartAIGateway
+      parameters:
+        - description: AI Gateway ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIGateway'
+          description: Started
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Start AI Gateway
+      tags:
+        - AI Gateways
+  /v1alpha3/ai-gateways/{id}:stop:
+    put:
+      description: Stop a running AI gateway.
+      operationId: AIGatewayService_StopAIGateway
+      parameters:
+        - description: AI Gateway ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIGateway'
+          description: Stopped
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Stop AI Gateway
+      tags:
+        - AI Gateways
   /v1alpha3/knowledge-bases:
     get:
       operationId: KnowledgeBaseService_ListKnowledgeBases
@@ -1346,10 +1769,10 @@ paths:
         - KnowledgeBaseService
   /v1alpha3/redpanda-connect/mcp-servers:
     get:
-      description: 'List Redpanda Connect MCP Servers. Optional: filter based on MCP server name.'
+      description: Lists MCP servers. Optionally filter by display name, tags, or secret ID.
       operationId: MCPServerService_ListMCPServers
       parameters:
-        - description: Any MCP Server that partially match this name will be returned.
+        - description: Returns MCP servers that partially match this name.
           in: query
           name: filter.display_name_contains
           schema:
@@ -1359,7 +1782,7 @@ paths:
           name: filter.tags[string]
           schema:
             type: string
-        - description: Match MCP servers that use this secret ID.
+        - description: Filters MCP servers that reference this secret ID in their tool configurations.
           in: query
           name: filter.secret_id
           schema:
@@ -1390,11 +1813,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: List Redpanda Connect MCP Servers
+      summary: List MCP servers
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
     post:
-      description: Create a new Redpanda Connect MCP Server.
+      description: Create a new MCP server.
       operationId: MCPServerService_CreateMCPServer
       requestBody:
         content:
@@ -1416,15 +1839,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Create Redpanda Connect MCP Server
+      summary: Create MCP server
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
   /v1alpha3/redpanda-connect/mcp-servers/{id}:
     delete:
-      description: Delete a Redpanda Connect MCP server.
+      description: Delete an MCP server.
       operationId: MCPServerService_DeleteMCPServer
       parameters:
-        - description: MCP Server ID.
+        - description: MCP server ID.
           in: path
           name: id
           required: true
@@ -1448,11 +1871,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Delete a Redpanda Connect MCP server
+      summary: Delete an MCP server
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
     get:
-      description: Get a specific Redpanda Connect MCP server.
+      description: Get a specific MCP server.
       operationId: MCPServerService_GetMCPServer
       parameters:
         - description: MCP server ID.
@@ -1480,22 +1903,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Get Redpanda Connect MCP server
+      summary: Get MCP server
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
     put:
-      description: Update the configuration of a Redpanda Connect MCP server.
+      description: Update the configuration of an MCP server.
       operationId: MCPServerService_UpdateMCPServer
       parameters:
-        - description: MCP Server ID.
+        - description: MCP server ID.
           in: path
           name: id
           required: true
           schema:
             type: string
-        - description: |-
-            Specifies which fields should be updated. If not provided,
-            all fields will be updated.
+        - description: Specifies which fields to update. If not provided, updates all fields.
           in: query
           name: update_mask
           schema:
@@ -1520,15 +1941,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Update a Redpanda Connect MCP Server
+      summary: Update an MCP server
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
   /v1alpha3/redpanda-connect/mcp-servers/{id}:start:
     post:
-      description: Start a stopped Redpanda Connect MCP server.
+      description: Start a stopped MCP server.
       operationId: MCPServerService_StartMCPServer
       parameters:
-        - description: MCP Server ID.
+        - description: MCP server ID.
           in: path
           name: id
           required: true
@@ -1553,15 +1974,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Start a Redpanda Connect MCP server
+      summary: Start an MCP server
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
   /v1alpha3/redpanda-connect/mcp-servers/{id}:stop:
     post:
-      description: Stop a running Redpanda Connect MCP server.
+      description: Stop a running MCP server.
       operationId: MCPServerService_StopMCPServer
       parameters:
-        - description: MCP Server ID.
+        - description: MCP server ID.
           in: path
           name: id
           required: true
@@ -1586,12 +2007,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Stops a Redpanda Connect MCP server
+      summary: Stop an MCP server
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
   /v1alpha3/redpanda-connect/mcp-servers:getConfigSchema:
     get:
-      description: The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
+      description: Returns the configuration schema for MCP server tools, including available components and processors.
       operationId: MCPServerService_GetMCPServerServiceConfigSchema
       responses:
         "200":
@@ -1606,12 +2027,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Retrieve the schema for Redpanda Connect MCP Servers configurations.
+      summary: Get MCP server configuration schema
       tags:
-        - Redpanda Connect MCP servers
+        - Remote MCP
   /v1alpha3/redpanda-connect/mcp-servers:lint-config:
     post:
-      description: Validates a supplied Redpanda Connect MCP tools YAML and returns a list of linting hints. If no problems are found, the list is empty.
+      description: Validates a given MCP tool's configuration and returns linting hints. Each tool's YAML configuration is validated. If no problems are found, the response is empty.
       operationId: MCPServerService_LintMCPConfig
       requestBody:
         content:
@@ -1633,43 +2054,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Lint a Redpanda Connect MCP tools configuration
+      summary: Lint a MCP tools configuration
       tags:
-        - Redpanda Connect MCP servers
-  /v1alpha3/shadowlink/{name}/failover:
-    post:
-      description: Fail over a shadow link or a specific shadow topic within a link.
-      operationId: ShadowLinkService_FailOver
-      parameters:
-        - description: The name of the shadow link to fail over
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FailOverBody'
-        required: true
-        x-originalParamName: body
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/v1alpha3.FailOverResponse'
-          description: Failover completed
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Fail Over Shadow Link
-      tags:
-        - Shadow Links (Dataplane)
+        - Remote MCP
 security:
   - auth0: []
 servers:
@@ -1685,9 +2072,9 @@ servers:
 tags:
   - description: Create and manage AI agents and their configurations.
     name: AI Agents
+  - description: Create and manage AI gateways and their configurations.
+    name: AI Gateways
   - description: Create and manage retrieval-augmented generation (RAG) knowledge bases.
     name: Redpanda AI KnowledgeBase
-  - description: Create and manage Redpanda Connect MCP servers and their configurations.
-    name: Redpanda Connect MCP servers
-  - description: Dataplane operations for Redpanda shadow links.
-    name: Shadow Links (Dataplane)
+  - description: Create and manage MCP servers and their configurations.
+    name: Remote MCP

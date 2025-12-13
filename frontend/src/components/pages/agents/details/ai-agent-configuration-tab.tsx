@@ -32,26 +32,30 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
-import { SecretSelector } from 'components/ui/secret/secret-selector';
-import { Edit, Plus, Save, Settings, Trash2 } from 'lucide-react';
+import { AI_AGENT_SECRET_TEXT, SecretSelector } from 'components/ui/secret/secret-selector';
+import { ServiceAccountSection } from 'components/ui/service-account/service-account-section';
+import { Edit, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
   AIAgent_MCPServerSchema,
+  type AIAgent_Provider,
+  AIAgent_Provider_AnthropicSchema,
+  AIAgent_Provider_GoogleSchema,
+  AIAgent_Provider_OpenAICompatibleSchema,
   AIAgent_Provider_OpenAISchema,
   AIAgent_ProviderSchema,
   AIAgentUpdateSchema,
   UpdateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
-import type { MCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useCallback, useMemo, useState } from 'react';
 import { useGetAIAgentQuery, useUpdateAIAgentMutation } from 'react-query/api/ai-agent';
-import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
+import { type MCPServer, useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-import { AIAgentModel, MODEL_OPTIONS_BY_PROVIDER, PROVIDER_INFO } from '../ai-agent-model';
+import { AIAgentModel, detectProvider, MODEL_OPTIONS_BY_PROVIDER } from '../ai-agent-model';
 
 type LocalAIAgent = {
   displayName: string;
@@ -59,7 +63,9 @@ type LocalAIAgent = {
   model: string;
   maxIterations: number;
   systemPrompt: string;
+  provider: AIAgent_Provider;
   apiKeySecret: string;
+  baseUrl: string;
   resources: {
     tier: string;
   };
@@ -73,23 +79,121 @@ type LocalAIAgent = {
 const SECRET_TEMPLATE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
 
 /**
- * Detects the provider for a given model name using pattern matching
- */
-const detectProvider = (modelName: string): (typeof PROVIDER_INFO)[keyof typeof PROVIDER_INFO] | null => {
-  for (const provider of Object.values(PROVIDER_INFO)) {
-    if (provider.modelPattern.test(modelName)) {
-      return provider;
-    }
-  }
-  return null;
-};
-
-/**
  * Extracts the secret name from the template string format: ${secrets.SECRET_NAME} -> SECRET_NAME
  */
 const extractSecretName = (apiKeyTemplate: string): string => {
   const match = apiKeyTemplate.match(SECRET_TEMPLATE_REGEX);
   return match ? match[1] : '';
+};
+
+/**
+ * Extracts provider info from AI Agent provider config
+ */
+const extractProviderInfo = (provider: AIAgent_Provider): { apiKeyTemplate: string; baseUrl: string } => {
+  let apiKeyTemplate = '';
+  let baseUrl = '';
+
+  switch (provider.provider.case) {
+    case 'openai':
+      apiKeyTemplate = provider.provider.value.apiKey;
+      baseUrl = provider.provider.value.baseUrl || '';
+      break;
+    case 'anthropic':
+      apiKeyTemplate = provider.provider.value.apiKey;
+      baseUrl = provider.provider.value.baseUrl || '';
+      break;
+    case 'google':
+      apiKeyTemplate = provider.provider.value.apiKey;
+      baseUrl = provider.provider.value.baseUrl || '';
+      break;
+    case 'openaiCompatible':
+      apiKeyTemplate = provider.provider.value.apiKey;
+      baseUrl = provider.provider.value.baseUrl;
+      break;
+    default:
+      break;
+  }
+
+  return { apiKeyTemplate, baseUrl };
+};
+
+/**
+ * Creates updated provider with new API key reference
+ */
+const createUpdatedProvider = (
+  providerCase: 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | undefined,
+  apiKeyRef: string,
+  baseUrl: string
+): AIAgent_Provider => {
+  switch (providerCase) {
+    case 'anthropic':
+      return create(AIAgent_ProviderSchema, {
+        provider: {
+          case: 'anthropic',
+          value: create(AIAgent_Provider_AnthropicSchema, {
+            apiKey: apiKeyRef,
+            baseUrl: baseUrl || undefined,
+          }),
+        },
+      });
+    case 'google':
+      return create(AIAgent_ProviderSchema, {
+        provider: {
+          case: 'google',
+          value: create(AIAgent_Provider_GoogleSchema, {
+            apiKey: apiKeyRef,
+            baseUrl: baseUrl || undefined,
+          }),
+        },
+      });
+    case 'openaiCompatible':
+      return create(AIAgent_ProviderSchema, {
+        provider: {
+          case: 'openaiCompatible',
+          value: create(AIAgent_Provider_OpenAICompatibleSchema, {
+            apiKey: apiKeyRef,
+            baseUrl,
+          }),
+        },
+      });
+    default: // openai
+      return create(AIAgent_ProviderSchema, {
+        provider: {
+          case: 'openai',
+          value: create(AIAgent_Provider_OpenAISchema, {
+            apiKey: apiKeyRef,
+            baseUrl: baseUrl || undefined,
+          }),
+        },
+      });
+  }
+};
+
+/**
+ * Builds tags map preserving internal tags from original agent
+ */
+const buildTagsMap = (
+  originalTags: { [key: string]: string },
+  userTags: Array<{ key: string; value: string }>
+): { [key: string]: string } => {
+  const tagsMap: { [key: string]: string } = {};
+
+  // Preserve internal tags
+  if (originalTags.service_account_id) {
+    tagsMap.service_account_id = originalTags.service_account_id;
+  }
+  if (originalTags.secret_id) {
+    tagsMap.secret_id = originalTags.secret_id;
+  }
+
+  // Add user-defined tags
+  for (const tag of userTags) {
+    if (tag.key.trim() && tag.value.trim()) {
+      tagsMap[tag.key.trim()] = tag.value.trim();
+    }
+  }
+
+  return tagsMap;
 };
 
 /**
@@ -142,6 +246,7 @@ const MCPServersSection = ({
   );
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Large configuration form with many conditionals - already refactored with helper functions
 export const AIAgentConfigurationTab = () => {
   const { id } = useParams<{ id: string }>();
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
@@ -192,12 +297,9 @@ export const AIAgentConfigurationTab = () => {
       return editedAgentData;
     }
 
-    if (aiAgentData?.aiAgent) {
-      // Extract the secret name from the provider's apiKey template string
-      const apiKeyTemplate =
-        aiAgentData.aiAgent.provider?.provider.case === 'openai'
-          ? aiAgentData.aiAgent.provider.provider.value.apiKey
-          : '';
+    if (aiAgentData?.aiAgent?.provider) {
+      const provider = aiAgentData.aiAgent.provider;
+      const { apiKeyTemplate, baseUrl } = extractProviderInfo(provider);
       const apiKeySecret = extractSecretName(apiKeyTemplate);
 
       return {
@@ -206,7 +308,9 @@ export const AIAgentConfigurationTab = () => {
         model: aiAgentData.aiAgent.model,
         maxIterations: aiAgentData.aiAgent.maxIterations,
         systemPrompt: aiAgentData.aiAgent.systemPrompt,
+        provider: aiAgentData.aiAgent.provider,
         apiKeySecret,
+        baseUrl,
         resources: { tier: getResourceTierFromAgent(aiAgentData.aiAgent.resources) },
         selectedMcpServers: Object.values(aiAgentData.aiAgent.mcpServers).map((server) => server.id),
         tags: Object.entries(aiAgentData.aiAgent.tags)
@@ -217,6 +321,17 @@ export const AIAgentConfigurationTab = () => {
 
     return null;
   }, [editedAgentData, aiAgentData, getResourceTierFromAgent]);
+
+  const updateField = useCallback(
+    (updates: Partial<LocalAIAgent>) => {
+      const currentData = getCurrentData();
+      if (!currentData) {
+        return;
+      }
+      setEditedAgentData({ ...currentData, ...updates });
+    },
+    [getCurrentData]
+  );
 
   const handleAddTag = () => {
     const currentData = getCurrentData();
@@ -276,33 +391,9 @@ export const AIAgentConfigurationTab = () => {
         mcpServersMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
       }
 
-      // Build tags map and preserve internal tags
-      const tagsMap: { [key: string]: string } = {};
-
-      // First, preserve the internal tags from the original agent data
-      if (aiAgentData.aiAgent.tags.service_account_id) {
-        tagsMap.service_account_id = aiAgentData.aiAgent.tags.service_account_id;
-      }
-      if (aiAgentData.aiAgent.tags.secret_id) {
-        tagsMap.secret_id = aiAgentData.aiAgent.tags.secret_id;
-      }
-
-      // Then add user-defined tags
-      for (const tag of currentData.tags) {
-        if (tag.key.trim() && tag.value.trim()) {
-          tagsMap[tag.key.trim()] = tag.value.trim();
-        }
-      }
-
-      // Create provider with updated secret
-      const updatedProvider = create(AIAgent_ProviderSchema, {
-        provider: {
-          case: 'openai',
-          value: create(AIAgent_Provider_OpenAISchema, {
-            apiKey: `\${secrets.${currentData.apiKeySecret}}`,
-          }),
-        },
-      });
+      const tagsMap = buildTagsMap(aiAgentData.aiAgent.tags, currentData.tags);
+      const apiKeyRef = `\${secrets.${currentData.apiKeySecret}}`;
+      const updatedProvider = createUpdatedProvider(currentData.provider.provider.case, apiKeyRef, currentData.baseUrl);
 
       await updateAIAgent(
         create(UpdateAIAgentRequestSchema, {
@@ -378,13 +469,13 @@ export const AIAgentConfigurationTab = () => {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-4">
         {/* Main Configuration - takes 3/4 width on large screens */}
         <div className="space-y-6 xl:col-span-3">
-          {/* Agent Configuration Card */}
+          {/* Basic Information Card */}
           <Card className="px-0 py-0" size="full">
             <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
-                  <Text className="font-semibold">Agent Configuration</Text>
+                  <Text className="font-semibold">Basic Information</Text>
                 </CardTitle>
                 <div className="flex gap-2">
                   {isEditing ? (
@@ -415,14 +506,14 @@ export const AIAgentConfigurationTab = () => {
             <CardContent className="px-4 pb-4">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Agent ID</Label>
+                  <Label>ID</Label>
                   <div className="w-full">
                     <DynamicCodeBlock code={agent.id} lang="text" />
                   </div>
                 </div>
                 {agent.url && (
                   <div className="space-y-2">
-                    <Label>Agent URL</Label>
+                    <Label>URL</Label>
                     <div className="flex-1">
                       <DynamicCodeBlock code={agent.url} lang="text" />
                     </div>
@@ -433,16 +524,7 @@ export const AIAgentConfigurationTab = () => {
                   {isEditing ? (
                     <Input
                       id="displayName"
-                      onChange={(e) => {
-                        const currentData = getCurrentData();
-                        if (!currentData) {
-                          return;
-                        }
-                        setEditedAgentData({
-                          ...currentData,
-                          displayName: e.target.value,
-                        });
-                      }}
+                      onChange={(e) => updateField({ displayName: e.target.value })}
                       value={displayData.displayName}
                     />
                   ) : (
@@ -456,16 +538,7 @@ export const AIAgentConfigurationTab = () => {
                   {isEditing ? (
                     <Textarea
                       id="description"
-                      onChange={(e) => {
-                        const currentData = getCurrentData();
-                        if (!currentData) {
-                          return;
-                        }
-                        setEditedAgentData({
-                          ...currentData,
-                          description: e.target.value,
-                        });
-                      }}
+                      onChange={(e) => updateField({ description: e.target.value })}
                       value={displayData.description}
                     />
                   ) : (
@@ -474,55 +547,112 @@ export const AIAgentConfigurationTab = () => {
                     </div>
                   )}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="systemPrompt">System Prompt</Label>
-                  {isEditing ? (
-                    <Textarea
-                      id="systemPrompt"
-                      onChange={(e) => {
-                        const currentData = getCurrentData();
-                        if (!currentData) {
-                          return;
-                        }
-                        setEditedAgentData({
-                          ...currentData,
-                          systemPrompt: e.target.value,
-                        });
-                      }}
-                      rows={8}
-                      value={displayData.systemPrompt}
-                    />
-                  ) : (
-                    <DynamicCodeBlock code={displayData.systemPrompt} lang="text" />
-                  )}
-                </div>
+
+                {/* Tags - moved from sidebar */}
+                {displayData.tags.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Tags</Label>
+                    <div className="space-y-2">
+                      {displayData.tags.map((tag, index) => (
+                        <div className="flex items-center gap-2" key={`tag-${index}`}>
+                          <div className="flex-1">
+                            <Input
+                              disabled={!isEditing}
+                              onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
+                              placeholder="Key"
+                              value={tag.key}
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <Input
+                              disabled={!isEditing}
+                              onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
+                              placeholder="Value"
+                              value={tag.value}
+                            />
+                          </div>
+                          {isEditing && (
+                            <div className="flex h-9 items-end">
+                              <Button onClick={() => handleRemoveTag(index)} size="sm" variant="outline">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {isEditing && displayData.tags.length === 0 && (
+                  <div className="space-y-2">
+                    <Label>Tags</Label>
+                    <Button className="w-full" onClick={handleAddTag} variant="dashed">
+                      <Plus className="h-4 w-4" />
+                      Add Tag
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* System Prompt Card */}
+          <Card className="px-0 py-0" size="full">
+            <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                <Text className="font-semibold">System Prompt</Text>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <div className="space-y-2">
+                <Label htmlFor="systemPrompt">System Prompt</Label>
+                {isEditing ? (
+                  <Textarea
+                    id="systemPrompt"
+                    onChange={(e) => updateField({ systemPrompt: e.target.value })}
+                    rows={8}
+                    value={displayData.systemPrompt}
+                  />
+                ) : (
+                  <DynamicCodeBlock code={displayData.systemPrompt} lang="text" />
+                )}
               </div>
             </CardContent>
           </Card>
 
           {/* MCP Servers - Always visible */}
-          {(connectedMcpServers.length > 0 || isEditing) && (
-            <MCPServersSection
-              availableMcpServers={availableMcpServers}
-              connectedMcpServers={connectedMcpServers}
-              isEditing={isEditing}
-              onServerSelectionChange={(newServers) => {
-                const currentData = getCurrentData();
-                if (!currentData) {
-                  return;
-                }
-                setEditedAgentData({
-                  ...currentData,
-                  selectedMcpServers: newServers,
-                });
-              }}
-              selectedMcpServers={displayData.selectedMcpServers}
-            />
+          <MCPServersSection
+            availableMcpServers={availableMcpServers}
+            connectedMcpServers={connectedMcpServers}
+            isEditing={isEditing}
+            onServerSelectionChange={(newServers) => updateField({ selectedMcpServers: newServers })}
+            selectedMcpServers={displayData.selectedMcpServers}
+          />
+
+          {/* Service Account - Always visible */}
+          {agent.tags.service_account_id && (
+            <Card className="px-0 py-0" size="full">
+              <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4" />
+                  <Text className="font-semibold">Service Account</Text>
+                </CardTitle>
+                <Text variant="muted">
+                  The service account is used by the agent to authenticate to other systems within the Redpanda Cloud
+                  Platform (e.g. MCP servers, Redpanda broker).
+                </Text>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <ServiceAccountSection serviceAccountId={agent.tags.service_account_id} />
+              </CardContent>
+            </Card>
           )}
         </div>
 
-        {/* Resources Card */}
-        <div className="xl:col-span-1">
+        {/* Right Sidebar */}
+        <div className="space-y-6 xl:col-span-1">
+          {/* Resources Card */}
           <Card className="px-0 py-0" size="full">
             <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
               <CardTitle className="flex items-center gap-2">
@@ -531,82 +661,147 @@ export const AIAgentConfigurationTab = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
-              <div className="space-y-6">
-                {/* Resources */}
+              <div className="space-y-2">
+                <Label htmlFor="resources">Resource Tier</Label>
+                {isEditing ? (
+                  <ResourceTierSelect
+                    onValueChange={(value) => updateField({ resources: { tier: value } })}
+                    value={displayData.resources.tier}
+                  />
+                ) : (
+                  <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                    <code className="font-mono text-sm">
+                      {agent.resources?.cpuShares || '200m'} CPU, {agent.resources?.memoryShares || '800M'} RAM
+                    </code>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* LLM Configuration Card */}
+          <Card className="px-0 py-0" size="full">
+            <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                <Text className="font-semibold">LLM Configuration</Text>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              {isEditing ? (
                 <div className="space-y-4">
+                  {/* Provider - now editable */}
                   <div className="space-y-2">
-                    <Label htmlFor="resources">Resource Tier</Label>
-                    {isEditing ? (
-                      <ResourceTierSelect
-                        onValueChange={(value) => {
-                          const currentData = getCurrentData();
-                          if (!currentData) {
-                            return;
-                          }
-                          setEditedAgentData({
-                            ...currentData,
-                            resources: { tier: value },
-                          });
-                        }}
-                        value={displayData.resources.tier}
+                    <Label htmlFor="provider">Provider</Label>
+                    <Select
+                      onValueChange={(value: 'openai' | 'anthropic' | 'google' | 'openaiCompatible') => {
+                        const newProviderData = MODEL_OPTIONS_BY_PROVIDER[value];
+                        const firstModel =
+                          newProviderData.models.length > 0 && newProviderData.models[0]
+                            ? newProviderData.models[0].value
+                            : displayData.model;
+
+                        updateField({
+                          provider: createUpdatedProvider(value, '', displayData.baseUrl || ''),
+                          model: firstModel,
+                          apiKeySecret: '',
+                        });
+                      }}
+                      value={displayData.provider?.provider.case}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select provider">
+                          {displayData.provider?.provider.case && (
+                            <div className="flex items-center gap-2">
+                              <img
+                                alt={
+                                  MODEL_OPTIONS_BY_PROVIDER[
+                                    displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
+                                  ]?.label
+                                }
+                                className="h-4 w-4"
+                                src={
+                                  MODEL_OPTIONS_BY_PROVIDER[
+                                    displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
+                                  ]?.icon
+                                }
+                              />
+                              <span>
+                                {displayData.provider.provider.case === 'openai' && 'OpenAI'}
+                                {displayData.provider.provider.case === 'anthropic' && 'Anthropic'}
+                                {displayData.provider.provider.case === 'google' && 'Google'}
+                                {displayData.provider.provider.case === 'openaiCompatible' && 'OpenAI Compatible'}
+                              </span>
+                            </div>
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([providerId, provider]) => (
+                          <SelectItem key={providerId} value={providerId}>
+                            <div className="flex items-center gap-2">
+                              <img alt={provider.label} className="h-4 w-4" src={provider.icon} />
+                              <span>{provider.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Model - filtered by provider */}
+                  <div className="space-y-2">
+                    <Label htmlFor="model">Model</Label>
+                    {displayData.provider?.provider.case === 'openaiCompatible' ? (
+                      <Input
+                        onChange={(e) => updateField({ model: e.target.value })}
+                        placeholder="Enter model name (e.g., llama-3.1-70b)"
+                        value={displayData.model}
                       />
                     ) : (
-                      <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <code className="font-mono text-sm">
-                          {agent.resources?.cpuShares || '200m'} CPU, {agent.resources?.memoryShares || '800M'} RAM
-                        </code>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                      <Select onValueChange={(value) => updateField({ model: value })} value={displayData.model}>
+                        <SelectTrigger>
+                          <SelectValue>
+                            {displayData.model && detectProvider(displayData.model) ? (
+                              <div className="flex items-center gap-2">
+                                <img
+                                  alt={detectProvider(displayData.model)?.label}
+                                  className="h-4 w-4"
+                                  src={detectProvider(displayData.model)?.icon}
+                                />
+                                <span>{displayData.model}</span>
+                              </div>
+                            ) : (
+                              displayData.model
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(() => {
+                            const providerCase = displayData.provider?.provider.case;
 
-                {/* Provider Configuration */}
-                <div className="space-y-4">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="model">Model</Label>
-                      {isEditing ? (
-                        <Select
-                          onValueChange={(value) => {
-                            const currentData = getCurrentData();
-                            if (!currentData) {
-                              return;
-                            }
-                            setEditedAgentData({
-                              ...currentData,
-                              model: value,
-                            });
-                          }}
-                          value={displayData.model}
-                        >
-                          <SelectTrigger>
-                            <SelectValue>
-                              {displayData.model && detectProvider(displayData.model) ? (
-                                <div className="flex items-center gap-2">
-                                  <img
-                                    alt={detectProvider(displayData.model)?.label}
-                                    className="h-4 w-4"
-                                    src={detectProvider(displayData.model)?.icon}
-                                  />
-                                  <span>{displayData.model}</span>
-                                </div>
-                              ) : (
-                                displayData.model
-                              )}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([providerId, provider]) => {
-                              const logoSrc = provider.icon;
+                            const providerData = providerCase
+                              ? MODEL_OPTIONS_BY_PROVIDER[providerCase as keyof typeof MODEL_OPTIONS_BY_PROVIDER]
+                              : null;
+
+                            if (!providerData) {
                               return (
-                                <SelectGroup key={providerId}>
-                                  <SelectLabel>
-                                    <div className="flex items-center gap-2">
-                                      <img alt={provider.label} className="h-4 w-4" src={logoSrc} />
-                                      <span>{provider.label}</span>
-                                    </div>
-                                  </SelectLabel>
-                                  {provider.models.map((model) => (
+                                <div className="p-2">
+                                  <Text variant="muted">No models available for this provider</Text>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <SelectGroup>
+                                <SelectLabel>
+                                  <div className="flex items-center gap-2">
+                                    <img alt={providerData.label} className="h-4 w-4" src={providerData.icon} />
+                                    <span>{providerData.label}</span>
+                                  </div>
+                                </SelectLabel>
+                                {providerData.models.map(
+                                  (model: { value: string; name: string; description: string }) => (
                                     <SelectItem key={model.value} value={model.value}>
                                       <div className="flex flex-col gap-0.5">
                                         <Text className="font-medium">{model.name}</Text>
@@ -615,129 +810,99 @@ export const AIAgentConfigurationTab = () => {
                                         </Text>
                                       </div>
                                     </SelectItem>
-                                  ))}
-                                </SelectGroup>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                          <AIAgentModel model={displayData.model} />
-                        </div>
-                      )}
+                                  )
+                                )}
+                              </SelectGroup>
+                            );
+                          })()}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  {/* API Token */}
+                  <div className="space-y-2">
+                    <Label htmlFor="apiKeySecret">API Token</Label>
+                    <div className="[&>div]:flex-col [&>div]:items-stretch [&>div]:gap-2">
+                      <SecretSelector
+                        availableSecrets={availableSecrets}
+                        customText={AI_AGENT_SECRET_TEXT}
+                        onChange={(value) => updateField({ apiKeySecret: value })}
+                        placeholder="Select from secrets store or create new"
+                        scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
+                        value={displayData.apiKeySecret}
+                      />
                     </div>
+                  </div>
+
+                  {/* Base URL - only show for openaiCompatible */}
+                  {displayData.provider?.provider.case === 'openaiCompatible' && (
                     <div className="space-y-2">
+                      <Label htmlFor="baseUrl">Base URL (required)</Label>
+                      <Input
+                        onChange={(e) => updateField({ baseUrl: e.target.value })}
+                        placeholder="https://api.example.com/v1"
+                        value={displayData.baseUrl}
+                      />
+                      <Text variant="muted">API endpoint URL for your OpenAI-compatible service</Text>
+                    </div>
+                  )}
+
+                  {/* Max Iterations */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
                       <Label htmlFor="maxIterations">Max Iterations</Label>
-                      {isEditing ? (
-                        <>
-                          <div className="flex items-center justify-between pb-2">
-                            <Text className="font-medium text-sm">{displayData.maxIterations}</Text>
-                          </div>
-                          <Slider
-                            max={100}
-                            min={10}
-                            onValueChange={(values) => {
-                              const currentData = getCurrentData();
-                              if (!currentData) {
-                                return;
-                              }
-                              setEditedAgentData({
-                                ...currentData,
-                                maxIterations: values[0],
-                              });
-                            }}
-                            value={[displayData.maxIterations]}
-                          />
-                        </>
-                      ) : (
-                        <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                          <Text variant="default">{displayData.maxIterations}</Text>
-                        </div>
-                      )}
+                      <Text className="font-medium text-sm">{displayData.maxIterations}</Text>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="apiKeySecret">OpenAI API Token</Label>
-                      {isEditing ? (
-                        <div className="[&>div]:flex-col [&>div]:items-stretch [&>div]:gap-2">
-                          <SecretSelector
-                            availableSecrets={availableSecrets}
-                            onChange={(value) => {
-                              const currentData = getCurrentData();
-                              if (!currentData) {
-                                return;
-                              }
-                              setEditedAgentData({
-                                ...currentData,
-                                apiKeySecret: value,
-                              });
-                            }}
-                            placeholder="Select from secrets store or create new"
-                            scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
-                            value={displayData.apiKeySecret}
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                          <Text variant="default">{displayData.apiKeySecret || 'No secret configured'}</Text>
-                        </div>
-                      )}
+                    <Slider
+                      max={100}
+                      min={10}
+                      onValueChange={(values) => updateField({ maxIterations: values[0] })}
+                      value={[displayData.maxIterations]}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Provider</Label>
+                    <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                      <Text variant="default">
+                        {agent.provider?.provider.case === 'openai' && 'OpenAI'}
+                        {agent.provider?.provider.case === 'anthropic' && 'Anthropic'}
+                        {agent.provider?.provider.case === 'google' && 'Google'}
+                        {agent.provider?.provider.case === 'openaiCompatible' && 'OpenAI Compatible'}
+                      </Text>
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Model</Label>
+                    <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                      <AIAgentModel model={displayData.model} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>API Token</Label>
+                    <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                      <Text variant="default">{displayData.apiKeySecret || 'No secret configured'}</Text>
+                    </div>
+                  </div>
+                  {agent.provider?.provider.case === 'openaiCompatible' && displayData.baseUrl && (
                     <div className="space-y-2">
-                      <Label>Provider</Label>
+                      <Label>Base URL</Label>
                       <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <Text variant="default">
-                          {agent.provider?.provider.case === 'openai' ? 'OpenAI' : 'Unknown'}
-                        </Text>
+                        <Text variant="default">{displayData.baseUrl}</Text>
                       </div>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label>Max Iterations</Label>
+                    <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                      <Text variant="default">{displayData.maxIterations}</Text>
                     </div>
                   </div>
                 </div>
-
-                {/* Tags */}
-                {(displayData.tags.length > 0 || isEditing) && (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Tags</Label>
-                      <div className="space-y-2">
-                        {displayData.tags.map((tag, index) => (
-                          <div className="flex items-center gap-2" key={`tag-${index}`}>
-                            <div className="flex-1">
-                              <Input
-                                disabled={!isEditing}
-                                onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
-                                placeholder="Key"
-                                value={tag.key}
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <Input
-                                disabled={!isEditing}
-                                onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
-                                placeholder="Value"
-                                value={tag.value}
-                              />
-                            </div>
-                            {isEditing && (
-                              <div className="flex h-9 items-end">
-                                <Button onClick={() => handleRemoveTag(index)} size="sm" variant="outline">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                        {isEditing && (
-                          <Button className="w-full" onClick={handleAddTag} variant="dashed">
-                            <Plus className="h-4 w-4" />
-                            Add Tag
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>

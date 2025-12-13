@@ -6,9 +6,11 @@ import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { CheckIcon, Waypoints } from 'lucide-react';
 import { AnimatePresence, type MotionProps, motion } from 'motion/react';
+import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 import { ConnectorLogo } from './connector-logo';
 import type { ConnectComponentSpec } from '../types/schema';
+import { componentStatusToString } from '../utils/schema';
 
 const logoStyle = {
   height: '24px',
@@ -67,11 +69,14 @@ export const ConnectTile = ({
         <div className="flex flex-col gap-1">
           <InlineCode className="truncate bg-background px-0 py-0 font-semibold text-md">{component.name}</InlineCode>
           <span>
-            {component.status && component.status !== 'stable' && component.name !== 'redpanda' && (
-              <Badge size="sm" variant="gray">
-                {component.status}
-              </Badge>
-            )}
+            {(component.status === ComponentStatus.BETA ||
+              component.status === ComponentStatus.EXPERIMENTAL ||
+              component.status === ComponentStatus.DEPRECATED) &&
+              component.name !== 'redpanda' && (
+                <Badge size="sm" variant="gray">
+                  {componentStatusToString(component.status)}
+                </Badge>
+              )}
           </span>
         </div>
         <div className="-translate-y-1/2 absolute top-1/2 right-0">

@@ -27,32 +27,26 @@ import {
   FormMessage,
 } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from 'components/redpanda-ui/components/select';
-import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { LLMConfigSection } from 'components/ui/ai-agent/llm-config-section';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
-import { SecretSelector } from 'components/ui/secret/secret-selector';
 import {
   ServiceAccountSelector,
   type ServiceAccountSelectorRef,
 } from 'components/ui/service-account/service-account-selector';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { config } from 'config';
-import { ExternalLink, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
   AIAgent_MCPServerSchema,
+  type AIAgent_Provider,
+  AIAgent_Provider_AnthropicSchema,
+  AIAgent_Provider_GoogleSchema,
+  AIAgent_Provider_OpenAICompatibleSchema,
   AIAgent_Provider_OpenAISchema,
   AIAgent_ProviderSchema,
   AIAgent_ServiceAccountSchema,
@@ -69,21 +63,6 @@ import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { FormSchema, type FormValues, initialValues } from './schemas';
-import { AIAgentBackButton } from '../ai-agent-back-button';
-import { MODEL_OPTIONS_BY_PROVIDER, PROVIDER_INFO } from '../ai-agent-model';
-
-/**
- * Detects the provider for a given model name using pattern matching
- * Allows handling any model from supported providers (e.g., gpt-4, gpt-4-turbo, o1-preview, claude-3-opus, etc.)
- */
-const detectProvider = (modelName: string): (typeof PROVIDER_INFO)[keyof typeof PROVIDER_INFO] | null => {
-  for (const provider of Object.values(PROVIDER_INFO)) {
-    if (provider.modelPattern.test(modelName)) {
-      return provider;
-    }
-  }
-  return null;
-};
 
 export const AIAgentCreatePage = () => {
   const navigate = useNavigate();
@@ -152,21 +131,23 @@ export const AIAgentCreatePage = () => {
       }));
   }, [secretsData]);
 
-  // Auto-detect and prefill OpenAI secret
+  // Auto-detect and prefill API key secret based on provider
+  const selectedProvider = form.watch('provider');
   useEffect(() => {
     // Only auto-select if the field is currently empty
     if (form.getValues('apiKeySecret')) {
       return;
     }
 
-    // Find the first secret with "OPENAI" in its name (case-insensitive)
-    const openAISecret = availableSecrets.find((secret) => secret.id.toUpperCase().includes('OPENAI'));
+    // Find the first secret matching the selected provider
+    const providerKeyword = selectedProvider.toUpperCase();
+    const providerSecret = availableSecrets.find((secret) => secret.id.toUpperCase().includes(providerKeyword));
 
     // If found, set it as the default value
-    if (openAISecret) {
-      form.setValue('apiKeySecret', openAISecret.id);
+    if (providerSecret) {
+      form.setValue('apiKeySecret', providerSecret.id);
     }
-  }, [availableSecrets, form]);
+  }, [availableSecrets, selectedProvider, form]);
 
   // Get available MCP servers (all servers, regardless of state)
   const availableMcpServers = useMemo(() => {
@@ -213,7 +194,12 @@ export const AIAgentCreatePage = () => {
               message: description,
             });
             toast.error(`Model: ${description}`);
-          } else if (field === 'ai_agent.provider.openai.api_key') {
+          } else if (
+            field === 'ai_agent.provider.openai.api_key' ||
+            field === 'ai_agent.provider.anthropic.api_key' ||
+            field === 'ai_agent.provider.google.api_key' ||
+            field === 'ai_agent.provider.openai_compatible.api_key'
+          ) {
             form.setError('apiKeySecret', {
               type: 'server',
               message: description,
@@ -292,6 +278,56 @@ export const AIAgentCreatePage = () => {
       clientSecret: `\${secrets.${secretName}.client_secret}`,
     });
 
+    // Build provider configuration based on selected provider
+    const apiKeyRef = `\${secrets.${values.apiKeySecret}}`;
+    let providerConfig: AIAgent_Provider;
+
+    switch (values.provider) {
+      case 'anthropic':
+        providerConfig = create(AIAgent_ProviderSchema, {
+          provider: {
+            case: 'anthropic',
+            value: create(AIAgent_Provider_AnthropicSchema, {
+              apiKey: apiKeyRef,
+              baseUrl: values.baseUrl || undefined,
+            }),
+          },
+        });
+        break;
+      case 'google':
+        providerConfig = create(AIAgent_ProviderSchema, {
+          provider: {
+            case: 'google',
+            value: create(AIAgent_Provider_GoogleSchema, {
+              apiKey: apiKeyRef,
+              baseUrl: values.baseUrl || undefined,
+            }),
+          },
+        });
+        break;
+      case 'openaiCompatible':
+        providerConfig = create(AIAgent_ProviderSchema, {
+          provider: {
+            case: 'openaiCompatible',
+            value: create(AIAgent_Provider_OpenAICompatibleSchema, {
+              apiKey: apiKeyRef,
+              baseUrl: values.baseUrl,
+            }),
+          },
+        });
+        break;
+      default: // openai
+        providerConfig = create(AIAgent_ProviderSchema, {
+          provider: {
+            case: 'openai',
+            value: create(AIAgent_Provider_OpenAISchema, {
+              apiKey: apiKeyRef,
+              baseUrl: values.baseUrl || undefined,
+            }),
+          },
+        });
+    }
+
     await createAgent(
       create(CreateAIAgentRequestSchema, {
         aiAgent: create(AIAgentCreateSchema, {
@@ -299,14 +335,7 @@ export const AIAgentCreatePage = () => {
           description: values.description?.trim() ?? '',
           systemPrompt: values.systemPrompt.trim(),
           model: values.model.trim(),
-          provider: create(AIAgent_ProviderSchema, {
-            provider: {
-              case: 'openai',
-              value: create(AIAgent_Provider_OpenAISchema, {
-                apiKey: `\${secrets.${values.apiKeySecret}}`,
-              }),
-            },
-          }),
+          provider: providerConfig,
           maxIterations: values.maxIterations,
           mcpServers: mcpServersMap,
           tags: tagsMap,
@@ -333,11 +362,7 @@ export const AIAgentCreatePage = () => {
     <div className="flex flex-col gap-4">
       {/* Header */}
       <div className="space-y-4">
-        <AIAgentBackButton />
-        <div className="space-y-2">
-          <Heading level={1}>Create New Agent</Heading>
-          <Text variant="muted">Set up a new AI agent from scratch</Text>
-        </div>
+        <Heading level={1}>Create New Agent</Heading>
       </div>
 
       <Form {...form}>
@@ -360,7 +385,7 @@ export const AIAgentCreatePage = () => {
                         <FormItem>
                           <FormLabel required>Agent Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="Customer Support Bot" {...field} />
+                            <Input {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -406,129 +431,28 @@ export const AIAgentCreatePage = () => {
                 </CardContent>
               </Card>
 
-              {/* OpenAI Configuration */}
+              {/* LLM Provider Configuration */}
               <Card size="full">
                 <CardHeader>
-                  <CardTitle>OpenAI Configuration</CardTitle>
+                  <CardTitle>LLM Provider Configuration</CardTitle>
                   <Text variant="muted">Configure the AI model and authentication</Text>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="apiKeySecret"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel required>OpenAI API Token</FormLabel>
-                          <FormControl>
-                            <SecretSelector
-                              availableSecrets={availableSecrets}
-                              onChange={field.onChange}
-                              placeholder="Select from secrets store or create new"
-                              scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
-                              value={field.value}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="model"
-                      render={({ field }) => {
-                        // Use pattern matching to detect provider (works for ANY model from that provider)
-                        const detectedProvider = field.value ? detectProvider(field.value) : null;
-
-                        return (
-                          <FormItem>
-                            <FormLabel required>Model</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select AI model">
-                                    {field.value && detectedProvider ? (
-                                      <div className="flex items-center gap-2">
-                                        <img
-                                          alt={detectedProvider.label}
-                                          className="h-4 w-4"
-                                          src={detectedProvider.icon}
-                                        />
-                                        <span>{field.value}</span>
-                                      </div>
-                                    ) : (
-                                      'Select AI model'
-                                    )}
-                                  </SelectValue>
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([providerId, provider]) => {
-                                  const logoSrc = provider.icon;
-                                  return (
-                                    <SelectGroup key={providerId}>
-                                      <SelectLabel>
-                                        <div className="flex items-center gap-2">
-                                          <img alt={provider.label} className="h-4 w-4" src={logoSrc} />
-                                          <span>{provider.label}</span>
-                                        </div>
-                                      </SelectLabel>
-                                      {provider.models.map((model) => (
-                                        <SelectItem key={model.value} value={model.value}>
-                                          <div className="flex flex-col gap-0.5">
-                                            <Text className="font-medium">{model.name}</Text>
-                                            <Text className="text-xs" variant="muted">
-                                              {model.description}
-                                            </Text>
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectGroup>
-                                  );
-                                })}
-                              </SelectContent>
-                            </Select>
-                            <Text variant="muted">
-                              See{' '}
-                              <a
-                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
-                                href="https://platform.openai.com/docs/models/overview"
-                                rel="noopener noreferrer"
-                                target="_blank"
-                              >
-                                OpenAI models <ExternalLink className="h-3 w-3" />
-                              </a>{' '}
-                              for available models.
-                            </Text>
-                            <FormMessage />
-                          </FormItem>
-                        );
-                      }}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="maxIterations"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center justify-between">
-                            <FormLabel>Max Iterations</FormLabel>
-                            <Text className="font-medium text-sm">{field.value}</Text>
-                          </div>
-                          <FormControl>
-                            <Slider
-                              max={100}
-                              min={10}
-                              onValueChange={(values) => field.onChange(values[0])}
-                              value={[field.value]}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <LLMConfigSection
+                    availableSecrets={availableSecrets}
+                    fieldNames={{
+                      provider: 'provider',
+                      model: 'model',
+                      apiKeySecret: 'apiKeySecret',
+                      baseUrl: 'baseUrl',
+                      maxIterations: 'maxIterations',
+                    }}
+                    form={form}
+                    mode="create"
+                    scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
+                    showBaseUrl={form.watch('provider') === 'openaiCompatible'}
+                    showMaxIterations={true}
+                  />
                 </CardContent>
               </Card>
             </div>

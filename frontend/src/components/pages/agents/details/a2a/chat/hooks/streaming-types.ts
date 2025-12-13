@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import type { TaskStateProps } from 'components/ai-elements/task';
+import type { Message, Task, TaskArtifactUpdateEvent, TaskState, TaskStatusUpdateEvent } from '@a2a-js/sdk';
 
 import type { ChatMessage, ContentBlock } from '../types';
 
@@ -56,77 +56,17 @@ export type TextDeltaEvent = {
 };
 
 /**
- * Raw task event
+ * Raw event from A2A SDK wrapped in AI SDK's streaming protocol
  */
-export type RawTaskEvent = {
-  kind: 'task';
-  id: string;
-  taskId?: string;
-  status?: {
-    state?: string;
-  };
-};
-
-/**
- * Raw status-update event
- */
-export type RawStatusUpdateEvent = {
-  kind: 'status-update';
-  taskId?: string;
-  status?: {
-    state?: string;
-    timestamp?: string; // Timestamp is at status level
-    message?: {
-      kind: string;
-      messageId: string;
-      metadata?: {
-        llm_message?: string;
-      };
-      parts?: Array<{ kind: string; text?: string }>;
-      role: string;
-    };
-  };
-};
-
-/**
- * Raw artifact-update event
- */
-export type RawArtifactUpdateEvent = {
-  kind: 'artifact-update';
-  taskId?: string;
-  artifact?: {
-    artifactId: string;
-    name?: string;
-    description?: string;
-    parts: Array<{
-      kind: string;
-      text?: string;
-      file?: {
-        name?: string;
-        mimeType?: string;
-        bytes?: string;
-      };
-    }>;
-  };
-};
-
-/**
- * Union of all raw event types
- */
-export type RawEvent = RawTaskEvent | RawStatusUpdateEvent | RawArtifactUpdateEvent;
-
-/**
- * Raw chunk wrapper
- */
-export type RawChunk = {
+export type RawStreamEvent = {
   type: 'raw';
-  rawValue: RawEvent;
+  rawValue: Task | TaskStatusUpdateEvent | TaskArtifactUpdateEvent | Message;
 };
 
 /**
- * Stream chunk union type
+ * Stream chunk union type - simplified, no Raw wrappers
  */
-export type StreamChunk = ResponseMetadataEvent | TextDeltaEvent | RawChunk | { type: string };
+export type StreamChunk = ResponseMetadataEvent | TextDeltaEvent | RawStreamEvent;
 
 /**
  * Streaming state that accumulates during stream consumption
@@ -157,12 +97,16 @@ export type StreamingState = {
   /**
    * Previous task state for detecting state transitions
    */
-  previousTaskState: TaskStateProps['state'] | undefined;
+  previousTaskState: TaskState | undefined;
   /**
    * Index in contentBlocks where taskId was first captured
    * Used to split pre-task content from task-related content
    */
   taskIdCapturedAtBlockIndex: number | undefined;
+  /**
+   * Latest usage metadata from status-update events
+   */
+  latestUsage: ChatMessage['usage'] | undefined;
   /**
    * @deprecated Legacy artifact accumulation - use contentBlocks instead
    */

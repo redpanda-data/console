@@ -77,9 +77,10 @@ export const TaskContent = ({
 }: TaskContentProps) => (
   <CollapsibleContent
     className={cn(
-      "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 text-popover-foreground outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
+      "text-popover-foreground outline-none",
       className
     )}
+    transition={{ duration: 0 }}
     {...props}
   >
     <div className="mt-4 space-y-2 border-muted border-l-2 pl-4">
@@ -130,7 +131,7 @@ export const TaskState = ({ state }: TaskStateProps) => {
         <Badge variant="gray" className="rounded-full">
           <Text variant="small" className="flex items-center gap-2">
             <ClockIcon className="size-4" />
-            Pending
+            Submitted
           </Text>
         </Badge>
       );

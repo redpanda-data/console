@@ -41,6 +41,7 @@ import (
 	apikafkaconnectsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha1"
 	apikafkaconnectsvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha2"
 	licensesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/license"
+	monitoringsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/monitoring/v1"
 	quotasvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/quota/v1"
 	topicsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1"
 	topicsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1alpha1"
@@ -123,6 +124,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	transformSvcV1 := transformsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "transform_service"), v, api.RedpandaClientProvider)
 	kafkaConnectSvcV1 := apikafkaconnectsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "kafka_connect_service"), api.ConnectSvc)
 	consoleTransformSvcV1 := &transformsvcv1.ConsoleService{Impl: transformSvcV1}
+	monitoringSvcV1 := monitoringsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "monitoring_service"), api.RedpandaClientProvider)
 
 	// v1alpha2
 
@@ -185,6 +187,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			dataplanev1connect.KafkaConnectServiceName:       kafkaConnectSvcV1,
 			dataplanev1connect.CloudStorageServiceName:       dataplanev1connect.UnimplementedCloudStorageServiceHandler{},
 			dataplanev1connect.SecurityServiceName:           dataplanev1connect.UnimplementedSecurityServiceHandler{},
+			dataplanev1connect.MonitoringServiceName:         monitoringSvcV1,
 		},
 	})
 
@@ -304,6 +307,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	securitySvcPathV1, securitySvcHandlerV1 := dataplanev1connect.NewSecurityServiceHandler(
 		securitySvcV1,
 		connect.WithInterceptors(hookOutput.Interceptors...))
+	monitoringSvcPathV1, monitoringSvcHandlerV1 := dataplanev1connect.NewMonitoringServiceHandler(monitoringSvcV1, connect.WithInterceptors(hookOutput.Interceptors...))
 
 	ossServices := []ConnectService{
 		{
@@ -427,6 +431,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			Handler:     cloudStorageSvcHandlerV1,
 		},
 		{
+			ServiceName: dataplanev1connect.MonitoringServiceName,
+			MountPath:   monitoringSvcPathV1,
+			Handler:     monitoringSvcHandlerV1,
+		},
+		{
 			ServiceName: consolev1alpha1connect.SecretServiceName,
 			MountPath:   consoleSecretsServicePath,
 			Handler:     consoleSecretsServiceHandler,
@@ -476,6 +485,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	dataplanev1connect.RegisterKafkaConnectServiceHandlerGatewayServer(gwMux, kafkaConnectSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1connect.RegisterCloudStorageServiceHandlerGatewayServer(gwMux, cloudStorageSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1connect.RegisterSecurityServiceHandlerGatewayServer(gwMux, securitySvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
+	dataplanev1connect.RegisterMonitoringServiceHandlerGatewayServer(gwMux, monitoringSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 
 	// mount
 
@@ -492,6 +502,7 @@ func (api *API) Routes() *chi.Mux {
 // All the routes for the application are defined in one place.
 func (api *API) routes() *chi.Mux {
 	baseRouter := chi.NewRouter()
+	baseRouter.Use(createHSTSHeaderMiddleware(api.Cfg.REST.TLS.Enabled))
 	baseRouter.NotFound(rest.HandleNotFound(api.Logger))
 	baseRouter.MethodNotAllowed(rest.HandleMethodNotAllowed(api.Logger))
 

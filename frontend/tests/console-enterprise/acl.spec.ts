@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+
 import {
   ModeAllowAll,
   ModeCustom,
@@ -16,8 +17,8 @@ import {
   ResourceTypeTransactionalId,
   type Rule,
 } from '../../src/components/pages/acls/new-acl/acl.model';
-import { ACLPage } from '../console/pages/ACLPage';
-import { RolePage } from '../console/pages/RolePage';
+import { AclPage } from '../console/utils/acl-page';
+import { RolePage } from '../console/utils/role-page';
 
 /**
  * Generates a unique principal name for testing
@@ -33,7 +34,7 @@ function generatePrincipalName(): string {
 }
 
 const aclPages = [
-  { type: 'Acl', createPage: (page: Page) => new ACLPage(page) },
+  { type: 'Acl', createPage: (page: Page) => new AclPage(page) },
   { type: 'Role', createPage: (page: Page) => new RolePage(page) },
 ];
 
@@ -948,7 +949,7 @@ test.describe('ACL Disable Rules Validation', () => {
       } as Rule,
     ];
 
-    const aclPage = new ACLPage(page);
+    const aclPage = new AclPage(page);
     await aclPage.goto();
 
     await test.step('Set principal and host', async () => {
@@ -1222,7 +1223,7 @@ test.describe('Allow all operations', () => {
           selectorValue: '',
           operations: {},
           resourceType: type,
-        }) as Rule,
+        }) as Rule
     );
 
     aclPages.map(({ createPage, type }) => {
@@ -1352,7 +1353,7 @@ test.describe('Multiples ACLs, different hosts but same role', () => {
   const roleName = generatePrincipalName();
 
   test('Create 2 ACLs with same role, 1 with host * and 1 with host 1.1.1.1', async ({ page }) => {
-    test.setTimeout(180000); // 3 minutes timeout for this complex multi-step test
+    test.setTimeout(180_000); // 3 minutes timeout for this complex multi-step test
 
     await test.step('Create first ACL host *', async () => {
       const rolePage = new RolePage(page);
@@ -1480,7 +1481,7 @@ test.describe('Multiples ACLs, different hosts but same role', () => {
 
       // Verify URL contains second host parameter
       await page.waitForURL(
-        `**/security/roles/${encodeURIComponent(roleName)}/details?host=${encodeURIComponent(secondHost)}`,
+        `**/security/roles/${encodeURIComponent(roleName)}/details?host=${encodeURIComponent(secondHost)}`
       );
 
       await page.waitForURL((url) => url.href.includes(`host=${encodeURIComponent(secondHost)}`));
@@ -1517,7 +1518,7 @@ test.describe('Multiples ACLs, different hosts but same role', () => {
 
       // Verify navigation to update page with host parameter
       await page.waitForURL(
-        `**/security/roles/${encodeURIComponent(roleName)}/update?host=${encodeURIComponent(firstHost)}`,
+        `**/security/roles/${encodeURIComponent(roleName)}/update?host=${encodeURIComponent(firstHost)}`
       );
 
       await page.waitForURL((url) => url.href.includes(`host=${encodeURIComponent(firstHost)}`));

@@ -10,11 +10,6 @@ import { ShadowLinkService } from "./shadowlink_pb";
 export const createShadowLink = ShadowLinkService.method.createShadowLink;
 
 /**
- * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.GetShadowLink
- */
-export const getShadowLink = ShadowLinkService.method.getShadowLink;
-
-/**
  * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.ListShadowLinks
  */
 export const listShadowLinks = ShadowLinkService.method.listShadowLinks;
@@ -28,13 +23,3 @@ export const updateShadowLink = ShadowLinkService.method.updateShadowLink;
  * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.DeleteShadowLink
  */
 export const deleteShadowLink = ShadowLinkService.method.deleteShadowLink;
-
-/**
- * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.ListShadowLinkTopics
- */
-export const listShadowLinkTopics = ShadowLinkService.method.listShadowLinkTopics;
-
-/**
- * @generated from rpc redpanda.api.console.v1alpha1.ShadowLinkService.GetShadowTopic
- */
-export const getShadowTopic = ShadowLinkService.method.getShadowTopic;

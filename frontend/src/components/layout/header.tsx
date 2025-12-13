@@ -70,6 +70,7 @@ const AppPageHeader = observer(() => {
               fontSize="xl"
               fontWeight={700}
               mr={2}
+              role="heading"
               {...(lastBreadcrumb.options?.canBeTruncated
                 ? {
                     wordBreak: 'break-all',

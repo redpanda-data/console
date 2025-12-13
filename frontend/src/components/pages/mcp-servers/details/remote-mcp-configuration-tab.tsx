@@ -31,19 +31,17 @@ import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resour
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
+import { ServiceAccountSection } from 'components/ui/service-account/service-account-section';
 import { ExpandedYamlDialog } from 'components/ui/yaml/expanded-yaml-dialog';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
-import { Edit, FileText, Hammer, Plus, Save, Settings, Trash2 } from 'lucide-react';
+import { isFeatureFlagEnabled } from 'config';
+import { Edit, FileText, Hammer, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import {
-  LintMCPConfigRequestSchema,
-  type MCPServer_State,
-  MCPServer_Tool_ComponentType,
-  UpdateMCPServerRequestSchema,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  type MCPServer_State,
+  MCPServer_Tool_ComponentType,
   useGetMCPServerQuery,
   useLintMCPConfigMutation,
   useListMCPServerTools,
@@ -61,7 +59,7 @@ import { type Template, templates } from '../templates/remote-mcp-templates';
 type LocalTool = {
   id: string;
   name: string;
-  componentType: MCPServer_Tool_ComponentType;
+  componentType: (typeof MCPServer_Tool_ComponentType)[keyof typeof MCPServer_Tool_ComponentType];
   config: string;
   selectedTemplate?: string;
 };
@@ -75,7 +73,7 @@ type LocalMCPServer = {
     tier: string;
   };
   tools: LocalTool[];
-  state: MCPServer_State;
+  state: (typeof MCPServer_State)[keyof typeof MCPServer_State];
   status: string;
   url: string;
 };
@@ -197,7 +195,7 @@ export const RemoteMCPConfigurationTab = () => {
       }
 
       await updateMCPServer(
-        create(UpdateMCPServerRequestSchema, {
+        {
           id,
           mcpServer: {
             displayName: currentData.displayName,
@@ -214,7 +212,7 @@ export const RemoteMCPConfigurationTab = () => {
           updateMask: create(FieldMaskSchema, {
             paths: ['display_name', 'description', 'tools', 'tags', 'resources'],
           }),
-        }),
+        },
         {
           onError: (error) => {
             toast.error(formatToastErrorMessageGRPC({ error, action: 'update', entity: 'MCP server' }));
@@ -345,11 +343,9 @@ export const RemoteMCPConfigurationTab = () => {
       },
     };
 
-    const response = await lintConfig(
-      create(LintMCPConfigRequestSchema, {
-        tools: toolsMap,
-      })
-    );
+    const response = await lintConfig({
+      tools: toolsMap,
+    });
 
     // Update lint hints for this tool
     setLintHints((prev) => ({
@@ -381,11 +377,9 @@ export const RemoteMCPConfigurationTab = () => {
           },
         };
 
-        const response = await lintConfig(
-          create(LintMCPConfigRequestSchema, {
-            tools: toolsMap,
-          })
-        );
+        const response = await lintConfig({
+          tools: toolsMap,
+        });
 
         // Store hints for this tool
         if (response.lintHints && Object.keys(response.lintHints).length > 0) {
@@ -797,7 +791,10 @@ export const RemoteMCPConfigurationTab = () => {
                             <Label className="font-medium text-sm">Component Type</Label>
                             <Select
                               onValueChange={(value) => {
-                                const componentType = Number.parseInt(value, 10) as MCPServer_Tool_ComponentType;
+                                const componentType = Number.parseInt(
+                                  value,
+                                  10
+                                ) as (typeof MCPServer_Tool_ComponentType)[keyof typeof MCPServer_Tool_ComponentType];
                                 handleUpdateTool(selectedTool.id, { componentType });
                               }}
                               value={selectedTool.componentType.toString()}
@@ -816,7 +813,9 @@ export const RemoteMCPConfigurationTab = () => {
                                   .map((componentType) => (
                                     <SelectItem key={componentType} value={componentType.toString()}>
                                       <RedpandaConnectComponentTypeBadge
-                                        componentType={componentType as MCPServer_Tool_ComponentType}
+                                        componentType={
+                                          componentType as (typeof MCPServer_Tool_ComponentType)[keyof typeof MCPServer_Tool_ComponentType]
+                                        }
                                       />
                                     </SelectItem>
                                   ))}
@@ -938,6 +937,29 @@ export const RemoteMCPConfigurationTab = () => {
             </div>
           )}
         </div>
+
+        {/* Service Account - Show only if feature flag is enabled */}
+        {isFeatureFlagEnabled('enableMcpServiceAccount') &&
+          displayData?.tags &&
+          displayData.tags.find((tag) => tag.key === 'service_account_id') && (
+            <Card className="px-0 py-0" size="full">
+              <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4" />
+                  <Text className="font-semibold">Service Account</Text>
+                </CardTitle>
+                <Text className="text-sm" variant="muted">
+                  The service account is used by the MCP server to authenticate to other systems within the Redpanda
+                  Cloud platform (e.g. Redpanda broker).
+                </Text>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <ServiceAccountSection
+                  serviceAccountId={displayData.tags.find((tag) => tag.key === 'service_account_id')?.value || ''}
+                />
+              </CardContent>
+            </Card>
+          )}
       </div>
 
       {/* Expanded YAML Editor Dialog */}

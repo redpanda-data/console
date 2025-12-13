@@ -13,13 +13,15 @@ import { useToast } from '@redpanda-data/ui';
 import {
   convertRulesToCreateACLRequests,
   handleResponses,
+  type PrincipalType,
+  PrincipalTypeRedpandaRole,
   PrincipalTypeUser,
   parsePrincipal,
   type Rule,
 } from 'components/pages/acls/new-acl/acl.model';
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { uiState } from 'state/ui-state';
 
 import { useCreateAcls } from '../../../../react-query/api/acl';
@@ -28,6 +30,20 @@ import PageContent from '../../../misc/page-content';
 const AclCreatePage = () => {
   const toast = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const principalTypeParam = searchParams.get('principalType')?.toLowerCase();
+  const principalName = searchParams.get('principalName');
+
+  const principalTypeMap: Record<string, PrincipalType> = {
+    redpandarole: PrincipalTypeRedpandaRole,
+    user: PrincipalTypeUser,
+  };
+
+  const principalType = principalTypeParam ? principalTypeMap[principalTypeParam] : undefined;
+
+  const sharedConfig =
+    principalName && principalType ? { principal: `${principalType}${principalName}`, host: '*' } : undefined;
 
   useEffect(() => {
     uiState.pageBreadcrumbs = [
@@ -53,7 +69,8 @@ const AclCreatePage = () => {
         edit={false}
         onCancel={() => navigate('/security/acls')}
         onSubmit={createAclMutation}
-        principalType={PrincipalTypeUser}
+        principalType={principalType}
+        sharedConfig={sharedConfig}
       />
     </PageContent>
   );

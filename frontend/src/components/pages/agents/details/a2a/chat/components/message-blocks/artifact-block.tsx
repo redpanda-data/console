@@ -14,13 +14,10 @@ import {
   ArtifactContent,
   ArtifactDescription,
   ArtifactHeader,
-  ArtifactMetadata,
   ArtifactTitle,
 } from 'components/ai-elements/artifact';
 import { Image } from 'components/ai-elements/image';
 import { Response } from 'components/ai-elements/response';
-import { useScrollToBottom } from 'hooks/use-scroll-to-bottom';
-import { useCallback } from 'react';
 
 import type { ArtifactPart } from '../../types';
 
@@ -37,21 +34,19 @@ type ArtifactBlockProps = {
  * Displays generated content, code, or data from the agent
  * Supports text and file (e.g., image) parts
  */
-export const ArtifactBlock = ({ artifactId, name, description, parts }: ArtifactBlockProps) => {
-  const { isAtBottom, scrollToBottom } = useScrollToBottom();
-
-  // Trigger scroll when images finish loading
-  const handleImageLoad = useCallback(() => {
-    if (isAtBottom) {
-      scrollToBottom('smooth');
-    }
-  }, [isAtBottom, scrollToBottom]);
+export const ArtifactBlock = ({ artifactId, name, description, parts, timestamp }: ArtifactBlockProps) => {
+  const time = timestamp.toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    fractionalSecondDigits: 3,
+  });
 
   return (
     <Artifact className="mt-4" key={artifactId}>
       <ArtifactHeader>
         <div>
-          <ArtifactTitle>{name || `Artifact ${artifactId}`}</ArtifactTitle>
+          <ArtifactTitle>{name || 'Artifact'}</ArtifactTitle>
           {description && <ArtifactDescription>{description}</ArtifactDescription>}
         </div>
       </ArtifactHeader>
@@ -62,7 +57,6 @@ export const ArtifactBlock = ({ artifactId, name, description, parts }: Artifact
           }
 
           if (part.kind === 'file' && part.file.mimeType.startsWith('image/')) {
-            // Handle both base64 bytes (streaming) and URIs (DB)
             const imageSrc = part.file.bytes
               ? `data:${part.file.mimeType};base64,${part.file.bytes}`
               : part.file.uri || '';
@@ -72,17 +66,15 @@ export const ArtifactBlock = ({ artifactId, name, description, parts }: Artifact
                 {part.file.bytes ? (
                   <Image
                     alt={part.file.name || 'Generated image'}
-                    base64={part.file.bytes} // Not used, but required by type
+                    base64={part.file.bytes}
                     className="h-auto max-w-full rounded-md"
                     mediaType={part.file.mimeType}
                     uint8Array={new Uint8Array()}
                   />
                 ) : (
-                  // biome-ignore lint/a11y/noNoninteractiveElementInteractions: onLoad is a standard HTML event for images
                   <img
                     alt={part.file.name || 'Generated image'}
                     className="h-auto max-w-full rounded-md"
-                    onLoad={handleImageLoad}
                     src={imageSrc}
                   />
                 )}
@@ -90,11 +82,21 @@ export const ArtifactBlock = ({ artifactId, name, description, parts }: Artifact
             );
           }
 
-          // Fallback for unknown part types
           return null;
         })}
       </ArtifactContent>
-      <ArtifactMetadata artifactId={artifactId} />
+      <div className="border-t bg-muted/30 px-4 py-2 text-muted-foreground text-xs">
+        <div className="flex flex-col gap-0.5">
+          <div className="flex gap-1.5">
+            <span className="font-medium">artifact_id:</span>
+            <span className="font-mono">{artifactId}</span>
+          </div>
+          <div className="flex gap-1.5">
+            <span className="font-medium">time:</span>
+            <span>{time}</span>
+          </div>
+        </div>
+      </div>
     </Artifact>
   );
 };

@@ -16,24 +16,20 @@ export const REDPANDA_TOPIC_AND_USER_COMPONENTS = [
 
 /**
  * Fields that are critical for connection and should always be shown
- * even when they have defaults
+ * even when they have defaults.
+ *
+ * Note: These fields are only shown if they exist in the component's schema.
+ * The existence check happens naturally through schema iteration.
  */
 export const CRITICAL_CONNECTION_FIELDS = new Set([
-  'addresses',
-  'seed_brokers',
+  'sasl',
+  'consumer_group',
   'topics',
   'topic',
-  'brokers',
-  'tls',
-  'consumer_group',
+  'key',
+  'partition',
+  'label',
 ]);
-
-/**
- * Configuration object fields that should be hidden for REDPANDA_SECRET_COMPONENTS
- * when wizard data exists (unless showOptionalFields is true)
- * Note: 'tls' is NOT included here because Redpanda Cloud always requires TLS enabled
- */
-export const NON_CRITICAL_CONFIG_OBJECTS = new Set(['metadata', 'batching', 'backoff', 'retry']);
 
 export const REDPANDA_CONTEXTUAL_VARIABLES = {
   REDPANDA_BROKERS: {
@@ -68,59 +64,6 @@ export const REDPANDA_CONTEXTUAL_VARIABLES = {
   },
 } as const;
 
-// temporary until we get backend support to filter out managed components
-// currently query selecting components that are visible using this filter:
-// @link https://docs.redpanda.com/redpanda-connect/components/about/?type=processor%2Cinput%2Coutput%2Cscanner%2Cmetric%2Ccache%2Ctracer%2Crate_limit%2Cbuffer&support=certified%2Ccommunity&cloud=no&enterprise=yes%2Cno
-export const MANAGED_ONLY_CONNECT_COMPONENTS = [
-  'amqp_1',
-  'awk',
-  'aws_cloudwatch',
-  'beanstalkd',
-  'cassandra',
-  'cockroachdb_changefeed',
-  'command',
-  'couchbase',
-  'crash',
-  'cypher',
-  'discord',
-  'dynamic',
-  'file',
-  'grok',
-  'hdfs',
-  'influxdb',
-  'jaeger',
-  'javascript',
-  'json_api',
-  'logger',
-  'msgpack',
-  'nanomsg',
-  'nats_stream',
-  'nsq',
-  'ockam_kafka',
-  'ollama_chat',
-  'ollama_embeddings',
-  'ollama_moderation',
-  'open_telemetry_collector',
-  'parquet',
-  'protobuf',
-  'pulsar',
-  'pusher',
-  'redpanda_data_transform',
-  'sentry_capture',
-  'socket',
-  'socket_server',
-  'sqlite',
-  'statsd',
-  'stdin',
-  'stdout',
-  'subprocess',
-  'tigerbeetle_cdc',
-  'twitter_search',
-  'wasm',
-  'websocket',
-  'zmq4',
-];
-
 export const getContextualVariableSyntax = (name: ContextualVariableName): string => `\${${name}}`;
 
 export type ContextualVariableName = keyof typeof REDPANDA_CONTEXTUAL_VARIABLES;
@@ -147,6 +90,7 @@ export const wizardStepDefinitions = [
   { id: WizardStep.ADD_OUTPUT, title: 'Add an output' },
   { id: WizardStep.ADD_TOPIC, title: 'Add a topic' },
   { id: WizardStep.ADD_USER, title: 'Add permissions' },
+
   { id: WizardStep.CREATE_CONFIG, title: 'Edit pipeline' },
 ];
 
@@ -162,3 +106,5 @@ export const stepMotionProps: MotionProps = {
 };
 
 export const HANDLED_ARRAY_MERGE_PATHS = ['pipeline.processors', 'cache_resources', 'rate_limit_resources'];
+
+export type PipelineMode = 'create' | 'edit' | 'view';

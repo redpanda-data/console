@@ -81,25 +81,24 @@ var (
 // MCPServerServiceClient is a client for the redpanda.api.dataplane.v1alpha3.MCPServerService
 // service.
 type MCPServerServiceClient interface {
-	// CreateMCPServer creates a Redpanda Connect MCP Server in the Redpanda cluster.
+	// CreateMCPServer creates an MCP server in the Redpanda cluster.
 	CreateMCPServer(context.Context, *connect.Request[v1alpha3.CreateMCPServerRequest]) (*connect.Response[v1alpha3.CreateMCPServerResponse], error)
-	// GetMCPServer gets a specific Redpanda Connect MCP Server.
+	// GetMCPServer gets a specific MCP server.
 	GetMCPServer(context.Context, *connect.Request[v1alpha3.GetMCPServerRequest]) (*connect.Response[v1alpha3.GetMCPServerResponse], error)
-	// ListMCPServers implements the list mcp_servers method which lists the MCP servers
-	// in the Redpanda cluster.
+	// Lists all MCP servers in the Redpanda cluster.
 	ListMCPServers(context.Context, *connect.Request[v1alpha3.ListMCPServersRequest]) (*connect.Response[v1alpha3.ListMCPServersResponse], error)
-	// Update MCPServer updates a specific Redpanda Connect MCP server configuration.
+	// Updates a specific MCP server configuration.
 	UpdateMCPServer(context.Context, *connect.Request[v1alpha3.UpdateMCPServerRequest]) (*connect.Response[v1alpha3.UpdateMCPServerResponse], error)
-	// DeleteMCPServer deletes a specific Redpanda Connect MCP server.
+	// DeleteMCPServer deletes a specific MCP server.
 	DeleteMCPServer(context.Context, *connect.Request[v1alpha3.DeleteMCPServerRequest]) (*connect.Response[v1alpha3.DeleteMCPServerResponse], error)
-	// StopMCPServer stops a specific Redpanda Connect MCP server.
+	// StopMCPServer stops a specific MCP server.
 	StopMCPServer(context.Context, *connect.Request[v1alpha3.StopMCPServerRequest]) (*connect.Response[v1alpha3.StopMCPServerResponse], error)
-	// StartMCPServer starts a specific Redpanda Connect MCP server that has been previously stopped.
+	// StartMCPServer starts a specific MCP server that has been previously stopped.
 	StartMCPServer(context.Context, *connect.Request[v1alpha3.StartMCPServerRequest]) (*connect.Response[v1alpha3.StartMCPServerResponse], error)
-	// The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
+	// Returns the configuration schema for MCP server tools, including available components and processors.
 	GetMCPServerServiceConfigSchema(context.Context, *connect.Request[v1alpha3.GetMCPServerServiceConfigSchemaRequest]) (*connect.Response[v1alpha3.GetMCPServerServiceConfigSchemaResponse], error)
-	// Lints a Redpanda Connect MCP tools configuration and returns zero or more
-	// issues (“hints”). An empty list means the config passed all lint checks.
+	// Lints a MCP tools configuration and returns zero or more
+	// issues ("hints"). An empty list means the config passed all lint checks.
 	LintMCPConfig(context.Context, *connect.Request[v1alpha3.LintMCPConfigRequest]) (*connect.Response[v1alpha3.LintMCPConfigResponse], error)
 }
 
@@ -233,25 +232,24 @@ func (c *mCPServerServiceClient) LintMCPConfig(ctx context.Context, req *connect
 // MCPServerServiceHandler is an implementation of the
 // redpanda.api.dataplane.v1alpha3.MCPServerService service.
 type MCPServerServiceHandler interface {
-	// CreateMCPServer creates a Redpanda Connect MCP Server in the Redpanda cluster.
+	// CreateMCPServer creates an MCP server in the Redpanda cluster.
 	CreateMCPServer(context.Context, *connect.Request[v1alpha3.CreateMCPServerRequest]) (*connect.Response[v1alpha3.CreateMCPServerResponse], error)
-	// GetMCPServer gets a specific Redpanda Connect MCP Server.
+	// GetMCPServer gets a specific MCP server.
 	GetMCPServer(context.Context, *connect.Request[v1alpha3.GetMCPServerRequest]) (*connect.Response[v1alpha3.GetMCPServerResponse], error)
-	// ListMCPServers implements the list mcp_servers method which lists the MCP servers
-	// in the Redpanda cluster.
+	// Lists all MCP servers in the Redpanda cluster.
 	ListMCPServers(context.Context, *connect.Request[v1alpha3.ListMCPServersRequest]) (*connect.Response[v1alpha3.ListMCPServersResponse], error)
-	// Update MCPServer updates a specific Redpanda Connect MCP server configuration.
+	// Updates a specific MCP server configuration.
 	UpdateMCPServer(context.Context, *connect.Request[v1alpha3.UpdateMCPServerRequest]) (*connect.Response[v1alpha3.UpdateMCPServerResponse], error)
-	// DeleteMCPServer deletes a specific Redpanda Connect MCP server.
+	// DeleteMCPServer deletes a specific MCP server.
 	DeleteMCPServer(context.Context, *connect.Request[v1alpha3.DeleteMCPServerRequest]) (*connect.Response[v1alpha3.DeleteMCPServerResponse], error)
-	// StopMCPServer stops a specific Redpanda Connect MCP server.
+	// StopMCPServer stops a specific MCP server.
 	StopMCPServer(context.Context, *connect.Request[v1alpha3.StopMCPServerRequest]) (*connect.Response[v1alpha3.StopMCPServerResponse], error)
-	// StartMCPServer starts a specific Redpanda Connect MCP server that has been previously stopped.
+	// StartMCPServer starts a specific MCP server that has been previously stopped.
 	StartMCPServer(context.Context, *connect.Request[v1alpha3.StartMCPServerRequest]) (*connect.Response[v1alpha3.StartMCPServerResponse], error)
-	// The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
+	// Returns the configuration schema for MCP server tools, including available components and processors.
 	GetMCPServerServiceConfigSchema(context.Context, *connect.Request[v1alpha3.GetMCPServerServiceConfigSchemaRequest]) (*connect.Response[v1alpha3.GetMCPServerServiceConfigSchemaResponse], error)
-	// Lints a Redpanda Connect MCP tools configuration and returns zero or more
-	// issues (“hints”). An empty list means the config passed all lint checks.
+	// Lints a MCP tools configuration and returns zero or more
+	// issues ("hints"). An empty list means the config passed all lint checks.
 	LintMCPConfig(context.Context, *connect.Request[v1alpha3.LintMCPConfigRequest]) (*connect.Response[v1alpha3.LintMCPConfigResponse], error)
 }
 

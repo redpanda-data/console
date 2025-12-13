@@ -7,45 +7,82 @@ import {
   useMutation as useTanstackMutation,
   useQuery as useTanstackQuery,
 } from '@tanstack/react-query';
+import { config, isFeatureFlagEnabled } from 'config';
 import {
-  type GetMCPServerRequest,
-  GetMCPServerRequestSchema,
-  type GetMCPServerResponse,
-  type ListMCPServersRequest,
-  ListMCPServersRequest_FilterSchema,
-  ListMCPServersRequestSchema,
-  type ListMCPServersResponse,
-  type MCPServer,
-  MCPServer_State,
-  MCPServerService,
+  GetMCPServerRequestSchema as GetMCPServerRequestSchemaV1,
+  type GetMCPServerRequest as GetMCPServerRequestV1,
+  type GetMCPServerResponse as GetMCPServerResponseV1,
+  ListMCPServersRequest_FilterSchema as ListMCPServersRequest_FilterSchemaV1,
+  ListMCPServersRequestSchema as ListMCPServersRequestSchemaV1,
+  type ListMCPServersRequest as ListMCPServersRequestV1,
+  type ListMCPServersResponse as ListMCPServersResponseV1,
+  MCPServer_State as MCPServer_StateV1,
+  MCPServerService as MCPServerServiceV1,
+  type MCPServer as MCPServerV1,
+} from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
+import {
+  createMCPServer as createMCPServerV1,
+  deleteMCPServer as deleteMCPServerV1,
+  getMCPServerServiceConfigSchema as getMCPServerServiceConfigSchemaV1,
+  getMCPServer as getMCPServerV1,
+  lintMCPConfig as lintMCPConfigV1,
+  listMCPServers as listMCPServersV1,
+  startMCPServer as startMCPServerV1,
+  stopMCPServer as stopMCPServerV1,
+  updateMCPServer as updateMCPServerV1,
+} from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
+import {
+  GetMCPServerRequestSchema as GetMCPServerRequestSchemaV1Alpha3,
+  type GetMCPServerRequest as GetMCPServerRequestV1Alpha3,
+  type GetMCPServerResponse as GetMCPServerResponseV1Alpha3,
+  ListMCPServersRequest_FilterSchema as ListMCPServersRequest_FilterSchemaV1Alpha3,
+  ListMCPServersRequestSchema as ListMCPServersRequestSchemaV1Alpha3,
+  type ListMCPServersRequest as ListMCPServersRequestV1Alpha3,
+  type ListMCPServersResponse as ListMCPServersResponseV1Alpha3,
+  MCPServer_State as MCPServer_StateV1Alpha3,
+  MCPServer_Tool_ComponentType as MCPServer_Tool_ComponentTypeV1Alpha3,
+  MCPServerService as MCPServerServiceV1Alpha3,
+  type MCPServer as MCPServerV1Alpha3,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import {
-  createMCPServer,
-  deleteMCPServer,
-  getMCPServer,
-  getMCPServerServiceConfigSchema,
-  lintMCPConfig,
-  listMCPServers,
-  startMCPServer,
-  stopMCPServer,
-  updateMCPServer,
+  createMCPServer as createMCPServerV1Alpha3,
+  deleteMCPServer as deleteMCPServerV1Alpha3,
+  getMCPServerServiceConfigSchema as getMCPServerServiceConfigSchemaV1Alpha3,
+  getMCPServer as getMCPServerV1Alpha3,
+  lintMCPConfig as lintMCPConfigV1Alpha3,
+  listMCPServers as listMCPServersV1Alpha3,
+  startMCPServer as startMCPServerV1Alpha3,
+  stopMCPServer as stopMCPServerV1Alpha3,
+  updateMCPServer as updateMCPServerV1Alpha3,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp-MCPServerService_connectquery';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
-import { authenticatedFetch } from 'utils/authenticated-fetch';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 // TODO: Make this dynamic so that pagination can be used properly
 const MCP_SERVER_MAX_PAGE_SIZE = 50;
 
+// Export unified types
+export type GetMCPServerRequest = GetMCPServerRequestV1 | GetMCPServerRequestV1Alpha3;
+export type GetMCPServerResponse = GetMCPServerResponseV1 | GetMCPServerResponseV1Alpha3;
+export type ListMCPServersRequest = ListMCPServersRequestV1 | ListMCPServersRequestV1Alpha3;
+export type ListMCPServersResponse = ListMCPServersResponseV1 | ListMCPServersResponseV1Alpha3;
+export type MCPServer = MCPServerV1 | MCPServerV1Alpha3;
+
+// Export enums - default to v1alpha3 for backward compatibility
+export const MCPServer_State = MCPServer_StateV1Alpha3;
+export const MCPServer_Tool_ComponentType = MCPServer_Tool_ComponentTypeV1Alpha3;
+
 export const useListMCPServersQuery = (
   input?: MessageInit<ListMCPServersRequest>,
   options?: QueryOptions<GenMessage<ListMCPServersRequest>, ListMCPServersResponse>
 ) => {
-  const listMCPServersRequest = create(ListMCPServersRequestSchema, {
+  const useMcpV1 = isFeatureFlagEnabled('enableMcpServiceAccount');
+
+  const listMCPServersRequestV1 = create(ListMCPServersRequestSchemaV1, {
     pageToken: '',
     pageSize: MCP_SERVER_MAX_PAGE_SIZE,
     filter: input?.filter
-      ? create(ListMCPServersRequest_FilterSchema, {
+      ? create(ListMCPServersRequest_FilterSchemaV1, {
           displayNameContains: input.filter.displayNameContains,
           tags: input.filter.tags,
           secretId: input.filter.secretId,
@@ -53,24 +90,52 @@ export const useListMCPServersQuery = (
       : undefined,
   });
 
-  return useQuery(listMCPServers, listMCPServersRequest, {
-    enabled: options?.enabled,
+  const listMCPServersRequestV1Alpha3 = create(ListMCPServersRequestSchemaV1Alpha3, {
+    pageToken: '',
+    pageSize: MCP_SERVER_MAX_PAGE_SIZE,
+    filter: input?.filter
+      ? create(ListMCPServersRequest_FilterSchemaV1Alpha3, {
+          displayNameContains: input.filter.displayNameContains,
+          tags: input.filter.tags,
+          secretId: input.filter.secretId,
+        })
+      : undefined,
   });
+
+  const resultV1 = useQuery(listMCPServersV1, listMCPServersRequestV1, {
+    enabled: useMcpV1 && options?.enabled !== false,
+  });
+
+  const resultV1Alpha3 = useQuery(listMCPServersV1Alpha3, listMCPServersRequestV1Alpha3, {
+    enabled: !useMcpV1 && options?.enabled !== false,
+  });
+
+  return useMcpV1 ? resultV1 : resultV1Alpha3;
 };
 
 export const useGetMCPServerQuery = (
   input?: MessageInit<GetMCPServerRequest>,
   options?: QueryOptions<GenMessage<GetMCPServerResponse>>
 ) => {
-  const getMCPServerRequest = create(GetMCPServerRequestSchema, { id: input?.id });
+  const useMcpV1 = isFeatureFlagEnabled('enableMcpServiceAccount');
 
-  return useQuery(getMCPServer, getMCPServerRequest, {
-    enabled: options?.enabled,
-    refetchInterval:
-      options?.refetchInterval ??
-      ((query) => (query?.state?.data?.mcpServer?.state === MCPServer_State.STARTING ? 2 * 1000 : false)),
-    refetchIntervalInBackground: options?.refetchIntervalInBackground ?? false,
+  const getMCPServerRequestV1 = create(GetMCPServerRequestSchemaV1, {
+    id: input?.id,
   });
+
+  const getMCPServerRequestV1Alpha3 = create(GetMCPServerRequestSchemaV1Alpha3, {
+    id: input?.id,
+  });
+
+  const resultV1 = useQuery(getMCPServerV1, getMCPServerRequestV1, {
+    enabled: useMcpV1 && options?.enabled !== false,
+  });
+
+  const resultV1Alpha3 = useQuery(getMCPServerV1Alpha3, getMCPServerRequestV1Alpha3, {
+    enabled: !useMcpV1 && options?.enabled !== false,
+  });
+
+  return useMcpV1 ? resultV1 : resultV1Alpha3;
 };
 
 export const useCheckMCPServerNameUniqueness = () => {
@@ -91,12 +156,13 @@ export const useCheckMCPServerNameUniqueness = () => {
 
 export const useCreateMCPServerMutation = () => {
   const queryClient = useQueryClient();
+  const useMcpV1 = isFeatureFlagEnabled('enableMcpServiceAccount');
 
-  return useMutation(createMCPServer, {
+  const mutationV1 = useMutation(createMCPServerV1, {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
-          schema: MCPServerService.method.listMCPServers,
+          schema: MCPServerServiceV1.method.listMCPServers,
           cardinality: 'finite',
         }),
         exact: false,
@@ -109,23 +175,44 @@ export const useCreateMCPServerMutation = () => {
         entity: 'MCP server',
       }),
   });
+
+  const mutationV1Alpha3 = useMutation(createMCPServerV1Alpha3, {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: MCPServerServiceV1Alpha3.method.listMCPServers,
+          cardinality: 'finite',
+        }),
+        exact: false,
+      });
+    },
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
+        error,
+        action: 'create',
+        entity: 'MCP server',
+      }),
+  });
+
+  return useMcpV1 ? mutationV1 : mutationV1Alpha3;
 };
 
 export const useUpdateMCPServerMutation = () => {
   const queryClient = useQueryClient();
+  const useMcpV1 = isFeatureFlagEnabled('enableMcpServiceAccount');
 
-  return useMutation(updateMCPServer, {
+  const mutationV1 = useMutation(updateMCPServerV1, {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
-          schema: MCPServerService.method.listMCPServers,
+          schema: MCPServerServiceV1.method.listMCPServers,
           cardinality: 'finite',
         }),
         exact: false,
       });
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
-          schema: MCPServerService.method.getMCPServer,
+          schema: MCPServerServiceV1.method.getMCPServer,
           cardinality: 'finite',
         }),
         exact: false,
@@ -138,6 +225,33 @@ export const useUpdateMCPServerMutation = () => {
         entity: 'MCP server',
       }),
   });
+
+  const mutationV1Alpha3 = useMutation(updateMCPServerV1Alpha3, {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: MCPServerServiceV1Alpha3.method.listMCPServers,
+          cardinality: 'finite',
+        }),
+        exact: false,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: MCPServerServiceV1Alpha3.method.getMCPServer,
+          cardinality: 'finite',
+        }),
+        exact: false,
+      });
+    },
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
+        error,
+        action: 'update',
+        entity: 'MCP server',
+      }),
+  });
+
+  return useMcpV1 ? mutationV1 : mutationV1Alpha3;
 };
 
 export const useDeleteMCPServerMutation = (options?: {
@@ -145,12 +259,13 @@ export const useDeleteMCPServerMutation = (options?: {
   onError?: (error: ConnectError) => void;
 }) => {
   const queryClient = useQueryClient();
+  const useMcpV1 = isFeatureFlagEnabled('enableMcpServiceAccount');
 
-  return useMutation(deleteMCPServer, {
+  const mutationV1 = useMutation(deleteMCPServerV1, {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
-          schema: MCPServerService.method.listMCPServers,
+          schema: MCPServerServiceV1.method.listMCPServers,
           cardinality: 'finite',
         }),
         exact: false,
@@ -161,23 +276,42 @@ export const useDeleteMCPServerMutation = (options?: {
       options?.onError?.(error);
     },
   });
+
+  const mutationV1Alpha3 = useMutation(deleteMCPServerV1Alpha3, {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: MCPServerServiceV1Alpha3.method.listMCPServers,
+          cardinality: 'finite',
+        }),
+        exact: false,
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error) => {
+      options?.onError?.(error);
+    },
+  });
+
+  return useMcpV1 ? mutationV1 : mutationV1Alpha3;
 };
 
 export const useStopMCPServerMutation = () => {
   const queryClient = useQueryClient();
+  const useMcpV1 = isFeatureFlagEnabled('enableMcpServiceAccount');
 
-  return useMutation(stopMCPServer, {
+  const mutationV1 = useMutation(stopMCPServerV1, {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
-          schema: MCPServerService.method.getMCPServer,
+          schema: MCPServerServiceV1.method.getMCPServer,
           cardinality: 'finite',
         }),
         exact: false,
       });
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
-          schema: MCPServerService.method.listMCPServers,
+          schema: MCPServerServiceV1.method.listMCPServers,
           cardinality: 'finite',
         }),
         exact: false,
@@ -190,23 +324,51 @@ export const useStopMCPServerMutation = () => {
         entity: 'MCP server',
       }),
   });
-};
 
-export const useStartMCPServerMutation = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation(startMCPServer, {
+  const mutationV1Alpha3 = useMutation(stopMCPServerV1Alpha3, {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
-          schema: MCPServerService.method.getMCPServer,
+          schema: MCPServerServiceV1Alpha3.method.getMCPServer,
           cardinality: 'finite',
         }),
         exact: false,
       });
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
-          schema: MCPServerService.method.listMCPServers,
+          schema: MCPServerServiceV1Alpha3.method.listMCPServers,
+          cardinality: 'finite',
+        }),
+        exact: false,
+      });
+    },
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
+        error,
+        action: 'stop',
+        entity: 'MCP server',
+      }),
+  });
+
+  return useMcpV1 ? mutationV1 : mutationV1Alpha3;
+};
+
+export const useStartMCPServerMutation = () => {
+  const queryClient = useQueryClient();
+  const useMcpV1 = isFeatureFlagEnabled('enableMcpServiceAccount');
+
+  const mutationV1 = useMutation(startMCPServerV1, {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: MCPServerServiceV1.method.getMCPServer,
+          cardinality: 'finite',
+        }),
+        exact: false,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: MCPServerServiceV1.method.listMCPServers,
           cardinality: 'finite',
         }),
         exact: false,
@@ -219,12 +381,48 @@ export const useStartMCPServerMutation = () => {
         entity: 'MCP server',
       }),
   });
+
+  const mutationV1Alpha3 = useMutation(startMCPServerV1Alpha3, {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: MCPServerServiceV1Alpha3.method.getMCPServer,
+          cardinality: 'finite',
+        }),
+        exact: false,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: MCPServerServiceV1Alpha3.method.listMCPServers,
+          cardinality: 'finite',
+        }),
+        exact: false,
+      });
+    },
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
+        error,
+        action: 'start',
+        entity: 'MCP server',
+      }),
+  });
+
+  return useMcpV1 ? mutationV1 : mutationV1Alpha3;
 };
 
-export const useGetMCPServerServiceConfigSchemaQuery = () => useQuery(getMCPServerServiceConfigSchema, {});
+export const useGetMCPServerServiceConfigSchemaQuery = () => {
+  const useMcpV1 = isFeatureFlagEnabled('enableMcpServiceAccount');
 
-export const useLintMCPConfigMutation = () =>
-  useMutation(lintMCPConfig, {
+  const resultV1 = useQuery(getMCPServerServiceConfigSchemaV1, {});
+  const resultV1Alpha3 = useQuery(getMCPServerServiceConfigSchemaV1Alpha3, {});
+
+  return useMcpV1 ? resultV1 : resultV1Alpha3;
+};
+
+export const useLintMCPConfigMutation = () => {
+  const useMcpV1 = isFeatureFlagEnabled('enableMcpServiceAccount');
+
+  const mutationV1 = useMutation(lintMCPConfigV1, {
     onError: (error) =>
       formatToastErrorMessageGRPC({
         error,
@@ -232,6 +430,18 @@ export const useLintMCPConfigMutation = () =>
         entity: 'MCP config',
       }),
   });
+
+  const mutationV1Alpha3 = useMutation(lintMCPConfigV1Alpha3, {
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
+        error,
+        action: 'lint',
+        entity: 'MCP config',
+      }),
+  });
+
+  return useMcpV1 ? mutationV1 : mutationV1Alpha3;
+};
 
 // Shared function to create MCP client with session management
 export const createMCPClientWithSession = async (
@@ -253,20 +463,19 @@ export const createMCPClientWithSession = async (
       version: '1.0.0',
     },
     {
-      capabilities: {
-        tools: {},
-      },
+      capabilities: {},
     }
   );
 
   // Create StreamableHTTP transport for HTTP endpoints
   const transport = new StreamableHTTPClientTransport(new URL(serverUrl), {
     fetch: async (input, init) => {
-      const response = await authenticatedFetch(input, {
+      const response = await fetch(input, {
         ...init,
         headers: {
           ...init?.headers,
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${config.jwt}`,
           'Mcp-Session-Id': client?.transport?.sessionId ?? '',
         },
       });
@@ -357,23 +566,39 @@ export type UseListMCPServerToolsParams = {
 
 export const useListMCPServerTools = ({ mcpServer }: UseListMCPServerToolsParams) => {
   const queryClient = useQueryClient();
+  const useMcpV1 = isFeatureFlagEnabled('enableMcpServiceAccount');
+  const StateEnum = useMcpV1 ? MCPServer_StateV1 : MCPServer_StateV1Alpha3;
 
   return useTanstackQuery({
     queryKey: ['mcp-server-tools', mcpServer?.url],
     queryFn: async () => {
       // Refetch getMCPServer data before listing tools
       if (mcpServer?.id) {
-        await queryClient.refetchQueries({
-          queryKey: createConnectQueryKey({
-            schema: MCPServerService.method.getMCPServer,
-            input: create(GetMCPServerRequestSchema, { id: mcpServer.id }),
-            cardinality: 'finite',
-          }),
-        });
+        if (useMcpV1) {
+          await queryClient.refetchQueries({
+            queryKey: createConnectQueryKey({
+              schema: MCPServerServiceV1.method.getMCPServer,
+              input: create(GetMCPServerRequestSchemaV1, {
+                id: mcpServer.id,
+              }),
+              cardinality: 'finite',
+            }),
+          });
+        } else {
+          await queryClient.refetchQueries({
+            queryKey: createConnectQueryKey({
+              schema: MCPServerServiceV1Alpha3.method.getMCPServer,
+              input: create(GetMCPServerRequestSchemaV1Alpha3, {
+                id: mcpServer.id,
+              }),
+              cardinality: 'finite',
+            }),
+          });
+        }
       }
 
       return listMCPServerTools(mcpServer?.url || '');
     },
-    enabled: !!mcpServer?.url && mcpServer?.state === MCPServer_State.RUNNING,
+    enabled: !!mcpServer?.url && mcpServer?.state === StateEnum.RUNNING,
   });
 };

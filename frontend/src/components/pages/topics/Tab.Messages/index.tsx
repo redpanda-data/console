@@ -80,6 +80,7 @@ import { IsDev } from '../../../../utils/env';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filter-helper';
 import { onPaginationChange } from '../../../../utils/pagination';
 import { sortingParser } from '../../../../utils/sorting-parser';
+import { getTopicFilters, setTopicFilters } from '../../../../utils/topic-filters-session';
 import {
   Label,
   navigatorClipboardErrorHandler,
@@ -363,6 +364,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
+  // Filters with session storage (NOT in URL)
+  const [filters, setFilters] = useState<FilterEntry[]>(() => getTopicFilters(props.topic.topicName));
+
+  // Sync filters to session storage whenever they change
+  useEffect(() => {
+    setTopicFilters(props.topic.topicName, filters);
+  }, [filters, props.topic.topicName]);
+
   // Deserializer settings with URL state management
   const [keyDeserializer, setKeyDeserializer] = useQueryStateWithCallback<PayloadEncoding>(
     {
@@ -485,7 +494,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       const functionNames: string[] = [];
       const functions: string[] = [];
 
-      const filteredSearchParams = (currentSearchParams?.filters ?? []).filter(
+      // Use filters from URL state instead of localStorage
+      const filteredSearchParams = filters.filter(
         (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode
       );
 
@@ -557,14 +567,16 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     getSearchParams,
     keyDeserializer,
     valueDeserializer,
+    filters,
   ]);
 
   // Convert searchFunc to useCallback
   const searchFunc = useCallback(
     (source: 'auto' | 'manual') => {
-      // Create search params signature
+      // Create search params signature (includes filters to detect changes)
       const currentSearchParams = getSearchParams(props.topic.topicName);
-      const searchParams = `${startOffset} ${maxResults} ${partitionID} ${currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp} ${keyDeserializer} ${valueDeserializer}`;
+      const filtersSignature = filters.map((f) => `${f.id}:${f.isActive}:${f.transpiledCode}`).join('|');
+      const searchParams = `${startOffset} ${maxResults} ${partitionID} ${currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp} ${keyDeserializer} ${valueDeserializer} ${filtersSignature}`;
 
       if (searchParams === currentSearchRunRef.current && source === 'auto') {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -615,6 +627,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       props.topic.topicName,
       keyDeserializer,
       valueDeserializer,
+      filters,
     ]
   );
 
@@ -933,6 +946,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
           <Label text="Max Results">
             <SingleSelect<number>
+              data-testid="max-results-select"
               onChange={(c) => {
                 setMaxResults(c);
               }}
@@ -997,7 +1011,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                   isDisabled={!canUseFilters}
                   onClick={() => {
                     const filter = new FilterEntry();
-                    filter.isNew = true;
                     setCurrentJSFilter(filter);
                   }}
                 >
@@ -1023,9 +1036,15 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
         <GridItem alignItems="flex-end" display="flex" gap={3} justifyContent="flex-end">
           <Menu>
-            <MenuButton as={IconButton} icon={<MdOutlineSettings size="1.5rem" />} variant="outline" />
+            <MenuButton
+              as={IconButton}
+              data-testid="message-settings-button"
+              icon={<MdOutlineSettings size="1.5rem" />}
+              variant="outline"
+            />
             <MenuList>
               <MenuItem
+                data-testid="deserialization-settings-menu-item"
                 onClick={() => {
                   setShowDeserializersModal(true);
                 }}
@@ -1033,6 +1052,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                 Deserialization
               </MenuItem>
               <MenuItem
+                data-testid="column-settings-menu-item"
                 onClick={() => {
                   setShowColumnSettingsModal(true);
                 }}
@@ -1040,6 +1060,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                 Column settings
               </MenuItem>
               <MenuItem
+                data-testid="preview-fields-menu-item"
                 onClick={() => {
                   setShowPreviewFieldsModal(true);
                 }}
@@ -1054,6 +1075,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
               <Tooltip hasArrow label="Repeat current search" placement="top">
                 <IconButton
                   aria-label="Repeat current search"
+                  data-testid="refresh-messages-button"
                   icon={<SyncIcon />}
                   onClick={() => searchFunc('manual')}
                   variant="outline"
@@ -1065,6 +1087,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                 <IconButton
                   aria-label="Stop searching"
                   colorScheme="red"
+                  data-testid="stop-search-button"
                   icon={<XCircleIcon />}
                   onClick={() => {
                     if (abortControllerRef.current) {
@@ -1080,14 +1103,22 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
         {/* Filter Tags */}
         <MessageSearchFilterBar
+          filters={filters}
           onEdit={(filter) => {
             setCurrentJSFilter(filter);
+          }}
+          onRemove={(filterId) => {
+            setFilters(filters.filter((f) => f.id !== filterId));
+          }}
+          onToggle={(filterId) => {
+            setFilters(filters.map((f) => (f.id === filterId ? { ...f, isActive: !f.isActive } : f)));
           }}
         />
 
         <GridItem display="flex" gap={4} gridColumn="1/-1" mt={4}>
           {/* Quick Search */}
           <Input
+            data-testid="message-quick-search-input"
             onChange={(x) => {
               setQuickSearch(x.target.value);
             }}
@@ -1120,14 +1151,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           currentFilter={currentJSFilter}
           onClose={() => setCurrentJSFilter(null)}
           onSave={(filter) => {
-            if (filter.isNew) {
-              uiState.topicSettings.searchParams.filters.push(filter);
-              filter.isNew = false;
+            // Check if filter exists in the array by ID
+            const existingIndex = filters.findIndex((f) => f.id === filter.id);
+            if (existingIndex >= 0) {
+              // Update existing filter
+              setFilters(filters.map((f) => (f.id === filter.id ? filter : f)));
             } else {
-              const idx = uiState.topicSettings.searchParams.filters.findIndex((x) => x.id === filter.id);
-              if (idx !== -1) {
-                uiState.topicSettings.searchParams.filters.splice(idx, 1, filter);
-              }
+              // Add new filter
+              setFilters([...filters, filter]);
             }
             searchFunc('manual');
           }}
@@ -1156,6 +1187,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           <DataTable<TopicMessage>
             columns={columns}
             data={filteredMessages}
+            data-testid="messages-table"
             emptyText="No messages"
             isLoading={searchPhase !== null}
             onPaginationChange={onPaginationChange(
@@ -1195,6 +1227,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             )}
           />
           <Button
+            data-testid="save-messages-button"
             isDisabled={messages.length === 0}
             mt={4}
             onClick={() => {

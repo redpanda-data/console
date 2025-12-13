@@ -866,6 +866,9 @@
           "complexity": {
             "noExcessiveCognitiveComplexity": "off"
           },
+          "performance": {
+            "useTopLevelRegex": "off"
+          },
           "suspicious": {
             "noConsole": "off",
             "noExplicitAny": "off"
@@ -875,7 +878,7 @@
     },
     {
       // Scripts and CLI tools
-      "includes": ["**/scripts/**/*", "**/bin/**/*", "*.mjs", "*.cjs"],
+      "includes": ["**/scripts/**/*", "**/bin/**/*", "*.mjs", "*.cjs", "**/tests/global-*.mjs", "**/tests/*.sh"],
       "linter": {
         "rules": {
           "suspicious": {

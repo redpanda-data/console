@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/core/admin/v2/cluster.proto";
+
+service MonitoringService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Monitoring"
+    description: "Monitoring operations for Redpanda."
+  };
+
+  rpc ListKafkaConnections(core.admin.v2.ListKafkaConnectionsRequest) returns (core.admin.v2.ListKafkaConnectionsResponse) {
+    option (google.api.http) = {get: "/v1/monitoring/kafka/connections"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Recent Connections"
+      description: "List information on recent connections to the cluster."
+      responses: {
+        key: "200"
+        value: {
+          description: "Recent connections"
+          schema: {
+            json_schema: {ref: ".redpanda.core.admin.v2.ListKafkaConnectionsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+}

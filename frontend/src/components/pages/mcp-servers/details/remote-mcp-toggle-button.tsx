@@ -62,6 +62,7 @@ export const RemoteMCPToggleButton = () => {
     return (
       <Button
         className="gap-2"
+        data-testid="stop-mcp-server-button"
         disabled={isStopping || mcpServerData.mcpServer.state === MCPServer_State.STOPPING}
         onClick={handleStopServer}
         size="sm"
@@ -76,6 +77,7 @@ export const RemoteMCPToggleButton = () => {
   return (
     <Button
       className="gap-2"
+      data-testid="start-mcp-server-button"
       disabled={isStarting || mcpServerData.mcpServer.state === MCPServer_State.STARTING}
       onClick={handleStartServer}
       size="sm"

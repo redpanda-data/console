@@ -42,6 +42,7 @@ import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
 import ClusterHealthOverview from './cluster-health-overview';
+import { ShadowLinkSection } from './shadow-link-overview-card';
 import colors from '../../../colors';
 import { type ComponentStatus, StatusType } from '../../../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
 import NurturePanel from '../../builder-io/nurture-panel';
@@ -150,6 +151,9 @@ class Overview extends PageComponent {
               <Statistic title="Replicas" value={overview.kafka?.replicasCount} />
             </Flex>
           </Section>
+
+          {/* Shadow Link Overview Section */}
+          <ShadowLinkSection />
 
           <Grid gap={6} gridTemplateColumns={{ base: '1fr', lg: 'fit-content(60%) 1fr' }}>
             <GridItem display="flex" flexDirection="column" gap={6}>

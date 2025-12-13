@@ -442,6 +442,7 @@ const useInvalidateAclsList = () => {
 
   const invalid = async () => {
     await queryClient.invalidateQueries({
+      // @ts-expect-error - createConnectQueryKey return type incompatibility with invalidateQueries
       queryKey: createConnectQueryKey({
         schema: ACLService,
         cardinality: 'finite',
