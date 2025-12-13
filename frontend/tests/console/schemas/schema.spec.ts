@@ -2,7 +2,7 @@
 import type { Locator } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
-import { SchemaPage } from '../utils/SchemaPage';
+import { SchemaPage } from '../utils/schema-page';
 
 const SCHEMA_REGISTRY_TABLE_NAME_TESTID = 'schema-registry-table-name';
 

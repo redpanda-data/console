@@ -149,9 +149,6 @@ export class SchemaPage {
   async validateSchema() {
     const validateButton = this.page.getByTestId('schema-create-validate-btn');
     await validateButton.click();
-
-    // Wait for validation result (either success or error)
-    await this.page.waitForTimeout(1000);
   }
 
   async addReference(params: { name: string; subject: string; version: number }) {
@@ -401,10 +398,6 @@ export class SchemaPage {
   /**
    * Helper methods
    */
-  async waitForStability(timeout = 1000) {
-    await this.page.waitForTimeout(timeout);
-  }
-
   async getCurrentVersion(): Promise<number> {
     const versionSelect = this.page.getByTestId('schema-definition-version-select');
     const selectedValue = await versionSelect.inputValue();
