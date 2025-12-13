@@ -178,23 +178,6 @@ export class SchemaPage {
     await expect(this.page).toHaveURL('/schema-registry');
   }
 
-  /**
-   * Version management methods
-   */
-  async deleteVersion(_versionNumber: number) {
-    const deleteButton = this.page.getByTestId('schema-definition-delete-version-btn');
-    await expect(deleteButton).toBeVisible();
-    await deleteButton.click();
-
-    // Confirm in modal
-    const confirmButton = this.page.getByRole('button', { name: /confirm|delete|yes/i });
-    if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await confirmButton.click();
-    }
-
-    await this.page.waitForTimeout(1000);
-  }
-
   async recoverVersion() {
     const recoverButton = this.page.getByTestId('schema-definition-recover-btn');
     await expect(recoverButton).toBeVisible();
@@ -202,20 +185,6 @@ export class SchemaPage {
 
     // Confirm in modal
     const confirmButton = this.page.getByRole('button', { name: /confirm|recover|yes/i });
-    if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await confirmButton.click();
-    }
-
-    await this.page.waitForTimeout(1000);
-  }
-
-  async permanentDeleteVersion() {
-    const permanentDeleteButton = this.page.getByTestId('schema-definition-permanent-delete-btn');
-    await expect(permanentDeleteButton).toBeVisible();
-    await permanentDeleteButton.click();
-
-    // Confirm in modal
-    const confirmButton = this.page.getByRole('button', { name: /confirm|delete|yes/i });
     if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await confirmButton.click();
     }
@@ -297,23 +266,6 @@ export class SchemaPage {
       await checkbox.uncheck();
     }
     await this.page.waitForTimeout(500);
-  }
-
-  /**
-   * List page actions
-   */
-  async deleteSubject(subjectName: string) {
-    const deleteButton = this.page.getByTestId(`schema-list-delete-btn-${subjectName}`);
-    await expect(deleteButton).toBeVisible();
-    await deleteButton.click();
-
-    // Confirm in modal
-    const confirmButton = this.page.getByRole('button', { name: /confirm|delete|yes/i });
-    if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await confirmButton.click();
-    }
-
-    await this.page.waitForTimeout(1000);
   }
 
   async clickCreateButton() {
