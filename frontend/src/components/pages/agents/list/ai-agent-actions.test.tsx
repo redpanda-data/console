@@ -12,6 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
+import { CLOUD_MANAGED_TAG_KEYS } from 'components/constants';
 import {
   AIAgent_State,
   AIAgentSchema,
@@ -330,8 +331,8 @@ describe('AIAgentActions', () => {
       url: 'http://localhost:8080/agents/agent-1',
       mcpServers: {},
       tags: {
-        service_account_id: 'sa-123',
-        secret_id: 'test-secret',
+        [CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID]: 'sa-123',
+        [CLOUD_MANAGED_TAG_KEYS.SECRET_ID]: 'test-secret',
       },
     };
 
