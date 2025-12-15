@@ -22,7 +22,7 @@ import {
   FieldSet,
 } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { EmbeddingModelSelect } from 'components/ui/ai/embedding-model-select';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
 import { Combine, ExternalLink } from 'lucide-react';
@@ -85,28 +85,28 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
                 {embeddingProvider === 'openai' && (
                   <FieldDescription>
                     See{' '}
-                    <a
-                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                    <Link
+                      className="inline-flex items-center gap-1"
                       href="https://platform.openai.com/docs/guides/embeddings#embedding-models"
                       rel="noopener noreferrer"
                       target="_blank"
                     >
                       OpenAI embedding models <ExternalLink className="h-3 w-3" />
-                    </a>{' '}
+                    </Link>{' '}
                     for available models and dimensions.
                   </FieldDescription>
                 )}
                 {embeddingProvider === 'cohere' && (
                   <FieldDescription>
                     See{' '}
-                    <a
-                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                    <Link
+                      className="inline-flex items-center gap-1"
                       href="https://docs.cohere.com/docs/cohere-embed"
                       rel="noopener noreferrer"
                       target="_blank"
                     >
                       Cohere embedding models <ExternalLink className="h-3 w-3" />
-                    </a>{' '}
+                    </Link>{' '}
                     for available models and dimensions.
                   </FieldDescription>
                 )}

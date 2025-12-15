@@ -29,7 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/c
 import { Field, FieldDescription, FieldError, FieldLabel } from '../../../redpanda-ui/components/field';
 import { FormItem, FormLabel } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
-import { Heading, Text } from '../../../redpanda-ui/components/typography';
+import { Heading, Link, Text } from '../../../redpanda-ui/components/typography';
 import { EmbeddingModelSelect } from '../../../ui/ai/embedding-model-select';
 import { SecretSelector } from '../../../ui/secret/secret-selector';
 import { COHERE_MODELS, OPENAI_MODELS } from '../constants';
@@ -221,14 +221,14 @@ export const EmbeddingGeneratorSection = ({ knowledgeBase, isEditMode }: Embeddi
 
               {embeddingGen?.provider?.provider.case === 'openai' && (
                 <p className="-mt-2 mb-2 text-muted-foreground text-sm">
-                  <a
-                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                  <Link
+                    className="inline-flex items-center gap-1"
                     href="https://platform.openai.com/docs/guides/embeddings#embedding-models"
                     rel="noopener noreferrer"
                     target="_blank"
                   >
                     OpenAI embedding models <ExternalLink className="h-3 w-3" />
-                  </a>{' '}
+                  </Link>{' '}
                   for available models and dimensions.
                 </p>
               )}
@@ -236,14 +236,9 @@ export const EmbeddingGeneratorSection = ({ knowledgeBase, isEditMode }: Embeddi
               {embeddingGen?.provider?.provider.case === 'cohere' && (
                 <p className="-mt-2 mb-2 text-muted-foreground text-sm">
                   See{' '}
-                  <a
-                    className="text-blue-500"
-                    href="https://docs.cohere.com/docs/cohere-embed"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
+                  <Link href="https://docs.cohere.com/docs/cohere-embed" rel="noopener noreferrer" target="_blank">
                     Cohere embedding models
-                  </a>{' '}
+                  </Link>{' '}
                   for available models and dimensions.
                 </p>
               )}

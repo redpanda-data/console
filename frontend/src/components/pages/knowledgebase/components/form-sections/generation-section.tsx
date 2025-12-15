@@ -19,6 +19,7 @@ import {
   FieldLegend,
   FieldSet,
 } from 'components/redpanda-ui/components/field';
+import { Link } from 'components/redpanda-ui/components/typography';
 import { ChatModelSelect } from 'components/ui/ai/chat-model-select';
 import { ExternalLink } from 'lucide-react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
@@ -53,14 +54,14 @@ export const GenerationSection: React.FC<GenerationSectionProps> = ({ form }) =>
                 />
                 <FieldDescription>
                   See{' '}
-                  <a
-                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                  <Link
+                    className="inline-flex items-center gap-1"
                     href="https://platform.openai.com/docs/models/overview"
                     rel="noopener noreferrer"
                     target="_blank"
                   >
                     OpenAI models <ExternalLink className="h-3 w-3" />
-                  </a>{' '}
+                  </Link>{' '}
                   for available models.
                 </FieldDescription>
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}

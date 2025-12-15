@@ -21,7 +21,7 @@ import {
   FieldSeparator,
   FieldSet,
 } from 'components/redpanda-ui/components/field';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { RerankerModelSelect } from 'components/ui/ai/reranker-model-select';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
 import { ExternalLink, Shuffle } from 'lucide-react';
@@ -86,14 +86,14 @@ export const RetrievalSection: React.FC<RetrievalSectionProps> = ({ form, availa
                     />
                     <FieldDescription>
                       See{' '}
-                      <a
-                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                      <Link
+                        className="inline-flex items-center gap-1"
                         href="https://docs.cohere.com/docs/rerank"
                         rel="noopener noreferrer"
                         target="_blank"
                       >
                         Cohere rerank models <ExternalLink className="h-3 w-3" />
-                      </a>{' '}
+                      </Link>{' '}
                       for available models.
                     </FieldDescription>
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
