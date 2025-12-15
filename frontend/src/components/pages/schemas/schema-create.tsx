@@ -26,6 +26,7 @@ import {
   RadioGroup,
   useToast,
 } from '@redpanda-data/ui';
+import { InfoIcon } from 'lucide-react';
 import { observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { useEffect, useState } from 'react';
@@ -43,6 +44,8 @@ import type { ElementOf } from '../../../utils/utils';
 import KowlEditor from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
 import { SingleSelect } from '../../misc/select';
+import { Switch } from '../../redpanda-ui/components/switch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
 import { PageComponent, type PageInitHelper } from '../page';
 
 // Regex for extracting record names from schema text
@@ -245,6 +248,9 @@ const SchemaPageButtons = observer(
                     schemaType: editorState.format as SchemaTypeType,
                     schema: editorState.schemaText,
                     references: editorState.references.filter((x) => x.name && x.subject),
+                    params: {
+                      normalize: editorState.normalize,
+                    },
                   })
                   .finally(() => setCreating(false));
 
@@ -504,6 +510,29 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
           />
         </div>
 
+        <Flex alignItems="center" gap="3">
+          <Flex alignItems="center" gap="2">
+            <span className="font-semibold">Normalize schema</span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <InfoIcon className="h-4 w-4 cursor-help text-gray-500" />
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  When enabled, the schema will be normalized to a canonical form before registration, reducing
+                  duplicate schema versions
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </Flex>
+          <Switch
+            checked={state.normalize}
+            onCheckedChange={(checked) => {
+              state.normalize = checked === true;
+            }}
+          />
+        </Flex>
+
         <Heading mt="8" variant="lg">
           Schema references
         </Heading>
@@ -612,6 +641,7 @@ function createSchemaState() {
       subject: string;
       version: number;
     }[],
+    normalize: false,
 
     get isInvalidKeyOrValue() {
       return this.strategy === 'TOPIC' && this.userInput.length > 0 && !this.keyOrValue;
