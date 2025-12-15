@@ -11,6 +11,7 @@
 
 'use client';
 
+import { CLOUD_MANAGED_TAG_KEYS } from 'components/constants';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   DropdownMenu,
@@ -53,8 +54,8 @@ export const MCPActions = ({
   const [deleteServiceAccountFlag, setDeleteServiceAccountFlag] = React.useState(false);
 
   // Get service account and secret info from server tags
-  const serviceAccountId = server.tags?.service_account_id || null;
-  const secretName = server.tags?.secret_id || null;
+  const serviceAccountId = server.tags?.[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID] || null;
+  const secretName = server.tags?.[CLOUD_MANAGED_TAG_KEYS.SECRET_ID] || null;
 
   const handleDelete = async (id: string) => {
     await onDeleteWithServiceAccount(id, deleteServiceAccountFlag, secretName, serviceAccountId);
