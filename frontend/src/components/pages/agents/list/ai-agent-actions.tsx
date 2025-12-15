@@ -12,6 +12,7 @@
 'use client';
 
 import { Button } from 'components/redpanda-ui/components/button';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +24,7 @@ import { Label } from 'components/redpanda-ui/components/label';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { Copy, Loader2, MoreHorizontal, Pause, Play } from 'lucide-react';
+import { Loader2, MoreHorizontal, Pause, Play } from 'lucide-react';
 import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import React from 'react';
 import { useStartAIAgentMutation, useStopAIAgentMutation } from 'react-query/api/ai-agent';
@@ -56,11 +57,8 @@ export const AIAgentActions = ({ agent, onDeleteWithServiceAccount, isDeletingAg
     setDeleteServiceAccountFlag(false);
   };
 
-  const handleCopy = () => {
-    if (agent.url) {
-      navigator.clipboard.writeText(agent.url);
-      toast.success('URL copied to clipboard');
-    }
+  const handleCopySuccess = () => {
+    toast.success('URL copied to clipboard');
   };
 
   const handleStart = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -85,14 +83,17 @@ export const AIAgentActions = ({ agent, onDeleteWithServiceAccount, isDeletingAg
             <span className="sr-only">Open menu</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[160px]">
+        <DropdownMenuContent align="end" className="w-[200px]">
           {agent.url && (
             <>
-              <DropdownMenuItem onClick={handleCopy}>
-                <div className="flex items-center gap-4">
-                  <Copy className="h-4 w-4" /> Copy URL
-                </div>
-              </DropdownMenuItem>
+              <CopyButton
+                className="[&]:!scale-100 [&]:!transform-none w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-sm hover:bg-accent [&_svg]:size-4"
+                content={agent.url}
+                onCopy={handleCopySuccess}
+                variant="ghost"
+              >
+                Copy URL
+              </CopyButton>
               <DropdownMenuSeparator />
             </>
           )}

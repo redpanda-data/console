@@ -12,15 +12,15 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { Button } from 'components/redpanda-ui/components/button';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { Copy, MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import { DeleteKnowledgeBaseRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import { useDeleteKnowledgeBaseMutation } from 'react-query/api/knowledge-base';
 import { toast } from 'sonner';
@@ -47,13 +47,8 @@ export const KnowledgeBaseActionsCell = ({ knowledgeBase }: KnowledgeBaseActions
     });
   };
 
-  const handleCopyUrl = () => {
-    if (knowledgeBase.retrievalApiUrl) {
-      navigator.clipboard.writeText(knowledgeBase.retrievalApiUrl);
-      toast.success('Retrieval API URL copied to clipboard');
-    } else {
-      toast.error('No retrieval API URL available');
-    }
+  const handleCopySuccess = () => {
+    toast.success('Retrieval API URL copied to clipboard');
   };
 
   return (
@@ -65,12 +60,15 @@ export const KnowledgeBaseActionsCell = ({ knowledgeBase }: KnowledgeBaseActions
             <span className="sr-only">Open menu</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[160px]">
-          <DropdownMenuItem onClick={handleCopyUrl}>
-            <div className="flex items-center gap-4">
-              <Copy className="h-4 w-4" /> Copy URL
-            </div>
-          </DropdownMenuItem>
+        <DropdownMenuContent align="end" className="w-[200px]">
+          <CopyButton
+            className="[&]:!scale-100 [&]:!transform-none w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-sm hover:bg-accent [&_svg]:size-4"
+            content={knowledgeBase.retrievalApiUrl}
+            onCopy={handleCopySuccess}
+            variant="ghost"
+          >
+            Copy URL
+          </CopyButton>
           <DropdownMenuSeparator />
           <DeleteResourceAlertDialog
             isDeleting={isDeleting}
