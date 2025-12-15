@@ -69,7 +69,9 @@ export class SchemaCreatePage extends PageComponent {
   render() {
     return (
       <PageContent key="b">
-        <Heading variant="xl">Create schema</Heading>
+        <Heading data-testid="schema-create-heading" variant="xl">
+          Create schema
+        </Heading>
 
         <SchemaEditor mode="CREATE" state={this.editorState} />
 
@@ -149,7 +151,9 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
 
     return (
       <PageContent key="b">
-        <Heading variant="xl">Add schema version</Heading>
+        <Heading data-testid="schema-add-version-heading" variant="xl">
+          Add schema version
+        </Heading>
 
         <SchemaEditor mode="ADD_VERSION" state={this.editorState} />
 
@@ -183,7 +187,7 @@ const SchemaPageButtons = observer(
     return (
       <>
         {persistentValidationError && (
-          <Alert mb="4" mt="4" status="error" variant="left-accent">
+          <Alert data-testid="schema-create-validation-error-alert" mb="4" mt="4" status="error" variant="left-accent">
             <AlertIcon />
             <Box flex="1">
               <AlertTitle alignItems="center" display="flex">
@@ -199,6 +203,7 @@ const SchemaPageButtons = observer(
             </Box>
             <CloseButton
               alignSelf="flex-start"
+              data-testid="schema-create-error-close-btn"
               onClick={() => setPersistentValidationError(null)}
               position="relative"
               right={-1}
@@ -210,6 +215,7 @@ const SchemaPageButtons = observer(
         <Flex gap="4" mt="4">
           <Button
             colorScheme="brand"
+            data-testid="schema-create-save-btn"
             isDisabled={isCreating || isMissingName || isValidating || editorState.isInvalidKeyOrValue}
             isLoading={isCreating}
             loadingText="Creating..."
@@ -272,6 +278,7 @@ const SchemaPageButtons = observer(
           </Button>
 
           <Button
+            data-testid="schema-create-validate-btn"
             isDisabled={isValidating || isMissingName || isValidating || editorState.isInvalidKeyOrValue}
             isLoading={isValidating}
             loadingText="Validate"
@@ -301,6 +308,7 @@ const SchemaPageButtons = observer(
           </Button>
 
           <Button
+            data-testid="schema-create-cancel-btn"
             onClick={() => {
               if (p.parentSubjectName) {
                 appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(p.parentSubjectName)}`);
@@ -395,6 +403,7 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
         <Flex gap="8">
           <FormField label="Strategy">
             <SingleSelect<NamingStrategy>
+              data-testid="schema-create-strategy-select"
               isDisabled={isAddVersion}
               onChange={(e) => {
                 state.userInput = '';
@@ -413,6 +422,7 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
           {showTopicNameInput ? (
             <FormField label="Topic name">
               <SingleSelect
+                data-testid="schema-create-topic-select"
                 isDisabled={isAddVersion}
                 onChange={(e) => (state.userInput = e)}
                 options={
@@ -429,16 +439,18 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
 
         <Flex gap="8">
           <FormField errorText="Required" isInvalid={state.isInvalidKeyOrValue} label="Key or value" width="auto">
-            <RadioGroup
-              isDisabled={isAddVersion}
-              name="keyOrValue"
-              onChange={(e) => (state.keyOrValue = e)}
-              options={[
-                { value: 'KEY', label: 'Key' },
-                { value: 'VALUE', label: 'Value' },
-              ]}
-              value={state.keyOrValue}
-            />
+            <Box data-testid="schema-create-key-value-radio">
+              <RadioGroup
+                isDisabled={isAddVersion}
+                name="keyOrValue"
+                onChange={(e) => (state.keyOrValue = e)}
+                options={[
+                  { value: 'KEY', label: 'Key' },
+                  { value: 'VALUE', label: 'Value' },
+                ]}
+                value={state.keyOrValue}
+              />
+            </Box>
           </FormField>
 
           <FormField
@@ -447,6 +459,7 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
             label={isCustom ? 'Subject name' : 'Computed subject name'}
           >
             <Input
+              data-testid="schema-create-subject-name-input"
               isDisabled={!isCustom || isAddVersion}
               onChange={(e) => (state.userInput = e.target.value)}
               value={state.computedSubjectName}
@@ -461,31 +474,35 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
 
       <Flex direction="column" gap="4" maxWidth="1000px">
         <FormField label="Format">
-          <RadioGroup
-            isDisabled={isAddVersion}
-            name="format"
-            onChange={(e) => {
-              if (state.format === e) {
-                return;
-              }
+          <Box data-testid="schema-create-format-radio">
+            <RadioGroup
+              isDisabled={isAddVersion}
+              name="format"
+              onChange={(e) => {
+                if (state.format === e) {
+                  return;
+                }
 
-              // Let user confirm
-              openSwitchSchemaFormatModal(() => {
-                state.format = e;
-                state.schemaText = exampleSchema[state.format];
-              });
-            }}
-            options={formatOptions}
-            value={state.format}
-          />
+                // Let user confirm
+                openSwitchSchemaFormatModal(() => {
+                  state.format = e;
+                  state.schemaText = exampleSchema[state.format];
+                });
+              }}
+              options={formatOptions}
+              value={state.format}
+            />
+          </Box>
         </FormField>
 
-        <KowlEditor
-          height="400px"
-          language={state.format === 'PROTOBUF' ? 'proto' : 'json'}
-          onChange={(e) => (state.schemaText = e ?? '')}
-          value={state.schemaText}
-        />
+        <div data-testid="schema-create-schema-editor">
+          <KowlEditor
+            height="400px"
+            language={state.format === 'PROTOBUF' ? 'proto' : 'json'}
+            onChange={(e) => (state.schemaText = e ?? '')}
+            value={state.schemaText}
+          />
+        </div>
 
         <Heading mt="8" variant="lg">
           Schema references
@@ -502,13 +519,18 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
   const { state } = p;
   const refs = state.references;
 
-  const renderRow = (ref: ElementOf<typeof refs>) => (
+  const renderRow = (ref: ElementOf<typeof refs>, index: number) => (
     <Flex alignItems="flex-end" gap="4">
       <FormField label="Schema reference">
-        <Input onChange={(e) => (ref.name = e.target.value)} value={ref.name} />
+        <Input
+          data-testid={`schema-create-reference-name-input-${index}`}
+          onChange={(e) => (ref.name = e.target.value)}
+          value={ref.name}
+        />
       </FormField>
       <FormField label="Subject">
         <SingleSelect
+          data-testid={`schema-create-reference-subject-select-${index}`}
           onChange={async (e) => {
             ref.subject = e;
 
@@ -535,6 +557,7 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
       </FormField>
       <FormField label="Version">
         <SingleSelect<number>
+          data-testid={`schema-create-reference-version-select-${index}`}
           onChange={(e) => (ref.version = e)}
           options={
             api.schemaDetails
@@ -547,6 +570,7 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
       </FormField>
       <IconButton
         aria-label="delete"
+        data-testid={`schema-create-reference-delete-btn-${index}`}
         icon={<DeleteIcon fontSize="19px" />}
         onClick={() => refs.remove(ref)}
         variant="ghost"
@@ -556,9 +580,10 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
 
   return (
     <Flex direction="column" gap="4">
-      {refs.map((x) => renderRow(x))}
+      {refs.map((x, index) => renderRow(x, index))}
 
       <Button
+        data-testid="schema-create-add-reference-btn"
         onClick={() => refs.push({ name: '', subject: '', version: 1 })}
         size="sm"
         variant="outline"

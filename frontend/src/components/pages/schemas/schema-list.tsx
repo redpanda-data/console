@@ -198,13 +198,14 @@ class SchemaList extends PageComponent {
       <PageContent key="b">
         <ToastContainer />
         {/* Statistics Bar */}
-        <Flex alignItems="center" gap="1rem">
+        <Flex alignItems="center" data-testid="schema-list-stats" gap="1rem">
           <SmallStat title="Mode">{api.schemaMode ?? <InlineSkeleton width="100px" />}</SmallStat>
           <Divider height="2ch" orientation="vertical" />
           <SmallStat title="Compatibility">{api.schemaCompatibility ?? <InlineSkeleton width="100px" />}</SmallStat>
         </Flex>
 
         <Button
+          data-testid="schema-list-edit-compatibility-btn"
           disabledReason={
             api.userData?.canManageSchemaRegistry === false
               ? "You don't have the 'canManageSchemaRegistry' permission"
@@ -222,6 +223,7 @@ class SchemaList extends PageComponent {
 
         <Flex alignItems="center" gap="4">
           <SearchField
+            data-testid="schema-list-search-field"
             placeholderText="Filter by subject name or schema ID..."
             searchText={uiSettings.schemaList.quickSearch}
             setSearchText={action((filterText) => {
@@ -230,7 +232,11 @@ class SchemaList extends PageComponent {
             })}
             width="350px"
           />
-          <Spinner display={this.isLoadingSchemaVersionMatches ? undefined : 'none'} size="md" />
+          <Spinner
+            data-testid="schema-list-search-spinner"
+            display={this.isLoadingSchemaVersionMatches ? undefined : 'none'}
+            size="md"
+          />
         </Flex>
 
         <Button
@@ -278,6 +284,7 @@ class SchemaList extends PageComponent {
           <Flex justifyContent={'space-between'} pb={3}>
             <Button
               colorScheme="brand"
+              data-testid="schema-list-create-btn"
               disabledReason={
                 api.userData?.canCreateSchemas === false
                   ? "You don't have the 'canCreateSchemas' permission"
@@ -288,6 +295,7 @@ class SchemaList extends PageComponent {
               Create new schema
             </Button>
             <Checkbox
+              data-testid="schema-list-show-soft-deleted-checkbox"
               isChecked={uiSettings.schemaList.showSoftDeleted}
               onChange={(e) => (uiSettings.schemaList.showSoftDeleted = e.target.checked)}
             >
@@ -319,7 +327,7 @@ class SchemaList extends PageComponent {
                           hasArrow
                           label="This subject has been soft-deleted. It can be restored or permanently deleted."
                         >
-                          <Box>
+                          <Box data-testid="schema-list-soft-deleted-icon">
                             <ArchiveIcon height={16} style={{ color: 'var(--chakra-colors-gray-400)' }} width={16} />
                           </Box>
                         </Tooltip>
@@ -349,6 +357,7 @@ class SchemaList extends PageComponent {
                 cell: ({ row: { original: r } }) => (
                   <Button
                     color="gray.500"
+                    data-testid={`schema-list-delete-btn-${r.name}`}
                     disabledReason={
                       api.userData?.canDeleteSchemas === false
                         ? "You don't have the 'canDeleteSchemas' permission"

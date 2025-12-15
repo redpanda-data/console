@@ -9,10 +9,11 @@ export type SingleSelectProps<T> = Omit<SelectProps<T>, 'value' | 'onChange'> & 
 
 export function SingleSelect<T>(p: SingleSelectProps<T>) {
   const options = p.options;
+  const { 'data-testid': testId, ...restProps } = p as SingleSelectProps<T> & { 'data-testid'?: string };
 
-  return (
+  const selectElement = (
     <RPSelect<T>
-      {...p}
+      {...restProps}
       formatOptionLabel={(data) => {
         // Bug: data.label has the same value as data.value instead of the proper label
         // so we must find the actual option again based on the value
@@ -36,4 +37,11 @@ export function SingleSelect<T>(p: SingleSelectProps<T>) {
       value={{ value: p.value }}
     />
   );
+
+  // Wrap in div with data-testid if provided, for E2E testing
+  if (testId) {
+    return <div data-testid={testId}>{selectElement}</div>;
+  }
+
+  return selectElement;
 }

@@ -158,6 +158,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
         {/* Buttons */}
         <Flex gap="2">
           <Button
+            data-testid="schema-details-edit-compatibility-btn"
             disabledReason={
               api.userData?.canManageSchemaRegistry === false
                 ? "You don't have the 'canManageSchemaRegistry' permission"
@@ -171,6 +172,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
             Edit compatibility
           </Button>
           <Button
+            data-testid="schema-details-add-version-btn"
             disabledReason={
               api.userData?.canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined
             }
@@ -180,6 +182,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
             Add new version
           </Button>
           <Button
+            data-testid="schema-details-delete-subject-btn"
             disabledReason={
               api.userData?.canDeleteSchemas === false ? "You don't have the 'canDeleteSchemas' permission" : undefined
             }
@@ -241,6 +244,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
 
         {/* Definition / Diff */}
         <Tabs
+          data-testid="schema-details-tabs"
           isFitted
           items={[
             {
@@ -360,6 +364,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
           <Label text="Version">
             <Box width="200px">
               <SingleSelect
+                data-testid="schema-definition-version-select"
                 isDisabled={subject.versions.length === 0}
                 onChange={(value) => {
                   editQuery((x) => (x.version = String(value)));
@@ -376,13 +381,14 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
               />
             </Box>
           </Label>
-          <Flex alignItems="center" height="36px" ml="4">
+          <Flex alignItems="center" data-testid="schema-definition-schema-id" height="36px" ml="4">
             Schema ID: {schema.id}
           </Flex>
 
           {schema.isSoftDeleted ? (
             <>
               <Button
+                data-testid="schema-definition-permanent-delete-btn"
                 disabledReason={
                   api.userData?.canDeleteSchemas === false
                     ? "You don't have the 'canDeleteSchemas' permission"
@@ -428,6 +434,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
               </Button>
 
               <Button
+                data-testid="schema-definition-recover-btn"
                 disabledReason={
                   api.userData?.canCreateSchemas === false
                     ? "You don't have the 'canCreateSchemas' permission"
@@ -475,6 +482,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
             </>
           ) : (
             <Button
+              data-testid="schema-definition-delete-version-btn"
               disabledReason={
                 api.userData?.canDeleteSchemas === false
                   ? "You don't have the 'canDeleteSchemas' permission"
@@ -517,7 +525,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
 
         {/* Deleted Hint */}
         {schema.isSoftDeleted && (
-          <Alert status="warning" variant="left-accent">
+          <Alert data-testid="schema-definition-soft-deleted-alert" status="warning" variant="left-accent">
             <AlertIcon />
             <Box>
               <AlertTitle>Soft-deleted schema</AlertTitle>
@@ -531,6 +539,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
         {/* Code Block */}
         <CodeBlock
           codeString={getFormattedSchemaText(schema)}
+          data-testid="schema-definition-code-block"
           language={schemaTypeToCodeBlockLanguage(schema.type)}
           showCopyButton={false}
           showLineNumbers
@@ -577,6 +586,7 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
             <Label text="Version">
               <Box width="200px">
                 <SingleSelect
+                  data-testid="schema-diff-version-left-select"
                   isDisabled={subject.versions.length === 0}
                   onChange={(value) => {
                     setSelectedVersionLeft(value);
@@ -592,7 +602,7 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
                 />
               </Box>
             </Label>
-            <Flex alignItems="center" height="36px" ml="4">
+            <Flex alignItems="center" data-testid="schema-diff-schema-id-left" height="36px" ml="4">
               Schema ID: {schemaLeft.id}
             </Flex>
           </Flex>
@@ -604,6 +614,7 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
             <Label text="Version">
               <Box width="200px">
                 <SingleSelect
+                  data-testid="schema-diff-version-right-select"
                   isDisabled={subject.versions.length === 0}
                   onChange={(value) => {
                     setSelectedVersionRight(value);
@@ -619,7 +630,7 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
                 />
               </Box>
             </Label>
-            <Flex alignItems="center" height="36px" ml="4">
+            <Flex alignItems="center" data-testid="schema-diff-schema-id-right" height="36px" ml="4">
               Schema ID: {schemaRight.id}
             </Flex>
           </Flex>
@@ -628,6 +639,7 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
 
       {/* Diff View */}
       <KowlDiffEditor
+        data-testid="schema-diff-editor"
         height="800px"
         language={schemaTypeToCodeBlockLanguage(schemaLeft.type)}
         modified={getFormattedSchemaText(schemaRight)}
@@ -650,7 +662,7 @@ const SchemaReferences = observer(
 
     return (
       <>
-        <Text fontSize="lg" fontWeight="bold" mt="20">
+        <Text data-testid="schema-references-heading" fontSize="lg" fontWeight="bold" mt="20">
           References
         </Text>
         <Text mb="6">
@@ -659,7 +671,7 @@ const SchemaReferences = observer(
         </Text>
 
         {schema.references.length > 0 ? (
-          <UnorderedList>
+          <UnorderedList data-testid="schema-references-list">
             {schema.references.map((ref) => {
               // Schema references contain two distinct identifiers:
               // - ref.name: The import string used within the schema (e.g., "foo/bar/baz.proto")
@@ -676,6 +688,7 @@ const SchemaReferences = observer(
                 <ListItem key={ref.name + ref.subject + ref.version}>
                   <Link
                     as={ReactRouterLink}
+                    data-testid={`schema-reference-link-${ref.subject}`}
                     to={`/schema-registry/subjects/${encodeURIComponentPercents(ref.subject)}?version=${ref.version}`}
                   >
                     {ref.subject}
@@ -688,7 +701,7 @@ const SchemaReferences = observer(
           <Text>This schema has no references.</Text>
         )}
 
-        <Text fontSize="lg" fontWeight="bold" mt="20">
+        <Text data-testid="schema-referenced-by-heading" fontSize="lg" fontWeight="bold" mt="20">
           Referenced By
         </Text>
         <Text mb="6">
@@ -697,7 +710,7 @@ const SchemaReferences = observer(
         </Text>
 
         {!!referencedBy && referencedBy?.length > 0 ? (
-          <UnorderedList>
+          <UnorderedList data-testid="schema-referenced-by-list">
             {referencedBy
               .flatMap((x) => x.usages)
               .map((ref) => {
@@ -709,6 +722,7 @@ const SchemaReferences = observer(
                   <ListItem key={ref.subject + ref.version}>
                     <Link
                       as={ReactRouterLink}
+                      data-testid={`schema-referenced-by-link-${ref.subject}`}
                       to={`/schema-registry/subjects/${encodeURIComponentPercents(ref.subject)}?version=${ref.version}`}
                     >
                       {ref.subject}
