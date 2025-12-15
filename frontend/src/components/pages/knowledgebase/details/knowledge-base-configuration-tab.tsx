@@ -9,12 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { BasicInfoSection } from './sections/basic-info-section';
-import { EmbeddingGeneratorSection } from './sections/embedding-generator-section';
-import { IndexerSection } from './sections/indexer-section';
-import { RetrieverSection } from './sections/retriever-section';
-import { VectorDatabaseSection } from './sections/vector-database-section';
-import type { KnowledgeBase } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { BasicInfoSection } from './basic-info-section';
+import { EmbeddingGeneratorSection } from './embedding-generator-section';
+import { IndexerSection } from './indexer-section';
+import { RetrieverSection } from './retriever-section';
+import { VectorDatabaseSection } from './vector-database-section';
+import type { KnowledgeBase } from '../../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 
 type KnowledgeBaseConfigurationTabProps = {
   knowledgeBase: KnowledgeBase;

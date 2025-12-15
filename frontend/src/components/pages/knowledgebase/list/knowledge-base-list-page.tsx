@@ -49,9 +49,14 @@ import { toast } from 'sonner';
 import { Features } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
 
-import { ALL_EMBEDDING_MODELS, COHERE_RERANKER_MODELS } from './constants';
 import { KnowledgeBaseActionsCell } from './knowledge-base-actions';
-import { isRegexPattern, stripRegexPrefix } from './schemas';
+import {
+  ALL_EMBEDDING_MODELS,
+  COHERE_RERANKER_MODELS,
+  type EmbeddingModel,
+  type RerankerModel,
+} from '../../../ui/ai/ai-constants';
+import { isRegexPattern, stripRegexPrefix } from '../create/schemas';
 
 // Icon wrapper components for provider logos
 const OpenAIIcon = ({ className }: { className?: string }) => (
@@ -62,13 +67,13 @@ const CohereIcon = ({ className }: { className?: string }) => (
   <img alt="Cohere" className={className} src={CohereLogo} />
 );
 
-const embeddingModelOptions = ALL_EMBEDDING_MODELS.map((model) => ({
+const embeddingModelOptions = ALL_EMBEDDING_MODELS.map((model: EmbeddingModel) => ({
   value: model.name,
   label: model.name,
   icon: model.provider === 'openai' ? OpenAIIcon : CohereIcon,
 }));
 
-const rerankerModelOptions = COHERE_RERANKER_MODELS.map((model) => ({
+const rerankerModelOptions = COHERE_RERANKER_MODELS.map((model: RerankerModel) => ({
   value: model.name,
   label: model.name,
   icon: CohereIcon,

@@ -27,15 +27,15 @@ import { Loader2, X } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Button } from '../../redpanda-ui/components/button';
+import { Button } from '../../../redpanda-ui/components/button';
 import {
   DataTableColumnHeader,
   DataTablePagination,
   DataTableViewOptions,
-} from '../../redpanda-ui/components/data-table';
-import { Input } from '../../redpanda-ui/components/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
-import { Heading, Text } from '../../redpanda-ui/components/typography';
+} from '../../../redpanda-ui/components/data-table';
+import { Input } from '../../../redpanda-ui/components/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { Heading, Text } from '../../../redpanda-ui/components/typography';
 
 export type RetrievalResult = {
   score?: number;

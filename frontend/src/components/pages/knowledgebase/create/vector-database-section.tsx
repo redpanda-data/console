@@ -26,7 +26,7 @@ import { Database } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 
-import type { KnowledgeBaseCreateFormValues } from '../../schemas';
+import type { KnowledgeBaseCreateFormValues } from './schemas';
 
 type VectorDatabaseSectionProps = {
   form: UseFormReturn<KnowledgeBaseCreateFormValues>;

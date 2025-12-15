@@ -16,17 +16,17 @@ import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { KnowledgeBaseDocumentList, type RetrievalResult } from './knowledge-base-document-list';
-import type { KnowledgeBase } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { useCallMCPServerToolMutation } from '../../../react-query/api/remote-mcp';
-import { Button } from '../../redpanda-ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../redpanda-ui/components/card';
-import { DynamicCodeBlock } from '../../redpanda-ui/components/code-block-dynamic';
-import { FormItem, FormLabel } from '../../redpanda-ui/components/form';
-import { Input } from '../../redpanda-ui/components/input';
-import { Skeleton } from '../../redpanda-ui/components/skeleton';
-import { Textarea } from '../../redpanda-ui/components/textarea';
-import { Text } from '../../redpanda-ui/components/typography';
-import { JSONView } from '../../ui/json/json-view';
+import type { KnowledgeBase } from '../../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { useCallMCPServerToolMutation } from '../../../../react-query/api/remote-mcp';
+import { Button } from '../../../redpanda-ui/components/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
+import { DynamicCodeBlock } from '../../../redpanda-ui/components/code-block-dynamic';
+import { FormItem, FormLabel } from '../../../redpanda-ui/components/form';
+import { Input } from '../../../redpanda-ui/components/input';
+import { Skeleton } from '../../../redpanda-ui/components/skeleton';
+import { Textarea } from '../../../redpanda-ui/components/textarea';
+import { Text } from '../../../redpanda-ui/components/typography';
+import { JSONView } from '../../../ui/json/json-view';
 
 type PlaygroundTabProps = {
   knowledgeBase: KnowledgeBase;

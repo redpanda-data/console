@@ -56,7 +56,7 @@ import { uiState } from 'state/ui-state';
 
 import { KnowledgeBaseConfigurationTab } from './knowledge-base-configuration-tab';
 import { PlaygroundTab } from './knowledge-base-playground-tab';
-import { isRegexPattern, markAsRegexPattern, stripRegexPrefix } from './schemas';
+import { isRegexPattern, markAsRegexPattern, stripRegexPrefix } from '../create/schemas';
 
 // Extended type for edit form that includes split topic fields
 type KnowledgeBaseUpdateForm = KnowledgeBaseUpdate & {

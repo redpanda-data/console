@@ -32,7 +32,7 @@ import {
   type UseFormReturn,
 } from 'react-hook-form';
 
-import type { KnowledgeBaseCreateFormValues } from '../../schemas';
+import type { KnowledgeBaseCreateFormValues } from './schemas';
 
 type BasicInformationSectionProps = {
   form: UseFormReturn<KnowledgeBaseCreateFormValues>;

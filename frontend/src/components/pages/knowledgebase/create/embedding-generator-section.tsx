@@ -29,8 +29,8 @@ import { Combine, ExternalLink } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 
-import { COHERE_MODELS, detectEmbeddingProvider, OPENAI_MODELS } from '../../constants';
-import type { KnowledgeBaseCreateFormValues } from '../../schemas';
+import type { KnowledgeBaseCreateFormValues } from './schemas';
+import { COHERE_MODELS, detectEmbeddingProvider, OPENAI_MODELS } from '../../../ui/ai/ai-constants';
 
 type EmbeddingGeneratorSectionProps = {
   form: UseFormReturn<KnowledgeBaseCreateFormValues>;

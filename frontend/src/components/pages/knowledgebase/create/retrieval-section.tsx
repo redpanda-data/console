@@ -28,8 +28,8 @@ import { ExternalLink, Shuffle } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 
-import { COHERE_RERANKER_MODELS } from '../../constants';
-import type { KnowledgeBaseCreateFormValues } from '../../schemas';
+import type { KnowledgeBaseCreateFormValues } from './schemas';
+import { COHERE_RERANKER_MODELS } from '../../../ui/ai/ai-constants';
 
 type RetrievalSectionProps = {
   form: UseFormReturn<KnowledgeBaseCreateFormValues>;

@@ -24,8 +24,8 @@ import { ChatModelSelect } from 'components/ui/ai/chat-model-select';
 import { ExternalLink } from 'lucide-react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 
-import { MODEL_OPTIONS_BY_PROVIDER, PROVIDER_INFO } from '../../../agents/ai-agent-model';
-import type { KnowledgeBaseCreateFormValues } from '../../schemas';
+import type { KnowledgeBaseCreateFormValues } from './schemas';
+import { MODEL_OPTIONS_BY_PROVIDER, PROVIDER_INFO } from '../../agents/ai-agent-model';
 
 type GenerationSectionProps = {
   form: UseFormReturn<KnowledgeBaseCreateFormValues>;

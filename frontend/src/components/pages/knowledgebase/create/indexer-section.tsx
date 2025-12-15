@@ -38,7 +38,7 @@ import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { SASLMechanism } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 
-import type { KnowledgeBaseCreateFormValues } from '../../schemas';
+import type { KnowledgeBaseCreateFormValues } from './schemas';
 
 type IndexerSectionProps = {
   form: UseFormReturn<KnowledgeBaseCreateFormValues>;

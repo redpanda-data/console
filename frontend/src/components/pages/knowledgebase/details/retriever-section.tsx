@@ -30,10 +30,10 @@ import { Field, FieldDescription, FieldError, FieldLabel } from '../../../redpan
 import { FormItem, FormLabel } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Text } from '../../../redpanda-ui/components/typography';
+import { COHERE_RERANKER_MODELS } from '../../../ui/ai/ai-constants';
 import { RerankerModelSelect } from '../../../ui/ai/reranker-model-select';
 import { SecretSelector } from '../../../ui/secret/secret-selector';
-import { COHERE_RERANKER_MODELS } from '../constants';
-import { extractSecretName, formatSecretTemplate } from '../utils/secret-utils';
+import { extractSecretName, formatSecretTemplate } from '../../../ui/secret/secret-utils';
 
 type KnowledgeBaseUpdateForm = KnowledgeBaseUpdate & {
   indexer?: KnowledgeBaseUpdate['indexer'] & {

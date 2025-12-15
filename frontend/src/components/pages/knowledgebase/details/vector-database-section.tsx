@@ -29,7 +29,7 @@ import { FormItem, FormLabel } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Text } from '../../../redpanda-ui/components/typography';
 import { SecretSelector } from '../../../ui/secret/secret-selector';
-import { extractSecretName, formatSecretTemplate } from '../utils/secret-utils';
+import { extractSecretName, formatSecretTemplate } from '../../../ui/secret/secret-utils';
 
 type KnowledgeBaseUpdateForm = KnowledgeBaseUpdate & {
   indexer?: KnowledgeBaseUpdate['indexer'] & {

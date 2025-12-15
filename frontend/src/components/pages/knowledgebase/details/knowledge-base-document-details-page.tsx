@@ -12,9 +12,9 @@
 import { config } from 'config';
 import { useLocation } from 'react-router-dom';
 
-import { Response } from '../../ai-elements/response';
-import { Card, CardContent } from '../../redpanda-ui/components/card';
-import { Heading, Text } from '../../redpanda-ui/components/typography';
+import { Response } from '../../../ai-elements/response';
+import { Card, CardContent } from '../../../redpanda-ui/components/card';
+import { Heading, Text } from '../../../redpanda-ui/components/typography';
 
 export const KnowledgeBaseDocumentDetailsPage = () => {
   const location = useLocation();

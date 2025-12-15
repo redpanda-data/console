@@ -46,17 +46,17 @@ import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-import { BasicInformationSection } from './components/form-sections/basic-information-section';
-import { EmbeddingGeneratorSection } from './components/form-sections/embedding-generator-section';
-import { IndexerSection } from './components/form-sections/indexer-section';
-import { RetrievalSection } from './components/form-sections/retrieval-section';
-import { VectorDatabaseSection } from './components/form-sections/vector-database-section';
+import { BasicInformationSection } from './basic-information-section';
+import { EmbeddingGeneratorSection } from './embedding-generator-section';
+import { IndexerSection } from './indexer-section';
+import { RetrievalSection } from './retrieval-section';
 import {
   initialValues,
   KnowledgeBaseCreateFormSchema,
   type KnowledgeBaseCreateFormValues,
   markAsRegexPattern,
 } from './schemas';
+import { VectorDatabaseSection } from './vector-database-section';
 
 export const KnowledgeBaseCreatePage = () => {
   const navigate = useNavigate();
