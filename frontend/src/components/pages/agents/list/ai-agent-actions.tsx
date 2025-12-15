@@ -40,14 +40,12 @@ type AIAgentActionsProps = {
     serviceAccountId: string | null
   ) => Promise<void>;
   isDeletingAgent: boolean;
-  setIsDeleteDialogOpen: (open: boolean) => void;
 };
 
 export const AIAgentActions = ({
   agent,
   onDeleteWithServiceAccount,
   isDeletingAgent,
-  setIsDeleteDialogOpen,
 }: AIAgentActionsProps) => {
   const { mutate: startAIAgent, isPending: isStarting } = useStartAIAgentMutation();
   const { mutate: stopAIAgent, isPending: isStopping } = useStopAIAgentMutation();
@@ -134,7 +132,6 @@ export const AIAgentActions = ({
             isDeleting={isDeletingAgent}
             onDelete={handleDelete}
             onOpenChange={(open) => {
-              setIsDeleteDialogOpen(open);
               if (!open) {
                 setDeleteServiceAccountFlag(false);
               }

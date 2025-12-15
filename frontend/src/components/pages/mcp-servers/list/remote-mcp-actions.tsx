@@ -32,10 +32,9 @@ import type { MCPServer } from './remote-mcp-list-page';
 
 type RemoteMCPActionsCellProps = {
   server: MCPServer;
-  setIsDeleteDialogOpen: (open: boolean) => void;
 };
 
-export const RemoteMCPActionsCell = ({ server, setIsDeleteDialogOpen }: RemoteMCPActionsCellProps) => {
+export const RemoteMCPActionsCell = ({ server }: RemoteMCPActionsCellProps) => {
   const { mutate: deleteMCPServer, isPending: isDeleting } = useDeleteMCPServerMutation();
   const { mutate: startMCPServer, isPending: isStarting } = useStartMCPServerMutation();
   const { mutate: stopMCPServer, isPending: isStopping } = useStopMCPServerMutation();
@@ -115,7 +114,6 @@ export const RemoteMCPActionsCell = ({ server, setIsDeleteDialogOpen }: RemoteMC
           <DeleteResourceAlertDialog
             isDeleting={isDeleting}
             onDelete={handleDelete}
-            onOpenChange={setIsDeleteDialogOpen}
             resourceId={server.id}
             resourceName={server.name}
             resourceType="Remote MCP Server"

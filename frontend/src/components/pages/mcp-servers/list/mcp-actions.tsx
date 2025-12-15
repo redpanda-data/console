@@ -39,14 +39,12 @@ type MCPActionsProps = {
     serviceAccountId: string | null
   ) => Promise<void>;
   isDeletingServer: boolean;
-  setIsDeleteDialogOpen: (open: boolean) => void;
 };
 
 export const MCPActions = ({
   server,
   onDeleteWithServiceAccount,
   isDeletingServer,
-  setIsDeleteDialogOpen,
 }: MCPActionsProps) => {
   const { mutate: startMCPServer, isPending: isStarting } = useStartMCPServerMutation();
   const { mutate: stopMCPServer, isPending: isStopping } = useStopMCPServerMutation();
@@ -127,7 +125,6 @@ export const MCPActions = ({
             isDeleting={isDeletingServer}
             onDelete={handleDelete}
             onOpenChange={(open) => {
-              setIsDeleteDialogOpen(open);
               if (!open) {
                 setDeleteServiceAccountFlag(false);
               }

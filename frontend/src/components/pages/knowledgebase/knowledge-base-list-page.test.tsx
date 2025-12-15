@@ -13,6 +13,7 @@ import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
 import {
+  DeleteKnowledgeBaseRequestSchema,
   DeleteKnowledgeBaseResponseSchema,
   KnowledgeBaseSchema,
   ListKnowledgeBasesResponseSchema,
@@ -47,6 +48,7 @@ vi.mock('state/supported-features', () => ({
 import { KnowledgeBaseListPage as KnowledgeBaseList } from './knowledge-base-list-page';
 
 const OPEN_MENU_REGEX = /open menu/i;
+const DELETE_CONFIRMATION_REGEX = /you are about to delete/i;
 const TYPE_DELETE_REGEX = /type "delete" to confirm/i;
 const DELETE_BUTTON_REGEX = /^delete$/i;
 
@@ -100,7 +102,45 @@ describe('KnowledgeBaseList', () => {
     expect(screen.getByText('Description for KB 2')).toBeVisible();
   });
 
-  test('should trigger delete RPC when submitting deletion', async () => {
+  test('should navigate to knowledge base details when clicking on row', async () => {
+    const user = userEvent.setup();
+
+    const kb1 = create(KnowledgeBaseSchema, {
+      id: 'test-kb-123',
+      displayName: 'Test Knowledge Base',
+      description: 'Test description',
+      tags: {},
+    });
+
+    const listKnowledgeBasesResponse = create(ListKnowledgeBasesResponseSchema, {
+      knowledgeBases: [kb1],
+      nextPageToken: '',
+    });
+
+    const listKnowledgeBasesMock = vi.fn().mockReturnValue(listKnowledgeBasesResponse);
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listKnowledgeBases, listKnowledgeBasesMock);
+    });
+
+    render(
+      <MemoryRouter>
+        <KnowledgeBaseList />
+      </MemoryRouter>,
+      { transport }
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Knowledge Base')).toBeVisible();
+    });
+
+    const row = screen.getByText('Test Knowledge Base').closest('tr');
+    if (row) {
+      await user.click(row);
+    }
+  });
+
+  test('should delete a knowledge base from the list', async () => {
     const user = userEvent.setup();
 
     const kb1 = create(KnowledgeBaseSchema, {
@@ -138,6 +178,7 @@ describe('KnowledgeBaseList', () => {
 
     const rows = screen.getAllByRole('row');
     const kbRow = rows.find((row) => within(row).queryByText('Test Knowledge Base 1'));
+    expect(kbRow).toBeDefined();
 
     if (!kbRow) {
       throw new Error('Knowledge base row not found');
@@ -146,59 +187,33 @@ describe('KnowledgeBaseList', () => {
     const actionsButton = within(kbRow).getByRole('button', { name: OPEN_MENU_REGEX });
     await user.click(actionsButton);
 
-    const deleteButton = await screen.findByText('Delete', {});
+    const deleteButton = await screen.findByText('Delete', {}, { timeout: 3000 });
     await user.click(deleteButton);
 
-    const confirmationInput = await screen.findByPlaceholderText(TYPE_DELETE_REGEX);
+    await waitFor(() => {
+      expect(screen.getByText(DELETE_CONFIRMATION_REGEX)).toBeVisible();
+    });
+
+    const confirmationInput = screen.getByPlaceholderText(TYPE_DELETE_REGEX);
     await user.type(confirmationInput, 'delete');
+
+    await waitFor(() => {
+      const confirmButton = screen.getByRole('button', { name: DELETE_BUTTON_REGEX });
+      expect(confirmButton).not.toBeDisabled();
+    });
 
     const confirmButton = screen.getByRole('button', { name: DELETE_BUTTON_REGEX });
     await user.click(confirmButton);
 
     await waitFor(() => {
-      expect(deleteKnowledgeBaseMock).toHaveBeenCalledWith({
-        id: 'kb-1',
-      });
       expect(deleteKnowledgeBaseMock).toHaveBeenCalledTimes(1);
+      expect(deleteKnowledgeBaseMock).toHaveBeenCalledWith(
+        create(DeleteKnowledgeBaseRequestSchema, {
+          id: 'kb-1',
+        }),
+        expect.anything()
+      );
     });
-  });
-
-  test('should navigate to knowledge base details when clicking on row', async () => {
-    const user = userEvent.setup();
-
-    const kb1 = create(KnowledgeBaseSchema, {
-      id: 'test-kb-123',
-      displayName: 'Test Knowledge Base',
-      description: 'Test description',
-      tags: {},
-    });
-
-    const listKnowledgeBasesResponse = create(ListKnowledgeBasesResponseSchema, {
-      knowledgeBases: [kb1],
-      nextPageToken: '',
-    });
-
-    const listKnowledgeBasesMock = vi.fn().mockReturnValue(listKnowledgeBasesResponse);
-
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listKnowledgeBases, listKnowledgeBasesMock);
-    });
-
-    render(
-      <MemoryRouter>
-        <KnowledgeBaseList />
-      </MemoryRouter>,
-      { transport }
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Knowledge Base')).toBeVisible();
-    });
-
-    const row = screen.getByText('Test Knowledge Base').closest('tr');
-    if (row) {
-      await user.click(row);
-    }
   });
 
   test('should display loading state when fetching knowledge bases', async () => {

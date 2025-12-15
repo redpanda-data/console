@@ -373,7 +373,13 @@ export const KnowledgeBaseListPage = () => {
 
   const handleRowClick = (knowledgeBaseId: string, event: React.MouseEvent) => {
     const target = event.target as HTMLElement;
-    if (target.closest('[data-actions-column]') || target.closest('[role="menuitem"]') || target.closest('button')) {
+    if (
+      target.closest('[data-actions-column]') ||
+      target.closest('[role="menuitem"]') ||
+      target.closest('[role="dialog"]') ||
+      target.closest('[role="alertdialog"]') ||
+      target.closest('button')
+    ) {
       return;
     }
     navigate(`/knowledgebases/${encodeURIComponent(knowledgeBaseId)}`);
