@@ -47,7 +47,6 @@ import { MetadataStep } from './metadata-step';
 import { FormSchema, type FormValues, initialValues } from './schemas';
 import { ToolsStep } from './tools-step';
 import { useMetadataValidation } from './use-metadata-validation';
-import { RemoteMCPBackButton } from '../remote-mcp-back-button';
 
 const TOOL_FIELD_REGEX = /mcp_server\.tools\.([^.]+)\.(.+)/;
 
@@ -361,12 +360,9 @@ export const RemoteMCPCreatePage: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
-      <div className="space-y-4">
-        <RemoteMCPBackButton />
-        <div className="space-y-2">
-          <Heading level={1}>Create MCP Server</Heading>
-          <Text variant="muted">Set up a new managed MCP server with custom tools and configurations.</Text>
-        </div>
+      <div className="space-y-2">
+        <Heading level={1}>Create MCP Server</Heading>
+        <Text variant="muted">Set up a new managed MCP server with custom tools and configurations.</Text>
       </div>
 
       <Stepper.Provider className="space-y-4" variant="horizontal">
