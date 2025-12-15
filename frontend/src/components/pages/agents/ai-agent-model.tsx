@@ -84,19 +84,39 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     label: 'OpenAI',
     icon: OpenAILogo,
     models: [
+      // TODO: Once we support these models, uncomment the lines below
+      // {
+      //   value: 'gpt-5.2',
+      //   name: 'gpt-5.2',
+      //   description: 'The best model for coding and agentic tasks across industries',
+      // },
+      // {
+      //   value: 'gpt-5.1',
+      //   name: 'gpt-5.1',
+      //   description: 'The best model for coding and agentic tasks with configurable reasoning effort',
+      // },
       {
         value: 'gpt-5',
         name: 'gpt-5',
-        description: 'The best model for coding and agentic tasks across domains',
+        description:
+          'Previous intelligent reasoning model for coding and agentic tasks with configurable reasoning effort',
       },
       {
         value: 'gpt-5-mini',
         name: 'gpt-5-mini',
-        description: 'A faster, cost-efficient version of gpt-5 for well-defined tasks',
+        description: 'A faster, cost-efficient version of GPT-5 for well-defined tasks',
+      },
+      {
+        value: 'gpt-5-nano',
+        name: 'gpt-5-nano',
+        description: 'Fastest, most cost-efficient version of GPT-5',
       },
     ],
   },
   anthropic: {
+    /**
+     * @see https://platform.claude.com/docs/en/about-claude/models/overview
+     */
     label: 'Anthropic',
     icon: AnthropicLogo,
     models: [
@@ -118,6 +138,9 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     ],
   },
   google: {
+    /**
+     * @see https://ai.google.dev/gemini-api/docs/models
+     */
     label: 'Google',
     icon: GeminiLogo,
     models: [
