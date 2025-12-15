@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
+import { CLOUD_MANAGED_TAG_KEYS, isCloudManagedTagKey } from 'components/constants';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
@@ -178,12 +179,12 @@ const buildTagsMap = (
 ): { [key: string]: string } => {
   const tagsMap: { [key: string]: string } = {};
 
-  // Preserve internal tags
-  if (originalTags.service_account_id) {
-    tagsMap.service_account_id = originalTags.service_account_id;
+  // Preserve system-generated tags
+  if (originalTags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID]) {
+    tagsMap[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID] = originalTags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID];
   }
-  if (originalTags.secret_id) {
-    tagsMap.secret_id = originalTags.secret_id;
+  if (originalTags[CLOUD_MANAGED_TAG_KEYS.SECRET_ID]) {
+    tagsMap[CLOUD_MANAGED_TAG_KEYS.SECRET_ID] = originalTags[CLOUD_MANAGED_TAG_KEYS.SECRET_ID];
   }
 
   // Add user-defined tags
@@ -314,7 +315,7 @@ export const AIAgentConfigurationTab = () => {
         resources: { tier: getResourceTierFromAgent(aiAgentData.aiAgent.resources) },
         selectedMcpServers: Object.values(aiAgentData.aiAgent.mcpServers).map((server) => server.id),
         tags: Object.entries(aiAgentData.aiAgent.tags)
-          .filter(([key]) => key !== 'secret_id' && key !== 'service_account_id')
+          .filter(([key]) => !isCloudManagedTagKey(key))
           .map(([key, value]) => ({ key, value })),
       };
     }
@@ -380,6 +381,14 @@ export const AIAgentConfigurationTab = () => {
     const currentData = getCurrentData();
     if (!currentData) {
       return;
+    }
+
+    // Validate that user tags don't use reserved keys
+    for (const tag of currentData.tags) {
+      if (isCloudManagedTagKey(tag.key.trim())) {
+        toast.error(`Tag key "${tag.key.trim()}" is reserved for system use`);
+        return;
+      }
     }
 
     try {

@@ -18,3 +18,17 @@ export const FEATURE_FLAGS = {
   enableMcpServiceAccount: false,
   shadowlinkCloudUi: false,
 };
+
+// Cloud-managed tag keys for service account integration
+// These tags are created automatically when enableMcpServiceAccount is enabled
+// and are critical for cleanup operations during deletion in Redpanda Cloud
+export const CLOUD_MANAGED_TAG_KEYS = {
+  SERVICE_ACCOUNT_ID: 'rp_cloud_service_account_id',
+  SECRET_ID: 'rp_cloud_secret_id',
+} as const;
+
+// Helper function to check if a tag key is cloud-managed
+export const isCloudManagedTagKey = (key: string): boolean =>
+  Object.values(CLOUD_MANAGED_TAG_KEYS).includes(
+    key as (typeof CLOUD_MANAGED_TAG_KEYS)[keyof typeof CLOUD_MANAGED_TAG_KEYS]
+  );

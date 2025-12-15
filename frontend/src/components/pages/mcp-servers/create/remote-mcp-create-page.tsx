@@ -26,7 +26,7 @@ import {
 } from 'components/ui/service-account/service-account-selector';
 import { ExpandedYamlDialog } from 'components/ui/yaml/expanded-yaml-dialog';
 import { useYamlLabelSync } from 'components/ui/yaml/use-yaml-label-sync';
-import { config, isFeatureFlagEnabled } from 'config';
+import { isFeatureFlagEnabled } from 'config';
 import { ArrowLeft, FileText, Hammer, Loader2 } from 'lucide-react';
 import { MCPServer_ServiceAccountSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -35,6 +35,11 @@ import { useCreateMCPServerMutation, useLintMCPConfigMutation } from 'react-quer
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import {
+  addServiceAccountTags,
+  generateServiceAccountName,
+  getServiceAccountNamePrefix,
+} from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { getTierById } from './form-helpers';
@@ -100,13 +105,12 @@ export const RemoteMCPCreatePage: React.FC = () => {
   // Auto-generate service account name when MCP server name changes
   useEffect(() => {
     if (displayName) {
-      const clusterType = config.isServerless ? 'serverless' : 'cluster';
-      const sanitizedServerName = displayName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-      const generatedName = `${clusterType}-${config.clusterId}-mcp-${sanitizedServerName}-sa`;
+      const generatedName = generateServiceAccountName(displayName, 'mcp');
+      const currentValue = form.getValues('serviceAccountName');
+      const prefix = getServiceAccountNamePrefix('mcp');
 
       // Only update if the field is empty or matches the previous auto-generated pattern
-      const currentValue = form.getValues('serviceAccountName');
-      if (!currentValue || currentValue.startsWith(`${clusterType}-${config.clusterId}-mcp-`)) {
+      if (!currentValue || currentValue.startsWith(prefix)) {
         form.setValue('serviceAccountName', generatedName, { shouldValidate: false });
       }
     }
@@ -317,9 +321,8 @@ export const RemoteMCPCreatePage: React.FC = () => {
 
       const { secretName, serviceAccountId } = serviceAccountResult;
 
-      // Add service_account_id and secret_id to tags for easy deletion
-      tagsMap.service_account_id = serviceAccountId;
-      tagsMap.secret_id = secretName;
+      // Add system-generated service account tags
+      addServiceAccountTags(tagsMap, serviceAccountId, secretName);
 
       serviceAccountConfig = create(MCPServer_ServiceAccountSchema, {
         clientId: `\${secrets.${secretName}.client_id}`,
