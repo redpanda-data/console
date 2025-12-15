@@ -14,6 +14,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -171,6 +172,48 @@ func (s *APIIntegrationTestSuite) TestCreateSchemaWithNormalize() {
 	require := require.New(t)
 	assert := assert.New(t)
 
+	// Helper function to create schema and return ID
+	createSchema := func(ctx context.Context, subject string, schema string, normalize *bool) (int, error) {
+		var req any
+		if normalize != nil {
+			reqWithParams := struct {
+				Schema string `json:"schema"`
+				Type   string `json:"schemaType"`
+				Params struct {
+					Normalize bool `json:"normalize"`
+				} `json:"params"`
+			}{
+				Schema: schema,
+				Type:   sr.TypeProtobuf.String(),
+			}
+			reqWithParams.Params.Normalize = *normalize
+			req = reqWithParams
+		} else {
+			req = struct {
+				Schema string `json:"schema"`
+				Type   string `json:"schemaType"`
+			}{
+				Schema: schema,
+				Type:   sr.TypeProtobuf.String(),
+			}
+		}
+
+		res, body := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/"+subject+"/versions", req)
+		if res.StatusCode != http.StatusOK {
+			return 0, fmt.Errorf("unexpected status code: %d", res.StatusCode)
+		}
+
+		createResponse := struct {
+			ID int `json:"id"`
+		}{}
+		err := json.Unmarshal(body, &createResponse)
+		if err != nil {
+			return 0, err
+		}
+
+		return createResponse.ID, nil
+	}
+
 	t.Run("create schema with normalize=false", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
@@ -182,27 +225,10 @@ enum Level {
   LEVEL_CRITICAL = 2;
   LEVEL_NORMAL = 1;
 }`
-		req := struct {
-			Schema string `json:"schema"`
-			Type   string `json:"schemaType"`
-			Params struct {
-				Normalize bool `json:"normalize"`
-			} `json:"params"`
-		}{
-			Schema: schemaStr,
-			Type:   sr.TypeProtobuf.String(),
-		}
-		req.Params.Normalize = false
-
-		res, body := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/test-normalize-false/versions", req)
-		require.Equal(200, res.StatusCode)
-
-		createResponse := struct {
-			ID int `json:"id"`
-		}{}
-		err := json.Unmarshal(body, &createResponse)
+		normalize := false
+		schemaID, err := createSchema(ctx, "test-normalize-false", schemaStr, &normalize)
 		require.NoError(err)
-		assert.Greater(createResponse.ID, 0, "schema ID should be returned")
+		assert.Greater(schemaID, 0, "schema ID should be returned")
 	})
 
 	t.Run("create schema without normalize param (default false)", func(t *testing.T) {
@@ -215,23 +241,9 @@ enum State {
   STATE_UNSPECIFIED = 0;
   STATE_ACTIVE = 1;
 }`
-		req := struct {
-			Schema string `json:"schema"`
-			Type   string `json:"schemaType"`
-		}{
-			Schema: schemaStr,
-			Type:   sr.TypeProtobuf.String(),
-		}
-
-		res, body := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/test-normalize-default/versions", req)
-		require.Equal(200, res.StatusCode)
-
-		createResponse := struct {
-			ID int `json:"id"`
-		}{}
-		err := json.Unmarshal(body, &createResponse)
+		schemaID, err := createSchema(ctx, "test-normalize-default", schemaStr, nil)
 		require.NoError(err)
-		assert.Greater(createResponse.ID, 0, "schema ID should be returned")
+		assert.Greater(schemaID, 0, "schema ID should be returned")
 	})
 
 	t.Run("normalize=true prevents duplicates with different enum value order", func(t *testing.T) {
@@ -246,28 +258,9 @@ enum Role {
   ROLE_ADMIN = 2;
   ROLE_USER = 1;
 }`
-
-		req1 := struct {
-			Schema string `json:"schema"`
-			Type   string `json:"schemaType"`
-			Params struct {
-				Normalize bool `json:"normalize"`
-			} `json:"params"`
-		}{
-			Schema: schema1,
-			Type:   sr.TypeProtobuf.String(),
-		}
-		req1.Params.Normalize = true
-
-		res1, body1 := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/test-normalize-enum-order/versions", req1)
-		require.Equal(200, res1.StatusCode, "first schema creation with normalize=true should succeed")
-
-		createResponse1 := struct {
-			ID int `json:"id"`
-		}{}
-		err := json.Unmarshal(body1, &createResponse1)
-		require.NoError(err)
-		firstSchemaID := createResponse1.ID
+		normalize := true
+		firstSchemaID, err := createSchema(ctx, "test-normalize-enum-order", schema1, &normalize)
+		require.NoError(err, "first schema creation with normalize=true should succeed")
 		assert.Greater(firstSchemaID, 0, "first schema ID should be returned")
 
 		// Second schema with enum values in DIFFERENT order [0, 1, 2]
@@ -278,28 +271,8 @@ enum Role {
   ROLE_USER = 1;
   ROLE_ADMIN = 2;
 }`
-
-		req2 := struct {
-			Schema string `json:"schema"`
-			Type   string `json:"schemaType"`
-			Params struct {
-				Normalize bool `json:"normalize"`
-			} `json:"params"`
-		}{
-			Schema: schema2,
-			Type:   sr.TypeProtobuf.String(),
-		}
-		req2.Params.Normalize = true
-
-		res2, body2 := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/test-normalize-enum-order/versions", req2)
-		require.Equal(200, res2.StatusCode, "second schema creation with normalize=true should succeed")
-
-		createResponse2 := struct {
-			ID int `json:"id"`
-		}{}
-		err = json.Unmarshal(body2, &createResponse2)
-		require.NoError(err)
-		secondSchemaID := createResponse2.ID
+		secondSchemaID, err := createSchema(ctx, "test-normalize-enum-order", schema2, &normalize)
+		require.NoError(err, "second schema creation with normalize=true should succeed")
 
 		assert.Equal(firstSchemaID, secondSchemaID, "with normalize=true, schemas with different enum value order should produce the same schema ID")
 	})
@@ -325,28 +298,9 @@ enum MyEnumA {
   ENUMA_VALUE2 = 2;
   ENUMA_VALUE1 = 1;
 }`
-
-		req1 := struct {
-			Schema string `json:"schema"`
-			Type   string `json:"schemaType"`
-			Params struct {
-				Normalize bool `json:"normalize"`
-			} `json:"params"`
-		}{
-			Schema: schema1,
-			Type:   sr.TypeProtobuf.String(),
-		}
-		req1.Params.Normalize = false
-
-		res1, body1 := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/test-proto-no-normalize-enum/versions", req1)
-		require.Equal(200, res1.StatusCode)
-
-		createResponse1 := struct {
-			ID int `json:"id"`
-		}{}
-		err := json.Unmarshal(body1, &createResponse1)
+		normalize := false
+		firstSchemaID, err := createSchema(ctx, "test-proto-no-normalize-enum", schema1, &normalize)
 		require.NoError(err)
-		firstSchemaID := createResponse1.ID
 		assert.Greater(firstSchemaID, 0, "first schema ID should be returned")
 
 		// Second schema with enum values in DIFFERENT order [0, 1, 2]
@@ -363,78 +317,21 @@ enum MyEnumA {
   ENUMA_VALUE1 = 1;
   ENUMA_VALUE2 = 2;
 }`
-
-		req2 := struct {
-			Schema string `json:"schema"`
-			Type   string `json:"schemaType"`
-			Params struct {
-				Normalize bool `json:"normalize"`
-			} `json:"params"`
-		}{
-			Schema: schema2,
-			Type:   sr.TypeProtobuf.String(),
-		}
-		req2.Params.Normalize = false
-
-		res2, body2 := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/test-proto-no-normalize-enum/versions", req2)
-		require.Equal(200, res2.StatusCode)
-
-		createResponse2 := struct {
-			ID int `json:"id"`
-		}{}
-		err = json.Unmarshal(body2, &createResponse2)
+		secondSchemaID, err := createSchema(ctx, "test-proto-no-normalize-enum", schema2, &normalize)
 		require.NoError(err)
-		secondSchemaID := createResponse2.ID
 
 		// Without normalize, enum value order differences should create different schema IDs
 		assert.NotEqual(firstSchemaID, secondSchemaID, "without normalize, schemas with different enum value order should create different schema IDs")
 
 		// Now test the SAME schemas with normalize=true on a different subject
-		req3 := struct {
-			Schema string `json:"schema"`
-			Type   string `json:"schemaType"`
-			Params struct {
-				Normalize bool `json:"normalize"`
-			} `json:"params"`
-		}{
-			Schema: schema1,
-			Type:   sr.TypeProtobuf.String(),
-		}
-		req3.Params.Normalize = true
-
-		res3, body3 := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/test-proto-with-normalize-enum/versions", req3)
-		require.Equal(200, res3.StatusCode)
-
-		createResponse3 := struct {
-			ID int `json:"id"`
-		}{}
-		err = json.Unmarshal(body3, &createResponse3)
+		normalizeTrue := true
+		thirdSchemaID, err := createSchema(ctx, "test-proto-with-normalize-enum", schema1, &normalizeTrue)
 		require.NoError(err)
-		thirdSchemaID := createResponse3.ID
 		assert.Greater(thirdSchemaID, 0, "third schema ID should be returned")
 
 		// Same schema with different enum value order but normalize=true
-		req4 := struct {
-			Schema string `json:"schema"`
-			Type   string `json:"schemaType"`
-			Params struct {
-				Normalize bool `json:"normalize"`
-			} `json:"params"`
-		}{
-			Schema: schema2,
-			Type:   sr.TypeProtobuf.String(),
-		}
-		req4.Params.Normalize = true
-
-		res4, body4 := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/test-proto-with-normalize-enum/versions", req4)
-		require.Equal(200, res4.StatusCode)
-
-		createResponse4 := struct {
-			ID int `json:"id"`
-		}{}
-		err = json.Unmarshal(body4, &createResponse4)
+		fourthSchemaID, err := createSchema(ctx, "test-proto-with-normalize-enum", schema2, &normalizeTrue)
 		require.NoError(err)
-		fourthSchemaID := createResponse4.ID
 
 		// With normalize=true, they should have the same ID
 		assert.Equal(thirdSchemaID, fourthSchemaID, "with normalize=true, schemas with different enum value order should produce the same schema ID")
