@@ -171,7 +171,8 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
       {/* Buttons */}
       <Flex gap="2">
         <Button
-          data-testid="schema-details-edit-compatibility-btn"disabledReason={
+          data-testid="schema-details-edit-compatibility-btn"
+          disabledReason={
             canManageSchemaRegistry === false ? "You don't have the 'canManageSchemaRegistry' permission" : undefined
           }
           onClick={() => navigate(`/schema-registry/subjects/${subjectNameEncoded}/edit-compatibility`)}
@@ -179,14 +180,16 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
         >
           Edit compatibility
         </Button>
-        <Buttondata-testid="schema-details-add-version-btn"
+        <Button
+          data-testid="schema-details-add-version-btn"
           disabledReason={canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined}
           onClick={() => navigate(`/schema-registry/subjects/${subjectNameEncoded}/add-version`)}
           variant="outline"
         >
           Add new version
         </Button>
-        <Buttondata-testid="schema-details-delete-subject-btn"
+        <Button
+          data-testid="schema-details-delete-subject-btn"
           disabledReason={canDeleteSchemas === false ? "You don't have the 'canDeleteSchemas' permission" : undefined}
           onClick={() => handleDeleteSubject(isSoftDeleted ?? false)}
           variant="outline"
@@ -197,7 +200,8 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
 
       {/* Definition / Diff */}
       <Tabs
-        data-testid="schema-details-tabs"isFitted
+        data-testid="schema-details-tabs"
+        isFitted
         items={[
           {
             key: 'definition',
@@ -643,7 +647,7 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
               <ListItem key={ref.name + ref.subject + ref.version}>
                 <Link
                   as={ReactRouterLink}
-                    data-testid={`schema-reference-link-${ref.subject}`}
+                  data-testid={`schema-reference-link-${ref.subject}`}
                   to={`/schema-registry/subjects/${encodeURIComponentPercents(ref.subject)}?version=${ref.version}`}
                 >
                   {ref.subject}
@@ -677,7 +681,7 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
                 <ListItem key={ref.subject + ref.version}>
                   <Link
                     as={ReactRouterLink}
-                      data-testid={`schema-referenced-by-link-${ref.subject}`}
+                    data-testid={`schema-referenced-by-link-${ref.subject}`}
                     to={`/schema-registry/subjects/${encodeURIComponentPercents(ref.subject)}?version=${ref.version}`}
                   >
                     {ref.subject}

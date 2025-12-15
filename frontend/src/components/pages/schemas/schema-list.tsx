@@ -195,7 +195,8 @@ const SchemaList: FC = () => {
       </Flex>
 
       <Button
-        data-testid="schema-list-edit-compatibility-btn"disabledReason={
+        data-testid="schema-list-edit-compatibility-btn"
+        disabledReason={
           api.userData?.canManageSchemaRegistry === false
             ? "You don't have the 'canManageSchemaRegistry' permission"
             : undefined
@@ -306,7 +307,8 @@ const SchemaList: FC = () => {
               >
                 Create new schema
               </Button>
-              <Checkbox data-testid="schema-list-show-soft-deleted-checkbox"
+              <Checkbox
+                data-testid="schema-list-show-soft-deleted-checkbox"
                 isChecked={showSoftDeleted}
                 onChange={(e) => {
                   setShowSoftDeleted(e.target.checked);
@@ -366,7 +368,7 @@ const SchemaList: FC = () => {
                   cell: ({ row: { original: r } }) => (
                     <Button
                       color="gray.500"
-                    data-testid={`schema-list-delete-btn-${r.name}`}
+                      data-testid={`schema-list-delete-btn-${r.name}`}
                       disabledReason={
                         api.userData?.canDeleteSchemas === false
                           ? "You don't have the 'canDeleteSchemas' permission"
