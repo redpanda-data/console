@@ -213,7 +213,7 @@ const MultiSelectValue = React.forwardRef<React.ComponentRef<'div'>, MultiSelect
     return (
       <TooltipProvider delayDuration={300}>
         <div
-          className={cn('flex flex-1 flex-nowrap items-center gap-0.25 overflow-x-scroll', className)}
+          className={cn('flex flex-1 flex-nowrap items-center gap-0.25 overflow-x-hidden', className)}
           {...props}
           ref={forwardRef}
         >
