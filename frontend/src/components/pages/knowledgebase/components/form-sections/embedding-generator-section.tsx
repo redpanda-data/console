@@ -16,7 +16,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { EmbeddingModelSelect } from 'components/ui/ai/embedding-model-select';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
-import { ExternalLink } from 'lucide-react';
+import { Combine, ExternalLink } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 
@@ -36,7 +36,10 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
 }) => (
   <Card size="full">
     <CardHeader>
-      <CardTitle>Embedding Generator</CardTitle>
+      <CardTitle className="flex items-center gap-2">
+        <Combine className="h-4 w-4" />
+        <Text className="font-semibold">Embedding Generator</Text>
+      </CardTitle>
     </CardHeader>
     <CardContent>
       <div className="space-y-4">

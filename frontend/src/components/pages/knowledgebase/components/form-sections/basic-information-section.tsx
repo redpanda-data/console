@@ -13,7 +13,9 @@ import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui
 import { Field, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
+import { Settings } from 'lucide-react';
 import {
   Controller,
   type FieldArrayWithId,
@@ -39,7 +41,10 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
 }) => (
   <Card size="full">
     <CardHeader>
-      <CardTitle>Basic Information</CardTitle>
+      <CardTitle className="flex items-center gap-2">
+        <Settings className="h-4 w-4" />
+        <Text className="font-semibold">Basic Information</Text>
+      </CardTitle>
     </CardHeader>
     <CardContent>
       <div className="space-y-4">

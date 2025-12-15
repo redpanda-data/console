@@ -12,9 +12,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { RerankerModelSelect } from 'components/ui/ai/reranker-model-select';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Shuffle } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 
@@ -30,7 +31,10 @@ type RetrievalSectionProps = {
 export const RetrievalSection: React.FC<RetrievalSectionProps> = ({ form, availableSecrets, rerankerEnabled }) => (
   <Card size="full">
     <CardHeader>
-      <CardTitle>Retrieval</CardTitle>
+      <CardTitle className="flex items-center gap-2">
+        <Shuffle className="h-4 w-4" />
+        <Text className="font-semibold">Retrieval</Text>
+      </CardTitle>
     </CardHeader>
     <CardContent>
       <div className="space-y-4">

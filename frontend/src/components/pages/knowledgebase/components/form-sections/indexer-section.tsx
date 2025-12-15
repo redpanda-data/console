@@ -19,10 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { RegexPatternsField } from 'components/ui/regex/regex-patterns-field';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
 import { TopicSelector } from 'components/ui/topic/topic-selector';
 import { UserSelector } from 'components/ui/user/user-selector';
+import { TableOfContents } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { SASLMechanism } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { Controller, type UseFormReturn } from 'react-hook-form';
@@ -37,7 +39,10 @@ type IndexerSectionProps = {
 export const IndexerSection: React.FC<IndexerSectionProps> = ({ form, availableSecrets }) => (
   <Card size="full">
     <CardHeader>
-      <CardTitle>Indexer</CardTitle>
+      <CardTitle className="flex items-center gap-2">
+        <TableOfContents className="h-4 w-4" />
+        <Text className="font-semibold">Indexer</Text>
+      </CardTitle>
     </CardHeader>
     <CardContent>
       <div className="space-y-4">

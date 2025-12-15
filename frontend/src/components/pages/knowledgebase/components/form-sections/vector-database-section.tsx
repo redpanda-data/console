@@ -13,7 +13,9 @@ import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { FormLabel } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
+import { Database } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 
@@ -27,7 +29,10 @@ type VectorDatabaseSectionProps = {
 export const VectorDatabaseSection: React.FC<VectorDatabaseSectionProps> = ({ form, availableSecrets }) => (
   <Card size="full">
     <CardHeader>
-      <CardTitle>Vector Database</CardTitle>
+      <CardTitle className="flex items-center gap-2">
+        <Database className="h-4 w-4" />
+        <Text className="font-semibold">Vector Database</Text>
+      </CardTitle>
     </CardHeader>
     <CardContent>
       <div className="space-y-4">
