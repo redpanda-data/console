@@ -11,7 +11,7 @@
 
 import { Edit, Plus, Save, Settings, Trash2 } from 'lucide-react';
 import React, { useEffect } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { Controller, useFormContext } from 'react-hook-form';
 
 import type {
   KnowledgeBase,
@@ -20,7 +20,8 @@ import type {
 import { Button } from '../../../redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { DynamicCodeBlock } from '../../../redpanda-ui/components/code-block-dynamic';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../redpanda-ui/components/form';
+import { Field, FieldError, FieldLabel } from '../../../redpanda-ui/components/field';
+import { FormItem, FormLabel } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Textarea } from '../../../redpanda-ui/components/textarea';
 import { Heading, Text } from '../../../redpanda-ui/components/typography';
@@ -126,17 +127,15 @@ export const BasicInfoSection = ({
           </div>
 
           {isEditMode ? (
-            <FormField
+            <Controller
               control={control}
               name="displayName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Display Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel>Display Name</FieldLabel>
+                  <Input {...field} />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
               )}
             />
           ) : (
@@ -147,17 +146,15 @@ export const BasicInfoSection = ({
           )}
 
           {isEditMode ? (
-            <FormField
+            <Controller
               control={control}
               name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} rows={3} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel>Description</FieldLabel>
+                  <Textarea {...field} rows={3} />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
               )}
             />
           ) : (

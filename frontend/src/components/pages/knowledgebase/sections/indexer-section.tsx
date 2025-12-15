@@ -22,7 +22,7 @@ import type {
 import { useListSecretsQuery } from '../../../../react-query/api/secret';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Field, FieldDescription, FieldError, FieldLabel } from '../../../redpanda-ui/components/field';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../redpanda-ui/components/form';
+import { FormItem, FormLabel } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
 import { Text } from '../../../redpanda-ui/components/typography';
@@ -71,38 +71,36 @@ export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProp
           {isEditMode ? (
             <>
               <div className="flex gap-4">
-                <FormField
+                <Controller
                   control={control}
                   name="indexer.chunkSize"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel required>Chunk Size</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          min={1}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
-                          type="number"
-                        />
-                      </FormControl>
-                    </FormItem>
+                  render={({ field, fieldState }) => (
+                    <Field className="flex-1" data-invalid={fieldState.invalid}>
+                      <FieldLabel required>Chunk Size</FieldLabel>
+                      <Input
+                        {...field}
+                        min={1}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        type="number"
+                      />
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                    </Field>
                   )}
                 />
-                <FormField
+                <Controller
                   control={control}
                   name="indexer.chunkOverlap"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel required>Chunk Overlap</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          min={0}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
-                          type="number"
-                        />
-                      </FormControl>
-                    </FormItem>
+                  render={({ field, fieldState }) => (
+                    <Field className="flex-1" data-invalid={fieldState.invalid}>
+                      <FieldLabel required>Chunk Overlap</FieldLabel>
+                      <Input
+                        {...field}
+                        min={0}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        type="number"
+                      />
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                    </Field>
                   )}
                 />
               </div>
@@ -134,27 +132,34 @@ export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProp
                 )}
               />
 
-              <FormField
+              <Controller
                 control={control}
                 name="indexer.inputTopics"
-                render={() => (
-                  <FormItem>
-                    <FormMessage />
-                  </FormItem>
+                render={({ fieldState }) => (
+                  <>
+                    {fieldState.invalid && (
+                      <Field data-invalid={true}>
+                        <FieldError errors={[fieldState.error]} />
+                      </Field>
+                    )}
+                  </>
                 )}
               />
 
-              <FormField
+              <Controller
                 control={control}
                 name="indexer.redpandaUsername"
-                render={({ field }) => (
-                  <UserSelector
-                    helperText="Select from existing Redpanda users"
-                    isRequired
-                    label="Redpanda Username"
-                    onChange={field.onChange}
-                    value={field.value || ''}
-                  />
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <UserSelector
+                      errorMessage={fieldState.error?.message}
+                      helperText="Select from existing Redpanda users"
+                      isRequired
+                      label="Redpanda Username"
+                      onChange={field.onChange}
+                      value={field.value || ''}
+                    />
+                  </Field>
                 )}
               />
 
@@ -186,21 +191,19 @@ export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProp
                 )}
               />
 
-              <FormField
+              <Controller
                 control={control}
                 name="indexer.redpandaSaslMechanism"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel required>SASL Mechanism</FormLabel>
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel required>SASL Mechanism</FieldLabel>
                     <Select
                       onValueChange={(value) => field.onChange(Number(value))}
                       value={String(field.value || SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256)}
                     >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={String(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256)}>
                           SCRAM-SHA-256
@@ -210,7 +213,8 @@ export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProp
                         </SelectItem>
                       </SelectContent>
                     </Select>
-                  </FormItem>
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
                 )}
               />
             </>

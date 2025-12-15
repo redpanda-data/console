@@ -27,7 +27,7 @@ import { useListSecretsQuery } from '../../../../react-query/api/secret';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Checkbox } from '../../../redpanda-ui/components/checkbox';
 import { Field, FieldDescription, FieldError, FieldLabel } from '../../../redpanda-ui/components/field';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../redpanda-ui/components/form';
+import { FormItem, FormLabel } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Text } from '../../../redpanda-ui/components/typography';
 import { RerankerModelSelect } from '../../../ui/ai/reranker-model-select';
@@ -146,74 +146,71 @@ export const RetrieverSection = ({ knowledgeBase, isEditMode }: RetrieverSection
         <div className="flex flex-col gap-4">
           {isEditMode ? (
             <>
-              <FormField
+              <Controller
                 control={control}
                 name="retriever.reranker.enabled"
                 render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center gap-2">
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                      <FormLabel className="mb-0 font-medium">Enable Reranker (Recommended)</FormLabel>
+                  <div className="flex items-center gap-2">
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    <div className="space-y-1">
+                      <FieldLabel className="mb-0 font-medium">Enable Reranker (Recommended)</FieldLabel>
+                      <FieldDescription>
+                        Reranker improves search quality by reordering retrieved documents based on relevance.
+                      </FieldDescription>
                     </div>
-                    <p className="mt-1 text-muted-foreground text-sm">
-                      Reranker improves search quality by reordering retrieved documents based on relevance.
-                    </p>
-                  </FormItem>
+                  </div>
                 )}
               />
 
               {formData.retriever?.reranker?.enabled && (
                 <>
-                  <FormItem>
-                    <FormLabel required>Model</FormLabel>
-                    <FormControl>
-                      <RerankerModelSelect
-                        models={COHERE_RERANKER_MODELS}
-                        onValueChange={(value) => {
-                          // Get current form state synchronously to avoid stale closure
-                          const currentFormState = getValues();
+                  <Field>
+                    <FieldLabel required>Model</FieldLabel>
+                    <RerankerModelSelect
+                      models={COHERE_RERANKER_MODELS}
+                      onValueChange={(value) => {
+                        // Get current form state synchronously to avoid stale closure
+                        const currentFormState = getValues();
 
-                          // Extract current API key to preserve it when updating model
-                          const currentApiKey =
-                            currentFormState.retriever?.reranker?.provider?.provider.case === 'cohere'
-                              ? currentFormState.retriever.reranker.provider.provider.value.apiKey
-                              : '';
+                        // Extract current API key to preserve it when updating model
+                        const currentApiKey =
+                          currentFormState.retriever?.reranker?.provider?.provider.case === 'cohere'
+                            ? currentFormState.retriever.reranker.provider.provider.value.apiKey
+                            : '';
 
-                          // Rebuild entire retriever structure with new model and preserved API key
-                          // Update at 'retriever' level to ensure updateMask path is correct for backend
-                          setValue(
-                            'retriever',
-                            create(KnowledgeBaseUpdate_RetrieverSchema, {
-                              reranker: create(KnowledgeBaseUpdate_Retriever_RerankerSchema, {
-                                enabled: true,
-                                provider: create(KnowledgeBaseUpdate_Retriever_Reranker_ProviderSchema, {
-                                  provider: {
-                                    case: 'cohere',
-                                    value: create(KnowledgeBaseUpdate_Retriever_Reranker_Provider_CohereSchema, {
-                                      model: value,
-                                      apiKey: currentApiKey || '',
-                                    }),
-                                  },
-                                }),
+                        // Rebuild entire retriever structure with new model and preserved API key
+                        // Update at 'retriever' level to ensure updateMask path is correct for backend
+                        setValue(
+                          'retriever',
+                          create(KnowledgeBaseUpdate_RetrieverSchema, {
+                            reranker: create(KnowledgeBaseUpdate_Retriever_RerankerSchema, {
+                              enabled: true,
+                              provider: create(KnowledgeBaseUpdate_Retriever_Reranker_ProviderSchema, {
+                                provider: {
+                                  case: 'cohere',
+                                  value: create(KnowledgeBaseUpdate_Retriever_Reranker_Provider_CohereSchema, {
+                                    model: value,
+                                    apiKey: currentApiKey || '',
+                                  }),
+                                },
                               }),
                             }),
-                            {
-                              shouldDirty: true,
-                              shouldTouch: true,
-                              shouldValidate: true,
-                            }
-                          );
-                        }}
-                        placeholder="Select reranker model"
-                        value={
-                          formData.retriever?.reranker?.provider?.provider.case === 'cohere'
-                            ? formData.retriever.reranker.provider.provider.value.model || ''
-                            : ''
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                          }),
+                          {
+                            shouldDirty: true,
+                            shouldTouch: true,
+                            shouldValidate: true,
+                          }
+                        );
+                      }}
+                      placeholder="Select reranker model"
+                      value={
+                        formData.retriever?.reranker?.provider?.provider.case === 'cohere'
+                          ? formData.retriever.reranker.provider.provider.value.model || ''
+                          : ''
+                      }
+                    />
+                  </Field>
 
                   <Controller
                     control={control}

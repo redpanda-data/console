@@ -10,10 +10,18 @@
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import { FormDescription, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from 'components/redpanda-ui/components/field';
 import { ChatModelSelect } from 'components/ui/ai/chat-model-select';
 import { ExternalLink } from 'lucide-react';
-import type { UseFormReturn } from 'react-hook-form';
+import { Controller, type UseFormReturn } from 'react-hook-form';
 
 import { MODEL_OPTIONS_BY_PROVIDER, PROVIDER_INFO } from '../../../agents/ai-agent-model';
 import type { KnowledgeBaseCreateFormValues } from '../../schemas';
@@ -28,36 +36,39 @@ export const GenerationSection: React.FC<GenerationSectionProps> = ({ form }) =>
       <CardTitle>Generation</CardTitle>
     </CardHeader>
     <CardContent>
-      <div className="space-y-4">
-        <FormField
-          control={form.control}
-          name="generationModel"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel required>Model</FormLabel>
-              <ChatModelSelect
-                onValueChange={field.onChange}
-                providerGroups={MODEL_OPTIONS_BY_PROVIDER}
-                providerInfo={PROVIDER_INFO}
-                value={field.value}
-              />
-              <FormDescription>
-                See{' '}
-                <a
-                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
-                  href="https://platform.openai.com/docs/models/overview"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  OpenAI models <ExternalLink className="h-3 w-3" />
-                </a>{' '}
-                for available models.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
+      <FieldGroup>
+        <FieldSet>
+          <FieldLegend>Generation Model</FieldLegend>
+          <Controller
+            control={form.control}
+            name="generationModel"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel required>Model</FieldLabel>
+                <ChatModelSelect
+                  onValueChange={field.onChange}
+                  providerGroups={MODEL_OPTIONS_BY_PROVIDER}
+                  providerInfo={PROVIDER_INFO}
+                  value={field.value}
+                />
+                <FieldDescription>
+                  See{' '}
+                  <a
+                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                    href="https://platform.openai.com/docs/models/overview"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    OpenAI models <ExternalLink className="h-3 w-3" />
+                  </a>{' '}
+                  for available models.
+                </FieldDescription>
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+        </FieldSet>
+      </FieldGroup>
     </CardContent>
   </Card>
 );

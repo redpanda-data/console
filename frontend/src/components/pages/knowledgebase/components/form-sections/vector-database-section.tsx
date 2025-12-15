@@ -10,8 +10,15 @@
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
-import { FormLabel } from 'components/redpanda-ui/components/form';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
@@ -35,53 +42,53 @@ export const VectorDatabaseSection: React.FC<VectorDatabaseSectionProps> = ({ fo
       </CardTitle>
     </CardHeader>
     <CardContent>
-      <div className="space-y-4">
-        <div>
-          <FormLabel>Database Type</FormLabel>
-        </div>
+      <FieldGroup>
+        <FieldSet>
+          <FieldLegend>PostgreSQL Configuration</FieldLegend>
+          <FieldDescription>Configure your PostgreSQL database for vector storage</FieldDescription>
+          <Controller
+            control={form.control}
+            name="postgresDsn"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel required>PostgreSQL DSN</FieldLabel>
+                <SecretSelector
+                  availableSecrets={availableSecrets}
+                  customText={{
+                    dialogDescription:
+                      'Create a new secret for your PostgreSQL connection string. The secret will be stored securely.',
+                    secretNamePlaceholder: 'e.g., POSTGRES_DSN',
+                    secretValuePlaceholder: 'postgresql://user:password@host:port/database',
+                    secretValueDescription: 'PostgreSQL connection string',
+                    emptyStateDescription: 'Create a secret to securely store your PostgreSQL connection string',
+                  }}
+                  onChange={field.onChange}
+                  placeholder="postgresql://user:password@host:port/database"
+                  scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
+                  value={field.value}
+                />
+                <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
 
-        <Controller
-          control={form.control}
-          name="postgresDsn"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel required>PostgreSQL DSN</FieldLabel>
-              <SecretSelector
-                availableSecrets={availableSecrets}
-                customText={{
-                  dialogDescription:
-                    'Create a new secret for your PostgreSQL connection string. The secret will be stored securely.',
-                  secretNamePlaceholder: 'e.g., POSTGRES_DSN',
-                  secretValuePlaceholder: 'postgresql://user:password@host:port/database',
-                  secretValueDescription: 'PostgreSQL connection string',
-                  emptyStateDescription: 'Create a secret to securely store your PostgreSQL connection string',
-                }}
-                onChange={field.onChange}
-                placeholder="postgresql://user:password@host:port/database"
-                scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
-                value={field.value}
-              />
-              <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-
-        <Controller
-          control={form.control}
-          name="postgresTable"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel required>Table Name</FieldLabel>
-              <Input {...field} placeholder="my_table" />
-              <FieldDescription>
-                Must start with a letter and contain only letters, numbers, and underscores
-              </FieldDescription>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-      </div>
+          <Controller
+            control={form.control}
+            name="postgresTable"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel required>Table Name</FieldLabel>
+                <Input {...field} placeholder="my_table" />
+                <FieldDescription>
+                  Must start with a letter and contain only letters, numbers, and underscores
+                </FieldDescription>
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+        </FieldSet>
+      </FieldGroup>
     </CardContent>
   </Card>
 );
