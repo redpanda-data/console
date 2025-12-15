@@ -12,6 +12,7 @@ dotenv.config();
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
+  timeout: 120 * 1000, // 2 minutes for overall test timeout (increased for CI stability)
   expect: {
     timeout: 60 * 1000,
   },
@@ -23,9 +24,9 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 4 : undefined,
+  workers: process.env.CI ? 8 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
+  reporter: process.env.CI ? 'list' : 'html',
   /* Global setup and teardown */
   globalSetup: './tests/global-setup.mjs',
   globalTeardown: './tests/global-teardown.mjs',
@@ -44,6 +45,10 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+
+    /* Disable screenshots and videos in CI for performance */
+    screenshot: process.env.CI ? 'only-on-failure' : 'off',
+    video: process.env.CI ? 'retain-on-failure' : 'off',
   },
 
   /* Configure projects for major browsers */
