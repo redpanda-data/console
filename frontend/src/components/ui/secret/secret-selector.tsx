@@ -55,6 +55,19 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { z } from 'zod';
 
+// OpenAI API key validation pattern
+export const OPENAI_API_KEY_PATTERN = {
+  regex: /^sk-(proj-)?[A-Za-z0-9-_]{20,}$/,
+  message:
+    'Invalid OpenAI API key format. Must start with "sk-" or "sk-proj-" followed by at least 20 alphanumeric characters',
+};
+
+// Generic validation that accepts any non-empty string
+export const GENERIC_SECRET_VALUE_PATTERN = {
+  regex: /.+/,
+  message: 'Secret value is required',
+};
+
 export type SecretSelectorCustomText = {
   /** Dialog description shown when creating a new secret */
   dialogDescription: string;
