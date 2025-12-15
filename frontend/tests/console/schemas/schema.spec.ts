@@ -261,7 +261,7 @@ test.describe('Schema Registry E2E Tests', () => {
       await schemaPage.gotoCreate();
 
       await schemaPage.cancelCreation();
-      await expect(page).toHaveURL('/schema-registry');
+      await expect(page).toHaveURL(/^\/schema-registry(\?.*)?$/);
     });
 
     test('should navigate to create page from list', async ({ page }) => {

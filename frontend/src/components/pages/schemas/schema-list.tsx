@@ -235,7 +235,7 @@ const SchemaList: FC = () => {
       <Drawer direction="right" onOpenChange={setIsHelpSidebarOpen} open={isHelpSidebarOpen}>
         <DrawerContent aria-labelledby="schema-help-title" className="w-[600px] sm:max-w-[600px]" role="dialog">
           <DrawerHeader className="border-b">
-            <DrawerTitle data-testid="schema-search-header" id="schema-help-title">
+            <DrawerTitle data-testid="schema-help-title" id="schema-help-title">
               Schema Search Help
             </DrawerTitle>
           </DrawerHeader>
