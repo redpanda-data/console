@@ -11,6 +11,7 @@
 
 'use client';
 
+import { ConnectError } from '@connectrpc/connect';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -48,6 +49,7 @@ import { useDeleteSecretMutation } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { AIAgentActions } from './ai-agent-actions';
 import { AIAgentDeleteHandler, type AIAgentDeleteHandlerRef } from './ai-agent-delete-handler';
@@ -321,8 +323,9 @@ const AIAgentsListPageContent = ({
 
         // Show single success toast regardless of what was deleted
         toast.success('AI agent deleted successfully');
-      } catch (_error) {
-        toast.error('Failed to delete AI agent');
+      } catch (deleteError) {
+        const connectError = ConnectError.from(deleteError);
+        toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'delete', entity: 'AI agent' }));
       }
     },
     [deleteAIAgent, deleteSecret, deleteHandlerRef]

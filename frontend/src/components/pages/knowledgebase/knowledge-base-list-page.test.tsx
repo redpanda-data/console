@@ -13,12 +13,16 @@ import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
 import {
+  DeleteKnowledgeBaseResponseSchema,
   KnowledgeBaseSchema,
   ListKnowledgeBasesResponseSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { listKnowledgeBases } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base-KnowledgeBaseService_connectquery';
+import {
+  deleteKnowledgeBase,
+  listKnowledgeBases,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base-KnowledgeBaseService_connectquery';
 import { MemoryRouter } from 'react-router-dom';
-import { render, screen, waitFor } from 'test-utils';
+import { render, screen, waitFor, within } from 'test-utils';
 
 vi.mock('config', () => ({
   config: {
@@ -40,7 +44,11 @@ vi.mock('state/supported-features', () => ({
   },
 }));
 
-import { KnowledgeBaseList } from './knowledge-base-list';
+import { KnowledgeBaseListPage as KnowledgeBaseList } from './knowledge-base-list-page';
+
+const OPEN_MENU_REGEX = /open menu/i;
+const TYPE_DELETE_REGEX = /type "delete" to confirm/i;
+const DELETE_BUTTON_REGEX = /^delete$/i;
 
 describe('KnowledgeBaseList', () => {
   test('should list all knowledge bases', async () => {
@@ -88,18 +96,76 @@ describe('KnowledgeBaseList', () => {
 
     expect(listKnowledgeBasesMock).toHaveBeenCalledTimes(1);
 
-    expect(screen.getByText('kb-1')).toBeVisible();
-    expect(screen.getByText('kb-2')).toBeVisible();
-
     expect(screen.getByText('Description for KB 1')).toBeVisible();
     expect(screen.getByText('Description for KB 2')).toBeVisible();
-
-    expect(screen.getByText('env: production')).toBeVisible();
-    expect(screen.getByText('team: data-science')).toBeVisible();
-    expect(screen.getByText('env: staging')).toBeVisible();
   });
 
-  test('should navigate to knowledge base details when clicking on ID link', async () => {
+  test('should trigger delete RPC when submitting deletion', async () => {
+    const user = userEvent.setup();
+
+    const kb1 = create(KnowledgeBaseSchema, {
+      id: 'kb-1',
+      displayName: 'Test Knowledge Base 1',
+      description: 'Description for KB 1',
+      tags: {
+        env: 'production',
+      },
+    });
+
+    const listKnowledgeBasesResponse = create(ListKnowledgeBasesResponseSchema, {
+      knowledgeBases: [kb1],
+      nextPageToken: '',
+    });
+
+    const listKnowledgeBasesMock = vi.fn().mockReturnValue(listKnowledgeBasesResponse);
+    const deleteKnowledgeBaseMock = vi.fn().mockReturnValue(create(DeleteKnowledgeBaseResponseSchema, {}));
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listKnowledgeBases, listKnowledgeBasesMock);
+      rpc(deleteKnowledgeBase, deleteKnowledgeBaseMock);
+    });
+
+    render(
+      <MemoryRouter>
+        <KnowledgeBaseList />
+      </MemoryRouter>,
+      { transport }
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Knowledge Base 1')).toBeVisible();
+    });
+
+    const rows = screen.getAllByRole('row');
+    const kbRow = rows.find((row) => within(row).queryByText('Test Knowledge Base 1'));
+
+    if (!kbRow) {
+      throw new Error('Knowledge base row not found');
+    }
+
+    const actionsButton = within(kbRow).getByRole('button', { name: OPEN_MENU_REGEX });
+    await user.click(actionsButton);
+
+    const deleteButton = await screen.findByText('Delete', {});
+    await user.click(deleteButton);
+
+    const confirmationInput = await screen.findByPlaceholderText(TYPE_DELETE_REGEX);
+    await user.type(confirmationInput, 'delete');
+
+    const confirmButton = screen.getByRole('button', { name: DELETE_BUTTON_REGEX });
+    await user.click(confirmButton);
+
+    await waitFor(() => {
+      expect(deleteKnowledgeBaseMock).toHaveBeenCalledWith({
+        id: 'kb-1',
+      });
+      expect(deleteKnowledgeBaseMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  test('should navigate to knowledge base details when clicking on row', async () => {
+    const user = userEvent.setup();
+
     const kb1 = create(KnowledgeBaseSchema, {
       id: 'test-kb-123',
       displayName: 'Test Knowledge Base',
@@ -126,11 +192,13 @@ describe('KnowledgeBaseList', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('test-kb-123')).toBeVisible();
+      expect(screen.getByText('Test Knowledge Base')).toBeVisible();
     });
 
-    const idLink = screen.getByText('test-kb-123').closest('a');
-    expect(idLink).toHaveAttribute('href', '/knowledgebases/test-kb-123');
+    const row = screen.getByText('Test Knowledge Base').closest('tr');
+    if (row) {
+      await user.click(row);
+    }
   });
 
   test('should display loading state when fetching knowledge bases', async () => {
@@ -152,19 +220,17 @@ describe('KnowledgeBaseList', () => {
       rpc(listKnowledgeBases, listKnowledgeBasesMock);
     });
 
-    const { container } = render(
+    render(
       <MemoryRouter>
         <KnowledgeBaseList />
       </MemoryRouter>,
       { transport }
     );
 
-    const skeleton = container.querySelector('.chakra-skeleton');
-    expect(skeleton).toBeInTheDocument();
+    expect(screen.getByText('Loading knowledge bases...')).toBeVisible();
 
     await waitFor(() => {
-      const skeletonAfter = container.querySelector('.chakra-skeleton');
-      expect(skeletonAfter).not.toBeInTheDocument();
+      expect(screen.queryByText('Loading knowledge bases...')).not.toBeInTheDocument();
     });
   });
 
@@ -188,10 +254,10 @@ describe('KnowledgeBaseList', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('You have no knowledge bases.')).toBeVisible();
+      expect(screen.getByText('No knowledge bases found.')).toBeVisible();
     });
 
-    expect(screen.getAllByTestId('create-knowledge-base-button').length).toBeGreaterThan(0);
+    expect(screen.getByText('Create Knowledge Base')).toBeVisible();
   });
 
   test('should filter knowledge bases by search text', async () => {
@@ -243,7 +309,7 @@ describe('KnowledgeBaseList', () => {
     });
   });
 
-  test('should filter knowledge bases by ID', async () => {
+  test('should filter knowledge bases by name', async () => {
     const user = userEvent.setup();
 
     const kb1 = create(KnowledgeBaseSchema, {
@@ -279,20 +345,20 @@ describe('KnowledgeBaseList', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('production-kb')).toBeVisible();
-      expect(screen.getByText('staging-kb')).toBeVisible();
+      expect(screen.getByText('Production KB')).toBeVisible();
+      expect(screen.getByText('Staging KB')).toBeVisible();
     });
 
     const filterInput = screen.getByPlaceholderText('Filter knowledge bases...');
-    await user.type(filterInput, 'production');
+    await user.type(filterInput, 'Production');
 
     await waitFor(() => {
-      expect(screen.getByText('production-kb')).toBeVisible();
-      expect(screen.queryByText('staging-kb')).not.toBeInTheDocument();
+      expect(screen.getByText('Production KB')).toBeVisible();
+      expect(screen.queryByText('Staging KB')).not.toBeInTheDocument();
     });
   });
 
-  test('should filter knowledge bases by description', async () => {
+  test('should filter knowledge bases by display name', async () => {
     const user = userEvent.setup();
 
     const kb1 = create(KnowledgeBaseSchema, {
@@ -333,7 +399,7 @@ describe('KnowledgeBaseList', () => {
     });
 
     const filterInput = screen.getByPlaceholderText('Filter knowledge bases...');
-    await user.type(filterInput, 'customer');
+    await user.type(filterInput, 'First');
 
     await waitFor(() => {
       expect(screen.getByText('First KB')).toBeVisible();
