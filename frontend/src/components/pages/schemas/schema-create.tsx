@@ -525,7 +525,12 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
               </Tooltip>
             </TooltipProvider>
           </Flex>
-          <Switch checked={state.normalize} onCheckedChange={(checked) => (state.normalize = checked === true)} />
+          <Switch
+            checked={state.normalize}
+            onCheckedChange={(checked) => {
+              state.normalize = checked === true;
+            }}
+          />
         </Flex>
 
         <Heading mt="8" variant="lg">
