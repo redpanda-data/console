@@ -188,14 +188,14 @@ const SchemaList: FC = () => {
     <PageContent key="b">
       <ToastContainer />
       {/* Statistics Bar */}
-      <Flex alignItems="center" gap="1rem">
+      <Flex alignItems="center" data-testid="schema-list-stats" gap="1rem">
         <SmallStat title="Mode">{schemaMode ?? <InlineSkeleton width="100px" />}</SmallStat>
         <Divider height="2ch" orientation="vertical" />
         <SmallStat title="Compatibility">{schemaCompatibility ?? <InlineSkeleton width="100px" />}</SmallStat>
       </Flex>
 
       <Button
-        disabledReason={
+        data-testid="schema-list-edit-compatibility-btn"disabledReason={
           api.userData?.canManageSchemaRegistry === false
             ? "You don't have the 'canManageSchemaRegistry' permission"
             : undefined
@@ -233,7 +233,7 @@ const SchemaList: FC = () => {
       <Drawer direction="right" onOpenChange={setIsHelpSidebarOpen} open={isHelpSidebarOpen}>
         <DrawerContent aria-labelledby="schema-help-title" className="w-[600px] sm:max-w-[600px]" role="dialog">
           <DrawerHeader className="border-b">
-            <DrawerTitle data-testid="schema-help-title" id="schema-help-title">
+            <DrawerTitle data-testid="schema-search-header" id="schema-help-title">
               Schema Search Help
             </DrawerTitle>
           </DrawerHeader>
@@ -296,6 +296,7 @@ const SchemaList: FC = () => {
             <Flex justifyContent={'space-between'} pb={3}>
               <Button
                 colorScheme="brand"
+                data-testid="schema-list-create-btn"
                 disabledReason={
                   api.userData?.canCreateSchemas === false
                     ? "You don't have the 'canCreateSchemas' permission"
@@ -305,7 +306,7 @@ const SchemaList: FC = () => {
               >
                 Create new schema
               </Button>
-              <Checkbox
+              <Checkbox data-testid="schema-list-show-soft-deleted-checkbox"
                 isChecked={showSoftDeleted}
                 onChange={(e) => {
                   setShowSoftDeleted(e.target.checked);
@@ -339,7 +340,7 @@ const SchemaList: FC = () => {
                             hasArrow
                             label="This subject has been soft-deleted. It can be restored or permanently deleted."
                           >
-                            <Box>
+                            <Box data-testid="schema-list-soft-deleted-icon">
                               <ArchiveIcon height={16} style={{ color: 'var(--chakra-colors-gray-400)' }} width={16} />
                             </Box>
                           </Tooltip>
@@ -365,6 +366,7 @@ const SchemaList: FC = () => {
                   cell: ({ row: { original: r } }) => (
                     <Button
                       color="gray.500"
+                    data-testid={`schema-list-delete-btn-${r.name}`}
                       disabledReason={
                         api.userData?.canDeleteSchemas === false
                           ? "You don't have the 'canDeleteSchemas' permission"
