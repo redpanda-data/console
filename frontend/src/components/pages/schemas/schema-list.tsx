@@ -213,6 +213,7 @@ const SchemaList: FC = () => {
 
       <Flex alignItems="center" gap="2">
         <SearchField
+          data-testid="schema-list-search-field"
           placeholderText="Filter by subject name or schema ID..."
           searchText={quickSearch ?? ''}
           setSearchText={setQuickSearch}
