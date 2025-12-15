@@ -41,11 +41,7 @@ type MCPActionsProps = {
   isDeletingServer: boolean;
 };
 
-export const MCPActions = ({
-  server,
-  onDeleteWithServiceAccount,
-  isDeletingServer,
-}: MCPActionsProps) => {
+export const MCPActions = ({ server, onDeleteWithServiceAccount, isDeletingServer }: MCPActionsProps) => {
   const { mutate: startMCPServer, isPending: isStarting } = useStartMCPServerMutation();
   const { mutate: stopMCPServer, isPending: isStopping } = useStopMCPServerMutation();
   const [deleteServiceAccountFlag, setDeleteServiceAccountFlag] = React.useState(false);

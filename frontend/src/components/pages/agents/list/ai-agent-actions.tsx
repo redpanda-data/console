@@ -42,11 +42,7 @@ type AIAgentActionsProps = {
   isDeletingAgent: boolean;
 };
 
-export const AIAgentActions = ({
-  agent,
-  onDeleteWithServiceAccount,
-  isDeletingAgent,
-}: AIAgentActionsProps) => {
+export const AIAgentActions = ({ agent, onDeleteWithServiceAccount, isDeletingAgent }: AIAgentActionsProps) => {
   const { mutate: startAIAgent, isPending: isStarting } = useStartAIAgentMutation();
   const { mutate: stopAIAgent, isPending: isStopping } = useStopAIAgentMutation();
   const [deleteServiceAccountFlag, setDeleteServiceAccountFlag] = React.useState(false);
