@@ -140,9 +140,9 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
       }
       const isDisabled = !isEnabled;
 
-      // Handle Knowledge Base, MCP server and AI Agent routes with beta badge
+      // Handle Knowledge Base and AI Agent routes with beta badge
       const title =
-        entry.path === '/knowledgebases' || entry.path === '/mcp-servers' || entry.path === '/agents'
+        entry.path === '/knowledgebases' || entry.path === '/agents'
           ? getSidebarItemTitleWithBetaBadge({ route: entry })
           : entry.title;
 
