@@ -15,9 +15,45 @@ export class DebugBundlePage {
   /**
    * Navigation methods
    */
-  async goto() {
+  async goto(options?: { skipCleanup?: boolean }) {
     await this.page.goto('/debug-bundle');
     await expect(this.page.getByRole('heading', { name: /debug bundle/i })).toBeVisible();
+
+    // Skip cleanup if we're just checking status
+    if (options?.skipCleanup) {
+      return;
+    }
+
+    // Ensure we're on the form page, not a progress page
+    // If there's an "in progress" link, navigate through to get back to the form
+    const progressLink = this.page.getByRole('link', { name: /bundle generation in progress|in progress/i });
+    const hasProgressLink = await progressLink.isVisible().catch(() => false);
+
+    if (hasProgressLink) {
+      await progressLink.click();
+      await this.page.waitForURL(/\/debug-bundle\/progress\//);
+
+      // Wait for either "Done" or "Try Again" button to appear (bundle completed or failed)
+      await Promise.race([
+        this.page.getByTestId('debug-bundle-done-button').waitFor({ state: 'visible', timeout: 60000 }),
+        this.page.getByTestId('debug-bundle-try-again-button').waitFor({ state: 'visible', timeout: 60000 }),
+      ]);
+
+      // Click whichever button is available to get back to form
+      const doneButton = this.page.getByTestId('debug-bundle-done-button');
+      const tryAgainButton = this.page.getByTestId('debug-bundle-try-again-button');
+
+      if (await doneButton.isVisible().catch(() => false)) {
+        await doneButton.click();
+      } else if (await tryAgainButton.isVisible().catch(() => false)) {
+        await tryAgainButton.click();
+      }
+
+      await this.page.waitForURL('/debug-bundle');
+    }
+
+    // Wait for the form to be visible
+    await expect(this.page.getByRole('button', { name: /generate/i }).first()).toBeVisible();
   }
 
   async gotoProgress(bundleId?: string) {
@@ -40,7 +76,10 @@ export class DebugBundlePage {
    * Mode switching
    */
   async switchToAdvancedMode() {
+    await this.page.waitForLoadState('networkidle');
+
     const advancedButton = this.page.getByTestId('switch-to-custom-debug-bundle-form');
+    await expect(advancedButton).toBeVisible();
     await advancedButton.click();
 
     // Verify advanced options are visible
@@ -191,13 +230,13 @@ export class DebugBundlePage {
       await expect(stopButton).toBeVisible();
       await stopButton.click();
 
-      // Confirm if there's a confirmation dialog
-      const confirmButton = this.page.getByRole('button', { name: /confirm|yes|stop/i });
-      if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await confirmButton.click();
-      }
-
-      await this.page.waitForTimeout(1000);
+      // Wait for cancellation to complete - either button disappears or "Try Again" button appears
+      await Promise.race([
+        this.page.getByTestId('debug-bundle-try-again-button').waitFor({ state: 'visible', timeout: 5000 }),
+        this.page.getByTestId('debug-bundle-stop-button').waitFor({ state: 'hidden', timeout: 5000 }),
+      ]).catch(() => {
+        // If neither happens within timeout, that's okay - the cancellation may have completed differently
+      });
     });
   }
 
@@ -254,7 +293,7 @@ export class DebugBundlePage {
    * Status checking methods
    */
   async isBundleGenerationInProgress(): Promise<boolean> {
-    await this.goto();
+    await this.goto({ skipCleanup: true });
 
     const progressLink = this.page.getByRole('link', { name: /progress|in progress/i });
     return progressLink.isVisible({ timeout: 2000 }).catch(() => false);

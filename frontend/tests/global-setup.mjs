@@ -1,7 +1,7 @@
 import { GenericContainer, Network, Wait } from 'testcontainers';
 
 import { exec } from 'node:child_process';
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -47,7 +47,7 @@ async function setupDockerNetwork(state) {
 
 async function startRedpandaContainer(network, state) {
   console.log('Starting Redpanda container...');
-  const redpanda = await new GenericContainer('redpandadata/redpanda:v25.2.1')
+  const redpanda = await new GenericContainer('redpandadata/redpanda:v25.3.2')
     .withNetwork(network)
     .withNetworkAliases('redpanda')
     .withExposedPorts(
@@ -89,13 +89,13 @@ async function startRedpandaContainer(network, state) {
     ])
     .withHealthCheck({
       test: ['CMD-SHELL', "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"],
-      interval: 15_000,
+      interval: 10_000,
       timeout: 3000,
       retries: 5,
       startPeriod: 5000,
     })
     .withWaitStrategy(Wait.forHealthCheck())
-    .withStartupTimeout(120_000)
+    .withStartupTimeout(90_000)
     .start();
 
   state.redpandaId = redpanda.getId();
@@ -270,9 +270,26 @@ topic.creation.enable=false
 
 async function buildBackendImage(isEnterprise) {
   console.log(`Building backend Docker image ${isEnterprise ? '(Enterprise)' : '(OSS)'}...`);
-  const backendDir = isEnterprise
-    ? resolve(__dirname, '../../../console-enterprise/backend')
-    : resolve(__dirname, '../../backend');
+
+  let backendDir;
+  if (isEnterprise) {
+    // Check for ENTERPRISE_BACKEND_DIR environment variable
+    if (process.env.ENTERPRISE_BACKEND_DIR) {
+      backendDir = resolve(process.env.ENTERPRISE_BACKEND_DIR);
+      console.log(`Using ENTERPRISE_BACKEND_DIR from environment: ${backendDir}`);
+    } else {
+      // Default to relative path
+      backendDir = resolve(__dirname, '../../../console-enterprise/backend');
+    }
+  } else {
+    backendDir = resolve(__dirname, '../../backend');
+  }
+
+  // Resolve symlinks to real path (needed for Docker build context)
+  if (existsSync(backendDir)) {
+    backendDir = realpathSync(backendDir);
+  }
+
   const imageTag = isEnterprise ? 'console-backend:e2e-test-enterprise' : 'console-backend:e2e-test';
 
   console.log(`Building from: ${backendDir}`);
@@ -367,19 +384,33 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
 
   // Mount license file for enterprise mode
   if (isEnterprise) {
-    const licensePath = resolve(__dirname, '../../../console-enterprise/frontend/tests/config/redpanda.license');
-    console.log(`Enterprise license path: ${licensePath}`);
+    let licensePath;
+    const fs = await import('node:fs');
 
-    // Check if license file exists
-    try {
-      const fs = await import('node:fs');
+    // Check if license is provided as GitHub secret (environment variable)
+    if (process.env.ENTERPRISE_LICENSE_CONTENT) {
+      console.log('Using ENTERPRISE_LICENSE_CONTENT from environment variable (GitHub secret)');
+      // Write the license content to a temporary file
+      const { mkdtempSync, writeFileSync } = await import('node:fs');
+      const { tmpdir } = await import('node:os');
+      const tempDir = mkdtempSync(`${tmpdir()}/redpanda-license-`);
+      licensePath = `${tempDir}/redpanda.license`;
+      writeFileSync(licensePath, process.env.ENTERPRISE_LICENSE_CONTENT);
+      console.log(`✓ License written to temporary file: ${licensePath}`);
+    } else {
+      // Default to relative path based on backend directory
+      const backendDir = process.env.ENTERPRISE_BACKEND_DIR
+        ? resolve(process.env.ENTERPRISE_BACKEND_DIR)
+        : resolve(__dirname, '../../../console-enterprise/backend');
+
+      const defaultLicensePath = resolve(backendDir, '../configs/shared/redpanda.license');
+      licensePath = process.env.REDPANDA_LICENSE_PATH || defaultLicensePath;
+      console.log(`Enterprise license path: ${licensePath}`);
+
       if (!fs.existsSync(licensePath)) {
         throw new Error(`License file not found at: ${licensePath}`);
       }
       console.log(`✓ License file found`);
-    } catch (error) {
-      console.error(`License file error:`, error.message);
-      throw error;
     }
 
     bindMounts.push({
@@ -408,6 +439,7 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
     const container = new GenericContainer(imageTag)
       .withNetwork(network)
       .withNetworkAliases('console-backend')
+      .withNetworkMode(network.getName())
       .withExposedPorts({ container: 3000, host: 3000 })
       .withBindMounts(bindMounts)
       .withCommand(['--config.filepath=/etc/console/config.yaml']);
