@@ -18,6 +18,37 @@ export class DebugBundlePage {
   async goto() {
     await this.page.goto('/debug-bundle');
     await expect(this.page.getByRole('heading', { name: /debug bundle/i })).toBeVisible();
+
+    // Ensure we're on the form page, not a progress page
+    // If there's an "in progress" link, navigate through to get back to the form
+    const progressLink = this.page.getByRole('link', { name: /bundle generation in progress|in progress/i });
+    const hasProgressLink = await progressLink.isVisible().catch(() => false);
+
+    if (hasProgressLink) {
+      await progressLink.click();
+      await this.page.waitForURL(/\/debug-bundle\/progress\//);
+
+      // Wait for either "Done" or "Try Again" button to appear (bundle completed or failed)
+      await Promise.race([
+        this.page.getByTestId('debug-bundle-done-button').waitFor({ state: 'visible', timeout: 60000 }),
+        this.page.getByTestId('debug-bundle-try-again-button').waitFor({ state: 'visible', timeout: 60000 }),
+      ]);
+
+      // Click whichever button is available to get back to form
+      const doneButton = this.page.getByTestId('debug-bundle-done-button');
+      const tryAgainButton = this.page.getByTestId('debug-bundle-try-again-button');
+
+      if (await doneButton.isVisible().catch(() => false)) {
+        await doneButton.click();
+      } else if (await tryAgainButton.isVisible().catch(() => false)) {
+        await tryAgainButton.click();
+      }
+
+      await this.page.waitForURL('/debug-bundle');
+    }
+
+    // Wait for the form to be visible
+    await expect(this.page.getByRole('button', { name: /generate/i }).first()).toBeVisible();
   }
 
   async gotoProgress(bundleId?: string) {
