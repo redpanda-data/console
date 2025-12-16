@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { ConnectError } from '@connectrpc/connect';
 import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import type { ColumnDef } from '@tanstack/react-table';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
@@ -16,6 +17,8 @@ import { makeObservable, observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast as sonnerToast } from 'sonner';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
 import PipelinePage from './pipeline';
@@ -426,7 +429,11 @@ function executeMessageSearch(search: MessageSearch, topicName: string, pipeline
   return runInAction(() => {
     try {
       return search.startSearch(request);
-    } catch (_error: unknown) {
+    } catch (error) {
+      const connectError = ConnectError.from(error);
+      sonnerToast.error(
+        formatToastErrorMessageGRPC({ error: connectError, action: 'search', entity: 'pipeline logs' })
+      );
       return Promise.resolve([]);
     }
   });

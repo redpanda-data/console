@@ -13,6 +13,7 @@
 
 import { CLOUD_MANAGED_TAG_KEYS } from 'components/constants';
 import { Button } from 'components/redpanda-ui/components/button';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +25,7 @@ import { Label } from 'components/redpanda-ui/components/label';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { Copy, Loader2, MoreHorizontal, Pause, Play } from 'lucide-react';
+import { Loader2, MoreHorizontal, Pause, Play } from 'lucide-react';
 import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import React from 'react';
 import { useStartAIAgentMutation, useStopAIAgentMutation } from 'react-query/api/ai-agent';
@@ -41,15 +42,9 @@ type AIAgentActionsProps = {
     serviceAccountId: string | null
   ) => Promise<void>;
   isDeletingAgent: boolean;
-  setIsDeleteDialogOpen: (open: boolean) => void;
 };
 
-export const AIAgentActions = ({
-  agent,
-  onDeleteWithServiceAccount,
-  isDeletingAgent,
-  setIsDeleteDialogOpen,
-}: AIAgentActionsProps) => {
+export const AIAgentActions = ({ agent, onDeleteWithServiceAccount, isDeletingAgent }: AIAgentActionsProps) => {
   const { mutate: startAIAgent, isPending: isStarting } = useStartAIAgentMutation();
   const { mutate: stopAIAgent, isPending: isStopping } = useStopAIAgentMutation();
   const [deleteServiceAccountFlag, setDeleteServiceAccountFlag] = React.useState(false);
@@ -63,11 +58,8 @@ export const AIAgentActions = ({
     setDeleteServiceAccountFlag(false);
   };
 
-  const handleCopy = () => {
-    if (agent.url) {
-      navigator.clipboard.writeText(agent.url);
-      toast.success('URL copied to clipboard');
-    }
+  const handleCopySuccess = () => {
+    toast.success('URL copied to clipboard');
   };
 
   const handleStart = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -92,14 +84,17 @@ export const AIAgentActions = ({
             <span className="sr-only">Open menu</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[160px]">
+        <DropdownMenuContent align="end" className="w-[200px]">
           {agent.url && (
             <>
-              <DropdownMenuItem onClick={handleCopy}>
-                <div className="flex items-center gap-4">
-                  <Copy className="h-4 w-4" /> Copy URL
-                </div>
-              </DropdownMenuItem>
+              <CopyButton
+                className="[&]:transform-none! w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-sm hover:bg-accent [&]:scale-100! [&_svg]:size-4"
+                content={agent.url}
+                onCopy={handleCopySuccess}
+                variant="ghost"
+              >
+                Copy URL
+              </CopyButton>
               <DropdownMenuSeparator />
             </>
           )}
@@ -135,7 +130,6 @@ export const AIAgentActions = ({
             isDeleting={isDeletingAgent}
             onDelete={handleDelete}
             onOpenChange={(open) => {
-              setIsDeleteDialogOpen(open);
               if (!open) {
                 setDeleteServiceAccountFlag(false);
               }

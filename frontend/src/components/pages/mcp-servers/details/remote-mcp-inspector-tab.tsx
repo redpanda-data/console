@@ -22,7 +22,7 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { RedpandaConnectComponentTypeBadge } from 'components/ui/connect/redpanda-connect-component-type-badge';
 import { DynamicJSONForm } from 'components/ui/json/dynamic-json-form';
 import type { JSONSchemaType, JSONValue } from 'components/ui/json/json-utils';
-import JSONView from 'components/ui/json/json-view';
+import { JSONView } from 'components/ui/json/json-view';
 import { Clock, Hammer, Send, X } from 'lucide-react';
 import {
   CreateTopicRequest_Topic_ConfigSchema,
