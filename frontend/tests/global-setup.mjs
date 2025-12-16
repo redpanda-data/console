@@ -403,8 +403,8 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
         ? resolve(process.env.ENTERPRISE_BACKEND_DIR)
         : resolve(__dirname, '../../../console-enterprise/backend');
 
-      // License is in frontend/tests/config, so go from backend -> ../frontend/tests/config
-      licensePath = resolve(backendDir, '../frontend/tests/config/redpanda.license');
+      const defaultLicensePath = resolve(backendDir, '../configs/shared/redpanda.license');
+      licensePath = process.env.REDPANDA_LICENSE_PATH || defaultLicensePath;
       console.log(`Enterprise license path: ${licensePath}`);
 
       if (!fs.existsSync(licensePath)) {
