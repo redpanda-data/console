@@ -11,6 +11,7 @@
 
 'use client';
 
+import { ConnectError } from '@connectrpc/connect';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -41,13 +42,14 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Loader2, Plus, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import type { KnowledgeBase } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import React, { useEffect, useMemo } from 'react';
-import { useListKnowledgeBasesQuery } from 'react-query/api/knowledge-base';
+import React, { useCallback, useEffect, useMemo } from 'react';
+import { useDeleteKnowledgeBaseMutation, useListKnowledgeBasesQuery } from 'react-query/api/knowledge-base';
 import { useListTopicsQuery } from 'react-query/api/topic';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Features } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { KnowledgeBaseActionsCell } from './knowledge-base-actions';
 import {
@@ -161,7 +163,7 @@ const ModelCell = ({ provider, model }: { provider: string; model: string }) => 
 
   return (
     <div className="flex items-center gap-2">
-      <ProviderLogo className="h-4 w-4 flex-shrink-0" provider={provider} />
+      <ProviderLogo className="h-4 w-4 shrink-0" provider={provider} />
       <Text variant="default">{model}</Text>
     </div>
   );
@@ -178,102 +180,121 @@ const transformKnowledgeBase = (kb: KnowledgeBase): KnowledgeBaseTableRow => ({
   retrievalApiUrl: kb.retrievalApiUrl,
 });
 
-export const createColumns = (
-  navigate: ReturnType<typeof useNavigate>,
-  availableTopics: string[]
-): ColumnDef<KnowledgeBaseTableRow>[] => [
-  {
-    accessorKey: 'displayName',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-    cell: ({ row }) => (
-      <Text className="font-medium" variant="default">
-        {row.getValue('displayName')}
-      </Text>
-    ),
-  },
-  {
-    accessorKey: 'description',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Description" />,
-    cell: ({ row }) => {
-      const description = row.getValue('description') as string;
-      return (
-        <Text className="wrap-break-word" variant="default">
-          {description || ''}
-        </Text>
-      );
-    },
-  },
-  {
-    accessorKey: 'inputTopics',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Input Topics" />,
-    cell: ({ row }) => {
-      const patterns = row.getValue('inputTopics') as string[];
-      if (patterns.length === 0) {
-        return <Text variant="muted">-</Text>;
-      }
+type CreateColumnsOptions = {
+  handleDelete: (knowledgeBaseId: string) => Promise<void>;
+  navigate: ReturnType<typeof useNavigate>;
+  isDeletingKnowledgeBase: boolean;
+  availableTopics: string[];
+};
 
-      // Get all existing topics that match the patterns
-      const matchedTopics = getMatchedTopics(patterns, availableTopics);
+export const createColumns = (options: CreateColumnsOptions): ColumnDef<KnowledgeBaseTableRow>[] => {
+  const { handleDelete, navigate, isDeletingKnowledgeBase, availableTopics } = options;
+  return [
+    {
+      accessorKey: 'displayName',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+      cell: ({ row }) => {
+        const displayName = row.getValue('displayName') as string;
+        return (
+          <Text className="wrap-break-word font-medium" variant="default">
+            {displayName}
+          </Text>
+        );
+      },
+    },
+    {
+      accessorKey: 'description',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Description" />,
+      cell: ({ row }) => {
+        const description = row.getValue('description') as string;
+        return (
+          <Text className="wrap-break-word" variant="default">
+            {description || ''}
+          </Text>
+        );
+      },
+    },
+    {
+      accessorKey: 'inputTopics',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Input Topics" />,
+      cell: ({ row }) => {
+        const patterns = row.getValue('inputTopics') as string[];
+        if (patterns.length === 0) {
+          return <Text variant="muted">-</Text>;
+        }
 
-      if (matchedTopics.length === 0) {
-        return <Text variant="muted">-</Text>;
-      }
+        // Get all existing topics that match the patterns
+        const matchedTopics = getMatchedTopics(patterns, availableTopics);
 
-      return (
-        <div className="flex flex-wrap gap-1">
-          {matchedTopics.map((topic) => (
-            <button
-              className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 font-medium text-gray-700 text-xs transition-colors hover:bg-gray-200 hover:text-gray-900"
-              key={topic}
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/topics/${encodeURIComponent(topic)}`);
-              }}
-              type="button"
-            >
-              {topic}
-            </button>
-          ))}
-        </div>
-      );
+        if (matchedTopics.length === 0) {
+          return <Text variant="muted">-</Text>;
+        }
+
+        return (
+          <div className="flex flex-wrap gap-1">
+            {matchedTopics.map((topic) => (
+              <button
+                className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 font-medium text-gray-700 text-xs transition-colors hover:bg-gray-200 hover:text-gray-900"
+                key={topic}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/topics/${encodeURIComponent(topic)}`);
+                }}
+                type="button"
+              >
+                {topic}
+              </button>
+            ))}
+          </div>
+        );
+      },
     },
-  },
-  {
-    accessorKey: 'embeddingGenerator',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Embedding Generator" />,
-    cell: ({ row }) => {
-      const value = row.getValue('embeddingGenerator') as { provider: string; model: string };
-      return <ModelCell model={value.model} provider={value.provider} />;
+    {
+      accessorKey: 'embeddingGenerator',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Embedding Generator" />,
+      cell: ({ row }) => {
+        const value = row.getValue('embeddingGenerator') as { provider: string; model: string };
+        return <ModelCell model={value.model} provider={value.provider} />;
+      },
+      filterFn: (row, id, value) => {
+        const embeddingGenerator = row.getValue(id) as { provider: string; model: string };
+        if (!embeddingGenerator.model) {
+          return false;
+        }
+        return value.includes(embeddingGenerator.model);
+      },
     },
-    filterFn: (row, id, value) => {
-      const embeddingGenerator = row.getValue(id) as { provider: string; model: string };
-      if (!embeddingGenerator.model) {
-        return false;
-      }
-      return value.includes(embeddingGenerator.model);
+    {
+      accessorKey: 'rerankerModel',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Reranker Model" />,
+      cell: ({ row }) => {
+        const value = row.getValue('rerankerModel') as { provider: string; model: string };
+        return <ModelCell model={value.model} provider={value.provider} />;
+      },
+      filterFn: (row, id, value) => {
+        const rerankerModel = row.getValue(id) as { provider: string; model: string };
+        if (!rerankerModel.model) {
+          return false;
+        }
+        return value.includes(rerankerModel.model);
+      },
     },
-  },
-  {
-    accessorKey: 'rerankerModel',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Reranker Model" />,
-    cell: ({ row }) => {
-      const value = row.getValue('rerankerModel') as { provider: string; model: string };
-      return <ModelCell model={value.model} provider={value.provider} />;
+    {
+      id: 'actions',
+      enableHiding: false,
+      cell: ({ row }) => {
+        const knowledgeBase = row.original;
+        return (
+          <KnowledgeBaseActionsCell
+            isDeletingKnowledgeBase={isDeletingKnowledgeBase}
+            knowledgeBase={knowledgeBase}
+            onDelete={handleDelete}
+          />
+        );
+      },
     },
-    filterFn: (row, id, value) => {
-      const rerankerModel = row.getValue(id) as { provider: string; model: string };
-      if (!rerankerModel.model) {
-        return false;
-      }
-      return value.includes(rerankerModel.model);
-    },
-  },
-  {
-    id: 'actions',
-    enableHiding: false,
-    cell: ({ row }) => <KnowledgeBaseActionsCell knowledgeBase={row.original} />,
-  },
-];
+  ];
+};
 
 function KnowledgeBaseDataTableToolbar({ table }: { table: TanstackTable<KnowledgeBaseTableRow> }) {
   const isFiltered = table.getState().columnFilters.length > 0;
@@ -361,6 +382,8 @@ export const KnowledgeBaseListPage = () => {
     [knowledgeBasesData]
   );
 
+  const { mutateAsync: deleteKnowledgeBase, isPending: isDeletingKnowledgeBase } = useDeleteKnowledgeBaseMutation();
+
   useEffect(() => {
     updatePageTitle();
   }, []);
@@ -376,6 +399,20 @@ export const KnowledgeBaseListPage = () => {
     }
   }, [error]);
 
+  const handleDelete = useCallback(
+    async (knowledgeBaseId: string) => {
+      try {
+        await deleteKnowledgeBase({ id: knowledgeBaseId });
+
+        toast.success('Knowledge base deleted successfully');
+      } catch (deleteError) {
+        const connectError = ConnectError.from(deleteError);
+        toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'delete', entity: 'knowledge base' }));
+      }
+    },
+    [deleteKnowledgeBase]
+  );
+
   const handleRowClick = (knowledgeBaseId: string, event: React.MouseEvent) => {
     const target = event.target as HTMLElement;
     if (
@@ -390,7 +427,16 @@ export const KnowledgeBaseListPage = () => {
     navigate(`/knowledgebases/${encodeURIComponent(knowledgeBaseId)}`);
   };
 
-  const columns = useMemo(() => createColumns(navigate, availableTopics), [navigate, availableTopics]);
+  const columns = React.useMemo(
+    () =>
+      createColumns({
+        handleDelete,
+        navigate,
+        isDeletingKnowledgeBase,
+        availableTopics,
+      }),
+    [handleDelete, navigate, isDeletingKnowledgeBase, availableTopics]
+  );
 
   const table = useReactTable({
     data: knowledgeBases,

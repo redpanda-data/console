@@ -8,9 +8,6 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-
-import { create } from '@bufbuild/protobuf';
-import { ConnectError } from '@connectrpc/connect';
 import { Button } from 'components/redpanda-ui/components/button';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
@@ -21,34 +18,27 @@ import {
 } from 'components/redpanda-ui/components/dropdown-menu';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { MoreHorizontal } from 'lucide-react';
-import { DeleteKnowledgeBaseRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { useDeleteKnowledgeBaseMutation } from 'react-query/api/knowledge-base';
 import { toast } from 'sonner';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import type { KnowledgeBaseTableRow } from './knowledge-base-list-page';
 
 type KnowledgeBaseActionsCellProps = {
   knowledgeBase: KnowledgeBaseTableRow;
+  onDelete: (knowledgeBaseId: string) => void;
+  isDeletingKnowledgeBase: boolean;
 };
 
-export const KnowledgeBaseActionsCell = ({ knowledgeBase }: KnowledgeBaseActionsCellProps) => {
-  const { mutate: deleteKnowledgeBase, isPending: isDeleting } = useDeleteKnowledgeBaseMutation();
-
-  const handleDelete = (id: string) => {
-    deleteKnowledgeBase(create(DeleteKnowledgeBaseRequestSchema, { id }), {
-      onSuccess: () => {
-        toast.success(`Knowledge base ${knowledgeBase.displayName} deleted`);
-      },
-      onError: (error) => {
-        const connectError = ConnectError.from(error);
-        toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'delete', entity: 'knowledge base' }));
-      },
-    });
-  };
-
+export const KnowledgeBaseActionsCell = ({
+  knowledgeBase,
+  onDelete,
+  isDeletingKnowledgeBase,
+}: KnowledgeBaseActionsCellProps) => {
   const handleCopySuccess = () => {
     toast.success('Retrieval API URL copied to clipboard');
+  };
+
+  const handleDelete = async (id: string) => {
+    await onDelete(id);
   };
 
   return (
@@ -62,7 +52,7 @@ export const KnowledgeBaseActionsCell = ({ knowledgeBase }: KnowledgeBaseActions
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[200px]">
           <CopyButton
-            className="[&]:!scale-100 [&]:!transform-none w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-sm hover:bg-accent [&_svg]:size-4"
+            className="[&]:transform-none! w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-sm hover:bg-accent [&]:scale-100! [&_svg]:size-4"
             content={knowledgeBase.retrievalApiUrl}
             onCopy={handleCopySuccess}
             variant="ghost"
@@ -71,7 +61,7 @@ export const KnowledgeBaseActionsCell = ({ knowledgeBase }: KnowledgeBaseActions
           </CopyButton>
           <DropdownMenuSeparator />
           <DeleteResourceAlertDialog
-            isDeleting={isDeleting}
+            isDeleting={isDeletingKnowledgeBase}
             onDelete={handleDelete}
             resourceId={knowledgeBase.id}
             resourceName={knowledgeBase.displayName}
