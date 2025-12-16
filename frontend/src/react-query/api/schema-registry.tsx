@@ -12,7 +12,6 @@ import type {
   SchemaRegistrySubjectDetails,
   SchemaVersion,
 } from 'state/rest-interfaces';
-import { authenticatedFetch } from 'utils/authenticated-fetch';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 // Stale time constants for consistent cache behavior
@@ -24,7 +23,7 @@ export const useListSchemasQuery = () => {
   return useTanstackQuery<SchemaRegistrySubject[]>({
     queryKey: ['schemaRegistry', 'subjects'],
     queryFn: async () => {
-      const response = await authenticatedFetch(`${config.restBasePath}/schema-registry/subjects`, {
+      const response = await config.fetch(`${config.restBasePath}/schema-registry/subjects`, {
         method: 'GET',
       });
 
@@ -48,7 +47,7 @@ export const useSchemaModeQuery = () =>
   useTanstackQuery<string | null>({
     queryKey: ['schemaRegistry', 'mode'],
     queryFn: async () => {
-      const response = await authenticatedFetch(`${config.restBasePath}/schema-registry/mode`, {
+      const response = await config.fetch(`${config.restBasePath}/schema-registry/mode`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -73,7 +72,7 @@ export const useSchemaCompatibilityQuery = () =>
   useTanstackQuery<string | null>({
     queryKey: ['schemaRegistry', 'compatibility'],
     queryFn: async () => {
-      const response = await authenticatedFetch(`${config.restBasePath}/schema-registry/config`, {
+      const response = await config.fetch(`${config.restBasePath}/schema-registry/config`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -122,7 +121,7 @@ export const useUpdateGlobalCompatibilityMutation = () => {
 
   return useTanstackMutation<SchemaRegistryConfigResponse, Error, SchemaRegistryCompatibilityMode>({
     mutationFn: async (mode: SchemaRegistryCompatibilityMode) => {
-      const response = await authenticatedFetch(`${config.restBasePath}/schema-registry/config`, {
+      const response = await config.fetch(`${config.restBasePath}/schema-registry/config`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -161,7 +160,7 @@ export const useUpdateSubjectCompatibilityMutation = () => {
   >({
     mutationFn: async ({ subjectName, mode }) => {
       if (mode === 'DEFAULT') {
-        const response = await authenticatedFetch(
+        const response = await config.fetch(
           `${config.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`,
           {
             method: 'DELETE',
@@ -177,7 +176,7 @@ export const useUpdateSubjectCompatibilityMutation = () => {
         return response.json();
       }
 
-      const response = await authenticatedFetch(
+      const response = await config.fetch(
         `${config.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`,
         {
           method: 'PUT',
@@ -239,7 +238,7 @@ export const useSchemaTypesQuery = () =>
   useTanstackQuery<string[]>({
     queryKey: ['schemaRegistry', 'types'],
     queryFn: async () => {
-      const response = await authenticatedFetch(`${config.restBasePath}/schema-registry/schemas/types`, {
+      const response = await config.fetch(`${config.restBasePath}/schema-registry/schemas/types`, {
         method: 'GET',
         headers: {},
       });
@@ -369,7 +368,7 @@ export const useSchemaReferencedByQuery = (subjectName: string, version: number,
   return useTanstackQuery<{ schemaId: number; error?: string; usages: { subject: string; version: number }[] }[]>({
     queryKey: ['schemaRegistry', 'subjects', subjectName, 'versions', version, 'referencedby'],
     queryFn: async () => {
-      const response = await authenticatedFetch(
+      const response = await config.fetch(
         `${config.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/referencedby`,
         {
           method: 'GET',
@@ -443,13 +442,10 @@ export const useSchemaUsagesByIdQuery = (schemaId: number | null) => {
         return [];
       }
 
-      const response = await authenticatedFetch(
-        `${config.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`,
-        {
-          method: 'GET',
-          headers: {},
-        }
-      );
+      const response = await config.fetch(`${config.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`, {
+        method: 'GET',
+        headers: {},
+      });
 
       if (!response.ok) {
         // 404 means the schema ID doesn't exist, return empty array

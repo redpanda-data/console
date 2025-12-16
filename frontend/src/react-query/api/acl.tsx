@@ -31,7 +31,6 @@ import type {
   AclStrResourceType,
   GetAclOverviewResponse,
 } from 'state/rest-interfaces';
-import { authenticatedFetch } from 'utils/authenticated-fetch';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import {
@@ -150,7 +149,7 @@ export const useLegacyListACLsQuery = (
     // We need to precisely match the query key provided by other parts of connect-query
     queryKey: infiniteQueryKey,
     queryFn: async () => {
-      const response = await authenticatedFetch(`${config.restBasePath}/acls`, {
+      const response = await config.fetch(`${config.restBasePath}/acls`, {
         method: 'GET',
         headers: {},
       });
@@ -334,7 +333,7 @@ export const useLegacyCreateACLMutation = () => {
         operation: getACLOperation(request.operation),
         permissionType: getACLPermissionType(request.permissionType),
       };
-      const response = await authenticatedFetch(`${config.restBasePath}/acls`, {
+      const response = await config.fetch(`${config.restBasePath}/acls`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

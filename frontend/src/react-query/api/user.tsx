@@ -16,7 +16,6 @@ import { createUser, listUsers, updateUser } from 'protogen/redpanda/api/datapla
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import type { GetUsersResponse } from 'state/rest-interfaces';
-import { authenticatedFetch } from 'utils/authenticated-fetch';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 /**
@@ -43,7 +42,7 @@ export const useLegacyListUsersQuery = (
     // We need to precisely match the query key provided by other parts of connect-query
     queryKey: infiniteQueryKey,
     queryFn: async () => {
-      const response = await authenticatedFetch(`${config.restBasePath}/users`, {
+      const response = await config.fetch(`${config.restBasePath}/users`, {
         method: 'GET',
         headers: {},
       });
