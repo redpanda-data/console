@@ -11,6 +11,7 @@
 
 'use client';
 
+import { ConnectError } from '@connectrpc/connect';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -50,6 +51,7 @@ import { useDeleteSecretMutation } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { MCPActions } from './mcp-actions';
 import { MCPDeleteHandler, type MCPDeleteHandlerRef } from './mcp-delete-handler';
@@ -300,8 +302,9 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
 
         // Show single success toast regardless of what was deleted
         toast.success('MCP server deleted successfully');
-      } catch (_error) {
-        toast.error('Failed to delete MCP server');
+      } catch (error) {
+        const connectError = ConnectError.from(error);
+        toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'delete', entity: 'MCP server' }));
       }
     },
     [deleteMCPServer, deleteSecret, deleteHandlerRef]

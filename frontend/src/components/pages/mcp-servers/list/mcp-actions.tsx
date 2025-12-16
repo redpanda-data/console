@@ -84,7 +84,7 @@ export const MCPActions = ({ server, onDeleteWithServiceAccount, isDeletingServe
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[200px]">
           <CopyButton
-            className="[&]:!scale-100 [&]:!transform-none w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-sm hover:bg-accent [&_svg]:size-4"
+            className="[&]:transform-none! w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-sm hover:bg-accent [&]:scale-100! [&_svg]:size-4"
             content={server.url}
             data-testid="copy-url-button"
             onCopy={handleCopySuccess}

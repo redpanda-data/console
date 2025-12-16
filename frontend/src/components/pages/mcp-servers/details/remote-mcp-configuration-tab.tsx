@@ -12,6 +12,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
+import { ConnectError } from '@connectrpc/connect';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
@@ -396,9 +397,9 @@ export const RemoteMCPConfigurationTab = () => {
       }
 
       return true;
-    } catch (_error) {
-      // If linting fails, allow save but show warning
-      toast.warning('Unable to validate configuration. Proceeding with save.');
+    } catch (error) {
+      const connectError = ConnectError.from(error);
+      toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'lint', entity: 'MCP config' }));
       return true;
     }
   };

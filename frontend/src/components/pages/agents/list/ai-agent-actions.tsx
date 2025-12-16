@@ -87,7 +87,7 @@ export const AIAgentActions = ({ agent, onDeleteWithServiceAccount, isDeletingAg
           {agent.url && (
             <>
               <CopyButton
-                className="[&]:!scale-100 [&]:!transform-none w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-sm hover:bg-accent [&_svg]:size-4"
+                className="[&]:transform-none! w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-sm hover:bg-accent [&]:scale-100! [&_svg]:size-4"
                 content={agent.url}
                 onCopy={handleCopySuccess}
                 variant="ghost"
