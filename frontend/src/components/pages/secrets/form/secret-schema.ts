@@ -1,14 +1,15 @@
 import { z } from 'zod';
 
-// Regex for validating secret ID format (uppercase letters, numbers, underscores, starting with letter)
-const SECRET_ID_REGEX = /^[A-Z][A-Z0-9_]*$/;
+// Regex for validating secret ID format
+// This can be either through the UI (uppercase with underscores) or through kafka connect (lower with slashes and dashes)
+const SECRET_ID_REGEX = /^[a-zA-Z0-9/_-]+$/;
 
 export const secretSchema = (customValueSchema?: z.ZodTypeAny) =>
   z.object({
     id: z
       .string()
       .min(1, 'ID is required')
-      .regex(SECRET_ID_REGEX, 'ID must use uppercase letters, numbers, and underscores only, starting with a letter'),
+      .regex(SECRET_ID_REGEX, 'ID must contain only letters, numbers, slashes, underscores, and hyphens'),
     value: customValueSchema ? customValueSchema : z.string().min(1, 'Value is required'),
     labels: z
       .array(

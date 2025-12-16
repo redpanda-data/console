@@ -86,7 +86,6 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
                     <field.TextField
                       data-testid="txt-confirmation-delete"
                       placeholder={`Type "${secretId}" to confirm`}
-                      transform={(value) => value.toUpperCase()}
                     />
                   )}
                 </form.AppField>
