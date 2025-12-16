@@ -20,11 +20,11 @@ import {
   isRetentionUnitDisabled,
 } from '../utils/topic';
 
-interface AdvancedTopicSettingsProps {
+type AdvancedTopicSettingsProps = {
   form: UseFormReturn<AddTopicFormData>;
   isExistingTopic: boolean;
   disabled?: boolean;
-}
+};
 
 export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, isExistingTopic, disabled = false }) => {
   // Generate unit options from CreateTopicModal factors for consistency
@@ -96,7 +96,7 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
 
 AdvancedTopicSettings.displayName = 'AdvancedTopicSettings';
 
-interface RetentionInputGroupProps {
+type RetentionInputGroupProps = {
   form: UseFormReturn<AddTopicFormData>;
   isExistingTopic: boolean;
   disabled?: boolean;
@@ -105,7 +105,7 @@ interface RetentionInputGroupProps {
   unitField: keyof AddTopicFormData;
   units: { value: string; label: string }[];
   onChange: (onChange: (value?: number) => void) => (e: React.ChangeEvent<HTMLInputElement>) => void;
-}
+};
 
 const RetentionInputGroup = memo<RetentionInputGroupProps>(
   ({ form, isExistingTopic, disabled = false, label, valueField, unitField, units, onChange }) => {

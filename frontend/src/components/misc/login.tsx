@@ -213,7 +213,7 @@ const LoginPage = observer(() => {
   return (
     <Flex minHeight="100vh" width="full">
       <Modal
-        isOpen={uiState.loginError != null}
+        isOpen={uiState.loginError !== null}
         onClose={() => {
           uiState.loginError = null;
         }}

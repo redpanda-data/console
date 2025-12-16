@@ -24,9 +24,9 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 
 import type { UnifiedShadowLink } from '../../model';
 
-export interface ConfigurationTopicReplicationProps {
+export type ConfigurationTopicReplicationProps = {
   shadowLink: UnifiedShadowLink;
-}
+};
 
 // Default properties that are synced when excludeDefault is false
 const DEFAULT_PROPERTIES = [

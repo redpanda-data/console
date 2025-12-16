@@ -660,7 +660,7 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
   const content = target && props.content(target);
 
   return (
-    <AlertDialog isOpen={target != null} leastDestructiveRef={cancelRef} onClose={cancel}>
+    <AlertDialog isOpen={target !== null} leastDestructiveRef={cancelRef} onClose={cancel}>
       <AlertDialogOverlay>
         <AlertDialogContent>
           <AlertDialogHeader>Confirm</AlertDialogHeader>
@@ -703,7 +703,7 @@ export const TasksColumn = observer((props: { observable: ClusterConnectors | Cl
   let running = 0;
   let total = 0;
 
-  if ('error' in obs && obs.error != null) {
+  if ('error' in obs && obs.error !== null) {
     return null;
   }
 
@@ -815,11 +815,11 @@ export const TaskState = observer(
 
       const close = () => showErr(undefined);
       errModal = (
-        <Modal isOpen={err != null} onClose={close}>
+        <Modal isOpen={err !== null} onClose={close}>
           <ModalOverlay />
           <ModalContent minW="5xl">
             <ModalHeader>
-              {task.taskId == null ? 'Error in Connector' : `Error trace of task ${task.taskId}`}
+              {task.taskId === null ? 'Error in Connector' : `Error trace of task ${task.taskId}`}
             </ModalHeader>
             <ModalBody>
               <Box className="codeBox" px={2} py={3} style={{ whiteSpace: 'pre', overflow: 'scroll' }} w="full">

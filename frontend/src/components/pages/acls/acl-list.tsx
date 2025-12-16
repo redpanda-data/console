@@ -506,7 +506,7 @@ const RolesTab = observer(() => {
     }
   });
   // @ts-expect-error perhaps required for MobX?
-  const _isLoading = rolesApi.roles == null;
+  const _isLoading = rolesApi.roles === null;
 
   const rolesWithMembers = roles.map((r) => {
     const members = rolesApi.roleMembers.get(r) ?? [];

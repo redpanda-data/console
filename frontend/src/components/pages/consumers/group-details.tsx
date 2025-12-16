@@ -486,7 +486,7 @@ const GroupByTopics = observer(
         ? 0 // only one -> expand
         : undefined; // more than one -> collapse
 
-    const nullEntries = topicEntries.filter((e) => e == null).length;
+    const nullEntries = topicEntries.filter((e) => e === null).length;
     if (topicEntries.length === 0 || topicEntries.length === nullEntries) {
       return (
         <Empty

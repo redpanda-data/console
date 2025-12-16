@@ -21,21 +21,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { getRuleDataTestId, handleUrlWithHost } from '../acls/new-acl/acl.model';
 import { OperationsBadge } from '../acls/new-acl/operations-badge';
 
-interface Role {
+type Role = {
   principalType: string;
   principalName: string;
-}
+};
 
-interface UserRolesCardProps {
+type UserRolesCardProps = {
   roles: Role[];
   onChangeRoles?: () => void;
-}
+};
 
-interface RoleTableRowProps {
+type RoleTableRowProps = {
   role: Role;
   isExpanded: boolean;
   onToggle: () => void;
-}
+};
 
 const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
   const navigate = useNavigate();

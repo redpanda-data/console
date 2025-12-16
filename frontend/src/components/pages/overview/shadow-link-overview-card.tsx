@@ -21,9 +21,9 @@ import { Feature, isSupported } from '../../../state/supported-features';
 import { ShadowLinkDiagram } from '../shadowlinks/details/shadow-link-diagram';
 import { ShadowLinkMetrics } from '../shadowlinks/details/shadow-link-metrics';
 
-interface ShadowLinkOverviewCardProps {
+type ShadowLinkOverviewCardProps = {
   shadowLink: ListShadowLinksResponse_ShadowLink;
-}
+};
 
 export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ shadowLink }) => {
   const navigate = useNavigate();

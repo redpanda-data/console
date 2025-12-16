@@ -72,7 +72,7 @@ export const UpdatePopup = observer(() => {
   }
 
   const serverTimestamp = uiState.serverBuildTimestamp;
-  if (serverTimestamp == null) {
+  if (serverTimestamp === null) {
     return null;
   }
 

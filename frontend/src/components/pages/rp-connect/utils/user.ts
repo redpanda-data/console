@@ -39,10 +39,10 @@ const createConsumerGroupACLs = (consumerGroupName: string, username: string) =>
   }));
 };
 
-interface TopicPermissionCheck {
+type TopicPermissionCheck = {
   hasPermissions: ACL_Operation[];
   missingPermissions: ACL_Operation[];
-}
+};
 
 export const getACLOperationName = (operation: ACL_Operation): string => {
   switch (operation) {
@@ -360,12 +360,12 @@ const createKafkaUser = async (
   }
 };
 
-interface CreateUserWithSecretsParams {
+type CreateUserWithSecretsParams = {
   userData: AddUserFormData;
   topicName?: string;
   consumerGroup?: string;
   existingUserSelected: boolean;
-}
+};
 
 const handleOperationResult = (result: OperationResult) => {
   if (result.success && result.message) {

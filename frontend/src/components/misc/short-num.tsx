@@ -16,11 +16,11 @@ import { numberToThousandsString } from '../../utils/tsx-utils';
 export function ShortNum(p: { value: number; tooltip?: boolean; className?: string; style?: CSSProperties }) {
   let { value, tooltip, className } = p;
   const style = p.style;
-  if (value == null) {
+  if (value === null) {
     return '';
   }
 
-  if (tooltip == null) {
+  if (tooltip === null) {
     tooltip = false;
   }
   const originalValue = value;

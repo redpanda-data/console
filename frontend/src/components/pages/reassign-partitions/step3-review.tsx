@@ -218,7 +218,7 @@ export class StepReview extends Component<{
 
     const totalTraffic = trafficStats.sum((t) => t.partitionStats.sum((p) => p.totalTraffic));
 
-    const isThrottled = settings.maxReplicationTraffic != null && settings.maxReplicationTraffic > 0;
+    const isThrottled = settings.maxReplicationTraffic !== null && settings.maxReplicationTraffic > 0;
     const trafficThrottle = isThrottled ? `${prettyBytesOrNA(settings.maxReplicationTraffic ?? 0)}/s` : 'disabled';
 
     const estimatedTime = (() => {
@@ -284,7 +284,7 @@ const ReviewPartitionTable = observer(
             header: 'Brokers After',
             cell: ({ row: { original: partition } }) => {
               const partitionAssignments = props.assignments.partitions.first((p) => p.partitionId === partition.id);
-              if (partitionAssignments == null || partitionAssignments.replicas == null) {
+              if (partitionAssignments === null || partitionAssignments.replicas === null) {
                 return '??';
               }
               return (

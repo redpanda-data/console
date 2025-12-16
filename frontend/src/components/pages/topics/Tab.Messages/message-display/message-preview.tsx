@@ -64,7 +64,7 @@ export const MessagePreview = observer(
       }
       if (
         value.encoding === 'null' ||
-        value.payload == null ||
+        value.payload === null ||
         (typeof value.payload === 'string' && value.payload.length === 0)
       ) {
         return <EmptyBadge mode="empty" />;

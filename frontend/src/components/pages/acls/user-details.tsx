@@ -64,7 +64,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
   }
 
   async refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListAcls) {
+    if (api.userData !== null && !api.userData.canListAcls) {
       return;
     }
 

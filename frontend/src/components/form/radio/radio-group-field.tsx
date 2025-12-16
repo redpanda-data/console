@@ -5,20 +5,20 @@ import { RadioCard, type Sizes } from './radio-card';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
-interface RadioGroupOption {
+type RadioGroupOption = {
   value: string;
   label: string;
   disabled?: boolean;
   invalid?: boolean;
-}
+};
 
-export interface RadioGroupFieldProps {
+export type RadioGroupFieldProps = {
   label?: ReactNode;
   helperText?: ReactNode;
   options: RadioGroupOption[];
   direction?: StackDirection;
   size?: Sizes;
-}
+};
 
 export const RadioGroupField = ({
   label,

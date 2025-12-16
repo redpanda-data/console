@@ -25,7 +25,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { ShadowTopicStatusBadge } from './shadow-topic-status-badge';
 
-interface ShadowTopicsTableProps {
+type ShadowTopicsTableProps = {
   topics: ShadowTopic[] | undefined;
   onFailoverTopic: (topicName: string) => void;
   onRefresh?: () => void;
@@ -35,7 +35,7 @@ interface ShadowTopicsTableProps {
   isFetching?: boolean;
   topicNameFilter?: string;
   onTopicNameFilterChange?: (value: string) => void;
-}
+};
 
 const emptyTopics: ShadowTopic[] = [];
 

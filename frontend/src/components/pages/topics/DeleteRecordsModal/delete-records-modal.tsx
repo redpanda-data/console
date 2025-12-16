@@ -421,7 +421,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
 
   // biome-ignore lint/suspicious/noConfusingVoidType: needed to fix error TS2345
   const handleFinish = (responseData: void | DeleteRecordsResponseData | null | undefined) => {
-    if (responseData == null) {
+    if (responseData === null) {
       setErrors(['You are not allowed to delete records on this topic. Please contact your Kafka administrator.']);
       return;
     }
@@ -483,7 +483,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     } else if (isSpecficPartition && isManualOffset) {
       // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
       api.deleteTopicRecords(topicName, specifiedOffset, specifiedPartition!)?.then(handleFinish);
-    } else if (isTimestamp && timestamp != null) {
+    } else if (isTimestamp && timestamp !== null) {
       api.getTopicOffsetsByTimestamp([topicName], timestamp).then((topicOffsets) => {
         if (isAllPartitions) {
           const pairs = topicOffsets[0].partitions.map(({ partitionId, offset }) => ({
@@ -494,7 +494,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
         } else if (isSpecficPartition) {
           const partitionOffset = topicOffsets[0].partitions.find((p) => specifiedPartition === p.partitionId)?.offset;
 
-          if (partitionOffset != null) {
+          if (partitionOffset !== null) {
             // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
             api.deleteTopicRecords(topicName, partitionOffset, specifiedPartition!)?.then(handleFinish);
           } else {
@@ -510,7 +510,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
   };
 
   const getPartitionInfo = (): PartitionInfo => {
-    if (specifiedPartition != null && partitionOption === 'specificPartition') {
+    if (specifiedPartition !== null && partitionOption === 'specificPartition') {
       return ['specificPartition', specifiedPartition];
     }
     return 'allPartitions';
@@ -544,7 +544,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
               specificPartition={specifiedPartition}
             />
           )}
-          {!hasErrors && step === 2 && partitionOption != null && (
+          {!hasErrors && step === 2 && partitionOption !== null && (
             <SelectOffsetStep
               offsetOption={offsetOption}
               onOffsetOptionSelected={setOffsetOption}

@@ -76,7 +76,7 @@ export class CreateTopicModalContent extends Component<Props> {
     const state = this.props.state;
 
     let replicationFactorError = '';
-    if (api.clusterOverview && state.replicationFactor != null) {
+    if (api.clusterOverview && state.replicationFactor !== null) {
       replicationFactorError = validateReplicationFactor(state.replicationFactor, api.isRedpanda);
     }
 
@@ -195,18 +195,18 @@ export function NumInput(p: {
   // We need to keep track of intermediate values.
   // Otherwise, typing '2e' for example, would be rejected.
   // But the user might still add '5', and '2e5' is a valid number.
-  const [editValue, setEditValue] = useState(p.value == null ? undefined : String(p.value));
-  useEffect(() => setEditValue(p.value == null ? undefined : String(p.value)), [p.value]);
+  const [editValue, setEditValue] = useState(p.value === null ? undefined : String(p.value));
+  useEffect(() => setEditValue(p.value === null ? undefined : String(p.value)), [p.value]);
 
   const commit = (x: number | undefined) => {
     if (p.disabled) {
       return;
     }
     let clampedValue = x;
-    if (clampedValue != null && p.min != null && clampedValue < p.min) {
+    if (clampedValue !== null && p.min !== null && clampedValue < p.min) {
       clampedValue = p.min;
     }
-    if (clampedValue != null && p.max != null && clampedValue > p.max) {
+    if (clampedValue !== null && p.max !== null && clampedValue > p.max) {
       clampedValue = p.max;
     }
     setEditValue(clampedValue === undefined ? clampedValue : String(clampedValue));
@@ -260,7 +260,7 @@ export function NumInput(p: {
         placeholder={p.placeholder}
         spellCheck={false}
         style={{ minWidth: '120px', width: '100%' }}
-        value={p.disabled && p.placeholder && p.value == null ? undefined : editValue}
+        value={p.disabled && p.placeholder && p.value === null ? undefined : editValue}
       />
 
       {p.addonAfter && <InputRightAddon p="0">{p.addonAfter}</InputRightAddon>}
@@ -279,7 +279,7 @@ function RetentionTimeSelect(p: {
   const numDisabled = unit === 'default' || unit === 'infinite';
 
   let placeholder: string | undefined;
-  if (unit === 'default' && p.defaultConfigValue != null) {
+  if (unit === 'default' && p.defaultConfigValue !== null) {
     if (Number.isFinite(Number(p.defaultConfigValue))) {
       placeholder = prettyMilliseconds(p.defaultConfigValue, {
         showLargeAsInfinite: true,
@@ -360,7 +360,7 @@ function RetentionSizeSelect(p: {
 
   let placeholder: string | undefined;
   if (unit === 'default') {
-    if (p.defaultConfigValue != null && p.defaultConfigValue !== '' && Number.isFinite(Number(p.defaultConfigValue))) {
+    if (p.defaultConfigValue !== null && p.defaultConfigValue !== '' && Number.isFinite(Number(p.defaultConfigValue))) {
       placeholder = prettyBytes(p.defaultConfigValue, { showLargeAsInfinite: true, showNullAs: 'default' });
     } else {
       placeholder = 'default';

@@ -23,7 +23,7 @@ import { useWatch } from 'react-hook-form';
 import { Item } from '../../../../redpanda-ui/components/item';
 import { getFilterTypeLabel } from '../../shadowlink-helpers';
 
-interface FilterItemProps<TFieldValues extends FieldValues> {
+type FilterItemProps<TFieldValues extends FieldValues> = {
   control: Control<TFieldValues>;
   index: number;
   fieldNamePrefix: string;
@@ -32,7 +32,7 @@ interface FilterItemProps<TFieldValues extends FieldValues> {
   viewType: boolean; // true = editable, false = resume/summary
   'data-testid'?: string;
   errorMessage?: string; // Error message to display in resume/summary view
-}
+};
 
 export const FilterItem = <TFieldValues extends FieldValues>({
   control,

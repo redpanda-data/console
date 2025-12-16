@@ -24,10 +24,10 @@ import { Text } from '../../redpanda-ui/components/typography';
 import { type AclDetail, handleUrlWithHost } from '../acls/new-acl/acl.model';
 import { ACLDetails } from '../acls/new-acl/acl-details';
 
-interface SecurityAclRulesTableProps {
+type SecurityAclRulesTableProps = {
   data: AclDetail[];
   roleName: string;
-}
+};
 
 // Table to display multiple ACL rules for a role
 const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) => {

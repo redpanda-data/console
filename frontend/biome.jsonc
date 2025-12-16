@@ -1,5 +1,6 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "extends": ["ultracite/core", "ultracite/react"],
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -42,17 +43,7 @@
         "organizeImports": {
           "level": "on",
           "options": {
-            "groups": [
-              ":PACKAGE:",
-              ":BLANK_LINE:",
-              [
-                "@/**"
-              ],
-              ":BLANK_LINE:",
-              [
-                "./**"
-              ]
-            ]
+            "groups": [":PACKAGE:", ":BLANK_LINE:", ["@/**"], ":BLANK_LINE:", ["./**"]]
           }
         },
         "useSortedAttributes": "on",
@@ -216,51 +207,38 @@
         "noUnknownPseudoElement": "error",
         "noUnknownTypeSelector": "error",
         "noUnknownUnit": "error",
-        "noUnmatchableAnbSelector": "error"
+        "noUnmatchableAnbSelector": "error",
+        "useImageSize": "off"
       },
       "nursery": {
         "noDeprecatedImports": "error",
         "noDuplicateDependencies": "error",
         "noMisusedPromises": "error",
         "noNextAsyncClientComponent": "error",
-        "noNonNullAssertedOptionalChain": "error",
         "noReactForwardRef": "off",
         "noShadow": "error",
         "noUnusedExpressions": "error",
         "noUselessUndefined": "off",
-        "useAnchorHref": "error",
         "useConsistentArrowReturn": "error",
-        "useConsistentTypeDefinitions": "off",
         "useExhaustiveSwitchCases": "error",
-        "useImageSize": "off",
         "useMaxParams": "error",
-        "useReactFunctionComponents": "off",
         "noJsxLiterals": "off",
         "noUselessCatchBinding": "off",
         "noUnnecessaryConditions": "off",
-        "noSecrets": "off",
         "useExplicitType": "off",
         "useSortedClasses": {
           "fix": "safe",
           "level": "error",
           "options": {
-            "attributes": [
-              "className"
-            ],
-            "functions": [
-              "clsx",
-              "cva",
-              "tw",
-              "twMerge",
-              "cn",
-              "twJoin",
-              "tv"
-            ]
+            "attributes": ["className"],
+            "functions": ["clsx", "cva", "tw", "twMerge", "cn", "twJoin", "tv"]
           }
         },
         "noFloatingPromises": "error",
         "noUnresolvedImports": "off",
-        "noImportCycles": "off"
+        "noImportCycles": "off",
+        "noLeakedRender": "off",
+        "noIncrementDecrement": "off"
       },
       "performance": {
         "noAccumulatingSpread": "error",
@@ -287,7 +265,7 @@
         "noInferrableTypes": "error",
         "noNamespace": "error",
         "noNegationElse": "error",
-        "noNestedTernary": "error",
+        "noNestedTernary": "off",
         "noNonNullAssertion": "error",
         "noParameterAssign": "error",
         "noParameterProperties": "error",
@@ -320,9 +298,7 @@
           "level": "error",
           "options": {
             "requireAscii": true,
-            "filenameCases": [
-              "kebab-case"
-            ],
+            "filenameCases": ["kebab-case"],
             "match": "[\\-$]?(.+?)[.](.+)"
           }
         },
@@ -358,7 +334,8 @@
         "useExportsLast": "off",
         "useSingleVarDeclarator": "off",
         "noDescendingSpecificity": "error",
-        "noValueAtRule": "error"
+        "noValueAtRule": "error",
+        "useReactFunctionComponents": "off"
       },
       "suspicious": {
         "noAlert": "error",
@@ -498,14 +475,9 @@
   },
   "overrides": [
     {
-      "includes": [
-        "**/*.{test,spec}.{ts,tsx,js,jsx}",
-        "**/__tests__/**/*"
-      ],
+      "includes": ["**/*.{test,spec}.{ts,tsx,js,jsx}", "**/__tests__/**/*"],
       "javascript": {
-        "globals": [
-          "vi"
-        ]
+        "globals": ["vi"]
       },
       "linter": {
         "rules": {
@@ -523,14 +495,7 @@
       }
     },
     {
-      "includes": [
-        "**/scripts/**/*",
-        "**/bin/**/*",
-        "*.mjs",
-        "*.cjs",
-        "**/tests/global-*.mjs",
-        "**/tests/*.sh"
-      ],
+      "includes": ["**/scripts/**/*", "**/bin/**/*", "*.mjs", "*.cjs", "**/tests/global-*.mjs", "**/tests/*.sh"],
       "linter": {
         "rules": {
           "suspicious": {
@@ -543,10 +508,7 @@
       }
     },
     {
-      "includes": [
-        "**/*.d.ts",
-        "**/{env,global,types}.d.ts"
-      ],
+      "includes": ["**/*.d.ts", "**/{env,global,types}.d.ts"],
       "linter": {
         "rules": {
           "correctness": {
@@ -557,14 +519,7 @@
       }
     },
     {
-      "includes": [
-        "**/dist/**/*",
-        "**/build/**/*",
-        "**/out/**/*",
-        "**/coverage/**/*",
-        ".env",
-        ".env.*"
-      ],
+      "includes": ["**/dist/**/*", "**/build/**/*", "**/out/**/*", "**/coverage/**/*", ".env", ".env.*"],
       "formatter": {
         "enabled": false
       },
@@ -587,9 +542,5 @@
         }
       }
     }
-  ],
-  "extends": [
-    "ultracite/core",
-    "ultracite/react"
   ]
 }

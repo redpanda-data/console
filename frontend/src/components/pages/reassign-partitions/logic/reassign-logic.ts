@@ -212,7 +212,7 @@ function computeReplicaAssignments(
   const resultBrokers: ExBroker[] = []; // result
   // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
   const sourceBrokers = partition.replicas.map((id) => allBrokers.first((b) => b.brokerId === id)!);
-  if (sourceBrokers.any((x) => x == null)) {
+  if (sourceBrokers.any((x) => x === null)) {
     throw new Error(
       `replicas of partition ${partition.id} (${toJson(partition.replicas)}) define a brokerId which can't be found in 'allBrokers': ${toJson(allBrokers.map((b) => ({ id: b.brokerId, address: b.address, rack: b.rack })))}`
     );
@@ -527,14 +527,14 @@ class ExBroker implements Broker {
     this.actualSize = 0;
     this.actualLeader = 0;
 
-    if (apiData.topicPartitions == null) {
+    if (apiData.topicPartitions === null) {
       throw new Error(
         `cannot recompute actual usage of broker '${this.brokerId}' because 'api.topicPartitions == null' (no permissions?)`
       );
     }
 
     for (const [topic, partitions] of apiData.topicPartitions) {
-      if (partitions == null) {
+      if (partitions === null) {
         throw new Error(
           `cannot recompute actual usage of broker '${this.brokerId}' for topic '${topic}', because 'partitions == null' (no permissions?)`
         );
@@ -601,7 +601,7 @@ function checkArguments(apiData: ApiData, selectedTopicPartitions: TopicPartitio
   throwIfNullOrEmpty('apiData.brokers', apiData.brokers);
   throwIfNullOrEmpty('apiData.topics', apiData.topics);
   throwIfNullOrEmpty('apiData.topicPartitions', apiData.topicPartitions);
-  const topicsMissingPartitionData = apiData.topics.filter((t) => apiData.topicPartitions.get(t.topicName) == null);
+  const topicsMissingPartitionData = apiData.topics.filter((t) => apiData.topicPartitions.get(t.topicName) === null);
   if (topicsMissingPartitionData.length > 0) {
     throw new Error(
       `apiData is missing topicPartitions for these topics: ${topicsMissingPartitionData.map((t) => t.topicName).join(', ')}`
@@ -625,7 +625,7 @@ function checkArguments(apiData: ApiData, selectedTopicPartitions: TopicPartitio
 }
 
 function throwIfNullOrEmpty(name: string, obj: unknown[] | Map<unknown, unknown>) {
-  if (obj == null) {
+  if (obj === null) {
     throw new Error(`${name} is null`);
   }
 

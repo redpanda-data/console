@@ -59,13 +59,13 @@ import { parseSchema } from '../utils/schema';
 import { type PipelineMode, usePipelineMode } from '../utils/use-pipeline-mode';
 import { getConnectTemplate } from '../utils/yaml';
 
-interface FooterProps {
+type FooterProps = {
   mode: PipelineMode;
   onSave?: () => void;
   onCancel: () => void;
   isSaving?: boolean;
   disabled?: boolean;
-}
+};
 
 const Footer = memo(({ mode, onSave, onCancel, isSaving, disabled }: FooterProps) => {
   if (mode === 'view') {

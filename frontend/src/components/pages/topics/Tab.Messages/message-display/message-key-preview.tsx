@@ -84,7 +84,7 @@ export const MessageKeyPreview = observer(
       if (key.isPayloadNull) {
         return <EmptyBadge mode="null" />;
       }
-      if (key.payload == null || (typeof key.payload === 'string' && key.payload.length === 0)) {
+      if (key.payload === null || (typeof key.payload === 'string' && key.payload.length === 0)) {
         return <EmptyBadge mode="empty" />;
       }
 

@@ -248,17 +248,20 @@ describe('getUpdateValuesForConnection', () => {
         newCredentials: { username: 'admin', password: 'pass', mechanism: ScramMechanism.SCRAM_SHA_512 },
         expectedPath: 'configurations.client_options.authentication_configuration',
       },
-    ])(
-      'should detect $description',
-      ({ originalUseScram, newUseScram, originalCredentials, newCredentials, expectedPath }) => {
-        const original = { ...baseFormValues, useScram: originalUseScram, scramCredentials: originalCredentials };
-        const updated = { ...baseFormValues, useScram: newUseScram, scramCredentials: newCredentials };
+    ])('should detect $description', ({
+      originalUseScram,
+      newUseScram,
+      originalCredentials,
+      newCredentials,
+      expectedPath,
+    }) => {
+      const original = { ...baseFormValues, useScram: originalUseScram, scramCredentials: originalCredentials };
+      const updated = { ...baseFormValues, useScram: newUseScram, scramCredentials: newCredentials };
 
-        const result = getUpdateValuesForConnection(updated, original);
+      const result = getUpdateValuesForConnection(updated, original);
 
-        expect(result.fieldMaskPaths).toContain(expectedPath);
-      }
-    );
+      expect(result.fieldMaskPaths).toContain(expectedPath);
+    });
   });
 
   describe('Advanced client options changes', () => {

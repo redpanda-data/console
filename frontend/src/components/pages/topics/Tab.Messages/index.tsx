@@ -161,7 +161,7 @@ function getMessageAsString(value: string | TopicMessage): string {
 }
 
 function getPayloadAsString(value: string | Uint8Array | object): string {
-  if (value == null) {
+  if (value === null) {
     return '';
   }
 
@@ -230,14 +230,14 @@ function onCopyKey(original: TopicMessage, toast: ReturnType<typeof useToast>) {
     .catch(navigatorClipboardErrorHandler);
 }
 
-interface LoadLargeMessageParams {
+type LoadLargeMessageParams = {
   topicName: string;
   messagePartitionID: number;
   offset: number;
   setMessages: React.Dispatch<React.SetStateAction<TopicMessage[]>>;
   keyDeserializer: PayloadEncoding;
   valueDeserializer: PayloadEncoding;
-}
+};
 
 async function loadLargeMessage({
   topicName,
@@ -1071,7 +1071,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           </Menu>
           <Flex alignItems="flex-end">
             {/* Refresh Button */}
-            {searchPhase == null && (
+            {searchPhase === null && (
               <Tooltip hasArrow label="Repeat current search" placement="top">
                 <IconButton
                   aria-label="Repeat current search"
@@ -1082,7 +1082,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                 />
               </Tooltip>
             )}
-            {searchPhase != null && (
+            {searchPhase !== null && (
               <Tooltip hasArrow label="Stop searching" placement="top">
                 <IconButton
                   aria-label="Stop searching"

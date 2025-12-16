@@ -22,7 +22,7 @@ type HeapUserData = {
 };
 
 declare global {
-  interface Window {
+  type Window = {
     heap?: {
       identify: (email: string) => void;
       addUserProperties: (properties: Record<string, unknown>) => void;
@@ -30,7 +30,7 @@ declare global {
       addEventProperties: (properties: Record<string, unknown>) => void;
       resetIdentity: () => void;
     };
-  }
+  };
 }
 
 /**

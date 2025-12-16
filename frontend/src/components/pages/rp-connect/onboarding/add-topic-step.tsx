@@ -46,10 +46,10 @@ import {
 } from '../types/wizard';
 import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FORM_DEFAULTS } from '../utils/topic';
 
-interface AddTopicStepProps {
+type AddTopicStepProps = {
   defaultTopicName?: string;
   onValidityChange?: (isValid: boolean) => void;
-}
+};
 
 export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps & MotionProps>(
   ({ defaultTopicName, onValidityChange, ...motionProps }, ref) => {

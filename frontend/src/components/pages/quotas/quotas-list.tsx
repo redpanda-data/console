@@ -40,14 +40,14 @@ class QuotasList extends PageComponent {
   }
 
   refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListQuotas) {
+    if (api.userData !== null && !api.userData.canListQuotas) {
       return;
     }
     api.refreshQuotas(force);
   }
 
   render() {
-    if (api.userData != null && !api.userData.canListQuotas) {
+    if (api.userData !== null && !api.userData.canListQuotas) {
       return PermissionDenied;
     }
     if (api.Quotas === undefined) {

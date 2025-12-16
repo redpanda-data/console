@@ -27,20 +27,20 @@ import { TLS_MODE, type TLSMode } from '../model';
 
 export type CertificateType = 'ca' | 'clientCert' | 'clientKey';
 
-interface CertificateValue {
+type CertificateValue = {
   filePath?: string;
   pemContent?: string;
   fileName?: string;
-}
+};
 
-interface CertificateDialogProps {
+type CertificateDialogProps = {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   certificateType: CertificateType;
   mode: TLSMode;
   existingValue?: CertificateValue;
   onSave: (value: CertificateValue) => void;
-}
+};
 
 const CERTIFICATE_LABELS: Record<CertificateType, string> = {
   ca: 'CA certificate',

@@ -14,10 +14,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../redpanda-ui/comp
 import { Separator } from '../../redpanda-ui/components/separator';
 import { Text } from '../../redpanda-ui/components/typography';
 
-interface UserInformationCardProps {
+type UserInformationCardProps = {
   username: string;
   onEditPassword?: () => void;
-}
+};
 
 export const UserInformationCard = ({ username, onEditPassword }: UserInformationCardProps) => {
   return (

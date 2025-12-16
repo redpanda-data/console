@@ -43,9 +43,9 @@ type HubspotUserData = {
 };
 
 declare global {
-  interface Window {
+  type Window = {
     _hsq: unknown[];
-  }
+  };
 }
 
 export const hubspotSubmit = ({

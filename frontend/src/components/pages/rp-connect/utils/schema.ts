@@ -463,12 +463,12 @@ function generateScalarValue(spec: RawFieldSpec, options: GenerateDefaultValueOp
   }
 }
 
-interface GenerateDefaultValueOptions {
+type GenerateDefaultValueOptions = {
   showOptionalFields?: boolean;
   showAdvancedFields?: boolean;
   componentName?: string;
   parentName?: string;
-}
+};
 
 /**
  * Converts string default values to their proper types

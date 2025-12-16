@@ -36,7 +36,7 @@ export function partitionSelectionToTopicPartitions(
 
       const partitionIds = partitionSelection[topicName];
       const relevantPartitions = partitionIds.map((id) => allPartitions.first((p) => p.id === id));
-      if (relevantPartitions.any((p) => p == null)) {
+      if (relevantPartitions.any((p) => p === null)) {
         return; // at least one selected partition not available
       }
 
@@ -61,14 +61,14 @@ export function computeMovedReplicas(
   // - get Partition objects
   // - compute number of moved replicas
   for (const [topicName, allPartitions] of apiTopicPartitions) {
-    if (allPartitions == null) {
+    if (allPartitions === null) {
       continue;
     }
-    if (partitionSelection[topicName] == null || partitionSelection[topicName].length === 0) {
+    if (partitionSelection[topicName] === null || partitionSelection[topicName].length === 0) {
       continue;
     }
     const topic = apiTopics?.first((t) => t.topicName === topicName);
-    if (topic == null) {
+    if (topic === null) {
       continue;
     }
 

@@ -48,7 +48,7 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
     const sliderValue = Math.log10(value);
 
     const tipText = (f: number | null) => {
-      if (f == null) {
+      if (f === null) {
         return null;
       }
       if (f < 3) {

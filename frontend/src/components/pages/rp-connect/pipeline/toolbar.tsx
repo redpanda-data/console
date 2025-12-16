@@ -29,11 +29,11 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-interface ToolbarProps {
+type ToolbarProps = {
   pipelineId: string;
   pipelineName?: string;
   pipelineState?: Pipeline_State;
-}
+};
 
 export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: ToolbarProps) => {
   const navigate = useNavigate();

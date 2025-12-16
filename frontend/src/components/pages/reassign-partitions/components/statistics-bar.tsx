@@ -26,7 +26,7 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
   }
 
   render() {
-    if (api.topicPartitions == null) {
+    if (api.topicPartitions === null) {
       return null;
     }
 
@@ -88,10 +88,10 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
   @computed get selectedPartitions(): { topic: string; partitions: Partition[] }[] {
     const ar: { topic: string; partitions: Partition[] }[] = [];
     for (const [topic, partitions] of api.topicPartitions) {
-      if (partitions == null) {
+      if (partitions === null) {
         continue;
       }
-      if (this.props.partitionSelection[topic] == null) {
+      if (this.props.partitionSelection[topic] === null) {
         continue;
       }
       const relevantPartitions = partitions.filter((p) => this.props.partitionSelection[topic].includes(p.id));
@@ -101,7 +101,7 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
   }
 
   @computed get involvedBrokers(): Broker[] | null {
-    if (api.clusterInfo == null) {
+    if (api.clusterInfo === null) {
       return null;
     }
     const brokerIds = new Set<number>();

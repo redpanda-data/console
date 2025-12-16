@@ -32,9 +32,9 @@ const CertificateValue = ({ value, isFilePath }: { value: string; isFilePath: bo
   return <>{value}</>;
 };
 
-export interface TlsCertificatesConfigProps {
+export type TlsCertificatesConfigProps = {
   tlsSettings?: UnifiedTLSSettings;
-}
+};
 
 export const TlsCertificatesConfig = ({ tlsSettings }: TlsCertificatesConfigProps) => {
   // CA Certificate

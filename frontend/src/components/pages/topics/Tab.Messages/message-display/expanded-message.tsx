@@ -56,7 +56,7 @@ export const ExpandedMessage: FC<{
                 {msg.key === null || msg.key.size === 0 ? 'Key' : `Key (${prettyBytes(msg.key.size)})`}
               </Box>
             ),
-            isDisabled: msg.key == null || msg.key.size === 0,
+            isDisabled: msg.key === null || msg.key.size === 0,
             component: (
               <Box>
                 <TroubleshootReportViewer payload={msg.key} />

@@ -281,7 +281,7 @@ export function getPreviewTags(
 
     const trimmed = t.pattern.trim();
     const searchPath = parseJsonPath(trimmed);
-    if (searchPath == null) {
+    if (searchPath === null) {
       continue;
     }
     if (typeof searchPath === 'string') {

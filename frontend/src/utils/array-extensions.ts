@@ -14,7 +14,7 @@
 export {};
 
 declare global {
-  interface Array<T> {
+  type Array<T> = {
     remove(obj: T): boolean;
     removeAll(selector: (x: T) => boolean): number;
 
@@ -79,7 +79,7 @@ declare global {
     isEqual(this: string[], other: string[]): boolean;
 
     orderBy<T>(this: T[], getElementOrder: (item: T) => number): T[];
-  }
+  };
 }
 
 Array.prototype.remove = function remove<T>(this: T[], obj: T): boolean {
@@ -233,7 +233,7 @@ Array.prototype.groupInto = function groupInto<T, K>(this: T[], keySelector: (x:
 };
 
 Array.prototype.filterNull = function filterNull<T>(this: (T | null | undefined)[]): T[] {
-  return this.filter((x) => x != null) as T[];
+  return this.filter((x) => x !== null) as T[];
 };
 
 Array.prototype.filterFalsy = function filterFalsy<T>(this: (T | null | undefined)[]): T[] {

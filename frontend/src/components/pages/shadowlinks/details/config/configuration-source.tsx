@@ -26,9 +26,9 @@ import type React from 'react';
 import { TlsCertificatesConfig } from './tls-certificates-config';
 import type { UnifiedShadowLink } from '../../model';
 
-export interface ConfigurationSourceProps {
+export type ConfigurationSourceProps = {
   shadowLink: UnifiedShadowLink;
-}
+};
 
 const ConfigField = ({ label, value, testId }: { label: string; value: React.ReactNode; testId?: string }) => (
   <div className="flex items-start justify-between border-b py-3 last:border-b-0">

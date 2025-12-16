@@ -87,7 +87,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
       this.infoItems.push({
         name: 'Stack (Decoded)',
         value: () => {
-          if (dataHolder.value == null) {
+          if (dataHolder.value === null) {
             return <div style={{ fontSize: '2rem' }}>Decoding stack trace, please wait...</div>;
           }
           return dataHolder.value;

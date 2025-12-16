@@ -171,7 +171,7 @@ class ReassignPartitions extends PageComponent {
       }
 
       // has user selected a topic partition that is not available anymore?
-      if (reset === false && this.selectedTopicPartitions == null) {
+      if (reset === false && this.selectedTopicPartitions === null) {
         reset = true;
       }
 
@@ -252,7 +252,7 @@ class ReassignPartitions extends PageComponent {
                 <Statistic
                   title="Total Partitions"
                   value={
-                    partitionCountLeaders != null && partitionCountOnlyReplicated != null
+                    partitionCountLeaders !== null && partitionCountOnlyReplicated !== null
                       ? partitionCountLeaders + partitionCountOnlyReplicated
                       : '...'
                   }
@@ -497,7 +497,7 @@ class ReassignPartitions extends PageComponent {
     if (this.currentStep === 1) {
       // Assign -> Review
       const topicPartitions = this.selectedTopicPartitions;
-      if (topicPartitions == null) {
+      if (topicPartitions === null) {
         this.resetSelectionAndPage(true, true);
         return;
       }
@@ -505,7 +505,7 @@ class ReassignPartitions extends PageComponent {
       const targetBrokers = this.selectedBrokerIds
         .map((id) => api.clusterInfo?.brokers.first((b) => b.brokerId === id))
         .filterFalsy();
-      if (targetBrokers.any((b) => b == null)) {
+      if (targetBrokers.any((b) => b === null)) {
         throw new Error('one or more broker ids could not be mapped to broker entries');
       }
 
@@ -539,7 +539,7 @@ class ReassignPartitions extends PageComponent {
     if (this.currentStep === 2) {
       // Review -> Start
       const request = this.reassignmentRequest;
-      if (request == null) {
+      if (request === null) {
         toast({
           status: 'error',
           description: 'reassignment request was null',
@@ -578,7 +578,7 @@ class ReassignPartitions extends PageComponent {
   }
 
   async startReassignment(request: PartitionReassignmentRequest): Promise<boolean> {
-    if (uiSettings.reassignment.maxReplicationTraffic != null && uiSettings.reassignment.maxReplicationTraffic > 0) {
+    if (uiSettings.reassignment.maxReplicationTraffic !== null && uiSettings.reassignment.maxReplicationTraffic > 0) {
       const success = await this.setTrafficLimit(request);
       if (!success) {
         return false;
@@ -595,7 +595,7 @@ class ReassignPartitions extends PageComponent {
 
       const errors = response.reassignPartitionsResponses
         .map((e) => {
-          const partErrors = e.partitions.filter((p) => p.errorMessage != null);
+          const partErrors = e.partitions.filter((p) => p.errorMessage !== null);
           if (partErrors.length === 0) {
             return null;
           }
@@ -656,7 +656,7 @@ class ReassignPartitions extends PageComponent {
           ?.first((partition) => partition.id === partitionId)?.replicas;
         const brokersNew = p.replicas;
 
-        if (brokersOld == null || brokersNew == null) {
+        if (brokersOld === null || brokersNew === null) {
           continue;
         }
 
@@ -745,7 +745,7 @@ class ReassignPartitions extends PageComponent {
   }
 
   startRefreshingTopicConfigs() {
-    if (IsDev && this.refreshTopicConfigsTimer == null) {
+    if (IsDev && this.refreshTopicConfigsTimer === null) {
       this.refreshTopicConfigsTimer = window.setInterval(this.refreshTopicConfigs, 6000);
     }
   }
@@ -820,10 +820,10 @@ class ReassignPartitions extends PageComponent {
   }
 
   @computed get topicsWithMoves(): TopicWithMoves[] {
-    if (this.reassignmentRequest == null) {
+    if (this.reassignmentRequest === null) {
       return [];
     }
-    if (api.topics == null) {
+    if (api.topics === null) {
       return [];
     }
     return computeMovedReplicas(this.partitionSelection, this.reassignmentRequest, api.topics, api.topicPartitions);

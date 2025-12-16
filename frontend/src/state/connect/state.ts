@@ -301,7 +301,7 @@ export class ConnectClusterStore {
       if (connectorType) {
         connectorStore = new ConnectorPropertiesStore(this.clusterName, pluginClassName, connectorType, initialConfig, {
           secretStore: this.features.secretStore,
-          editing: initialConfig != null,
+          editing: initialConfig !== null,
         });
         this.connectors.set(identifier, connectorStore);
       }
@@ -400,7 +400,7 @@ export class SecretsStore {
 
   get secrets() {
     for (const [key, value] of this._data) {
-      if (value.value !== '' && value.value != null) {
+      if (value.value !== '' && value.value !== null) {
         this._secrets.set(key, value);
       }
     }
@@ -610,7 +610,7 @@ export class ConnectorPropertiesStore {
         this.propsByName.set(p.name, p);
       }
 
-      if (this.appliedConfig == null) {
+      if (this.appliedConfig === null) {
         // Set default values
         for (const p of allProps) {
           if (p.entry.definition.custom_default_value !== undefined) {
@@ -646,7 +646,7 @@ export class ConnectorPropertiesStore {
               // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
               return prop!;
             })
-            .filter((x) => x != null);
+            .filter((x) => x !== null);
 
           this.allGroups.push(this.createPropertyGroup(step, groupDef, groupProps));
         }

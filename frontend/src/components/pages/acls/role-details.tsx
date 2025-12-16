@@ -50,7 +50,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
   }
 
   async refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListAcls) {
+    if (api.userData !== null && !api.userData.canListAcls) {
       return;
     }
 

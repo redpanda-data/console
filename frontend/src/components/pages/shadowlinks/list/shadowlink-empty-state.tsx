@@ -33,9 +33,9 @@ const ShadowingDescription = () => (
   </>
 );
 
-interface ShadowLinkEmptyStateProps {
+type ShadowLinkEmptyStateProps = {
   onCreateClick: () => void;
-}
+};
 
 export const ShadowLinkEmptyState = ({ onCreateClick }: ShadowLinkEmptyStateProps) => (
   <Card size={'full'}>
@@ -86,10 +86,10 @@ export const ShadowLinkFeatureDisabledState = () => (
   </Card>
 );
 
-interface ShadowLinkErrorStateProps {
+type ShadowLinkErrorStateProps = {
   errorMessage: string;
   onRetry: () => void;
-}
+};
 
 export const ShadowLinkErrorState = ({ errorMessage, onRetry }: ShadowLinkErrorStateProps) => (
   <Card data-testid="shadowlink-error-card" size="full">
@@ -108,10 +108,10 @@ export const ShadowLinkErrorState = ({ errorMessage, onRetry }: ShadowLinkErrorS
   </Card>
 );
 
-interface ShadowLinkNotFoundStateProps {
+type ShadowLinkNotFoundStateProps = {
   name: string;
   onBackClick: () => void;
-}
+};
 
 export const ShadowLinkNotFoundState = ({ name, onBackClick }: ShadowLinkNotFoundStateProps) => (
   <div className="flex h-64 items-center justify-center">
@@ -126,9 +126,9 @@ export const ShadowLinkNotFoundState = ({ name, onBackClick }: ShadowLinkNotFoun
   </div>
 );
 
-interface ShadowLinkLoadErrorStateProps {
+type ShadowLinkLoadErrorStateProps = {
   errorMessage: string;
-}
+};
 
 export const ShadowLinkLoadErrorState = ({ errorMessage }: ShadowLinkLoadErrorStateProps) => (
   <div className="flex h-64 items-center justify-center">

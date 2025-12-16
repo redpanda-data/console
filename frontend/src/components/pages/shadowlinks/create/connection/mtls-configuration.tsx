@@ -38,12 +38,12 @@ const MTLS_CLIENT_KEY_SECRET_TEXT: SecretSelectorCustomText = {
   emptyStateDescription: 'Create a secret to securely store your mTLS client private key',
 };
 
-interface MtlsCertificatesUploadProps {
+type MtlsCertificatesUploadProps = {
   control: Control<FormValues>;
   errors: FieldErrors<FormValues>;
   renderCertificateButton: (certType: CertificateType) => React.ReactNode;
   hideClientKey?: boolean;
-}
+};
 
 const MtlsCertificatesUpload = ({
   control,

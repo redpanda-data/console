@@ -336,7 +336,7 @@ export function collectElements2(
           for (const key in currentObj as Record<string, unknown>) {
             if (Object.hasOwn(currentObj as Record<string, unknown>, key)) {
               const value = (currentObj as Record<string, unknown>)[key];
-              if (value == null || typeof value === 'function') {
+              if (value === null || typeof value === 'function') {
                 continue;
               }
 
@@ -353,7 +353,7 @@ export function collectElements2(
           for (const key in currentObj as Record<string, unknown>) {
             if (Object.hasOwn(currentObj as Record<string, unknown>, key)) {
               const value = (currentObj as Record<string, unknown>)[key];
-              if (value == null || typeof value === 'function') {
+              if (value === null || typeof value === 'function') {
                 continue;
               }
 
@@ -446,7 +446,7 @@ function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown
       }
 
       // descend into object
-      if (typeof value === 'object' && value != null) {
+      if (typeof value === 'object' && value !== null) {
         const childResult = getAllKeysRecursive(ctx, value as Record<string, unknown>);
 
         if (childResult === 'abort') {
@@ -834,7 +834,7 @@ export function delay(timeoutMs: number): Promise<void> {
 }
 
 export function setHeader(init: RequestInit, name: string, value: string) {
-  if (init.headers == null) {
+  if (init.headers === null) {
     init.headers = [[name, value]];
   } else if (Array.isArray(init.headers)) {
     init.headers.push([name, value]);

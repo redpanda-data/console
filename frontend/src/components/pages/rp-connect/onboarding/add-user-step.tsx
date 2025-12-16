@@ -56,14 +56,14 @@ import {
   useCreateUserWithSecretsMutation,
 } from '../utils/user';
 
-interface AddUserStepProps {
+type AddUserStepProps = {
   defaultUsername?: string;
   defaultSaslMechanism?: (typeof SASL_MECHANISMS)[number];
   topicName?: string;
   defaultConsumerGroup?: string;
   showConsumerGroupFields?: boolean;
   onValidityChange?: (isValid: boolean) => void;
-}
+};
 
 export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProps>(
   (

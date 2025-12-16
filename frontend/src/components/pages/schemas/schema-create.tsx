@@ -125,7 +125,7 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
       return DefaultSkeleton;
     }
 
-    if (this.editorState == null) {
+    if (this.editorState === null) {
       const schema = subject.schemas.first((x) => x.version === subject.latestActiveVersion);
       if (!schema) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage

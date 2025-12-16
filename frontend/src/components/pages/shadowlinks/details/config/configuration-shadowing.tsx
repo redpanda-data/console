@@ -25,9 +25,9 @@ import {
   getResourceTypeLabel,
 } from '../../shadowlink-helpers';
 
-export interface ConfigurationShadowingProps {
+export type ConfigurationShadowingProps = {
   shadowLink: UnifiedShadowLink;
-}
+};
 
 // Component to display a single name filter (topic or consumer group)
 const NameFilterDisplay = ({ filter, index }: { filter: UnifiedNameFilter; index: number }) => {
