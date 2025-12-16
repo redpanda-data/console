@@ -11,6 +11,7 @@
 
 'use client';
 
+import { ConnectError } from '@connectrpc/connect';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -48,6 +49,7 @@ import { useDeleteSecretMutation } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { AIAgentActions } from './ai-agent-actions';
 import { AIAgentDeleteHandler, type AIAgentDeleteHandlerRef } from './ai-agent-delete-handler';
@@ -137,7 +139,6 @@ const transformAPIAIAgent = (apiAgent: APIAIAgent): AIAgent => ({
 });
 
 type CreateColumnsOptions = {
-  setIsDeleteDialogOpen: (open: boolean) => void;
   mcpServersMap: Map<string, { name: string; tools: string[] }>;
   handleDeleteWithServiceAccount: (
     agentId: string,
@@ -149,7 +150,7 @@ type CreateColumnsOptions = {
 };
 
 export const createColumns = (options: CreateColumnsOptions): ColumnDef<AIAgent>[] => {
-  const { setIsDeleteDialogOpen, mcpServersMap, handleDeleteWithServiceAccount, isDeletingAgent } = options;
+  const { mcpServersMap, handleDeleteWithServiceAccount, isDeletingAgent } = options;
 
   return [
     {
@@ -235,7 +236,6 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<AIAgent>
           agent={row.original}
           isDeletingAgent={isDeletingAgent}
           onDeleteWithServiceAccount={handleDeleteWithServiceAccount}
-          setIsDeleteDialogOpen={setIsDeleteDialogOpen}
         />
       ),
     },
@@ -290,7 +290,6 @@ const AIAgentsListPageContent = ({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
   // React Query hooks
   const { data: aiAgentsData, isLoading, error } = useListAIAgentsQuery({});
@@ -321,8 +320,9 @@ const AIAgentsListPageContent = ({
 
         // Show single success toast regardless of what was deleted
         toast.success('AI agent deleted successfully');
-      } catch (_error) {
-        toast.error('Failed to delete AI agent');
+      } catch (deleteError) {
+        const connectError = ConnectError.from(deleteError);
+        toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'delete', entity: 'AI agent' }));
       }
     },
     [deleteAIAgent, deleteSecret, deleteHandlerRef]
@@ -350,13 +350,14 @@ const AIAgentsListPageContent = ({
   }, []);
 
   const handleRowClick = (agentId: string, event: React.MouseEvent) => {
-    // Don't navigate if delete dialog is open
-    if (isDeleteDialogOpen) {
-      return;
-    }
-    // Don't navigate if clicking on the actions dropdown or its trigger
     const target = event.target as HTMLElement;
-    if (target.closest('[data-actions-column]') || target.closest('[role="menuitem"]') || target.closest('button')) {
+    if (
+      target.closest('[data-actions-column]') ||
+      target.closest('[role="menuitem"]') ||
+      target.closest('[role="dialog"]') ||
+      target.closest('[role="alertdialog"]') ||
+      target.closest('button')
+    ) {
       return;
     }
     navigate(`/agents/${agentId}`);
@@ -365,7 +366,6 @@ const AIAgentsListPageContent = ({
   const columns = React.useMemo(
     () =>
       createColumns({
-        setIsDeleteDialogOpen,
         mcpServersMap,
         handleDeleteWithServiceAccount,
         isDeletingAgent,

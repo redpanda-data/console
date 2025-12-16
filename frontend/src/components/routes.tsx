@@ -51,9 +51,10 @@ import CreateConnector from './pages/connect/create-connector';
 import KafkaConnectOverview from './pages/connect/overview';
 import GroupDetails from './pages/consumers/group-details';
 import GroupList from './pages/consumers/group-list';
-import KnowledgeBaseCreate from './pages/knowledgebase/knowledge-base-create';
-import KnowledgeBaseDetails from './pages/knowledgebase/knowledge-base-details';
-import KnowledgeBaseList from './pages/knowledgebase/knowledge-base-list';
+import { KnowledgeBaseCreatePage } from './pages/knowledgebase/create/knowledge-base-create-page';
+import { KnowledgeBaseDetailsPage } from './pages/knowledgebase/details/knowledge-base-details-page';
+import { KnowledgeBaseDocumentDetailsPage } from './pages/knowledgebase/details/knowledge-base-document-details-page';
+import { KnowledgeBaseListPage } from './pages/knowledgebase/list/knowledge-base-list-page';
 import { RemoteMCPCreatePage } from './pages/mcp-servers/create/remote-mcp-create-page';
 import { RemoteMCPDetailsPage } from './pages/mcp-servers/details/remote-mcp-details-page';
 import { RemoteMCPListPage } from './pages/mcp-servers/list/remote-mcp-list-page';
@@ -436,22 +437,27 @@ export const APP_ROUTES: IRouteEntry[] = [
 
   MakeRoute<{}>(
     '/knowledgebases',
-    KnowledgeBaseList,
+    KnowledgeBaseListPage,
     'Knowledge Bases',
     BookOpenIcon,
     true,
     routeVisibility(
-      // Do not display knowledge bases if feature flag is disabled or in serverless mode
-      () => isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi') && !isServerless(), // Needed to pass flags to current routing solution
+      // Do not display knowledge bases if feature flag is disabled
+      () => isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi'), // Needed to pass flags to current routing solution
       [Feature.PipelineService],
       [],
       []
     )
   ),
-  MakeRoute<{}>('/knowledgebases/create', KnowledgeBaseCreate, 'Create Knowledge Base'),
+  MakeRoute<{}>('/knowledgebases/create', KnowledgeBaseCreatePage, 'Create Knowledge Base'),
+  MakeRoute<{ knowledgebaseId: string; documentId: string }>(
+    '/knowledgebases/:knowledgebaseId/documents/:documentId',
+    KnowledgeBaseDocumentDetailsPage,
+    'Document Details'
+  ),
   MakeRoute<{ knowledgebaseId: string }>(
     '/knowledgebases/:knowledgebaseId',
-    KnowledgeBaseDetails,
+    KnowledgeBaseDetailsPage,
     'Knowledge Base Details'
   ),
 

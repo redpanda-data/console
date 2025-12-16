@@ -13,6 +13,7 @@
 
 import { CLOUD_MANAGED_TAG_KEYS } from 'components/constants';
 import { Button } from 'components/redpanda-ui/components/button';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +25,7 @@ import { Label } from 'components/redpanda-ui/components/label';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { Copy, Loader2, MoreHorizontal, Pause, Play } from 'lucide-react';
+import { Loader2, MoreHorizontal, Pause, Play } from 'lucide-react';
 import React from 'react';
 import { MCPServer_State, useStartMCPServerMutation, useStopMCPServerMutation } from 'react-query/api/remote-mcp';
 import { toast } from 'sonner';
@@ -40,15 +41,9 @@ type MCPActionsProps = {
     serviceAccountId: string | null
   ) => Promise<void>;
   isDeletingServer: boolean;
-  setIsDeleteDialogOpen: (open: boolean) => void;
 };
 
-export const MCPActions = ({
-  server,
-  onDeleteWithServiceAccount,
-  isDeletingServer,
-  setIsDeleteDialogOpen,
-}: MCPActionsProps) => {
+export const MCPActions = ({ server, onDeleteWithServiceAccount, isDeletingServer }: MCPActionsProps) => {
   const { mutate: startMCPServer, isPending: isStarting } = useStartMCPServerMutation();
   const { mutate: stopMCPServer, isPending: isStopping } = useStopMCPServerMutation();
   const [deleteServiceAccountFlag, setDeleteServiceAccountFlag] = React.useState(false);
@@ -62,8 +57,7 @@ export const MCPActions = ({
     setDeleteServiceAccountFlag(false);
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(server.url);
+  const handleCopySuccess = () => {
     toast.success('URL copied to clipboard');
   };
 
@@ -89,12 +83,16 @@ export const MCPActions = ({
             <span className="sr-only">Open menu</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[160px]">
-          <DropdownMenuItem data-testid="copy-url-menu-item" onClick={handleCopy}>
-            <div className="flex items-center gap-4">
-              <Copy className="h-4 w-4" /> Copy URL
-            </div>
-          </DropdownMenuItem>
+        <DropdownMenuContent align="end" className="w-[200px]">
+          <CopyButton
+            className="[&]:transform-none! w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-sm hover:bg-accent [&]:scale-100! [&_svg]:size-4"
+            content={server.url}
+            data-testid="copy-url-button"
+            onCopy={handleCopySuccess}
+            variant="ghost"
+          >
+            Copy URL
+          </CopyButton>
           <DropdownMenuSeparator />
           {canStart && (
             <DropdownMenuItem data-testid="start-server-menu-item" onClick={handleStart}>
@@ -128,7 +126,6 @@ export const MCPActions = ({
             isDeleting={isDeletingServer}
             onDelete={handleDelete}
             onOpenChange={(open) => {
-              setIsDeleteDialogOpen(open);
               if (!open) {
                 setDeleteServiceAccountFlag(false);
               }

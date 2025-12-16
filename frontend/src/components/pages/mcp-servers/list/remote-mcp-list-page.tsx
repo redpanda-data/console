@@ -11,6 +11,7 @@
 
 'use client';
 
+import { ConnectError } from '@connectrpc/connect';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -50,6 +51,7 @@ import { useDeleteSecretMutation } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { MCPActions } from './mcp-actions';
 import { MCPDeleteHandler, type MCPDeleteHandlerRef } from './mcp-delete-handler';
@@ -149,7 +151,6 @@ const transformAPIMCPServer = (apiServer: APIMCPServer): MCPServer => {
 };
 
 export const createColumns = (
-  setIsDeleteDialogOpen: (open: boolean) => void,
   handleDeleteWithServiceAccount: (
     serverId: string,
     deleteServiceAccount: boolean,
@@ -222,7 +223,6 @@ export const createColumns = (
           isDeletingServer={isDeletingServer}
           onDeleteWithServiceAccount={handleDeleteWithServiceAccount}
           server={server}
-          setIsDeleteDialogOpen={setIsDeleteDialogOpen}
         />
       );
     },
@@ -273,7 +273,6 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
   // React Query hooks
   const { data: mcpServersData, isLoading, error } = useListMCPServersQuery({});
@@ -303,8 +302,9 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
 
         // Show single success toast regardless of what was deleted
         toast.success('MCP server deleted successfully');
-      } catch (_error) {
-        toast.error('Failed to delete MCP server');
+      } catch (deleteError) {
+        const connectError = ConnectError.from(deleteError);
+        toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'delete', entity: 'MCP server' }));
       }
     },
     [deleteMCPServer, deleteSecret, deleteHandlerRef]
@@ -321,20 +321,21 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
   }, []);
 
   const handleRowClick = (serverId: string, event: React.MouseEvent) => {
-    // Don't navigate if delete dialog is open
-    if (isDeleteDialogOpen) {
-      return;
-    }
-    // Don't navigate if clicking on the actions dropdown or its trigger
     const target = event.target as HTMLElement;
-    if (target.closest('[data-actions-column]') || target.closest('[role="menuitem"]') || target.closest('button')) {
+    if (
+      target.closest('[data-actions-column]') ||
+      target.closest('[role="menuitem"]') ||
+      target.closest('[role="dialog"]') ||
+      target.closest('[role="alertdialog"]') ||
+      target.closest('button')
+    ) {
       return;
     }
     navigate(`/mcp-servers/${serverId}`);
   };
 
   const columns = React.useMemo(
-    () => createColumns(setIsDeleteDialogOpen, handleDeleteWithServiceAccount, isDeletingServer),
+    () => createColumns(handleDeleteWithServiceAccount, isDeletingServer),
     [handleDeleteWithServiceAccount, isDeletingServer]
   );
 
