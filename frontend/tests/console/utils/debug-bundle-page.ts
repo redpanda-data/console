@@ -15,9 +15,14 @@ export class DebugBundlePage {
   /**
    * Navigation methods
    */
-  async goto() {
+  async goto(options?: { skipCleanup?: boolean }) {
     await this.page.goto('/debug-bundle');
     await expect(this.page.getByRole('heading', { name: /debug bundle/i })).toBeVisible();
+
+    // Skip cleanup if we're just checking status
+    if (options?.skipCleanup) {
+      return;
+    }
 
     // Ensure we're on the form page, not a progress page
     // If there's an "in progress" link, navigate through to get back to the form
@@ -288,7 +293,7 @@ export class DebugBundlePage {
    * Status checking methods
    */
   async isBundleGenerationInProgress(): Promise<boolean> {
-    await this.goto();
+    await this.goto({ skipCleanup: true });
 
     const progressLink = this.page.getByRole('link', { name: /progress|in progress/i });
     return progressLink.isVisible({ timeout: 2000 }).catch(() => false);
