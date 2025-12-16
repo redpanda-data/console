@@ -46,7 +46,7 @@ import {
   useSchemaModeQuery,
   useSchemaReferencedByQuery,
   useSchemaTypesQuery,
-} from '../../../react-query/api/schema';
+} from '../../../react-query/api/schema-registry';
 import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/rest-interfaces';
 import { uiState } from '../../../state/ui-state';
 import { Button, DefaultSkeleton, Label } from '../../../utils/tsx-utils';

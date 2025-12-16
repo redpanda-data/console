@@ -12,6 +12,7 @@
 import { Box, CodeBlock, Empty, Flex, Grid, GridItem, RadioGroup, Text, useToast, VStack } from '@redpanda-data/ui';
 import type { FC } from 'react';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './schema-details';
 import {
@@ -20,8 +21,7 @@ import {
   useSchemaModeQuery,
   useUpdateGlobalCompatibilityMutation,
   useUpdateSubjectCompatibilityMutation,
-} from '../../../react-query/api/schema';
-import { appGlobal } from '../../../state/app-global';
+} from '../../../react-query/api/schema-registry';
 import { api } from '../../../state/backend-api';
 import type {
   SchemaRegistryCompatibilityMode,
@@ -56,6 +56,7 @@ const SchemaNotConfiguredPage: FC = () => {
 };
 
 const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName: subjectNameEncoded }) => {
+  const navigate = useNavigate();
   const subjectName = subjectNameEncoded ? decodeURIComponent(subjectNameEncoded) : undefined;
 
   const { data: schemaMode, isLoading: isModeLoading } = useSchemaModeQuery();
@@ -97,9 +98,9 @@ const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName
       <EditSchemaCompatibility
         onClose={() => {
           if (subjectName) {
-            appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
+            navigate(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
           } else {
-            appGlobal.historyReplace('/schema-registry');
+            navigate('/schema-registry');
           }
         }}
         schemaCompatibility={schemaCompatibility}

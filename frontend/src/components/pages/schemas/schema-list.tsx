@@ -49,7 +49,7 @@ import {
   useSchemaDetailsQuery,
   useSchemaModeQuery,
   useSchemaUsagesByIdQuery,
-} from '../../../react-query/api/schema';
+} from '../../../react-query/api/schema-registry';
 // Global state
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';

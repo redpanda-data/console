@@ -137,8 +137,8 @@ export const useUpdateGlobalCompatibilityMutation = () => {
 
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'compatibility'], exact: false });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'compatibility'], exact: false });
     },
     onError: (error) => {
       const connectError = ConnectError.from(error);
@@ -195,8 +195,11 @@ export const useUpdateSubjectCompatibilityMutation = () => {
 
       return response.json();
     },
-    onSuccess: (_, { subjectName }) => {
-      queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'], exact: false });
+    onSuccess: async (_, { subjectName }) => {
+      await queryClient.invalidateQueries({
+        queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
+        exact: false,
+      });
     },
     onError: (error) => {
       const connectError = ConnectError.from(error);
@@ -291,9 +294,12 @@ export const useCreateSchemaMutation = () => {
 
       return response.json();
     },
-    onSuccess: (_, { subjectName }) => {
-      queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'], exact: false });
+    onSuccess: async (_, { subjectName }) => {
+      await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects'], exact: false });
+      await queryClient.invalidateQueries({
+        queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
+        exact: false,
+      });
     },
     onError: (error) => {
       const connectError = ConnectError.from(error);
@@ -349,13 +355,21 @@ export const useValidateSchemaMutation = () =>
 
       return response.json();
     },
+    onError: (error) => {
+      const connectError = ConnectError.from(error);
+      return formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'validate',
+        entity: 'schema',
+      });
+    },
   });
 
 export const useSchemaReferencedByQuery = (subjectName: string, version: number, options?: { enabled?: boolean }) => {
   return useTanstackQuery<{ schemaId: number; error?: string; usages: { subject: string; version: number }[] }[]>({
     queryKey: ['schemaRegistry', 'subjects', subjectName, 'versions', version, 'referencedby'],
     queryFn: async () => {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `${config.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/referencedby`,
         {
           method: 'GET',
