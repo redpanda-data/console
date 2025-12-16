@@ -24,11 +24,11 @@
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noImplicitOverride": false
+    "noImplicitOverride": false,
+    "strictNullChecks": true
   },
   "include": ["src", "./vitest.setup.ts"],
   "exclude": ["src/utils/interpreter/**", "node_modules", "src/**/*.test.tsx", "src/**/*.test.ts", "src/protogen"],
-
   "watchOptions": {
     "watchFile": "useFsEvents",
     "fallbackPolling": "dynamicpriority"
