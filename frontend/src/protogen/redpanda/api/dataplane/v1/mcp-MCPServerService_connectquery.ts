@@ -5,64 +5,63 @@
 import { MCPServerService } from "./mcp_pb";
 
 /**
- * CreateMCPServer creates a Redpanda Connect MCP Server in the Redpanda cluster.
+ * CreateMCPServer creates an MCP server in the Redpanda cluster.
  *
  * @generated from rpc redpanda.api.dataplane.v1.MCPServerService.CreateMCPServer
  */
 export const createMCPServer = MCPServerService.method.createMCPServer;
 
 /**
- * GetMCPServer gets a specific Redpanda Connect MCP Server.
+ * GetMCPServer gets a specific MCP server.
  *
  * @generated from rpc redpanda.api.dataplane.v1.MCPServerService.GetMCPServer
  */
 export const getMCPServer = MCPServerService.method.getMCPServer;
 
 /**
- * ListMCPServers implements the list mcp_servers method which lists the MCP servers
- * in the Redpanda cluster.
+ * Lists all MCP servers in the Redpanda cluster.
  *
  * @generated from rpc redpanda.api.dataplane.v1.MCPServerService.ListMCPServers
  */
 export const listMCPServers = MCPServerService.method.listMCPServers;
 
 /**
- * Update MCPServer updates a specific Redpanda Connect MCP server configuration.
+ * Updates a specific MCP server configuration.
  *
  * @generated from rpc redpanda.api.dataplane.v1.MCPServerService.UpdateMCPServer
  */
 export const updateMCPServer = MCPServerService.method.updateMCPServer;
 
 /**
- * DeleteMCPServer deletes a specific Redpanda Connect MCP server.
+ * DeleteMCPServer deletes a specific MCP server.
  *
  * @generated from rpc redpanda.api.dataplane.v1.MCPServerService.DeleteMCPServer
  */
 export const deleteMCPServer = MCPServerService.method.deleteMCPServer;
 
 /**
- * StopMCPServer stops a specific Redpanda Connect MCP server.
+ * StopMCPServer stops a specific MCP server.
  *
  * @generated from rpc redpanda.api.dataplane.v1.MCPServerService.StopMCPServer
  */
 export const stopMCPServer = MCPServerService.method.stopMCPServer;
 
 /**
- * StartMCPServer starts a specific Redpanda Connect MCP server that has been previously stopped.
+ * StartMCPServer starts a specific MCP server that has been previously stopped.
  *
  * @generated from rpc redpanda.api.dataplane.v1.MCPServerService.StartMCPServer
  */
 export const startMCPServer = MCPServerService.method.startMCPServer;
 
 /**
- * The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
+ * Returns the configuration schema for MCP server tools, including available components and processors.
  *
  * @generated from rpc redpanda.api.dataplane.v1.MCPServerService.GetMCPServerServiceConfigSchema
  */
 export const getMCPServerServiceConfigSchema = MCPServerService.method.getMCPServerServiceConfigSchema;
 
 /**
- * Lints a Redpanda Connect MCP tools configuration and returns zero or more
+ * Lints a MCP tools configuration and returns zero or more
  * issues ("hints"). An empty list means the config passed all lint checks.
  *
  * @generated from rpc redpanda.api.dataplane.v1.MCPServerService.LintMCPConfig
