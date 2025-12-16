@@ -403,7 +403,19 @@
     "@buf/googleapis_googleapis.connectrpc_query-es" "2.2.0-20250411203938-61b203b9a916.1"
     "@buf/redpandadata_core.bufbuild_es" "2.7.0-20251024023333-e0f79c48b9f0.1"
 
-"@bufbuild/protobuf@2.10.1", "@bufbuild/protobuf@2.x", "@bufbuild/protobuf@^2.10.0", "@bufbuild/protobuf@^2.5.0", "@bufbuild/protobuf@^2.7.0":
+"@bufbuild/cel@0.3.0":
+  version "0.3.0"
+  resolved "https://registry.npmjs.org/@bufbuild/cel/-/cel-0.3.0.tgz"
+  integrity sha512-vIdcn0Ot6XDKakcDqEQvvlCtMlYwLlxc++SrVjjCmYIiZRH+tlr1GRYpe5R9kguSiTS3BLh7C+I7ZoektVPICQ==
+  dependencies:
+    "@bufbuild/cel-spec" "0.3.0"
+
+"@bufbuild/cel-spec@0.3.0":
+  version "0.3.0"
+  resolved "https://registry.npmjs.org/@bufbuild/cel-spec/-/cel-spec-0.3.0.tgz"
+  integrity sha512-mN669LGlXkYNco6NzSTpFoW52UwGb0h5UJNct43nkOjk9YrgUtzcBn9PfjrwbyAe3OlUtasvXAFf1Tjs3NQLOg==
+
+"@bufbuild/protobuf@2.10.1", "@bufbuild/protobuf@2.x", "@bufbuild/protobuf@^2.10.0", "@bufbuild/protobuf@^2.5.0", "@bufbuild/protobuf@^2.6.2", "@bufbuild/protobuf@^2.7.0", "@bufbuild/protobuf@^2.8.0":
   version "2.10.1"
   resolved "https://registry.npmjs.org/@bufbuild/protobuf/-/protobuf-2.10.1.tgz"
   integrity sha512-ckS3+vyJb5qGpEYv/s1OebUHDi/xSNtfgw1wqKZo7MR9F2z+qXr0q5XagafAG/9O0QPVIUfST0smluYSTpYFkg==
@@ -424,6 +436,13 @@
     "@bufbuild/protobuf" "2.10.1"
     "@typescript/vfs" "^1.6.2"
     typescript "5.4.5"
+
+"@bufbuild/protovalidate@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.npmjs.org/@bufbuild/protovalidate/-/protovalidate-1.1.0.tgz"
+  integrity sha512-oC1sYAr9eQucZsLb0M7cIk3TftZ/cOBbKT1XBIL9Aypm5e0IcC8/HlfN+NrwPVhw9JI4bOQM1Ar1E6x7L71nbA==
+  dependencies:
+    "@bufbuild/cel" "0.3.0"
 
 "@builder.io/sdk-react@^4.2.4":
   version "4.2.4"

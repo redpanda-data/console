@@ -10,6 +10,7 @@
         "@buf/redpandadata_cloud.connectrpc_query-es": "^2.2.0-20251128173054-b9f9fc6e5a70.1",
         "@bufbuild/protobuf": "^2.10.0",
         "@bufbuild/protoc-gen-es": "^2.10.0",
+        "@bufbuild/protovalidate": "^1.1.0",
         "@builder.io/sdk-react": "^4.2.4",
         "@chakra-ui/icons": "^2.1",
         "@chakra-ui/object-utils": "^2.1",
@@ -256,11 +257,17 @@
 
     "@buf/redpandadata_core.connectrpc_query-es": ["@buf/redpandadata_core.connectrpc_query-es@2.2.0-20251024023333-e0f79c48b9f0.1", "https://buf.build/gen/npm/v1/@buf/redpandadata_core.connectrpc_query-es/-/redpandadata_core.connectrpc_query-es-2.2.0-20251024023333-e0f79c48b9f0.1.tgz", { "dependencies": { "@buf/googleapis_googleapis.connectrpc_query-es": "2.2.0-20250411203938-61b203b9a916.1", "@buf/redpandadata_core.bufbuild_es": "2.7.0-20251024023333-e0f79c48b9f0.1" }, "peerDependencies": { "@bufbuild/protobuf": "^2.7.0", "@connectrpc/connect-query": "^2.2.0" } }, ""],
 
+    "@bufbuild/cel": ["@bufbuild/cel@0.3.0", "", { "dependencies": { "@bufbuild/cel-spec": "0.3.0" }, "peerDependencies": { "@bufbuild/protobuf": "^2.6.2" } }, "sha512-vIdcn0Ot6XDKakcDqEQvvlCtMlYwLlxc++SrVjjCmYIiZRH+tlr1GRYpe5R9kguSiTS3BLh7C+I7ZoektVPICQ=="],
+
+    "@bufbuild/cel-spec": ["@bufbuild/cel-spec@0.3.0", "", { "peerDependencies": { "@bufbuild/protobuf": "^2.6.2" } }, "sha512-mN669LGlXkYNco6NzSTpFoW52UwGb0h5UJNct43nkOjk9YrgUtzcBn9PfjrwbyAe3OlUtasvXAFf1Tjs3NQLOg=="],
+
     "@bufbuild/protobuf": ["@bufbuild/protobuf@2.10.1", "", {}, "sha512-ckS3+vyJb5qGpEYv/s1OebUHDi/xSNtfgw1wqKZo7MR9F2z+qXr0q5XagafAG/9O0QPVIUfST0smluYSTpYFkg=="],
 
     "@bufbuild/protoc-gen-es": ["@bufbuild/protoc-gen-es@2.10.1", "", { "dependencies": { "@bufbuild/protobuf": "2.10.1", "@bufbuild/protoplugin": "2.10.1" }, "bin": { "protoc-gen-es": "bin/protoc-gen-es" } }, "sha512-vsfbWs1X93oX+sMMJ7910/OwIizAYH5IOAArsxnSTifiop1fVgLFPAvJBLiHZoNMI8B/lbqji2SFwvjK0AWO1Q=="],
 
     "@bufbuild/protoplugin": ["@bufbuild/protoplugin@2.10.1", "", { "dependencies": { "@bufbuild/protobuf": "2.10.1", "@typescript/vfs": "^1.6.2", "typescript": "5.4.5" } }, "sha512-imB8dKEjrOnG5+XqVS+CeYn924WGLU/g3wogKhk11XtX9y9NJ7432OS6h24asuBbLrQcPdEZ6QkfM7KeOCeeyQ=="],
+
+    "@bufbuild/protovalidate": ["@bufbuild/protovalidate@1.1.0", "", { "dependencies": { "@bufbuild/cel": "0.3.0" }, "peerDependencies": { "@bufbuild/protobuf": "^2.8.0" } }, "sha512-oC1sYAr9eQucZsLb0M7cIk3TftZ/cOBbKT1XBIL9Aypm5e0IcC8/HlfN+NrwPVhw9JI4bOQM1Ar1E6x7L71nbA=="],
 
     "@builder.io/sdk-react": ["@builder.io/sdk-react@4.2.4", "", { "dependencies": { "isolated-vm": "^5.0.0" }, "peerDependencies": { "react": ">=16 || ^19.0.0-rc" } }, "sha512-4JM2B+sfuqou4AcW6S7/xTQJGi2CfvZglmhbKMdP7lxshVJST3zFsNFDEL8k7UAkaZ9cmg3XiUrG+eGHkFJzTw=="],
 

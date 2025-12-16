@@ -36,8 +36,8 @@ import type { KnowledgeBaseCreateFormValues } from './schemas';
 
 type BasicInformationSectionProps = {
   form: UseFormReturn<KnowledgeBaseCreateFormValues>;
-  tagFields: FieldArrayWithId<KnowledgeBaseCreateFormValues, 'tags', 'id'>[];
-  appendTag: UseFieldArrayAppend<KnowledgeBaseCreateFormValues, 'tags'>;
+  tagFields: FieldArrayWithId<KnowledgeBaseCreateFormValues, 'tagsArray', 'id'>[];
+  appendTag: UseFieldArrayAppend<KnowledgeBaseCreateFormValues, 'tagsArray'>;
   removeTag: UseFieldArrayRemove;
 };
 
@@ -85,11 +85,16 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
 
           <TagsFieldList
             appendTag={appendTag}
-            fieldName="tags"
+            fieldName="tagsArray"
             form={form}
             removeTag={removeTag}
             tagFields={tagFields}
           />
+          {form.formState.errors.tagsArray && (
+            <Text className="text-destructive text-sm">
+              {String(form.formState.errors.tagsArray.message || form.formState.errors.tagsArray)}
+            </Text>
+          )}
         </FieldSet>
       </FieldGroup>
     </CardContent>

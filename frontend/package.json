@@ -45,6 +45,7 @@
     "@buf/redpandadata_cloud.connectrpc_query-es": "^2.2.0-20251128173054-b9f9fc6e5a70.1",
     "@bufbuild/protobuf": "^2.10.0",
     "@bufbuild/protoc-gen-es": "^2.10.0",
+    "@bufbuild/protovalidate": "^1.1.0",
     "@builder.io/sdk-react": "^4.2.4",
     "@chakra-ui/icons": "^2.1",
     "@chakra-ui/object-utils": "^2.1",

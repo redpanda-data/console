@@ -151,7 +151,7 @@ export const RetrieverSection = ({ knowledgeBase, isEditMode }: RetrieverSection
                 name="retriever.reranker.enabled"
                 render={({ field }) => (
                   <div className="flex items-center gap-2">
-                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
                     <div className="space-y-1">
                       <FieldLabel className="mb-0 font-medium">Enable Reranker (Recommended)</FieldLabel>
                       <FieldDescription>
@@ -273,7 +273,7 @@ export const RetrieverSection = ({ knowledgeBase, isEditMode }: RetrieverSection
             <>
               <FormItem>
                 <div className="flex items-center gap-2">
-                  <Checkbox checked={reranker?.enabled} disabled={true} />
+                  <Checkbox checked={reranker?.enabled ?? false} disabled={true} />
                   <FormLabel className="mb-0 font-medium">Enable Reranker (Recommended)</FormLabel>
                 </div>
                 <p className="mt-1 text-muted-foreground text-sm">

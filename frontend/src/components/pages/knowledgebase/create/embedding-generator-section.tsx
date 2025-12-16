@@ -10,6 +10,7 @@
  */
 
 import CohereLogo from 'assets/cohere.svg';
+import OpenAILogo from 'assets/openai.svg';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import {
   Field,
@@ -132,71 +133,82 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
             )}
           />
         </FieldSet>
+
         <FieldSeparator />
+
         <FieldSet>
           <FieldLegend>API Credentials</FieldLegend>
-          {embeddingProvider === 'openai' && (
-            <Controller
-              control={form.control}
-              name="openaiApiKey"
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel required>OpenAI API Key</FieldLabel>
-                  <SecretSelector
-                    availableSecrets={availableSecrets}
-                    customText={{
-                      dialogDescription:
-                        'Create a new secret for your OpenAI API key. The secret will be stored securely.',
-                      secretNamePlaceholder: 'e.g., OPENAI_API_KEY',
-                      secretValuePlaceholder: 'Enter OpenAI API key (e.g., sk-...)',
-                      secretValueDescription: 'Your OpenAI API key',
-                      emptyStateDescription: 'Create a secret to securely store your OpenAI API key',
-                    }}
-                    onChange={field.onChange}
-                    placeholder="Select OpenAI API key from secrets"
-                    scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
-                    value={field.value || ''}
-                  />
-                  <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-          )}
-
-          {embeddingProvider === 'cohere' && (
-            <Controller
-              control={form.control}
-              name="cohereApiKey"
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <div className="mb-2 flex items-center gap-2">
-                    <img alt="Cohere" className="h-4 w-4" src={CohereLogo} />
-                    <Text className="font-medium text-sm">Cohere Configuration</Text>
-                  </div>
-                  <FieldLabel required>Cohere API Key</FieldLabel>
-                  <SecretSelector
-                    availableSecrets={availableSecrets}
-                    customText={{
-                      dialogDescription:
-                        'Create a new secret for your Cohere API key. The secret will be stored securely.',
-                      secretNamePlaceholder: 'e.g., COHERE_API_KEY',
-                      secretValuePlaceholder: 'Enter Cohere API key',
-                      secretValueDescription: 'Your Cohere API key',
-                      emptyStateDescription: 'Create a secret to securely store your Cohere API key',
-                    }}
-                    onChange={field.onChange}
-                    placeholder="Select Cohere API key from secrets"
-                    scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
-                    value={field.value || ''}
-                  />
-                  <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-          )}
+          <Controller
+            control={form.control}
+            name="openaiApiKey"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <div className="mb-2 flex items-center gap-2">
+                  <img alt="OpenAI" className="h-4 w-4" src={OpenAILogo} />
+                  <Text className="font-medium text-sm">OpenAI Configuration</Text>
+                </div>
+                <FieldLabel required>OpenAI API Key</FieldLabel>
+                <SecretSelector
+                  availableSecrets={availableSecrets}
+                  customText={{
+                    dialogDescription:
+                      'Create a new secret for your OpenAI API key. The secret will be stored securely.',
+                    secretNamePlaceholder: 'e.g., OPENAI_API_KEY',
+                    secretValuePlaceholder: 'Enter OpenAI API key (e.g., sk-...)',
+                    secretValueDescription: 'Your OpenAI API key for embeddings and generation',
+                    emptyStateDescription: 'Create a secret to securely store your OpenAI API key',
+                  }}
+                  onChange={field.onChange}
+                  placeholder="Select OpenAI API key from secrets"
+                  scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
+                  value={field.value || ''}
+                />
+                <FieldDescription>
+                  Required for embeddings and generation. All credentials are securely stored in your Secrets Store
+                </FieldDescription>
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
         </FieldSet>
+
+        {embeddingProvider === 'cohere' && (
+          <>
+            <FieldSeparator />
+            <FieldSet>
+              <Controller
+                control={form.control}
+                name="cohereApiKey"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <div className="mb-2 flex items-center gap-2">
+                      <img alt="Cohere" className="h-4 w-4" src={CohereLogo} />
+                      <Text className="font-medium text-sm">Cohere Configuration</Text>
+                    </div>
+                    <FieldLabel required>Cohere API Key</FieldLabel>
+                    <SecretSelector
+                      availableSecrets={availableSecrets}
+                      customText={{
+                        dialogDescription:
+                          'Create a new secret for your Cohere API key. The secret will be stored securely.',
+                        secretNamePlaceholder: 'e.g., COHERE_API_KEY',
+                        secretValuePlaceholder: 'Enter Cohere API key',
+                        secretValueDescription: 'Your Cohere API key for embeddings',
+                        emptyStateDescription: 'Create a secret to securely store your Cohere API key',
+                      }}
+                      onChange={field.onChange}
+                      placeholder="Select Cohere API key from secrets"
+                      scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
+                      value={field.value || ''}
+                    />
+                    <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
+            </FieldSet>
+          </>
+        )}
       </FieldGroup>
     </CardContent>
   </Card>
