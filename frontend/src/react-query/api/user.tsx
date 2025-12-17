@@ -42,11 +42,9 @@ export const useLegacyListUsersQuery = (
     // We need to precisely match the query key provided by other parts of connect-query
     queryKey: infiniteQueryKey,
     queryFn: async () => {
-      const response = await fetch(`${config.restBasePath}/users`, {
+      const response = await config.fetch(`${config.restBasePath}/users`, {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${config.jwt}`,
-        },
+        headers: {},
       });
 
       const data = await response.json();

@@ -9,18 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import type { RefObject } from 'react';
-import React from 'react';
-
-import { appGlobal } from '../../../state/app-global';
-import { api } from '../../../state/backend-api';
-import { uiSettings } from '../../../state/ui';
-import { Button, DefaultSkeleton, InlineSkeleton } from '../../../utils/tsx-utils';
-import { PageComponent, type PageInitHelper } from '../page';
-
-import './Schema.List.scss';
+// Icons
 import { ArchiveIcon, TrashIcon } from '@heroicons/react/outline';
+import { InfoIcon } from '@primer/octicons-react';
+// Redpanda UI (legacy)
 import {
   Alert,
   AlertIcon,
@@ -30,15 +22,8 @@ import {
   createStandaloneToast,
   DataTable,
   Divider,
-  Drawer,
-  DrawerBody,
-  DrawerCloseButton,
-  DrawerContent,
-  DrawerHeader,
-  DrawerOverlay,
   Empty,
   Flex,
-  Heading,
   SearchField,
   Skeleton,
   Spinner,
@@ -46,39 +31,61 @@ import {
   Tooltip,
   VStack,
 } from '@redpanda-data/ui';
-import { action, makeObservable, observable } from 'mobx';
+import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
+import type { FC } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+// Routing and state management
 import { Link } from 'react-router-dom';
 
+// Local modals
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
+// Custom hooks
+import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
+// API hooks
+import {
+  useDeleteSchemaSubjectMutation,
+  useListSchemasQuery,
+  useSchemaCompatibilityQuery,
+  useSchemaDetailsQuery,
+  useSchemaModeQuery,
+  useSchemaUsagesByIdQuery,
+} from '../../../react-query/api/schema-registry';
+// Global state
+import { appGlobal } from '../../../state/app-global';
+import { api } from '../../../state/backend-api';
 import type { SchemaRegistrySubject } from '../../../state/rest-interfaces';
+import { uiSettings } from '../../../state/ui';
+import { uiState } from '../../../state/ui-state';
+// Utility components and functions
+import { Button, InlineSkeleton } from '../../../utils/tsx-utils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
+// Layout components
 import PageContent from '../../misc/page-content';
-import type SearchBar from '../../misc/search-bar';
 import Section from '../../misc/section';
 import { SmallStat } from '../../misc/small-stat';
+// Redpanda UI Registry components
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '../../redpanda-ui/components/drawer';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
-function renderRequestErrors(requestErrors?: string[]) {
+const RequestErrors: FC<{ requestErrors?: string[] }> = ({ requestErrors }) => {
   if (!requestErrors || requestErrors.length === 0) {
     return null;
   }
 
   return (
     <Section>
-      <div className="SchemaList__error-card">
-        {requestErrors.map((errorMessage, idx) => (
-          <Alert key={idx} marginTop="1em" status="error">
-            <AlertIcon />
-            <div>{errorMessage}</div>
-          </Alert>
-        ))}
-      </div>
+      {requestErrors.map((errorMessage, idx) => (
+        <Alert key={idx} marginTop="1em" status="error">
+          <AlertIcon />
+          <div>{errorMessage}</div>
+        </Alert>
+      ))}
     </Section>
   );
-}
+};
 
-function renderNotConfigured() {
+const NotConfigured: FC = () => {
   return (
     <PageContent>
       <Section>
@@ -99,347 +106,356 @@ function renderNotConfigured() {
       </Section>
     </PageContent>
   );
-}
+};
 
-@observer
-class SchemaList extends PageComponent {
-  @observable searchBar: RefObject<SearchBar<{ name: string }>> = React.createRef();
-  @observable filteredSchemaSubjects: { name: string }[];
-  @observable isLoadingSchemaVersionMatches = false;
-  @observable isHelpSidebarOpen = false;
+const SchemaList: FC = () => {
+  const [isHelpSidebarOpen, setIsHelpSidebarOpen] = useState(false);
+  const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
-  constructor(p: Readonly<{ matchedPath: string }>) {
-    super(p);
-    makeObservable(this);
-  }
+  const [showSoftDeleted, setShowSoftDeleted] = useQueryStateWithCallback<boolean>(
+    {
+      onUpdate: (val) => {
+        uiSettings.schemaList.showSoftDeleted = val;
+      },
+      getDefaultValue: () => uiSettings.schemaList.showSoftDeleted,
+    },
+    'showSoftDeleted',
+    parseAsBoolean
+  );
 
-  initPage(p: PageInitHelper): void {
-    p.title = 'Schema Registry';
-    p.addBreadcrumb('Schema Registry', '/schema-registry');
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
-  }
+  const { data: schemaSubjects, isLoading, isError, refetch: refetchSchemas } = useListSchemasQuery();
+  const { data: schemaMode, refetch: refetchMode } = useSchemaModeQuery();
+  const { data: schemaCompatibility, refetch: refetchCompatibility } = useSchemaCompatibilityQuery();
+  const deleteSchemaMutation = useDeleteSchemaSubjectMutation();
 
-  refreshData(force?: boolean) {
-    api.refreshSchemaCompatibilityConfig();
-    api.refreshSchemaMode();
-    api.refreshSchemaSubjects(force);
-    api.refreshSchemaTypes(force);
-
-    // Forcing a refresh means clearing cached information
-    // For all the above calls this happens automatically, but schema usages are a cached map
-    api.schemaUsagesById.clear();
-  }
-
-  isFilterMatch(filterString: string, subject: SchemaRegistrySubject) {
-    // Find by schema ID
-    const filterAsNumber = Number(filterString.trim());
-    if (!Number.isNaN(filterAsNumber)) {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.log('finding by num', { num: filterAsNumber });
-      // Filter is a number, lets see if we can find a matching schema(-version)
-      const schemas = api.schemaUsagesById.get(filterAsNumber);
-      const matches = schemas?.filter((s) => s.subject === subject.name);
-      if (matches && matches.length > 0) {
-        for (const m of matches) {
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.log(`found match: ${m.subject} v${m.version}`);
-        }
-        return true;
-      }
-    }
-
-    // Find by regex
-    try {
-      const quickSearchRegExp = new RegExp(filterString, 'i');
-      if (subject.name.match(quickSearchRegExp)) {
-        return true;
-      }
-    } catch {
-      // no op - invalid regex, fall back to string matching
-    }
-
-    // Find by normal string matching
-    return subject.name.toLowerCase().includes(filterString.toLowerCase());
-  }
-
-  componentDidMount() {
-    this.triggerSearchBySchemaId();
-  }
-
-  triggerSearchBySchemaId() {
-    const trimmedValue = uiSettings.schemaList.quickSearch.trim();
+  // Parse schema ID from search query
+  const schemaIdSearch = useMemo(() => {
+    const trimmedValue = quickSearch.trim();
     const searchAsNum = Number(trimmedValue);
-    if (trimmedValue.length && !Number.isNaN(searchAsNum)) {
-      // Keep calling it to keep the list updated
-      // Extra calls (even when we already have data) will be automatically caught by caching
-      this.isLoadingSchemaVersionMatches = true;
-      api.refreshSchemaUsagesById(searchAsNum).finally(() => (this.isLoadingSchemaVersionMatches = false));
+    return trimmedValue.length && !Number.isNaN(searchAsNum) ? searchAsNum : null;
+  }, [quickSearch]);
+
+  const { data: schemaUsages, isLoading: isLoadingSchemaVersionMatches } = useSchemaUsagesByIdQuery(schemaIdSearch);
+
+  const refreshData = useCallback(() => {
+    refetchMode();
+    refetchCompatibility();
+    api.refreshSchemaTypes();
+    refetchSchemas();
+  }, [refetchSchemas, refetchMode, refetchCompatibility]);
+
+  useEffect(() => {
+    uiState.pageBreadcrumbs = [{ title: 'Schema Registry', linkTo: '/schema-registry' }];
+    appGlobal.onRefresh = () => refreshData();
+  }, [refreshData]);
+
+  const filteredSubjects = useMemo(() => {
+    let subjects = schemaSubjects ?? [];
+
+    // Filter by soft-deleted status
+    if (!showSoftDeleted) {
+      subjects = subjects.filter((x) => !x.isSoftDeleted);
     }
+
+    // Filter by search query
+    const searchQuery = quickSearch;
+    if (searchQuery) {
+      // Find by schema ID
+      const filterAsNumber = Number(searchQuery.trim());
+      if (Number.isNaN(filterAsNumber)) {
+        // Find by regex or string matching
+        try {
+          const quickSearchRegExp = new RegExp(searchQuery, 'i');
+          subjects = subjects.filter((subject) => Boolean(subject.name.match(quickSearchRegExp)));
+        } catch (_e) {
+          const searchLower = searchQuery.toLowerCase();
+          subjects = subjects.filter((subject) => subject.name.toLowerCase().includes(searchLower));
+        }
+      } else {
+        const matchingSubjectNames = new Set(schemaUsages?.map((s) => s.subject) ?? []);
+        subjects = subjects.filter((subject) => matchingSubjectNames.has(subject.name));
+      }
+    }
+
+    return subjects;
+  }, [schemaSubjects, quickSearch, showSoftDeleted, schemaUsages]);
+
+  if (api.schemaOverviewIsConfigured === false) {
+    return <NotConfigured />;
   }
 
-  render() {
-    if (api.schemaOverviewIsConfigured === false) {
-      return renderNotConfigured();
-    }
-    if (api.schemaSubjects === undefined) {
-      return DefaultSkeleton; // request in progress
-    }
+  return (
+    <PageContent key="b">
+      <ToastContainer />
+      {/* Statistics Bar */}
+      <Flex alignItems="center" data-testid="schema-list-stats" gap="1rem">
+        <SmallStat title="Mode">{schemaMode ?? <InlineSkeleton width="100px" />}</SmallStat>
+        <Divider height="2ch" orientation="vertical" />
+        <SmallStat title="Compatibility">{schemaCompatibility ?? <InlineSkeleton width="100px" />}</SmallStat>
+      </Flex>
 
-    let filteredSubjects = api.schemaSubjects;
-    if (uiSettings.schemaList.quickSearch) {
-      filteredSubjects = filteredSubjects.filter((s) => this.isFilterMatch(uiSettings.schemaList.quickSearch, s));
-    }
-    filteredSubjects = filteredSubjects.filter(
-      (x) => uiSettings.schemaList.showSoftDeleted || !(uiSettings.schemaList.showSoftDeleted || x.isSoftDeleted)
-    );
+      <Button
+        data-testid="schema-list-edit-compatibility-btn"
+        disabledReason={
+          api.userData?.canManageSchemaRegistry === false
+            ? "You don't have the 'canManageSchemaRegistry' permission"
+            : undefined
+        }
+        mb="4"
+        onClick={() => appGlobal.historyPush('/schema-registry/edit-compatibility')}
+        variant="outline"
+        width="fit-content"
+      >
+        Edit compatibility
+      </Button>
 
-    return (
-      <PageContent key="b">
-        <ToastContainer />
-        {/* Statistics Bar */}
-        <Flex alignItems="center" data-testid="schema-list-stats" gap="1rem">
-          <SmallStat title="Mode">{api.schemaMode ?? <InlineSkeleton width="100px" />}</SmallStat>
-          <Divider height="2ch" orientation="vertical" />
-          <SmallStat title="Compatibility">{api.schemaCompatibility ?? <InlineSkeleton width="100px" />}</SmallStat>
-        </Flex>
+      <RequestErrors />
 
-        <Button
-          data-testid="schema-list-edit-compatibility-btn"
-          disabledReason={
-            api.userData?.canManageSchemaRegistry === false
-              ? "You don't have the 'canManageSchemaRegistry' permission"
-              : undefined
-          }
-          mb="4"
-          onClick={() => appGlobal.historyPush('/schema-registry/edit-compatibility')}
-          variant="outline"
-          width="fit-content"
-        >
-          Edit compatibility
-        </Button>
+      <Flex alignItems="center" gap="2">
+        <SearchField
+          data-testid="schema-list-search-field"
+          placeholderText="Filter by subject name or schema ID..."
+          searchText={quickSearch ?? ''}
+          setSearchText={setQuickSearch}
+          width="350px"
+        />
+        <Tooltip hasArrow label="Help with schema search" placement="top">
+          <Box
+            alignItems="center"
+            cursor="pointer"
+            data-testid="schema-search-help"
+            display="inline-flex"
+            onClick={() => setIsHelpSidebarOpen(true)}
+          >
+            <InfoIcon />
+          </Box>
+        </Tooltip>
+        <Spinner display={isLoadingSchemaVersionMatches ? undefined : 'none'} size="md" />
+      </Flex>
+      <Drawer direction="right" onOpenChange={setIsHelpSidebarOpen} open={isHelpSidebarOpen}>
+        <DrawerContent aria-labelledby="schema-help-title" className="w-[600px] sm:max-w-[600px]" role="dialog">
+          <DrawerHeader className="border-b">
+            <DrawerTitle data-testid="schema-help-title" id="schema-help-title">
+              Schema Search Help
+            </DrawerTitle>
+          </DrawerHeader>
 
-        {renderRequestErrors()}
-
-        <Flex alignItems="center" gap="4">
-          <SearchField
-            data-testid="schema-list-search-field"
-            placeholderText="Filter by subject name or schema ID..."
-            searchText={uiSettings.schemaList.quickSearch}
-            setSearchText={action((filterText) => {
-              uiSettings.schemaList.quickSearch = filterText;
-              this.triggerSearchBySchemaId();
-            })}
-            width="350px"
-          />
-          <Spinner
-            data-testid="schema-list-search-spinner"
-            display={this.isLoadingSchemaVersionMatches ? undefined : 'none'}
-            size="md"
-          />
-        </Flex>
-
-        <Button
-          cursor="pointer"
-          data-testid="schema-search-help"
-          fontWeight={400}
-          mb=".5rem"
-          mr="auto"
-          onClick={() => (this.isHelpSidebarOpen = true)}
-          paddingInline={0}
-          textDecoration="underline"
-          variant="link"
-        >
-          Help with schema search
-        </Button>
-        <Drawer
-          isOpen={this.isHelpSidebarOpen}
-          onClose={() => (this.isHelpSidebarOpen = false)}
-          placement="right"
-          size="md"
-        >
-          <DrawerOverlay />
-          <DrawerContent>
-            <DrawerCloseButton />
-            <DrawerHeader data-testid="schema-search-header">Schema Search Help</DrawerHeader>
-
-            <DrawerBody>
-              <Heading mt={4} size="md">
+          <div className="space-y-6 p-4">
+            <section aria-labelledby="filtering-heading" className="space-y-3">
+              <h3 className="font-semibold text-gray-900" id="filtering-heading">
                 Filtering schemas
-              </Heading>
-              There are two ways to filter schemas, and they work a little differently.
-              <Heading mt={4} size="md">
-                Schema ID
-              </Heading>
-              If a number matches a schema ID, the results include all subjects referencing that schema.
-              <Heading mt={4} size="md">
-                Subject name
-              </Heading>
-              To search subject names, enter that specific name or a regex.
-            </DrawerBody>
-          </DrawerContent>
-        </Drawer>
+              </h3>
+              <p className="text-base text-gray-600 leading-relaxed">
+                There are two ways to filter schemas, and they work a little differently.
+              </p>
+            </section>
 
-        <Section>
-          <Flex justifyContent={'space-between'} pb={3}>
-            <Button
-              colorScheme="brand"
-              data-testid="schema-list-create-btn"
-              disabledReason={
-                api.userData?.canCreateSchemas === false
-                  ? "You don't have the 'canCreateSchemas' permission"
-                  : undefined
-              }
-              onClick={() => appGlobal.historyPush('/schema-registry/create')}
-            >
-              Create new schema
-            </Button>
-            <Checkbox
-              data-testid="schema-list-show-soft-deleted-checkbox"
-              isChecked={uiSettings.schemaList.showSoftDeleted}
-              onChange={(e) => (uiSettings.schemaList.showSoftDeleted = e.target.checked)}
-            >
-              Show soft-deleted
-            </Checkbox>
-          </Flex>
+            <div className="space-y-4 pl-4">
+              <section aria-labelledby="schema-id-heading" className="space-y-2">
+                <h3 className="font-semibold text-base text-gray-900" id="schema-id-heading">
+                  Schema ID
+                </h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  If a number matches a schema ID, the results include all subjects referencing that schema.
+                </p>
+              </section>
 
-          <DataTable<SchemaRegistrySubject>
-            columns={[
-              {
-                header: 'Name',
-                accessorKey: 'name',
-                size: Number.POSITIVE_INFINITY,
-                cell: ({
-                  row: {
-                    original: { name, isSoftDeleted },
-                  },
-                }) => (
-                  <Box whiteSpace="break-spaces" wordBreak="break-word">
-                    <Flex alignItems="center" gap={2}>
-                      <Link
-                        data-testid="schema-registry-table-name"
-                        to={`/schema-registry/subjects/${encodeURIComponentPercents(name)}?version=latest`}
-                      >
-                        {name}
-                      </Link>
-                      {isSoftDeleted && (
-                        <Tooltip
-                          hasArrow
-                          label="This subject has been soft-deleted. It can be restored or permanently deleted."
+              <section aria-labelledby="subject-name-heading" className="space-y-2">
+                <h3 className="font-semibold text-base text-gray-900" id="subject-name-heading">
+                  Subject name
+                </h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  To search subject names, enter that specific name or a regex.
+                </p>
+              </section>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {(() => {
+        if (isLoading) {
+          return (
+            <Section>
+              <Skeleton height="400px" />
+            </Section>
+          );
+        }
+
+        if (isError) {
+          return (
+            <Section>
+              <Alert status="error">
+                <AlertIcon />
+                Error loading schemas
+              </Alert>
+            </Section>
+          );
+        }
+
+        return (
+          <Section>
+            <Flex justifyContent={'space-between'} pb={3}>
+              <Button
+                colorScheme="brand"
+                data-testid="schema-list-create-btn"
+                disabledReason={
+                  api.userData?.canCreateSchemas === false
+                    ? "You don't have the 'canCreateSchemas' permission"
+                    : undefined
+                }
+                onClick={() => appGlobal.historyPush('/schema-registry/create')}
+              >
+                Create new schema
+              </Button>
+              <Checkbox
+                data-testid="schema-list-show-soft-deleted-checkbox"
+                isChecked={showSoftDeleted}
+                onChange={(e) => {
+                  setShowSoftDeleted(e.target.checked);
+                }}
+              >
+                Show soft-deleted
+              </Checkbox>
+            </Flex>
+
+            <DataTable<SchemaRegistrySubject>
+              columns={[
+                {
+                  header: 'Name',
+                  accessorKey: 'name',
+                  size: Number.POSITIVE_INFINITY,
+                  cell: ({
+                    row: {
+                      original: { name, isSoftDeleted },
+                    },
+                  }) => (
+                    <Box whiteSpace="break-spaces" wordBreak="break-word">
+                      <Flex alignItems="center" gap={2}>
+                        <Link
+                          data-testid="schema-registry-table-name"
+                          to={`/schema-registry/subjects/${encodeURIComponentPercents(name)}?version=latest`}
                         >
-                          <Box data-testid="schema-list-soft-deleted-icon">
-                            <ArchiveIcon height={16} style={{ color: 'var(--chakra-colors-gray-400)' }} width={16} />
-                          </Box>
-                        </Tooltip>
-                      )}
-                    </Flex>
-                  </Box>
-                ),
-              },
-              {
-                header: 'Type',
-                cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />,
-                size: 100,
-              },
-              {
-                header: 'Compatibility',
-                cell: ({ row: { original: r } }) => <SchemaCompatibilityColumn name={r.name} />,
-                size: 100,
-              },
-              {
-                header: 'Latest Version',
-                cell: ({ row: { original: r } }) => <LatestVersionColumn name={r.name} />,
-                size: 100,
-              },
-              {
-                header: '',
-                id: 'actions',
-                cell: ({ row: { original: r } }) => (
-                  <Button
-                    color="gray.500"
-                    data-testid={`schema-list-delete-btn-${r.name}`}
-                    disabledReason={
-                      api.userData?.canDeleteSchemas === false
-                        ? "You don't have the 'canDeleteSchemas' permission"
-                        : undefined
-                    }
-                    height="16px"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-
-                      if (r.isSoftDeleted) {
-                        openPermanentDeleteModal(r.name, () => {
-                          api
-                            .deleteSchemaSubject(r.name, true)
-                            .then(() => {
-                              toast({
-                                status: 'success',
-                                duration: 4000,
-                                isClosable: false,
-                                title: 'Subject permanently deleted',
-                              });
-                              api.refreshSchemaSubjects(true);
-                              appGlobal.historyPush('/schema-registry/');
-                            })
-                            .catch((err) => {
-                              toast({
-                                status: 'error',
-                                duration: null,
-                                isClosable: true,
-                                title: 'Failed to permanently delete subject',
-                                description: String(err),
-                              });
-                            });
-                        });
-                      } else {
-                        openDeleteModal(r.name, () => {
-                          api
-                            .deleteSchemaSubject(r.name, false)
-                            .then(() => {
-                              toast({
-                                status: 'success',
-                                duration: 4000,
-                                isClosable: false,
-                                title: 'Subject soft-deleted',
-                              });
-                              api.refreshSchemaSubjects(true);
-                            })
-                            .catch((err) => {
-                              toast({
-                                status: 'error',
-                                duration: null,
-                                isClosable: true,
-                                title: 'Failed to soft-delete subject',
-                                description: String(err),
-                              });
-                            });
-                        });
+                          {name}
+                        </Link>
+                        {isSoftDeleted && (
+                          <Tooltip
+                            hasArrow
+                            label="This subject has been soft-deleted. It can be restored or permanently deleted."
+                          >
+                            <Box data-testid="schema-list-soft-deleted-icon">
+                              <ArchiveIcon height={16} style={{ color: 'var(--chakra-colors-gray-400)' }} width={16} />
+                            </Box>
+                          </Tooltip>
+                        )}
+                      </Flex>
+                    </Box>
+                  ),
+                },
+                { header: 'Type', cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />, size: 100 },
+                {
+                  header: 'Compatibility',
+                  cell: ({ row: { original: r } }) => <SchemaCompatibilityColumn name={r.name} />,
+                  size: 100,
+                },
+                {
+                  header: 'Latest Version',
+                  cell: ({ row: { original: r } }) => <LatestVersionColumn name={r.name} />,
+                  size: 100,
+                },
+                {
+                  header: '',
+                  id: 'actions',
+                  cell: ({ row: { original: r } }) => (
+                    <Button
+                      color="gray.500"
+                      data-testid={`schema-list-delete-btn-${r.name}`}
+                      disabledReason={
+                        api.userData?.canDeleteSchemas === false
+                          ? "You don't have the 'canDeleteSchemas' permission"
+                          : undefined
                       }
-                    }}
-                    variant="icon"
-                  >
-                    <TrashIcon />
-                  </Button>
-                ),
-                size: 1,
-              },
-            ]}
-            data={filteredSubjects}
-            pagination
-            rowClassName={(row) => (row.original.isSoftDeleted ? 'soft-deleted-row' : '')}
-            sorting
-          />
-        </Section>
-      </PageContent>
-    );
-  }
-}
+                      height="16px"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
 
-const SchemaTypeColumn = observer((p: { name: string }) => {
-  const details = api.schemaDetails.get(p.name);
-  if (!details) {
-    api.refreshSchemaDetails(p.name);
+                        if (r.isSoftDeleted) {
+                          openPermanentDeleteModal(r.name, () => {
+                            deleteSchemaMutation.mutate(
+                              { subjectName: r.name, permanent: true },
+                              {
+                                onSuccess: () => {
+                                  toast({
+                                    status: 'success',
+                                    duration: 4000,
+                                    isClosable: false,
+                                    title: 'Subject permanently deleted',
+                                  });
+                                },
+                                onError: (err) => {
+                                  toast({
+                                    status: 'error',
+                                    duration: null,
+                                    isClosable: true,
+                                    title: 'Failed to permanently delete subject',
+                                    description: String(err),
+                                  });
+                                },
+                              }
+                            );
+                          });
+                        } else {
+                          openDeleteModal(r.name, () => {
+                            deleteSchemaMutation.mutate(
+                              { subjectName: r.name, permanent: false },
+                              {
+                                onSuccess: () => {
+                                  toast({
+                                    status: 'success',
+                                    duration: 4000,
+                                    isClosable: false,
+                                    title: 'Subject soft-deleted',
+                                  });
+                                },
+                                onError: (err) => {
+                                  toast({
+                                    status: 'error',
+                                    duration: null,
+                                    isClosable: true,
+                                    title: 'Failed to soft-delete subject',
+                                    description: String(err),
+                                  });
+                                },
+                              }
+                            );
+                          });
+                        }
+                      }}
+                      variant="icon"
+                    >
+                      <TrashIcon />
+                    </Button>
+                  ),
+                  size: 1,
+                },
+              ]}
+              data={filteredSubjects}
+              pagination
+              rowClassName={(row) => (row.original.isSoftDeleted ? 'text-gray-400' : '')}
+              sorting
+            />
+          </Section>
+        );
+      })()}
+    </PageContent>
+  );
+};
+
+const SchemaTypeColumn: FC<{ name: string }> = ({ name }) => {
+  const { data: details, isLoading } = useSchemaDetailsQuery(name);
+
+  if (isLoading || !details) {
     return <Skeleton height="15px" />;
   }
 
@@ -463,22 +479,22 @@ const SchemaTypeColumn = observer((p: { name: string }) => {
       {details.type}
     </Badge>
   );
-});
+};
 
-const SchemaCompatibilityColumn = observer((p: { name: string }) => {
-  const details = api.schemaDetails.get(p.name);
-  if (!details) {
-    api.refreshSchemaDetails(p.name);
+const SchemaCompatibilityColumn: FC<{ name: string }> = ({ name }) => {
+  const { data: details, isLoading } = useSchemaDetailsQuery(name);
+
+  if (isLoading || !details) {
     return <Skeleton height="15px" />;
   }
 
   return <>{details.compatibility}</>;
-});
+};
 
-const LatestVersionColumn = observer((p: { name: string }) => {
-  const details = api.schemaDetails.get(p.name);
-  if (!details) {
-    api.refreshSchemaDetails(p.name);
+const LatestVersionColumn: FC<{ name: string }> = ({ name }) => {
+  const { data: details, isLoading } = useSchemaDetailsQuery(name);
+
+  if (isLoading || !details) {
     return <Skeleton height="15px" />;
   }
 
@@ -487,6 +503,6 @@ const LatestVersionColumn = observer((p: { name: string }) => {
   }
 
   return <>{details.latestActiveVersion}</>;
-});
+};
 
 export default SchemaList;

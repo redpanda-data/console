@@ -43,17 +43,15 @@ test.describe('Schema Registry E2E Tests', () => {
       expect(await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count()).toEqual(1);
 
       await page.getByPlaceholder('Filter by subject name or schema ID...').fill('1');
-      await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).getByText('com.shop.v1.avro.Customer').waitFor();
-      await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).getByText('com.shop.v1.avro.Address').waitFor();
-      await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).getByText('shop/v1/address.proto').waitFor();
       await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).getByText('shop/v1/customer.proto').waitFor();
-      expect(await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count()).toEqual(4);
+      expect(await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count()).toEqual(1);
     });
 
     test("should show 'Schema search help'", async ({ page }) => {
       await page.goto('/schema-registry');
+      await expect(page.getByTestId('schema-help-title')).not.toBeVisible();
       await page.getByTestId('schema-search-help').click();
-      await page.getByTestId('schema-search-header').waitFor();
+      await expect(page.getByTestId('schema-help-title')).toBeVisible();
     });
 
     test('should filter on schema name', async ({ page }) => {
@@ -118,6 +116,14 @@ test.describe('Schema Registry E2E Tests', () => {
         await versionSelector.click();
       }
     });
+
+    test("should show 'Schema search help'", async ({ page }) => {
+      // Let's search for 7
+      await page.goto('/schema-registry');
+      await expect(page.getByTestId('schema-help-title')).not.toBeVisible();
+      await page.getByTestId('schema-search-help').click();
+      await expect(page.getByTestId('schema-help-title')).toBeVisible();
+    });
   });
 
   test.describe('Schema - Search and Clear', () => {
@@ -172,7 +178,7 @@ test.describe('Schema Registry E2E Tests', () => {
 
       await page.getByRole('link', { name: 'Schema Registry' }).first().click();
 
-      await expect(page).toHaveURL('/schema-registry');
+      await expect(page).toHaveURL('/schema-registry?showSoftDeleted=false');
     });
   });
 
@@ -261,7 +267,7 @@ test.describe('Schema Registry E2E Tests', () => {
       await schemaPage.gotoCreate();
 
       await schemaPage.cancelCreation();
-      await expect(page).toHaveURL('/schema-registry');
+      await expect(page).toHaveURL('/schema-registry?showSoftDeleted=false');
     });
 
     test('should navigate to create page from list', async ({ page }) => {
@@ -576,17 +582,6 @@ test.describe('Schema Registry E2E Tests', () => {
   });
 
   test.describe('Schema Error Handling', () => {
-    test('should display schema search help drawer', async ({ page }) => {
-      const schemaPage = new SchemaPage(page);
-      await schemaPage.goto();
-
-      const helpButton = page.getByTestId('schema-search-help');
-      await helpButton.click();
-
-      const helpHeader = page.getByTestId('schema-search-header');
-      await expect(helpHeader).toBeVisible();
-    });
-
     test('should handle empty search results', async ({ page }) => {
       const schemaPage = new SchemaPage(page);
       await schemaPage.goto();

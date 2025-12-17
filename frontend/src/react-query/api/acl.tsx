@@ -149,11 +149,9 @@ export const useLegacyListACLsQuery = (
     // We need to precisely match the query key provided by other parts of connect-query
     queryKey: infiniteQueryKey,
     queryFn: async () => {
-      const response = await fetch(`${config.restBasePath}/acls`, {
+      const response = await config.fetch(`${config.restBasePath}/acls`, {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${config.jwt}`,
-        },
+        headers: {},
       });
 
       const data = await response.json();
@@ -335,10 +333,9 @@ export const useLegacyCreateACLMutation = () => {
         operation: getACLOperation(request.operation),
         permissionType: getACLPermissionType(request.permissionType),
       };
-      const response = await fetch(`${config.restBasePath}/acls`, {
+      const response = await config.fetch(`${config.restBasePath}/acls`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${config.jwt}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(legacyRequestBody),

@@ -28,261 +28,196 @@ import {
   UnorderedList,
   useToast,
 } from '@redpanda-data/ui';
-import { makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
-import { useState } from 'react';
-import { Link as ReactRouterLink } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { runInAction } from 'mobx';
+import React, { useEffect, useState } from 'react';
+import { Link as ReactRouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
-import { appGlobal } from '../../../state/app-global';
-import { api } from '../../../state/backend-api';
+import { SchemaRegistryCapability } from '../../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import { useGetIdentityQuery } from '../../../react-query/api/authentication';
+import {
+  useCreateSchemaMutation,
+  useDeleteSchemaSubjectMutation,
+  useDeleteSchemaVersionMutation,
+  useListSchemasQuery,
+  useSchemaCompatibilityQuery,
+  useSchemaDetailsQuery,
+  useSchemaModeQuery,
+  useSchemaReferencedByQuery,
+  useSchemaTypesQuery,
+} from '../../../react-query/api/schema-registry';
 import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/rest-interfaces';
 import { uiState } from '../../../state/ui-state';
-import { editQuery } from '../../../utils/query-helper';
 import { Button, DefaultSkeleton, Label } from '../../../utils/tsx-utils';
 import { decodeURIComponentPercents, encodeURIComponentPercents } from '../../../utils/utils';
 import { KowlDiffEditor } from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
 import { SingleSelect } from '../../misc/select';
 import { SmallStat } from '../../misc/small-stat';
-import { PageComponent, type PageProps } from '../page';
 
-const { ToastContainer, toast } = createStandaloneToast();
+const { ToastContainer } = createStandaloneToast();
 
-@observer
-class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
-  subjectNameRaw: string;
-  subjectNameEncoded: string;
+const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: subjectNameProp }) => {
+  const { subjectName: subjectNameParam } = useParams<{ subjectName: string }>();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const toast = useToast();
 
-  @observable version = 'latest' as 'latest' | number;
+  // Use prop if provided (for routing), otherwise use URL param
+  const subjectNameRaw = decodeURIComponentPercents(subjectNameProp || subjectNameParam || '');
+  const subjectNameEncoded = encodeURIComponent(subjectNameRaw);
 
-  initPage(): void {
-    this.updateTitleAndBreadcrumbs();
-    this.refreshData(false);
-    appGlobal.onRefresh = () => this.refreshData(true);
-  }
+  const versionParam = searchParams.get('version');
+  const version =
+    versionParam && versionParam !== 'latest' && !Number.isNaN(Number(versionParam)) ? Number(versionParam) : 'latest';
 
-  constructor(p: Readonly<PageProps<{ subjectName: string }>>) {
-    super(p);
-    this.subjectNameRaw = decodeURIComponentPercents(this.props.subjectName);
-    this.subjectNameEncoded = encodeURIComponent(this.subjectNameRaw);
+  // Fetch data using React Query hooks
+  const { data: userData } = useGetIdentityQuery();
+  const { data: schemaSubjects } = useListSchemasQuery();
+  const { data: subject, isLoading: isLoadingSubject } = useSchemaDetailsQuery(subjectNameRaw);
+  useSchemaCompatibilityQuery(); // Fetch for other components
+  useSchemaModeQuery(); // Fetch for other components
+  useSchemaTypesQuery(); // Fetch for other components
 
-    makeObservable(this);
-  }
+  const deleteSubjectMutation = useDeleteSchemaSubjectMutation();
 
-  componentDidUpdate(prevProps: { subjectName: string }) {
-    if (!prevProps) {
-      return;
-    }
-
-    const prevName = decodeURIComponentPercents(prevProps.subjectName);
-    const currentName = decodeURIComponentPercents(this.props.subjectName);
-    const prevVersion = getVersionFromQuery();
-    const currentVersion = getVersionFromQuery();
-
-    if (prevName !== currentName || prevVersion !== currentVersion) {
-      this.subjectNameRaw = currentName;
-      this.subjectNameEncoded = encodeURIComponent(currentName);
-      this.updateTitleAndBreadcrumbs();
-      this.refreshData();
-    }
-  }
-
-  updateTitleAndBreadcrumbs() {
-    const subjectNameRaw = decodeURIComponentPercents(this.props.subjectName);
-    this.subjectNameRaw = subjectNameRaw;
-
-    const version = getVersionFromQuery() ?? 'latest';
-    editQuery((x) => {
-      x.version = String(version);
+  // Update page title and breadcrumbs
+  useEffect(() => {
+    runInAction(() => {
+      uiState.pageTitle = subjectNameRaw;
+      uiState.pageBreadcrumbs = [
+        { title: 'Schema Registry', linkTo: '/schema-registry' },
+        {
+          title: subjectNameRaw,
+          linkTo: `/schema-registry/${encodeURIComponent(subjectNameRaw)}?version=${version}`,
+          options: {
+            canBeTruncated: true,
+            canBeCopied: true,
+          },
+        },
+      ];
     });
+  }, [subjectNameRaw, version]);
 
-    uiState.pageTitle = subjectNameRaw;
-    uiState.pageBreadcrumbs = [];
-    uiState.pageBreadcrumbs.push({ title: 'Schema Registry', linkTo: '/schema-registry' });
-    uiState.pageBreadcrumbs.push({
-      title: subjectNameRaw,
-      linkTo: `/schema-registry/${encodeURIComponent(subjectNameRaw)}?version=${version}`,
-      options: {
-        canBeTruncated: true,
-        canBeCopied: true,
-      },
-    });
+  // Set version in query params if not present
+  useEffect(() => {
+    if (!searchParams.has('version')) {
+      setSearchParams({ version: 'latest' });
+    }
+  }, [searchParams, setSearchParams]);
+
+  if (isLoadingSubject || !subject) {
+    return DefaultSkeleton;
   }
 
-  refreshData(force?: boolean) {
-    api.refreshSchemaCompatibilityConfig();
-    api.refreshSchemaMode();
-    api.refreshSchemaSubjects(force);
-    api.refreshSchemaTypes(force);
+  const isSoftDeleted = schemaSubjects?.find((x) => x.name === subjectNameRaw)?.isSoftDeleted;
 
-    const subjectName = decodeURIComponentPercents(this.props.subjectName);
-    api.refreshSchemaDetails(subjectName, force).then(() => {
-      const details = api.schemaDetails.get(subjectName);
-      if (!details) {
-        return;
-      }
+  const canManageSchemaRegistry = userData?.permissions?.schemaRegistry?.includes(SchemaRegistryCapability.WRITE);
+  const canCreateSchemas = userData?.permissions?.schemaRegistry?.includes(SchemaRegistryCapability.WRITE);
+  const canDeleteSchemas = userData?.permissions?.schemaRegistry?.includes(SchemaRegistryCapability.DELETE);
 
-      for (const v of details.versions) {
-        if (v.isSoftDeleted) {
-          continue;
+  const handleDeleteSubject = (permanent: boolean) => {
+    const modalCallback = () => {
+      deleteSubjectMutation.mutate(
+        { subjectName: subjectNameRaw, permanent },
+        {
+          onSuccess: () => {
+            toast({
+              status: 'success',
+              duration: 4000,
+              isClosable: false,
+              title: permanent ? 'Subject permanently deleted' : 'Subject soft-deleted',
+            });
+            if (permanent) {
+              navigate('/schema-registry/');
+            }
+          },
+          onError: (err) => {
+            toast({
+              status: 'error',
+              duration: null,
+              isClosable: true,
+              title: permanent ? 'Failed to permanently delete subject' : 'Failed to soft-delete subject',
+              description: String(err),
+            });
+          },
         }
+      );
+    };
 
-        api.refreshSchemaReferencedBy(subjectName, v.version, force);
-      }
-    });
-  }
-
-  render() {
-    const isSoftDeleted = api.schemaSubjects?.find((x) => x.name === this.subjectNameRaw)?.isSoftDeleted;
-    const subject = api.schemaDetails.get(this.subjectNameRaw);
-    if (!subject) {
-      return DefaultSkeleton;
+    if (permanent) {
+      openPermanentDeleteModal(subjectNameRaw, modalCallback);
+    } else {
+      openDeleteModal(subjectNameRaw, modalCallback);
     }
+  };
 
-    return (
-      <PageContent key="b">
-        <ToastContainer />
+  return (
+    <PageContent key="b">
+      <ToastContainer />
 
-        {/* Statistics Bar */}
-        <Flex alignItems="center" gap="1rem">
-          <SmallStat title="Format">{subject.type}</SmallStat>
-          <Divider height="2ch" orientation="vertical" />
+      {/* Statistics Bar */}
+      <Flex alignItems="center" gap="1rem">
+        <SmallStat title="Format">{subject.type}</SmallStat>
+        <Divider height="2ch" orientation="vertical" />
 
-          <SmallStat title="Compatibility">{subject.compatibility}</SmallStat>
-          <Divider height="2ch" orientation="vertical" />
+        <SmallStat title="Compatibility">{subject.compatibility}</SmallStat>
+        <Divider height="2ch" orientation="vertical" />
 
-          <SmallStat title="Active Versions">{subject.schemas.count((x) => !x.isSoftDeleted)}</SmallStat>
-        </Flex>
+        <SmallStat title="Active Versions">{subject.schemas.count((x) => !x.isSoftDeleted)}</SmallStat>
+      </Flex>
 
-        {/* Buttons */}
-        <Flex gap="2">
-          <Button
-            data-testid="schema-details-edit-compatibility-btn"
-            disabledReason={
-              api.userData?.canManageSchemaRegistry === false
-                ? "You don't have the 'canManageSchemaRegistry' permission"
-                : undefined
-            }
-            onClick={() =>
-              appGlobal.historyPush(`/schema-registry/subjects/${this.subjectNameEncoded}/edit-compatibility`)
-            }
-            variant="outline"
-          >
-            Edit compatibility
-          </Button>
-          <Button
-            data-testid="schema-details-add-version-btn"
-            disabledReason={
-              api.userData?.canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined
-            }
-            onClick={() => appGlobal.historyPush(`/schema-registry/subjects/${this.subjectNameEncoded}/add-version`)}
-            variant="outline"
-          >
-            Add new version
-          </Button>
-          <Button
-            data-testid="schema-details-delete-subject-btn"
-            disabledReason={
-              api.userData?.canDeleteSchemas === false ? "You don't have the 'canDeleteSchemas' permission" : undefined
-            }
-            onClick={() => {
-              if (isSoftDeleted) {
-                openPermanentDeleteModal(this.subjectNameRaw, () => {
-                  api
-                    .deleteSchemaSubject(this.subjectNameRaw, true)
-                    .then(() => {
-                      toast({
-                        status: 'success',
-                        duration: 4000,
-                        isClosable: false,
-                        title: 'Subject permanently deleted',
-                      });
-                      api.refreshSchemaSubjects(true);
-                      appGlobal.historyPush('/schema-registry/');
-                    })
-                    .catch((err) => {
-                      toast({
-                        status: 'error',
-                        duration: null,
-                        isClosable: true,
-                        title: 'Failed to permanently delete subject',
-                        description: String(err),
-                      });
-                    });
-                });
-              } else {
-                openDeleteModal(this.subjectNameRaw, () => {
-                  api
-                    .deleteSchemaSubject(this.subjectNameRaw, false)
-                    .then(() => {
-                      toast({
-                        status: 'success',
-                        duration: 4000,
-                        isClosable: false,
-                        title: 'Subject soft-deleted',
-                      });
-                      api.refreshSchemaSubjects(true);
-                    })
-                    .catch((err) => {
-                      toast({
-                        status: 'error',
-                        duration: null,
-                        isClosable: true,
-                        title: 'Failed to soft-delete subject',
-                        description: String(err),
-                      });
-                    });
-                });
-              }
-            }}
-            variant="outline"
-          >
-            Delete subject
-          </Button>
-        </Flex>
+      {/* Buttons */}
+      <Flex gap="2">
+        <Button
+          data-testid="schema-details-edit-compatibility-btn"
+          disabledReason={
+            canManageSchemaRegistry === false ? "You don't have the 'canManageSchemaRegistry' permission" : undefined
+          }
+          onClick={() => navigate(`/schema-registry/subjects/${subjectNameEncoded}/edit-compatibility`)}
+          variant="outline"
+        >
+          Edit compatibility
+        </Button>
+        <Button
+          data-testid="schema-details-add-version-btn"
+          disabledReason={canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined}
+          onClick={() => navigate(`/schema-registry/subjects/${subjectNameEncoded}/add-version`)}
+          variant="outline"
+        >
+          Add new version
+        </Button>
+        <Button
+          data-testid="schema-details-delete-subject-btn"
+          disabledReason={canDeleteSchemas === false ? "You don't have the 'canDeleteSchemas' permission" : undefined}
+          onClick={() => handleDeleteSubject(isSoftDeleted ?? false)}
+          variant="outline"
+        >
+          Delete subject
+        </Button>
+      </Flex>
 
-        {/* Definition / Diff */}
-        <Tabs
-          data-testid="schema-details-tabs"
-          isFitted
-          items={[
-            {
-              key: 'definition',
-              name: 'Definition',
-              component: <SubjectDefinition subject={subject} />,
-            },
-            {
-              key: 'diff',
-              name: 'Version diff',
-              component: <VersionDiff subject={subject} />,
-            },
-          ]}
-        />
-      </PageContent>
-    );
-  }
-}
-
-function getVersionFromQuery(): 'latest' | number | undefined {
-  const query = new URLSearchParams(window.location.search);
-  if (query.has('version')) {
-    const versionStr = query.get('version');
-
-    if (versionStr !== '' && !Number.isNaN(Number(versionStr))) {
-      return Number(versionStr);
-    }
-
-    if (versionStr === 'latest') {
-      return 'latest';
-    }
-
-    // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.log(`unknown version string in query: "${versionStr}" will be ignored, proceeding with "latest"`);
-  }
-
-  return;
-}
+      {/* Definition / Diff */}
+      <Tabs
+        data-testid="schema-details-tabs"
+        isFitted
+        items={[
+          {
+            key: 'definition',
+            name: 'Definition',
+            component: <SubjectDefinition subject={subject} />,
+          },
+          {
+            key: 'diff',
+            name: 'Version diff',
+            component: <VersionDiff subject={subject} />,
+          },
+        ]}
+      />
+    </PageContent>
+  );
+};
 
 export function schemaTypeToCodeBlockLanguage(type: string) {
   const lower = type.toLowerCase();
@@ -303,57 +238,175 @@ export function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
   return schema.schema;
 }
 
-const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
-  const toastFn = useToast();
+const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
+  const toast = useToast();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
 
-  const subject = p.subject;
+  const subjectData = p.subject;
 
-  const queryVersion = getVersionFromQuery();
+  const { data: userData } = useGetIdentityQuery();
+  const deleteVersionMutation = useDeleteSchemaVersionMutation();
+  const createSchemaMutation = useCreateSchemaMutation();
+
+  const queryVersion = searchParams.get('version');
+  const versionNumber =
+    queryVersion && queryVersion !== 'latest' && !Number.isNaN(Number(queryVersion)) ? Number(queryVersion) : null;
 
   // Determine fallback version when no specific version is requested
   const fallbackVersion =
-    subject.latestActiveVersion === -1 ? subject.schemas.last()?.version : subject.latestActiveVersion;
+    subjectData.latestActiveVersion === -1 ? subjectData.schemas.last()?.version : subjectData.latestActiveVersion;
 
   // Check if requested version exists in available schemas
-  const requestedVersionExists =
-    queryVersion !== undefined && queryVersion !== 'latest'
-      ? subject.schemas.some((s) => s.version === queryVersion)
-      : true;
+  const requestedVersionExists = versionNumber ? subjectData.schemas.some((s) => s.version === versionNumber) : true;
 
   // Use URL parameter if provided and exists, otherwise fall back to latest active version
-  const defaultVersion = (() => {
-    if (queryVersion === undefined) {
-      return fallbackVersion;
-    }
-    if (queryVersion === 'latest' || !requestedVersionExists) {
-      return fallbackVersion;
-    }
-    return queryVersion;
-  })();
+  const defaultVersion =
+    versionNumber && requestedVersionExists
+      ? versionNumber
+      : (fallbackVersion ?? subjectData.versions[0]?.version ?? 1);
   const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
 
   // Show notification and update URL if requested version doesn't exist
-  if (queryVersion !== undefined && queryVersion !== 'latest' && !requestedVersionExists) {
-    toastFn({
-      status: 'warning',
-      title: `Version ${queryVersion} not found`,
-      description: `Showing version ${fallbackVersion} instead`,
-      duration: 5000,
-      isClosable: true,
-    });
-    // Update URL to reflect the actual version being shown
-    editQuery((x) => (x.version = String(fallbackVersion)));
-  }
+  useEffect(() => {
+    if (versionNumber && !requestedVersionExists) {
+      toast({
+        status: 'warning',
+        title: `Version ${versionNumber} not found`,
+        description: `Showing version ${fallbackVersion} instead`,
+        duration: 5000,
+        isClosable: true,
+      });
+      setSearchParams({ version: String(fallbackVersion) });
+    }
+  }, [versionNumber, requestedVersionExists, fallbackVersion, toast, setSearchParams]);
 
-  const schema = subject.schemas.first((x) => x.version === selectedVersion);
+  const schema = subjectData.schemas.first((x) => x.version === selectedVersion);
 
-  if (!schema) {
-    if (selectedVersion !== defaultVersion) {
+  useEffect(() => {
+    if (!schema && selectedVersion !== defaultVersion) {
       setSelectedVersion(defaultVersion);
     }
+  }, [schema, selectedVersion, defaultVersion]);
 
+  if (!schema) {
     return null;
   }
+
+  const canCreateSchemas = userData?.permissions?.schemaRegistry?.includes(SchemaRegistryCapability.WRITE);
+  const canDeleteSchemas = userData?.permissions?.schemaRegistry?.includes(SchemaRegistryCapability.DELETE);
+
+  const handleVersionChange = (value: number) => {
+    setSearchParams({ version: String(value) });
+    setSelectedVersion(value);
+  };
+
+  const handlePermanentDelete = () => {
+    openPermanentDeleteModal(`${subjectData.name} version ${schema.version}`, () => {
+      deleteVersionMutation.mutate(
+        { subjectName: subjectData.name, version: schema.version, permanent: true },
+        {
+          onSuccess: async () => {
+            toast({
+              status: 'success',
+              duration: 4000,
+              isClosable: false,
+              title: 'Schema version permanently deleted',
+            });
+
+            // Invalidate and refetch to get updated details
+            await queryClient.invalidateQueries({
+              queryKey: ['schemaRegistry', 'subjects', subjectData.name, 'details'],
+            });
+            const newDetails = queryClient.getQueryData<SchemaRegistrySubjectDetails>([
+              'schemaRegistry',
+              'subjects',
+              subjectData.name,
+              'details',
+            ]);
+
+            if (newDetails?.latestActiveVersion) {
+              setSelectedVersion(newDetails.latestActiveVersion);
+            } else {
+              navigate('/schema-registry/');
+            }
+          },
+          onError: (err) => {
+            toast({
+              status: 'error',
+              duration: null,
+              isClosable: true,
+              title: 'Failed to permanently delete schema version',
+              description: String(err),
+            });
+          },
+        }
+      );
+    });
+  };
+
+  const handleRecover = () => {
+    createSchemaMutation.mutate(
+      {
+        subjectName: subjectData.name,
+        schemaType: schema.type,
+        schema: schema.schema,
+        references: schema.references,
+      },
+      {
+        onSuccess: (result) => {
+          toast({
+            status: 'success',
+            duration: 4000,
+            isClosable: false,
+            title: `Schema ${subjectData.name} ${schema.version} has been recovered`,
+            description: `Schema ID: ${result.id}`,
+          });
+
+          // Navigate to the latest active version after recovery
+          navigate(`/schema-registry/subjects/${encodeURIComponent(subjectData.name)}?version=latest`);
+        },
+        onError: (err) => {
+          toast({
+            status: 'error',
+            duration: null,
+            isClosable: true,
+            title: `Failed to recover schema ${subjectData.name} ${schema.version}`,
+            description: `Error: ${String(err)}`,
+          });
+        },
+      }
+    );
+  };
+
+  const handleSoftDelete = () => {
+    openDeleteModal(`${subjectData.name} version ${schema.version}`, () => {
+      deleteVersionMutation.mutate(
+        { subjectName: subjectData.name, version: schema.version, permanent: false },
+        {
+          onSuccess: () => {
+            toast({
+              status: 'success',
+              duration: 4000,
+              isClosable: false,
+              title: 'Schema version deleted',
+              description: 'You can recover or permanently delete it.',
+            });
+          },
+          onError: (err) => {
+            toast({
+              status: 'error',
+              duration: null,
+              isClosable: true,
+              title: 'Failed to delete schema version',
+              description: String(err),
+            });
+          },
+        }
+      );
+    });
+  };
 
   return (
     <Flex gap="10">
@@ -365,17 +418,14 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
             <Box width="200px">
               <SingleSelect
                 data-testid="schema-definition-version-select"
-                isDisabled={subject.versions.length === 0}
-                onChange={(value) => {
-                  editQuery((x) => (x.version = String(value)));
-                  setSelectedVersion(value);
-                }}
-                options={subject.versions.map((v) => ({
+                isDisabled={subjectData.versions.length === 0}
+                onChange={handleVersionChange}
+                options={subjectData.versions.map((v) => ({
                   value: v.version,
                   label:
                     String(v.version) +
                     (v.isSoftDeleted ? ' (soft-deleted)' : '') +
-                    (subject.versions.at(-1) === v ? ' (latest)' : ''),
+                    (subjectData.versions.at(-1) === v ? ' (latest)' : ''),
                 }))}
                 value={selectedVersion}
               />
@@ -390,44 +440,10 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
               <Button
                 data-testid="schema-definition-permanent-delete-btn"
                 disabledReason={
-                  api.userData?.canDeleteSchemas === false
-                    ? "You don't have the 'canDeleteSchemas' permission"
-                    : undefined
+                  canDeleteSchemas === false ? "You don't have the 'canDeleteSchemas' permission" : undefined
                 }
                 ml="auto"
-                onClick={() =>
-                  openPermanentDeleteModal(`${subject.name} version ${schema.version}`, () => {
-                    api
-                      .deleteSchemaSubjectVersion(subject.name, schema.version, true)
-                      .then(async () => {
-                        toastFn({
-                          status: 'success',
-                          duration: 4000,
-                          isClosable: false,
-                          title: 'Schema version permanently deleted',
-                        });
-
-                        api.refreshSchemaSubjects(true);
-                        await api.refreshSchemaDetails(subject.name, true);
-
-                        const newDetails = api.schemaDetails.get(subject.name);
-                        if (newDetails?.latestActiveVersion) {
-                          setSelectedVersion(newDetails.latestActiveVersion);
-                        } else {
-                          appGlobal.historyPush('/schema-registry/');
-                        }
-                      })
-                      .catch((err) => {
-                        toastFn({
-                          status: 'error',
-                          duration: null,
-                          isClosable: true,
-                          title: 'Failed to permanently delete schema version',
-                          description: String(err),
-                        });
-                      });
-                  })
-                }
+                onClick={handlePermanentDelete}
                 variant="outline"
               >
                 Permanent delete
@@ -436,45 +452,9 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
               <Button
                 data-testid="schema-definition-recover-btn"
                 disabledReason={
-                  api.userData?.canCreateSchemas === false
-                    ? "You don't have the 'canCreateSchemas' permission"
-                    : undefined
+                  canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined
                 }
-                onClick={() => {
-                  api
-                    .createSchema(subject.name, {
-                      references: schema.references,
-                      schema: schema.schema,
-                      schemaType: schema.type,
-                    })
-                    .then(async (r) => {
-                      toastFn({
-                        status: 'success',
-                        duration: 4000,
-                        isClosable: false,
-                        title: `Schema ${subject.name} ${schema.version} has been recovered`,
-                        description: `Schema ID: ${r.id}`,
-                      });
-                      api.refreshSchemaSubjects(true);
-                      await api.refreshSchemaDetails(subject.name, true);
-
-                      const updatedDetails = api.schemaDetails.get(subject.name);
-                      if (updatedDetails) {
-                        appGlobal.historyPush(
-                          `/schema-registry/subjects/${encodeURIComponent(subject.name)}?version=${updatedDetails.latestActiveVersion}`
-                        );
-                      }
-                    })
-                    .catch((err) => {
-                      toastFn({
-                        status: 'error',
-                        duration: null,
-                        isClosable: true,
-                        title: `Failed to recover schema ${subject.name} ${schema.version} `,
-                        description: `Error: ${String(err)}`,
-                      });
-                    });
-                }}
+                onClick={handleRecover}
                 variant="outline"
               >
                 Recover
@@ -484,38 +464,10 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
             <Button
               data-testid="schema-definition-delete-version-btn"
               disabledReason={
-                api.userData?.canDeleteSchemas === false
-                  ? "You don't have the 'canDeleteSchemas' permission"
-                  : undefined
+                canDeleteSchemas === false ? "You don't have the 'canDeleteSchemas' permission" : undefined
               }
               ml="auto"
-              onClick={() =>
-                openDeleteModal(`${subject.name} version ${schema.version}`, () => {
-                  api
-                    .deleteSchemaSubjectVersion(subject.name, schema.version, false)
-                    .then(() => {
-                      toastFn({
-                        status: 'success',
-                        duration: 4000,
-                        isClosable: false,
-                        title: 'Schema version deleted',
-                        description: 'You can recover or permanently delete it.',
-                      });
-
-                      api.refreshSchemaDetails(subject.name, true);
-                      api.refreshSchemaSubjects(true);
-                    })
-                    .catch((err) => {
-                      toastFn({
-                        status: 'error',
-                        duration: null,
-                        isClosable: true,
-                        title: 'Failed to delete schema version',
-                        description: String(err),
-                      });
-                    });
-                })
-              }
+              onClick={handleSoftDelete}
               variant="outline"
             >
               Delete
@@ -549,17 +501,18 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
 
       {/* References Box */}
       <Box>
-        <SchemaReferences schema={schema} subject={subject} />
+        <SchemaReferences schema={schema} subject={subjectData} />
       </Box>
     </Flex>
   );
-});
+};
 
-const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
+const VersionDiff = (p: { subject: SchemaRegistrySubjectDetails }) => {
   const subject = p.subject;
 
-  const defaultVersionLeft = subject.versions[0].version;
-  const defaultVersionRight = subject.latestActiveVersion === -1 ? defaultVersionLeft : subject.latestActiveVersion;
+  const defaultVersionLeft = subject.versions[0]?.version ?? 1;
+  const defaultVersionRight =
+    subject.latestActiveVersion === -1 ? defaultVersionLeft : (subject.latestActiveVersion ?? defaultVersionLeft);
 
   const [selectedVersionLeft, setSelectedVersionLeft] = useState(defaultVersionLeft);
   const [selectedVersionRight, setSelectedVersionRight] = useState(defaultVersionRight);
@@ -567,12 +520,19 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
   const schemaLeft = subject.schemas.first((x) => x.version === selectedVersionLeft);
   const schemaRight = subject.schemas.first((x) => x.version === selectedVersionRight);
 
-  if (!schemaLeft) {
-    setSelectedVersionLeft(subject.versions[0].version);
-    return null;
-  }
-  if (!schemaRight) {
-    setSelectedVersionLeft(subject.versions[0].version);
+  useEffect(() => {
+    if (!schemaLeft) {
+      setSelectedVersionLeft(subject.versions[0]?.version ?? 1);
+    }
+  }, [schemaLeft, subject.versions]);
+
+  useEffect(() => {
+    if (!schemaRight) {
+      setSelectedVersionRight(subject.versions[0]?.version ?? 1);
+    }
+  }, [schemaRight, subject.versions]);
+
+  if (!(schemaLeft && schemaRight)) {
     return null;
   }
 
@@ -650,45 +610,78 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
       />
     </Flex>
   );
-});
+};
 
-const SchemaReferences = observer(
-  (p: { subject: SchemaRegistrySubjectDetails; schema: SchemaRegistryVersionedSchema }) => {
-    const { subject, schema } = p;
-    const version = schema.version;
+const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: SchemaRegistryVersionedSchema }) => {
+  const { subject, schema } = p;
+  const version = schema.version;
 
-    const referencedByVersions = api.schemaReferencedBy.get(subject.name);
-    const referencedBy = referencedByVersions?.get(version);
+  // Fetch referenced by data using React Query
+  const { data: referencedByData } = useSchemaReferencedByQuery(subject.name, version);
 
-    return (
-      <>
-        <Text data-testid="schema-references-heading" fontSize="lg" fontWeight="bold" mt="20">
-          References
-        </Text>
-        <Text mb="6">
-          Schemas that are required by this version.
-          {/* <Link as={ReactRouterLink} to="/home">Learn More</Link> */}
-        </Text>
+  return (
+    <>
+      <Text data-testid="schema-references-heading" fontSize="lg" fontWeight="bold" mt="20">
+        References
+      </Text>
+      <Text mb="6">
+        Schemas that are required by this version.
+        {/* <Link as={ReactRouterLink} to="/home">Learn More</Link> */}
+      </Text>
 
-        {schema.references.length > 0 ? (
-          <UnorderedList data-testid="schema-references-list">
-            {schema.references.map((ref) => {
-              // Schema references contain two distinct identifiers:
-              // - ref.name: The import string used within the schema (e.g., "foo/bar/baz.proto")
-              // - ref.subject: The actual Schema Registry subject name (e.g., "foo.bar.baz")
-              //
-              // For consistent UX, we display the subject name (what users navigate to)
-              // rather than the import string. Both "References" and "Referenced By"
-              // sections now consistently show subject names.
-              //
-              // Navigation uses encodeURIComponentPercents() instead of encodeURIComponent()
-              // because schema subject names with periods/slashes cause URL parsing issues
-              // in React Router. The special encoder replaces % with ﹪ to avoid conflicts.
+      {schema.references.length > 0 ? (
+        <UnorderedList data-testid="schema-references-list">
+          {schema.references.map((ref) => {
+            // Schema references contain two distinct identifiers:
+            // - ref.name: The import string used within the schema (e.g., "foo/bar/baz.proto")
+            // - ref.subject: The actual Schema Registry subject name (e.g., "foo.bar.baz")
+            //
+            // For consistent UX, we display the subject name (what users navigate to)
+            // rather than the import string. Both "References" and "Referenced By"
+            // sections now consistently show subject names.
+            //
+            // Navigation uses encodeURIComponentPercents() instead of encodeURIComponent()
+            // because schema subject names with periods/slashes cause URL parsing issues
+            // in React Router. The special encoder replaces % with ﹪ to avoid conflicts.
+            return (
+              <ListItem key={ref.name + ref.subject + ref.version}>
+                <Link
+                  as={ReactRouterLink}
+                  data-testid={`schema-reference-link-${ref.subject}`}
+                  to={`/schema-registry/subjects/${encodeURIComponentPercents(ref.subject)}?version=${ref.version}`}
+                >
+                  {ref.subject}
+                </Link>
+              </ListItem>
+            );
+          })}
+        </UnorderedList>
+      ) : (
+        <Text>This schema has no references.</Text>
+      )}
+
+      <Text data-testid="schema-referenced-by-heading" fontSize="lg" fontWeight="bold" mt="20">
+        Referenced By
+      </Text>
+      <Text mb="6">
+        Schemas that reference this version.
+        {/* <Link as={ReactRouterLink} to="/home">Learn More</Link> */}
+      </Text>
+
+      {referencedByData && referencedByData.length > 0 ? (
+        <UnorderedList data-testid="schema-referenced-by-list">
+          {referencedByData
+            .flatMap((x) => x.usages)
+            .map((ref) => {
+              // Referenced By data only contains subject names (not import strings),
+              // so this section was already displaying correctly. However, we use
+              // encodeURIComponentPercents() for consistent navigation behavior
+              // with the References section above.
               return (
-                <ListItem key={ref.name + ref.subject + ref.version}>
+                <ListItem key={ref.subject + ref.version}>
                   <Link
                     as={ReactRouterLink}
-                    data-testid={`schema-reference-link-${ref.subject}`}
+                    data-testid={`schema-referenced-by-link-${ref.subject}`}
                     to={`/schema-registry/subjects/${encodeURIComponentPercents(ref.subject)}?version=${ref.version}`}
                   >
                     {ref.subject}
@@ -696,47 +689,12 @@ const SchemaReferences = observer(
                 </ListItem>
               );
             })}
-          </UnorderedList>
-        ) : (
-          <Text>This schema has no references.</Text>
-        )}
-
-        <Text data-testid="schema-referenced-by-heading" fontSize="lg" fontWeight="bold" mt="20">
-          Referenced By
-        </Text>
-        <Text mb="6">
-          Schemas that reference this version.
-          {/* <Link as={ReactRouterLink} to="/home">Learn More</Link> */}
-        </Text>
-
-        {!!referencedBy && referencedBy?.length > 0 ? (
-          <UnorderedList data-testid="schema-referenced-by-list">
-            {referencedBy
-              .flatMap((x) => x.usages)
-              .map((ref) => {
-                // Referenced By data only contains subject names (not import strings),
-                // so this section was already displaying correctly. However, we use
-                // encodeURIComponentPercents() for consistent navigation behavior
-                // with the References section above.
-                return (
-                  <ListItem key={ref.subject + ref.version}>
-                    <Link
-                      as={ReactRouterLink}
-                      data-testid={`schema-referenced-by-link-${ref.subject}`}
-                      to={`/schema-registry/subjects/${encodeURIComponentPercents(ref.subject)}?version=${ref.version}`}
-                    >
-                      {ref.subject}
-                    </Link>
-                  </ListItem>
-                );
-              })}
-          </UnorderedList>
-        ) : (
-          <Text>This schema has no incoming references.</Text>
-        )}
-      </>
-    );
-  }
-);
+        </UnorderedList>
+      ) : (
+        <Text>This schema has no incoming references.</Text>
+      )}
+    </>
+  );
+};
 
 export default SchemaDetailsView;

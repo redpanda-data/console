@@ -219,7 +219,7 @@ const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
   [DisabledReasons.notSupportedServerless]: <span>This feature is not yet supported for Serverless.</span>,
 } as const;
 
-export interface MenuItemState {
+interface MenuItemState {
   visible: boolean;
   disabledReasons: DisabledReasons[];
 }
@@ -405,12 +405,12 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Add version'
   ),
   MakeRoute<{ subjectName: string }>('/schema-registry/subjects/:subjectName', SchemaDetailsView, 'Schema Registry'),
-  MakeRoute<{ subjectName: string }>(
+  MakeRoute<{ subjectName?: string }>(
     '/schema-registry/edit-compatibility',
     EditSchemaCompatibilityPage,
     'Edit Schema Compatibility'
   ),
-  MakeRoute<{ subjectName: string }>(
+  MakeRoute<{ subjectName?: string }>(
     '/schema-registry/subjects/:subjectName/edit-compatibility',
     EditSchemaCompatibilityPage,
     'Edit Schema Compatibility'

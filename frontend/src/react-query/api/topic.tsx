@@ -52,11 +52,8 @@ export const useLegacyListTopicsQuery = (
   const legacyListTopicsResult = useTanstackQuery<GetTopicsResponse>({
     queryKey: infiniteQueryKey,
     queryFn: async () => {
-      const response = await fetch(`${config.restBasePath}/topics`, {
+      const response = await config.fetch(`${config.restBasePath}/topics`, {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${config.jwt}`,
-        },
       });
 
       return response.json();
