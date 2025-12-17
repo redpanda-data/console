@@ -14,6 +14,7 @@
 export {};
 
 declare global {
+  // biome-ignore lint/style/useConsistentTypeDefinitions: leave as interface due to type checker
   interface Array<T> {
     remove(obj: T): boolean;
     removeAll(selector: (x: T) => boolean): number;

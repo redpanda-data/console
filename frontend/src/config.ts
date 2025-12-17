@@ -50,6 +50,7 @@ import { AppFeatures, getBasePath } from './utils/env';
 declare const __webpack_public_path__: string;
 
 declare global {
+  // biome-ignore lint/style/useConsistentTypeDefinitions: leave as interface due to type checker
   interface Window {
     MonacoEnvironment?: monaco.Environment;
   }

@@ -203,10 +203,22 @@ export function NumInput(p: {
       return;
     }
     let clampedValue = x;
-    if (clampedValue !== null && clampedValue !== undefined && p.min !== null && p.min !== undefined && clampedValue < p.min) {
+    if (
+      clampedValue !== null &&
+      clampedValue !== undefined &&
+      p.min !== null &&
+      p.min !== undefined &&
+      clampedValue < p.min
+    ) {
       clampedValue = p.min;
     }
-    if (clampedValue !== null && clampedValue !== undefined && p.max !== null && p.max !== undefined && clampedValue > p.max) {
+    if (
+      clampedValue !== null &&
+      clampedValue !== undefined &&
+      p.max !== null &&
+      p.max !== undefined &&
+      clampedValue > p.max
+    ) {
       clampedValue = p.max;
     }
     setEditValue(clampedValue === undefined ? clampedValue : String(clampedValue));

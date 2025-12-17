@@ -2290,7 +2290,12 @@ export const rolesApi = observable({
 
     for (const r of rolePromises) {
       const res = (await r) as { response?: { role?: { name: string }; members: Array<{ principal: string }> } };
-      if (res.response === null || res.response === undefined || res.response.role === null || res.response.role === undefined) {
+      if (
+        res.response === null ||
+        res.response === undefined ||
+        res.response.role === null ||
+        res.response.role === undefined
+      ) {
         continue; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
       }
       const roleName = res.response.role.name;

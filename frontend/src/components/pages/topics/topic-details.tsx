@@ -338,7 +338,12 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         (t) => <AclList acl={api.topicAcls.get(t.topicName)} />,
         [
           () => {
-            if (AppFeatures.SINGLE_SIGN_ON && api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
+            if (
+              AppFeatures.SINGLE_SIGN_ON &&
+              api.userData !== null &&
+              api.userData !== undefined &&
+              !api.userData.canListAcls
+            ) {
               return (
                 <Popover content={"You need the cluster-permission 'viewAcl' to view this tab"} hideCloseButton={true}>
                   <div>

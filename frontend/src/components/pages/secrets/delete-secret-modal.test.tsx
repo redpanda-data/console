@@ -16,71 +16,72 @@ import { fireEvent, render, screen, waitFor, within } from 'test-utils';
 import { DeleteSecretModal } from './delete-secret-modal';
 
 describe('DeleteSecretModal', () => {
-  test.each(['SECRET_ID', 'lower/with/slashes', 'lower-with-dashes'])(
-    'should let the user delete a secret after entering confirmation text: %s',
-    async (secretId) => {
-      const pipelinesForSecretResponse = create(GetPipelinesForSecretResponseSchema, {
-        response: create(GetPipelinesForSecretResponseSchemaDataPlane, {
-          pipelinesForSecret: create(PipelinesForSecretSchema, {
-            secretId,
-            pipelines: [],
+  test.each([
+    'SECRET_ID',
+    'lower/with/slashes',
+    'lower-with-dashes',
+  ])('should let the user delete a secret after entering confirmation text: %s', async (secretId) => {
+    const pipelinesForSecretResponse = create(GetPipelinesForSecretResponseSchema, {
+      response: create(GetPipelinesForSecretResponseSchemaDataPlane, {
+        pipelinesForSecret: create(PipelinesForSecretSchema, {
+          secretId,
+          pipelines: [],
+        }),
+      }),
+    });
+
+    const listPipelinesForSecretMock = vi.fn().mockReturnValue(pipelinesForSecretResponse);
+    const deleteSecretMock = vi.fn().mockReturnValue({});
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(getPipelinesForSecret, listPipelinesForSecretMock);
+      rpc(deleteSecret, deleteSecretMock);
+    });
+
+    render(
+      <DeleteSecretModal
+        isOpen
+        onClose={() => {
+          // no op - test modal
+        }}
+        secretId={secretId}
+      />,
+      { transport }
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('delete-secret-button')).toBeVisible();
+    });
+
+    fireEvent.click(screen.getByTestId('delete-secret-button'));
+
+    // Verify that the delete mutation was called with the correct parameters
+    await waitFor(() => {
+      expect(screen.getByTestId('delete-secret-button')).toBeVisible();
+      expect(screen.getByTestId('delete-secret-button')).toBeDisabled();
+    });
+
+    fireEvent.change(screen.getByTestId('txt-confirmation-delete'), { target: { value: secretId } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('delete-secret-button')).toBeVisible();
+      expect(screen.getByTestId('delete-secret-button')).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByTestId('delete-secret-button'));
+
+    await waitFor(() => {
+      expect(deleteSecretMock).toHaveBeenCalledTimes(1);
+      expect(deleteSecretMock).toHaveBeenCalledWith(
+        create(DeleteSecretRequestSchema, {
+          request: create(DeleteSecretRequestSchemaDataPlane, {
+            id: secretId,
           }),
         }),
-      });
-
-      const listPipelinesForSecretMock = vi.fn().mockReturnValue(pipelinesForSecretResponse);
-      const deleteSecretMock = vi.fn().mockReturnValue({});
-
-      const transport = createRouterTransport(({ rpc }) => {
-        rpc(getPipelinesForSecret, listPipelinesForSecretMock);
-        rpc(deleteSecret, deleteSecretMock);
-      });
-
-      render(
-        <DeleteSecretModal
-          isOpen
-          onClose={() => {
-            // no op - test modal
-          }}
-          secretId={secretId}
-        />,
-        { transport }
+        expect.anything()
       );
-
-      await waitFor(() => {
-        expect(screen.getByTestId('delete-secret-button')).toBeVisible();
-      });
-
-      fireEvent.click(screen.getByTestId('delete-secret-button'));
-
-      // Verify that the delete mutation was called with the correct parameters
-      await waitFor(() => {
-        expect(screen.getByTestId('delete-secret-button')).toBeVisible();
-        expect(screen.getByTestId('delete-secret-button')).toBeDisabled();
-      });
-
-      fireEvent.change(screen.getByTestId('txt-confirmation-delete'), { target: { value: secretId } });
-
-      await waitFor(() => {
-        expect(screen.getByTestId('delete-secret-button')).toBeVisible();
-        expect(screen.getByTestId('delete-secret-button')).toBeEnabled();
-      });
-
-      fireEvent.click(screen.getByTestId('delete-secret-button'));
-
-      await waitFor(() => {
-        expect(deleteSecretMock).toHaveBeenCalledTimes(1);
-        expect(deleteSecretMock).toHaveBeenCalledWith(
-          create(DeleteSecretRequestSchema, {
-            request: create(DeleteSecretRequestSchemaDataPlane, {
-              id: secretId,
-            }),
-          }),
-          expect.anything()
-        );
-      });
-    }
-  );
+    });
+  });
 
   test('should show a warning if the secret is in use', async () => {
     const secretId = 'SECRET_ID';
