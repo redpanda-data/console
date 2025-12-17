@@ -149,7 +149,7 @@ export function removeRedundantReassignments(topicAssignments: TopicAssignments,
       let originalReassignedPartitionsCount = 0;
       for (const partitionId in topicAssignment) {
         if (Object.hasOwn(topicAssignment, partitionId)) {
-          originalReassignedPartitionsCount++;
+          originalReassignedPartitionsCount += 1;
           const a = topicAssignment[partitionId];
           const brokersBefore = curTopicPartitions.first((p) => p.id === Number(partitionId))?.replicas;
           if (!brokersBefore) {

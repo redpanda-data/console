@@ -874,10 +874,10 @@ const apiStore = {
           p.topicName = topicName;
 
           if (p.partitionError) {
-            partitionErrors++;
+            partitionErrors += 1;
           }
           if (p.waterMarksError) {
-            waterMarkErrors++;
+            waterMarkErrors += 1;
           }
           if (partitionErrors || waterMarkErrors) {
             p.hasErrors = true;

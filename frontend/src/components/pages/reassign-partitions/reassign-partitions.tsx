@@ -571,10 +571,10 @@ class ReassignPartitions extends PageComponent {
       return;
     }
 
-    this.currentStep++;
+    this.currentStep += 1;
   }
   onPreviousPage() {
-    this.currentStep--;
+    this.currentStep -= 1;
   }
 
   async startReassignment(request: PartitionReassignmentRequest): Promise<boolean> {
@@ -761,7 +761,7 @@ class ReassignPartitions extends PageComponent {
       if (this.refreshTopicConfigsRequestsInProgress > 0) {
         return;
       }
-      this.refreshTopicConfigsRequestsInProgress++;
+      this.refreshTopicConfigsRequestsInProgress += 1;
       const topicConfigs = await partialTopicConfigs([
         'follower.replication.throttled.replicas',
         'leader.replication.throttled.replicas',
@@ -785,7 +785,7 @@ class ReassignPartitions extends PageComponent {
     } catch (_err) {
       this.stopRefreshingTopicConfigs();
     } finally {
-      this.refreshTopicConfigsRequestsInProgress--;
+      this.refreshTopicConfigsRequestsInProgress -= 1;
     }
   }
 

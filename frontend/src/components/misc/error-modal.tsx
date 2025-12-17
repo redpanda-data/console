@@ -100,7 +100,8 @@ const errorModals: ErrorModalProps[] = observable([]);
 
 let nextErrorKey = 0;
 export function showErrorModal(title: string, subTitle: React.ReactNode, content: React.ReactNode) {
-  const key = nextErrorKey++;
+  const key = nextErrorKey;
+  nextErrorKey += 1;
 
   // keep formatting for strings
   let formattedContent = content;

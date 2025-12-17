@@ -362,13 +362,14 @@ const processResourceAcls = (resource: ListACLsResponse['resources'][number], ho
 
     if (!rulesMap.has(ruleKey)) {
       rulesMap.set(ruleKey, {
-        id: hostData.ruleIdCounter++,
+        id: hostData.ruleIdCounter,
         resourceType,
         mode: ModeCustom,
         selectorType,
         selectorValue,
         operations: {},
       });
+      hostData.ruleIdCounter += 1;
     }
 
     // biome-ignore lint/style/noNonNullAssertion: in the previous lines we ensured the key exists

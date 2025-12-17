@@ -803,7 +803,7 @@ export class ConnectorPropertiesStore {
             if (x.group.name === g.name) {
               return order;
             }
-            order++;
+            order += 1;
           }
         }
 

@@ -80,7 +80,7 @@
           }
         },
         "noLeakedRender": "error",
-        "noIncrementDecrement": "off",
+        "noIncrementDecrement": "error",
         "noDeprecatedImports": "error", // this may slow down the linting process
         "noFloatingPromises": "error", // this may slow down the linting process
         "noMisusedPromises": "error", // this may slow down the linting process

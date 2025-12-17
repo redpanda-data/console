@@ -71,7 +71,11 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
   const showErrors = state.property.errors.length > 0;
   const errors = showErrors ? state.property.errors : state.property.lastErrors;
   const errorToShow = showErrors ? errors[state.property.currentErrorIndex % errors.length] : undefined;
-  const cycleError = showErrors ? () => state.property.currentErrorIndex++ : undefined;
+  const cycleError = showErrors
+    ? () => {
+        state.property.currentErrorIndex += 1;
+      }
+    : undefined;
 
   return (
     <Grid gap="10" templateColumns="1fr">

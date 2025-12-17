@@ -97,8 +97,8 @@ Array.prototype.removeAll = function removeAll<T>(this: T[], selector: (x: T) =>
   for (let i = 0; i < this.length; i++) {
     if (selector(this[i])) {
       this.splice(i, 1);
-      count++;
-      i--;
+      count += 1;
+      i -= 1;
     }
   }
   return count;

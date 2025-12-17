@@ -200,7 +200,10 @@ const KafkaConnectorMain = observer(
               component: (
                 <Box mt="8">
                   <Box maxWidth="800px">
-                    {Boolean(connectorStore) && <ConfigPage connectorStore={connectorStore} context="EDIT" />}
+                    {Boolean(connectorStore) && (
+                      // biome-ignore lint/style/noNonNullAssertion: checked above with Boolean(connectorStore)
+                      <ConfigPage connectorStore={connectorStore!} context="EDIT" />
+                    )}
                   </Box>
 
                   {/* Update Config Button */}
@@ -590,7 +593,7 @@ const ConnectorDetails = observer(
               if (configKey === x.name) {
                 return i;
               }
-              i++;
+              i += 1;
             }
           }
         }

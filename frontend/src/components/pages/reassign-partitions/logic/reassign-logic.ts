@@ -316,18 +316,18 @@ function computeReplicaAssignments(
     // Take the best broker
     const bestTrackedBroker = brokerReplicaCount[0];
     const bestBroker = bestTrackedBroker.broker;
-    bestTrackedBroker.assignedReplicas++; // increase temporary counter (which only tracks assignments within the topic)
+    bestTrackedBroker.assignedReplicas += 1; // increase temporary counter (which only tracks assignments within the topic)
     resultBrokers.push(bestBroker);
     consumedBrokers.push(bestBroker);
 
     // Increase total number of assigned replicas
-    bestBroker.assignedReplicas++;
+    bestBroker.assignedReplicas += 1;
     // The new assignment will take up disk space, which must be tracked as well.
     bestBroker.assignedSize += partition.replicaSize;
   }
 
   // Count the first broker in the list as the leader
-  resultBrokers[0].assignedLeader++;
+  resultBrokers[0].assignedLeader += 1;
 
   return resultBrokers;
 }
@@ -369,9 +369,9 @@ function balanceLeaders(
         newBrokers[betterLeaderIndex] = plannedLeader;
 
         // Adjust tracking info for leaders and consumed disk size
-        plannedLeader.assignedLeader--;
+        plannedLeader.assignedLeader -= 1;
         plannedLeader.assignedSize -= p.replicaSize;
-        betterLeader.assignedLeader++;
+        betterLeader.assignedLeader += 1;
         betterLeader.assignedSize += p.replicaSize;
 
         // Update final assignments
@@ -381,7 +381,7 @@ function balanceLeaders(
           (exBroker) => apiData.brokers.first((b) => b.brokerId === exBroker.brokerId)!
         );
 
-        leaderSwitchCount++;
+        leaderSwitchCount += 1;
       }
     }
   }

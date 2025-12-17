@@ -361,7 +361,7 @@ const renderName = (topic: Topic) => {
   let missing = 0;
   for (const a of TopicActions) {
     if (!actions.includes(a)) {
-      missing++;
+      missing += 1;
     }
   }
 
@@ -455,7 +455,7 @@ function ConfirmDeletionModal({
             {Boolean(error) && (
               <Alert mb={2} status="error">
                 <AlertIcon />
-                {`An error occurred: ${typeof error === 'string' ? error : error.message}`}
+                {`An error occurred: ${typeof error === 'string' ? error : error?.message ?? 'Unknown error'}`}
               </Alert>
             )}
             {Boolean(topicToDelete?.isInternal) && (

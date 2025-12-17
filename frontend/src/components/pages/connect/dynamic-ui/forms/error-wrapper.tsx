@@ -17,7 +17,11 @@ export const ErrorWrapper = observer((props: PropsWithoutRef<{ property: Propert
 
   const errorToShow = showErrors ? errors[property.currentErrorIndex % errors.length] : undefined;
 
-  const cycleError = showErrors ? () => property.currentErrorIndex++ : undefined;
+  const cycleError = showErrors
+    ? () => {
+        property.currentErrorIndex += 1;
+      }
+    : undefined;
 
   return (
     <div>

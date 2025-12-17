@@ -152,10 +152,10 @@ export class DebugTimerStore {
   }
 
   private increaseSec() {
-    this.secondCounter++;
+    this.secondCounter += 1;
   }
   private increaseFrame() {
-    this.frame++;
+    this.frame += 1;
   }
 
   useSeconds() {
