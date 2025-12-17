@@ -795,12 +795,11 @@ class ReassignPartitions extends PageComponent {
 
   @computed get selectedTopicPartitions(): TopicPartitions[] | undefined {
     const apiTopics = api.topics;
-    if (!apiTopics) {
-      return undefined;
-    }
     const apiPartitions = api.topicPartitions;
-    if (!apiPartitions) {
-      return undefined;
+
+    if (!(apiTopics && apiPartitions)) {
+      // biome-ignore lint/suspicious/useGetterReturn: early return for undefined case
+      return;
     }
 
     return partitionSelectionToTopicPartitions(this.partitionSelection, apiPartitions, apiTopics);
@@ -872,7 +871,7 @@ const steps: WizardStep[] = [
 
         return true;
       },
-      computeWarning: (rp) => {
+      computeWarning: (rp): string | undefined => {
         const allBrokers = api.clusterInfo?.brokers;
         if (!allBrokers) {
           return;
@@ -905,7 +904,7 @@ const steps: WizardStep[] = [
               ? `Your selected Brokers, Your cluster contains ${allBrokers.length} brokers across `
               : '';
         }
-        return undefined;
+        return;
       },
     },
   },

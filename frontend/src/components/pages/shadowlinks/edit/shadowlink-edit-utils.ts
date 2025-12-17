@@ -91,7 +91,7 @@ export const buildTLSSettings = (
       : Boolean(values.mtls.ca?.pemContent || values.mtls.clientCert?.pemContent || values.mtls.clientKey?.pemContent);
 
   if (!hasCertificates) {
-    return undefined;
+    return;
   }
 
   if (values.mtlsMode === TLS_MODE.FILE_PATH) {

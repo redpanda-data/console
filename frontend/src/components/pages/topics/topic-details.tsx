@@ -209,18 +209,17 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   @computed get topic(): undefined | Topic | null {
     // undefined = not yet known, null = known to be null
     if (!api.topics) {
-      return undefined;
+      // biome-ignore lint/suspicious/useGetterReturn: early return for undefined case
+      return;
     }
     const topic = api.topics.find((e) => e.topicName === this.props.topicName);
-    if (!topic) {
-      return null;
-    }
-    return topic;
+    return topic ?? null;
   }
   @computed get topicConfig(): undefined | ConfigEntry[] | null {
     const config = api.topicConfig.get(this.props.topicName);
     if (config === undefined) {
-      return undefined;
+      // biome-ignore lint/suspicious/useGetterReturn: early return for undefined case
+      return;
     }
     if (config === null || config.error !== null) {
       return null;

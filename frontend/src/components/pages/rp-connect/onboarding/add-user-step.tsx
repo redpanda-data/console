@@ -125,7 +125,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       // Only check if the CURRENT form username matches an existing user
       // Don't use persisted username to avoid showing existing user state when creating a new one
       if (!watchedUsername) {
-        return undefined;
+        return;
       }
       return usersList?.users?.find((user) => user.name === watchedUsername);
     }, [watchedUsername, usersList?.users]);

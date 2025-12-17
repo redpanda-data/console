@@ -68,7 +68,6 @@
       },
       "nursery": {
         "noReactForwardRef": "off",
-        "noUselessUndefined": "off",
         "useSortedClasses": {
           "fix": "safe",
           "level": "error",

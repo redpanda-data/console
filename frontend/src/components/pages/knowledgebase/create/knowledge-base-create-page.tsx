@@ -135,7 +135,7 @@ export const KnowledgeBaseCreatePage = () => {
         return patternMatch.id;
       }
 
-      return undefined;
+      return;
     };
 
     // Map fields to their pattern keywords

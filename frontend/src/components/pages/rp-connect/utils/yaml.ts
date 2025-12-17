@@ -279,7 +279,7 @@ export const mergeConnectConfigs = (
         entity: 'mergeConnectConfigs',
       })
     );
-    return undefined; // Keep existing YAML in editor
+    return; // Keep existing YAML in editor
   }
 
   const componentType = detectComponentType(newConfigObject, doc);
@@ -294,7 +294,7 @@ export const mergeConnectConfigs = (
         entity: 'mergeConnectConfigs',
       })
     );
-    return undefined; // Keep existing YAML in editor
+    return; // Keep existing YAML in editor
   }
 
   return doc;

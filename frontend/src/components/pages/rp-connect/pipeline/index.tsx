@@ -216,7 +216,7 @@ export default function PipelinePage() {
   const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
   const yamlEditorSchema = useMemo(() => {
     if (!schemaResponse?.configSchema) {
-      return undefined;
+      return;
     }
 
     try {
@@ -227,7 +227,7 @@ export default function PipelinePage() {
       };
     } catch {
       // Fallback to undefined if schema parsing fails - editor will use basic YAML schema
-      return undefined;
+      return;
     }
   }, [schemaResponse]);
 

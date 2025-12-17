@@ -193,11 +193,11 @@ export class ActiveReassignments extends Component<{
 
   @computed get minThrottle(): number | undefined {
     const t = this.throttleSettings;
-    if (t.followerThrottle !== undefined || t.leaderThrottle !== undefined) {
-      return Math.min(t.followerThrottle ?? Number.POSITIVE_INFINITY, t.leaderThrottle ?? Number.POSITIVE_INFINITY);
+    if (t.followerThrottle === undefined && t.leaderThrottle === undefined) {
+      // biome-ignore lint/suspicious/useGetterReturn: early return for undefined case
+      return;
     }
-
-    return undefined;
+    return Math.min(t.followerThrottle ?? Number.POSITIVE_INFINITY, t.leaderThrottle ?? Number.POSITIVE_INFINITY);
   }
 }
 

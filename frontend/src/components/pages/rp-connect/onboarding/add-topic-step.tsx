@@ -104,7 +104,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
     const existingTopicSelected = useMemo(() => {
       // Only check if the CURRENT form topic name matches an existing topic
       if (!watchedTopicName) {
-        return undefined;
+        return;
       }
       return topicList?.topics?.find((topic) => topic.topicName === watchedTopicName);
     }, [watchedTopicName, topicList]);
