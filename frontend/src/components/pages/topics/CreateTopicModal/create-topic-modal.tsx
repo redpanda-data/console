@@ -721,7 +721,7 @@ export function RatioInput(p: { value: number; onChange: (ratio: number) => void
             type="number"
             value={percentageValue}
           />
-          <span className="-translate-y-1/2 pointer-events-none absolute top-1/2 right-2 text-muted-foreground text-sm">
+          <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground text-sm">
             %
           </span>
         </div>
