@@ -64,7 +64,11 @@ export function computeMovedReplicas(
     if (allPartitions === null) {
       continue;
     }
-    if (partitionSelection[topicName] === null || partitionSelection[topicName].length === 0) {
+    if (
+      partitionSelection[topicName] === undefined ||
+      partitionSelection[topicName] === null ||
+      partitionSelection[topicName].length === 0
+    ) {
       continue;
     }
     const topic = apiTopics?.first((t) => t.topicName === topicName);
