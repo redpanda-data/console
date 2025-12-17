@@ -89,7 +89,7 @@
         "useExhaustiveSwitchCases": "error" // this may slow down the linting process
       },
       "style": {
-        "noNestedTernary": "off",
+        "noNestedTernary": "error",
         "useReadonlyClassProperties": "off",
         "noDefaultExport": "off",
         "useConsistentTypeDefinitions": {

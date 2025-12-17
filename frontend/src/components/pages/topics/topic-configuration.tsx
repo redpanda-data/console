@@ -61,6 +61,15 @@ const ConfigEditorForm: FC<{
   const toast = useToast();
   const [globalError, setGlobalError] = useState<string | null>(null);
 
+  const defaultValueType = (() => {
+    if (!editedEntry.isExplicitlySet) {
+      return 'default';
+    }
+    return entryHasInfiniteValue(editedEntry) ? 'infinite' : 'custom';
+  })();
+  const defaultCustomValue =
+    editedEntry.isExplicitlySet && !entryHasInfiniteValue(editedEntry) ? editedEntry.value : '';
+
   const {
     control,
     handleSubmit,
@@ -68,8 +77,8 @@ const ConfigEditorForm: FC<{
     watch,
   } = useForm<Inputs>({
     defaultValues: {
-      valueType: editedEntry.isExplicitlySet ? (entryHasInfiniteValue(editedEntry) ? 'infinite' : 'custom') : 'default',
-      customValue: editedEntry.isExplicitlySet && !entryHasInfiniteValue(editedEntry) ? editedEntry.value : '',
+      valueType: defaultValueType,
+      customValue: defaultCustomValue,
     },
   });
 

@@ -197,15 +197,14 @@ class KafkaConnectOverview extends PageComponent<{
             Kafka Connect.
           </Text>
         )}
-        {tabs.length === 1 ? (
-          typeof tabs[0].content === 'function' ? (
-            tabs[0].content()
-          ) : (
-            tabs[0].content
-          )
-        ) : (
-          <Tabs defaultSelectedTabKey={getDefaultView(this.props.defaultView).initialTab} tabs={tabs} />
-        )}
+        {(() => {
+          if (tabs.length !== 1) {
+            return <Tabs defaultSelectedTabKey={getDefaultView(this.props.defaultView).initialTab} tabs={tabs} />;
+          }
+
+          const tabContent = tabs[0].content;
+          return typeof tabContent === 'function' ? tabContent() : tabContent;
+        })()}
       </PageContent>
     );
   }

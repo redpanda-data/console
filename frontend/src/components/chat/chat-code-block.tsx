@@ -89,10 +89,11 @@ export const ChatCodeBlock = ({
             lineProps={(lineNumber: number) => {
               const highlight = shouldHighlightLine(lineNumber - 1);
               const DIMMED_OPACITY = 0.5;
+              const opacity = highlightLines && !highlight ? DIMMED_OPACITY : 1;
               return {
                 style: {
                   backgroundColor: highlight ? 'whiteAlpha.200' : 'initial',
-                  opacity: highlightLines ? (highlight ? 1 : DIMMED_OPACITY) : 1,
+                  opacity,
                 },
               };
             }}
