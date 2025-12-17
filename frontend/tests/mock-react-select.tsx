@@ -1,16 +1,16 @@
 import type { ChangeEvent } from 'react';
 import { vi } from 'vitest';
 
-interface ChakraEvent {
+type ChakraEvent = {
   label: string;
   value: string;
-}
+};
 
-interface MockedReactSelectProps {
+type MockedReactSelectProps = {
   options: ChakraEvent[];
   value: string;
   onChange: (event?: ChakraEvent) => void;
-}
+};
 
 const MockedReactSelect = ({ options, value, onChange }: MockedReactSelectProps) => {
   function handleChange(event: ChangeEvent<HTMLSelectElement>) {

@@ -12,9 +12,9 @@ export async function load(url, context, nextLoad) {
     };
   }
 
-  return nextLoad(url, context);
+  return await nextLoad(url, context);
 }
 
 export async function resolve(specifier, context, nextResolve) {
-  return nextResolve(specifier, context);
+  return await nextResolve(specifier, context);
 }

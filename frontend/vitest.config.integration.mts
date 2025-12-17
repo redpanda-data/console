@@ -1,11 +1,16 @@
-import { defineConfig } from 'vitest/config';
-import { loadEnv } from 'vite';
-import react from '@vitejs/plugin-react';
-import tsconfigPaths from 'vite-tsconfig-paths';
-import envCompatible from 'vite-plugin-env-compatible';
 import yaml from '@rollup/plugin-yaml';
+import react from '@vitejs/plugin-react';
+import { loadEnv } from 'vite';
+import envCompatible from 'vite-plugin-env-compatible';
+import tsconfigPaths from 'vite-tsconfig-paths';
+import { defineConfig } from 'vitest/config';
 
 const ENV_PREFIX = 'REACT_APP_';
+
+// Regex patterns for module resolution
+const REDPANDA_UI_REGEX = /^@redpanda-data\/ui$/;
+const BUFBUILD_REGEX = /^@bufbuild\/buf$/;
+const MONACO_EDITOR_REGEX = /^monaco-editor$/;
 
 export default defineConfig(({ mode }) => {
   loadEnv(mode, 'env', ENV_PREFIX);
@@ -20,7 +25,7 @@ export default defineConfig(({ mode }) => {
         },
       },
       pool: 'threads',
-      testTimeout: 30000,
+      testTimeout: 30_000,
       globals: true,
       environment: 'jsdom', // Integration tests use jsdom environment
       include: ['src/**/*.test.tsx'], // Only .test.tsx files (integration tests)
@@ -50,15 +55,15 @@ export default defineConfig(({ mode }) => {
       },
       alias: [
         {
-          find: /^@redpanda-data\/ui$/, // For Redpanda UI we generate both CommonJS and ESM versions, but Vitest is ESM 1st, so we want to force ESM to be used.
+          find: REDPANDA_UI_REGEX, // For Redpanda UI we generate both CommonJS and ESM versions, but Vitest is ESM 1st, so we want to force ESM to be used.
           replacement: '@redpanda-data/ui/dist/index.js',
         },
         {
-          find: /^@bufbuild\/buf$/,
+          find: BUFBUILD_REGEX,
           replacement: '@bufbuild/protobuf/dist/esm/index.js',
         },
         {
-          find: /^monaco-editor$/,
+          find: MONACO_EDITOR_REGEX,
           replacement: 'monaco-editor/esm/vs/editor/editor.api.js',
         },
       ],

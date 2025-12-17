@@ -1,12 +1,12 @@
 import { expect, type Page, test } from '@playwright/test';
 
-export interface CreateSchemaOptions {
+export type CreateSchemaOptions = {
   subjectName: string;
   schemaFormat?: 'AVRO' | 'PROTOBUF' | 'JSON';
   schemaText: string;
   strategy?: 'TOPIC_NAME' | 'RECORD_NAME' | 'TOPIC_RECORD_NAME' | 'CUSTOM';
   keyOrValue?: 'KEY' | 'VALUE';
-}
+};
 
 export const createSchema = async (
   page: Page,
@@ -110,8 +110,8 @@ export const addSchemaVersion = async (
   });
 };
 
-export const sampleAvroSchema = (recordName: string) => {
-  return JSON.stringify(
+export const sampleAvroSchema = (recordName: string) =>
+  JSON.stringify(
     {
       type: 'record',
       name: recordName,
@@ -125,10 +125,9 @@ export const sampleAvroSchema = (recordName: string) => {
     null,
     2
   );
-};
 
-export const sampleAvroSchemaV2 = (recordName: string) => {
-  return JSON.stringify(
+export const sampleAvroSchemaV2 = (recordName: string) =>
+  JSON.stringify(
     {
       type: 'record',
       name: recordName,
@@ -143,10 +142,8 @@ export const sampleAvroSchemaV2 = (recordName: string) => {
     null,
     2
   );
-};
 
-export const sampleProtobufSchema = (messageName: string) => {
-  return `syntax = "proto3";
+export const sampleProtobufSchema = (messageName: string) => `syntax = "proto3";
 
 package com.example.test;
 
@@ -156,13 +153,12 @@ message ${messageName} {
   string email = 3;
 }
 `;
-};
 
-export const sampleJsonSchema = (title: string) => {
-  return JSON.stringify(
+export const sampleJsonSchema = (title: string) =>
+  JSON.stringify(
     {
       $schema: 'http://json-schema.org/draft-07/schema#',
-      title: title,
+      title,
       type: 'object',
       properties: {
         id: { type: 'number' },
@@ -174,4 +170,3 @@ export const sampleJsonSchema = (title: string) => {
     null,
     2
   );
-};

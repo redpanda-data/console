@@ -1,12 +1,14 @@
 import { expect, test } from '@playwright/test';
 
+const REDPANDA_TITLE_REGEX = /Redpanda/;
+
 test.describe('Seed Test for Redpanda Console', () => {
   test('seed - application setup and basic navigation', async ({ page }) => {
     // Navigate to Redpanda Console homepage
     await page.goto('/');
 
     // Verify application loaded successfully
-    await expect(page).toHaveTitle(/Redpanda/);
+    await expect(page).toHaveTitle(REDPANDA_TITLE_REGEX);
 
     // Verify version title is visible (basic component check)
     await expect(page.getByTestId('versionTitle')).toBeVisible();

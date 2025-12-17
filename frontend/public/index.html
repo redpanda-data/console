@@ -11,82 +11,80 @@
 -->
 
 <html lang="en">
-
-<head>
+  <head>
     <!-- fix https://github.com/webpack/webpack/issues/2882 -->
-    <base href="/" />
+    <base href="/">
     <!-- end fix https://github.com/webpack/webpack/issues/2882 -->
-    <meta charset="utf-8" />
+    <meta charset="utf-8">
     <title>Redpanda Console</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="WebApp to explore Kafka Messages, Topics, ..." />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="WebApp to explore Kafka Messages, Topics, ...">
 
     <!-- Unused for now -->
     <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap" rel="stylesheet"> -->
     <!-- <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet"> -->
 
     <script>
-        {
-            let basePath = window["BASE_URL"] = "__BASE_PATH_REPLACE_MARKER__";
-            window["ENABLED_FEATURES"] = "__FEATURES_REPLACE_MARKER__";
+    'use strict';
+    {
+      const basePath = (window.BASE_URL = '__BASE_PATH_REPLACE_MARKER__');
+      window.ENABLED_FEATURES = '__FEATURES_REPLACE_MARKER__';
 
-            window.__getLocation = function () {
-                return window.location;
-            };
-            let l = window.__getLocation();
-            let base = document.querySelector('base');
-            if (!basePath.startsWith('__BASE')) {
-                base.href = l.protocol + '//' + l.hostname + (l.port ? (':' + l.port) : '') + basePath;
-            } else {
-                base.href = l.protocol + '//' + l.hostname + (l.port ? (':' + l.port) : '') + '/';
-            }
-        }
+      window.__getLocation = () => window.location;
+      const l = window.__getLocation();
+      const base = document.querySelector('base');
+      if (basePath.startsWith('__BASE')) {
+        base.href = `${l.protocol}//${l.hostname}${l.port ? `:${l.port}` : ''}/`;
+      } else {
+        base.href = `${l.protocol}//${l.hostname}${l.port ? `:${l.port}` : ''}${basePath}`;
+      }
+    }
     </script>
 
     <!-- <link rel="icon" type="image/x-icon" href="./favicon.ico" /> -->
-    <link rel="icon" type="image/png" sizes="384x384" href="./favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="384x384" href="./favicon-32.png">
     <!-- Analytics scripts will be loaded conditionally based on backend configuration -->
     <script>
-        // Function to load analytics scripts
-        window.loadAnalyticsScripts = function() {
-            const enabledFeatures = window.ENABLED_FEATURES ? window.ENABLED_FEATURES.split(',') : [];
-            const isAnalyticsEnabled = enabledFeatures.includes('ANALYTICS');
-            if (isAnalyticsEnabled) {
-                // Load Hubspot script
-                const script = document.createElement('script');
-                script.charset = 'utf-8';
-                script.type = 'text/javascript';
-                script.src = 'https://js.hsforms.net/forms/embed/v2.js';
-                document.head.appendChild(script);
-                
-                // Load HubSpot Tracking Code
-                const hubspotScript = document.createElement('script');
-                hubspotScript.type = 'text/javascript';
-                hubspotScript.id = 'hs-script-loader';
-                hubspotScript.async = true;
-                hubspotScript.defer = true;
-                hubspotScript.src = '//js.hs-scripts.com/<%= HUBSPOT_PORTAL_ID %>.js';
-                document.head.appendChild(hubspotScript);
-                
-                // Load Heap Analytics
-                const heapScript = document.createElement('script');
-                heapScript.type = 'text/javascript';
-                heapScript.textContent = `
+    'use strict';
+    // Function to load analytics scripts
+    window.loadAnalyticsScripts = () => {
+      const enabledFeatures = window.ENABLED_FEATURES ? window.ENABLED_FEATURES.split(',') : [];
+      const isAnalyticsEnabled = enabledFeatures.includes('ANALYTICS');
+      if (isAnalyticsEnabled) {
+        // Load Hubspot script
+        const script = document.createElement('script');
+        script.charset = 'utf-8';
+        script.type = 'text/javascript';
+        script.src = 'https://js.hsforms.net/forms/embed/v2.js';
+        document.head.appendChild(script);
+
+        // Load HubSpot Tracking Code
+        const hubspotScript = document.createElement('script');
+        hubspotScript.type = 'text/javascript';
+        hubspotScript.id = 'hs-script-loader';
+        hubspotScript.async = true;
+        hubspotScript.defer = true;
+        hubspotScript.src = '//js.hs-scripts.com/<%= HUBSPOT_PORTAL_ID %>.js';
+        document.head.appendChild(hubspotScript);
+
+        // Load Heap Analytics
+        const heapScript = document.createElement('script');
+        heapScript.type = 'text/javascript';
+        heapScript.textContent = `
                     window.heap=window.heap||[],heap.load=function(e,t){window.heap.appid=e,window.heap.config=t=t||{};var r=document.createElement("script");r.type="text/javascript",r.async=!0,r.src="https://cdn.heapanalytics.com/js/heap-"+e+".js";var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(r,a);for(var n=function(e){return function(){heap.push([e].concat(Array.prototype.slice.call(arguments,0)))}},p=["addEventProperties","addUserProperties","clearEventProperties","identify","resetIdentity","removeEventProperty","setEventProperty","track","unsetEventProperty"],o=0;o<p.length;o++)heap[p[o]]=n(p[o])};
                     heap.load("<%= HEAP_APP_ID %>");
                 `;
-                document.head.appendChild(heapScript);
-            }   
-        };
-        
-        // Load analytics scripts after the page is fully loaded
-        window.addEventListener('load', window.loadAnalyticsScripts);
-    </script>
-</head>
+        document.head.appendChild(heapScript);
+      }
+    };
 
-<body>
+    // Load analytics scripts after the page is fully loaded
+    window.addEventListener('load', window.loadAnalyticsScripts);
+    </script>
+  </head>
+
+  <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-</body>
-
+  </body>
 </html>

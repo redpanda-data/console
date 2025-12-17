@@ -19,6 +19,8 @@
       "!**/coverage/**/*",
       "!**/.nyc_output/**/*",
       "!**/*.css",
+      "!**/tests/console",
+      "!**/tests/console-enterprise",
       "!**/components/redpanda-ui",
       "!**/assets/rp-connect-schema-full.json",
       "!**/components/ai-elements",
