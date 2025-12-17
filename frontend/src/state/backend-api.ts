@@ -615,7 +615,7 @@ const apiStore = {
 
   refreshTopics(force?: boolean) {
     cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force).then((v) => {
-      if (v?.topics !== null) {
+      if (v?.topics !== null && v?.topics !== undefined) {
         for (const t of v.topics) {
           if (!t.allowedActions) {
             // no op - allowedActions may not be set
@@ -1063,7 +1063,7 @@ const apiStore = {
 
   refreshCluster(force?: boolean) {
     cachedApiRequest<ClusterInfoResponse>(`${appConfig.restBasePath}/cluster`, force).then((v) => {
-      if (v?.clusterInfo !== null) {
+      if (v?.clusterInfo !== null && v?.clusterInfo !== undefined) {
         transaction(() => {
           // add 'type' to each synonym entry
           for (const broker of v.clusterInfo.brokers) {
@@ -1114,7 +1114,7 @@ const apiStore = {
 
   refreshConsumerGroups(force?: boolean) {
     cachedApiRequest<GetConsumerGroupsResponse>(`${appConfig.restBasePath}/consumer-groups`, force).then((v) => {
-      if (v?.consumerGroups !== null) {
+      if (v?.consumerGroups !== null && v?.consumerGroups !== undefined) {
         for (const g of v.consumerGroups) {
           addFrontendFieldsForConsumerGroup(g);
         }

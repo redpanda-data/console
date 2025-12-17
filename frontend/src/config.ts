@@ -321,7 +321,7 @@ setTimeout(() => {
 }, 50);
 
 export function isEmbedded() {
-  return config.jwt !== null;
+  return config.jwt !== null && config.jwt !== undefined;
 }
 
 /**
@@ -353,7 +353,7 @@ export const embeddedAvailableRoutesObservable = observable({
       }
       return route;
     })
-      .filter((x) => x.icon !== null) // routes without icon are "nested", so they shouldn't be visible directly
+      .filter((x) => x.icon !== null && x.icon !== undefined) // routes without icon are "nested", so they shouldn't be visible directly
       .filter((x) => !routesIgnoredInEmbedded.includes(x.path)) // things that should not be visible in embedded/cloud mode
       .filter((x) => {
         if (x.visibilityCheck) {
