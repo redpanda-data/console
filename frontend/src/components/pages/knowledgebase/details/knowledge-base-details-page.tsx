@@ -433,7 +433,7 @@ export const KnowledgeBaseDetailsPage = () => {
                 <Text className="font-medium text-sm" variant="muted">
                   Indexer Status
                 </Text>
-                {Boolean(consumerGroup?.state) && (
+                {consumerGroup?.state ? (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -446,7 +446,7 @@ export const KnowledgeBaseDetailsPage = () => {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                )}
+                ) : null}
               </div>
               <ConsumerGroupStatus
                 consumerGroupId={`${knowledgeBase.id}-indexer`}

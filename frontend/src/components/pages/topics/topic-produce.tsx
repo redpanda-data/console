@@ -541,7 +541,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
               </Box>
             </Label>
           )}
-          {Boolean(errors?.key?.data) && <Text color="red.500">{errors.key.data.message}</Text>}
+          {Boolean(errors?.key?.data) && <Text color="red.500">{errors?.key?.data?.message}</Text>}
         </Flex>
 
         <Divider />
@@ -654,7 +654,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                 </Box>
               </Label>
             )}
-            {Boolean(errors?.value?.data) && <Text color="red.500">{errors.value.data.message}</Text>}
+            {Boolean(errors?.value?.data) && <Text color="red.500">{errors?.value?.data?.message}</Text>}
             <input {...register('value.data')} data-testid="valueData" />
           </Flex>
         </Flex>

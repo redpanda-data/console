@@ -62,11 +62,11 @@ export const ExpandedMessage: FC<{
                 <TroubleshootReportViewer payload={msg.key} />
                 <PayloadComponent loadLargeMessage={loadLargeMessage} payload={msg.key} />
                 <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
-                  {Boolean(onCopyKey) && (
+                  {onCopyKey ? (
                     <Button isDisabled={msg.key.isPayloadNull} onClick={() => onCopyKey(msg)} variant="outline">
                       Copy Key
                     </Button>
-                  )}
+                  ) : null}
                 </ExpandedMessageFooter>
               </Box>
             ),
@@ -83,11 +83,11 @@ export const ExpandedMessage: FC<{
                 <TroubleshootReportViewer payload={msg.value} />
                 <PayloadComponent loadLargeMessage={loadLargeMessage} payload={msg.value} />
                 <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
-                  {Boolean(onCopyValue) && (
+                  {onCopyValue ? (
                     <Button isDisabled={msg.value.isPayloadNull} onClick={() => onCopyValue(msg)} variant="outline">
                       Copy Value
                     </Button>
-                  )}
+                  ) : null}
                 </ExpandedMessageFooter>
               </Box>
             ),

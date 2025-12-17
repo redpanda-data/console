@@ -113,12 +113,12 @@ const ChatInputComponent = ({
                 </PromptInputModelSelectContent>
               </PromptInputModelSelect>
             )}
-            {Boolean(usage.max_input_tokens) && (
+            {usage.max_input_tokens !== undefined && (
               <Context
                 maxTokens={usage.max_input_tokens}
                 modelId={modelId}
                 usage={contextUsage}
-                usedTokens={usage.input_tokens}
+                usedTokens={usage.input_tokens ?? 0}
               >
                 <ContextTrigger />
                 <ContextContent align="start" side="top">

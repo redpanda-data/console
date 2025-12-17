@@ -55,9 +55,9 @@ export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ 
       <CardContent>
         <div className="flex flex-col gap-4">
           {/* Metrics */}
-          {Boolean(unifiedShadowLink) && <ShadowLinkMetrics shadowLink={unifiedShadowLink} />}
+          {unifiedShadowLink ? <ShadowLinkMetrics shadowLink={unifiedShadowLink} /> : null}
           {/* Diagram */}
-          {Boolean(unifiedShadowLink) && <ShadowLinkDiagram shadowLink={unifiedShadowLink} />}
+          {unifiedShadowLink ? <ShadowLinkDiagram shadowLink={unifiedShadowLink} /> : null}
         </div>
       </CardContent>
     </Card>

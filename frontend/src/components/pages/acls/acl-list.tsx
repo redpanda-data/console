@@ -690,7 +690,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
         width="300px"
       />
       <Section>
-        {Boolean(edittingPrincipalGroup) && (
+        {edittingPrincipalGroup ? (
           <AclPrincipalGroupEditor
             onClose={() => {
               setEdittingPrincipalGroup(null);
@@ -700,7 +700,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
             principalGroup={edittingPrincipalGroup}
             type={editorType}
           />
-        )}
+        ) : null}
 
         <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />
 

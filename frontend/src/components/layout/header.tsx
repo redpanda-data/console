@@ -64,7 +64,7 @@ const AppPageHeader = observer(() => {
 
       <Flex alignItems="center" justifyContent="space-between" pb={2}>
         <Flex alignItems="center">
-          {Boolean(lastBreadcrumb) && (
+          {lastBreadcrumb ? (
             <Text
               as="span"
               fontSize="xl"
@@ -82,14 +82,14 @@ const AppPageHeader = observer(() => {
             >
               {lastBreadcrumb.title}
             </Text>
-          )}
-          {Boolean(lastBreadcrumb) && (
+          ) : null}
+          {lastBreadcrumb ? (
             <Box>
-              {Boolean(lastBreadcrumb.options?.canBeCopied) && (
+              {lastBreadcrumb.options?.canBeCopied ? (
                 <CopyButton content={lastBreadcrumb.title} variant="ghost" />
-              )}
+              ) : null}
             </Box>
-          )}
+          ) : null}
           {Boolean(showRefresh) && <DataRefreshButton />}
         </Flex>
         <Flex alignItems="center" gap={2}>

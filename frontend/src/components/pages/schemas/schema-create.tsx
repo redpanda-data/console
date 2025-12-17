@@ -189,7 +189,7 @@ const SchemaPageButtons = observer(
 
     return (
       <>
-        {Boolean(persistentValidationError) && (
+        {persistentValidationError ? (
           <Alert data-testid="schema-create-validation-error-alert" mb="4" mt="4" status="error" variant="left-accent">
             <AlertIcon />
             <Box flex="1">
@@ -213,7 +213,7 @@ const SchemaPageButtons = observer(
               top={-1}
             />
           </Alert>
-        )}
+        ) : null}
 
         <Flex gap="4" mt="4">
           <Button

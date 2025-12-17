@@ -146,11 +146,9 @@ export class AdminDebugBundle extends PageComponent {
           >
             Bundle generation in progress...
           </Button>
-          <Text>
-            Started{' '}
-            {Boolean(api.debugBundleStatus?.createdAt) &&
-              timestampDate(api.debugBundleStatus?.createdAt).toLocaleString()}
-          </Text>
+          {api.debugBundleStatus?.createdAt ? (
+            <Text>Started {timestampDate(api.debugBundleStatus.createdAt).toLocaleString()}</Text>
+          ) : null}
         </Box>
       );
     }
@@ -672,12 +670,12 @@ const NewDebugBundleForm: FC<{
         </Flex>
       )}
 
-      {Boolean(error) && (
+      {error ? (
         <Alert my={4} status="error">
           <AlertIcon />
           {error.message}
         </Alert>
-      )}
+      ) : null}
 
       <Flex gap={2} mt={4}>
         {debugBundleExists && !api.isDebugBundleExpired && !api.isDebugBundleError ? (

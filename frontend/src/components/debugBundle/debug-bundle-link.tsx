@@ -79,11 +79,8 @@ const DebugBundleLink = ({
           </Tooltip>
         )}
       </Flex>
-      {Boolean(showDatetime) && (
-        <Text>
-          Generated{' '}
-          {Boolean(statusWithFilename.createdAt) && timestampDate(statusWithFilename.createdAt).toLocaleString()}
-        </Text>
+      {Boolean(showDatetime) && statusWithFilename.createdAt && (
+        <Text>Generated {timestampDate(statusWithFilename.createdAt).toLocaleString()}</Text>
       )}
     </Box>
   );

@@ -48,12 +48,12 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
                       <Text data-testid={`broker-${status.brokerId}-label`} display="inline" fontWeight="bold">
                         Broker {status.brokerId}
                       </Text>
-                      <Text display="inline">
-                        {' '}
-                        started at{' '}
-                        {Boolean(status.value.value.createdAt) &&
-                          timestampDate(status.value.value.createdAt).toLocaleString()}
-                      </Text>
+                      {status.value.value.createdAt ? (
+                        <Text display="inline">
+                          {' '}
+                          started at {timestampDate(status.value.value.createdAt).toLocaleString()}
+                        </Text>
+                      ) : null}
                     </Box>
                     <Text color="gray.500" data-testid={`broker-${status.brokerId}-job-id`} fontSize="sm">
                       {status.value.value.jobId}

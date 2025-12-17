@@ -474,7 +474,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
             )}
 
             {/* Expanded YAML Editor Dialog */}
-            {Boolean(expandedTool) && (
+            {expandedTool ? (
               <ExpandedYamlDialog
                 form={form}
                 isLintConfigPending={isLintConfigPending}
@@ -485,7 +485,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
                 onLint={() => handleLintTool(expandedTool.index)}
                 toolIndex={expandedTool.index}
               />
-            )}
+            ) : null}
           </>
         )}
       </Stepper.Provider>

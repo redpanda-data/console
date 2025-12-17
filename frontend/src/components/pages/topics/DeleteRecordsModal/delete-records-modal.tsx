@@ -305,12 +305,13 @@ const ManualOffsetContent = observer(
     return (
       <Flex alignItems="center" gap={2}>
         <Slider max={max} min={min} onChange={updateOffsetFromSlider} value={sliderValue}>
-          {Boolean(marks) &&
-            Object.entries(marks).map(([value, label]) => (
-              <SliderMark key={value} value={Number(value)}>
-                {label}
-              </SliderMark>
-            ))}
+          {marks
+            ? Object.entries(marks).map(([value, label]) => (
+                <SliderMark key={value} value={Number(value)}>
+                  {label}
+                </SliderMark>
+              ))
+            : null}
           <SliderTrack>
             <SliderFilledTrack />
           </SliderTrack>

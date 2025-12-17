@@ -81,9 +81,7 @@ export const InstallRpkListItem = () => {
             </SelectContent>
           </Select>
         </div>
-        {Boolean(selectedInstallMethod?.command) && (
-          <DynamicCodeBlock code={selectedInstallMethod?.command} lang="bash" />
-        )}
+        {selectedInstallMethod?.command ? <DynamicCodeBlock code={selectedInstallMethod.command} lang="bash" /> : null}
       </div>
     </ListItem>
   );

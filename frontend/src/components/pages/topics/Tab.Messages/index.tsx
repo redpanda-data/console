@@ -1146,7 +1146,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         </GridItem>
       </Grid>
 
-      {Boolean(currentJSFilter) && (
+      {currentJSFilter ? (
         <JavascriptFilterModal
           currentFilter={currentJSFilter}
           onClose={() => setCurrentJSFilter(null)}
@@ -1163,7 +1163,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             searchFunc('manual');
           }}
         />
-      )}
+      ) : null}
 
       {/* Message Table (or error display) */}
       {fetchError ? (

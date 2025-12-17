@@ -75,7 +75,7 @@ export const RemoteMCPToolButton = ({
             </span>
           )}
         </div>
-        {Boolean(isEditing && onRemove) && (
+        {isEditing && onRemove ? (
           <Button
             onClick={(e) => {
               e.stopPropagation();
@@ -86,7 +86,7 @@ export const RemoteMCPToolButton = ({
           >
             <Trash2 className="h-4 w-4" />
           </Button>
-        )}
+        ) : null}
       </div>
       <div className="flex-1">
         <Text className="line-clamp-2 text-xs" title={description} variant="muted">

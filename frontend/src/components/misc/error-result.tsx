@@ -106,9 +106,9 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
           {errorTitle}
         </Heading>
         <Text fontSize="lg">{capitalizeFirst(errorMessage)}</Text>
-        {Boolean(errorDetails) && (
+        {errorDetails ? (
           <CodeBlock codeString={errorDetails} language="json" maxW="50vw" showCopyButton theme="light" />
-        )}
+        ) : null}
       </Stack>
       <Box alignItems="center" display="flex" justifyContent="center" minW="300px">
         <Image

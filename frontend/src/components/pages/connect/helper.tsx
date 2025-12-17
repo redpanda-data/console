@@ -460,13 +460,13 @@ export const ConnectorClass = observer((props: { observable: { class: string } }
 
   return (
     <div style={{ height: '1px', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
-      {Boolean(meta?.logo) && (
+      {meta?.logo ? (
         <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
           <ZeroSizeWrapper transform="translateY(-1px)" width="22px">
             <div style={{ width: '22px', height: '22px' }}>{meta.logo}</div>
           </ZeroSizeWrapper>
         </span>
-      )}
+      ) : null}
 
       <Popover
         content={<div style={{ maxWidth: '500px', minWidth: 'max-content', whiteSpace: 'pre-wrap' }}>{c}</div>}
@@ -666,7 +666,7 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
           <AlertDialogHeader>Confirm</AlertDialogHeader>
           <AlertDialogBody>
             {content}
-            {Boolean(err) && (
+            {err ? (
               <Box mt={4}>
                 <Alert status="error" variant="left-accent">
                   <AlertIcon />
@@ -678,7 +678,7 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
                   </AlertDescription>
                 </Alert>
               </Box>
-            )}
+            ) : null}
           </AlertDialogBody>
           <AlertDialogFooter gap={2}>
             <Button onClick={cancel} ref={cancelRef} variant="outline">

@@ -806,9 +806,9 @@ export const RemoteMCPConfigurationTab = () => {
                     </div>
                   </div>
 
-                  {Boolean(selectedTool) && (
+                  {selectedTool ? (
                     <div className="space-y-4">
-                      {Boolean(isEditing) && (
+                      {isEditing ? (
                         <div className="grid grid-cols-1 gap-4 rounded-lg bg-muted/30 p-4 md:grid-cols-3">
                           <div className="space-y-2">
                             <Label className="font-medium text-sm">Component Type</Label>
@@ -903,7 +903,7 @@ export const RemoteMCPConfigurationTab = () => {
                             </Select>
                           </div>
                         </div>
-                      )}
+                      ) : null}
                       <div className="space-y-2">
                         <YamlEditorCard
                           height="500px"
@@ -920,10 +920,10 @@ export const RemoteMCPConfigurationTab = () => {
                           showLint={isEditing}
                           value={selectedTool.config}
                         />
-                        {Boolean(isEditing) && <LintHintList lintHints={lintHints[selectedTool.id] || {}} />}
+                        {isEditing ? <LintHintList lintHints={lintHints[selectedTool.id] || {}} /> : null}
                       </div>
                     </div>
-                  )}
+                  ) : null}
 
                   {!selectedTool && displayData.tools.length > 0 && (
                     <div className="flex items-center justify-center rounded-lg border-2 border-muted border-dashed py-12 text-center">
@@ -986,7 +986,7 @@ export const RemoteMCPConfigurationTab = () => {
       </div>
 
       {/* Expanded YAML Editor Dialog */}
-      {Boolean(selectedTool) && (
+      {selectedTool ? (
         <ExpandedYamlDialog
           isLintConfigPending={isLintConfigPending}
           isOpen={isExpandedDialogOpen}
@@ -999,7 +999,7 @@ export const RemoteMCPConfigurationTab = () => {
           toolName={selectedTool.name}
           value={selectedTool.config}
         />
-      )}
+      ) : null}
     </div>
   );
 };

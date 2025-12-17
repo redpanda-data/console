@@ -260,14 +260,14 @@ const LoginPage = observer(() => {
             </Box>
           )}
           <Stack my={5}>
-            {Boolean(authenticationApi.methodsErrorResponse) && (
+            {authenticationApi.methodsErrorResponse ? (
               <Alert status="error">
                 <AlertIcon />
                 <AlertDescription>
                   Failed to fetch authentication methods: {authenticationApi.methodsErrorResponse.message}
                 </AlertDescription>
               </Alert>
-            )}
+            ) : null}
             {authenticationApi.methods.reduce((acc, method, index) => {
               const AuthComponent = AUTH_ELEMENTS[method];
               if (AuthComponent) {

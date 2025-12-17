@@ -455,7 +455,7 @@ function ConfirmDeletionModal({
             {Boolean(error) && (
               <Alert mb={2} status="error">
                 <AlertIcon />
-                {`An error occurred: ${typeof error === 'string' ? error : error?.message ?? 'Unknown error'}`}
+                {`An error occurred: ${typeof error === 'string' ? error : (error?.message ?? 'Unknown error')}`}
               </Alert>
             )}
             {Boolean(topicToDelete?.isInternal) && (

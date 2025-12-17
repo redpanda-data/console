@@ -69,12 +69,12 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
             <ModalHeader>Delete Secret</ModalHeader>
             <ModalBody mb={4}>
               <Stack spacing={4}>
-                {Boolean(deleteSecretError) && (
+                {deleteSecretError ? (
                   <Alert data-testid="delete-secret-error" status="error" variant="subtle">
                     <AlertIcon />
                     {deleteSecretError.message}
                   </Alert>
-                )}
+                ) : null}
                 <Text>
                   This action will cause data loss. To confirm, type <Code>{secretId}</Code> into the confirmation box
                   below.
