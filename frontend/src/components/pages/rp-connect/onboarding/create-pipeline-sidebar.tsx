@@ -94,7 +94,7 @@ export const CreatePipelineSidebar = memo(
         <AddSecretsCard editorContent={editorContent} editorInstance={editorInstance} />
         <AddContextualVariablesCard editorContent={editorContent} editorInstance={editorInstance} />
 
-        {rawComponentList && (
+        {Boolean(rawComponentList) && (
           <AddConnectorDialog
             components={rawComponentList}
             connectorType={selectedConnector}

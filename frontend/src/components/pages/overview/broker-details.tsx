@@ -86,7 +86,7 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
             {/* biome-ignore lint/style/noNonNullAssertion: not touching MobX observables */}
             <Statistic title="Storage" value={prettyBytesOrNA(broker.totalLogDirSizeBytes!)} />
             <Statistic title="IP address" value={broker.address} />
-            {broker.rack && <Statistic title="Rack" value={broker.rack} />}
+            {Boolean(broker.rack) && <Statistic title="Rack" value={broker.rack} />}
           </Flex>
         </Section>
         <Section py={4}>

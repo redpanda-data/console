@@ -180,14 +180,14 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
             value={formState.mechanism}
           />
         </FormControl>
-        {formState.error && (
+        {Boolean(formState.error) && (
           <Alert status="error">
             <AlertIcon />
             <AlertDescription>{formState.error}</AlertDescription>
           </Alert>
         )}
         <Button data-testid="auth-submit" onClick={formState.handleSubmit} variant="brand">
-          {formState.isLoading && <Spinner mr="1" size="sm" />}
+          {Boolean(formState.isLoading) && <Spinner mr="1" size="sm" />}
           Log in
         </Button>
       </Flex>
@@ -260,7 +260,7 @@ const LoginPage = observer(() => {
             </Box>
           )}
           <Stack my={5}>
-            {authenticationApi.methodsErrorResponse && (
+            {Boolean(authenticationApi.methodsErrorResponse) && (
               <Alert status="error">
                 <AlertIcon />
                 <AlertDescription>

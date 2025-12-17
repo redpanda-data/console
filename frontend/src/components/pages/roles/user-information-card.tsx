@@ -39,7 +39,7 @@ export const UserInformationCard = ({ username, onEditPassword }: UserInformatio
           <Text variant="label">Password</Text>
           <Text variant="muted">Passwords cannot be viewed</Text>
           <div className="flex justify-end">
-            {onEditPassword && (
+            {Boolean(onEditPassword) && (
               <Button onClick={onEditPassword} size="sm" variant="outline">
                 Edit
               </Button>

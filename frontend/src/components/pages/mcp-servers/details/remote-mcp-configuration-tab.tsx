@@ -716,7 +716,7 @@ export const RemoteMCPConfigurationTab = () => {
                     </div>
                   </div>
 
-                  {(displayData.tags.length > 0 || isEditing) && (
+                  {Boolean(displayData.tags.length > 0 || isEditing) && (
                     <div className="flex flex-col gap-2 space-y-4">
                       <Heading className="font-medium text-sm" level={4}>
                         Tags
@@ -749,7 +749,7 @@ export const RemoteMCPConfigurationTab = () => {
                                   value={tag.value}
                                 />
                               </div>
-                              {isEditing && (
+                              {Boolean(isEditing) && (
                                 <div className="flex h-9 items-end">
                                   <Button onClick={() => handleRemoveTag(index)} size="sm" variant="outline">
                                     <Trash2 className="h-4 w-4" />
@@ -759,7 +759,7 @@ export const RemoteMCPConfigurationTab = () => {
                             </div>
                           );
                         })}
-                        {isEditing && (
+                        {Boolean(isEditing) && (
                           <Button className="w-full" onClick={handleAddTag} variant="dashed">
                             <Plus className="h-4 w-4" />
                             Add Tag
@@ -806,9 +806,9 @@ export const RemoteMCPConfigurationTab = () => {
                     </div>
                   </div>
 
-                  {selectedTool && (
+                  {Boolean(selectedTool) && (
                     <div className="space-y-4">
-                      {isEditing && (
+                      {Boolean(isEditing) && (
                         <div className="grid grid-cols-1 gap-4 rounded-lg bg-muted/30 p-4 md:grid-cols-3">
                           <div className="space-y-2">
                             <Label className="font-medium text-sm">Component Type</Label>
@@ -920,7 +920,7 @@ export const RemoteMCPConfigurationTab = () => {
                           showLint={isEditing}
                           value={selectedTool.config}
                         />
-                        {isEditing && <LintHintList lintHints={lintHints[selectedTool.id] || {}} />}
+                        {Boolean(isEditing) && <LintHintList lintHints={lintHints[selectedTool.id] || {}} />}
                       </div>
                     </div>
                   )}
@@ -936,7 +936,7 @@ export const RemoteMCPConfigurationTab = () => {
                     </div>
                   )}
 
-                  {isEditing && (
+                  {Boolean(isEditing) && (
                     <Button className="w-full" onClick={handleAddTool} variant="dashed">
                       <Plus className="h-4 w-4" />
                       Add Tool
@@ -948,7 +948,7 @@ export const RemoteMCPConfigurationTab = () => {
           </div>
 
           {/* Secrets panel - takes 1 column on xl screens, only shown when editing and there are missing secrets */}
-          {hasSecretWarnings && isEditing && (
+          {Boolean(hasSecretWarnings && isEditing) && (
             <div className="xl:col-span-1">
               <div className="sticky top-4">
                 <QuickAddSecrets
@@ -986,7 +986,7 @@ export const RemoteMCPConfigurationTab = () => {
       </div>
 
       {/* Expanded YAML Editor Dialog */}
-      {selectedTool && (
+      {Boolean(selectedTool) && (
         <ExpandedYamlDialog
           isLintConfigPending={isLintConfigPending}
           isOpen={isExpandedDialogOpen}

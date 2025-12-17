@@ -306,7 +306,7 @@ function EditSchemaCompatibility(p: {
         </GridItem>
 
         <GridItem>
-          {subjectName && schema && (
+          {Boolean(subjectName && schema) && (
             <>
               <Text
                 data-testid="edit-compatibility-subject-name"

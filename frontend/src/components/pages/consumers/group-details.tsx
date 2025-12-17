@@ -186,7 +186,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
           </Button>
         </Flex>
         {/* Statistics Card */}
-        {uiSettings.consumerGroupDetails.showStatisticsBar && (
+        {Boolean(uiSettings.consumerGroupDetails.showStatisticsBar) && (
           <Section py={4}>
             <div className="statisticsBar">
               <Flex gap="2rem" justifyContent="space-between">

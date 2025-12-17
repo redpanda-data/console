@@ -148,7 +148,8 @@ export class AdminDebugBundle extends PageComponent {
           </Button>
           <Text>
             Started{' '}
-            {api.debugBundleStatus?.createdAt && timestampDate(api.debugBundleStatus?.createdAt).toLocaleString()}
+            {Boolean(api.debugBundleStatus?.createdAt) &&
+              timestampDate(api.debugBundleStatus?.createdAt).toLocaleString()}
           </Text>
         </Box>
       );
@@ -157,18 +158,22 @@ export class AdminDebugBundle extends PageComponent {
     return (
       <Box>
         <Box mt={4}>
-          {(api.canDownloadDebugBundle || api.isDebugBundleExpired) && (
+          {Boolean(api.canDownloadDebugBundle || api.isDebugBundleExpired) && (
             <Text fontWeight="bold">Latest debug bundle:</Text>
           )}
-          {api.isDebugBundleExpired && <Text>Your previous bundle has expired and cannot be downloaded.</Text>}
-          {api.isDebugBundleError && <Text fontWeight="bold">Your debug bundle was not generated. Try again.</Text>}
-          {api.canDownloadDebugBundle && <DebugBundleLink showDeleteButton statuses={api.debugBundleStatuses} />}
+          {Boolean(api.isDebugBundleExpired) && <Text>Your previous bundle has expired and cannot be downloaded.</Text>}
+          {Boolean(api.isDebugBundleError) && (
+            <Text fontWeight="bold">Your debug bundle was not generated. Try again.</Text>
+          )}
+          {Boolean(api.canDownloadDebugBundle) && (
+            <DebugBundleLink showDeleteButton statuses={api.debugBundleStatuses} />
+          )}
 
           {api.debugBundleStatuses.length === 0 && <Text>No debug bundle available for download.</Text>}
         </Box>
 
         <Box>
-          {this.submitInProgress && <Box>Generating bundle ...</Box>}
+          {Boolean(this.submitInProgress) && <Box>Generating bundle ...</Box>}
 
           <NewDebugBundleForm
             debugBundleExists={api.hasDebugProcess}
@@ -344,7 +349,7 @@ const NewDebugBundleForm: FC<{
   return (
     <Box mt={4}>
       <Header mode={advancedForm ? 'advanced' : 'default'} />
-      {advancedForm && (
+      {Boolean(advancedForm) && (
         <Flex
           flexDirection="column"
           gap={2}
@@ -667,7 +672,7 @@ const NewDebugBundleForm: FC<{
         </Flex>
       )}
 
-      {error && (
+      {Boolean(error) && (
         <Alert my={4} status="error">
           <AlertIcon />
           {error.message}

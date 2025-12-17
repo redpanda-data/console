@@ -102,11 +102,11 @@ export const ChatCodeBlock = ({
             style={theme === 'dark' ? nightOwlTheme : prism}
             wrapLines
           >
-            {removeLineBreaksFromCopy ? codeString.replace(/[\n\r]/g, '') : codeString}
+            {removeLineBreaksFromCopy ? codeString.replace(/[\n\r]/g, '') : codeString || ''}
           </SyntaxHighlighter>
         </Box>
       </Box>
-      {showCopyButton && (
+      {Boolean(showCopyButton) && (
         <Box position="absolute" right={1} top={1}>
           <CopyButton
             _hover={{

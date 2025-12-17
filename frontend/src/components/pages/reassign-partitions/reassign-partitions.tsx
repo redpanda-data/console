@@ -330,7 +330,7 @@ class ReassignPartitions extends PageComponent {
                 }}
               >
                 {/* Back */}
-                {step.backButton && (
+                {Boolean(step.backButton) && (
                   <Button
                     isDisabled={this.currentStep <= 0 || this.requestInProgress}
                     onClick={this.onPreviousPage}

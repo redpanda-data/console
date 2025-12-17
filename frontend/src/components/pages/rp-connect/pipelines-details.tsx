@@ -212,7 +212,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
           </Button>
         </Flex>
 
-        {error && (
+        {Boolean(error) && (
           <Alert status="error" variant="left-accent">
             <AlertIcon />
             {error}

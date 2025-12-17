@@ -221,7 +221,9 @@ export const AIAgentModel = ({ model, providerType, className, showLogo = true, 
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      {showLogo && providerInfo && <img alt={providerInfo.label} className={logoSize} src={providerInfo.icon} />}
+      {Boolean(showLogo && providerInfo) && (
+        <img alt={providerInfo.label} className={logoSize} src={providerInfo.icon} />
+      )}
       <Text className="font-mono" variant={size === 'sm' ? 'small' : 'default'}>
         {model}
       </Text>

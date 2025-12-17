@@ -904,7 +904,7 @@ export class DeleteOffsetsModal extends Component<{
                 <TrashIcon color="white" />
               </div>
               <Box>
-                {visible && (
+                {Boolean(visible) && (
                   <Box>
                     {mode === 'group' && (
                       <Box>

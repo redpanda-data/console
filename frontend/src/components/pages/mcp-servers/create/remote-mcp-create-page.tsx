@@ -474,7 +474,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
             )}
 
             {/* Expanded YAML Editor Dialog */}
-            {expandedTool && (
+            {Boolean(expandedTool) && (
               <ExpandedYamlDialog
                 form={form}
                 isLintConfigPending={isLintConfigPending}

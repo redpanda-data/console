@@ -68,7 +68,7 @@ export const VectorDatabaseSection: React.FC<VectorDatabaseSectionProps> = ({ fo
                   value={field.value}
                 />
                 <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />
@@ -83,7 +83,7 @@ export const VectorDatabaseSection: React.FC<VectorDatabaseSectionProps> = ({ fo
                 <FieldDescription>
                   Must start with a letter and contain only letters, numbers, and underscores
                 </FieldDescription>
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />

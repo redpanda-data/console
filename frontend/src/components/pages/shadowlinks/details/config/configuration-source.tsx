@@ -119,7 +119,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
               }
             />
 
-            {hasTLSCerts && <TlsCertificatesConfig tlsSettings={tlsSettings} />}
+            {Boolean(hasTLSCerts) && <TlsCertificatesConfig tlsSettings={tlsSettings} />}
           </div>
         </CardContent>
       </Card>
@@ -147,7 +147,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
               }
             />
 
-            {isAuthEnabled && (
+            {Boolean(isAuthEnabled) && (
               <>
                 <ConfigField label="Username" testId="auth-username" value={scramConfig?.username || '-'} />
                 <ConfigField label="SASL mechanism" testId="auth-sasl-mechanism" value={scramMechanismLabel} />

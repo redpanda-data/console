@@ -237,7 +237,7 @@ class Overview extends PageComponent {
 
               <Section flexDirection="column">
                 <Heading as="h3">Resources and updates</Heading>
-                {api.clusterOverview?.kafka?.distribution && <NurturePanel />}
+                {Boolean(api.clusterOverview?.kafka?.distribution) && <NurturePanel />}
                 <hr />
                 <div className="mt-4 flex flex-row items-center gap-2 font-sm text-gray-600">
                   <a href="https://docs.redpanda.com/docs/home/">Documentation</a>
@@ -443,7 +443,7 @@ function ClusterDetails() {
         </>
       )}
 
-      {api.isRedpanda && api.isAdminApiConfigured && api.userData?.canManageLicense && (
+      {Boolean(api.isRedpanda && api.isAdminApiConfigured && api.userData?.canManageLicense) && (
         <>
           <GridItem />
           <GridItem colSpan={{ base: 1, lg: 2 }}>

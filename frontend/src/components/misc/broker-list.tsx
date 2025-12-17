@@ -142,7 +142,7 @@ function BrokerTooltip(p: { broker: Broker; children?: React.ReactElement; toolt
       Broker ID {id}
     </b>,
     <div key={2}>{broker.address}</div>,
-    <React.Fragment key={3}>{broker.rack && <div>{broker.rack}</div>}</React.Fragment>,
+    <React.Fragment key={3}>{Boolean(broker.rack) && <div>{broker.rack}</div>}</React.Fragment>,
     <React.Fragment key={4}>{p.tooltipSuffix || null}</React.Fragment>,
   ];
 

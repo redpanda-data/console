@@ -196,7 +196,7 @@ const ConfigEditorForm: FC<{
                 </Box>
               )}
             </Flex>
-            {globalError && (
+            {Boolean(globalError) && (
               <Alert my={2} status="error">
                 <AlertIcon />
                 {globalError}
@@ -328,7 +328,7 @@ const ConfigGroup = observer(
   }) => (
     <>
       <div className="configGroupSpacer" />
-      {p.groupName && <div className="configGroupTitle">{p.groupName}</div>}
+      {Boolean(p.groupName) && <div className="configGroupTitle">{p.groupName}</div>}
       {p.entries.map((e) => (
         <ConfigEntryComponent
           entry={e}
@@ -360,7 +360,7 @@ const ConfigEntryComponent = observer(
 
         <Text>{friendlyValue}</Text>
 
-        <span className="isEditted">{entry.isExplicitlySet && 'Custom'}</span>
+        <span className="isEditted">{Boolean(entry.isExplicitlySet) && 'Custom'}</span>
 
         <span className="configButtons">
           <Tooltip hasArrow isDisabled={canEdit} label={nonEdittableReason} placement="left">
@@ -376,7 +376,7 @@ const ConfigEntryComponent = observer(
               <Icon as={PencilIcon} />
             </button>
           </Tooltip>
-          {entry.documentation && (
+          {Boolean(entry.documentation) && (
             <Popover
               content={
                 <Flex flexDirection="column" gap={2}>

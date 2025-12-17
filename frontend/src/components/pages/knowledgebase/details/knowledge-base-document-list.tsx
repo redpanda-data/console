@@ -134,7 +134,7 @@ function RetrievalResultsToolbar({ table }: { table: ReturnType<typeof useReactT
           placeholder="Filter content..."
           value={(table.getState().globalFilter as string) ?? ''}
         />
-        {isFiltered && (
+        {Boolean(isFiltered) && (
           <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
             Reset
             <X className="ml-2 h-4 w-4" />

@@ -78,7 +78,7 @@ const VirtualizedRows = ({
             </TableRow>
           );
         })}
-        {isFetchingNextPage && <LoadingRow columnsLength={columnsLength} message="Loading more topics..." />}
+        {Boolean(isFetchingNextPage) && <LoadingRow columnsLength={columnsLength} message="Loading more topics..." />}
       </>
     );
   }
@@ -216,7 +216,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
           <CardTitle>Replicated topics</CardTitle>
           <CardAction>
             <div className="mb-4 flex items-center gap-2">
-              {isFetching && (
+              {Boolean(isFetching) && (
                 <Button size="icon" variant="ghost">
                   <Loader2 className="h-5 w-5 animate-spin" />
                 </Button>
@@ -230,7 +230,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
                   value={topicNameFilter || ''}
                 />
               </div>
-              {topicNameFilter && (
+              {Boolean(topicNameFilter) && (
                 <Button onClick={() => onTopicNameFilterChange?.('')} size="sm" variant="ghost">
                   <X className="h-4 w-4" />
                 </Button>

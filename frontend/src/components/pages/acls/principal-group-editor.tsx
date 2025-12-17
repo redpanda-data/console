@@ -173,7 +173,7 @@ export const AclPrincipalGroupEditor = observer(
           <ModalBody>
             <VStack gap={6} w="full">
               <AnimatePresence>
-                {error && (
+                {Boolean(error) && (
                   <MotionDiv animProps={animProps_radioOptionGroup} style={{ color: 'red', fontWeight: 500 }}>
                     Error: {error}
                   </MotionDiv>
@@ -489,7 +489,7 @@ export const ResourceACLsEditor = observer(
           </Label>
         </Flex>
 
-        {p.onDelete && (
+        {Boolean(p.onDelete) && (
           <Flex>
             <Box alignSelf="center" bg="gray.300" height="80%" width="1px" />
             <Button alignSelf="center" mx={2} onClick={p.onDelete} variant="ghost">

@@ -66,7 +66,7 @@ export class RoleComponent extends Component<{ role: Role; grantedBy?: RoleBindi
           </div>
         </div>
 
-        {grantedBy && (
+        {Boolean(grantedBy) && (
           <>
             <div style={{ background: '#dcdcdc' }} /> {/* seperator */}
             <div style={{ paddingLeft: '1em' }}>

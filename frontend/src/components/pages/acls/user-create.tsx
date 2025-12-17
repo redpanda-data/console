@@ -277,7 +277,7 @@ const CreateUserModal = observer(
             />
           </FormField>
 
-          {Features.rolesApi && (
+          {Boolean(Features.rolesApi) && (
             <FormField
               description="Assign roles to this user. This is optional and can be changed later."
               isDisabled={!Features.rolesApi}

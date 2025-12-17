@@ -730,8 +730,8 @@ const ProgressBar = (p: {
           fontSize: '75%',
         }}
       >
-        {left && <div>{left}</div>}
-        {right && <div style={{ marginLeft: 'auto' }}>{right}</div>}
+        {Boolean(left) && <div>{left}</div>}
+        {Boolean(right) && <div style={{ marginLeft: 'auto' }}>{right}</div>}
       </div>
     </>
   );

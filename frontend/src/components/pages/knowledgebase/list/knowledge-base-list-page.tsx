@@ -324,7 +324,7 @@ function KnowledgeBaseDataTableToolbar({ table }: { table: TanstackTable<Knowled
             title="Reranker Model"
           />
         )}
-        {isFiltered && (
+        {Boolean(isFiltered) && (
           <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
             Reset
             <X className="ml-2 h-4 w-4" />

@@ -426,7 +426,7 @@ export const ConnectTiles = memo(
                   />
                 </div>
                 {/* Gradient overlay to indicate scrollability - only show when not at bottom */}
-                {showScrollGradient && (
+                {Boolean(showScrollGradient) && (
                   <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-gradient-to-t from-background via-background/60 to-transparent" />
                 )}
               </div>

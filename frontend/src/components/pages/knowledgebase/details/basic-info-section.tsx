@@ -134,7 +134,7 @@ export const BasicInfoSection = ({
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel>Display Name</FieldLabel>
                   <Input {...field} />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
             />
@@ -153,7 +153,7 @@ export const BasicInfoSection = ({
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel>Description</FieldLabel>
                   <Textarea {...field} rows={3} />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
             />
@@ -172,7 +172,7 @@ export const BasicInfoSection = ({
             <DynamicCodeBlock code={knowledgeBase.retrievalApiUrl} lang="text" />
           </div>
 
-          {(editableTags.length > 0 || isEditMode) && (
+          {Boolean(editableTags.length > 0 || isEditMode) && (
             <div className="flex flex-col gap-2 space-y-4">
               <Heading className="font-medium text-sm" level={4}>
                 Tags
@@ -213,7 +213,7 @@ export const BasicInfoSection = ({
                           value={tag.value}
                         />
                       </div>
-                      {isEditMode && (
+                      {Boolean(isEditMode) && (
                         <div className="flex h-9 items-end">
                           <Button
                             onClick={() => {
@@ -230,7 +230,7 @@ export const BasicInfoSection = ({
                     </div>
                   );
                 })}
-                {isEditMode && (
+                {Boolean(isEditMode) && (
                   <Button
                     className="w-full"
                     onClick={() => {

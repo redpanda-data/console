@@ -66,7 +66,7 @@ class ErrorModal extends Component<ErrorModalProps> {
               </Flex>
 
               {/* Content */}
-              {this.content && (
+              {Boolean(this.content) && (
                 <Box alignSelf="stretch" maxHeight="300px" overflowY="auto">
                   {this.content}
                 </Box>

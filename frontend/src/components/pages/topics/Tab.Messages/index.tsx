@@ -1146,7 +1146,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         </GridItem>
       </Grid>
 
-      {currentJSFilter && (
+      {Boolean(currentJSFilter) && (
         <JavascriptFilterModal
           currentFilter={currentJSFilter}
           onClose={() => setCurrentJSFilter(null)}

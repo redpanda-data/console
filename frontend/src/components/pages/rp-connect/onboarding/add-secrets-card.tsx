@@ -176,7 +176,7 @@ export const AddSecretsCard = ({
                       </Badge>
                     ))}
                   </CollapsibleContent>
-                  {hasMoreSecrets && (
+                  {Boolean(hasMoreSecrets) && (
                     <CollapsibleTrigger asChild>
                       <Badge
                         className="cursor-pointer hover:bg-accent hover:text-accent-foreground"

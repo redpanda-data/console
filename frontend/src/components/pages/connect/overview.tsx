@@ -191,7 +191,7 @@ class KafkaConnectOverview extends PageComponent<{
 
     return (
       <PageContent>
-        {this.props.isKafkaConnectEnabled && (
+        {Boolean(this.props.isKafkaConnectEnabled) && (
           <Text>
             There are two ways to integrate your Redpanda data with data from external systems: Redpanda Connect and
             Kafka Connect.

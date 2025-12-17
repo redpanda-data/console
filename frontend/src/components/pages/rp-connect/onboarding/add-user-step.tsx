@@ -489,7 +489,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                     )}
                   />
 
-                  {topicName && (
+                  {Boolean(topicName) && (
                     <FormField
                       control={form.control}
                       disabled={isPending || isReadOnly}
@@ -546,7 +546,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                 </>
               )}
 
-              {showConsumerGroupFields && (
+              {Boolean(showConsumerGroupFields) && (
                 <div className="flex flex-col gap-2">
                   <FormLabel>Consumer Group (Optional)</FormLabel>
                   <FormDescription>

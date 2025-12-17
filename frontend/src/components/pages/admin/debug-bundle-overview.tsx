@@ -51,7 +51,8 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
                       <Text display="inline">
                         {' '}
                         started at{' '}
-                        {status.value.value.createdAt && timestampDate(status.value.value.createdAt).toLocaleString()}
+                        {Boolean(status.value.value.createdAt) &&
+                          timestampDate(status.value.value.createdAt).toLocaleString()}
                       </Text>
                     </Box>
                     <Text color="gray.500" data-testid={`broker-${status.brokerId}-job-id`} fontSize="sm">

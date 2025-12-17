@@ -18,7 +18,7 @@ export function Statistic(
       <StatLabel>
         <Flex gap={1}>
           {title}
-          {hint && (
+          {Boolean(hint) && (
             <Tooltip hasArrow label={hint} placement="right">
               <Box alignSelf="start">
                 <MdInfoOutline size={18} />

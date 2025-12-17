@@ -85,7 +85,7 @@ export const AIAgentActions = ({ agent, onDeleteWithServiceAccount, isDeletingAg
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[200px]">
-          {agent.url && (
+          {Boolean(agent.url) && (
             <>
               <CopyButton
                 className="[&]:transform-none! w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-sm hover:bg-accent [&]:scale-100! [&_svg]:size-4"
@@ -98,7 +98,7 @@ export const AIAgentActions = ({ agent, onDeleteWithServiceAccount, isDeletingAg
               <DropdownMenuSeparator />
             </>
           )}
-          {canStart && (
+          {Boolean(canStart) && (
             <DropdownMenuItem onClick={handleStart}>
               {isStarting ? (
                 <div className="flex items-center gap-4">
@@ -112,7 +112,7 @@ export const AIAgentActions = ({ agent, onDeleteWithServiceAccount, isDeletingAg
               )}
             </DropdownMenuItem>
           )}
-          {canStop && (
+          {Boolean(canStop) && (
             <DropdownMenuItem onClick={handleStop}>
               {isStopping ? (
                 <div className="flex items-center gap-4">
@@ -125,7 +125,7 @@ export const AIAgentActions = ({ agent, onDeleteWithServiceAccount, isDeletingAg
               )}
             </DropdownMenuItem>
           )}
-          {(canStart || canStop) && <DropdownMenuSeparator />}
+          {Boolean(canStart || canStop) && <DropdownMenuSeparator />}
           <DeleteResourceAlertDialog
             isDeleting={isDeletingAgent}
             onDelete={handleDelete}
@@ -138,7 +138,7 @@ export const AIAgentActions = ({ agent, onDeleteWithServiceAccount, isDeletingAg
             resourceName={agent.name}
             resourceType="AI Agent"
           >
-            {serviceAccountId && secretName && (
+            {Boolean(serviceAccountId && secretName) && (
               <div className="flex items-center space-x-2 rounded-lg border border-muted bg-muted/10 p-4">
                 <Switch
                   checked={deleteServiceAccountFlag}

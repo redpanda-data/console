@@ -110,7 +110,7 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
                     for available models and dimensions.
                   </FieldDescription>
                 )}
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />
@@ -127,7 +127,7 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
                   {...field}
                   onChange={(e) => field.onChange(Number.parseInt(e.target.value, 10) || 1536)}
                 />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />
@@ -158,7 +158,7 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
                     value={field.value || ''}
                   />
                   <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
             />
@@ -191,7 +191,7 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
                     value={field.value || ''}
                   />
                   <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
             />

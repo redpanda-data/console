@@ -338,7 +338,7 @@ const SchemaList: FC = () => {
                         >
                           {name}
                         </Link>
-                        {isSoftDeleted && (
+                        {Boolean(isSoftDeleted) && (
                           <Tooltip
                             hasArrow
                             label="This subject has been soft-deleted. It can be restored or permanently deleted."

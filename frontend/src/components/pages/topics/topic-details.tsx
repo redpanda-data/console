@@ -375,7 +375,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     return (
       <>
         <PageContent key={'b'}>
-          {uiSettings.topicDetailsShowStatisticsBar && <TopicQuickInfoStatistic topic={topic} />}
+          {Boolean(uiSettings.topicDetailsShowStatisticsBar) && <TopicQuickInfoStatistic topic={topic} />}
 
           <Flex gap={2} mb={4}>
             <Button
@@ -410,7 +410,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             />
           </Section>
         </PageContent>
-        {this.deleteRecordsModalAlive && (
+        {Boolean(this.deleteRecordsModalAlive) && (
           <DeleteRecordsModal
             afterClose={() => (this.deleteRecordsModalAlive = false)}
             onCancel={() => (this.deleteRecordsModalAlive = false)}

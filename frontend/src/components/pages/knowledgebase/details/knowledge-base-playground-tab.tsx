@@ -178,7 +178,7 @@ export const PlaygroundTab = React.memo<PlaygroundTabProps>(({ knowledgeBase }) 
       </CardHeader>
       <CardContent className="px-4 pb-4">
         <div className="flex flex-col gap-4">
-          {knowledgeBase.retrievalApiUrl && (
+          {Boolean(knowledgeBase.retrievalApiUrl) && (
             <div className="space-y-2">
               <FormLabel>Retrieval API URL</FormLabel>
               <DynamicCodeBlock code={knowledgeBase.retrievalApiUrl} lang="text" />

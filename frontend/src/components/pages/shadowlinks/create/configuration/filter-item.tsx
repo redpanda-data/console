@@ -76,7 +76,7 @@ export const FilterItem = <TFieldValues extends FieldValues>({
               </Badge>
             )}
           </div>
-          {errorMessage && (
+          {Boolean(errorMessage) && (
             <p className="mt-1 text-destructive text-sm" data-slot="form-message">
               {errorMessage}
             </p>
@@ -180,7 +180,7 @@ export const FilterItem = <TFieldValues extends FieldValues>({
                     </div>
                     {children}
                     <FormMessage />
-                    {showMatchAllMessage && (
+                    {Boolean(showMatchAllMessage) && (
                       <Alert variant="warning">
                         <Info className="h-4 w-4" />
                         <AlertDescription>This filter will match all {resourceType}.</AlertDescription>

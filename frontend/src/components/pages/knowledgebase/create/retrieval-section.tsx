@@ -67,7 +67,7 @@ export const RetrievalSection: React.FC<RetrievalSectionProps> = ({ form, availa
           />
         </FieldSet>
 
-        {rerankerEnabled && (
+        {Boolean(rerankerEnabled) && (
           <>
             <FieldSeparator />
             <FieldSet>
@@ -96,7 +96,7 @@ export const RetrievalSection: React.FC<RetrievalSectionProps> = ({ form, availa
                       </Link>{' '}
                       for available models.
                     </FieldDescription>
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                    {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
               />
@@ -123,7 +123,7 @@ export const RetrievalSection: React.FC<RetrievalSectionProps> = ({ form, availa
                       value={field.value || ''}
                     />
                     <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                    {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
               />

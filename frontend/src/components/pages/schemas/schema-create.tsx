@@ -189,7 +189,7 @@ const SchemaPageButtons = observer(
 
     return (
       <>
-        {persistentValidationError && (
+        {Boolean(persistentValidationError) && (
           <Alert data-testid="schema-create-validation-error-alert" mb="4" mt="4" status="error" variant="left-accent">
             <AlertIcon />
             <Box flex="1">
@@ -397,7 +397,7 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
     <>
       <Heading variant="lg">Settings</Heading>
 
-      {isAddVersion && (
+      {Boolean(isAddVersion) && (
         <Alert status="info">
           <AlertIcon />
           When adding a new schema version, the only thing that can be changed is the schema definition and its

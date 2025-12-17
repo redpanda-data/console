@@ -214,7 +214,7 @@ export const ShadowLinkListPage = () => {
                 </Button>
               </span>
             </TooltipTrigger>
-            {hasShadowLink && (
+            {Boolean(hasShadowLink) && (
               <TooltipContent>
                 <p>Only one shadowlink can be created at this time</p>
               </TooltipContent>

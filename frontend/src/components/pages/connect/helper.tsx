@@ -460,7 +460,7 @@ export const ConnectorClass = observer((props: { observable: { class: string } }
 
   return (
     <div style={{ height: '1px', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
-      {meta?.logo && (
+      {Boolean(meta?.logo) && (
         <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
           <ZeroSizeWrapper transform="translateY(-1px)" width="22px">
             <div style={{ width: '22px', height: '22px' }}>{meta.logo}</div>
@@ -666,7 +666,7 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
           <AlertDialogHeader>Confirm</AlertDialogHeader>
           <AlertDialogBody>
             {content}
-            {err && (
+            {Boolean(err) && (
               <Box mt={4}>
                 <Alert status="error" variant="left-accent">
                   <AlertIcon />

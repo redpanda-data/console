@@ -400,7 +400,7 @@ export class RadioOptionGroup<T extends string | null = string> extends Componen
             <Box p={3}>
               <Text fontWeight={500}>{kv.title}</Text>
               <Text color="gray.500">{kv.subTitle}</Text>
-              {kv.content && (p.showContent === 'always' || p.value === kv.value) && (
+              {Boolean(kv.content) && (p.showContent === 'always' || p.value === kv.value) && (
                 <Box key={String(kv.value)} style={{ marginLeft: '27px', marginTop: '12px' }}>
                   <div>{kv.content}</div>
                 </Box>
@@ -511,7 +511,7 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
             {this.props.progressText}
           </Text>
         </Flex>
-        {this.props.bytesConsumed && this.props.messagesConsumed && (
+        {Boolean(this.props.bytesConsumed && this.props.messagesConsumed) && (
           <Flex fontSize="sm" fontWeight="bold" justifyContent="space-between">
             <Flex alignItems="center" gap={2}>
               <MdOutlineDownload color={colors.brandOrange} size={14} /> {this.props.bytesConsumed}

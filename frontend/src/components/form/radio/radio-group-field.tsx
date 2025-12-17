@@ -34,12 +34,12 @@ export const RadioGroupField = ({
   return (
     <FormControl isInvalid={!!field.state.meta.errors?.length}>
       <Stack spacing={0.5}>
-        {label && (
+        {Boolean(label) && (
           <FormLabel fontWeight="medium" mb={0}>
             {label}
           </FormLabel>
         )}
-        {helperText && (
+        {Boolean(helperText) && (
           <FormHelperText mb={1} mt={0}>
             {helperText}
           </FormHelperText>

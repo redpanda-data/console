@@ -145,7 +145,7 @@ export function CertificateDialog({
                 onDrop={handleFileUpload}
                 testId="certificate-dropzone"
               >
-                {fileName && (
+                {Boolean(fileName) && (
                   <Text className="text-muted-foreground" variant="small">
                     {fileName}
                   </Text>

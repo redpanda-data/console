@@ -101,7 +101,7 @@ export const AIAgentDetailsPage = () => {
               Configuration
             </div>
           </TabsTrigger>
-          {isAiAgentsInspectorFeatureEnabled && (
+          {Boolean(isAiAgentsInspectorFeatureEnabled) && (
             <TabsTrigger className="gap-2" value="inspector">
               <Search className="h-4 w-4" />
               Inspector
@@ -112,7 +112,7 @@ export const AIAgentDetailsPage = () => {
         <TabsContent value="configuration">
           <AIAgentConfigurationTab />
         </TabsContent>
-        {isAiAgentsInspectorFeatureEnabled && (
+        {Boolean(isAiAgentsInspectorFeatureEnabled) && (
           <TabsContent className="flex h-full flex-col" value="inspector">
             <AIAgentInspectorTab />
           </TabsContent>

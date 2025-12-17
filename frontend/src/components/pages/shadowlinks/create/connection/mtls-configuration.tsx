@@ -74,13 +74,15 @@ const MtlsCertificatesUpload = ({
       )}
     </div>
 
-    {(errors.mtls?.ca || errors.mtls?.clientCert || errors.mtls?.clientKey) && (
+    {Boolean(errors.mtls?.ca || errors.mtls?.clientCert || errors.mtls?.clientKey) && (
       <div className="flex flex-col gap-1" data-testid="mtls-certificates-errors">
-        {errors.mtls?.ca?.message && <Text className="text-destructive text-sm">{String(errors.mtls.ca.message)}</Text>}
-        {errors.mtls?.clientCert?.message && (
+        {Boolean(errors.mtls?.ca?.message) && (
+          <Text className="text-destructive text-sm">{String(errors.mtls.ca.message)}</Text>
+        )}
+        {Boolean(errors.mtls?.clientCert?.message) && (
           <Text className="text-destructive text-sm">{String(errors.mtls.clientCert.message)}</Text>
         )}
-        {errors.mtls?.clientKey?.message && (
+        {Boolean(errors.mtls?.clientKey?.message) && (
           <Text className="text-destructive text-sm">{String(errors.mtls.clientKey.message)}</Text>
         )}
       </div>

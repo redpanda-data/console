@@ -637,7 +637,7 @@ const SharedConfiguration = ({
                   testId="shared-principal-input"
                   value={sharedConfig.principal.replace(PRINCIPAL_PREFIX_REGEX, '')}
                 />
-                {principalError && (
+                {Boolean(principalError) && (
                   <p className="text-red-600 text-sm" data-testid="principal-error">
                     {principalError}
                   </p>

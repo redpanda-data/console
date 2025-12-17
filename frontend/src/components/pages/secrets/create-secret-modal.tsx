@@ -101,7 +101,7 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
             <ModalCloseButton />
             <ModalBody>
               <Stack spacing={2}>
-                {createSecretError && (
+                {Boolean(createSecretError) && (
                   <Alert data-testid="create-secret-error" status="error" variant="subtle">
                     <AlertIcon />
                     {createSecretError.message}

@@ -194,7 +194,7 @@ export const EmbeddingGeneratorSection = ({ knowledgeBase, isEditMode }: Embeddi
                         scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
                         value={extractSecretName(currentApiKey || '')}
                       />
-                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   );
                 }}

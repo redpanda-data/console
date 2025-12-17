@@ -236,7 +236,7 @@ export function NumInput(p: {
 
   return (
     <InputGroup>
-      {p.addonBefore && <InputLeftAddon>{p.addonBefore}</InputLeftAddon>}
+      {Boolean(p.addonBefore) && <InputLeftAddon>{p.addonBefore}</InputLeftAddon>}
 
       <Input
         className={`numericInput ${p.className ?? ''}`}
@@ -275,7 +275,7 @@ export function NumInput(p: {
         value={p.disabled && p.placeholder && p.value === null ? undefined : editValue}
       />
 
-      {p.addonAfter && <InputRightAddon p="0">{p.addonAfter}</InputRightAddon>}
+      {Boolean(p.addonAfter) && <InputRightAddon p="0">{p.addonAfter}</InputRightAddon>}
     </InputGroup>
   );
 }

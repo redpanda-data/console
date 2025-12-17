@@ -38,7 +38,7 @@ export const WhiteCard = (p: PropsWithChildren<{ style?: React.CSSProperties; ti
       ...p.style,
     }}
   >
-    {p.title && <h2 style={{ borderBottom: '1px solid #0002' }}>{p.title}</h2>}
+    {Boolean(p.title) && <h2 style={{ borderBottom: '1px solid #0002' }}>{p.title}</h2>}
     <div>{p.children}</div>
   </div>
 );

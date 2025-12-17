@@ -113,7 +113,7 @@ class SearchBar<TItem> extends Component<{
 
       return (
         <AnimatePresence>
-          {searchSummary && (
+          {Boolean(searchSummary) && (
             <MotionSpan
               identityKey={searchSummary?.identity ?? 'null'} // identityKey={searchSummary?.identity ?? 'null'}
               overrideAnimProps={animProps_span_searchResult}

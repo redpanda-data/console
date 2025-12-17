@@ -125,7 +125,7 @@ export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
         <CardHeader className="flex items-center justify-between">
           <CardTitle>Roles</CardTitle>
           <CardAction>
-            {onChangeRoles && (
+            {Boolean(onChangeRoles) && (
               <Button onClick={onChangeRoles} testId="assign-role-button" variant="outline">
                 Assign role
               </Button>
@@ -144,7 +144,7 @@ export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
       <CardHeader className="flex items-center justify-between">
         <CardTitle>Roles</CardTitle>
         <CardAction>
-          {onChangeRoles && (
+          {Boolean(onChangeRoles) && (
             <Button onClick={onChangeRoles} testId="change-role-button" variant="outline">
               Change Role
             </Button>

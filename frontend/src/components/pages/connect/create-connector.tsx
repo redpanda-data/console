@@ -142,7 +142,7 @@ const ConnectorType = observer(
           </>
         )}
 
-        {p.activeCluster && (
+        {Boolean(p.activeCluster) && (
           <>
             <Flex direction="column" gap="1em">
               <Box maxWidth="600px">

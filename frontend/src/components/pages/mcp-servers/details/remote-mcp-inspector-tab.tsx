@@ -421,7 +421,7 @@ export const RemoteMCPInspectorTab = () => {
           {/* Tools List */}
           {mcpServerData?.mcpServer?.state === MCPServer_State.RUNNING && (
             <div className="space-y-2">
-              {(isLoadingTools || isRefetchingTools) && (
+              {Boolean(isLoadingTools || isRefetchingTools) && (
                 <div className="flex items-center justify-center py-4">
                   <Badge className="text-xs" variant="outline">
                     <Clock className="mr-1 h-3 w-3 animate-spin" />
@@ -587,7 +587,7 @@ export const RemoteMCPInspectorTab = () => {
                       )}
 
                       {/* Response Section */}
-                      {isServerToolPending && (
+                      {Boolean(isServerToolPending) && (
                         <div className="space-y-2">
                           <Label className="font-medium text-sm">Response</Label>
                           <div className="flex flex-col space-y-3">

@@ -115,7 +115,9 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
     return (
       <div className="space-y-2">
         <FormLabel>{label}</FormLabel>
-        {isExistingTopic && <p className="mb-2 text-gray-500 text-xs">Existing topic values cannot be modified</p>}
+        {Boolean(isExistingTopic) && (
+          <p className="mb-2 text-gray-500 text-xs">Existing topic values cannot be modified</p>
+        )}
         <Group attached>
           <FormField
             control={form.control}

@@ -96,7 +96,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
         onClick={action(() => this.createPipeline())}
         variant="secondary"
       >
-        {this.isCreating && <Spinner />}
+        {Boolean(this.isCreating) && <Spinner />}
         {this.isCreating ? 'Creating...' : 'Create'}
       </Button>
     );

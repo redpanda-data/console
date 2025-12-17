@@ -85,7 +85,7 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
   return (
     <div className="flex h-[calc(100vh-210px)] flex-col" ref={containerRef}>
       {/* Context ID header */}
-      {contextId && (
+      {Boolean(contextId) && (
         <div className="shrink-0 border-b bg-muted/30 px-4 py-2">
           <div className="flex gap-1.5 text-muted-foreground text-xs">
             <span className="font-medium">context_id:</span>
@@ -96,7 +96,7 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
 
       <Conversation className="min-h-0 flex-1" initial="instant" resize="instant">
         <ConversationContent>
-          {isLoadingHistory && (
+          {Boolean(isLoadingHistory) && (
             <div className="flex h-full items-center justify-center">
               <Loader size={24} />
             </div>

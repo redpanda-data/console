@@ -120,7 +120,7 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
           />
         )}
 
-        {showErrors && <FormErrorMessage onClick={cycleError}>{errorToShow}</FormErrorMessage>}
+        {Boolean(showErrors) && <FormErrorMessage onClick={cycleError}>{errorToShow}</FormErrorMessage>}
       </FormControl>
 
       {/* <Box p="4" >

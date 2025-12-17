@@ -25,7 +25,7 @@ const ExpandedMessageFooter: FC<{ children?: ReactNode; onDownloadRecord?: () =>
 }) => (
   <Flex gap={2} justifyContent="flex-end" my={4}>
     {children}
-    {onDownloadRecord && (
+    {Boolean(onDownloadRecord) && (
       <Button onClick={onDownloadRecord} variant="outline">
         Download Record
       </Button>
@@ -62,7 +62,7 @@ export const ExpandedMessage: FC<{
                 <TroubleshootReportViewer payload={msg.key} />
                 <PayloadComponent loadLargeMessage={loadLargeMessage} payload={msg.key} />
                 <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
-                  {onCopyKey && (
+                  {Boolean(onCopyKey) && (
                     <Button isDisabled={msg.key.isPayloadNull} onClick={() => onCopyKey(msg)} variant="outline">
                       Copy Key
                     </Button>
@@ -83,7 +83,7 @@ export const ExpandedMessage: FC<{
                 <TroubleshootReportViewer payload={msg.value} />
                 <PayloadComponent loadLargeMessage={loadLargeMessage} payload={msg.value} />
                 <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
-                  {onCopyValue && (
+                  {Boolean(onCopyValue) && (
                     <Button isDisabled={msg.value.isPayloadNull} onClick={() => onCopyValue(msg)} variant="outline">
                       Copy Value
                     </Button>
@@ -99,7 +99,7 @@ export const ExpandedMessage: FC<{
             component: (
               <Box>
                 <MessageHeaders msg={msg} />
-                {onDownloadRecord && <ExpandedMessageFooter onDownloadRecord={onDownloadRecord} />}
+                {Boolean(onDownloadRecord) && <ExpandedMessageFooter onDownloadRecord={onDownloadRecord} />}
               </Box>
             ),
           },

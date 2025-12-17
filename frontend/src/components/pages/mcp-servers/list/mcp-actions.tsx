@@ -94,7 +94,7 @@ export const MCPActions = ({ server, onDeleteWithServiceAccount, isDeletingServe
             Copy URL
           </CopyButton>
           <DropdownMenuSeparator />
-          {canStart && (
+          {Boolean(canStart) && (
             <DropdownMenuItem data-testid="start-server-menu-item" onClick={handleStart}>
               {isStarting ? (
                 <div className="flex items-center gap-4">
@@ -108,7 +108,7 @@ export const MCPActions = ({ server, onDeleteWithServiceAccount, isDeletingServe
               )}
             </DropdownMenuItem>
           )}
-          {canStop && (
+          {Boolean(canStop) && (
             <DropdownMenuItem data-testid="stop-server-menu-item" onClick={handleStop}>
               {isStopping ? (
                 <div className="flex items-center gap-4">
@@ -121,7 +121,7 @@ export const MCPActions = ({ server, onDeleteWithServiceAccount, isDeletingServe
               )}
             </DropdownMenuItem>
           )}
-          {(canStart || canStop) && <DropdownMenuSeparator />}
+          {Boolean(canStart || canStop) && <DropdownMenuSeparator />}
           <DeleteResourceAlertDialog
             isDeleting={isDeletingServer}
             onDelete={handleDelete}
@@ -134,7 +134,7 @@ export const MCPActions = ({ server, onDeleteWithServiceAccount, isDeletingServe
             resourceName={server.name}
             resourceType="Remote MCP Server"
           >
-            {serviceAccountId && secretName && (
+            {Boolean(serviceAccountId && secretName) && (
               <div className="flex items-center space-x-2 rounded-lg border border-muted bg-muted/10 p-4">
                 <Switch
                   checked={deleteServiceAccountFlag}

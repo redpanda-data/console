@@ -99,7 +99,7 @@ const ChatInputComponent = ({
         </PromptInputBody>
         <PromptInputFooter>
           <PromptInputTools>
-            {agent.model && (
+            {Boolean(agent.model) && (
               <PromptInputModelSelect disabled value={agent.model}>
                 <PromptInputModelSelectTrigger>
                   <PromptInputModelSelectValue>
@@ -113,7 +113,7 @@ const ChatInputComponent = ({
                 </PromptInputModelSelectContent>
               </PromptInputModelSelect>
             )}
-            {usage.max_input_tokens && (
+            {Boolean(usage.max_input_tokens) && (
               <Context
                 maxTokens={usage.max_input_tokens}
                 modelId={modelId}

@@ -39,12 +39,12 @@ export const KeyValueField = ({ label, helperText, showAddButton = true, ...rest
   return (
     <FormControl mb={4}>
       <Stack spacing={0.5}>
-        {label && (
+        {Boolean(label) && (
           <FormLabel fontWeight="medium" mb={0}>
             {label}
           </FormLabel>
         )}
-        {helperText && (
+        {Boolean(helperText) && (
           <FormHelperText mb={1} mt={0}>
             {helperText}
           </FormHelperText>
@@ -54,7 +54,7 @@ export const KeyValueField = ({ label, helperText, showAddButton = true, ...rest
         <KeyValuePairField index={index} key={index} {...rest} />
       ))}
 
-      {showAddButton && (
+      {Boolean(showAddButton) && (
         <ButtonGroup>
           <Button
             data-testid="add-label-button"

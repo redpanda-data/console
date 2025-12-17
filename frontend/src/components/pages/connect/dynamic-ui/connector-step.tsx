@@ -40,7 +40,7 @@ export const ConnectorStepComponent = observer(
           {step.name}
         </Heading>
 
-        {step.description && (
+        {Boolean(step.description) && (
           <Text mb="4" size="sm">
             {step.description}
           </Text>

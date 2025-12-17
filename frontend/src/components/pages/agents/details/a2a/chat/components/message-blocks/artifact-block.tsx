@@ -47,7 +47,7 @@ export const ArtifactBlock = ({ artifactId, name, description, parts, timestamp 
       <ArtifactHeader>
         <div>
           <ArtifactTitle>{name || 'Artifact'}</ArtifactTitle>
-          {description && <ArtifactDescription>{description}</ArtifactDescription>}
+          {Boolean(description) && <ArtifactDescription>{description}</ArtifactDescription>}
         </div>
       </ArtifactHeader>
       <ArtifactContent>

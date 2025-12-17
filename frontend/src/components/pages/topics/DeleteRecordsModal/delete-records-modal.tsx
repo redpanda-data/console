@@ -305,7 +305,7 @@ const ManualOffsetContent = observer(
     return (
       <Flex alignItems="center" gap={2}>
         <Slider max={max} min={min} onChange={updateOffsetFromSlider} value={sliderValue}>
-          {marks &&
+          {Boolean(marks) &&
             Object.entries(marks).map(([value, label]) => (
               <SliderMark key={value} value={Number(value)}>
                 {label}
@@ -522,7 +522,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
       <ModalContent minW="2xl">
         <ModalHeader>Delete records in topic</ModalHeader>
         <ModalBody>
-          {hasErrors && (
+          {Boolean(hasErrors) && (
             <Alert mb={2} status="error">
               <AlertIcon />
               <Flex flexDirection="column" gap={4} p={2}>

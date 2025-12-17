@@ -69,7 +69,7 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
             <ModalHeader>Delete Secret</ModalHeader>
             <ModalBody mb={4}>
               <Stack spacing={4}>
-                {deleteSecretError && (
+                {Boolean(deleteSecretError) && (
                   <Alert data-testid="delete-secret-error" status="error" variant="subtle">
                     <AlertIcon />
                     {deleteSecretError.message}

@@ -445,14 +445,14 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
 
   return (
     <>
-      {api.isAdminApiConfigured && (
+      {Boolean(api.isAdminApiConfigured) && (
         <ChangePasswordModal
           isOpen={isChangePasswordModalOpen}
           setIsOpen={setIsChangePasswordModalOpen}
           userName={user.name}
         />
       )}
-      {Features.rolesApi && (
+      {Boolean(Features.rolesApi) && (
         <ChangeRolesModal isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} userName={user.name} />
       )}
 
@@ -461,7 +461,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
           <Icon as={BsThreeDots} />
         </MenuButton>
         <MenuList>
-          {api.isAdminApiConfigured && (
+          {Boolean(api.isAdminApiConfigured) && (
             <MenuItem
               onClick={(e) => {
                 e.stopPropagation();
@@ -471,7 +471,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
               Change password
             </MenuItem>
           )}
-          {Features.rolesApi && (
+          {Boolean(Features.rolesApi) && (
             <MenuItem
               onClick={(e) => {
                 e.stopPropagation();
@@ -676,7 +676,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
         identity, or mTLS client). The ACLs tab shows only the permissions directly granted to each principal. For a
         complete view of all permissions, including permissions granted through roles, see the Permissions List tab.
       </Box>
-      {Features.rolesApi && (
+      {Boolean(Features.rolesApi) && (
         <Alert status="info">
           <AlertIcon />
           Roles are a more flexible and efficient way to manage user permissions, especially with complex organizational
@@ -690,7 +690,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
         width="300px"
       />
       <Section>
-        {edittingPrincipalGroup && (
+        {Boolean(edittingPrincipalGroup) && (
           <AclPrincipalGroupEditor
             onClose={() => {
               setEdittingPrincipalGroup(null);

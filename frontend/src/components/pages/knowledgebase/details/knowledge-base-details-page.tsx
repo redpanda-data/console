@@ -417,7 +417,7 @@ export const KnowledgeBaseDetailsPage = () => {
       {/* Header */}
       <div>
         <Heading level={1}>{knowledgeBase.displayName}</Heading>
-        {knowledgeBase.description && (
+        {Boolean(knowledgeBase.description) && (
           <Text className="mt-2" variant="muted">
             {knowledgeBase.description}
           </Text>
@@ -433,7 +433,7 @@ export const KnowledgeBaseDetailsPage = () => {
                 <Text className="font-medium text-sm" variant="muted">
                   Indexer Status
                 </Text>
-                {consumerGroup?.state && (
+                {Boolean(consumerGroup?.state) && (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
