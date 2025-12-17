@@ -3,6 +3,10 @@
     "playwright-test": {
       "command": "npx",
       "args": ["playwright", "run-test-mcp-server"]
+    },
+    "ultracite": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://www.ultracite.ai/api/mcp/mcp"]
     }
   }
 }
