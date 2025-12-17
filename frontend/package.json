@@ -32,7 +32,8 @@
     "format:check": "biome format src/*",
     "format": "biome format src/* --write",
     "load-git-hooks": "cd .. && git config core.hooksPath \"./.git-hooks\"",
-    "analyze": "RSDOCTOR=true npm run build"
+    "analyze": "RSDOCTOR=true npm run build",
+    "prepare": "lefthook install"
   },
   "overrides": {
     "elliptic": "^6.6.1"
@@ -163,6 +164,7 @@
     "@vitejs/plugin-react": "^5.1.1",
     "@vitest/coverage-v8": "^4.0.8",
     "@vitest/ui": "^4.0.8",
+    "lefthook": "^2.0.12",
     "node-fetch": "^3.3.2",
     "rsbuild-plugin-devtools-json": "^0.2.5",
     "tar-stream": "^3.1.7",
