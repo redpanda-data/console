@@ -28,7 +28,7 @@ export function formatConfigValue(
 ): string {
   let suffix: string;
 
-  if (value === null) {
+  if (value === null || value === undefined) {
     return '';
   }
 

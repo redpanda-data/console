@@ -402,7 +402,7 @@ export class EditOffsetsModal extends Component<{
                           original: { offset },
                         },
                       }) =>
-                        offset === null ? (
+                        offset === null || offset === undefined ? (
                           <Tooltip
                             hasArrow
                             label="The group does not have an offset for this partition yet"
@@ -1051,7 +1051,7 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
     }
 
     // from timestamp
-    if ('offset' in x) {
+    if (x && typeof x === 'object' && 'offset' in x) {
       return x.offset;
     }
 

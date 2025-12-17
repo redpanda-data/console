@@ -2290,7 +2290,7 @@ export const rolesApi = observable({
 
     for (const r of rolePromises) {
       const res = (await r) as { response?: { role?: { name: string }; members: Array<{ principal: string }> } };
-      if (res.response === null || res.response.role === null) {
+      if (res.response === null || res.response === undefined || res.response.role === null || res.response.role === undefined) {
         continue; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
       }
       const roleName = res.response.role.name;
@@ -2930,8 +2930,8 @@ export function createMessageSearch() {
                     console.log('unhandled key encoding type', {
                       encoding: key?.encoding,
                       encodingName:
-                        key?.encoding !== null
-                          ? PayloadEncodingSchema.values.find((value) => value.number === key.encoding)?.localName
+                        key?.encoding !== null && key?.encoding !== undefined
+                          ? PayloadEncodingSchema.values.find((value) => value.number === key?.encoding)?.localName
                           : undefined,
                       message: res,
                     });
@@ -3017,8 +3017,8 @@ export function createMessageSearch() {
                     console.log('unhandled value encoding type', {
                       encoding: val?.encoding,
                       encodingName:
-                        val?.encoding !== null
-                          ? PayloadEncodingSchema.values.find((value) => value.number === val.encoding)?.localName
+                        val?.encoding !== null && val?.encoding !== undefined
+                          ? PayloadEncodingSchema.values.find((value) => value.number === val?.encoding)?.localName
                           : undefined,
                       message: res,
                     });
@@ -3127,6 +3127,10 @@ export const brokerMap = computed(
   () => {
     const brokers = api.clusterInfo?.brokers;
     if (brokers === null) {
+      return null;
+    }
+
+    if (!brokers) {
       return null;
     }
 

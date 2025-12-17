@@ -68,7 +68,7 @@ export function computeMovedReplicas(
       continue;
     }
     const topic = apiTopics?.first((t) => t.topicName === topicName);
-    if (topic === null) {
+    if (topic === null || topic === undefined) {
       continue;
     }
 

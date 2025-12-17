@@ -30,7 +30,7 @@ type AclListProps = {
 
 function flatResourceList(store: Acls) {
   const acls = store;
-  if (acls?.aclResources === null) {
+  if (!acls || acls.aclResources === null) {
     return [];
   }
   const flatResources = acls.aclResources

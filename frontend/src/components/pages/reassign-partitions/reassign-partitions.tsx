@@ -497,7 +497,7 @@ class ReassignPartitions extends PageComponent {
     if (this.currentStep === 1) {
       // Assign -> Review
       const topicPartitions = this.selectedTopicPartitions;
-      if (topicPartitions === null) {
+      if (topicPartitions === null || topicPartitions === undefined) {
         this.resetSelectionAndPage(true, true);
         return;
       }
@@ -656,7 +656,7 @@ class ReassignPartitions extends PageComponent {
           ?.first((partition) => partition.id === partitionId)?.replicas;
         const brokersNew = p.replicas;
 
-        if (brokersOld === null || brokersNew === null) {
+        if (brokersOld === null || brokersOld === undefined || brokersNew === null) {
           continue;
         }
 

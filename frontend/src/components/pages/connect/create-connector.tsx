@@ -228,7 +228,7 @@ class CreateConnector extends PageComponent<{ clusterName: string }> {
 
   render() {
     const clusters = api.connectConnectors?.clusters;
-    if (clusters === null) {
+    if (clusters === null || clusters === undefined) {
       return null;
     }
     const clusterName = decodeURIComponent(this.props.clusterName);

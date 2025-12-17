@@ -284,7 +284,7 @@ const ReviewPartitionTable = observer(
             header: 'Brokers After',
             cell: ({ row: { original: partition } }) => {
               const partitionAssignments = props.assignments.partitions.first((p) => p.partitionId === partition.id);
-              if (partitionAssignments === null || partitionAssignments.replicas === null) {
+              if (partitionAssignments === null || partitionAssignments === undefined || partitionAssignments.replicas === null) {
                 return '??';
               }
               return (

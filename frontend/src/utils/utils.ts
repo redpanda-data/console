@@ -834,7 +834,7 @@ export function delay(timeoutMs: number): Promise<void> {
 }
 
 export function setHeader(init: RequestInit, name: string, value: string) {
-  if (init.headers === null) {
+  if (init.headers === null || init.headers === undefined) {
     init.headers = [[name, value]];
   } else if (Array.isArray(init.headers)) {
     init.headers.push([name, value]);

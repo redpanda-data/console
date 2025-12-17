@@ -421,7 +421,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
 
   // biome-ignore lint/suspicious/noConfusingVoidType: needed to fix error TS2345
   const handleFinish = (responseData: void | DeleteRecordsResponseData | null | undefined) => {
-    if (responseData === null) {
+    if (responseData === null || responseData === undefined || typeof responseData === 'undefined') {
       setErrors(['You are not allowed to delete records on this topic. Please contact your Kafka administrator.']);
       return;
     }
@@ -494,7 +494,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
         } else if (isSpecficPartition) {
           const partitionOffset = topicOffsets[0].partitions.find((p) => specifiedPartition === p.partitionId)?.offset;
 
-          if (partitionOffset !== null) {
+          if (partitionOffset !== null && partitionOffset !== undefined) {
             // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
             api.deleteTopicRecords(topicName, partitionOffset, specifiedPartition!)?.then(handleFinish);
           } else {

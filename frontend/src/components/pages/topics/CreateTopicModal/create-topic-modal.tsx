@@ -76,7 +76,7 @@ export class CreateTopicModalContent extends Component<Props> {
     const state = this.props.state;
 
     let replicationFactorError = '';
-    if (api.clusterOverview && state.replicationFactor !== null) {
+    if (api.clusterOverview && state.replicationFactor !== null && state.replicationFactor !== undefined) {
       replicationFactorError = validateReplicationFactor(state.replicationFactor, api.isRedpanda);
     }
 
@@ -203,10 +203,10 @@ export function NumInput(p: {
       return;
     }
     let clampedValue = x;
-    if (clampedValue !== null && p.min !== null && clampedValue < p.min) {
+    if (clampedValue !== null && clampedValue !== undefined && p.min !== null && p.min !== undefined && clampedValue < p.min) {
       clampedValue = p.min;
     }
-    if (clampedValue !== null && p.max !== null && clampedValue > p.max) {
+    if (clampedValue !== null && clampedValue !== undefined && p.max !== null && p.max !== undefined && clampedValue > p.max) {
       clampedValue = p.max;
     }
     setEditValue(clampedValue === undefined ? clampedValue : String(clampedValue));
@@ -279,7 +279,7 @@ function RetentionTimeSelect(p: {
   const numDisabled = unit === 'default' || unit === 'infinite';
 
   let placeholder: string | undefined;
-  if (unit === 'default' && p.defaultConfigValue !== null) {
+  if (unit === 'default' && p.defaultConfigValue !== null && p.defaultConfigValue !== undefined) {
     if (Number.isFinite(Number(p.defaultConfigValue))) {
       placeholder = prettyMilliseconds(p.defaultConfigValue, {
         showLargeAsInfinite: true,
