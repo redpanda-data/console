@@ -205,7 +205,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
 
     // When last visible item is near the end, fetch more
     if (lastItem.index >= rows.length - 1 && hasNextPage && !isFetchingNextPage && getNextTopicPage) {
-      void getNextTopicPage();
+      getNextTopicPage();
     }
   }, [hasNextPage, getNextTopicPage, isFetchingNextPage, rows.length, virtualRows]);
 

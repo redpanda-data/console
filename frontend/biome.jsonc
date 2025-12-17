@@ -61,8 +61,7 @@
           "options": {
             "maxAllowedComplexity": 30
           }
-        },
-        "noVoid": "off"
+        }
       },
       "correctness": {
         "useImageSize": "off"

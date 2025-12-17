@@ -107,9 +107,18 @@ class KafkaConnectOverview extends PageComponent<{
     p.title = 'Overview';
     p.addBreadcrumb('Connect', '/connect-clusters');
 
-    void this.checkRPCNSecretEnable();
-    void this.refreshData();
-    appGlobal.onRefresh = () => void this.refreshData();
+    // biome-ignore lint/nursery/noFloatingPromises: Fire-and-forget with internal error handling
+    this.initializeData();
+    appGlobal.onRefresh = async () => await this.refreshData();
+  }
+
+  private async initializeData(): Promise<void> {
+    try {
+      await this.checkRPCNSecretEnable();
+      await this.refreshData();
+    } catch {
+      // Error during initialization - component will show error state
+    }
   }
 
   async checkRPCNSecretEnable() {

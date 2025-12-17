@@ -43,17 +43,17 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
     });
 
   // Stable callback references to prevent ChatInput re-renders
-  const handleCancel = useCallback(() => {
+  const handleCancel = useCallback(async () => {
     const lastMessage = messages.at(-1);
     if (lastMessage?.taskId) {
-      void handleCancelTask(lastMessage.taskId);
+      await handleCancelTask(lastMessage.taskId);
     }
   }, [messages, handleCancelTask]);
 
   const handleSubmitMessage = useCallback(
-    (message: Parameters<typeof handleSubmit>[0], event: React.FormEvent) => {
+    async (message: Parameters<typeof handleSubmit>[0], event: React.FormEvent) => {
       event.preventDefault();
-      void handleSubmit(message);
+      await handleSubmit(message);
     },
     [handleSubmit]
   );

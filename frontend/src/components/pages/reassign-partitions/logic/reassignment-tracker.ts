@@ -97,8 +97,8 @@ export class ReassignmentTracker {
     this.clusterTimer = window.setInterval(() => api.refreshCluster(true), refreshIntervals.cluster);
 
     // Immediately refresh as well
-    setTimeout(() => {
-      void this.refreshReassignments();
+    setTimeout(async () => {
+      await this.refreshReassignments();
       api.refreshCluster(true);
     });
   }

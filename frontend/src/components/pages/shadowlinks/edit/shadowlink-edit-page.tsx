@@ -116,8 +116,8 @@ export const ShadowLinkEditPage = () => {
     mode: 'onChange',
   });
 
-  const onSubmit = (values: FormValues) => {
-    void updateShadowLink(values);
+  const onSubmit = async (values: FormValues) => {
+    await updateShadowLink(values);
   };
 
   /**

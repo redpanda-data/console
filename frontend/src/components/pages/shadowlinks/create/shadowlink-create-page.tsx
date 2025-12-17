@@ -242,9 +242,9 @@ export const ShadowLinkCreatePage = () => {
     },
   });
 
-  const onSubmit = (values: FormValues) => {
+  const onSubmit = async (values: FormValues) => {
     const request = buildCreateShadowLinkRequest(values);
-    void createShadowLink(request);
+    await createShadowLink(request);
   };
 
   // Form setup

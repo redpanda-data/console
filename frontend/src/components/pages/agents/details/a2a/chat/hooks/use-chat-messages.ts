@@ -55,14 +55,20 @@ export const useChatMessages = (agentId: string): UseChatMessagesResult => {
 
   // Load messages from database on mount or when context changes
   useEffect(() => {
-    const loadChatMessages = async () => {
+    async function loadChatMessages() {
       setIsLoadingHistory(true);
-      const loadedMessages = await loadMessages(agentId, contextId);
-      setMessages(loadedMessages);
-      setIsLoadingHistory(false);
-    };
+      try {
+        const loadedMessages = await loadMessages(agentId, contextId);
+        setMessages(loadedMessages);
+      } catch {
+        // Error loading messages - silently fail and show empty state
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    }
 
-    void loadChatMessages();
+    // biome-ignore lint/nursery/noFloatingPromises: Fire-and-forget with internal error handling
+    loadChatMessages();
   }, [agentId, contextId]);
 
   return {
