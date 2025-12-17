@@ -66,7 +66,8 @@
         }
       },
       "correctness": {
-        "useImageSize": "off"
+        "useImageSize": "off",
+        "useJsonImportAttributes": "error" // this may slow down the linting process
       },
       "nursery": {
         "noReactForwardRef": "off",
@@ -78,11 +79,14 @@
             "functions": ["clsx", "cva", "tw", "twMerge", "cn", "twJoin", "tv"]
           }
         },
-        "noFloatingPromises": "error",
-        "noUnresolvedImports": "off",
-        "noImportCycles": "off",
         "noLeakedRender": "off",
-        "noIncrementDecrement": "off"
+        "noIncrementDecrement": "off",
+        "noDeprecatedImports": "error", // this may slow down the linting process
+        "noFloatingPromises": "error", // this may slow down the linting process
+        "noMisusedPromises": "error", // this may slow down the linting process
+        "noUnresolvedImports": "off", // this may slow down the linting process
+        "noImportCycles": "off", // this may slow down the linting process
+        "useExhaustiveSwitchCases": "error" // this may slow down the linting process
       },
       "style": {
         "noNestedTernary": "off",
