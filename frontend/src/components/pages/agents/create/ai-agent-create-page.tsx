@@ -274,6 +274,7 @@ export const AIAgentCreatePage = () => {
         }
 
         subagentsMap[subagent.name.trim()] = create(AIAgent_SubagentSchema, {
+          description: subagent.description?.trim() ?? '',
           systemPrompt: subagent.systemPrompt.trim(),
           mcpServers: subagentMcpMap,
         });

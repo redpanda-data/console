@@ -22,6 +22,7 @@ export const SubagentSchema = z.object({
     .regex(/^[A-Za-z0-9_-]+$/, {
       message: 'Name can only contain letters, numbers, hyphens, and underscores',
     }),
+  description: z.string().max(256, 'Description must be at most 256 characters').optional(),
   systemPrompt: z.string().min(10, 'System prompt must be at least 10 characters'),
   selectedMcpServers: z.array(z.string()).default([]),
 });

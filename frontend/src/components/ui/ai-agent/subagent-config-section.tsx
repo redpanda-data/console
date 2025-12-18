@@ -53,6 +53,7 @@ export const SubagentConfigSection = ({ control, availableMcpServers }: Subagent
     const newIndex = fields.length;
     append({
       name: '',
+      description: '',
       systemPrompt: '',
       selectedMcpServers: [],
     });
@@ -102,6 +103,30 @@ export const SubagentConfigSection = ({ control, availableMcpServers }: Subagent
                         <FormControl>
                           <Input placeholder="e.g., code-reviewer" {...nameField} />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Description */}
+                  <FormField
+                    control={control}
+                    name={`subagents.${index}.description`}
+                    render={({ field: descField }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Brief description of this subagent's purpose..."
+                            rows={2}
+                            {...descField}
+                          />
+                        </FormControl>
+                        <Text className="text-muted-foreground text-sm" variant="muted">
+                          Used by the parent agent to decide when to invoke this subagent. Also used for context
+                          management - the parent provides context when starting the subagent, which maintains its own
+                          context.
+                        </Text>
                         <FormMessage />
                       </FormItem>
                     )}

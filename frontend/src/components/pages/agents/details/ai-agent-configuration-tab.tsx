@@ -81,6 +81,7 @@ type LocalAIAgent = {
   tags: Array<{ key: string; value: string }>;
   subagents: Array<{
     name: string;
+    description: string;
     systemPrompt: string;
     selectedMcpServers: string[];
   }>;
@@ -332,6 +333,7 @@ export const AIAgentConfigurationTab = () => {
           .map(([key, value]) => ({ key, value })),
         subagents: Object.entries(aiAgentData.aiAgent.subagents || {}).map(([name, subagent]) => ({
           name,
+          description: subagent.description || '',
           systemPrompt: subagent.systemPrompt,
           selectedMcpServers: Object.values(subagent.mcpServers || {}).map((server) => server.id),
         })),
@@ -400,7 +402,7 @@ export const AIAgentConfigurationTab = () => {
     const newIndex = currentData.subagents.length;
     setEditedAgentData({
       ...currentData,
-      subagents: [...currentData.subagents, { name: '', systemPrompt: '', selectedMcpServers: [] }],
+      subagents: [...currentData.subagents, { name: '', description: '', systemPrompt: '', selectedMcpServers: [] }],
     });
     // Auto-expand the newly added subagent
     setExpandedSubagent(`subagent-${newIndex}`);
@@ -421,7 +423,7 @@ export const AIAgentConfigurationTab = () => {
 
   const handleUpdateSubagent = (
     index: number,
-    field: 'name' | 'systemPrompt' | 'selectedMcpServers',
+    field: 'name' | 'description' | 'systemPrompt' | 'selectedMcpServers',
     value: string | string[]
   ) => {
     const currentData = getCurrentData();
@@ -474,6 +476,7 @@ export const AIAgentConfigurationTab = () => {
           }
 
           subagentsMap[subagent.name.trim()] = create(AIAgent_SubagentSchema, {
+            description: subagent.description?.trim() ?? '',
             systemPrompt: subagent.systemPrompt.trim(),
             mcpServers: subagentMcpMap,
           });
@@ -760,6 +763,33 @@ export const AIAgentConfigurationTab = () => {
                                 <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
                                   <Text variant="default">{subagent.name}</Text>
                                 </div>
+                              )}
+                            </div>
+
+                            {/* Description */}
+                            <div className="space-y-2">
+                              <Label htmlFor={`subagent-desc-${index}`}>Description</Label>
+                              {isEditing ? (
+                                <>
+                                  <Textarea
+                                    id={`subagent-desc-${index}`}
+                                    onChange={(e) => handleUpdateSubagent(index, 'description', e.target.value)}
+                                    placeholder="Brief description of this subagent's purpose..."
+                                    rows={2}
+                                    value={subagent.description}
+                                  />
+                                  <Text className="text-muted-foreground text-sm" variant="muted">
+                                    Used by the parent agent to decide when to invoke this subagent. Also used for context
+                                    management - the parent provides context when starting the subagent, which maintains its
+                                    own context.
+                                  </Text>
+                                </>
+                              ) : subagent.description ? (
+                                <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                  <Text variant="default">{subagent.description}</Text>
+                                </div>
+                              ) : (
+                                <Text variant="muted">No description</Text>
                               )}
                             </div>
 
