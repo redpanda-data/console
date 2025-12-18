@@ -914,7 +914,7 @@ export const AIAgentConfigurationTab = () => {
           </Card>
 
           {/* Service Account - Always visible */}
-          {Boolean(agent.tags.service_account_id) && (
+          {Boolean(agent.tags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID]) && (
             <Card className="px-0 py-0" size="full">
               <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
                 <CardTitle className="flex items-center gap-2">
@@ -927,7 +927,7 @@ export const AIAgentConfigurationTab = () => {
                 </Text>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <ServiceAccountSection serviceAccountId={agent.tags.service_account_id} />
+                <ServiceAccountSection serviceAccountId={agent.tags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID]} />
               </CardContent>
             </Card>
           )}
