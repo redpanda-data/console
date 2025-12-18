@@ -520,6 +520,7 @@ export const AIAgentCreatePage = () => {
                         <FormControl>
                           {availableMcpServers.length > 0 ? (
                             <MCPServerCardList
+                              idPrefix="root"
                               onValueChange={field.onChange}
                               servers={availableMcpServers}
                               value={field.value || []}

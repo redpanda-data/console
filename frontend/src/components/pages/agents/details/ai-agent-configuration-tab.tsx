@@ -248,6 +248,7 @@ const MCPServersSection = ({
             </MCPEmpty>
           ) : (
             <MCPServerCardList
+              idPrefix="root"
               onValueChange={isEditing ? onServerSelectionChange : undefined}
               servers={serversToDisplay}
               showCheckbox={isEditing}
@@ -815,6 +816,7 @@ export const AIAgentConfigurationTab = () => {
                               {isEditing ? (
                                 availableMcpServers.length > 0 ? (
                                   <MCPServerCardList
+                                    idPrefix={`subagent-${index}`}
                                     onValueChange={(newServers) =>
                                       handleUpdateSubagent(index, 'selectedMcpServers', newServers)
                                     }

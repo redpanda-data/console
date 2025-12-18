@@ -164,6 +164,7 @@ export const SubagentConfigSection = ({ control, availableMcpServers }: Subagent
                         <FormControl>
                           {availableMcpServers.length > 0 ? (
                             <MCPServerCardList
+                              idPrefix={`subagent-${index}`}
                               onValueChange={mcpField.onChange}
                               servers={availableMcpServers}
                               value={mcpField.value || []}
