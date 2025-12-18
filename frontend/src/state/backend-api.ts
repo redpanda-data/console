@@ -284,7 +284,7 @@ const cache = new LazyMap<string, CacheEntry>((u) => new CacheEntry(u));
 class CacheEntry {
   url: string;
 
-  private timeSinceLastResult = new TimeSince(); // set automatically
+  private readonly timeSinceLastResult = new TimeSince(); // set automatically
   /** How long ago (in seconds) the data was last updated */
   get resultAge() {
     return this.timeSinceLastResult.value / 1000;
@@ -326,7 +326,7 @@ class CacheEntry {
   lastResult: unknown | undefined; // set automatically
   isPending: boolean; // set automatically
 
-  private timeSinceRequestStarted = new TimeSince(); // set automatically
+  private readonly timeSinceRequestStarted = new TimeSince(); // set automatically
   private lastRequestDurationMs: number; // set automatically
   /** How long (in seconds) the last request took (or is currently taking so far) */
   get requestTime() {

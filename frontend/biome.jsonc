@@ -77,7 +77,6 @@
         "useExhaustiveSwitchCases": "error" // this may slow down the linting process
       },
       "style": {
-        "useReadonlyClassProperties": "off",
         "noDefaultExport": "off",
         "useConsistentTypeDefinitions": {
           "level": "error",

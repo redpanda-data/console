@@ -134,7 +134,7 @@ function sanitizeValue(value: unknown, type: string) {
 }
 
 export class ConnectClusterStore {
-  private clusterName: string;
+  private readonly clusterName: string;
   isInitialized = false;
   private connectors: Map<string, ConnectorPropertiesStore>;
   features: ConnectorClusterFeatures = { secretStore: false };
@@ -479,7 +479,7 @@ export class ConnectorPropertiesStore {
   clusterName: string;
   pluginClassName: string;
   connectorType: 'sink' | 'source';
-  private appliedConfig: Record<string, unknown> | undefined;
+  private readonly appliedConfig: Record<string, unknown> | undefined;
 
   // biome-ignore lint/nursery/useMaxParams: Legacy MobX class with multiple constructor parameters
   constructor(
