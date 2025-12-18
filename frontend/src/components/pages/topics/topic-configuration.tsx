@@ -289,7 +289,9 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
       {$state.editedEntry !== null && (
         <ConfigEditorForm
           editedEntry={$state.editedEntry}
-          onClose={() => ($state.editedEntry = null)}
+          onClose={() => {
+            $state.editedEntry = null;
+          }}
           onSuccess={() => {
             props.onForceRefresh();
           }}
@@ -301,7 +303,9 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
           icon="filter"
           placeholderText="Filter"
           searchText={$state.filter || ''}
-          setSearchText={(value) => ($state.filter = value)}
+          setSearchText={(value) => {
+            $state.filter = value;
+          }}
         />
         {categories.map((x) => (
           <ConfigGroup

@@ -170,8 +170,12 @@ export class DebugTimerStore {
 
 let refreshCounter = 0; // used to always create a different value, forcing some components to always re-render
 const REFRESH_COUNTER_MAX = 1000;
-export const alwaysChanging = () => (refreshCounter = (refreshCounter + 1) % REFRESH_COUNTER_MAX);
+export const alwaysChanging = () => {
+  refreshCounter = (refreshCounter + 1) % REFRESH_COUNTER_MAX;
+  return refreshCounter;
+};
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 export function assignDeep(target: Record<string, unknown>, source: Record<string, unknown>) {
   for (const key in source) {
     if (!Object.hasOwn(source, key)) {
@@ -251,6 +255,7 @@ export function collectElements(
   return ctx.results;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 function collectElementsRecursive(ctx: PropertySearchExContext, obj: Record<string, unknown>): PropertySearchResult {
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
@@ -415,6 +420,7 @@ type GetAllKeysContext = {
   results: Property[];
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown>): PropertySearchResult {
   const isArray = Array.isArray(obj);
   let result = 'continue' as PropertySearchResult;

@@ -43,6 +43,7 @@ const PermissionBadge = ({ isAllow, children, testId }: PermissionBadgeProps) =>
   );
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const OperationsBadge = ({ rule, showResourceDescription = true }: OperationsBadgesProps) => {
   const enabledOperations = Object.entries(rule.operations).map(([op, value]: [string, OperationType]) => ({
     name: formatLabel(op),

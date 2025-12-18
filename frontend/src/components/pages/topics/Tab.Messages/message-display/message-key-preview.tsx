@@ -66,6 +66,7 @@ export const MessageKeyPreview = observer(
     msg: TopicMessage;
     previewFields: () => PreviewTagV2[];
     previewDisplayMode?: 'single' | 'wrap' | 'rows';
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   }) => {
     const key = msg.key;
 

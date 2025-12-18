@@ -184,7 +184,9 @@ class GroupList extends PageComponent {
     <SearchField
       placeholderText="Enter search term/regex"
       searchText={uiSettings.consumerGroupList.quickSearch}
-      setSearchText={(x) => (uiSettings.consumerGroupList.quickSearch = x)}
+      setSearchText={(x) => {
+        uiSettings.consumerGroupList.quickSearch = x;
+      }}
       width="350px"
     />
   ));

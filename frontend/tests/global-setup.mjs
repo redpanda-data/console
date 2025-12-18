@@ -398,6 +398,7 @@ async function buildBackendImage(isEnterprise) {
   }
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: (21) nested test environment setup with multiple configuration checks
 async function startBackendServer(network, isEnterprise, imageTag, state) {
   console.log('Starting backend server container...');
   console.log(`Image tag: ${imageTag}`);

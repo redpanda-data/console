@@ -80,6 +80,7 @@ export type KnowledgeBaseEditTabsRef = {
   handleSave: () => Promise<void>;
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 function initializeFormData(kb: KnowledgeBase): KnowledgeBaseUpdateForm {
   if (!kb) {
     return create(KnowledgeBaseUpdateSchema, {

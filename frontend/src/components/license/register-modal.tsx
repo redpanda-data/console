@@ -82,6 +82,7 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
     },
   });
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
     setIsSubmitting(true);
     setFieldErrors({}); // Clear previous field errors

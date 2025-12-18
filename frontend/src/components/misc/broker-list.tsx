@@ -56,7 +56,7 @@ export class BrokerList extends Component<BrokerListProps> {
     }
 
     const brokers = brokerMap.get();
-
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 20 - nested conditionals for broker tag styling and tooltip content
     const tags = sortedIds.map((id) => {
       const broker = brokers?.get(id);
 

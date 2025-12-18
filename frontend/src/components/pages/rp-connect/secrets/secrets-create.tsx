@@ -124,7 +124,9 @@ class RpConnectSecretCreate extends PageComponent {
                 isRequired
                 max={255}
                 min={1}
-                onChange={(x) => (this.id = x.target.value)}
+                onChange={(x) => {
+                  this.id = x.target.value;
+                }}
                 pattern="^[A-Z][A-Z0-9_]*$"
                 placeholder="Enter a secret name..."
                 value={this.id}
@@ -139,7 +141,9 @@ class RpConnectSecretCreate extends PageComponent {
                 data-testid="secretValue"
                 isDisabled={this.isCreating}
                 isRequired
-                onChange={(x) => (this.secret = x.target.value)}
+                onChange={(x) => {
+                  this.secret = x.target.value;
+                }}
                 placeholder="Enter a secret value..."
                 type="password"
                 value={this.secret}

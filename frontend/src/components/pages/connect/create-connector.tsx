@@ -159,7 +159,9 @@ const ConnectorType = observer(
                     icon="filter"
                     placeholderText="Search"
                     searchText={state.textFilter}
-                    setSearchText={(x) => (state.textFilter = x)}
+                    setSearchText={(x) => {
+                      state.textFilter = x;
+                    }}
                   />
                 </Box>
               </Box>

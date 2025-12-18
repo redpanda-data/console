@@ -92,6 +92,7 @@ export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async 
  * If such an error is detected, it redirects the user to the `/trial-expired` page.
  *
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
   try {
     return await next(request);

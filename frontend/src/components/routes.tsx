@@ -334,6 +334,7 @@ function routeVisibility(
   requiredPermissions?: UserPermissions[],
   requiredAppFeatures?: AppFeature[]
 ): () => MenuItemState {
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: route configuration with conditional rendering and permissions
   return () => {
     let v = typeof visible === 'boolean' ? visible : visible();
 

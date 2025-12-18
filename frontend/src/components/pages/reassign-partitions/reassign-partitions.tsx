@@ -489,6 +489,7 @@ class ReassignPartitions extends PageComponent {
   }
 
   // will be wrapped in a 'transaction' since we're modifying multiple observables
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   onNextPage() {
     if (this.currentStep === 0) {
       // Select -> Assign
@@ -637,6 +638,7 @@ class ReassignPartitions extends PageComponent {
     }
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   async setTrafficLimit(request: PartitionReassignmentRequest): Promise<boolean> {
     const maxBytesPerSecond = Math.round(uiSettings.reassignment.maxReplicationTraffic ?? 0);
 

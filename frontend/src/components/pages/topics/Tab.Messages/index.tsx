@@ -482,6 +482,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   );
 
   // Convert executeMessageSearch to useCallback
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const executeMessageSearch = useCallback(async (): Promise<TopicMessage[]> => {
     const canUseFilters =
       (api.topicPermissions.get(props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();

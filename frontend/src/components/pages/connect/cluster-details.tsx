@@ -103,7 +103,9 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                 onFilteredDataChanged={(data) => {
                   this.filteredResults = data;
                 }}
-                onQueryChanged={(filterText) => (uiSettings.connectorsList.quickSearch = filterText)}
+                onQueryChanged={(filterText) => {
+                  uiSettings.connectorsList.quickSearch = filterText;
+                }}
                 placeholderText="Enter search term/regex"
               />
             </Box>

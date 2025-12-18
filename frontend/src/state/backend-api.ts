@@ -284,7 +284,7 @@ const cache = new LazyMap<string, CacheEntry>((u) => new CacheEntry(u));
 class CacheEntry {
   url: string;
 
-  private timeSinceLastResult = new TimeSince(); // set automatically
+  private readonly timeSinceLastResult = new TimeSince(); // set automatically
   /** How long ago (in seconds) the data was last updated */
   get resultAge() {
     return this.timeSinceLastResult.value / 1000;
@@ -326,7 +326,7 @@ class CacheEntry {
   lastResult: unknown | undefined; // set automatically
   isPending: boolean; // set automatically
 
-  private timeSinceRequestStarted = new TimeSince(); // set automatically
+  private readonly timeSinceRequestStarted = new TimeSince(); // set automatically
   private lastRequestDurationMs: number; // set automatically
   /** How long (in seconds) the last request took (or is currently taking so far) */
   get requestTime() {
@@ -957,10 +957,9 @@ const apiStore = {
   },
 
   refreshQuotas(force?: boolean) {
-    cachedApiRequest<QuotaResponse | null>(`${appConfig.restBasePath}/quotas`, force).then(
-      (v) => (this.Quotas = v ?? null),
-      addError
-    );
+    cachedApiRequest<QuotaResponse | null>(`${appConfig.restBasePath}/quotas`, force).then((v) => {
+      this.Quotas = v ?? null;
+    }, addError);
   },
 
   async refreshSupportedEndpoints(): Promise<EndpointCompatibilityResponse | null> {
@@ -1064,6 +1063,7 @@ const apiStore = {
   refreshCluster(force?: boolean) {
     cachedApiRequest<ClusterInfoResponse>(`${appConfig.restBasePath}/cluster`, force).then((v) => {
       if (v?.clusterInfo !== null && v?.clusterInfo !== undefined) {
+        // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
         transaction(() => {
           // add 'type' to each synonym entry
           for (const broker of v.clusterInfo.brokers) {
@@ -1198,6 +1198,7 @@ const apiStore = {
   },
 
   refreshAdminInfo(force?: boolean) {
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
     cachedApiRequest<AdminInfo | null>(`${appConfig.restBasePath}/admin`, force).then((info) => {
       if (info === null) {
         this.adminInfo = null;
@@ -2233,6 +2234,7 @@ export const rolesApi = observable({
   roleMembers: new Map<string, RolePrincipal[]>(), // RoleName -> Principals
   rolesError: null as ConnectError | null,
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   async refreshRoles(): Promise<void> {
     this.rolesError = null;
     const client = appConfig.securityClient;
@@ -2764,7 +2766,8 @@ export function createMessageSearch() {
       this.messages.length = 0;
       this.elapsedMs = null;
 
-      const messageSearchAbortController = (this.abortController = new AbortController());
+      const messageSearchAbortController = new AbortController();
+      this.abortController = messageSearchAbortController;
 
       // do it
       const req = create(ListMessagesRequestSchema);

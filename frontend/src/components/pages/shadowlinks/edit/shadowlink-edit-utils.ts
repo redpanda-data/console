@@ -122,6 +122,7 @@ export const buildTLSSettings = (
 export const getUpdateValuesForConnection = (
   values: FormValues,
   originalValues: FormValues
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 ): UpdateResult<ReturnType<typeof create<typeof ShadowLinkClientOptionsSchema>>> => {
   const fieldMaskPaths: string[] = [];
 

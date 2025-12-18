@@ -24,6 +24,7 @@ import { numberToThousandsString } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../../utils/utils';
 
 // todo: rename QuickInfo
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
   const topic = p.topic;
 

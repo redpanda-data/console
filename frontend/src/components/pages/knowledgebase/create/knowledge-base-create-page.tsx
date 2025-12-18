@@ -160,6 +160,7 @@ export const KnowledgeBaseCreatePage = () => {
     }
   }, [availableSecrets, form]);
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const buildKnowledgeBaseCreate = (values: KnowledgeBaseCreateFormValues) => {
     // Convert tags array to object format
     const tagsMap: Record<string, string> = {};

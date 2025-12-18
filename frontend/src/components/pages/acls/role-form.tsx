@@ -178,7 +178,9 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                   data-testid="create-role__role-name"
                   isDisabled={editMode}
                   isRequired
-                  onChange={(v) => (formState.roleName = v.target.value)}
+                  onChange={(v) => {
+                    formState.roleName = v.target.value;
+                  }}
                   pattern="^[^,=]+$"
                   title="Please avoid using commas or equal signs."
                   value={formState.roleName}
@@ -221,7 +223,13 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             description="The host the user needs to connect from in order for the permissions to apply."
             label="Host"
           >
-            <Input onChange={(v) => (formState.host = v.target.value)} value={formState.host} width={600} />
+            <Input
+              onChange={(v) => {
+                formState.host = v.target.value;
+              }}
+              value={formState.host}
+              width={600}
+            />
           </FormField>
 
           <Flex data-testid="create-role-topics-section" flexDirection="column" gap={4}>

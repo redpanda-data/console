@@ -52,6 +52,7 @@ export type JsonSchemaType = {
  * @param parentSchema Optional parent schema to check required array
  * @returns A default value matching the schema type
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 export function generateDefaultFromJsonSchema(
   schema: JsonSchemaType,
   propertyName?: string,

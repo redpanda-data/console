@@ -63,6 +63,7 @@ export const EmbeddingGeneratorSection = ({ knowledgeBase, isEditMode }: Embeddi
   const embeddingGen = knowledgeBase.embeddingGenerator;
 
   // Ensure embedding provider is always properly initialized when entering edit mode
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   useEffect(() => {
     if (isEditMode && formData.embeddingGenerator) {
       const hasProvider = formData.embeddingGenerator.provider?.provider.case;
@@ -141,6 +142,7 @@ export const EmbeddingGeneratorSection = ({ knowledgeBase, isEditMode }: Embeddi
               <Controller
                 control={control}
                 name="embeddingGenerator.provider"
+                // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
                 render={({ field, fieldState }) => {
                   const currentProvider = field.value?.provider.case;
                   let currentApiKey = '';

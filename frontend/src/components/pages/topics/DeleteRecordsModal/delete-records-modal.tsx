@@ -461,6 +461,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     return offsetOption === null;
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const onOk = () => {
     if (!topic) {
       return;

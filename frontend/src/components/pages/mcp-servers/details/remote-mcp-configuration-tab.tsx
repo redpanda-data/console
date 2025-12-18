@@ -167,6 +167,7 @@ export const RemoteMCPConfigurationTab = () => {
     });
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const handleSave = async () => {
     if (!(mcpServerData?.mcpServer && id)) {
       return;
@@ -295,6 +296,7 @@ export const RemoteMCPConfigurationTab = () => {
     }
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const handleUpdateTool = (toolId: string, updates: Partial<LocalTool>) => {
     const currentData = getCurrentData();
     if (!currentData) {
@@ -378,6 +380,7 @@ export const RemoteMCPConfigurationTab = () => {
     }));
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const handleLintAllTools = async (): Promise<boolean> => {
     const currentData = getCurrentData();
     if (!currentData) {

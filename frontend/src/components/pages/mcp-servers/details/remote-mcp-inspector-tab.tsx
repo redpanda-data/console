@@ -38,6 +38,7 @@ import { toast } from 'sonner';
 
 import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 const generateDefaultValue = (fieldSchema: JSONSchemaType): JSONValue => {
   if ('default' in fieldSchema && fieldSchema.default !== undefined) {
     return fieldSchema.default;
@@ -139,6 +140,7 @@ const getComponentTypeFromToolName = (toolName: string): MCPServer_Tool_Componen
 const DEFAULT_TOPIC_PARTITION_COUNT = 1;
 const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const RemoteMCPInspectorTab = () => {
   const { id } = useParams<{ id: string }>();
   const [selectedTool, setSelectedTool] = useState<string>('');
@@ -191,6 +193,7 @@ export const RemoteMCPInspectorTab = () => {
   );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Remote MCP Inspector Tab useEffect dependencies
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   useEffect(() => {
     if (
       selectedTool &&
@@ -359,6 +362,7 @@ export const RemoteMCPInspectorTab = () => {
     return { isValid: Object.keys(errors).length === 0, errors };
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const getToolResponseData = () => {
     if (!serverToolResponse) {
       return null;

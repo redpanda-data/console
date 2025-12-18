@@ -1,0 +1,47 @@
+name: "Frontend Review"
+on:
+  pull_request:
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-review.yml"
+env:
+  CI: true
+jobs:
+  biome:
+    name: runner / Biome
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            frontend/node_modules
+          key: ${{ runner.os }}-bun-frontend-${{ hashFiles('frontend/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-frontend-
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Get Biome version
+        id: biome-version
+        run: echo "version=$(jq -r '.devDependencies["@biomejs/biome"]' package.json)" >> $GITHUB_OUTPUT
+      - name: Setup Biome
+        uses: biomejs/setup-biome@v2
+        with:
+          version: ${{ steps.biome-version.outputs.version }}
+      - name: Setup Reviewdog Biome action
+        uses: mongolyy/reviewdog-action-biome@v1
+        with:
+          github_token: ${{ secrets.github_token }}
+          workdir: frontend
+          reporter: github-pr-review

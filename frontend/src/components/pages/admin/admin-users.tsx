@@ -105,7 +105,9 @@ export class AdminUsers extends Component<Record<string, never>> {
           <SearchField
             placeholderText="Enter search term/regex"
             searchText={this.quickSearch}
-            setSearchText={(x) => (this.quickSearch = x)}
+            setSearchText={(x) => {
+              this.quickSearch = x;
+            }}
             width="300px"
           />
         </div>

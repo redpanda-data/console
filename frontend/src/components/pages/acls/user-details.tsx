@@ -89,11 +89,23 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
       <PageContent>
         <div className="flex flex-col gap-4">
           <UserInformationCard
-            onEditPassword={api.isAdminApiConfigured ? () => (this.isChangePasswordModalOpen = true) : undefined}
+            onEditPassword={
+              api.isAdminApiConfigured
+                ? () => {
+                    this.isChangePasswordModalOpen = true;
+                  }
+                : undefined
+            }
             username={userName}
           />
           <UserPermissionDetailsContent
-            onChangeRoles={Features.rolesApi ? () => (this.isChangeRolesModalOpen = true) : undefined}
+            onChangeRoles={
+              Features.rolesApi
+                ? () => {
+                    this.isChangeRolesModalOpen = true;
+                  }
+                : undefined
+            }
             userName={userName}
           />
           <div>
@@ -130,7 +142,9 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
           {Boolean(api.isAdminApiConfigured) && (
             <ChangePasswordModal
               isOpen={this.isChangePasswordModalOpen}
-              setIsOpen={(value: boolean) => (this.isChangePasswordModalOpen = value)}
+              setIsOpen={(value: boolean) => {
+                this.isChangePasswordModalOpen = value;
+              }}
               userName={userName}
             />
           )}
@@ -138,7 +152,9 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
           {Boolean(Features.rolesApi) && (
             <ChangeRolesModal
               isOpen={this.isChangeRolesModalOpen}
-              setIsOpen={(value: boolean) => (this.isChangeRolesModalOpen = value)}
+              setIsOpen={(value: boolean) => {
+                this.isChangeRolesModalOpen = value;
+              }}
               userName={userName}
             />
           )}

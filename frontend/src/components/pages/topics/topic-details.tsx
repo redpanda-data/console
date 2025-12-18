@@ -48,10 +48,10 @@ export type TopicTabId = (typeof TopicTabIds)[number];
 class TopicTab {
   readonly topicGetter: () => Topic | undefined | null;
   id: TopicTabId;
-  private requiredPermission: TopicAction;
+  private readonly requiredPermission: TopicAction;
   titleText: React.ReactNode;
-  private contentFunc: (topic: Topic) => React.ReactNode;
-  private disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[];
+  private readonly contentFunc: (topic: Topic) => React.ReactNode;
+  private readonly disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[];
 
   // biome-ignore lint/nursery/useMaxParams: Legacy class with many constructor parameters
   constructor(
@@ -387,11 +387,9 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             >
               Produce Record
             </Button>
-            {DeleteRecordsMenuItem(
-              topic.cleanupPolicy === 'compact',
-              topic.allowedActions,
-              () => (this.deleteRecordsModalAlive = true)
-            )}
+            {DeleteRecordsMenuItem(topic.cleanupPolicy === 'compact', topic.allowedActions, () => {
+              this.deleteRecordsModalAlive = true;
+            })}
           </Flex>
 
           {/* Tabs:  Messages, Configuration */}
@@ -412,8 +410,12 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         </PageContent>
         {Boolean(this.deleteRecordsModalAlive) && (
           <DeleteRecordsModal
-            afterClose={() => (this.deleteRecordsModalAlive = false)}
-            onCancel={() => (this.deleteRecordsModalAlive = false)}
+            afterClose={() => {
+              this.deleteRecordsModalAlive = false;
+            }}
+            onCancel={() => {
+              this.deleteRecordsModalAlive = false;
+            }}
             onFinish={() => {
               this.deleteRecordsModalAlive = false;
               this.refreshData(true);

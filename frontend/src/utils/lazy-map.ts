@@ -10,7 +10,7 @@
  */
 
 export class LazyMap<K, V> extends Map<K, V> {
-  private defaultCreate: (key: K) => V;
+  private readonly defaultCreate: (key: K) => V;
 
   constructor(defaultCreate: (key: K) => V) {
     super();

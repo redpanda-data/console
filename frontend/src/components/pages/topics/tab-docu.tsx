@@ -62,7 +62,7 @@ function sanitizeUrl(uri: string): string {
 
 @observer
 export class TopicDocumentation extends Component<{ topic: Topic }> {
-  private components = {
+  private readonly components = {
     // biome-ignore lint/suspicious/noExplicitAny: react-markdown component props are complex and dynamic
     code({ inline, className, children, ...props }: any) {
       const match = CODE_LANGUAGE_REGEX.exec(className || '');

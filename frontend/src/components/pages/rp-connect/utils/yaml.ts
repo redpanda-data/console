@@ -311,6 +311,7 @@ type YAMLNode = { items?: unknown[]; comment?: string; commentBefore?: string };
 type YAMLKey = { value?: string; comment?: string };
 type YAMLPair = { key?: YAMLKey; value?: YAMLNode };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 function addCommentsRecursive(node: YAMLNode, spec: RawFieldSpec): void {
   if (!node.items) {
     return;

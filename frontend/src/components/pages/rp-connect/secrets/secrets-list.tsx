@@ -113,7 +113,9 @@ class RpConnectSecretsList extends PageComponent {
               <SearchField
                 placeholderText="Enter search term / regex..."
                 searchText={uiSettings.rpcnSecretList.quickSearch}
-                setSearchText={(x) => (uiSettings.rpcnSecretList.quickSearch = x)}
+                setSearchText={(x) => {
+                  uiSettings.rpcnSecretList.quickSearch = x;
+                }}
                 width="350px"
               />
             </Flex>

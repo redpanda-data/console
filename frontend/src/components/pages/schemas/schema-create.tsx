@@ -430,7 +430,9 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
               <SingleSelect
                 data-testid="schema-create-topic-select"
                 isDisabled={isAddVersion}
-                onChange={(e) => (state.userInput = e)}
+                onChange={(e) => {
+                  state.userInput = e;
+                }}
                 options={
                   api.topics?.filter((x) => !x.topicName.startsWith('_')).map((x) => ({ value: x.topicName })) ?? []
                 }
@@ -449,7 +451,9 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
               <RadioGroup
                 isDisabled={isAddVersion}
                 name="keyOrValue"
-                onChange={(e) => (state.keyOrValue = e)}
+                onChange={(e) => {
+                  state.keyOrValue = e;
+                }}
                 options={[
                   { value: 'KEY', label: 'Key' },
                   { value: 'VALUE', label: 'Value' },
@@ -467,7 +471,9 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
             <Input
               data-testid="schema-create-subject-name-input"
               isDisabled={!isCustom || isAddVersion}
-              onChange={(e) => (state.userInput = e.target.value)}
+              onChange={(e) => {
+                state.userInput = e.target.value;
+              }}
               value={state.computedSubjectName}
             />
           </FormField>
@@ -505,7 +511,9 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
           <KowlEditor
             height="400px"
             language={state.format === 'PROTOBUF' ? 'proto' : 'json'}
-            onChange={(e) => (state.schemaText = e ?? '')}
+            onChange={(e) => {
+              state.schemaText = e ?? '';
+            }}
             value={state.schemaText}
           />
         </div>
@@ -553,7 +561,9 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
       <FormField label="Schema reference">
         <Input
           data-testid={`schema-create-reference-name-input-${index}`}
-          onChange={(e) => (ref.name = e.target.value)}
+          onChange={(e) => {
+            ref.name = e.target.value;
+          }}
           value={ref.name}
         />
       </FormField>
@@ -587,7 +597,9 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
       <FormField label="Version">
         <SingleSelect<number>
           data-testid={`schema-create-reference-version-select-${index}`}
-          onChange={(e) => (ref.version = e)}
+          onChange={(e) => {
+            ref.version = e;
+          }}
           options={
             api.schemaDetails
               .get(ref.subject)
@@ -667,6 +679,7 @@ function createSchemaState() {
       return subjectName;
     },
 
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
     computeRecordName() {
       if (this.format === 'AVRO' || this.format === 'JSON') {
         // Avro
