@@ -12,6 +12,12 @@
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import { CLOUD_MANAGED_TAG_KEYS, isCloudManagedTagKey } from 'components/constants';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from 'components/redpanda-ui/components/accordion';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
@@ -45,6 +51,7 @@ import {
   AIAgent_Provider_OpenAICompatibleSchema,
   AIAgent_Provider_OpenAISchema,
   AIAgent_ProviderSchema,
+  AIAgent_SubagentSchema,
   AIAgentUpdateSchema,
   UpdateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
@@ -72,6 +79,11 @@ type LocalAIAgent = {
   };
   selectedMcpServers: string[];
   tags: Array<{ key: string; value: string }>;
+  subagents: Array<{
+    name: string;
+    systemPrompt: string;
+    selectedMcpServers: string[];
+  }>;
 };
 
 /**
@@ -257,6 +269,7 @@ export const AIAgentConfigurationTab = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedAgentData, setEditedAgentData] = useState<LocalAIAgent | null>(null);
+  const [expandedSubagent, setExpandedSubagent] = useState<string | undefined>(undefined);
 
   // Get available MCP servers
   const availableMcpServers = useMemo(() => {
@@ -317,6 +330,11 @@ export const AIAgentConfigurationTab = () => {
         tags: Object.entries(aiAgentData.aiAgent.tags)
           .filter(([key]) => !isCloudManagedTagKey(key))
           .map(([key, value]) => ({ key, value })),
+        subagents: Object.entries(aiAgentData.aiAgent.subagents || {}).map(([name, subagent]) => ({
+          name,
+          systemPrompt: subagent.systemPrompt,
+          selectedMcpServers: Object.values(subagent.mcpServers || {}).map((server) => server.id),
+        })),
       };
     }
 
@@ -373,7 +391,52 @@ export const AIAgentConfigurationTab = () => {
     });
   };
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
+  const handleAddSubagent = () => {
+    const currentData = getCurrentData();
+    if (!currentData) {
+      return;
+    }
+
+    const newIndex = currentData.subagents.length;
+    setEditedAgentData({
+      ...currentData,
+      subagents: [...currentData.subagents, { name: '', systemPrompt: '', selectedMcpServers: [] }],
+    });
+    // Auto-expand the newly added subagent
+    setExpandedSubagent(`subagent-${newIndex}`);
+  };
+
+  const handleRemoveSubagent = (index: number) => {
+    const currentData = getCurrentData();
+    if (!currentData) {
+      return;
+    }
+
+    const updatedSubagents = currentData.subagents.filter((_, i) => i !== index);
+    setEditedAgentData({
+      ...currentData,
+      subagents: updatedSubagents,
+    });
+  };
+
+  const handleUpdateSubagent = (
+    index: number,
+    field: 'name' | 'systemPrompt' | 'selectedMcpServers',
+    value: string | string[]
+  ) => {
+    const currentData = getCurrentData();
+    if (!currentData) {
+      return;
+    }
+
+    const updatedSubagents = [...currentData.subagents];
+    updatedSubagents[index] = { ...updatedSubagents[index], [field]: value };
+    setEditedAgentData({
+      ...currentData,
+      subagents: updatedSubagents,
+    });
+  };
+
   const handleSave = async () => {
     if (!(aiAgentData?.aiAgent && id)) {
       return;
@@ -401,6 +464,22 @@ export const AIAgentConfigurationTab = () => {
         mcpServersMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
       }
 
+      // Build subagents map
+      const subagentsMap: Record<string, ReturnType<typeof create<typeof AIAgent_SubagentSchema>>> = {};
+      for (const subagent of currentData.subagents) {
+        if (subagent.name.trim()) {
+          const subagentMcpMap: Record<string, { id: string }> = {};
+          for (const serverId of subagent.selectedMcpServers) {
+            subagentMcpMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
+          }
+
+          subagentsMap[subagent.name.trim()] = create(AIAgent_SubagentSchema, {
+            systemPrompt: subagent.systemPrompt.trim(),
+            mcpServers: subagentMcpMap,
+          });
+        }
+      }
+
       const tagsMap = buildTagsMap(aiAgentData.aiAgent.tags, currentData.tags);
       const apiKeyRef = `\${secrets.${currentData.apiKeySecret}}`;
       const updatedProvider = createUpdatedProvider(currentData.provider.provider.case, apiKeyRef, currentData.baseUrl);
@@ -421,6 +500,7 @@ export const AIAgentConfigurationTab = () => {
               memoryShares: selectedTier?.memory || '400M',
             },
             mcpServers: mcpServersMap,
+            subagents: subagentsMap,
             tags: tagsMap,
           }),
           updateMask: create(FieldMaskSchema, {
@@ -434,6 +514,7 @@ export const AIAgentConfigurationTab = () => {
               'service_account',
               'resources',
               'mcp_servers',
+              'subagents',
               'tags',
             ],
           }),
@@ -639,6 +720,122 @@ export const AIAgentConfigurationTab = () => {
             onServerSelectionChange={(newServers) => updateField({ selectedMcpServers: newServers })}
             selectedMcpServers={displayData.selectedMcpServers}
           />
+
+          {/* Subagents */}
+          <Card className="px-0 py-0" size="full">
+            <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                <Text className="font-semibold">Subagents (Optional)</Text>
+              </CardTitle>
+              <Text variant="muted">
+                Specialized subagents that inherit the provider and model from the parent agent. Each subagent has its
+                own system prompt and can access a subset of MCP servers.
+              </Text>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <div className="space-y-4">
+                {displayData.subagents.length === 0 ? (
+                  <Text variant="muted">No subagents configured</Text>
+                ) : (
+                  <Accordion collapsible onValueChange={setExpandedSubagent} type="single" value={expandedSubagent}>
+                    {displayData.subagents.map((subagent, index) => (
+                      <AccordionItem key={`subagent-${index}`} value={`subagent-${index}`}>
+                        <AccordionTrigger>
+                          <Text className="font-medium">{subagent.name || `Subagent ${index + 1}`}</Text>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-4 pt-4">
+                            {/* Name */}
+                            <div className="space-y-2">
+                              <Label htmlFor={`subagent-name-${index}`}>Subagent Name</Label>
+                              {isEditing ? (
+                                <Input
+                                  id={`subagent-name-${index}`}
+                                  onChange={(e) => handleUpdateSubagent(index, 'name', e.target.value)}
+                                  placeholder="e.g., code-reviewer"
+                                  value={subagent.name}
+                                />
+                              ) : (
+                                <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                  <Text variant="default">{subagent.name}</Text>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* System Prompt */}
+                            <div className="space-y-2">
+                              <Label htmlFor={`subagent-prompt-${index}`}>System Prompt</Label>
+                              {isEditing ? (
+                                <Textarea
+                                  id={`subagent-prompt-${index}`}
+                                  onChange={(e) => handleUpdateSubagent(index, 'systemPrompt', e.target.value)}
+                                  placeholder="Define the specialized behavior for this subagent..."
+                                  rows={6}
+                                  value={subagent.systemPrompt}
+                                />
+                              ) : (
+                                <DynamicCodeBlock code={subagent.systemPrompt} lang="text" />
+                              )}
+                            </div>
+
+                            {/* MCP Servers */}
+                            <div className="space-y-2">
+                              <Label>MCP Servers</Label>
+                              {isEditing ? (
+                                availableMcpServers.length > 0 ? (
+                                  <MCPServerCardList
+                                    onValueChange={(newServers) =>
+                                      handleUpdateSubagent(index, 'selectedMcpServers', newServers)
+                                    }
+                                    servers={availableMcpServers}
+                                    value={subagent.selectedMcpServers}
+                                  />
+                                ) : (
+                                  <Text variant="muted">No MCP servers available</Text>
+                                )
+                              ) : subagent.selectedMcpServers.length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                  {subagent.selectedMcpServers.map((serverId) => (
+                                    <span
+                                      className="inline-flex items-center rounded-md bg-secondary/5 px-2 py-1 text-xs"
+                                      key={serverId}
+                                    >
+                                      {serverId}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <Text variant="muted">No MCP servers selected</Text>
+                              )}
+                            </div>
+
+                            {/* Delete button */}
+                            {isEditing && (
+                              <div className="flex justify-end pt-2">
+                                <Button onClick={() => handleRemoveSubagent(index)} size="sm" variant="destructive">
+                                  <Trash2 className="h-4 w-4" />
+                                  Remove Subagent
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                )}
+
+                {/* Add subagent button */}
+                {isEditing && (
+                  <Button className="w-full" onClick={handleAddSubagent} type="button" variant="dashed">
+                    <Plus className="h-4 w-4" />
+                    Add Subagent
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Service Account - Always visible */}
           {Boolean(agent.tags.service_account_id) && (

@@ -13,6 +13,19 @@ export const TagSchema = z.object({
     }),
 });
 
+// Zod schema for subagents - matching proto validation rules
+export const SubagentSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Subagent name is required')
+    .max(64, 'Name must be at most 64 characters')
+    .regex(/^[A-Za-z0-9_-]+$/, {
+      message: 'Name can only contain letters, numbers, hyphens, and underscores',
+    }),
+  systemPrompt: z.string().min(10, 'System prompt must be at least 10 characters'),
+  selectedMcpServers: z.array(z.string()).default([]),
+});
+
 // Form schema - matching proto validation rules
 export const FormSchema = z
   .object({
@@ -53,6 +66,16 @@ export const FormSchema = z
       .min(3, 'Service account name must be at least 3 characters')
       .max(128, 'Service account name must be at most 128 characters')
       .regex(/^[^<>]+$/, 'Service account name cannot contain < or > characters'),
+    subagents: z
+      .array(SubagentSchema)
+      .default([])
+      .refine(
+        (arr) => {
+          const names = arr.map((s) => s.name.trim()).filter((n) => n.length > 0);
+          return names.length === new Set(names).size;
+        },
+        { message: 'Subagent names must be unique' }
+      ),
   })
   .superRefine((data, ctx) => {
     if (data.provider === 'openaiCompatible') {
@@ -101,4 +124,5 @@ export const initialValues: FormValues = {
   resourcesTier: 'XSmall',
   systemPrompt: '',
   serviceAccountName: '',
+  subagents: [],
 };
