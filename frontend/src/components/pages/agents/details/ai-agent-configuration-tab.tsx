@@ -781,9 +781,9 @@ export const AIAgentConfigurationTab = () => {
                                     value={subagent.description}
                                   />
                                   <Text className="text-muted-foreground text-sm" variant="muted">
-                                    Used by the parent agent to decide when to invoke this subagent. Also used for context
-                                    management - the parent provides context when starting the subagent, which maintains its
-                                    own context.
+                                    Used by the parent agent to decide when to invoke this subagent. Also used for
+                                    context management - the parent provides context when starting the subagent, which
+                                    maintains its own context.
                                   </Text>
                                 </>
                               ) : subagent.description ? (
