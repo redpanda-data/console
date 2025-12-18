@@ -170,7 +170,10 @@ export class DebugTimerStore {
 
 let refreshCounter = 0; // used to always create a different value, forcing some components to always re-render
 const REFRESH_COUNTER_MAX = 1000;
-export const alwaysChanging = () => (refreshCounter = (refreshCounter + 1) % REFRESH_COUNTER_MAX);
+export const alwaysChanging = () => {
+  refreshCounter = (refreshCounter + 1) % REFRESH_COUNTER_MAX;
+  return refreshCounter;
+};
 
 export function assignDeep(target: Record<string, unknown>, source: Record<string, unknown>) {
   for (const key in source) {

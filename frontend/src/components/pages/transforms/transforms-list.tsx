@@ -146,7 +146,9 @@ class TransformsList extends PageComponent {
             <SearchField
               placeholderText="Enter search term / regex..."
               searchText={uiSettings.transformsList.quickSearch}
-              setSearchText={(x) => (uiSettings.transformsList.quickSearch = x)}
+              setSearchText={(x) => {
+                uiSettings.transformsList.quickSearch = x;
+              }}
               width="350px"
             />
           </Box>

@@ -103,7 +103,9 @@ export class ActiveReassignments extends Component<{
             // RedPand cluster throttles as needed, the api does not support setting the throttle manually
             !api.isRedpanda && (
               <Button
-                onClick={() => (this.showThrottleDialog = true)}
+                onClick={() => {
+                  this.showThrottleDialog = true;
+                }}
                 size="sm"
                 style={{ fontSize: 'smaller', padding: '0px 8px' }}
                 variant="link"
@@ -148,10 +150,17 @@ export class ActiveReassignments extends Component<{
           sorting={false}
         />
 
-        <ReassignmentDetailsDialog onClose={() => (this.reassignmentDetails = null)} state={this.reassignmentDetails} />
+        <ReassignmentDetailsDialog
+          onClose={() => {
+            this.reassignmentDetails = null;
+          }}
+          state={this.reassignmentDetails}
+        />
         <ThrottleDialog
           lastKnownMinThrottle={minThrottle}
-          onClose={() => (this.showThrottleDialog = false)}
+          onClose={() => {
+            this.showThrottleDialog = false;
+          }}
           visible={this.showThrottleDialog}
         />
 
@@ -276,7 +285,12 @@ export const ThrottleDialog: FC<{ visible: boolean; lastKnownMinThrottle: number
                   </ListItem>
                 </UnorderedList>
               </Box>
-              <BandwidthSlider onChange={(x) => ($state.newThrottleValue = x)} value={throttleValue} />
+              <BandwidthSlider
+                onChange={(x) => {
+                  $state.newThrottleValue = x;
+                }}
+                value={throttleValue}
+              />
             </Flex>
           </ModalBody>
           <ModalFooter justifyContent="space-between">
@@ -402,7 +416,12 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
         {/* Throttle */}
         <Flex gap={4}>
-          <Checkbox isChecked={this.shouldThrottle} onChange={(e) => (this.shouldThrottle = e.target.checked)}>
+          <Checkbox
+            isChecked={this.shouldThrottle}
+            onChange={(e) => {
+              this.shouldThrottle = e.target.checked;
+            }}
+          >
             <span>
               <span>Throttle Reassignment</span>
               <br />

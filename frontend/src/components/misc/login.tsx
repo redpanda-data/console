@@ -166,7 +166,9 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
                 ...provided,
               }),
             }}
-            onChange={(mechanism) => (formState.mechanism = mechanism)}
+            onChange={(mechanism) => {
+              formState.mechanism = mechanism;
+            }}
             options={[
               {
                 label: 'SCRAM-SHA-256',

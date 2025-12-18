@@ -97,7 +97,9 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
         {state.isRegex || p.connectorType === 'source' ? (
           <Input
             autoComplete="off"
-            onChange={(e) => (state.property.value = e.target.value)}
+            onChange={(e) => {
+              state.property.value = e.target.value;
+            }}
             spellCheck={false}
             value={String(state.property.value)}
           />

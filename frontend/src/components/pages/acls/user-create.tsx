@@ -216,7 +216,9 @@ const CreateUserModal = observer(
               autoComplete="off"
               autoFocus
               data-testid="create-user-name"
-              onChange={(v) => (state.username = v.target.value)}
+              onChange={(v) => {
+                state.username = v.target.value;
+              }}
               placeholder="Username"
               spellCheck={false}
               value={state.username}
@@ -235,7 +237,9 @@ const CreateUserModal = observer(
                 <PasswordInput
                   isInvalid={!isValidPassword}
                   name="test"
-                  onChange={(e) => (state.password = e.target.value)}
+                  onChange={(e) => {
+                    state.password = e.target.value;
+                  }}
                   value={state.password}
                 />
 
@@ -244,7 +248,9 @@ const CreateUserModal = observer(
                     aria-label="Refresh"
                     display="inline-flex"
                     icon={<MdRefresh size={16} />}
-                    onClick={() => (state.password = generatePassword(30, state.generateWithSpecialChars))}
+                    onClick={() => {
+                      state.password = generatePassword(30, state.generateWithSpecialChars);
+                    }}
                     variant="ghost"
                   />
                 </Tooltip>

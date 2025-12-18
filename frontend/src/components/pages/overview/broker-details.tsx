@@ -139,7 +139,9 @@ const DetailsDisplaySettings = observer(() => (
     <Flex gap="2rem">
       <OptionGroup
         label="Formatting"
-        onChange={(s) => (uiSettings.brokerList.valueDisplay = s)}
+        onChange={(s) => {
+          uiSettings.brokerList.valueDisplay = s;
+        }}
         options={{
           Friendly: 'friendly',
           Raw: 'raw',
@@ -148,7 +150,9 @@ const DetailsDisplaySettings = observer(() => (
       />
       <OptionGroup
         label="Sort"
-        onChange={(s) => (uiSettings.brokerList.propsOrder = s)}
+        onChange={(s) => {
+          uiSettings.brokerList.propsOrder = s;
+        }}
         options={{
           'Changed First': 'changedFirst',
           Alphabetical: 'alphabetical',

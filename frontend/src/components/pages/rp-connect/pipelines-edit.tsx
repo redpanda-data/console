@@ -133,7 +133,9 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
             <Input
               data-testid="pipelineName"
               isRequired
-              onChange={(x) => (this.displayName = x.target.value)}
+              onChange={(x) => {
+                this.displayName = x.target.value;
+              }}
               pattern="[a-zA-Z0-9_\-]+"
               placeholder="Enter a config name..."
               value={this.displayName}
@@ -144,7 +146,9 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
         <FormField label="Description">
           <Input
             data-testid="pipelineDescription"
-            onChange={(x) => (this.description = x.target.value)}
+            onChange={(x) => {
+              this.description = x.target.value;
+            }}
             value={this.description}
             width={500}
           />
@@ -158,13 +162,21 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
             max={MAX_TASKS}
             maxWidth={150}
             min={MIN_TASKS}
-            onChange={(e) => (this.tasks = Number(e ?? MIN_TASKS))}
+            onChange={(e) => {
+              this.tasks = Number(e ?? MIN_TASKS);
+            }}
             value={this.tasks}
           />
         </FormField>
 
         <div className="mt-4">
-          <PipelineEditor onChange={(x) => (this.editorContent = x)} secrets={this.secrets} yaml={this.editorContent} />
+          <PipelineEditor
+            onChange={(x) => {
+              this.editorContent = x;
+            }}
+            secrets={this.secrets}
+            yaml={this.editorContent}
+          />
         </div>
 
         <Flex alignItems="center" gap="4">

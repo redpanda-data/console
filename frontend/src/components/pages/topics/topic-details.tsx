@@ -387,11 +387,9 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             >
               Produce Record
             </Button>
-            {DeleteRecordsMenuItem(
-              topic.cleanupPolicy === 'compact',
-              topic.allowedActions,
-              () => (this.deleteRecordsModalAlive = true)
-            )}
+            {DeleteRecordsMenuItem(topic.cleanupPolicy === 'compact', topic.allowedActions, () => {
+              this.deleteRecordsModalAlive = true;
+            })}
           </Flex>
 
           {/* Tabs:  Messages, Configuration */}
@@ -412,8 +410,12 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         </PageContent>
         {Boolean(this.deleteRecordsModalAlive) && (
           <DeleteRecordsModal
-            afterClose={() => (this.deleteRecordsModalAlive = false)}
-            onCancel={() => (this.deleteRecordsModalAlive = false)}
+            afterClose={() => {
+              this.deleteRecordsModalAlive = false;
+            }}
+            onCancel={() => {
+              this.deleteRecordsModalAlive = false;
+            }}
             onFinish={() => {
               this.deleteRecordsModalAlive = false;
               this.refreshData(true);

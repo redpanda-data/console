@@ -135,7 +135,9 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
             <SearchField
               placeholderText="Filter by name"
               searchText={this.principalSearch}
-              setSearchText={(x) => (this.principalSearch = x)}
+              setSearchText={(x) => {
+                this.principalSearch = x;
+              }}
               width="300px"
             />
           </Box>

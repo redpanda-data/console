@@ -201,7 +201,9 @@ class RpConnectPipelinesList extends PageComponent<{}> {
             <SearchField
               placeholderText="Enter search term / regex..."
               searchText={uiSettings.pipelinesList.quickSearch}
-              setSearchText={(x) => (uiSettings.pipelinesList.quickSearch = x)}
+              setSearchText={(x) => {
+                uiSettings.pipelinesList.quickSearch = x;
+              }}
               width="350px"
             />
           </div>

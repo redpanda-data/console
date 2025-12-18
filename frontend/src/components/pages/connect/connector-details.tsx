@@ -135,7 +135,9 @@ const KafkaConnectorMain = observer(
               <Button
                 isDisabled={!canEdit}
                 minWidth="32"
-                onClick={() => ($state.pausingConnector = connector)}
+                onClick={() => {
+                  $state.pausingConnector = connector;
+                }}
                 variant="outline"
               >
                 {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'}
@@ -153,7 +155,9 @@ const KafkaConnectorMain = observer(
             <Button
               isDisabled={!canEdit}
               minWidth="32"
-              onClick={() => ($state.restartingConnector = connector)}
+              onClick={() => {
+                $state.restartingConnector = connector;
+              }}
               variant="outline"
             >
               Restart
@@ -171,7 +175,9 @@ const KafkaConnectorMain = observer(
               colorScheme="red"
               isDisabled={!canEdit}
               minWidth="32"
-              onClick={() => ($state.deletingConnector = connectorName)}
+              onClick={() => {
+                $state.deletingConnector = connectorName;
+              }}
               variant="outline"
             >
               Delete
@@ -257,7 +263,9 @@ const KafkaConnectorMain = observer(
 
         {/* Pause/Resume Modal */}
         <ConfirmModal<ClusterConnectorInfo>
-          clearTarget={() => ($state.pausingConnector = null)}
+          clearTarget={() => {
+            $state.pausingConnector = null;
+          }}
           content={(c) => (
             <>
               {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'} connector{' '}
@@ -284,7 +292,9 @@ const KafkaConnectorMain = observer(
 
         {/* Restart */}
         <ConfirmModal<ClusterConnectorInfo>
-          clearTarget={() => ($state.restartingConnector = null)}
+          clearTarget={() => {
+            $state.restartingConnector = null;
+          }}
           content={(c) => (
             <>
               Restart connector <strong>{c.name}</strong>?
@@ -304,7 +314,9 @@ const KafkaConnectorMain = observer(
 
         {/* Update Config */}
         <ConfirmModal<UpdatingConnectorData>
-          clearTarget={() => ($state.updatingConnector = null)}
+          clearTarget={() => {
+            $state.updatingConnector = null;
+          }}
           content={(c) => (
             <>
               Update configuration of connector <strong>{c.connectorName}</strong>?
@@ -326,7 +338,9 @@ const KafkaConnectorMain = observer(
 
         {/* Restart Task */}
         <ConfirmModal<RestartingTaskData>
-          clearTarget={() => ($state.restartingTask = null)}
+          clearTarget={() => {
+            $state.restartingTask = null;
+          }}
           content={(c) => (
             <>
               Restart task <strong>{c.taskId}</strong> of <strong>{c.connectorName}</strong>?
@@ -346,7 +360,9 @@ const KafkaConnectorMain = observer(
 
         {/* Delete Connector */}
         <ConfirmModal<string>
-          clearTarget={() => ($state.deletingConnector = null)}
+          clearTarget={() => {
+            $state.deletingConnector = null;
+          }}
           content={(c) => (
             <>
               Delete connector <strong>{c}</strong>?
@@ -658,7 +674,13 @@ const LogsTab = observer(
 
       // Start search immediately
       const searchPromise = executeMessageSearch(search, topicName, connectorName);
-      searchPromise.catch((x) => (tabState.error = String(x))).finally(() => (tabState.isComplete = true));
+      searchPromise
+        .catch((x) => {
+          tabState.error = String(x);
+        })
+        .finally(() => {
+          tabState.isComplete = true;
+        });
       return tabState;
     };
 
@@ -745,7 +767,9 @@ const LogsTab = observer(
           <Flex mb="6">
             <SearchField
               searchText={uiSettings.connectorsDetails.logsQuickSearch}
-              setSearchText={(x) => (uiSettings.connectorsDetails.logsQuickSearch = x)}
+              setSearchText={(x) => {
+                uiSettings.connectorsDetails.logsQuickSearch = x;
+              }}
               width="230px"
             />
             <Button ml="auto" onClick={() => setState(createLogsTabState())} variant="outline">

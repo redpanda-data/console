@@ -87,7 +87,9 @@ export class CreateTopicModalContent extends Component<Props> {
             <Input
               autoFocus
               data-testid="topic-name"
-              onChange={(e) => (state.topicName = e.target.value)}
+              onChange={(e) => {
+                state.topicName = e.target.value;
+              }}
               value={state.topicName}
               width="100%"
             />
@@ -97,7 +99,9 @@ export class CreateTopicModalContent extends Component<Props> {
             <Label style={{ flexBasis: '160px' }} text="Partitions">
               <NumInput
                 min={1}
-                onChange={(e) => (state.partitions = e)}
+                onChange={(e) => {
+                  state.partitions = e;
+                }}
                 placeholder={state.defaults.partitions}
                 value={state.partitions}
               />
@@ -107,7 +111,9 @@ export class CreateTopicModalContent extends Component<Props> {
                 <NumInput
                   disabled={isServerless()}
                   min={1}
-                  onChange={(e) => (state.replicationFactor = e)}
+                  onChange={(e) => {
+                    state.replicationFactor = e;
+                  }}
                   placeholder={state.defaults.replicationFactor}
                   value={state.replicationFactor}
                 />
@@ -126,7 +132,9 @@ export class CreateTopicModalContent extends Component<Props> {
               <Label style={{ flexBasis: '160px' }} text="Min In-Sync Replicas">
                 <NumInput
                   min={1}
-                  onChange={(e) => (state.minInSyncReplicas = e)}
+                  onChange={(e) => {
+                    state.minInSyncReplicas = e;
+                  }}
                   placeholder={state.defaults.minInSyncReplicas}
                   value={state.minInSyncReplicas}
                 />
@@ -139,7 +147,9 @@ export class CreateTopicModalContent extends Component<Props> {
               <Label style={{ flexBasis: '160px' }} text="Cleanup Policy">
                 <SingleSelect<CleanupPolicyType>
                   isReadOnly={isServerless()}
-                  onChange={(e) => (state.cleanupPolicy = e)}
+                  onChange={(e) => {
+                    state.cleanupPolicy = e;
+                  }}
                   options={[
                     { value: 'delete', label: 'delete' },
                     { value: 'compact', label: 'compact' },
@@ -152,8 +162,12 @@ export class CreateTopicModalContent extends Component<Props> {
             <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Time">
               <RetentionTimeSelect
                 defaultConfigValue={state.defaults.retentionTime}
-                onChangeUnit={(x) => (state.retentionTimeUnit = x)}
-                onChangeValue={(x) => (state.retentionTimeMs = x)}
+                onChangeUnit={(x) => {
+                  state.retentionTimeUnit = x;
+                }}
+                onChangeValue={(x) => {
+                  state.retentionTimeMs = x;
+                }}
                 unit={state.retentionTimeUnit}
                 value={state.retentionTimeMs}
               />
@@ -161,8 +175,12 @@ export class CreateTopicModalContent extends Component<Props> {
             <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Size">
               <RetentionSizeSelect
                 defaultConfigValue={state.defaults.retentionBytes}
-                onChangeUnit={(x) => (state.retentionSizeUnit = x)}
-                onChangeValue={(x) => (state.retentionSize = x)}
+                onChangeUnit={(x) => {
+                  state.retentionSizeUnit = x;
+                }}
+                onChangeValue={(x) => {
+                  state.retentionSize = x;
+                }}
                 unit={state.retentionSizeUnit}
                 value={state.retentionSize}
               />
@@ -461,14 +479,18 @@ const KeyValuePair = observer((p: { entries: TopicConfigEntry[]; entry: TopicCon
   return (
     <Box className="inputGroup" display="flex" width="100%">
       <Input
-        onChange={(e) => (entry.name = e.target.value)}
+        onChange={(e) => {
+          entry.name = e.target.value;
+        }}
         placeholder="Property Name..."
         spellCheck={false}
         style={{ flexBasis: '30%' }}
         value={entry.name}
       />
       <Input
-        onChange={(e) => (p.entry.value = e.target.value)}
+        onChange={(e) => {
+          p.entry.value = e.target.value;
+        }}
         placeholder="Property Value..."
         spellCheck={false}
         style={{ flexBasis: '60%' }}

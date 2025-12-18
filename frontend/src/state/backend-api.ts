@@ -957,10 +957,9 @@ const apiStore = {
   },
 
   refreshQuotas(force?: boolean) {
-    cachedApiRequest<QuotaResponse | null>(`${appConfig.restBasePath}/quotas`, force).then(
-      (v) => (this.Quotas = v ?? null),
-      addError
-    );
+    cachedApiRequest<QuotaResponse | null>(`${appConfig.restBasePath}/quotas`, force).then((v) => {
+      this.Quotas = v ?? null;
+    }, addError);
   },
 
   async refreshSupportedEndpoints(): Promise<EndpointCompatibilityResponse | null> {
@@ -2764,7 +2763,8 @@ export function createMessageSearch() {
       this.messages.length = 0;
       this.elapsedMs = null;
 
-      const messageSearchAbortController = (this.abortController = new AbortController());
+      const messageSearchAbortController = new AbortController();
+      this.abortController = messageSearchAbortController;
 
       // do it
       const req = create(ListMessagesRequestSchema);

@@ -55,7 +55,9 @@ export const PropertyComponent = observer((props: { property: Property }) => {
         inputComp = (
           <RadioGroup
             name={p.name}
-            onChange={(e) => (p.value = e)}
+            onChange={(e) => {
+              p.value = e;
+            }}
             options={options}
             value={String(v || def.default_value)}
           />
@@ -68,7 +70,13 @@ export const PropertyComponent = observer((props: { property: Property }) => {
         const options = recValues.map((x: string) => ({ label: x, value: x }));
         inputComp = (
           <Box maxWidth={260}>
-            <SingleSelect onChange={(e) => (p.value = e)} options={options} value={v} />
+            <SingleSelect
+              onChange={(e) => {
+                p.value = e;
+              }}
+              options={options}
+              value={v}
+            />
           </Box>
         );
       } else {
@@ -77,7 +85,9 @@ export const PropertyComponent = observer((props: { property: Property }) => {
           <Input
             defaultValue={def.default_value ?? undefined}
             isDisabled={props.property.isDisabled}
-            onChange={(e) => (p.value = e.target.value)}
+            onChange={(e) => {
+              p.value = e.target.value;
+            }}
             spellCheck={false}
             value={String(v)}
           />
@@ -102,21 +112,44 @@ export const PropertyComponent = observer((props: { property: Property }) => {
     case 'SHORT':
     case 'DOUBLE':
     case 'FLOAT':
-      inputComp = <NumberInput onChange={(e) => (p.value = e)} value={Number(v)} />;
+      inputComp = (
+        <NumberInput
+          onChange={(e) => {
+            p.value = e;
+          }}
+          value={Number(v)}
+        />
+      );
       break;
 
     case 'BOOLEAN':
-      inputComp = <Switch isChecked={Boolean(v)} onChange={(e) => (p.value = e.target.checked)} />;
+      inputComp = (
+        <Switch
+          isChecked={Boolean(v)}
+          onChange={(e) => {
+            p.value = e.target.checked;
+          }}
+        />
+      );
       break;
 
     case 'LIST':
       if (p.name === 'transforms') {
-        inputComp = <CommaSeparatedStringList defaultValue={String(v)} onChange={(x) => (p.value = x)} />;
+        inputComp = (
+          <CommaSeparatedStringList
+            defaultValue={String(v)}
+            onChange={(x) => {
+              p.value = x;
+            }}
+          />
+        );
       } else {
         inputComp = (
           <Input
             defaultValue={def.default_value ?? undefined}
-            onChange={(e) => (p.value = e.target.value)}
+            onChange={(e) => {
+              p.value = e.target.value;
+            }}
             value={String(v)}
           />
         );
@@ -127,7 +160,9 @@ export const PropertyComponent = observer((props: { property: Property }) => {
       inputComp = (
         <Input
           defaultValue={def.default_value ?? undefined}
-          onChange={(e) => (p.value = e.target.value)}
+          onChange={(e) => {
+            p.value = e.target.value;
+          }}
           value={String(v)}
         />
       );

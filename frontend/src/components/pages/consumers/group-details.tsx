@@ -236,14 +236,18 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
           initialTopic={this.editedTopic}
           key={`${this.editedTopic ?? ''}-${this.editedPartition ?? ''}`}
           offsets={this.edittingOffsets}
-          onClose={() => (this.edittingOffsets = null)}
+          onClose={() => {
+            this.edittingOffsets = null;
+          }}
         />
         <DeleteOffsetsModal
           disabledReason={cannotDeleteGroupReason(group)}
           group={group}
           mode={this.deletingMode}
           offsets={this.deletingOffsets}
-          onClose={() => (this.deletingOffsets = null)}
+          onClose={() => {
+            this.deletingOffsets = null;
+          }}
           onInit={() => this.deleteGroup()}
         />
       </PageContent>

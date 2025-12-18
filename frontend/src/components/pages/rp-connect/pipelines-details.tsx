@@ -175,7 +175,9 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                     description: String(err),
                   });
                 })
-                .finally(() => (this.isChangingPauseState = false));
+                .finally(() => {
+                  this.isChangingPauseState = false;
+                });
             }}
             variant="outline"
           >
@@ -276,7 +278,13 @@ export const LogsTab = observer((p: { pipeline: Pipeline }) => {
 
     // Resume search immediately
     const searchPromise = executeMessageSearch(search, topicName, p.pipeline.id);
-    searchPromise.catch((x) => (tabState.error = String(x))).finally(() => (tabState.isComplete = true));
+    searchPromise
+      .catch((x) => {
+        tabState.error = String(x);
+      })
+      .finally(() => {
+        tabState.isComplete = true;
+      });
     return tabState;
   };
 
@@ -356,7 +364,9 @@ export const LogsTab = observer((p: { pipeline: Pipeline }) => {
         <Flex mb="6">
           <SearchField
             searchText={uiSettings.pipelinesDetails.logsQuickSearch}
-            setSearchText={(x) => (uiSettings.pipelinesDetails.logsQuickSearch = x)}
+            setSearchText={(x) => {
+              uiSettings.pipelinesDetails.logsQuickSearch = x;
+            }}
             width="230px"
           />
           <Button ml="auto" onClick={() => setState(createLogsTabState())} variant="outline">

@@ -236,7 +236,9 @@ export class EditOffsetsModal extends Component<{
             <FormLabel>Strategy</FormLabel>
             <SingleSelect
               isDisabled={this.isLoadingTimestamps}
-              onChange={(v) => (this.selectedOption = v as EditOptions)}
+              onChange={(v) => {
+                this.selectedOption = v as EditOptions;
+              }}
               options={[
                 {
                   value: 'startOffset',
@@ -283,7 +285,9 @@ export class EditOffsetsModal extends Component<{
             <FormLabel>Timestamp</FormLabel>
             <KowlTimePicker
               disabled={this.isLoadingTimestamps}
-              onChange={(t) => (this.timestampUtcMs = t)}
+              onChange={(t) => {
+                this.timestampUtcMs = t;
+              }}
               valueUtcMs={this.timestampUtcMs}
             />
           </Box>
@@ -325,7 +329,9 @@ export class EditOffsetsModal extends Component<{
             >
               <SingleSelect
                 isDisabled={this.isLoadingTimestamps}
-                onChange={(x) => (this.selectedGroup = x)}
+                onChange={(x) => {
+                  this.selectedGroup = x;
+                }}
                 options={this.otherConsumerGroups.map((g) => ({ value: g.groupId, label: g.groupId }))}
                 value={this.selectedGroup}
               />

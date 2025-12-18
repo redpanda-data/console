@@ -65,7 +65,9 @@ const HeaderComp = observer((p: { list: Header[]; header: Header; index: number 
       <td className="name">
         <Input
           borderRightRadius="0"
-          onChange={(e) => (p.header.key = e.target.value)}
+          onChange={(e) => {
+            p.header.key = e.target.value;
+          }}
           placeholder="Key"
           spellCheck={false}
           value={key}
@@ -73,7 +75,9 @@ const HeaderComp = observer((p: { list: Header[]; header: Header; index: number 
       </td>
       <td className="value">
         <Input
-          onChange={(e) => (p.header.value = e.target.value)}
+          onChange={(e) => {
+            p.header.value = e.target.value;
+          }}
           placeholder="Value"
           spellCheck={false}
           value={value}

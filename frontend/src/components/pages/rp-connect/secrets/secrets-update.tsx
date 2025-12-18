@@ -112,7 +112,9 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
                 data-testid="secretValue"
                 isDisabled={this.isUpdating}
                 isRequired
-                onChange={(x) => (this.secret = x.target.value)}
+                onChange={(x) => {
+                  this.secret = x.target.value;
+                }}
                 placeholder="Enter a new secret value..."
                 type="password"
                 value={this.secret}

@@ -80,8 +80,12 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
               return;
           }
         }}
-        onMouseEnter={() => (this.isDragging = true)}
-        onMouseLeave={() => (this.isDragging = false)}
+        onMouseEnter={() => {
+          this.isDragging = true;
+        }}
+        onMouseLeave={() => {
+          this.isDragging = false;
+        }}
         step={0.1}
         value={sliderValue}
       >

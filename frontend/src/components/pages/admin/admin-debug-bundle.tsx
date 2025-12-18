@@ -390,12 +390,19 @@ const NewDebugBundleForm: FC<{
               value={formState.scramMechanism}
             />
           </FormField>
-          <Checkbox isChecked={formState.tlsEnabled} onChange={(x) => (formState.tlsEnabled = x.target.checked)}>
+          <Checkbox
+            isChecked={formState.tlsEnabled}
+            onChange={(x) => {
+              formState.tlsEnabled = x.target.checked;
+            }}
+          >
             TLS enabled
           </Checkbox>
           <Checkbox
             isChecked={formState.skipTlsVerification}
-            onChange={(x) => (formState.skipTlsVerification = x.target.checked)}
+            onChange={(x) => {
+              formState.skipTlsVerification = x.target.checked;
+            }}
           >
             Skip TLS verification
           </Checkbox>

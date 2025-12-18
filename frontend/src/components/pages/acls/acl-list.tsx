@@ -263,7 +263,9 @@ const PermissionsListTab = observer(() => {
       <SearchField
         placeholderText="Filter by name"
         searchText={uiSettings.aclList.permissionsTab.quickSearch}
-        setSearchText={(x) => (uiSettings.aclList.permissionsTab.quickSearch = x)}
+        setSearchText={(x) => {
+          uiSettings.aclList.permissionsTab.quickSearch = x;
+        }}
         width="300px"
       />
 
@@ -346,7 +348,9 @@ const UsersTab = observer(() => {
       <SearchField
         placeholderText="Filter by name"
         searchText={uiSettings.aclList.usersTab.quickSearch}
-        setSearchText={(x) => (uiSettings.aclList.usersTab.quickSearch = x)}
+        setSearchText={(x) => {
+          uiSettings.aclList.usersTab.quickSearch = x;
+        }}
         width="300px"
       />
 
@@ -530,7 +534,9 @@ const RolesTab = observer(() => {
       <SearchField
         placeholderText="Filter by name"
         searchText={uiSettings.aclList.rolesTab.quickSearch}
-        setSearchText={(x) => (uiSettings.aclList.rolesTab.quickSearch = x)}
+        setSearchText={(x) => {
+          uiSettings.aclList.rolesTab.quickSearch = x;
+        }}
         width="300px"
       />
       <Section>
@@ -686,7 +692,9 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
       <SearchField
         placeholderText="Filter by name"
         searchText={uiSettings.aclList.configTable.quickSearch}
-        setSearchText={(x) => (uiSettings.aclList.configTable.quickSearch = x)}
+        setSearchText={(x) => {
+          uiSettings.aclList.configTable.quickSearch = x;
+        }}
         width="300px"
       />
       <Section>
