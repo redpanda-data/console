@@ -740,6 +740,7 @@ class ColAfter extends Component<{
   selectedTime?: number;
   record: GroupOffset;
 }> {
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   render() {
     const record = this.props.record;
     const val = record.newOffset;

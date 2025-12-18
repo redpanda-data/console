@@ -407,6 +407,7 @@ const connectorMetadataMatchCache: {
   [className: string]: ConnectorMetadata;
 } = {};
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export function findConnectorMetadata(className: string): ConnectorMetadata | null {
   const c = className;
 

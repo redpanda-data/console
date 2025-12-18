@@ -238,6 +238,7 @@ export function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
   return schema.schema;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
   const toast = useToast();
   const navigate = useNavigate();

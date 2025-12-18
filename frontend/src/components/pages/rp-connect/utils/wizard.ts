@@ -10,6 +10,7 @@ import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 import type { StepSubmissionResult } from '../types/wizard';
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const handleStepResult = <T>(result: StepSubmissionResult<T> | undefined, onSuccess: () => void): boolean => {
   if (!result) {
     return false;
@@ -138,6 +139,7 @@ export const isSchemaRegistryUrlField = (fieldName: string, parentName?: string)
  * Checks if a RawFieldSpec or its children have wizard-relevant fields
  * Used to determine if advanced/optional fields should be shown
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const hasWizardRelevantFields = (spec: RawFieldSpec, componentName?: string): boolean => {
   if (!(componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
     return false;

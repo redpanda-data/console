@@ -183,6 +183,7 @@ export class ConnectClusterStore {
   }
 
   // CRUD operations
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   createConnector = flow(function* (
     this: ConnectClusterStore,
     pluginClass: string,
@@ -258,6 +259,7 @@ export class ConnectClusterStore {
     }
   });
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   updateConnnector = flow(function* (this: ConnectClusterStore, connectorName: string) {
     const remoteConnector = this.getRemoteConnector(connectorName);
 
@@ -530,6 +532,7 @@ export class ConnectorPropertiesStore {
       },
     });
   }
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   getConfigObject(): object {
     if (this.viewMode === 'json') {
       const config = {
@@ -588,6 +591,7 @@ export class ConnectorPropertiesStore {
     }
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   async initConfig() {
     const { clusterName, pluginClassName } = this;
 
@@ -699,6 +703,7 @@ export class ConnectorPropertiesStore {
     this.initPending = false;
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   async validate(config: object) {
     const { clusterName, pluginClassName } = this;
     try {

@@ -386,6 +386,7 @@ function generateObjectValue(
   return obj;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 function generateArrayValue(params: {
   spec: RawFieldSpec;
   showOptionalFields: boolean;

@@ -679,6 +679,7 @@ function createSchemaState() {
       return subjectName;
     },
 
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
     computeRecordName() {
       if (this.format === 'AVRO' || this.format === 'JSON') {
         // Avro

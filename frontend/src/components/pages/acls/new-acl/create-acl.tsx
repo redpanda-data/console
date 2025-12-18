@@ -216,6 +216,7 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
 
         {/* Rules Summary */}
         <div className="space-y-3">
+          {/** biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic */}
           {rules.map((rule) => {
             const ops = Object.entries(rule.operations);
             // Filter out operations that are not set

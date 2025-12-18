@@ -28,6 +28,7 @@ export const UserRoleTags = observer(
     userName: string;
     showMaxItems?: number;
     verticalView?: boolean;
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   }) => {
     const elements: JSX.Element[] = [];
     let numberOfVisibleElements = 0;

@@ -15,6 +15,7 @@ import { License_Source, License_Type } from '../../protogen/redpanda/api/consol
 import { api } from '../../state/backend-api';
 import { capitalizeFirst } from '../../utils/utils';
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const LicenseNotification = observer(() => {
   const location = useLocation();
 

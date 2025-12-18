@@ -70,6 +70,7 @@ export const AclPrincipalGroupEditor = observer(
       (!group.principalName ||
         api.ACLs?.aclResources.any((r) => r.acls.any((a) => a.principal === `User:${group.principalName}`)));
 
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
     const onOK = async () => {
       setError(undefined);
       setIsLoading(true);

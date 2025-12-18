@@ -191,6 +191,7 @@ export class ReassignmentTracker {
     });
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   updateReassignmentState(state: ReassignmentState) {
     // partition stats
     const topicPartitions = api.topicPartitions.get(state.topicName);

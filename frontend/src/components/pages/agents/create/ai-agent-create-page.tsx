@@ -160,7 +160,7 @@ export const AIAgentCreatePage = () => {
     return mcpServersData.mcpServers;
   }, [mcpServersData]);
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 36, refactor later
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const handleValidationError = (error: ConnectError) => {
     if (error.code === ConnectCode.InvalidArgument && error.details) {
       // Find BadRequest details
@@ -245,6 +245,7 @@ export const AIAgentCreatePage = () => {
     return result;
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const onSubmit = async (values: FormValues) => {
     // Build tags map from labels
     const tagsMap: Record<string, string> = {};

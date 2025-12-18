@@ -542,6 +542,7 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
   const tryGetBrokerConfig = (configName: string): string | undefined =>
     api.clusterInfo?.brokers?.find((_) => true)?.config.configs?.find((x) => x.name === configName)?.value ?? undefined;
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const getRetentionTimeFinalValue = (value: number | undefined, unit: RetentionTimeUnit) => {
     if (unit === 'default') {
       return;
@@ -577,6 +578,7 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
       return -1;
     }
   };
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const getRetentionSizeFinalValue = (value: number | undefined, unit: RetentionSizeUnit) => {
     if (unit === 'default') {
       return;
@@ -668,6 +670,7 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
         hasErrors: false,
       }),
     isOkEnabled: (state) => TOPIC_NAME_REGEX.test(state.topicName) && !state.hasErrors,
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
     onOk: async (state) => {
       if (!state.topicName) {
         throw new Error('"Topic Name" must be set');

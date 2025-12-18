@@ -19,6 +19,7 @@ import type { Property } from '../../../../state/connect/state';
 import { PropertyWidth } from '../../../../state/rest-interfaces';
 import { SingleSelect } from '../../../misc/select';
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const PropertyComponent = observer((props: { property: Property }) => {
   const p = props.property;
   const def = p.entry.definition;

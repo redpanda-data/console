@@ -55,14 +55,6 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "complexity": {
-        "noExcessiveCognitiveComplexity": {
-          "level": "error",
-          "options": {
-            "maxAllowedComplexity": 30
-          }
-        }
-      },
       "correctness": {
         "useImageSize": "off",
         "useJsonImportAttributes": "error" // this may slow down the linting process

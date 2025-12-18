@@ -175,6 +175,7 @@ export const alwaysChanging = () => {
   return refreshCounter;
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 export function assignDeep(target: Record<string, unknown>, source: Record<string, unknown>) {
   for (const key in source) {
     if (!Object.hasOwn(source, key)) {
@@ -254,6 +255,7 @@ export function collectElements(
   return ctx.results;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 function collectElementsRecursive(ctx: PropertySearchExContext, obj: Record<string, unknown>): PropertySearchResult {
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
@@ -418,6 +420,7 @@ type GetAllKeysContext = {
   results: Property[];
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown>): PropertySearchResult {
   const isArray = Array.isArray(obj);
   let result = 'continue' as PropertySearchResult;

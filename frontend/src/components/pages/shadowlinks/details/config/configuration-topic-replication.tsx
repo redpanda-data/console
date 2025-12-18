@@ -54,6 +54,7 @@ const CATEGORY_PROPERTIES_MAP: Record<string, string[]> = {
   Compression: ['compression.type'],
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopicReplicationProps) => {
   const topicSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
   const excludeDefault = topicSyncOptions?.excludeDefault ?? false;

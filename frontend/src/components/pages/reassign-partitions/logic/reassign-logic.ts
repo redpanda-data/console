@@ -396,6 +396,7 @@ type RiskyPartition = {
   criticalBrokers: ExBroker[]; // if this broker is offline...
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 function findRiskyPartitions(
   targetBrokers: ExBroker[],
   selectedTopicPartitions: TopicPartitions[],
@@ -522,6 +523,7 @@ class ExBroker implements Broker {
     this.recomputeInitial(selectedTopicPartitions);
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   private recomputeActual(apiData: ApiData) {
     this.actualReplicas = 0;
     this.actualSize = 0;

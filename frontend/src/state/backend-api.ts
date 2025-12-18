@@ -1063,6 +1063,7 @@ const apiStore = {
   refreshCluster(force?: boolean) {
     cachedApiRequest<ClusterInfoResponse>(`${appConfig.restBasePath}/cluster`, force).then((v) => {
       if (v?.clusterInfo !== null && v?.clusterInfo !== undefined) {
+        // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
         transaction(() => {
           // add 'type' to each synonym entry
           for (const broker of v.clusterInfo.brokers) {
@@ -1197,6 +1198,7 @@ const apiStore = {
   },
 
   refreshAdminInfo(force?: boolean) {
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
     cachedApiRequest<AdminInfo | null>(`${appConfig.restBasePath}/admin`, force).then((info) => {
       if (info === null) {
         this.adminInfo = null;
@@ -2232,6 +2234,7 @@ export const rolesApi = observable({
   roleMembers: new Map<string, RolePrincipal[]>(), // RoleName -> Principals
   rolesError: null as ConnectError | null,
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   async refreshRoles(): Promise<void> {
     this.rolesError = null;
     const client = appConfig.securityClient;

@@ -18,6 +18,7 @@ import { type LintHint, LintHintSchema } from '../../../protogen/redpanda/api/co
  * - err.rawMessage: Raw error from server
  * - err.details: Array of error details (LintHint, BadRequest, etc.)
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export function extractLintHintsFromError(err: unknown): Record<string, LintHint> {
   const lintHints: Record<string, LintHint> = {};
   let hintIndex = 0;
@@ -81,6 +82,7 @@ export function extractLintHintsFromError(err: unknown): Record<string, LintHint
   return lintHints;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export function formatPipelineError(err: unknown): React.ReactNode {
   const details: React.ReactNode[] = [];
   let genDesc = String(err);

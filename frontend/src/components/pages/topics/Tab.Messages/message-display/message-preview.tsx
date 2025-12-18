@@ -32,6 +32,7 @@ export const MessagePreview = observer(
     previewFields: () => PreviewTagV2[];
     isCompactTopic: boolean;
     previewDisplayMode?: 'single' | 'wrap' | 'rows';
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   }) => {
     const value = msg.value;
 

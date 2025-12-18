@@ -21,6 +21,7 @@ export const entryHasInfiniteValue = (entry: ConfigEntry) =>
 
 export const getInfiniteValueForEntry = (entry: ConfigEntryExtended) => CONFIG_INFINITE_VALUES[entry.name] ?? -1;
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 export function formatConfigValue(
   name: string,
   value: string | null | undefined,

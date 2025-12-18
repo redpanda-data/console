@@ -222,7 +222,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
     return result;
   };
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 56, refactor later
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const handleValidationError = (error: ConnectError) => {
     if (error.code === ConnectCode.InvalidArgument && error.details) {
       // Find BadRequest details
@@ -284,6 +284,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
     toast.error(formatToastErrorMessageGRPC({ error, action: 'create', entity: 'MCP server' }));
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const onSubmit = async (values: FormValues) => {
     const tier = getTierById(values.resourcesTier);
     const tagsMap: Record<string, string> = {};
@@ -366,6 +367,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
       </div>
 
       <Stepper.Provider className="space-y-4" variant="horizontal">
+        {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic */}
         {({ methods }) => (
           <>
             <Stepper.Navigation>

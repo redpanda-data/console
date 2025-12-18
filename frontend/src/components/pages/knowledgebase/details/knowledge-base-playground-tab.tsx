@@ -72,6 +72,7 @@ export const PlaygroundTab = React.memo<PlaygroundTabProps>(({ knowledgeBase }) 
     }
   }, []);
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const callRetrievalAPI = useCallback(async () => {
     if (!query.trim()) {
       toast.error('Query Required', {

@@ -58,7 +58,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
     super(p);
     makeObservable(this);
   }
-
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 19 - extensive error parsing for multiple info types (stack, components, environment)
   componentDidCatch(error: Error | null, errorInfo: object) {
     this.error = error;
     this.errorInfo = errorInfo;

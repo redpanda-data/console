@@ -373,6 +373,7 @@ export const AIAgentConfigurationTab = () => {
     });
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const handleSave = async () => {
     if (!(aiAgentData?.aiAgent && id)) {
       return;

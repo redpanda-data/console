@@ -201,6 +201,7 @@ type ObjectSearchContext = {
 // returns 'shouldStop'
 // true  -> stop
 // false -> continue
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 function findElement(ctx: PropertySearchContext, obj: unknown): boolean {
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {

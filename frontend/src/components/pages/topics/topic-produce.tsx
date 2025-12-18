@@ -127,6 +127,7 @@ type Inputs = {
   value: PayloadOptions;
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => {
   const toast = useToast();
 

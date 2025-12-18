@@ -376,11 +376,13 @@ export const navigateToConfigurationStep = async (
 /**
  * Add a topic filter (create form - without tab navigation)
  */
+
 export const addTopicFilterCreate = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen,
   name: string,
   options?: { patternType?: PatternType; filterType?: FilterType }
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 ) => {
   const { patternType = PatternType.LITERAL, filterType = FilterType.INCLUDE } = options || {};
 

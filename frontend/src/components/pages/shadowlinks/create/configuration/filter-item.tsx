@@ -97,7 +97,9 @@ export const FilterItem = <TFieldValues extends FieldValues>({
             <FormField
               control={control}
               name={filterFieldName}
+              // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
               render={({ field: filterField }) => {
+                // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
                 const getTabValue = () => {
                   if (patternField.value === PatternType.LITERAL && filterField.value === FilterType.INCLUDE) {
                     return 'include-specific';

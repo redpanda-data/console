@@ -77,6 +77,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       ...motionProps
     },
     ref
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   ) => {
     const queryClient = useQueryClient();
 

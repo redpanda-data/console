@@ -332,6 +332,7 @@ function RetentionTimeSelect(p: {
           <Select<RetentionTimeUnit>
             // style={{ minWidth: '90px', background: 'transparent' }}
             // bordered={false}
+            // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
             onChange={(arg) => {
               if (isSingleValue(arg) && arg && arg.value) {
                 const u = arg.value;
@@ -407,6 +408,7 @@ function RetentionSizeSelect(p: {
           <Select<RetentionSizeUnit>
             // style={{ minWidth: '90px', background: 'transparent' }}
             // bordered={false}
+            // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
             onChange={(arg) => {
               if (isSingleValue(arg) && arg && arg.value) {
                 const u = arg.value;

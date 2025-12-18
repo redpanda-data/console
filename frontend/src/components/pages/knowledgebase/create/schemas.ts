@@ -94,6 +94,7 @@ export const KnowledgeBaseCreateFormSchema = z
     generationProvider: z.literal('openai').default('openai'),
     generationModel: z.string().min(1, 'Generation model is required'),
   })
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   .superRefine((data, ctx) => {
     // Validate chunk overlap is less than chunk size
     if (data.chunkOverlap >= data.chunkSize) {

@@ -384,6 +384,7 @@ export const useCreateUserWithSecretsMutation = () => {
   // Aggregate isPending from all mutations
   const isPending = createUserMutation.isPending || createACLMutation.isPending || createSecretMutation.isPending;
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const createUserWithSecrets = async (params: CreateUserWithSecretsParams) => {
     const { userData, topicName, consumerGroup, existingUserSelected } = params;
 
