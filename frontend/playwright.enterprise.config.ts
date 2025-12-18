@@ -33,6 +33,7 @@ export default defineConfig({
   /* Custom metadata for setup/teardown */
   metadata: {
     isEnterprise: true,
+    needsShadowlink: true,  // Enables two-cluster setup for shadowlink tests
   },
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {

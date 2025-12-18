@@ -1,0 +1,4 @@
+superusers: ["e2euser"]
+enable_sasl: true
+sasl_mechanisms: ["SCRAM", "OAUTHBEARER"]
+enable_shadow_linking: true
