@@ -47,7 +47,9 @@
           "options": {
             "groups": [":PACKAGE:", ":BLANK_LINE:", ["@/**"], ":BLANK_LINE:", ["./**"]]
           }
-        }
+        },
+        "useSortedAttributes": "on",
+        "useSortedKeys": "off"
       }
     }
   },
@@ -64,7 +66,6 @@
         "noDeprecatedImports": "error", // this may slow down the linting process
         "noFloatingPromises": "error", // this may slow down the linting process
         "noMisusedPromises": "error", // this may slow down the linting process
-        "noUnresolvedImports": "off", // this may slow down the linting process
         "noImportCycles": "off", // this may slow down the linting process
         "useExhaustiveSwitchCases": "error" // this may slow down the linting process
       },
@@ -119,7 +120,8 @@
     },
     "parser": {
       "allowWrongLineComments": false,
-      "cssModules": false
+      "cssModules": false,
+      "tailwindDirectives": true
     }
   },
   "overrides": [
