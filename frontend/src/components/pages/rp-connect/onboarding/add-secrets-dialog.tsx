@@ -51,8 +51,8 @@ export const AddSecretsDialog = ({
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 <div className="space-y-1">
-                  {errorMessages.map((message, index) => (
-                    <div key={index}>{message}</div>
+                  {errorMessages.map((message) => (
+                    <div key={message}>{message}</div>
                   ))}
                 </div>
               </AlertDescription>

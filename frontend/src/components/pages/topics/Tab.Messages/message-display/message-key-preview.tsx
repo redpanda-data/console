@@ -12,7 +12,7 @@
 import { WarningIcon } from '@chakra-ui/icons';
 import { Flex, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import React, { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import type { PreviewTagV2 } from '../../../../../state/ui';
@@ -106,11 +106,7 @@ export const MessageKeyPreview = observer(
           const displayMode = previewDisplayMode ?? uiState.topicSettings.previewDisplayMode;
           text = (
             <span className="cellDiv fade" style={{ fontSize: '95%' }}>
-              <div className={`previewTags previewTags-${displayMode}`}>
-                {tags.map((t, i) => (
-                  <React.Fragment key={i}>{t}</React.Fragment>
-                ))}
-              </div>
+              <div className={`previewTags previewTags-${displayMode}`}>{tags}</div>
             </span>
           );
           return text;

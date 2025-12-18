@@ -125,8 +125,8 @@ const ConnectTilesSkeleton = memo(
     gridCols?: number;
     tileCount?: number;
   }) => {
-    const skeletonTiles = Array.from({ length: tileCount }, (_, i) => (
-      <div className="h-[78px] rounded-lg border bg-card p-4" key={`skeleton-tile-${i}`}>
+    const skeletonTiles = Array.from({ length: tileCount }, () => (
+      <div className="h-[78px] rounded-lg border bg-card p-4" key={crypto.randomUUID()}>
         <SkeletonGroup direction="horizontal" spacing="default">
           <SkeletonGroup className="flex-1" direction="vertical" spacing="sm">
             <Skeleton variant="heading" width="md" />

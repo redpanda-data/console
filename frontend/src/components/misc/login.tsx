@@ -272,7 +272,7 @@ const LoginPage = observer(() => {
               const AuthComponent = AUTH_ELEMENTS[method];
               if (AuthComponent) {
                 if (index > 0) {
-                  acc.push(<TextDivider key={`divider-${index}`} my={3} text="OR" />);
+                  acc.push(<TextDivider key={`divider-${method}`} my={3} text="OR" />);
                 }
                 acc.push(
                   <div key={method}>

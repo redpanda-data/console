@@ -283,7 +283,7 @@ export const AclPrincipalGroupEditor = observer(
                   <Flex flexDirection="column" gap={4}>
                     {group.topicAcls.map((t, i) => (
                       <ResourceACLsEditor
-                        key={i}
+                        key={`topic-${t.selector}-${i}`}
                         onDelete={() => group.topicAcls.remove(t)}
                         resource={t}
                         resourceType="Topic"
@@ -303,7 +303,7 @@ export const AclPrincipalGroupEditor = observer(
                   <Flex flexDirection="column" gap={4}>
                     {group.consumerGroupAcls.map((t, i) => (
                       <ResourceACLsEditor
-                        key={i}
+                        key={`consumer-group-${t.selector}-${i}`}
                         onDelete={() => group.consumerGroupAcls.remove(t)}
                         resource={t}
                         resourceType="Group"
@@ -327,7 +327,7 @@ export const AclPrincipalGroupEditor = observer(
                   <Flex flexDirection="column" gap={4}>
                     {group.transactionalIdAcls.map((t, i) => (
                       <ResourceACLsEditor
-                        key={i}
+                        key={`transactional-id-${t.selector}-${i}`}
                         onDelete={() => group.transactionalIdAcls.remove(t)}
                         resource={t}
                         resourceType="TransactionalID"

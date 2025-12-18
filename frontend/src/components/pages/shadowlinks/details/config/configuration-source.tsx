@@ -92,8 +92,8 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
               </Text>
               <div className="flex flex-col items-end gap-1" data-testid="bootstrap-servers-value">
                 {clientOptions?.bootstrapServers && clientOptions.bootstrapServers.length > 0 ? (
-                  clientOptions.bootstrapServers.map((server, index) => (
-                    <Text className="font-medium" key={`${server}-${index}`}>
+                  clientOptions.bootstrapServers.map((server) => (
+                    <Text className="font-medium" key={server}>
                       {server}
                     </Text>
                   ))

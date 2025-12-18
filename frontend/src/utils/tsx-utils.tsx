@@ -168,7 +168,7 @@ export function QuickTable(
     <table className={classNames} style={o.tableStyle}>
       <tbody>
         {entries.map((obj, i) => (
-          <React.Fragment key={i}>
+          <React.Fragment key={`${toSafeString(obj.key)}-${i}`}>
             <tr>
               <td className="keyCell" style={{ textAlign: o.keyAlign, ...o.keyStyle }}>
                 {React.isValidElement(obj.key) ? obj.key : toSafeString(obj.key)}

@@ -37,8 +37,8 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
   return (
     <Box data-testid="debug-bundle-overview" my={4}>
       <List>
-        {statuses.map((status, idx) => (
-          <ListItem data-testid={`debug-bundle-broker-status-${status.brokerId}`} key={idx}>
+        {statuses.map((status) => (
+          <ListItem data-testid={`debug-bundle-broker-status-${status.brokerId}`} key={status.brokerId}>
             <Flex alignItems="center" gap={3} mb={3}>
               {status.value.case === 'bundleStatus' && (
                 <>

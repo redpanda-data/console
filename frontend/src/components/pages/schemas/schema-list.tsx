@@ -75,8 +75,8 @@ const RequestErrors: FC<{ requestErrors?: string[] }> = ({ requestErrors }) => {
 
   return (
     <Section>
-      {requestErrors.map((errorMessage, idx) => (
-        <Alert key={idx} marginTop="1em" status="error">
+      {requestErrors.map((errorMessage) => (
+        <Alert key={errorMessage} marginTop="1em" status="error">
           <AlertIcon />
           <div>{errorMessage}</div>
         </Alert>

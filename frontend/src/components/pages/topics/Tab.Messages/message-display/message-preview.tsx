@@ -85,11 +85,7 @@ export const MessagePreview = observer(
           const displayMode = previewDisplayMode ?? uiState.topicSettings.previewDisplayMode;
           text = (
             <span className="cellDiv fade" style={{ fontSize: '95%' }}>
-              <div className={`previewTags previewTags-${displayMode}`}>
-                {tags.map((t, i) => (
-                  <React.Fragment key={i}>{t}</React.Fragment>
-                ))}
-              </div>
+              <div className={`previewTags previewTags-${displayMode}`}>{tags}</div>
             </span>
           );
           return text;

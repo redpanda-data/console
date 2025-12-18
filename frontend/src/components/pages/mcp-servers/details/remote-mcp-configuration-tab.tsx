@@ -80,6 +80,7 @@ type LocalMCPServer = {
   url: string;
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: This component manages complex configuration UI with multiple states and conditional renders
 export const RemoteMCPConfigurationTab = () => {
   const { id } = useParams<{ id: string }>();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
@@ -731,7 +732,7 @@ export const RemoteMCPConfigurationTab = () => {
                           const duplicateKeys = isEditing ? getDuplicateKeys(displayData.tags) : new Set();
                           const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
                           return (
-                            <div className="flex items-center gap-2" key={`tag-${index}`}>
+                            <div className="flex items-center gap-2" key={`tag-${tag.key}-${tag.value}`}>
                               <div className="flex-1">
                                 <Input
                                   className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}

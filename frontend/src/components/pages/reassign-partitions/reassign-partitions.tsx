@@ -273,8 +273,8 @@ class ReassignPartitions extends PageComponent {
               {/* Steps */}
               <div style={{ margin: '.75em 1em 1em 1em' }}>
                 <Stepper colorScheme="brand" index={this.currentStep}>
-                  {steps.map((item, index) => (
-                    <Step key={index} title={item.title}>
+                  {steps.map((item) => (
+                    <Step key={item.title} title={item.title}>
                       <StepIndicator>
                         <StepStatus active={<StepNumber />} complete={<StepIcon />} incomplete={<StepNumber />} />
                       </StepIndicator>
@@ -726,8 +726,8 @@ class ReassignPartitions extends PageComponent {
       'Reassign Partitions',
       `Reassignment request returned errors for ${errors.sum((e) => e.partitions.length)} / ${startedCount} partitions.`,
       <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-        {errors.map((r, i) => (
-          <div key={i}>
+        {errors.map((r) => (
+          <div key={r.topicName}>
             <div>
               <h4>Topic: "{r.topicName}"</h4>
               <ul>

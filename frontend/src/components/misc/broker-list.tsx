@@ -123,11 +123,7 @@ export class BrokerList extends Component<BrokerListProps> {
 
     return (
       <span style={{ cursor: 'pointer' }}>
-        <span className="brokerTagList">
-          {tags.map((t, i) => (
-            <React.Fragment key={i}>{t}</React.Fragment>
-          ))}
-        </span>
+        <span className="brokerTagList">{tags}</span>
       </span>
     );
   }
@@ -146,13 +142,7 @@ function BrokerTooltip(p: { broker: Broker; children?: React.ReactElement; toolt
     <React.Fragment key={4}>{p.tooltipSuffix || null}</React.Fragment>,
   ];
 
-  const tooltipContent = (
-    <div style={{ textAlign: 'left', maxWidth: '300px' }}>
-      {tooltipContentEntries.map((e, i) => (
-        <React.Fragment key={i}>{e}</React.Fragment>
-      ))}
-    </div>
-  );
+  const tooltipContent = <div style={{ textAlign: 'left', maxWidth: '300px' }}>{tooltipContentEntries}</div>;
 
   return (
     <Tooltip hasArrow label={tooltipContent} placement="top">

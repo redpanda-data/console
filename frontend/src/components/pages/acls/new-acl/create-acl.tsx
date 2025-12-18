@@ -1028,8 +1028,8 @@ export default function CreateACL({
     }
     return (
       <>
-        {desc.split('\n').map((line, i) => (
-          <span key={i}>
+        {desc.split('\n').map((line) => (
+          <span key={line}>
             {line}
             <br />
           </span>

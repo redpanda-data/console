@@ -107,8 +107,8 @@ export function formatPipelineError(err: unknown): React.ReactNode {
       <>
         <Text as="span">{genDesc}</Text>
         <ul>
-          {details.map((d, idx) => (
-            <li key={idx} style={{ listStylePosition: 'inside' }}>
+          {details.map((d) => (
+            <li key={String(d)} style={{ listStylePosition: 'inside' }}>
               {d}
             </li>
           ))}

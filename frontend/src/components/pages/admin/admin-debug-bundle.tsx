@@ -624,7 +624,7 @@ const NewDebugBundleForm: FC<{
             label="Label selectors"
           >
             {formState.labelSelectors.map((labelSelector, idx) => (
-              <Grid gap={2} key={idx} templateColumns="1fr 1fr auto">
+              <Grid gap={2} key={`${labelSelector.key}-${labelSelector.value}-${idx}`} templateColumns="1fr 1fr auto">
                 <GridItem>
                   <Text fontSize="sm">Key</Text>
                   <Input

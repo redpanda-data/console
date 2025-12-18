@@ -187,7 +187,7 @@ export const BasicInfoSection = ({
                   const duplicateKeys = isEditMode ? getDuplicateKeys(editableTags) : new Set();
                   const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
                   return (
-                    <div className="flex items-center gap-2" key={`tag-${index}`}>
+                    <div className="flex items-center gap-2" key={`tag-${tag.key}-${tag.value}`}>
                       <div className="flex-1">
                         <Input
                           className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}

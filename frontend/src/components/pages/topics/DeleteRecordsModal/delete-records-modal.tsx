@@ -255,10 +255,10 @@ const ManualOffsetContent = observer(
     if (api.topicPartitionErrors?.get(topicName) || api.topicWatermarksErrors?.get(topicName)) {
       const partitionErrors = api.topicPartitionErrors
         .get(topicName)
-        ?.map(({ partitionError }, idx) => <li key={`${topicName}-partitionErrors-${idx}`}>{partitionError}</li>);
+        ?.map(({ partitionError }) => <li key={`${topicName}-${partitionError}`}>{partitionError}</li>);
       const waterMarksErrors = api.topicWatermarksErrors
         .get(topicName)
-        ?.map(({ waterMarksError }, idx) => <li key={`${topicName}-watermarkErrors-${idx}`}>{waterMarksError}</li>);
+        ?.map(({ waterMarksError }) => <li key={`${topicName}-${waterMarksError}`}>{waterMarksError}</li>);
       const message = (
         <>
           {partitionErrors && partitionErrors.length > 0 ? (

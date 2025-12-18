@@ -46,13 +46,13 @@ export const ConnectorStepComponent = observer(
           </Text>
         )}
 
-        {groups.map((g, i) => (
+        {groups.map((g) => (
           <PropertyGroupComponent
             allGroups={props.allGroups}
             connectorType={props.connectorType}
             context={props.context}
             group={g}
-            key={i}
+            key={g.group.name}
             showAdvancedOptions={props.showAdvancedOptions}
           />
         ))}

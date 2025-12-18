@@ -124,7 +124,7 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
                   <AccordionContent className="px-6 pb-4" data-testid={`category-${categoryKey}-content`}>
                     <div className="flex flex-col">
                       {properties.map((property, index) => (
-                        <div key={`${property}-${index}`}>
+                        <div key={`${categoryKey}-${property}`}>
                           <div className="flex items-center justify-between py-3">
                             <Text data-testid={`property-${categoryKey}-${index}`}>{property}</Text>
                             <Badge data-testid={`property-${categoryKey}-${index}-badge`} variant="gray">

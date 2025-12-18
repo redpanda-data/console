@@ -563,7 +563,7 @@ export const AIAgentConfigurationTab = () => {
                     <Label>Tags</Label>
                     <div className="space-y-2">
                       {displayData.tags.map((tag, index) => (
-                        <div className="flex items-center gap-2" key={`tag-${index}`}>
+                        <div className="flex items-center gap-2" key={`tag-${tag.key}-${tag.value}`}>
                           <div className="flex-1">
                             <Input
                               disabled={!isEditing}
