@@ -470,13 +470,14 @@ export const AIAgentConfigurationTab = () => {
       // Build subagents map
       const subagentsMap: Record<string, ReturnType<typeof create<typeof AIAgent_SubagentSchema>>> = {};
       for (const subagent of currentData.subagents) {
-        if (subagent.name.trim()) {
+        const trimmedName = subagent.name.trim();
+        if (trimmedName) {
           const subagentMcpMap: Record<string, { id: string }> = {};
           for (const serverId of subagent.selectedMcpServers) {
             subagentMcpMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
           }
 
-          subagentsMap[subagent.name.trim()] = create(AIAgent_SubagentSchema, {
+          subagentsMap[trimmedName] = create(AIAgent_SubagentSchema, {
             description: subagent.description?.trim() ?? '',
             systemPrompt: subagent.systemPrompt.trim(),
             mcpServers: subagentMcpMap,
