@@ -458,6 +458,49 @@ export const AIAgentConfigurationTab = () => {
       }
     }
 
+    // Validate subagents
+    const subagentNames = new Set<string>();
+    for (const [index, subagent] of currentData.subagents.entries()) {
+      const trimmedName = subagent.name.trim();
+
+      // Validate name is not empty
+      if (!trimmedName) {
+        toast.error(`Subagent ${index + 1}: Name is required`);
+        return;
+      }
+
+      // Validate name format
+      if (!/^[A-Za-z0-9_-]+$/.test(trimmedName)) {
+        toast.error(`Subagent "${trimmedName}": Name can only contain letters, numbers, hyphens, and underscores`);
+        return;
+      }
+
+      // Validate name length
+      if (trimmedName.length > 64) {
+        toast.error(`Subagent "${trimmedName}": Name must be at most 64 characters`);
+        return;
+      }
+
+      // Check for duplicate names
+      if (subagentNames.has(trimmedName)) {
+        toast.error(`Subagent "${trimmedName}": Duplicate name found. Names must be unique`);
+        return;
+      }
+      subagentNames.add(trimmedName);
+
+      // Validate system prompt
+      if (subagent.systemPrompt.trim().length < 10) {
+        toast.error(`Subagent "${trimmedName}": System prompt must be at least 10 characters`);
+        return;
+      }
+
+      // Validate description length if provided
+      if (subagent.description && subagent.description.trim().length > 256) {
+        toast.error(`Subagent "${trimmedName}": Description must be at most 256 characters`);
+        return;
+      }
+    }
+
     try {
       const selectedTier = RESOURCE_TIERS.find((tier) => tier.id === currentData.resources.tier);
 
