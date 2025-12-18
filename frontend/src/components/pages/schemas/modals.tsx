@@ -180,12 +180,12 @@ export function openValidationErrorsModal(
           Compatibility Error Details:
         </Text>
         <Box background="gray.100" maxHeight="400px" overflowY="auto" p="6">
-          {compatibilityError.errorType && (
+          {Boolean(compatibilityError.errorType) && (
             <Text color="red.600" fontWeight="bold" mb="2">
               Error: {compatibilityError.errorType.replace(/_/g, ' ')}
             </Text>
           )}
-          {compatibilityError.description && <Text lineHeight="1.6">{compatibilityError.description}</Text>}
+          {Boolean(compatibilityError.description) && <Text lineHeight="1.6">{compatibilityError.description}</Text>}
         </Box>
       </Box>
     ) : null;

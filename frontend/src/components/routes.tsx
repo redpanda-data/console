@@ -103,7 +103,7 @@ import { type AppFeature, AppFeatures } from '../utils/env';
 //
 // biome-ignore lint/suspicious/noExplicitAny: route definitions have varying type parameters
 export type IRouteEntry = PageDefinition<any>;
-export interface PageDefinition<TRouteParams = {}> {
+export type PageDefinition<TRouteParams = {}> = {
   title: string;
   path: string;
   pageType: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>;
@@ -111,7 +111,7 @@ export interface PageDefinition<TRouteParams = {}> {
   icon?: (props: React.ComponentProps<'svg'>) => JSX.Element;
   menuItemKey?: string; // set by 'CreateRouteMenuItems'
   visibilityCheck?: () => MenuItemState;
-}
+};
 
 // Generate content for <Menu> from all routes
 export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[] {
@@ -154,7 +154,7 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
         disabledText: disabledText as unknown as string,
       };
     })
-    .filter((x) => x != null && x !== undefined) as NavLinkProps[];
+    .filter((x) => x !== null && x !== undefined) as NavLinkProps[];
 }
 
 // Convert routes to <Route/> JSX declarations
@@ -219,10 +219,10 @@ const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
   [DisabledReasons.notSupportedServerless]: <span>This feature is not yet supported for Serverless.</span>,
 } as const;
 
-interface MenuItemState {
+export type MenuItemState = {
   visible: boolean;
   disabledReasons: DisabledReasons[];
-}
+};
 
 // Separate component to handle the route rendering logic
 function RouteRenderer<TRouteParams>({ route }: { route: PageDefinition<TRouteParams> }): JSX.Element {

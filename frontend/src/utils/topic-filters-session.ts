@@ -13,9 +13,9 @@ import type { FilterEntry } from '../state/ui';
 
 const SESSION_STORAGE_KEY = 'topic-filters';
 
-interface TopicFiltersMap {
+type TopicFiltersMap = {
   [topicName: string]: FilterEntry[];
-}
+};
 
 /**
  * Get all filters from sessionStorage

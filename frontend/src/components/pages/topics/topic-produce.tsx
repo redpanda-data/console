@@ -438,7 +438,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
               </Label>
             </GridItem>
             <GridItem colSpan={2}>
-              {showKeySchemaSelection && (
+              {Boolean(showKeySchemaSelection) && (
                 <Label text="Schema">
                   <Controller
                     control={control}
@@ -475,7 +475,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
               )}
             </GridItem>
             <GridItem colSpan={1}>
-              {showKeySchemaSelection && (
+              {Boolean(showKeySchemaSelection) && (
                 <Label text="Version">
                   <Controller
                     control={control}
@@ -541,7 +541,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
               </Box>
             </Label>
           )}
-          {errors?.key?.data && <Text color="red.500">{errors.key.data.message}</Text>}
+          {Boolean(errors?.key?.data) && <Text color="red.500">{errors?.key?.data?.message}</Text>}
         </Flex>
 
         <Divider />
@@ -566,7 +566,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                 </Label>
               </GridItem>
               <GridItem colSpan={2}>
-                {showValueSchemaSelection && (
+                {Boolean(showValueSchemaSelection) && (
                   <Label text="Schema">
                     <Controller
                       control={control}
@@ -598,7 +598,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                 )}
               </GridItem>
               <GridItem colSpan={1}>
-                {showValueSchemaSelection && (
+                {Boolean(showValueSchemaSelection) && (
                   <Label text="Version">
                     <Controller
                       control={control}
@@ -654,7 +654,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                 </Box>
               </Label>
             )}
-            {errors?.value?.data && <Text color="red.500">{errors.value.data.message}</Text>}
+            {Boolean(errors?.value?.data) && <Text color="red.500">{errors?.value?.data?.message}</Text>}
             <input {...register('value.data')} data-testid="valueData" />
           </Flex>
         </Flex>

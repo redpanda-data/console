@@ -21,9 +21,9 @@ import { Feature, isSupported } from '../../../state/supported-features';
 import { ShadowLinkDiagram } from '../shadowlinks/details/shadow-link-diagram';
 import { ShadowLinkMetrics } from '../shadowlinks/details/shadow-link-metrics';
 
-interface ShadowLinkOverviewCardProps {
+type ShadowLinkOverviewCardProps = {
   shadowLink: ListShadowLinksResponse_ShadowLink;
-}
+};
 
 export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ shadowLink }) => {
   const navigate = useNavigate();
@@ -55,9 +55,9 @@ export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ 
       <CardContent>
         <div className="flex flex-col gap-4">
           {/* Metrics */}
-          {unifiedShadowLink && <ShadowLinkMetrics shadowLink={unifiedShadowLink} />}
+          {unifiedShadowLink ? <ShadowLinkMetrics shadowLink={unifiedShadowLink} /> : null}
           {/* Diagram */}
-          {unifiedShadowLink && <ShadowLinkDiagram shadowLink={unifiedShadowLink} />}
+          {unifiedShadowLink ? <ShadowLinkDiagram shadowLink={unifiedShadowLink} /> : null}
         </div>
       </CardContent>
     </Card>

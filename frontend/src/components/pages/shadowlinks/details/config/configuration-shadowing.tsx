@@ -25,9 +25,9 @@ import {
   getResourceTypeLabel,
 } from '../../shadowlink-helpers';
 
-export interface ConfigurationShadowingProps {
+export type ConfigurationShadowingProps = {
   shadowLink: UnifiedShadowLink;
-}
+};
 
 // Component to display a single name filter (topic or consumer group)
 const NameFilterDisplay = ({ filter, index }: { filter: UnifiedNameFilter; index: number }) => {
@@ -71,7 +71,11 @@ const NameFilterSection = ({
       {filters.length > 0 ? (
         <ItemGroup>
           {filters.map((filter, index) => (
-            <NameFilterDisplay filter={filter} index={index} key={`${testId}-filter-${index}`} />
+            <NameFilterDisplay
+              filter={filter}
+              index={index}
+              key={`${testId}-${filter.name}-${filter.patternType}-${filter.filterType}`}
+            />
           ))}
         </ItemGroup>
       ) : (
@@ -156,7 +160,11 @@ const ACLFilterSection = ({ filters }: { filters: UnifiedACLFilter[] }) => {
         ) : (
           <div className="space-y-3">
             {filters.map((filter, index) => (
-              <ACLFilterDisplay filter={filter} index={index} key={`acl-filter-${index}`} />
+              <ACLFilterDisplay
+                filter={filter}
+                index={index}
+                key={`acl-${filter.resourceFilter?.resourceType}-${filter.resourceFilter?.name}-${filter.accessFilter?.principal}`}
+              />
             ))}
           </div>
         )}

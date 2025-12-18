@@ -25,7 +25,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { ShadowTopicStatusBadge } from './shadow-topic-status-badge';
 
-interface ShadowTopicsTableProps {
+type ShadowTopicsTableProps = {
   topics: ShadowTopic[] | undefined;
   onFailoverTopic: (topicName: string) => void;
   onRefresh?: () => void;
@@ -35,7 +35,7 @@ interface ShadowTopicsTableProps {
   isFetching?: boolean;
   topicNameFilter?: string;
   onTopicNameFilterChange?: (value: string) => void;
-}
+};
 
 const emptyTopics: ShadowTopic[] = [];
 
@@ -78,7 +78,7 @@ const VirtualizedRows = ({
             </TableRow>
           );
         })}
-        {isFetchingNextPage && <LoadingRow columnsLength={columnsLength} message="Loading more topics..." />}
+        {Boolean(isFetchingNextPage) && <LoadingRow columnsLength={columnsLength} message="Loading more topics..." />}
       </>
     );
   }
@@ -205,7 +205,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
 
     // When last visible item is near the end, fetch more
     if (lastItem.index >= rows.length - 1 && hasNextPage && !isFetchingNextPage && getNextTopicPage) {
-      void getNextTopicPage();
+      getNextTopicPage();
     }
   }, [hasNextPage, getNextTopicPage, isFetchingNextPage, rows.length, virtualRows]);
 
@@ -216,7 +216,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
           <CardTitle>Replicated topics</CardTitle>
           <CardAction>
             <div className="mb-4 flex items-center gap-2">
-              {isFetching && (
+              {Boolean(isFetching) && (
                 <Button size="icon" variant="ghost">
                   <Loader2 className="h-5 w-5 animate-spin" />
                 </Button>
@@ -230,7 +230,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
                   value={topicNameFilter || ''}
                 />
               </div>
-              {topicNameFilter && (
+              {Boolean(topicNameFilter) && (
                 <Button onClick={() => onTopicNameFilterChange?.('')} size="sm" variant="ghost">
                   <X className="h-4 w-4" />
                 </Button>

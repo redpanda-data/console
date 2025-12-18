@@ -82,12 +82,12 @@ const ClusterHealthOverview = () => {
             </Grid>
           </ListItem>
         )}
-        {api.userData?.canViewDebugBundle && Features.debugBundle && (
+        {Boolean(api.userData?.canViewDebugBundle && Features.debugBundle) && (
           <ListItem>
             <Grid gap={4} templateColumns={{ sm: '1fr', md: '1fr 1fr' }}>
               <Box fontWeight="bold">Debug bundle</Box>
               <Flex gap={2}>
-                {api.isDebugBundleInProgress && (
+                {Boolean(api.isDebugBundleInProgress) && (
                   <Button
                     as={ReactRouterLink}
                     px={0}
@@ -97,7 +97,7 @@ const ClusterHealthOverview = () => {
                     Bundle generation in progress...
                   </Button>
                 )}
-                {api.canDownloadDebugBundle && (
+                {Boolean(api.canDownloadDebugBundle) && (
                   <DebugBundleLink showDatetime={false} statuses={api.debugBundleStatuses} />
                 )}
                 {!api.isDebugBundleInProgress && (

@@ -317,19 +317,21 @@ export class AclPage {
     // Wait for the ACL creation/update API call to complete
     // The API uses Connect RPC: /redpanda.api.dataplane.v1.ACLService/CreateACL or DeleteACLs
     const responsePromise = this.page.waitForResponse(
-      response => {
+      (response) => {
         const url = response.url();
         const method = response.request().method();
         const status = response.status();
 
         // Match POST requests to ACLService endpoints (CreateACL or DeleteACLs)
-        const matches = (url.includes('ACLService/CreateACL') || url.includes('ACLService/DeleteACLs')) &&
-               method === 'POST' &&
-               status >= 200 && status < 400;
+        const matches =
+          (url.includes('ACLService/CreateACL') || url.includes('ACLService/DeleteACLs')) &&
+          method === 'POST' &&
+          status >= 200 &&
+          status < 400;
 
         return matches;
       },
-      { timeout: 60000 } // 60 second timeout for API call (increased for CI stability)
+      { timeout: 60_000 } // 60 second timeout for API call (increased for CI stability)
     );
 
     await submitButton.click();

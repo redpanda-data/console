@@ -107,7 +107,7 @@ export const VectorDatabaseSection = ({ knowledgeBase, isEditMode }: VectorDatab
                       field.value?.vectorDatabase.case === 'postgres' ? field.value.vectorDatabase.value.dsn : ''
                     )}
                   />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
             />
@@ -119,13 +119,13 @@ export const VectorDatabaseSection = ({ knowledgeBase, isEditMode }: VectorDatab
             </div>
           )}
 
-          {postgres && (
+          {postgres ? (
             <FormItem>
               <FormLabel>Table Name</FormLabel>
               <p className="mb-2 text-muted-foreground text-sm">Table name cannot be changed after creation.</p>
               <Input disabled value={postgres.table} />
             </FormItem>
-          )}
+          ) : null}
         </div>
       </CardContent>
     </Card>

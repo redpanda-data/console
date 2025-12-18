@@ -61,7 +61,7 @@ export const SaveMessagesDialog = observer(
 
     const cleanPayload = (p: Payload): Payload | undefined => {
       if (!p) {
-        return undefined;
+        return;
       }
 
       const cleanedPayload = {

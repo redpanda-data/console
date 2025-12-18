@@ -39,22 +39,22 @@ export const KeyValueField = ({ label, helperText, showAddButton = true, ...rest
   return (
     <FormControl mb={4}>
       <Stack spacing={0.5}>
-        {label && (
+        {Boolean(label) && (
           <FormLabel fontWeight="medium" mb={0}>
             {label}
           </FormLabel>
         )}
-        {helperText && (
+        {Boolean(helperText) && (
           <FormHelperText mb={1} mt={0}>
             {helperText}
           </FormHelperText>
         )}
       </Stack>
-      {field?.state?.value?.map((_, index) => (
-        <KeyValuePairField index={index} key={index} {...rest} />
+      {field?.state?.value?.map((pair, index) => (
+        <KeyValuePairField index={index} key={`${pair.key}-${pair.value}-${index}`} {...rest} />
       ))}
 
-      {showAddButton && (
+      {Boolean(showAddButton) && (
         <ButtonGroup>
           <Button
             data-testid="add-label-button"

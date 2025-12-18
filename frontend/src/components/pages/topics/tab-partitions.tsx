@@ -144,8 +144,8 @@ const PartitionError: FC<{ partition: Partition }> = ({ partition }) => {
     <Popover
       content={
         <Flex flexDirection="column" gap={2} maxWidth={500} whiteSpace="pre-wrap">
-          {partition.partitionError && <Text>{partition.partitionError}</Text>}
-          {partition.waterMarksError && <Text>{partition.waterMarksError}</Text>}
+          {Boolean(partition.partitionError) && <Text>{partition.partitionError}</Text>}
+          {Boolean(partition.waterMarksError) && <Text>{partition.waterMarksError}</Text>}
         </Flex>
       }
       hideCloseButton

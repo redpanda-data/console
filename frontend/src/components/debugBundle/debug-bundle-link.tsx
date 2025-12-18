@@ -64,7 +64,7 @@ const DebugBundleLink = ({
         >
           {downloadFilename}
         </Link>
-        {showDeleteButton && (
+        {Boolean(showDeleteButton) && (
           <Tooltip hasArrow label="Delete bundle" placement="top">
             <IconButton
               aria-label="Delete file"
@@ -79,10 +79,8 @@ const DebugBundleLink = ({
           </Tooltip>
         )}
       </Flex>
-      {showDatetime && (
-        <Text>
-          Generated {statusWithFilename.createdAt && timestampDate(statusWithFilename.createdAt).toLocaleString()}
-        </Text>
+      {Boolean(showDatetime) && statusWithFilename.createdAt && (
+        <Text>Generated {timestampDate(statusWithFilename.createdAt).toLocaleString()}</Text>
       )}
     </Box>
   );

@@ -162,7 +162,7 @@ const TopicList: FC = () => {
             width="350px"
           />
           <AnimatePresence>
-            {localSearchValue && (
+            {Boolean(localSearchValue) && (
               <motion.div
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -361,7 +361,7 @@ const renderName = (topic: Topic) => {
   let missing = 0;
   for (const a of TopicActions) {
     if (!actions.includes(a)) {
-      missing++;
+      missing += 1;
     }
   }
 
@@ -452,13 +452,13 @@ function ConfirmDeletionModal({
           <AlertDialogHeader>Delete Topic</AlertDialogHeader>
 
           <AlertDialogBody>
-            {error && (
+            {Boolean(error) && (
               <Alert mb={2} status="error">
                 <AlertIcon />
-                {`An error occurred: ${typeof error === 'string' ? error : error.message}`}
+                {`An error occurred: ${typeof error === 'string' ? error : (error?.message ?? 'Unknown error')}`}
               </Alert>
             )}
-            {topicToDelete?.isInternal && (
+            {Boolean(topicToDelete?.isInternal) && (
               <Alert mb={2} status="error">
                 <AlertIcon />
                 This is an internal topic, deleting it might have unintended side-effects!

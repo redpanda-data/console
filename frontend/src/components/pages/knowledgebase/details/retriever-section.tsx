@@ -162,7 +162,7 @@ export const RetrieverSection = ({ knowledgeBase, isEditMode }: RetrieverSection
                 )}
               />
 
-              {formData.retriever?.reranker?.enabled && (
+              {Boolean(formData.retriever?.reranker?.enabled) && (
                 <>
                   <Field>
                     <FieldLabel required>Model</FieldLabel>
@@ -261,7 +261,7 @@ export const RetrieverSection = ({ knowledgeBase, isEditMode }: RetrieverSection
                             scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
                             value={extractSecretName(currentApiKey || '')}
                           />
-                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                          {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                         </Field>
                       );
                     }}

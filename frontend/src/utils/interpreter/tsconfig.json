@@ -15,7 +15,8 @@
     "removeComments": true,
     "noEmitHelpers": true,
     "noEmitOnError": true,
-    "noImplicitUseStrict": true
+    "noImplicitUseStrict": true,
+    "strictNullChecks": true
   },
   "include": ["findFunction.ts"]
 }

@@ -111,7 +111,7 @@ export const RemoteMCPDetailsPage = () => {
             <Logs className="h-4 w-4" />
             Logs
           </TabsTrigger>
-          {isRemoteMcpInspectorFeatureEnabled && (
+          {Boolean(isRemoteMcpInspectorFeatureEnabled) && (
             <TabsTrigger className="gap-2" value="inspector">
               <Search className="h-4 w-4" />
               MCP Inspector
@@ -128,7 +128,7 @@ export const RemoteMCPDetailsPage = () => {
         <TabsContent value="logs">
           <RemoteMCPLogsTab />
         </TabsContent>
-        {isRemoteMcpInspectorFeatureEnabled && (
+        {Boolean(isRemoteMcpInspectorFeatureEnabled) && (
           <TabsContent value="inspector">
             <RemoteMCPInspectorTab />
           </TabsContent>

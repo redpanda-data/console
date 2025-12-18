@@ -41,7 +41,7 @@ function mapControlplaneClientOptions(
   clientOptions: ControlplaneShadowLink['clientOptions']
 ): UnifiedClientOptions | undefined {
   if (!clientOptions) {
-    return undefined;
+    return;
   }
 
   // Map TLS settings - controlplane uses flat structure
@@ -109,7 +109,7 @@ function mapControlplaneTopicMetadataSyncOptions(
   options: ControlplaneShadowLink['topicMetadataSyncOptions']
 ): UnifiedTopicMetadataSyncOptions | undefined {
   if (!options) {
-    return undefined;
+    return;
   }
 
   return {
@@ -130,7 +130,7 @@ function mapControlplaneConsumerOffsetSyncOptions(
   options: ControlplaneShadowLink['consumerOffsetSyncOptions']
 ): UnifiedConsumerOffsetSyncOptions | undefined {
   if (!options) {
-    return undefined;
+    return;
   }
 
   return {
@@ -149,7 +149,7 @@ function mapControlplaneSecuritySyncOptions(
   options: ControlplaneShadowLink['securitySyncOptions']
 ): UnifiedSecuritySyncOptions | undefined {
   if (!options) {
-    return undefined;
+    return;
   }
 
   return {
@@ -180,7 +180,7 @@ function mapControlplaneSchemaRegistrySyncOptions(
   options: ControlplaneShadowLink['schemaRegistrySyncOptions']
 ): UnifiedSchemaRegistrySyncOptions | undefined {
   if (!options) {
-    return undefined;
+    return;
   }
 
   return {
@@ -196,7 +196,7 @@ function mapControlplaneSchemaRegistrySyncOptions(
  */
 function mapControlplaneConfigurations(sl: ControlplaneShadowLink): UnifiedShadowLinkConfigurations | undefined {
   if (!sl.clientOptions) {
-    return undefined;
+    return;
   }
 
   return {

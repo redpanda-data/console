@@ -46,7 +46,7 @@ export const TaskMessageWrapper = ({ taskId, taskState, children }: TaskMessageW
       </TaskTrigger>
       <TaskContent>
         {children}
-        {isWorking && (
+        {Boolean(isWorking) && (
           <div className="my-4 flex items-center">
             <Loader size={24} />
           </div>

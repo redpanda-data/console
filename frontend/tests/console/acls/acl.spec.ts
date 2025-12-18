@@ -1,7 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
 import {
-  getRuleDataTestId,
   ModeAllowAll,
   ModeCustom,
   ModeDenyAll,

@@ -14,6 +14,7 @@
 export {};
 
 declare global {
+  // biome-ignore lint/style/useConsistentTypeDefinitions: leave as interface due to type checker
   interface Array<T> {
     remove(obj: T): boolean;
     removeAll(selector: (x: T) => boolean): number;
@@ -96,8 +97,8 @@ Array.prototype.removeAll = function removeAll<T>(this: T[], selector: (x: T) =>
   for (let i = 0; i < this.length; i++) {
     if (selector(this[i])) {
       this.splice(i, 1);
-      count++;
-      i--;
+      count += 1;
+      i -= 1;
     }
   }
   return count;
@@ -233,7 +234,7 @@ Array.prototype.groupInto = function groupInto<T, K>(this: T[], keySelector: (x:
 };
 
 Array.prototype.filterNull = function filterNull<T>(this: (T | null | undefined)[]): T[] {
-  return this.filter((x) => x != null) as T[];
+  return this.filter((x) => x !== null) as T[];
 };
 
 Array.prototype.filterFalsy = function filterFalsy<T>(this: (T | null | undefined)[]): T[] {

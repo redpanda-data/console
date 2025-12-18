@@ -80,6 +80,7 @@ type LocalMCPServer = {
   url: string;
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: This component manages complex configuration UI with multiple states and conditional renders
 export const RemoteMCPConfigurationTab = () => {
   const { id } = useParams<{ id: string }>();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
@@ -716,7 +717,7 @@ export const RemoteMCPConfigurationTab = () => {
                     </div>
                   </div>
 
-                  {(displayData.tags.length > 0 || isEditing) && (
+                  {Boolean(displayData.tags.length > 0 || isEditing) && (
                     <div className="flex flex-col gap-2 space-y-4">
                       <Heading className="font-medium text-sm" level={4}>
                         Tags
@@ -731,7 +732,7 @@ export const RemoteMCPConfigurationTab = () => {
                           const duplicateKeys = isEditing ? getDuplicateKeys(displayData.tags) : new Set();
                           const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
                           return (
-                            <div className="flex items-center gap-2" key={`tag-${index}`}>
+                            <div className="flex items-center gap-2" key={`tag-${tag.key}-${tag.value}`}>
                               <div className="flex-1">
                                 <Input
                                   className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
@@ -749,7 +750,7 @@ export const RemoteMCPConfigurationTab = () => {
                                   value={tag.value}
                                 />
                               </div>
-                              {isEditing && (
+                              {Boolean(isEditing) && (
                                 <div className="flex h-9 items-end">
                                   <Button onClick={() => handleRemoveTag(index)} size="sm" variant="outline">
                                     <Trash2 className="h-4 w-4" />
@@ -759,7 +760,7 @@ export const RemoteMCPConfigurationTab = () => {
                             </div>
                           );
                         })}
-                        {isEditing && (
+                        {Boolean(isEditing) && (
                           <Button className="w-full" onClick={handleAddTag} variant="dashed">
                             <Plus className="h-4 w-4" />
                             Add Tag
@@ -806,9 +807,9 @@ export const RemoteMCPConfigurationTab = () => {
                     </div>
                   </div>
 
-                  {selectedTool && (
+                  {selectedTool ? (
                     <div className="space-y-4">
-                      {isEditing && (
+                      {isEditing ? (
                         <div className="grid grid-cols-1 gap-4 rounded-lg bg-muted/30 p-4 md:grid-cols-3">
                           <div className="space-y-2">
                             <Label className="font-medium text-sm">Component Type</Label>
@@ -903,7 +904,7 @@ export const RemoteMCPConfigurationTab = () => {
                             </Select>
                           </div>
                         </div>
-                      )}
+                      ) : null}
                       <div className="space-y-2">
                         <YamlEditorCard
                           height="500px"
@@ -920,10 +921,10 @@ export const RemoteMCPConfigurationTab = () => {
                           showLint={isEditing}
                           value={selectedTool.config}
                         />
-                        {isEditing && <LintHintList lintHints={lintHints[selectedTool.id] || {}} />}
+                        {isEditing ? <LintHintList lintHints={lintHints[selectedTool.id] || {}} /> : null}
                       </div>
                     </div>
-                  )}
+                  ) : null}
 
                   {!selectedTool && displayData.tools.length > 0 && (
                     <div className="flex items-center justify-center rounded-lg border-2 border-muted border-dashed py-12 text-center">
@@ -936,7 +937,7 @@ export const RemoteMCPConfigurationTab = () => {
                     </div>
                   )}
 
-                  {isEditing && (
+                  {Boolean(isEditing) && (
                     <Button className="w-full" onClick={handleAddTool} variant="dashed">
                       <Plus className="h-4 w-4" />
                       Add Tool
@@ -948,7 +949,7 @@ export const RemoteMCPConfigurationTab = () => {
           </div>
 
           {/* Secrets panel - takes 1 column on xl screens, only shown when editing and there are missing secrets */}
-          {hasSecretWarnings && isEditing && (
+          {Boolean(hasSecretWarnings && isEditing) && (
             <div className="xl:col-span-1">
               <div className="sticky top-4">
                 <QuickAddSecrets
@@ -986,7 +987,7 @@ export const RemoteMCPConfigurationTab = () => {
       </div>
 
       {/* Expanded YAML Editor Dialog */}
-      {selectedTool && (
+      {selectedTool ? (
         <ExpandedYamlDialog
           isLintConfigPending={isLintConfigPending}
           isOpen={isExpandedDialogOpen}
@@ -999,7 +1000,7 @@ export const RemoteMCPConfigurationTab = () => {
           toolName={selectedTool.name}
           value={selectedTool.config}
         />
-      )}
+      ) : null}
     </div>
   );
 };

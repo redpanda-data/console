@@ -47,13 +47,13 @@ export const ArtifactBlock = ({ artifactId, name, description, parts, timestamp 
       <ArtifactHeader>
         <div>
           <ArtifactTitle>{name || 'Artifact'}</ArtifactTitle>
-          {description && <ArtifactDescription>{description}</ArtifactDescription>}
+          {Boolean(description) && <ArtifactDescription>{description}</ArtifactDescription>}
         </div>
       </ArtifactHeader>
       <ArtifactContent>
-        {parts.map((part, index) => {
+        {parts.map((part) => {
           if (part.kind === 'text') {
-            return <Response key={index}>{part.text}</Response>;
+            return <Response key={`${artifactId}-text-${part.text.substring(0, 50)}`}>{part.text}</Response>;
           }
 
           if (part.kind === 'file' && part.file.mimeType.startsWith('image/')) {
@@ -62,7 +62,7 @@ export const ArtifactBlock = ({ artifactId, name, description, parts, timestamp 
               : part.file.uri || '';
 
             return (
-              <div className="my-4 flex justify-center" key={index}>
+              <div className="my-4 flex justify-center" key={`${artifactId}-image-${part.file.name || part.file.uri}`}>
                 {part.file.bytes ? (
                   <Image
                     alt={part.file.name || 'Generated image'}

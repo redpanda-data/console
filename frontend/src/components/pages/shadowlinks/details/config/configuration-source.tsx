@@ -26,9 +26,9 @@ import type React from 'react';
 import { TlsCertificatesConfig } from './tls-certificates-config';
 import type { UnifiedShadowLink } from '../../model';
 
-export interface ConfigurationSourceProps {
+export type ConfigurationSourceProps = {
   shadowLink: UnifiedShadowLink;
-}
+};
 
 const ConfigField = ({ label, value, testId }: { label: string; value: React.ReactNode; testId?: string }) => (
   <div className="flex items-start justify-between border-b py-3 last:border-b-0">
@@ -92,8 +92,8 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
               </Text>
               <div className="flex flex-col items-end gap-1" data-testid="bootstrap-servers-value">
                 {clientOptions?.bootstrapServers && clientOptions.bootstrapServers.length > 0 ? (
-                  clientOptions.bootstrapServers.map((server, index) => (
-                    <Text className="font-medium" key={`${server}-${index}`}>
+                  clientOptions.bootstrapServers.map((server) => (
+                    <Text className="font-medium" key={server}>
                       {server}
                     </Text>
                   ))
@@ -119,7 +119,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
               }
             />
 
-            {hasTLSCerts && <TlsCertificatesConfig tlsSettings={tlsSettings} />}
+            {Boolean(hasTLSCerts) && <TlsCertificatesConfig tlsSettings={tlsSettings} />}
           </div>
         </CardContent>
       </Card>
@@ -147,7 +147,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
               }
             />
 
-            {isAuthEnabled && (
+            {Boolean(isAuthEnabled) && (
               <>
                 <ConfigField label="Username" testId="auth-username" value={scramConfig?.username || '-'} />
                 <ConfigField label="SASL mechanism" testId="auth-sasl-mechanism" value={scramMechanismLabel} />

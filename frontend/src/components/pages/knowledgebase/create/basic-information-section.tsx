@@ -66,7 +66,7 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel required>Display Name</FieldLabel>
                 <Input placeholder="Enter display name" {...field} />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />
@@ -78,7 +78,7 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel>Description</FieldLabel>
                 <Textarea placeholder="Enter description" rows={3} {...field} />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />

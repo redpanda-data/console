@@ -220,7 +220,7 @@ export const schemaToConfig = (
 
 function populateWizardFields(spec: RawFieldSpec, componentName?: string): string | string[] | undefined {
   if (!spec.name) {
-    return undefined;
+    return;
   }
 
   const topicData = onboardingWizardStore.getTopicData();
@@ -251,7 +251,7 @@ function populateWizardFields(spec: RawFieldSpec, componentName?: string): strin
     }
   }
 
-  return undefined;
+  return;
 }
 
 /**
@@ -267,7 +267,7 @@ function populateContextualVariables(
   parentName?: string
 ): string | string[] | undefined {
   if (!(spec.name && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
-    return undefined;
+    return;
   }
 
   // Schema Registry URL within schema_registry object
@@ -275,7 +275,7 @@ function populateContextualVariables(
     return getContextualVariableSyntax('REDPANDA_SCHEMA_REGISTRY_URL');
   }
 
-  return undefined;
+  return;
 }
 
 /**
@@ -295,7 +295,7 @@ function populateConnectionDefaults(
   parentName?: string
 ): string | boolean | string[] | undefined {
   if (!(spec.name && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
-    return undefined;
+    return;
   }
 
   // SASL mechanism from session storage or default to SCRAM-SHA-256
@@ -305,7 +305,7 @@ function populateConnectionDefaults(
     return userData?.saslMechanism || 'SCRAM-SHA-256';
   }
 
-  return undefined;
+  return;
 }
 
 function shouldShowField(params: {
@@ -463,12 +463,12 @@ function generateScalarValue(spec: RawFieldSpec, options: GenerateDefaultValueOp
   }
 }
 
-interface GenerateDefaultValueOptions {
+type GenerateDefaultValueOptions = {
   showOptionalFields?: boolean;
   showAdvancedFields?: boolean;
   componentName?: string;
   parentName?: string;
-}
+};
 
 /**
  * Converts string default values to their proper types
@@ -525,7 +525,7 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
 
   // Early exit if field should not be shown (and wasn't auto-populated above)
   if (!shouldShow) {
-    return undefined;
+    return;
   }
 
   // Special comment handling for conditional and optional fields

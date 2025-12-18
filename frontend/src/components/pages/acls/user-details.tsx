@@ -64,7 +64,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
   }
 
   async refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListAcls) {
+    if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
       return;
     }
 
@@ -97,7 +97,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
             userName={userName}
           />
           <div>
-            {isServiceAccount && (
+            {Boolean(isServiceAccount) && (
               <DeleteUserConfirmModal
                 buttonEl={
                   <Button disabled={!isServiceAccount} variant="destructive">
@@ -127,7 +127,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
           </div>
 
           {/*Modals*/}
-          {api.isAdminApiConfigured && (
+          {Boolean(api.isAdminApiConfigured) && (
             <ChangePasswordModal
               isOpen={this.isChangePasswordModalOpen}
               setIsOpen={(value: boolean) => (this.isChangePasswordModalOpen = value)}
@@ -135,7 +135,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
             />
           )}
 
-          {Features.rolesApi && (
+          {Boolean(Features.rolesApi) && (
             <ChangeRolesModal
               isOpen={this.isChangeRolesModalOpen}
               setIsOpen={(value: boolean) => (this.isChangeRolesModalOpen = value)}

@@ -125,7 +125,7 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
       return DefaultSkeleton;
     }
 
-    if (this.editorState == null) {
+    if (this.editorState === null) {
       const schema = subject.schemas.first((x) => x.version === subject.latestActiveVersion);
       if (!schema) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -189,7 +189,7 @@ const SchemaPageButtons = observer(
 
     return (
       <>
-        {persistentValidationError && (
+        {persistentValidationError ? (
           <Alert data-testid="schema-create-validation-error-alert" mb="4" mt="4" status="error" variant="left-accent">
             <AlertIcon />
             <Box flex="1">
@@ -213,7 +213,7 @@ const SchemaPageButtons = observer(
               top={-1}
             />
           </Alert>
-        )}
+        ) : null}
 
         <Flex gap="4" mt="4">
           <Button
@@ -397,7 +397,7 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
     <>
       <Heading variant="lg">Settings</Heading>
 
-      {isAddVersion && (
+      {Boolean(isAddVersion) && (
         <Alert status="info">
           <AlertIcon />
           When adding a new schema version, the only thing that can be changed is the schema definition and its

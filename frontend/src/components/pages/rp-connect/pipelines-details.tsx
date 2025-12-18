@@ -132,7 +132,8 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                 let waitIteration = 0;
 
                 while (true) {
-                  const waitTime = waitDelays[Math.min(waitDelays.length - 1, waitIteration++)];
+                  const waitTime = waitDelays[Math.min(waitDelays.length - 1, waitIteration)];
+                  waitIteration += 1;
                   await delay(waitTime);
 
                   await pipelinesApi.refreshPipelines(true);
@@ -212,7 +213,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
           </Button>
         </Flex>
 
-        {error && (
+        {Boolean(error) && (
           <Alert status="error" variant="left-accent">
             <AlertIcon />
             {error}

@@ -30,7 +30,7 @@ type AclListProps = {
 
 function flatResourceList(store: Acls) {
   const acls = store;
-  if (acls?.aclResources == null) {
+  if (!acls || acls.aclResources === null) {
     return [];
   }
   const flatResources = acls.aclResources
@@ -44,7 +44,7 @@ export default observer(({ acl }: AclListProps) => {
 
   return (
     <>
-      {acl == null ? (
+      {acl === null ? (
         <Alert status="warning" style={{ marginBottom: '1em' }}>
           <AlertIcon />
           You do not have the necessary permissions to view ACLs

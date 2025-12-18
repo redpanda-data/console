@@ -194,7 +194,7 @@ export const EmbeddingGeneratorSection = ({ knowledgeBase, isEditMode }: Embeddi
                         scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
                         value={extractSecretName(currentApiKey || '')}
                       />
-                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   );
                 }}
@@ -209,7 +209,7 @@ export const EmbeddingGeneratorSection = ({ knowledgeBase, isEditMode }: Embeddi
                 <FormLabel>Model</FormLabel>
                 <div className="relative">
                   <Input className="pl-9" disabled value={embeddingGen?.model || 'Not configured'} />
-                  <div className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3">
+                  <div className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2">
                     {embeddingGen?.provider?.provider.case === 'openai' ? (
                       <OpenAILogo className="h-4 w-4 shrink-0" />
                     ) : (

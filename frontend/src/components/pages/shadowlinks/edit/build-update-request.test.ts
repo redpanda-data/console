@@ -168,19 +168,20 @@ describe('buildControlplaneUpdateRequest', () => {
         expectedPathContains: 'consumer_offset_sync_options',
         shouldNotContain: 'configurations.consumer_offset_sync_options',
       },
-    ])(
-      'should strip "configurations." prefix when $description',
-      ({ changes, expectedPathContains, shouldNotContain }) => {
-        const updatedValues = { ...baseFormValues, ...changes };
+    ])('should strip "configurations." prefix when $description', ({
+      changes,
+      expectedPathContains,
+      shouldNotContain,
+    }) => {
+      const updatedValues = { ...baseFormValues, ...changes };
 
-        const result = buildControlplaneUpdateRequest('shadow-link-id-123', updatedValues, baseFormValues);
+      const result = buildControlplaneUpdateRequest('shadow-link-id-123', updatedValues, baseFormValues);
 
-        const paths = result.updateMask?.paths ?? [];
-        expect(paths.some((p) => p.includes(expectedPathContains))).toBe(true);
-        expect(paths.every((p) => !p.startsWith('configurations.'))).toBe(true);
-        expect(paths.some((p) => p === shouldNotContain)).toBe(false);
-      }
-    );
+      const paths = result.updateMask?.paths ?? [];
+      expect(paths.some((p) => p.includes(expectedPathContains))).toBe(true);
+      expect(paths.every((p) => !p.startsWith('configurations.'))).toBe(true);
+      expect(paths.some((p) => p === shouldNotContain)).toBe(false);
+    });
   });
 
   describe('request structure', () => {

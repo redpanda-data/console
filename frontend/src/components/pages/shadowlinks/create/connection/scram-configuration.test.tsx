@@ -13,9 +13,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from 'components/redpanda-ui/components/form';
 import { useForm } from 'react-hook-form';
 import { fireEvent, render, screen, waitFor } from 'test-utils';
+import { vi } from 'vitest';
 
 import { ScramConfiguration } from './scram-configuration';
 import { FormSchema, type FormValues, initialValues } from '../model';
+
+vi.mock('config', () => ({
+  isEmbedded: vi.fn(() => false),
+}));
 
 const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormValues }) => {
   const form = useForm<FormValues>({

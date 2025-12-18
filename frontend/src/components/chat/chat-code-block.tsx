@@ -89,10 +89,11 @@ export const ChatCodeBlock = ({
             lineProps={(lineNumber: number) => {
               const highlight = shouldHighlightLine(lineNumber - 1);
               const DIMMED_OPACITY = 0.5;
+              const opacity = highlightLines && !highlight ? DIMMED_OPACITY : 1;
               return {
                 style: {
                   backgroundColor: highlight ? 'whiteAlpha.200' : 'initial',
-                  opacity: highlightLines ? (highlight ? 1 : DIMMED_OPACITY) : 1,
+                  opacity,
                 },
               };
             }}
@@ -101,11 +102,11 @@ export const ChatCodeBlock = ({
             style={theme === 'dark' ? nightOwlTheme : prism}
             wrapLines
           >
-            {removeLineBreaksFromCopy ? codeString.replace(/[\n\r]/g, '') : codeString}
+            {removeLineBreaksFromCopy ? codeString.replace(/[\n\r]/g, '') : codeString || ''}
           </SyntaxHighlighter>
         </Box>
       </Box>
-      {showCopyButton && (
+      {Boolean(showCopyButton) && (
         <Box position="absolute" right={1} top={1}>
           <CopyButton
             _hover={{

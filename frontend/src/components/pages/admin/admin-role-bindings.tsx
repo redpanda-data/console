@@ -86,7 +86,7 @@ export class SubjectComponent extends Component<{ subject: Subject }> {
         <span style={{ textTransform: 'capitalize' }}>{s.subjectKindName}</span>
         {': '}
         <span>{s.name}</span>
-        <span>{s.organization && ` (Org: ${s.organization})`}</span>
+        <span>{Boolean(s.organization) && ` (Org: ${s.organization})`}</span>
       </div>
     );
   }

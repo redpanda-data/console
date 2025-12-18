@@ -15,12 +15,12 @@ import { MdOutlineSettings } from 'react-icons/md';
 
 import type { FilterEntry } from '../../../../../state/ui';
 
-interface MessageSearchFilterBarProps {
+type MessageSearchFilterBarProps = {
   filters: FilterEntry[];
   onEdit: (filter: FilterEntry) => void;
   onToggle: (filterId: string) => void;
   onRemove: (filterId: string) => void;
-}
+};
 
 export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filters, onEdit, onToggle, onRemove }) => {
   return (

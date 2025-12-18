@@ -57,16 +57,18 @@ export default class AdminPageDebugBundleProgress extends PageComponent {
         </Text>
 
         <Box mt={4}>
-          {api.isDebugBundleInProgress && <Text data-testid="debug-bundle-generating-text">Generating bundle...</Text>}
-          {api.isDebugBundleExpired && (
+          {Boolean(api.isDebugBundleInProgress) && (
+            <Text data-testid="debug-bundle-generating-text">Generating bundle...</Text>
+          )}
+          {Boolean(api.isDebugBundleExpired) && (
             <Text data-testid="debug-bundle-expired-text" fontWeight="bold">
               Your previous bundle has expired and cannot be downloaded.
             </Text>
           )}
-          {api.isDebugBundleError && (
+          {Boolean(api.isDebugBundleError) && (
             <Text data-testid="debug-bundle-error-text">Your debug bundle was not generated.</Text>
           )}
-          {api.canDownloadDebugBundle && (
+          {Boolean(api.canDownloadDebugBundle) && (
             <Box data-testid="debug-bundle-complete-box">
               <Flex gap={2}>
                 <Text fontWeight="bold">Debug bundle complete:</Text>
@@ -78,7 +80,7 @@ export default class AdminPageDebugBundleProgress extends PageComponent {
 
         {!api.isDebugBundleExpired && (
           <Box mt={2}>
-            {api.debugBundleStatuses && <DebugBundleOverview statuses={api.debugBundleStatuses} />}
+            {Boolean(api.debugBundleStatuses) && <DebugBundleOverview statuses={api.debugBundleStatuses} />}
 
             <Box my={2}>
               {api.isDebugBundleInProgress ? (

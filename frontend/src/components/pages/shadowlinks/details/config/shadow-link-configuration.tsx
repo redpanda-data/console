@@ -18,9 +18,9 @@ import { ConfigurationSource } from './configuration-source';
 import { ConfigurationTopicReplication } from './configuration-topic-replication';
 import type { UnifiedShadowLink } from '../../model';
 
-export interface ShadowLinkConfigurationProps {
+export type ShadowLinkConfigurationProps = {
   shadowLink: UnifiedShadowLink;
-}
+};
 
 export const ShadowLinkConfiguration = ({ shadowLink }: ShadowLinkConfigurationProps) => (
   <Tabs defaultValue="all">

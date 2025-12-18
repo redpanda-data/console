@@ -267,7 +267,7 @@ function processVersionInfo(headers: Headers) {
 
       const serverBuildTimestamp = Number(v);
       if (
-        v != null &&
+        v !== null &&
         v !== '' &&
         Number.isFinite(serverBuildTimestamp) &&
         uiState.serverBuildTimestamp !== serverBuildTimestamp
@@ -615,7 +615,7 @@ const apiStore = {
 
   refreshTopics(force?: boolean) {
     cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force).then((v) => {
-      if (v?.topics != null) {
+      if (v?.topics !== null && v?.topics !== undefined) {
         for (const t of v.topics) {
           if (!t.allowedActions) {
             // no op - allowedActions may not be set
@@ -676,7 +676,7 @@ const apiStore = {
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/documentation`,
       force
     ).then((v) => {
-      const text = v.documentation.markdown == null ? null : decodeBase64(v.documentation.markdown);
+      const text = v.documentation.markdown === null ? null : decodeBase64(v.documentation.markdown);
       v.documentation.text = text;
       this.topicDocumentation.set(topicName, v.documentation);
     }, addError);
@@ -752,7 +752,7 @@ const apiStore = {
         }[] = [];
 
         for (const t of response.topics) {
-          if (t.error != null) {
+          if (t.error !== null) {
             // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
             continue;
@@ -841,7 +841,7 @@ const apiStore = {
             }
 
             // replicaSize
-            const validLogDirs = p.partitionLogDirs.filter((e) => (e.error == null || e.error === '') && e.size >= 0);
+            const validLogDirs = p.partitionLogDirs.filter((e) => (e.error === null || e.error === '') && e.size >= 0);
             const replicaSize = validLogDirs.length > 0 ? validLogDirs.max((e) => e.size) : 0;
             p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
           }
@@ -874,10 +874,10 @@ const apiStore = {
           p.topicName = topicName;
 
           if (p.partitionError) {
-            partitionErrors++;
+            partitionErrors += 1;
           }
           if (p.waterMarksError) {
-            waterMarkErrors++;
+            waterMarkErrors += 1;
           }
           if (partitionErrors || waterMarkErrors) {
             p.hasErrors = true;
@@ -885,7 +885,7 @@ const apiStore = {
           }
 
           // replicaSize
-          const validLogDirs = p.partitionLogDirs.filter((e) => (e.error == null || e.error === '') && e.size >= 0);
+          const validLogDirs = p.partitionLogDirs.filter((e) => (e.error === null || e.error === '') && e.size >= 0);
           const replicaSize = validLogDirs.length > 0 ? validLogDirs.max((e) => e.size) : 0;
           p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
         }
@@ -1063,7 +1063,7 @@ const apiStore = {
 
   refreshCluster(force?: boolean) {
     cachedApiRequest<ClusterInfoResponse>(`${appConfig.restBasePath}/cluster`, force).then((v) => {
-      if (v?.clusterInfo != null) {
+      if (v?.clusterInfo !== null && v?.clusterInfo !== undefined) {
         transaction(() => {
           // add 'type' to each synonym entry
           for (const broker of v.clusterInfo.brokers) {
@@ -1114,7 +1114,7 @@ const apiStore = {
 
   refreshConsumerGroups(force?: boolean) {
     cachedApiRequest<GetConsumerGroupsResponse>(`${appConfig.restBasePath}/consumer-groups`, force).then((v) => {
-      if (v?.consumerGroups != null) {
+      if (v?.consumerGroups !== null && v?.consumerGroups !== undefined) {
         for (const g of v.consumerGroups) {
           addFrontendFieldsForConsumerGroup(g);
         }
@@ -1199,7 +1199,7 @@ const apiStore = {
 
   refreshAdminInfo(force?: boolean) {
     cachedApiRequest<AdminInfo | null>(`${appConfig.restBasePath}/admin`, force).then((info) => {
-      if (info == null) {
+      if (info === null) {
         this.adminInfo = null;
         return;
       }
@@ -1219,7 +1219,7 @@ const apiStore = {
       for (const binding of info.roleBindings) {
         // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
         binding.resolvedRole = info.roles.first((r) => r.name === binding.roleName)!;
-        if (binding.resolvedRole == null) {
+        if (binding.resolvedRole === null) {
           // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error(`could not resolve roleBinding to role: ${toJson(binding)}`);
         }
@@ -1229,7 +1229,7 @@ const apiStore = {
       for (const user of info.users) {
         // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
         user.bindings = user.bindingIds.map((id) => info.roleBindings.first((rb) => rb.ephemeralId === id)!);
-        if (user.bindings.any((b) => b == null)) {
+        if (user.bindings.any((b) => b === null)) {
           // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error(`one or more rolebindings could not be resolved for user: ${toJson(user)}`);
         }
@@ -2290,7 +2290,12 @@ export const rolesApi = observable({
 
     for (const r of rolePromises) {
       const res = (await r) as { response?: { role?: { name: string }; members: Array<{ principal: string }> } };
-      if (res.response == null || res.response.role == null) {
+      if (
+        res.response === null ||
+        res.response === undefined ||
+        res.response.role === null ||
+        res.response.role === undefined
+      ) {
         continue; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
       }
       const roleName = res.response.role.name;
@@ -2777,7 +2782,7 @@ export function createMessageSearch() {
       // For StartOffset = Newest and any set push-down filter we need to bump the default timeout
       // from 30s to 30 minutes before ending the request gracefully.
       let timeoutMs = 30 * 1000;
-      if (searchRequest.startOffset === PartitionOffsetOrigin.End || req.filterInterpreterCode != null) {
+      if (searchRequest.startOffset === PartitionOffsetOrigin.End || req.filterInterpreterCode !== null) {
         const minuteMs = 60 * 1000;
         timeoutMs = 30 * minuteMs;
       }
@@ -2864,7 +2869,7 @@ export function createMessageSearch() {
                       encoding: 'text',
                       schemaId: 0,
                       size: header.value.length,
-                      isPayloadNull: header.value == null,
+                      isPayloadNull: header.value === null,
                     },
                   });
                 }
@@ -2930,8 +2935,8 @@ export function createMessageSearch() {
                     console.log('unhandled key encoding type', {
                       encoding: key?.encoding,
                       encodingName:
-                        key?.encoding != null
-                          ? PayloadEncodingSchema.values.find((value) => value.number === key.encoding)?.localName
+                        key?.encoding !== null && key?.encoding !== undefined
+                          ? PayloadEncodingSchema.values.find((value) => value.number === key?.encoding)?.localName
                           : undefined,
                       message: res,
                     });
@@ -3017,8 +3022,8 @@ export function createMessageSearch() {
                     console.log('unhandled value encoding type', {
                       encoding: val?.encoding,
                       encodingName:
-                        val?.encoding != null
-                          ? PayloadEncodingSchema.values.find((value) => value.number === val.encoding)?.localName
+                        val?.encoding !== null && val?.encoding !== undefined
+                          ? PayloadEncodingSchema.values.find((value) => value.number === val?.encoding)?.localName
                           : undefined,
                       message: res,
                     });
@@ -3078,7 +3083,7 @@ export function createMessageSearch() {
         this.abortController = null;
       }
 
-      if (this.searchPhase != null) {
+      if (this.searchPhase !== null) {
         this.searchPhase = 'Done';
         this.bytesConsumed = 0;
         this.totalMessagesConsumed = 0;
@@ -3126,7 +3131,11 @@ function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
 export const brokerMap = computed(
   () => {
     const brokers = api.clusterInfo?.brokers;
-    if (brokers == null) {
+    if (brokers === null) {
+      return null;
+    }
+
+    if (!brokers) {
       return null;
     }
 

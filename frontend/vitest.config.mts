@@ -7,6 +7,11 @@ import { defineConfig } from 'vitest/config';
 
 const ENV_PREFIX = 'REACT_APP_';
 
+// Regex patterns for module resolution
+const REDPANDA_UI_REGEX = /^@redpanda-data\/ui$/;
+const BUFBUILD_REGEX = /^@bufbuild\/buf$/;
+const MONACO_EDITOR_REGEX = /^monaco-editor$/;
+
 export default defineConfig(({ mode }) => {
   loadEnv(mode, 'env', ENV_PREFIX);
 
@@ -29,15 +34,15 @@ export default defineConfig(({ mode }) => {
       },
       alias: [
         {
-          find: /^@redpanda-data\/ui$/, // For Redpanda UI we generate both CommonJS and ESM versions, but Vitest is ESM 1st, so we want to force ESM to be used.
+          find: REDPANDA_UI_REGEX, // For Redpanda UI we generate both CommonJS and ESM versions, but Vitest is ESM 1st, so we want to force ESM to be used.
           replacement: '@redpanda-data/ui/dist/index.js',
         },
         {
-          find: /^@bufbuild\/buf$/,
+          find: BUFBUILD_REGEX,
           replacement: '@bufbuild/protobuf/dist/esm/index.js',
         },
         {
-          find: /^monaco-editor$/,
+          find: MONACO_EDITOR_REGEX,
           replacement: 'monaco-editor/esm/vs/editor/editor.api.js',
         },
       ],

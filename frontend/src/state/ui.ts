@@ -428,7 +428,7 @@ window.addEventListener('visibilitychange', () => {
 // When there are multiple tabs open, they are unaware of each other and overwriting each others changes.
 // So we must listen to changes made by other tabs, and when a change is saved we load the updated settings.
 window.addEventListener('storage', (e) => {
-  if (e.newValue == null) {
+  if (e.newValue === null) {
     return;
   }
   try {

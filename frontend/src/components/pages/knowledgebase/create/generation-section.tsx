@@ -64,7 +64,7 @@ export const GenerationSection: React.FC<GenerationSectionProps> = ({ form }) =>
                   </Link>{' '}
                   for available models.
                 </FieldDescription>
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />

@@ -306,7 +306,7 @@ function EditSchemaCompatibility(p: {
         </GridItem>
 
         <GridItem>
-          {subjectName && schema && (
+          {Boolean(subjectName && schema) && (
             <>
               <Text
                 data-testid="edit-compatibility-subject-name"
@@ -322,16 +322,18 @@ function EditSchemaCompatibility(p: {
               <Text fontSize="lg" fontWeight="bold" mb="4" mt="8">
                 Schema
               </Text>
-              <Box maxHeight="600px" overflow="scroll">
-                <CodeBlock
-                  codeString={getFormattedSchemaText(schema)}
-                  data-testid="edit-compatibility-schema-code"
-                  language={schemaTypeToCodeBlockLanguage(schema.type)}
-                  showCopyButton={false}
-                  showLineNumbers
-                  theme="light"
-                />
-              </Box>
+              {schema ? (
+                <Box maxHeight="600px" overflow="scroll">
+                  <CodeBlock
+                    codeString={getFormattedSchemaText(schema)}
+                    data-testid="edit-compatibility-schema-code"
+                    language={schemaTypeToCodeBlockLanguage(schema.type)}
+                    showCopyButton={false}
+                    showLineNumbers
+                    theme="light"
+                  />
+                </Box>
+              ) : null}
             </>
           )}
         </GridItem>

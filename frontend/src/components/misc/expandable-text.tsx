@@ -25,9 +25,9 @@ export function ExpandableText(p: { children: string; maxChars: number }) {
     <Text>
       {text}
 
-      {isTruncated && '...'}
+      {Boolean(isTruncated) && '...'}
 
-      {showExpander && (
+      {Boolean(showExpander) && (
         <Box
           cursor="pointer"
           display="inline"

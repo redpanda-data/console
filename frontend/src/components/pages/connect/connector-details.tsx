@@ -200,7 +200,10 @@ const KafkaConnectorMain = observer(
               component: (
                 <Box mt="8">
                   <Box maxWidth="800px">
-                    {connectorStore && <ConfigPage connectorStore={connectorStore} context="EDIT" />}
+                    {Boolean(connectorStore) && (
+                      // biome-ignore lint/style/noNonNullAssertion: checked above with Boolean(connectorStore)
+                      <ConfigPage connectorStore={connectorStore!} context="EDIT" />
+                    )}
                   </Box>
 
                   {/* Update Config Button */}
@@ -492,7 +495,7 @@ const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
             <CodeBlock codeString={p.error.content} language="json" showScroll={false} />
           </ModalBody>
           <ModalFooter gap={2}>
-            {hasConnectorLogs && (
+            {Boolean(hasConnectorLogs) && (
               <Button mr="auto" onClick={() => appGlobal.historyPush(`/topics/${LOGS_TOPIC_NAME}`)}>
                 Show Logs
               </Button>
@@ -590,7 +593,7 @@ const ConnectorDetails = observer(
               if (configKey === x.name) {
                 return i;
               }
-              i++;
+              i += 1;
             }
           }
         }

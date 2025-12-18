@@ -101,12 +101,12 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
             <ModalCloseButton />
             <ModalBody>
               <Stack spacing={2}>
-                {createSecretError && (
+                {createSecretError ? (
                   <Alert data-testid="create-secret-error" status="error" variant="subtle">
                     <AlertIcon />
                     {createSecretError.message}
                   </Alert>
-                )}
+                ) : null}
                 <Text>Secrets are stored securely and cannot be read by Console after creation.</Text>
 
                 <form.AppField

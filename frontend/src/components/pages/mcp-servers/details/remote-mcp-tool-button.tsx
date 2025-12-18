@@ -69,13 +69,13 @@ export const RemoteMCPToolButton = ({
           <Text as="span" className="truncate text-sm" title={name || 'Unnamed Tool'}>
             {name || 'Unnamed Tool'}
           </Text>
-          {hasLintIssues && (
+          {Boolean(hasLintIssues) && (
             <span title="Has linting issues">
               <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-600 dark:text-red-400" />
             </span>
           )}
         </div>
-        {isEditing && onRemove && (
+        {isEditing && onRemove ? (
           <Button
             onClick={(e) => {
               e.stopPropagation();
@@ -86,7 +86,7 @@ export const RemoteMCPToolButton = ({
           >
             <Trash2 className="h-4 w-4" />
           </Button>
-        )}
+        ) : null}
       </div>
       <div className="flex-1">
         <Text className="line-clamp-2 text-xs" title={description} variant="muted">

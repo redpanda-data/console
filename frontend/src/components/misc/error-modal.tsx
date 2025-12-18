@@ -66,7 +66,7 @@ class ErrorModal extends Component<ErrorModalProps> {
               </Flex>
 
               {/* Content */}
-              {this.content && (
+              {Boolean(this.content) && (
                 <Box alignSelf="stretch" maxHeight="300px" overflowY="auto">
                   {this.content}
                 </Box>
@@ -100,7 +100,8 @@ const errorModals: ErrorModalProps[] = observable([]);
 
 let nextErrorKey = 0;
 export function showErrorModal(title: string, subTitle: React.ReactNode, content: React.ReactNode) {
-  const key = nextErrorKey++;
+  const key = nextErrorKey;
+  nextErrorKey += 1;
 
   // keep formatting for strings
   let formattedContent = content;

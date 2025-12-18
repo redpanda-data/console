@@ -226,7 +226,7 @@ const MCPServersSection = ({
       </CardHeader>
       <CardContent className="px-4 pb-4">
         <div className="space-y-4">
-          {isEditing && <Text variant="muted">Select MCP servers to enable tools for this agent</Text>}
+          {Boolean(isEditing) && <Text variant="muted">Select MCP servers to enable tools for this agent</Text>}
           {hasNoServers ? (
             <MCPEmpty>
               <Text className="mb-4 text-center" variant="muted">
@@ -520,7 +520,7 @@ export const AIAgentConfigurationTab = () => {
                     <DynamicCodeBlock code={agent.id} lang="text" />
                   </div>
                 </div>
-                {agent.url && (
+                {Boolean(agent.url) && (
                   <div className="space-y-2">
                     <Label>URL</Label>
                     <div className="flex-1">
@@ -563,7 +563,7 @@ export const AIAgentConfigurationTab = () => {
                     <Label>Tags</Label>
                     <div className="space-y-2">
                       {displayData.tags.map((tag, index) => (
-                        <div className="flex items-center gap-2" key={`tag-${index}`}>
+                        <div className="flex items-center gap-2" key={`tag-${tag.key}-${tag.value}`}>
                           <div className="flex-1">
                             <Input
                               disabled={!isEditing}
@@ -580,7 +580,7 @@ export const AIAgentConfigurationTab = () => {
                               value={tag.value}
                             />
                           </div>
-                          {isEditing && (
+                          {Boolean(isEditing) && (
                             <div className="flex h-9 items-end">
                               <Button onClick={() => handleRemoveTag(index)} size="sm" variant="outline">
                                 <Trash2 className="h-4 w-4" />
@@ -640,7 +640,7 @@ export const AIAgentConfigurationTab = () => {
           />
 
           {/* Service Account - Always visible */}
-          {agent.tags.service_account_id && (
+          {Boolean(agent.tags.service_account_id) && (
             <Card className="px-0 py-0" size="full">
               <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
                 <CardTitle className="flex items-center gap-2">
@@ -720,7 +720,7 @@ export const AIAgentConfigurationTab = () => {
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select provider">
-                          {displayData.provider?.provider.case && (
+                          {Boolean(displayData.provider?.provider.case) && (
                             <div className="flex items-center gap-2">
                               <img
                                 alt={
@@ -771,7 +771,7 @@ export const AIAgentConfigurationTab = () => {
                       <Select onValueChange={(value) => updateField({ model: value })} value={displayData.model}>
                         <SelectTrigger>
                           <SelectValue>
-                            {displayData.model && detectProvider(displayData.model) ? (
+                            {Boolean(displayData.model) && detectProvider(displayData.model) ? (
                               <div className="flex items-center gap-2">
                                 <img
                                   alt={detectProvider(displayData.model)?.label}

@@ -159,7 +159,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
                 placeholder="Select or create secret"
               />
             </FormField>
-            {isNewSecret && (
+            {Boolean(isNewSecret) && (
               <FormField label="Secret value">
                 <Flex alignItems="center">
                   <PasswordInput

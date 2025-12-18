@@ -61,12 +61,12 @@ export class RoleComponent extends Component<{ role: Role; grantedBy?: RoleBindi
           <div className="roleTitle">Role Permissions</div>
           <div style={{ paddingLeft: '.5rem', display: 'grid', gridAutoFlow: 'row', gridGap: '20px' }}>
             {role.permissions.map((p, index) => (
-              <PermissionComponent key={index} permission={p} />
+              <PermissionComponent key={`${p.resourceName}-${index}`} permission={p} />
             ))}
           </div>
         </div>
 
-        {grantedBy && (
+        {Boolean(grantedBy) && (
           <>
             <div style={{ background: '#dcdcdc' }} /> {/* seperator */}
             <div style={{ paddingLeft: '1em' }}>
@@ -138,8 +138,8 @@ export class PermissionComponent extends Component<{ permission: Permission }> {
 }
 
 function stringsToBoxes(ar: string[], joiner?: ReactNode, wrapperClass?: string): ReactNode {
-  let r = ar.map<ReactNode>((str, index) => (
-    <span className="codeBox" key={index}>
+  let r = ar.map<ReactNode>((str) => (
+    <span className="codeBox" key={str}>
       {str}
     </span>
   ));

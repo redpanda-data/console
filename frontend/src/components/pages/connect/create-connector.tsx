@@ -142,7 +142,7 @@ const ConnectorType = observer(
           </>
         )}
 
-        {p.activeCluster && (
+        {Boolean(p.activeCluster) && (
           <>
             <Flex direction="column" gap="1em">
               <Box maxWidth="600px">
@@ -228,7 +228,7 @@ class CreateConnector extends PageComponent<{ clusterName: string }> {
 
   render() {
     const clusters = api.connectConnectors?.clusters;
-    if (clusters == null) {
+    if (clusters === null || clusters === undefined) {
       return null;
     }
     const clusterName = decodeURIComponent(this.props.clusterName);
@@ -325,7 +325,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
           selectedPlugin={selectedPlugin}
         />
       ),
-      postConditionMet: () => activeCluster != null && selectedPlugin != null,
+      postConditionMet: () => activeCluster !== null && selectedPlugin !== null,
       nextButtonLabel: null,
     },
     {
@@ -382,7 +382,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
         setLoading(true);
         const connectorRef = connectClusterStore.getConnector(selectedPlugin?.class ?? '', null, undefined);
 
-        if (parsedUpdatedConfig != null && !comparer.shallow(parsedUpdatedConfig, connectorRef?.getConfigObject())) {
+        if (parsedUpdatedConfig !== null && !comparer.shallow(parsedUpdatedConfig, connectorRef?.getConfigObject())) {
           connectorRef?.updateProperties(parsedUpdatedConfig);
         }
 
@@ -595,7 +595,7 @@ function Review({
 }: ReviewProps) {
   return (
     <>
-      {connectorPlugin != null ? (
+      {connectorPlugin !== null ? (
         <>
           <h2>Connector Plugin</h2>
           <ConnectorBoxCard
@@ -611,7 +611,7 @@ function Review({
         <Skeleton height={4} mt={5} noOfLines={6} />
       ) : (
         <>
-          {invalidValidationResult != null ? <ValidationDisplay validationResult={invalidValidationResult} /> : null}
+          {invalidValidationResult !== null ? <ValidationDisplay validationResult={invalidValidationResult} /> : null}
 
           {validationFailure ? (
             <Alert my={4} status="error" variant="left-accent">

@@ -33,9 +33,9 @@ import { useFormContext } from 'react-hook-form';
 
 import { MAX_TASKS, MIN_TASKS } from '../tasks';
 
-interface DetailsProps {
+type DetailsProps = {
   readonly?: boolean;
-}
+};
 
 export function Details({ readonly = false }: DetailsProps) {
   const { control, watch } = useFormContext();

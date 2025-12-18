@@ -64,7 +64,7 @@ const AppPageHeader = observer(() => {
 
       <Flex alignItems="center" justifyContent="space-between" pb={2}>
         <Flex alignItems="center">
-          {lastBreadcrumb && (
+          {lastBreadcrumb ? (
             <Text
               as="span"
               fontSize="xl"
@@ -82,13 +82,15 @@ const AppPageHeader = observer(() => {
             >
               {lastBreadcrumb.title}
             </Text>
-          )}
-          {lastBreadcrumb && (
+          ) : null}
+          {lastBreadcrumb ? (
             <Box>
-              {lastBreadcrumb.options?.canBeCopied && <CopyButton content={lastBreadcrumb.title} variant="ghost" />}
+              {lastBreadcrumb.options?.canBeCopied ? (
+                <CopyButton content={lastBreadcrumb.title} variant="ghost" />
+              ) : null}
             </Box>
-          )}
-          {showRefresh && <DataRefreshButton />}
+          ) : null}
+          {Boolean(showRefresh) && <DataRefreshButton />}
         </Flex>
         <Flex alignItems="center" gap={2}>
           {!isEmbedded() && api.isRedpanda && (

@@ -42,7 +42,7 @@ function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
     }
 
     if (maxLength !== undefined) {
-      numChars++;
+      numChars += 1;
       if (numChars >= maxLength) {
         break;
       }

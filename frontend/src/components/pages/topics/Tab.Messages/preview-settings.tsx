@@ -51,7 +51,7 @@ export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessag
   const getFreeId = (): string => {
     let i = 1;
     while (tags.any((t) => t.id === String(i))) {
-      i++;
+      i += 1;
     }
     return String(i);
   };
@@ -281,7 +281,7 @@ export function getPreviewTags(
 
     const trimmed = t.pattern.trim();
     const searchPath = parseJsonPath(trimmed);
-    if (searchPath == null) {
+    if (searchPath === null) {
       continue;
     }
     if (typeof searchPath === 'string') {
@@ -394,7 +394,7 @@ function parseJsonPath(str: string): string[] | string {
         if (pos === 0) {
           return 'pattern cannot start with a dot';
         }
-        pos++;
+        pos += 1;
         if (pos >= str.length) {
           return 'pattern can not end with a dot';
         }

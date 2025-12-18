@@ -180,14 +180,14 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
             value={formState.mechanism}
           />
         </FormControl>
-        {formState.error && (
+        {Boolean(formState.error) && (
           <Alert status="error">
             <AlertIcon />
             <AlertDescription>{formState.error}</AlertDescription>
           </Alert>
         )}
         <Button data-testid="auth-submit" onClick={formState.handleSubmit} variant="brand">
-          {formState.isLoading && <Spinner mr="1" size="sm" />}
+          {Boolean(formState.isLoading) && <Spinner mr="1" size="sm" />}
           Log in
         </Button>
       </Flex>
@@ -213,7 +213,7 @@ const LoginPage = observer(() => {
   return (
     <Flex minHeight="100vh" width="full">
       <Modal
-        isOpen={uiState.loginError != null}
+        isOpen={uiState.loginError !== null}
         onClose={() => {
           uiState.loginError = null;
         }}
@@ -260,19 +260,19 @@ const LoginPage = observer(() => {
             </Box>
           )}
           <Stack my={5}>
-            {authenticationApi.methodsErrorResponse && (
+            {authenticationApi.methodsErrorResponse ? (
               <Alert status="error">
                 <AlertIcon />
                 <AlertDescription>
                   Failed to fetch authentication methods: {authenticationApi.methodsErrorResponse.message}
                 </AlertDescription>
               </Alert>
-            )}
+            ) : null}
             {authenticationApi.methods.reduce((acc, method, index) => {
               const AuthComponent = AUTH_ELEMENTS[method];
               if (AuthComponent) {
                 if (index > 0) {
-                  acc.push(<TextDivider key={`divider-${index}`} my={3} text="OR" />);
+                  acc.push(<TextDivider key={`divider-${method}`} my={3} text="OR" />);
                 }
                 acc.push(
                   <div key={method}>

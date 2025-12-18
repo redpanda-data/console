@@ -264,7 +264,7 @@ export class StepSelectPartitions extends Component<{
   }
 
   @computed get topicPartitions(): TopicWithPartitions[] {
-    if (api.topics == null) {
+    if (api.topics === null) {
       return [];
     }
     return api.topics

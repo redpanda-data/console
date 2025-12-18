@@ -29,12 +29,13 @@ describe('shadowlink-helpers', () => {
       { patternType: PatternType.LITERAL, filterType: FilterType.EXCLUDE, expected: 'Exclude specific' },
       { patternType: PatternType.PREFIX, filterType: FilterType.EXCLUDE, expected: 'Exclude starting with' },
       { patternType: PatternType.UNSPECIFIED, filterType: FilterType.UNSPECIFIED, expected: 'Include specific topics' },
-    ])(
-      'should return $expected for pattern=$patternType, filter=$filterType',
-      ({ patternType, filterType, expected }) => {
-        expect(getFilterTypeLabel(patternType, filterType)).toBe(expected);
-      }
-    );
+    ])('should return $expected for pattern=$patternType, filter=$filterType', ({
+      patternType,
+      filterType,
+      expected,
+    }) => {
+      expect(getFilterTypeLabel(patternType, filterType)).toBe(expected);
+    });
   });
 
   describe('getResourceTypeLabel', () => {

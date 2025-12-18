@@ -228,7 +228,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             <Heading>Topics</Heading>
             {formState.topicACLs.map((topicACL, index) => (
               <ResourceACLsEditor
-                key={index}
+                key={`topic-${topicACL.selector}-${index}`}
                 onDelete={() => {
                   formState.topicACLs.splice(index, 1);
                 }}
@@ -254,7 +254,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             <Heading>Consumer Groups</Heading>
             {formState.consumerGroupsACLs.map((acl, index) => (
               <ResourceACLsEditor
-                key={index}
+                key={`consumer-group-${acl.selector}-${index}`}
                 onDelete={() => {
                   formState.consumerGroupsACLs.splice(index, 1);
                 }}
@@ -280,7 +280,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             <Heading>Transactional IDs</Heading>
             {formState.transactionalIDACLs.map((acl, index) => (
               <ResourceACLsEditor
-                key={index}
+                key={`transactional-id-${acl.selector}-${index}`}
                 onDelete={() => {
                   formState.transactionalIDACLs.splice(index, 1);
                 }}
@@ -429,8 +429,8 @@ const PrincipalSelector = observer((p: { state: RolePrincipal[] }) => {
       </Box>
 
       <Flex gap={2}>
-        {state.map((principal, idx) => (
-          <Tag cursor="pointer" key={idx}>
+        {state.map((principal) => (
+          <Tag cursor="pointer" key={principal.name}>
             <TagLabel>{principal.name}</TagLabel>
             <TagCloseButton onClick={() => state.remove(principal)} />
           </Tag>

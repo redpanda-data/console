@@ -41,7 +41,7 @@ const mergeCacheResource = (doc: Document.Parsed, newConfigObject: Partial<Conne
       let counter = 1;
       let uniqueLabel = `${newResource.label}_${counter}`;
       while (existingLabels.includes(uniqueLabel)) {
-        counter++;
+        counter += 1;
         uniqueLabel = `${newResource.label}_${counter}`;
       }
       newResource.label = uniqueLabel;
@@ -68,7 +68,7 @@ const mergeRateLimitResource = (doc: Document.Parsed, newConfigObject: Partial<C
       let counter = 1;
       let uniqueLabel = `${newResource.label}_${counter}`;
       while (existingLabels.includes(uniqueLabel)) {
-        counter++;
+        counter += 1;
         uniqueLabel = `${newResource.label}_${counter}`;
       }
       newResource.label = uniqueLabel;
@@ -279,7 +279,7 @@ export const mergeConnectConfigs = (
         entity: 'mergeConnectConfigs',
       })
     );
-    return undefined; // Keep existing YAML in editor
+    return; // Keep existing YAML in editor
   }
 
   const componentType = detectComponentType(newConfigObject, doc);
@@ -294,7 +294,7 @@ export const mergeConnectConfigs = (
         entity: 'mergeConnectConfigs',
       })
     );
-    return undefined; // Keep existing YAML in editor
+    return; // Keep existing YAML in editor
   }
 
   return doc;

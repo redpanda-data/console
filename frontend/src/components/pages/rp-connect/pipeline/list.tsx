@@ -66,8 +66,8 @@ const PipelineTableSkeleton = () => (
         </TableRow>
       </TableHeader>
       <TableBody>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <TableRow key={i}>
+        {Array.from({ length: 5 }).map(() => (
+          <TableRow key={crypto.randomUUID()}>
             <TableCell>
               <Skeleton className="h-4 w-24" />
             </TableCell>

@@ -43,7 +43,9 @@ jobs:
         uses: biomejs/setup-biome@v2
         with:
           version: ${{ steps.biome-version.outputs.version }}
-      - name: Run Biome
+      - name: Check Ultracite setup
+        run: bun x ultracite doctor
+      - name: Run Biome/Ultracite
         run: bun run lint:check
 
   type-check:

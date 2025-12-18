@@ -131,15 +131,14 @@ describe('getRpkCommand', () => {
       mockLocation('cloud.redpanda.com');
     });
 
-    describe.each(AVAILABLE_CLIENTS.map((client) => ({ clientType: client })))(
-      'clientType: $clientType',
-      ({ clientType }) => {
-        test('generates correct command', () => {
-          const command = getRpkCommand({ ...baseParams, clientType });
-          expect(command).toMatchSnapshot();
-        });
-      }
-    );
+    describe.each(AVAILABLE_CLIENTS.map((client) => ({ clientType: client })))('clientType: $clientType', ({
+      clientType,
+    }) => {
+      test('generates correct command', () => {
+        const command = getRpkCommand({ ...baseParams, clientType });
+        expect(command).toMatchSnapshot();
+      });
+    });
 
     test('generates command without client type (uses placeholder)', () => {
       const command = getRpkCommand(baseParams);
@@ -152,15 +151,14 @@ describe('getRpkCommand', () => {
       mockLocation('main--redpanda-cloud.netlify.app');
     });
 
-    describe.each(AVAILABLE_CLIENTS.map((client) => ({ clientType: client })))(
-      'clientType: $clientType',
-      ({ clientType }) => {
-        test('generates correct command with environment flag', () => {
-          const command = getRpkCommand({ ...baseParams, clientType });
-          expect(command).toMatchSnapshot();
-        });
-      }
-    );
+    describe.each(AVAILABLE_CLIENTS.map((client) => ({ clientType: client })))('clientType: $clientType', ({
+      clientType,
+    }) => {
+      test('generates correct command with environment flag', () => {
+        const command = getRpkCommand({ ...baseParams, clientType });
+        expect(command).toMatchSnapshot();
+      });
+    });
   });
 
   describe('Serverless cluster flag', () => {

@@ -84,7 +84,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Text>Tool {toolIndex + 1}</Text>
-            {canRemove && (
+            {Boolean(canRemove) && (
               <Button onClick={onRemove} type="button" variant="outline">
                 <Trash2 className="h-4 w-4" />
               </Button>

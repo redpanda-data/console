@@ -12,7 +12,7 @@
 import { WarningIcon } from '@chakra-ui/icons';
 import { Flex, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import React, { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import type { PreviewTagV2 } from '../../../../../state/ui';
@@ -43,7 +43,7 @@ function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
     }
 
     if (maxLength !== undefined) {
-      numChars++;
+      numChars += 1;
       if (numChars >= maxLength) {
         break;
       }
@@ -84,7 +84,7 @@ export const MessageKeyPreview = observer(
       if (key.isPayloadNull) {
         return <EmptyBadge mode="null" />;
       }
-      if (key.payload == null || (typeof key.payload === 'string' && key.payload.length === 0)) {
+      if (key.payload === null || (typeof key.payload === 'string' && key.payload.length === 0)) {
         return <EmptyBadge mode="empty" />;
       }
 
@@ -106,11 +106,7 @@ export const MessageKeyPreview = observer(
           const displayMode = previewDisplayMode ?? uiState.topicSettings.previewDisplayMode;
           text = (
             <span className="cellDiv fade" style={{ fontSize: '95%' }}>
-              <div className={`previewTags previewTags-${displayMode}`}>
-                {tags.map((t, i) => (
-                  <React.Fragment key={i}>{t}</React.Fragment>
-                ))}
-              </div>
+              <div className={`previewTags previewTags-${displayMode}`}>{tags}</div>
             </span>
           );
           return text;

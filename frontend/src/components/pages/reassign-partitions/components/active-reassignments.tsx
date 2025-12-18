@@ -193,11 +193,11 @@ export class ActiveReassignments extends Component<{
 
   @computed get minThrottle(): number | undefined {
     const t = this.throttleSettings;
-    if (t.followerThrottle !== undefined || t.leaderThrottle !== undefined) {
-      return Math.min(t.followerThrottle ?? Number.POSITIVE_INFINITY, t.leaderThrottle ?? Number.POSITIVE_INFINITY);
+    if (t.followerThrottle === undefined && t.leaderThrottle === undefined) {
+      // biome-ignore lint/suspicious/useGetterReturn: early return for undefined case
+      return;
     }
-
-    return undefined;
+    return Math.min(t.followerThrottle ?? Number.POSITIVE_INFINITY, t.leaderThrottle ?? Number.POSITIVE_INFINITY);
   }
 }
 
@@ -213,7 +213,7 @@ export const ThrottleDialog: FC<{ visible: boolean; lastKnownMinThrottle: number
     const toastRef = useRef<ToastId>();
 
     const throttleValue = $state.newThrottleValue ?? 0;
-    const noChange = $state.newThrottleValue === lastKnownMinThrottle || $state.newThrottleValue == null;
+    const noChange = $state.newThrottleValue === lastKnownMinThrottle || $state.newThrottleValue === null;
 
     const applyBandwidthThrottle = async () => {
       toastRef.current = toastFn({
@@ -355,7 +355,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
   }
 
   render() {
-    if (this.props.state == null) {
+    if (this.props.state === null) {
       return null;
     }
 
@@ -364,7 +364,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       this.lastState = state;
     }
 
-    const visible = this.props.state != null;
+    const visible = this.props.state !== null;
     if (this.wasVisible !== visible) {
       // became visible or invisible
       // force update of topic config, so isThrottle has up to date information
@@ -521,7 +521,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
   applyBandwidthThrottle() {
     const state = this.props.state;
-    if (state == null) {
+    if (state === null) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('apply bandwidth throttle: this.props.state is null');
       return;
@@ -535,7 +535,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         const brokersOld = p.replicas;
         const brokersNew = p.addingReplicas;
 
-        if (brokersOld == null || brokersNew == null) {
+        if (brokersOld === null || brokersNew === null) {
           // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.warn(
             "active reassignments, traffic limit: skipping partition because old or new brokers can't be found",
@@ -570,7 +570,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
   async cancelReassignment() {
     const state = this.props.state;
-    if (state == null) {
+    if (state === null) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('cancel reassignment: this.props.state is null');
       return;
@@ -632,7 +632,7 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
   render() {
     const { state } = this.props;
 
-    if (state.remaining == null) {
+    if (state.remaining === null) {
       return '...';
     }
     const transferred = state.totalTransferSize - state.remaining.value;
@@ -652,7 +652,7 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
           percent={state.progressPercent}
           right={
             <>
-              {state.estimateSpeed != null && (
+              {state.estimateSpeed !== null && (
                 <span style={{ paddingRight: '1em', opacity: '0.6' }}>({prettyBytesOrNA(state.estimateSpeed)}/s)</span>
               )}
               <span>
@@ -679,7 +679,7 @@ export class ETACol extends Component<{ state: ReassignmentState }> {
   render() {
     const { state } = this.props;
 
-    if (state.estimateSpeed == null || state.estimateCompletionTime == null) {
+    if (state.estimateSpeed === null || state.estimateCompletionTime === null) {
       return '...';
     }
 
@@ -730,8 +730,8 @@ const ProgressBar = (p: {
           fontSize: '75%',
         }}
       >
-        {left && <div>{left}</div>}
-        {right && <div style={{ marginLeft: 'auto' }}>{right}</div>}
+        {Boolean(left) && <div>{left}</div>}
+        {Boolean(right) && <div style={{ marginLeft: 'auto' }}>{right}</div>}
       </div>
     </>
   );

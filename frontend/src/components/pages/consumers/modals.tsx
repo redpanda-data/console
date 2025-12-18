@@ -402,7 +402,7 @@ export class EditOffsetsModal extends Component<{
                           original: { offset },
                         },
                       }) =>
-                        offset == null ? (
+                        offset === null || offset === undefined ? (
                           <Tooltip
                             hasArrow
                             label="The group does not have an offset for this partition yet"
@@ -444,7 +444,7 @@ export class EditOffsetsModal extends Component<{
   setPage(page: 0 | 1) {
     if (page === 1) {
       // compute and set newOffset
-      if (this.props.offsets == null) {
+      if (this.props.offsets === null) {
         return;
       }
       const op = this.selectedOption;
@@ -739,7 +739,7 @@ class ColAfter extends Component<{
     const val = record.newOffset;
 
     // No change
-    if (val == null) {
+    if (val === null) {
       return (
         <Tooltip hasArrow label="Offset will not be changed" openDelay={1} placement="top">
           <span style={{ opacity: 0.66, marginLeft: '2px' }}>
@@ -904,7 +904,7 @@ export class DeleteOffsetsModal extends Component<{
                 <TrashIcon color="white" />
               </div>
               <Box>
-                {visible && (
+                {Boolean(visible) && (
                   <Box>
                     {mode === 'group' && (
                       <Box>
@@ -1041,7 +1041,7 @@ export class DeleteOffsetsModal extends Component<{
 function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopic[] {
   const getOffset = (x: GroupOffset['newOffset']): number | undefined => {
     // no offset set
-    if (x == null) {
+    if (x === null) {
       return;
     }
 
@@ -1051,7 +1051,7 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
     }
 
     // from timestamp
-    if ('offset' in x) {
+    if (x && typeof x === 'object' && 'offset' in x) {
       return x.offset;
     }
 
@@ -1071,7 +1071,7 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
 
   // filter undefined partitions
   for (const t of topicOffsets) {
-    t.partitions.removeAll((p) => p.offset == null);
+    t.partitions.removeAll((p) => p.offset === null);
   }
 
   // assert type:

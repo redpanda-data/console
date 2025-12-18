@@ -476,7 +476,7 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
         </Flex>
 
         {/* Deleted Hint */}
-        {schema.isSoftDeleted && (
+        {Boolean(schema.isSoftDeleted) && (
           <Alert data-testid="schema-definition-soft-deleted-alert" status="warning" variant="left-accent">
             <AlertIcon />
             <Box>

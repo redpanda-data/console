@@ -96,7 +96,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
         onClick={action(() => this.createPipeline())}
         variant="secondary"
       >
-        {this.isCreating && <Spinner />}
+        {Boolean(this.isCreating) && <Spinner />}
         {this.isCreating ? 'Creating...' : 'Create'}
       </Button>
     );
@@ -218,10 +218,10 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
 export default RpConnectPipelinesCreate;
 
-interface QuickActionsProps {
+type QuickActionsProps = {
   editorInstance: editor.IStandaloneCodeEditor | null;
   resetAutocompleteSecrets: VoidFunction;
-}
+};
 
 const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActionsProps) => {
   const { isOpen: isAddSecretOpen, onOpen: openAddSecret, onClose: closeAddSecret } = useDisclosure();

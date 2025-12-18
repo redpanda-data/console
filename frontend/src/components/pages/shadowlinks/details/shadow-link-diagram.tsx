@@ -17,9 +17,9 @@ import type { CSSProperties } from 'react';
 
 import type { UnifiedShadowLink } from '../model';
 
-interface ShadowLinkDiagramProps {
+type ShadowLinkDiagramProps = {
   shadowLink: UnifiedShadowLink;
-}
+};
 
 const SourceClusterNode = ({ data }: { data: { brokers: string[] } }) => (
   <Item className="min-w-60 bg-background" size="sm" variant="outline">

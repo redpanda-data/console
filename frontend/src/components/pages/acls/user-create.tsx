@@ -109,7 +109,7 @@ class UserCreatePage extends PageComponent {
   }
 
   async refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListAcls) {
+    if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
       return;
     }
 
@@ -153,7 +153,7 @@ class UserCreatePage extends PageComponent {
       });
 
       // Refresh user list
-      if (api.userData != null && !api.userData.canListAcls) {
+      if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
         return false;
       }
       await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), api.refreshServiceAccounts()]);
@@ -277,7 +277,7 @@ const CreateUserModal = observer(
             />
           </FormField>
 
-          {Features.rolesApi && (
+          {Boolean(Features.rolesApi) && (
             <FormField
               description="Assign roles to this user. This is optional and can be changed later."
               isDisabled={!Features.rolesApi}

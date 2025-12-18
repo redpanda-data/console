@@ -61,6 +61,15 @@ const ConfigEditorForm: FC<{
   const toast = useToast();
   const [globalError, setGlobalError] = useState<string | null>(null);
 
+  const defaultValueType = (() => {
+    if (!editedEntry.isExplicitlySet) {
+      return 'default';
+    }
+    return entryHasInfiniteValue(editedEntry) ? 'infinite' : 'custom';
+  })();
+  const defaultCustomValue =
+    editedEntry.isExplicitlySet && !entryHasInfiniteValue(editedEntry) ? editedEntry.value : '';
+
   const {
     control,
     handleSubmit,
@@ -68,8 +77,8 @@ const ConfigEditorForm: FC<{
     watch,
   } = useForm<Inputs>({
     defaultValues: {
-      valueType: editedEntry.isExplicitlySet ? (entryHasInfiniteValue(editedEntry) ? 'infinite' : 'custom') : 'default',
-      customValue: editedEntry.isExplicitlySet && !entryHasInfiniteValue(editedEntry) ? editedEntry.value : '',
+      valueType: defaultValueType,
+      customValue: defaultCustomValue,
     },
   });
 
@@ -187,7 +196,7 @@ const ConfigEditorForm: FC<{
                 </Box>
               )}
             </Flex>
-            {globalError && (
+            {Boolean(globalError) && (
               <Alert my={2} status="error">
                 <AlertIcon />
                 {globalError}
@@ -319,7 +328,7 @@ const ConfigGroup = observer(
   }) => (
     <>
       <div className="configGroupSpacer" />
-      {p.groupName && <div className="configGroupTitle">{p.groupName}</div>}
+      {Boolean(p.groupName) && <div className="configGroupTitle">{p.groupName}</div>}
       {p.entries.map((e) => (
         <ConfigEntryComponent
           entry={e}
@@ -351,7 +360,7 @@ const ConfigEntryComponent = observer(
 
         <Text>{friendlyValue}</Text>
 
-        <span className="isEditted">{entry.isExplicitlySet && 'Custom'}</span>
+        <span className="isEditted">{Boolean(entry.isExplicitlySet) && 'Custom'}</span>
 
         <span className="configButtons">
           <Tooltip hasArrow isDisabled={canEdit} label={nonEdittableReason} placement="left">
@@ -367,7 +376,7 @@ const ConfigEntryComponent = observer(
               <Icon as={PencilIcon} />
             </button>
           </Tooltip>
-          {entry.documentation && (
+          {Boolean(entry.documentation) && (
             <Popover
               content={
                 <Flex flexDirection="column" gap={2}>

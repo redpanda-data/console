@@ -35,8 +35,8 @@ export class DebugBundlePage {
 
       // Wait for either "Done" or "Try Again" button to appear (bundle completed or failed)
       await Promise.race([
-        this.page.getByTestId('debug-bundle-done-button').waitFor({ state: 'visible', timeout: 60000 }),
-        this.page.getByTestId('debug-bundle-try-again-button').waitFor({ state: 'visible', timeout: 60000 }),
+        this.page.getByTestId('debug-bundle-done-button').waitFor({ state: 'visible', timeout: 60_000 }),
+        this.page.getByTestId('debug-bundle-try-again-button').waitFor({ state: 'visible', timeout: 60_000 }),
       ]);
 
       // Click whichever button is available to get back to form

@@ -21,13 +21,13 @@ import {
 } from 'components/redpanda-ui/components/alert-dialog';
 import { Text } from 'components/redpanda-ui/components/typography';
 
-interface FailoverDialogProps {
+type FailoverDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   topicName?: string;
   onConfirm: () => void;
   isLoading?: boolean;
-}
+};
 
 export const FailoverDialog = ({ open, onOpenChange, topicName, onConfirm, isLoading }: FailoverDialogProps) => {
   const handleCancel = () => {

@@ -71,7 +71,7 @@ export const IndexerSection: React.FC<IndexerSectionProps> = ({ form, availableS
                     {...field}
                     onChange={(e) => field.onChange(Number.parseInt(e.target.value, 10) || 512)}
                   />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
             />
@@ -88,7 +88,7 @@ export const IndexerSection: React.FC<IndexerSectionProps> = ({ form, availableS
                     {...field}
                     onChange={(e) => field.onChange(Number.parseInt(e.target.value, 10) || 100)}
                   />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
             />
@@ -106,7 +106,7 @@ export const IndexerSection: React.FC<IndexerSectionProps> = ({ form, availableS
                 <FieldLabel>Exact Topics</FieldLabel>
                 <FieldDescription>Select existing topics from your cluster</FieldDescription>
                 <TopicSelector onTopicsChange={field.onChange} selectedTopics={field.value || []} />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />
@@ -122,7 +122,7 @@ export const IndexerSection: React.FC<IndexerSectionProps> = ({ form, availableS
                   onChange={field.onChange}
                   patterns={field.value || []}
                 />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />
@@ -170,7 +170,7 @@ export const IndexerSection: React.FC<IndexerSectionProps> = ({ form, availableS
                   value={field.value}
                 />
                 <FieldDescription>All credentials are securely stored in your Secrets Store</FieldDescription>
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />
@@ -194,7 +194,7 @@ export const IndexerSection: React.FC<IndexerSectionProps> = ({ form, availableS
                   </SelectContent>
                 </Select>
                 <FieldDescription>Authentication mechanism for connecting to Redpanda</FieldDescription>
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />

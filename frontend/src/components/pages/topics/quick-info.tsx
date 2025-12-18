@@ -85,7 +85,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
       <Box>
         <Divider orientation="vertical" />
       </Box>
-      {cleanupPolicy && (
+      {Boolean(cleanupPolicy) && (
         <Flex gap={2}>
           <Text as="dt" fontWeight="bold">
             Cleanup Policy:
@@ -110,13 +110,13 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
             <Text as="dt" fontWeight="bold">
               Segment:
             </Text>
-            {segmentMs && segmentBytes && (
+            {segmentMs && segmentBytes ? (
               <Text as="dd">
                 ~{formatConfigValue(segmentMs.name, segmentMs.value, 'friendly')} or{' '}
                 {formatConfigValue(segmentBytes.name, segmentBytes.value, 'friendly')}
                 {Number.isFinite(Number(segmentBytes.value)) && Number(segmentBytes.value) !== -1 && ' / partition'}
               </Text>
-            )}
+            ) : null}
           </>
         )}
 
@@ -125,7 +125,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
             <Text as="dt" fontWeight="bold">
               Retention:
             </Text>
-            {retentionMs && retentionBytes && (
+            {retentionMs && retentionBytes ? (
               <Text as="dd">
                 ~
                 {retentionMs.value === '-1' && retentionBytes.value === '-1' ? (
@@ -140,7 +140,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
                   </>
                 )}
               </Text>
-            )}
+            ) : null}
           </>
         )}
       </Flex>

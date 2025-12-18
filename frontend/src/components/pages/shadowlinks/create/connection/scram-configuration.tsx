@@ -104,7 +104,7 @@ export const ScramConfiguration = () => {
         )}
       />
 
-      {useScram && (
+      {Boolean(useScram) && (
         <div className="space-y-4" data-testid="scram-credentials-form">
           <FormField
             control={control}

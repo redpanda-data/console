@@ -16,11 +16,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/c
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { Text } from '../../../redpanda-ui/components/typography';
 
-interface HostSelectorProps {
+type HostSelectorProps = {
   principalName: string;
   hosts: AclDetail[];
   baseUrl: string;
-}
+};
 
 export const HostSelector = ({ principalName, hosts, baseUrl }: HostSelectorProps) => {
   const navigate = useNavigate();

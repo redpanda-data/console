@@ -56,14 +56,14 @@ import {
   useCreateUserWithSecretsMutation,
 } from '../utils/user';
 
-interface AddUserStepProps {
+type AddUserStepProps = {
   defaultUsername?: string;
   defaultSaslMechanism?: (typeof SASL_MECHANISMS)[number];
   topicName?: string;
   defaultConsumerGroup?: string;
   showConsumerGroupFields?: boolean;
   onValidityChange?: (isValid: boolean) => void;
-}
+};
 
 export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProps>(
   (
@@ -125,7 +125,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       // Only check if the CURRENT form username matches an existing user
       // Don't use persisted username to avoid showing existing user state when creating a new one
       if (!watchedUsername) {
-        return undefined;
+        return;
       }
       return usersList?.users?.find((user) => user.name === watchedUsername);
     }, [watchedUsername, usersList?.users]);
@@ -489,7 +489,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                     )}
                   />
 
-                  {topicName && (
+                  {Boolean(topicName) && (
                     <FormField
                       control={form.control}
                       disabled={isPending || isReadOnly}
@@ -546,7 +546,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                 </>
               )}
 
-              {showConsumerGroupFields && (
+              {Boolean(showConsumerGroupFields) && (
                 <div className="flex flex-col gap-2">
                   <FormLabel>Consumer Group (Optional)</FormLabel>
                   <FormDescription>

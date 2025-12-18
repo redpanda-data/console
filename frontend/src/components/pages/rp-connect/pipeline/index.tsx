@@ -59,13 +59,13 @@ import { parseSchema } from '../utils/schema';
 import { type PipelineMode, usePipelineMode } from '../utils/use-pipeline-mode';
 import { getConnectTemplate } from '../utils/yaml';
 
-interface FooterProps {
+type FooterProps = {
   mode: PipelineMode;
   onSave?: () => void;
   onCancel: () => void;
   isSaving?: boolean;
   disabled?: boolean;
-}
+};
 
 const Footer = memo(({ mode, onSave, onCancel, isSaving, disabled }: FooterProps) => {
   if (mode === 'view') {
@@ -85,7 +85,7 @@ const Footer = memo(({ mode, onSave, onCancel, isSaving, disabled }: FooterProps
       </Button>
       <Button className="min-w-[70px]" disabled={isSaving || disabled} onClick={onSave}>
         {mode === 'create' ? 'Create Pipeline' : 'Update Pipeline'}
-        {isSaving && <Spinner size="sm" />}
+        {Boolean(isSaving) && <Spinner size="sm" />}
       </Button>
     </div>
   );
@@ -216,7 +216,7 @@ export default function PipelinePage() {
   const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
   const yamlEditorSchema = useMemo(() => {
     if (!schemaResponse?.configSchema) {
-      return undefined;
+      return;
     }
 
     try {
@@ -227,7 +227,7 @@ export default function PipelinePage() {
       };
     } catch {
       // Fallback to undefined if schema parsing fails - editor will use basic YAML schema
-      return undefined;
+      return;
     }
   }, [schemaResponse]);
 

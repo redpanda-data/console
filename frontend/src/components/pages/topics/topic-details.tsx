@@ -209,20 +209,19 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   @computed get topic(): undefined | Topic | null {
     // undefined = not yet known, null = known to be null
     if (!api.topics) {
-      return undefined;
+      // biome-ignore lint/suspicious/useGetterReturn: early return for undefined case
+      return;
     }
     const topic = api.topics.find((e) => e.topicName === this.props.topicName);
-    if (!topic) {
-      return null;
-    }
-    return topic;
+    return topic ?? null;
   }
   @computed get topicConfig(): undefined | ConfigEntry[] | null {
     const config = api.topicConfig.get(this.props.topicName);
     if (config === undefined) {
-      return undefined;
+      // biome-ignore lint/suspicious/useGetterReturn: early return for undefined case
+      return;
     }
-    if (config === null || config.error != null) {
+    if (config === null || config.error !== null) {
       return null;
     }
     return config.configEntries;
@@ -338,7 +337,12 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         (t) => <AclList acl={api.topicAcls.get(t.topicName)} />,
         [
           () => {
-            if (AppFeatures.SINGLE_SIGN_ON && api.userData != null && !api.userData.canListAcls) {
+            if (
+              AppFeatures.SINGLE_SIGN_ON &&
+              api.userData !== null &&
+              api.userData !== undefined &&
+              !api.userData.canListAcls
+            ) {
               return (
                 <Popover content={"You need the cluster-permission 'viewAcl' to view this tab"} hideCloseButton={true}>
                   <div>
@@ -371,7 +375,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     return (
       <>
         <PageContent key={'b'}>
-          {uiSettings.topicDetailsShowStatisticsBar && <TopicQuickInfoStatistic topic={topic} />}
+          {Boolean(uiSettings.topicDetailsShowStatisticsBar) && <TopicQuickInfoStatistic topic={topic} />}
 
           <Flex gap={2} mb={4}>
             <Button
@@ -406,7 +410,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             />
           </Section>
         </PageContent>
-        {this.deleteRecordsModalAlive && (
+        {Boolean(this.deleteRecordsModalAlive) && (
           <DeleteRecordsModal
             afterClose={() => (this.deleteRecordsModalAlive = false)}
             onCancel={() => (this.deleteRecordsModalAlive = false)}

@@ -110,7 +110,7 @@ export const ToolsStep: React.FC<ToolsStepProps> = ({
         </div>
 
         {/* Secrets panel - takes 1 column on xl screens, only shown when there are missing secrets */}
-        {hasSecretWarnings && (
+        {Boolean(hasSecretWarnings) && (
           <div className="xl:col-span-1">
             <div className="sticky top-4">
               <QuickAddSecrets

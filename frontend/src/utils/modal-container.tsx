@@ -21,7 +21,8 @@ export function openModal<P extends object>(
   component: React.FunctionComponent<P> | React.ComponentClass<P, Record<string, never>>,
   props: Omit<P, 'closeModal'>
 ) {
-  const id = nextModalId++;
+  const id = nextModalId;
+  nextModalId += 1;
   const p: typeof props & { closeModal: () => void } = {
     ...props,
     closeModal: () => removeModal(id),

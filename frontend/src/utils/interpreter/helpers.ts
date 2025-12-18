@@ -16,18 +16,18 @@ export function expectRefEq(test: { name: string; actual: unknown; expected: unk
   const { name, actual, expected } = test;
 
   expect(`${name} (type equality)`, () => typeof actual === typeof expected);
-  successfulTests--;
+  successfulTests -= 1;
 
   expect(`${name} (ref equality)`, () => actual === expected);
-  successfulTests--;
+  successfulTests -= 1;
 
-  successfulTests++;
+  successfulTests += 1;
 }
 export function expectEq(test: { name: string; actual: unknown; expected: unknown }) {
   const jActual = toJson(test.actual);
   const jExpected = toJson(test.expected);
   if (jActual === jExpected) {
-    successfulTests++;
+    successfulTests += 1;
     return;
   }
 
@@ -52,7 +52,7 @@ export function expect(testOrName: string | (() => boolean), test?: () => boolea
   const name = typeof testOrName === 'string' ? (testOrName as string) : null;
 
   if (testFunc()) {
-    successfulTests++;
+    successfulTests += 1;
     return; // Success
   }
 

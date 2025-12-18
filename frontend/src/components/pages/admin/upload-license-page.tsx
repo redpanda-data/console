@@ -60,7 +60,7 @@ const UploadLicenseForm: FC<{
       }}
     >
       <Flex flexDirection="column" gap={2} my={4}>
-        {state.showFileUpload && (
+        {Boolean(state.showFileUpload) && (
           <Box>
             <Box border="1px dashed" borderColor="gray.200" borderRadius="md" padding="4">
               <Dropzone
@@ -106,7 +106,7 @@ const UploadLicenseForm: FC<{
           </Box>
         )}
 
-        {state.errorMessage && (
+        {Boolean(state.errorMessage) && (
           <Alert status="error" variant="left-accent">
             <AlertIcon />
             <AlertDescription>{state.errorMessage}</AlertDescription>

@@ -83,7 +83,7 @@ export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProp
                         onChange={(e) => field.onChange(Number(e.target.value))}
                         type="number"
                       />
-                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -99,7 +99,7 @@ export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProp
                         onChange={(e) => field.onChange(Number(e.target.value))}
                         type="number"
                       />
-                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
                 />
@@ -137,7 +137,7 @@ export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProp
                 name="indexer.inputTopics"
                 render={({ fieldState }) => (
                   <>
-                    {fieldState.invalid && (
+                    {Boolean(fieldState.invalid) && (
                       <Field data-invalid={true}>
                         <FieldError errors={[fieldState.error]} />
                       </Field>
@@ -186,7 +186,7 @@ export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProp
                       scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
                       value={extractSecretName(field.value || '')}
                     />
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                    {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
               />
@@ -213,7 +213,7 @@ export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProp
                         </SelectItem>
                       </SelectContent>
                     </Select>
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                    {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
               />
