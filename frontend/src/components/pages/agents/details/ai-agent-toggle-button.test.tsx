@@ -49,14 +49,16 @@ describe('AIAgentToggleButton', () => {
       description: 'Test Description',
       state: AIAgent_State.RUNNING,
       provider: {
-        case: 'openai',
-        value: {
-          model: 'gpt-4',
-          secretId: 'secret-1',
+        provider: {
+          case: 'openai',
+          value: {
+            apiKey: 'secret-1',
+          },
         },
       },
+      model: 'gpt-4',
       systemPrompt: 'You are a helpful assistant',
-      mcpServerIds: ['server-1'],
+      mcpServers: {},
     });
 
     const getAIAgentResponse = create(GetAIAgentResponseSchema, {
@@ -120,14 +122,16 @@ describe('AIAgentToggleButton', () => {
       description: 'Test Description',
       state: AIAgent_State.STOPPED,
       provider: {
-        case: 'openai',
-        value: {
-          model: 'gpt-4',
-          secretId: 'secret-1',
+        provider: {
+          case: 'openai',
+          value: {
+            apiKey: 'secret-1',
+          },
         },
       },
+      model: 'gpt-4',
       systemPrompt: 'You are a helpful assistant',
-      mcpServerIds: ['server-1'],
+      mcpServers: {},
     });
 
     const getAIAgentResponse = create(GetAIAgentResponseSchema, {
@@ -191,14 +195,16 @@ describe('AIAgentToggleButton', () => {
       description: 'Test Description',
       state: AIAgent_State.STOPPING,
       provider: {
-        case: 'openai',
-        value: {
-          model: 'gpt-4',
-          secretId: 'secret-1',
+        provider: {
+          case: 'openai',
+          value: {
+            apiKey: 'secret-1',
+          },
         },
       },
+      model: 'gpt-4',
       systemPrompt: 'You are a helpful assistant',
-      mcpServerIds: ['server-1'],
+      mcpServers: {},
     });
 
     const getAIAgentResponse = create(GetAIAgentResponseSchema, {
@@ -235,14 +241,16 @@ describe('AIAgentToggleButton', () => {
       description: 'Test Description',
       state: AIAgent_State.STARTING,
       provider: {
-        case: 'openai',
-        value: {
-          model: 'gpt-4',
-          secretId: 'secret-1',
+        provider: {
+          case: 'openai',
+          value: {
+            apiKey: 'secret-1',
+          },
         },
       },
+      model: 'gpt-4',
       systemPrompt: 'You are a helpful assistant',
-      mcpServerIds: ['server-1'],
+      mcpServers: {},
     });
 
     const getAIAgentResponse = create(GetAIAgentResponseSchema, {
@@ -279,14 +287,16 @@ describe('AIAgentToggleButton', () => {
       description: 'Test Description',
       state: AIAgent_State.ERROR,
       provider: {
-        case: 'openai',
-        value: {
-          model: 'gpt-4',
-          secretId: 'secret-1',
+        provider: {
+          case: 'openai',
+          value: {
+            apiKey: 'secret-1',
+          },
         },
       },
+      model: 'gpt-4',
       systemPrompt: 'You are a helpful assistant',
-      mcpServerIds: ['server-1'],
+      mcpServers: {},
     });
 
     const getAIAgentResponse = create(GetAIAgentResponseSchema, {

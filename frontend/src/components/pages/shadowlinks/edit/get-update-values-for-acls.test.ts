@@ -37,7 +37,6 @@ const baseFormValues: FormValues = {
     mechanism: ScramMechanism.SCRAM_SHA_256,
   },
   useTls: true,
-  useMtls: false,
   mtlsMode: TLS_MODE.PEM,
   mtls: {
     ca: undefined,
@@ -52,6 +51,8 @@ const baseFormValues: FormValues = {
   consumers: [],
   aclsMode: 'all',
   aclFilters: [],
+  excludeDefault: false,
+  enableSchemaRegistrySync: false,
 };
 
 describe('getUpdateValuesForACLs', () => {

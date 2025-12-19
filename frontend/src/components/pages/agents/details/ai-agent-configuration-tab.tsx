@@ -91,7 +91,7 @@ type LocalAIAgent = {
  * Regex pattern to extract secret name from template string: ${secrets.SECRET_NAME}
  */
 const SECRET_TEMPLATE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
-
+const SUBAGENT_NAME_REGEX = /^[A-Za-z0-9_-]+$/;
 /**
  * Extracts the secret name from the template string format: ${secrets.SECRET_NAME} -> SECRET_NAME
  */
@@ -440,6 +440,72 @@ export const AIAgentConfigurationTab = () => {
     });
   };
 
+  const renderSubagentDescription = (
+    subagent: LocalAIAgent['subagents'][number],
+    index: number,
+    editing: boolean
+  ): JSX.Element => {
+    if (editing) {
+      return (
+        <>
+          <Textarea
+            id={`subagent-desc-${index}`}
+            onChange={(e) => handleUpdateSubagent(index, 'description', e.target.value)}
+            placeholder="Brief description of this subagent's purpose..."
+            rows={2}
+            value={subagent.description}
+          />
+          <Text className="text-muted-foreground text-sm" variant="muted">
+            Used by the parent agent to decide when to invoke this subagent. Also used for context management - the
+            parent provides context when starting the subagent, which maintains its own context.
+          </Text>
+        </>
+      );
+    }
+    if (subagent.description) {
+      return (
+        <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+          <Text variant="default">{subagent.description}</Text>
+        </div>
+      );
+    }
+    return <Text variant="muted">No description</Text>;
+  };
+
+  const renderSubagentMcpServers = (
+    subagent: LocalAIAgent['subagents'][number],
+    index: number,
+    editing: boolean,
+    servers: MCPServer[]
+  ): JSX.Element => {
+    if (editing) {
+      if (servers.length > 0) {
+        return (
+          <MCPServerCardList
+            idPrefix={`subagent-${index}`}
+            onValueChange={(newServers) => handleUpdateSubagent(index, 'selectedMcpServers', newServers)}
+            servers={servers}
+            value={subagent.selectedMcpServers}
+          />
+        );
+      }
+      return <Text variant="muted">No MCP servers available</Text>;
+    }
+    if (subagent.selectedMcpServers.length > 0) {
+      return (
+        <div className="flex flex-wrap gap-2">
+          {subagent.selectedMcpServers.map((serverId) => (
+            <span className="inline-flex items-center rounded-md bg-secondary/5 px-2 py-1 text-xs" key={serverId}>
+              {serverId}
+            </span>
+          ))}
+        </div>
+      );
+    }
+    return <Text variant="muted">No MCP servers selected</Text>;
+  };
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex form with many conditionals - already refactored with helper functions
   const handleSave = async () => {
     if (!(aiAgentData?.aiAgent && id)) {
       return;
@@ -470,7 +536,7 @@ export const AIAgentConfigurationTab = () => {
       }
 
       // Validate name format
-      if (!/^[A-Za-z0-9_-]+$/.test(trimmedName)) {
+      if (!SUBAGENT_NAME_REGEX.test(trimmedName)) {
         toast.error(`Subagent "${trimmedName}": Name can only contain letters, numbers, hyphens, and underscores`);
         return;
       }
@@ -787,123 +853,88 @@ export const AIAgentConfigurationTab = () => {
                   <Text variant="muted">No subagents configured</Text>
                 ) : (
                   <Accordion collapsible onValueChange={setExpandedSubagent} type="single" value={expandedSubagent}>
-                    {displayData.subagents.map((subagent, index) => (
-                      <AccordionItem key={`subagent-${index}`} value={`subagent-${index}`}>
-                        <AccordionTrigger>
-                          <Text className="font-medium">{subagent.name || `Subagent ${index + 1}`}</Text>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-4 pt-4">
-                            {/* Name */}
-                            <div className="space-y-2">
-                              <Label htmlFor={`subagent-name-${index}`}>Subagent Name</Label>
-                              {isEditing ? (
-                                <Input
-                                  id={`subagent-name-${index}`}
-                                  onChange={(e) => handleUpdateSubagent(index, 'name', e.target.value)}
-                                  placeholder="e.g., code-reviewer"
-                                  value={subagent.name}
-                                />
-                              ) : (
-                                <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                                  <Text variant="default">{subagent.name}</Text>
-                                </div>
-                              )}
-                            </div>
+                    {displayData.subagents.map((subagent, index) => {
+                      // Compute conditional rendering values using helper functions
+                      const descriptionContent = renderSubagentDescription(subagent, index, isEditing);
+                      const mcpServersContent = renderSubagentMcpServers(
+                        subagent,
+                        index,
+                        isEditing,
+                        availableMcpServers
+                      );
 
-                            {/* Description */}
-                            <div className="space-y-2">
-                              <Label htmlFor={`subagent-desc-${index}`}>Description</Label>
-                              {isEditing ? (
-                                <>
-                                  <Textarea
-                                    id={`subagent-desc-${index}`}
-                                    onChange={(e) => handleUpdateSubagent(index, 'description', e.target.value)}
-                                    placeholder="Brief description of this subagent's purpose..."
-                                    rows={2}
-                                    value={subagent.description}
-                                  />
-                                  <Text className="text-muted-foreground text-sm" variant="muted">
-                                    Used by the parent agent to decide when to invoke this subagent. Also used for
-                                    context management - the parent provides context when starting the subagent, which
-                                    maintains its own context.
-                                  </Text>
-                                </>
-                              ) : subagent.description ? (
-                                <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                                  <Text variant="default">{subagent.description}</Text>
-                                </div>
-                              ) : (
-                                <Text variant="muted">No description</Text>
-                              )}
-                            </div>
-
-                            {/* System Prompt */}
-                            <div className="space-y-2">
-                              <Label htmlFor={`subagent-prompt-${index}`}>System Prompt</Label>
-                              {isEditing ? (
-                                <Textarea
-                                  id={`subagent-prompt-${index}`}
-                                  onChange={(e) => handleUpdateSubagent(index, 'systemPrompt', e.target.value)}
-                                  placeholder="Define the specialized behavior for this subagent..."
-                                  rows={6}
-                                  value={subagent.systemPrompt}
-                                />
-                              ) : (
-                                <DynamicCodeBlock code={subagent.systemPrompt} lang="text" />
-                              )}
-                            </div>
-
-                            {/* MCP Servers */}
-                            <div className="space-y-2">
-                              <Label>MCP Servers</Label>
-                              {isEditing ? (
-                                availableMcpServers.length > 0 ? (
-                                  <MCPServerCardList
-                                    idPrefix={`subagent-${index}`}
-                                    onValueChange={(newServers) =>
-                                      handleUpdateSubagent(index, 'selectedMcpServers', newServers)
-                                    }
-                                    servers={availableMcpServers}
-                                    value={subagent.selectedMcpServers}
+                      return (
+                        // biome-ignore lint/suspicious/noArrayIndexKey: Using index as key for subagent items
+                        <AccordionItem key={`subagent-${index}`} value={`subagent-${index}`}>
+                          <AccordionTrigger>
+                            <Text className="font-medium">{subagent.name || `Subagent ${index + 1}`}</Text>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="space-y-4 pt-4">
+                              {/* Name */}
+                              <div className="space-y-2">
+                                <Label htmlFor={`subagent-name-${index}`}>Subagent Name</Label>
+                                {isEditing ? (
+                                  <Input
+                                    id={`subagent-name-${index}`}
+                                    onChange={(e) => handleUpdateSubagent(index, 'name', e.target.value)}
+                                    placeholder="e.g., code-reviewer"
+                                    value={subagent.name}
                                   />
                                 ) : (
-                                  <Text variant="muted">No MCP servers available</Text>
-                                )
-                              ) : subagent.selectedMcpServers.length > 0 ? (
-                                <div className="flex flex-wrap gap-2">
-                                  {subagent.selectedMcpServers.map((serverId) => (
-                                    <span
-                                      className="inline-flex items-center rounded-md bg-secondary/5 px-2 py-1 text-xs"
-                                      key={serverId}
-                                    >
-                                      {serverId}
-                                    </span>
-                                  ))}
+                                  <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                    <Text variant="default">{subagent.name}</Text>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Description */}
+                              <div className="space-y-2">
+                                <Label htmlFor={`subagent-desc-${index}`}>Description</Label>
+                                {descriptionContent}
+                              </div>
+
+                              {/* System Prompt */}
+                              <div className="space-y-2">
+                                <Label htmlFor={`subagent-prompt-${index}`}>System Prompt</Label>
+                                {isEditing ? (
+                                  <Textarea
+                                    id={`subagent-prompt-${index}`}
+                                    onChange={(e) => handleUpdateSubagent(index, 'systemPrompt', e.target.value)}
+                                    placeholder="Define the specialized behavior for this subagent..."
+                                    rows={6}
+                                    value={subagent.systemPrompt}
+                                  />
+                                ) : (
+                                  <DynamicCodeBlock code={subagent.systemPrompt} lang="text" />
+                                )}
+                              </div>
+
+                              {/* MCP Servers */}
+                              <div className="space-y-2">
+                                <Label>MCP Servers</Label>
+                                {mcpServersContent}
+                              </div>
+
+                              {/* Delete button */}
+                              {Boolean(isEditing) && (
+                                <div className="flex justify-end pt-2">
+                                  <Button onClick={() => handleRemoveSubagent(index)} size="sm" variant="destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                    Remove Subagent
+                                  </Button>
                                 </div>
-                              ) : (
-                                <Text variant="muted">No MCP servers selected</Text>
                               )}
                             </div>
-
-                            {/* Delete button */}
-                            {isEditing && (
-                              <div className="flex justify-end pt-2">
-                                <Button onClick={() => handleRemoveSubagent(index)} size="sm" variant="destructive">
-                                  <Trash2 className="h-4 w-4" />
-                                  Remove Subagent
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
+                          </AccordionContent>
+                        </AccordionItem>
+                      );
+                    })}
                   </Accordion>
                 )}
 
                 {/* Add subagent button */}
-                {isEditing && (
+                {Boolean(isEditing) && (
                   <Button className="w-full" onClick={handleAddSubagent} type="button" variant="dashed">
                     <Plus className="h-4 w-4" />
                     Add Subagent

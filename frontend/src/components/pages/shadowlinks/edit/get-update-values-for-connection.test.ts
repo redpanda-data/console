@@ -51,6 +51,7 @@ const baseFormValues: FormValues = {
   aclsMode: 'all',
   aclFilters: [],
   excludeDefault: false,
+  enableSchemaRegistrySync: false,
 };
 
 describe('getUpdateValuesForConnection', () => {

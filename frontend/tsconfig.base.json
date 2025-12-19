@@ -18,14 +18,14 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "baseUrl": "src",
     "incremental": true,
     "strictPropertyInitialization": false,
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitOverride": false,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "paths": { "*": ["./src/*"] }
   },
   "include": ["src", "./vitest.setup.ts"],
   "exclude": ["src/utils/interpreter/**", "node_modules", "src/**/*.test.tsx", "src/**/*.test.ts", "src/protogen"],

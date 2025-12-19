@@ -439,7 +439,9 @@ export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRol
   const {
     data: { roles: allRoles },
   } = useListRolesQuery();
-  const availableRoles = (allRoles ?? []).filter((r) => !roles.includes(r.name)).map((r) => ({ value: r.name }));
+  const availableRoles = (allRoles ?? [])
+    .filter((r: { name: string }) => !roles.includes(r.name))
+    .map((r: { name: string }) => ({ value: r.name }));
 
   return (
     <Flex direction="column" gap={4}>

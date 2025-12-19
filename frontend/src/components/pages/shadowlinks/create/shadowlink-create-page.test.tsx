@@ -421,7 +421,7 @@ describe('ShadowLinkCreatePage', () => {
       // Wrap mutateAsync to call onSuccess callback
       const wrappedMutateAsync = async (request: any) => {
         const result = await mockMutateAsync(request);
-        options?.onSuccess?.(result, request, undefined);
+        options?.onSuccess?.(result, request, undefined, {} as any);
         return result;
       };
 
@@ -491,7 +491,7 @@ describe('ShadowLinkCreatePage - Embedded Mode Redirect', () => {
     vi.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
       const wrappedMutateAsync = async (request: any) => {
         const result = await mockMutateAsync(request);
-        options?.onSuccess?.(result, request, undefined);
+        options?.onSuccess?.(result, request, undefined, {} as any);
         return result;
       };
 

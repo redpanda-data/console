@@ -54,7 +54,7 @@ export const RetrieverSection = ({ knowledgeBase, isEditMode }: RetrieverSection
 
   const availableSecrets =
     secretsData?.secrets
-      ?.filter((secret) => secret !== undefined)
+      ?.filter((secret): secret is NonNullable<typeof secret> => secret !== undefined)
       .map((secret) => ({
         id: secret.id,
         name: secret.id,

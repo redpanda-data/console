@@ -18,7 +18,7 @@ vi.mock('config', () => ({
     controlplaneUrl: 'http://localhost:9090',
   },
   isFeatureFlagEnabled: vi.fn(() => false),
-  addBearerTokenInterceptor: vi.fn((next) => async (request) => await next(request)),
+  addBearerTokenInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
 }));
 
 vi.mock('state/ui-state', () => ({
