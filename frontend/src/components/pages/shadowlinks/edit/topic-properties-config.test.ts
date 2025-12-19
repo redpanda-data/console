@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect } from 'vitest';
 
 import {
   getDefaultProperties,
@@ -21,14 +21,14 @@ import {
 
 describe('topic-properties-config', () => {
   describe('getPropertiesByCategory', () => {
-    it('should return a Map with correct number of categories', () => {
+    test('should return a Map with correct number of categories', () => {
       const result = getPropertiesByCategory();
 
       expect(result).toBeInstanceOf(Map);
       expect(result.size).toBeGreaterThan(0);
     });
 
-    it('should group Retention properties correctly', () => {
+    test('should group Retention properties correctly', () => {
       const result = getPropertiesByCategory();
       const retentionProps = result.get('Retention');
 
@@ -39,7 +39,7 @@ describe('topic-properties-config', () => {
       );
     });
 
-    it('should group Compaction properties correctly', () => {
+    test('should group Compaction properties correctly', () => {
       const result = getPropertiesByCategory();
       const compactionProps = result.get('Compaction');
 
@@ -50,7 +50,7 @@ describe('topic-properties-config', () => {
       );
     });
 
-    it('should return undefined for non-existent categories', () => {
+    test('should return undefined for non-existent categories', () => {
       const result = getPropertiesByCategory();
       const nonExistent = result.get('NonExistentCategory');
 
@@ -59,13 +59,13 @@ describe('topic-properties-config', () => {
   });
 
   describe('getDefaultProperties', () => {
-    it('should return 7 default properties', () => {
+    test('should return 7 default properties', () => {
       const result = getDefaultProperties();
 
       expect(result).toHaveLength(7);
     });
 
-    it('should include expected default properties', () => {
+    test('should include expected default properties', () => {
       const result = getDefaultProperties();
 
       expect(result).toEqual(
@@ -81,7 +81,7 @@ describe('topic-properties-config', () => {
       );
     });
 
-    it('should only return property names as strings', () => {
+    test('should only return property names as strings', () => {
       const result = getDefaultProperties();
 
       for (const prop of result) {
@@ -91,66 +91,66 @@ describe('topic-properties-config', () => {
   });
 
   describe('isPropertyEditable', () => {
-    it('should return true for optional properties', () => {
+    test('should return true for optional properties', () => {
       expect(isPropertyEditable('min.cleanable.dirty.ratio')).toBe(true);
       expect(isPropertyEditable('write.caching')).toBe(true);
     });
 
-    it('should return false for always properties', () => {
+    test('should return false for always properties', () => {
       expect(isPropertyEditable('cleanup.policy')).toBe(false);
       expect(isPropertyEditable('max.message.bytes')).toBe(false);
     });
 
-    it('should return false for never properties', () => {
+    test('should return false for never properties', () => {
       expect(isPropertyEditable('redpanda.remote.recovery')).toBe(false);
       expect(isPropertyEditable('redpanda.virtual.cluster.id')).toBe(false);
     });
 
-    it('should return false for non-existent properties', () => {
+    test('should return false for non-existent properties', () => {
       expect(isPropertyEditable('non.existent.property')).toBe(false);
     });
   });
 
   describe('isPropertyDisabled', () => {
-    it('should return true for never properties', () => {
+    test('should return true for never properties', () => {
       expect(isPropertyDisabled('redpanda.remote.recovery')).toBe(true);
       expect(isPropertyDisabled('redpanda.remote.readreplica')).toBe(true);
       expect(isPropertyDisabled('redpanda.virtual.cluster.id')).toBe(true);
     });
 
-    it('should return false for optional properties', () => {
+    test('should return false for optional properties', () => {
       expect(isPropertyDisabled('min.cleanable.dirty.ratio')).toBe(false);
       expect(isPropertyDisabled('retention.bytes')).toBe(false);
     });
 
-    it('should return false for always properties', () => {
+    test('should return false for always properties', () => {
       expect(isPropertyDisabled('cleanup.policy')).toBe(false);
       expect(isPropertyDisabled('max.message.bytes')).toBe(false);
     });
 
-    it('should return false for non-existent properties', () => {
+    test('should return false for non-existent properties', () => {
       expect(isPropertyDisabled('non.existent.property')).toBe(false);
     });
   });
 
   describe('isPropertyAlwaysReplicated', () => {
-    it('should return true for always properties', () => {
+    test('should return true for always properties', () => {
       expect(isPropertyAlwaysReplicated('cleanup.policy')).toBe(true);
       expect(isPropertyAlwaysReplicated('max.message.bytes')).toBe(true);
       expect(isPropertyAlwaysReplicated('message.timestamp.type')).toBe(true);
     });
 
-    it('should return false for optional properties', () => {
+    test('should return false for optional properties', () => {
       expect(isPropertyAlwaysReplicated('min.cleanable.dirty.ratio')).toBe(false);
       expect(isPropertyAlwaysReplicated('retention.bytes')).toBe(false);
     });
 
-    it('should return false for never properties', () => {
+    test('should return false for never properties', () => {
       expect(isPropertyAlwaysReplicated('redpanda.remote.recovery')).toBe(false);
       expect(isPropertyAlwaysReplicated('redpanda.virtual.cluster.id')).toBe(false);
     });
 
-    it('should return false for non-existent properties', () => {
+    test('should return false for non-existent properties', () => {
       expect(isPropertyAlwaysReplicated('non.existent.property')).toBe(false);
     });
   });
