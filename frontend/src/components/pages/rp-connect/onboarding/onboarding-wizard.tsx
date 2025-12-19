@@ -287,11 +287,26 @@ export const ConnectOnboardingWizard = ({
         try {
           const result = await addUserStepRef.current?.triggerSubmit();
           if (result?.success && result.data) {
-            setUserData({
-              username: result.data.username,
-              saslMechanism: result.data.saslMechanism,
-              consumerGroup: result.data.consumerGroup || '',
-            });
+            if ('authMethod' in result.data && result.data.authMethod === 'service-account') {
+              // Service account data
+              setUserData({
+                authMethod: 'service-account',
+                username: '',
+                saslMechanism: 'SCRAM-SHA-256',
+                consumerGroup: '',
+                serviceAccountName: result.data.serviceAccountName,
+                serviceAccountId: result.data.serviceAccountId,
+                serviceAccountSecretName: result.data.serviceAccountSecretName,
+              });
+            } else if ('username' in result.data) {
+              // SASL user data
+              setUserData({
+                authMethod: 'sasl',
+                username: result.data.username,
+                saslMechanism: result.data.saslMechanism,
+                consumerGroup: result.data.consumerGroup || '',
+              });
+            }
             regenerateYamlForTopicUserComponents(components);
             methods.next();
           }

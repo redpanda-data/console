@@ -31,6 +31,7 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
   CreatePipelineRequestSchema as CreatePipelineRequestSchemaDataPlane,
+  Pipeline_ServiceAccountSchema,
   PipelineCreateSchema,
   PipelineUpdateSchema,
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
@@ -45,7 +46,12 @@ import {
 import { useCreatePipelineMutation, useGetPipelineQuery, useUpdatePipelineMutation } from 'react-query/api/pipeline';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useOnboardingWizardDataStore, useOnboardingYamlContentStore } from 'state/onboarding-wizard-store';
+import {
+  useOnboardingUserDataStore,
+  useOnboardingWizardDataStore,
+  useOnboardingYamlContentStore,
+} from 'state/onboarding-wizard-store';
+import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { z } from 'zod';
 
@@ -346,14 +352,30 @@ export default function PipelinePage() {
     const { name, description, computeUnits } = form.getValues();
 
     if (mode === 'create') {
+      const userData = useOnboardingUserDataStore.getState();
+      const tags: Record<string, string> = {
+        __redpanda_cloud_pipeline_type: 'pipeline',
+      };
+
+      let serviceAccountConfig: ReturnType<typeof create<typeof Pipeline_ServiceAccountSchema>> | undefined;
+      if (userData.authMethod === 'service-account' && userData.serviceAccountId && userData.serviceAccountSecretName) {
+        // Add cloud-managed tags for cleanup
+        addServiceAccountTags(tags, userData.serviceAccountId, userData.serviceAccountSecretName);
+
+        // Service account passed in proto spec, NOT in YAML
+        serviceAccountConfig = create(Pipeline_ServiceAccountSchema, {
+          clientId: `\${secrets.${userData.serviceAccountSecretName}.client_id}`,
+          clientSecret: `\${secrets.${userData.serviceAccountSecretName}.client_secret}`,
+        });
+      }
+
       const pipelineCreate = create(PipelineCreateSchema, {
         displayName: name,
         configYaml: yamlContent,
         description: description || '',
         resources: { cpuShares: tasksToCPU(computeUnits) || '0', memoryShares: '0' },
-        tags: {
-          __redpanda_cloud_pipeline_type: 'pipeline',
-        },
+        tags,
+        serviceAccount: serviceAccountConfig,
       });
 
       const createRequestDataPlane = create(CreatePipelineRequestSchemaDataPlane, {
@@ -402,6 +424,7 @@ export default function PipelinePage() {
         tags: {
           ...pipeline?.tags,
         },
+        serviceAccount: pipeline?.serviceAccount,
       });
 
       const updateRequestDataPlane = create(UpdatePipelineRequestSchemaDataPlane, {

@@ -41,7 +41,7 @@ export type BaseStepRef<T> = {
 // User step-specific submission result
 export type UserStepSubmissionResult = {
   success: boolean;
-  data?: AddUserFormData;
+  data?: AddUserFormData | ServiceAccountSubmissionData;
 };
 
 // New ref type for user step
@@ -109,6 +109,10 @@ export type MinimalUserData = {
   username: string;
   saslMechanism: (typeof SASL_MECHANISMS)[number];
   consumerGroup: string;
+  authMethod?: 'sasl' | 'service-account';
+  serviceAccountName?: string;
+  serviceAccountId?: string;
+  serviceAccountSecretName?: string;
 };
 
 export const CreatableSelectionOptions = {
@@ -117,3 +121,19 @@ export const CreatableSelectionOptions = {
 } as const;
 
 export type CreatableSelectionType = (typeof CreatableSelectionOptions)[keyof typeof CreatableSelectionOptions];
+
+// Authentication method options for pipeline
+export const AuthenticationMethod = {
+  SASL: 'sasl',
+  SERVICE_ACCOUNT: 'service-account',
+} as const;
+
+export type AuthenticationMethodType = (typeof AuthenticationMethod)[keyof typeof AuthenticationMethod];
+
+// Service account submission data
+export type ServiceAccountSubmissionData = {
+  authMethod: 'service-account';
+  serviceAccountName: string;
+  serviceAccountId: string;
+  serviceAccountSecretName: string;
+};
