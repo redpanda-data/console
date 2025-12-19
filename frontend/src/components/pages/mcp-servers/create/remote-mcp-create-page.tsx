@@ -361,10 +361,10 @@ export const RemoteMCPCreatePage: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
-      <div className="space-y-2">
+      <header className="flex flex-col gap-2">
         <Heading level={1}>Create MCP Server</Heading>
         <Text variant="muted">Set up a new managed MCP server with custom tools and configurations.</Text>
-      </div>
+      </header>
 
       <Stepper.Provider className="space-y-4" variant="horizontal">
         {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic */}

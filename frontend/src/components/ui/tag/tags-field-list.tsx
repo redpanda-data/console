@@ -9,11 +9,10 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
-import { FormControl, FormField, FormItem, FormMessage } from 'components/redpanda-ui/components/form';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { Plus, Trash2 } from 'lucide-react';
-import type { FieldValues, Path, UseFormReturn } from 'react-hook-form';
+import { Controller, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form';
 
 type TagsFieldListProps<TFieldValues extends FieldValues> = {
   form: UseFormReturn<TFieldValues>;
@@ -53,32 +52,28 @@ export const TagsFieldList = <TFieldValues extends FieldValues>({
 }: TagsFieldListProps<TFieldValues>) => {
   return (
     <div className="flex flex-col gap-2">
-      <Text variant="label">Tags</Text>
-      <Text variant="muted">Key-value pairs for organizing and categorizing</Text>
+      <FieldLabel>Tags</FieldLabel>
+      <FieldDescription>Key-value pairs for organizing and categorizing</FieldDescription>
       {tagFields.map((f, idx) => (
         <div className="flex items-center gap-2" key={f.id}>
-          <FormField
+          <Controller
             control={form.control}
             name={`${fieldName}.${idx}.key` as Path<TFieldValues>}
-            render={({ field }) => (
-              <FormItem className="flex-1">
-                <FormControl>
-                  <Input placeholder="Key" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid} className="flex-1">
+                <Input placeholder="Key" {...field} />
+                {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
+              </Field>
             )}
           />
-          <FormField
+          <Controller
             control={form.control}
             name={`${fieldName}.${idx}.value` as Path<TFieldValues>}
-            render={({ field }) => (
-              <FormItem className="flex-1">
-                <FormControl>
-                  <Input placeholder="Value" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid} className="flex-1">
+                <Input placeholder="Value" {...field} />
+                {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
+              </Field>
             )}
           />
           <Button onClick={() => removeTag(idx)} size="icon" type="button" variant="outline">
@@ -90,13 +85,13 @@ export const TagsFieldList = <TFieldValues extends FieldValues>({
         <Plus className="h-4 w-4" /> Add Tag
       </Button>
       {/* Array-level message for duplicate keys */}
-      <FormField
+      <Controller
         control={form.control}
         name={fieldName as Path<TFieldValues>}
-        render={() => (
-          <FormItem>
-            <FormMessage />
-          </FormItem>
+        render={({ fieldState }) => (
+          <>
+            {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
+          </>
         )}
       />
     </div>

@@ -18,13 +18,7 @@ export default defineConfig(({ mode }) => {
   return {
     test: {
       fileParallelism: true,
-      poolOptions: {
-        threads: {
-          useAtomics: true,
-          singleThread: false,
-        },
-      },
-      pool: 'threads',
+      vmMemoryLimit: '1000Mb',
       testTimeout: 15_000,
       globals: true,
       environment: 'jsdom',

@@ -179,20 +179,30 @@ function useShouldShowRefresh() {
 }
 
 function useShouldHideHeader() {
-  const remoteMcpDetailsMatch = useMatch({
-    path: '/mcp-servers/:id',
+  const remoteMcpPagesMatch = useMatch({
+    path: '/mcp-servers',
     end: false,
   });
 
-  const aiAgentDetailsMatch = useMatch({
-    path: '/agents/:id',
+  const aiAgentPagesMatch = useMatch({
+    path: '/agents',
     end: false,
   });
 
-  const knowledgeBaseDetailsMatch = useMatch({
-    path: '/knowledgebases/:knowledgebaseId',
+  const knowledgeBasePagesMatch = useMatch({
+    path: '/knowledgebases',
     end: false,
   });
 
-  return remoteMcpDetailsMatch !== null || aiAgentDetailsMatch !== null || knowledgeBaseDetailsMatch !== null;
+  const secretPagesMatch = useMatch({
+    path: '/secrets',
+    end: false,
+  });
+
+  return (
+    remoteMcpPagesMatch !== null ||
+    aiAgentPagesMatch !== null ||
+    knowledgeBasePagesMatch !== null ||
+    secretPagesMatch !== null
+  );
 }

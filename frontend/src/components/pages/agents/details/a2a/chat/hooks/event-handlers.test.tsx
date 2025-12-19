@@ -10,7 +10,7 @@
  */
 
 import type { TaskStatusUpdateEvent } from '@a2a-js/sdk';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, vi } from 'vitest';
 
 import { handleStatusUpdateEvent } from './event-handlers';
 import type { StreamingState } from './streaming-types';
@@ -37,7 +37,7 @@ describe('artifact duplication bug', () => {
     contentBlocks: [],
   });
 
-  it('should allow normal agent messages through', () => {
+  test('should allow normal agent messages through', () => {
     const state = createMockState();
     const assistantMessage = createMockMessage();
     const onMessageUpdate = vi.fn();

@@ -384,9 +384,9 @@ export const AIAgentCreatePage = () => {
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
-      <div className="space-y-4">
-        <Heading level={1}>Create New Agent</Heading>
-      </div>
+      <header className="flex flex-col gap-2">
+        <Heading level={1}>Create AI Agent</Heading>
+      </header>
 
       <Form {...form}>
         <FormContainer className="w-full" layout="default" onSubmit={form.handleSubmit(onSubmit)} width="full">

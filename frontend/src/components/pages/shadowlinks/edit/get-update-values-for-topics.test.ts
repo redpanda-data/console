@@ -19,7 +19,7 @@ import {
   ShadowLinkConfigurationsSchema,
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { describe, expect, it, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 import { getUpdateValuesForTopics } from './shadowlink-edit-utils';
 import type { FormValues } from '../create/model';
@@ -459,7 +459,7 @@ describe('getUpdateValuesForTopics', () => {
 
   describe('buildDefaultTopicsValues', () => {
     describe('All Topics Mode', () => {
-      it('should return "all" mode when filter is single wildcard (*)', () => {
+      test('should return "all" mode when filter is single wildcard (*)', () => {
         const shadowLink = create(ShadowLinkSchema, {
           name: 'test-link',
           uid: 'uid-123',
@@ -482,7 +482,7 @@ describe('getUpdateValuesForTopics', () => {
         expect(result.topicsMode).toBe('all');
       });
 
-      it('should return empty topics array in "all" mode', () => {
+      test('should return empty topics array in "all" mode', () => {
         const shadowLink = create(ShadowLinkSchema, {
           name: 'test-link',
           uid: 'uid-123',
@@ -505,7 +505,7 @@ describe('getUpdateValuesForTopics', () => {
         expect(result.topics).toEqual([]);
       });
 
-      it('should extract topicProperties from shadowLink.syncedShadowTopicProperties', () => {
+      test('should extract topicProperties from shadowLink.syncedShadowTopicProperties', () => {
         const shadowLink = create(ShadowLinkSchema, {
           name: 'test-link',
           uid: 'uid-123',
@@ -528,7 +528,7 @@ describe('getUpdateValuesForTopics', () => {
         expect(result.topicProperties).toEqual(['retention.bytes', 'compression.type']);
       });
 
-      it('should extract excludeDefault from topicMetadataSyncOptions', () => {
+      test('should extract excludeDefault from topicMetadataSyncOptions', () => {
         const shadowLink = create(ShadowLinkSchema, {
           name: 'test-link',
           uid: 'uid-123',
@@ -554,7 +554,7 @@ describe('getUpdateValuesForTopics', () => {
     });
 
     describe('Specify Topics Mode', () => {
-      it('should return "specify" mode when filters are not wildcard', () => {
+      test('should return "specify" mode when filters are not wildcard', () => {
         const shadowLink = create(ShadowLinkSchema, {
           name: 'test-link',
           uid: 'uid-123',
@@ -577,7 +577,7 @@ describe('getUpdateValuesForTopics', () => {
         expect(result.topicsMode).toBe('specify');
       });
 
-      it('should map filters correctly with name, patternType, filterType', () => {
+      test('should map filters correctly with name, patternType, filterType', () => {
         const shadowLink = create(ShadowLinkSchema, {
           name: 'test-link',
           uid: 'uid-123',
@@ -606,7 +606,7 @@ describe('getUpdateValuesForTopics', () => {
         ]);
       });
 
-      it('should handle multiple filters', () => {
+      test('should handle multiple filters', () => {
         const shadowLink = create(ShadowLinkSchema, {
           name: 'test-link',
           uid: 'uid-123',
@@ -646,7 +646,7 @@ describe('getUpdateValuesForTopics', () => {
     });
 
     describe('Default Values & Edge Cases', () => {
-      it('should default excludeDefault to false when undefined', () => {
+      test('should default excludeDefault to false when undefined', () => {
         const shadowLink = create(ShadowLinkSchema, {
           name: 'test-link',
           uid: 'uid-123',
@@ -669,7 +669,7 @@ describe('getUpdateValuesForTopics', () => {
         expect(result.excludeDefault).toBe(false);
       });
 
-      it('should return empty topicProperties array when undefined', () => {
+      test('should return empty topicProperties array when undefined', () => {
         const shadowLink = create(ShadowLinkSchema, {
           name: 'test-link',
           uid: 'uid-123',
@@ -692,7 +692,7 @@ describe('getUpdateValuesForTopics', () => {
         expect(result.topicProperties).toEqual([]);
       });
 
-      it('should handle missing topicMetadataSyncOptions gracefully', () => {
+      test('should handle missing topicMetadataSyncOptions gracefully', () => {
         const shadowLink = create(ShadowLinkSchema, {
           name: 'test-link',
           uid: 'uid-123',

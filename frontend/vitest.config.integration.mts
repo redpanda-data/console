@@ -17,14 +17,14 @@ export default defineConfig(({ mode }) => {
 
   return {
     test: {
-      fileParallelism: true,
+      fileParallelism: false,
+      isolate: true,
+      pool: 'forks',
       poolOptions: {
-        threads: {
-          useAtomics: true,
-          singleThread: false,
+        forks: {
+          singleFork: true,
         },
       },
-      pool: 'threads',
       testTimeout: 30_000,
       globals: true,
       environment: 'jsdom', // Integration tests use jsdom environment
