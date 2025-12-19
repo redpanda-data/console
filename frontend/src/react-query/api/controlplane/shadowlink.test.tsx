@@ -11,7 +11,7 @@
 
 import {
   ListShadowLinksResponseSchema,
-  ShadowLinkSchema,
+  ShadowLinkListItemSchema,
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { listShadowLinks } from '@buf/redpandadata_cloud.connectrpc_query-es/redpanda/api/controlplane/v1/shadow_link-ShadowLinkService_connectquery';
 import { create } from '@bufbuild/protobuf';
@@ -79,7 +79,7 @@ describe('useControlplaneListShadowLinksQuery', () => {
 
     const mockListShadowLinks = vi.fn();
     const mockShadowLinks = [
-      create(ShadowLinkSchema, {
+      create(ShadowLinkListItemSchema, {
         id: 'sl-1',
         name: 'shadow-link-1',
         shadowRedpandaId: testCase.clusterId,

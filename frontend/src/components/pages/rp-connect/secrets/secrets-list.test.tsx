@@ -59,7 +59,7 @@ describe('RpConnectSecretsList', () => {
 
     render(
       <MemoryRouter>
-        <RpConnectSecretsList />
+        <RpConnectSecretsList matchedPath="/rp-connect/secrets" />
       </MemoryRouter>
     );
 
@@ -80,7 +80,7 @@ describe('RpConnectSecretsList', () => {
 
     render(
       <MemoryRouter>
-        <RpConnectSecretsList />
+        <RpConnectSecretsList matchedPath="/rp-connect/secrets" />
       </MemoryRouter>
     );
 
@@ -99,7 +99,7 @@ describe('RpConnectSecretsList', () => {
 
     render(
       <MemoryRouter>
-        <RpConnectSecretsList />
+        <RpConnectSecretsList matchedPath="/rp-connect/secrets" />
       </MemoryRouter>
     );
 

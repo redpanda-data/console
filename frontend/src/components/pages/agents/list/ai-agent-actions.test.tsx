@@ -51,7 +51,6 @@ const DELETE_BUTTON_REGEX = /^delete$/i;
 
 describe('AIAgentActions', () => {
   const onDeleteWithServiceAccount = vi.fn();
-  const setIsDeleteDialogOpen = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -74,18 +73,14 @@ describe('AIAgentActions', () => {
       description: 'Test Description',
       state: AIAgent_State.STOPPED,
       model: 'gpt-4',
+      providerType: 'openai',
       url: 'http://localhost:8080/agents/agent-1',
       mcpServers: {},
       tags: {},
     };
 
     render(
-      <AIAgentActions
-        agent={agent}
-        isDeletingAgent={false}
-        onDeleteWithServiceAccount={onDeleteWithServiceAccount}
-        setIsDeleteDialogOpen={setIsDeleteDialogOpen}
-      />
+      <AIAgentActions agent={agent} isDeletingAgent={false} onDeleteWithServiceAccount={onDeleteWithServiceAccount} />
     );
 
     const actionsButton = screen.getByRole('button', { name: OPEN_MENU_REGEX });
@@ -108,18 +103,14 @@ describe('AIAgentActions', () => {
       description: 'Test Description',
       state: AIAgent_State.RUNNING,
       model: 'gpt-4',
+      providerType: 'openai',
       url: 'http://localhost:8080/agents/agent-1',
       mcpServers: {},
       tags: {},
     };
 
     render(
-      <AIAgentActions
-        agent={agent}
-        isDeletingAgent={false}
-        onDeleteWithServiceAccount={onDeleteWithServiceAccount}
-        setIsDeleteDialogOpen={setIsDeleteDialogOpen}
-      />
+      <AIAgentActions agent={agent} isDeletingAgent={false} onDeleteWithServiceAccount={onDeleteWithServiceAccount} />
     );
 
     const actionsButton = screen.getByRole('button', { name: OPEN_MENU_REGEX });
@@ -142,6 +133,7 @@ describe('AIAgentActions', () => {
       description: 'Test Description',
       state: AIAgent_State.STOPPED,
       model: 'gpt-4',
+      providerType: 'openai',
       url: 'http://localhost:8080/agents/agent-1',
       mcpServers: {},
       tags: {},
@@ -161,12 +153,7 @@ describe('AIAgentActions', () => {
     });
 
     render(
-      <AIAgentActions
-        agent={agent}
-        isDeletingAgent={false}
-        onDeleteWithServiceAccount={onDeleteWithServiceAccount}
-        setIsDeleteDialogOpen={setIsDeleteDialogOpen}
-      />,
+      <AIAgentActions agent={agent} isDeletingAgent={false} onDeleteWithServiceAccount={onDeleteWithServiceAccount} />,
       { transport }
     );
 
@@ -196,6 +183,7 @@ describe('AIAgentActions', () => {
       description: 'Test Description',
       state: AIAgent_State.RUNNING,
       model: 'gpt-4',
+      providerType: 'openai',
       url: 'http://localhost:8080/agents/agent-1',
       mcpServers: {},
       tags: {},
@@ -215,12 +203,7 @@ describe('AIAgentActions', () => {
     });
 
     render(
-      <AIAgentActions
-        agent={agent}
-        isDeletingAgent={false}
-        onDeleteWithServiceAccount={onDeleteWithServiceAccount}
-        setIsDeleteDialogOpen={setIsDeleteDialogOpen}
-      />,
+      <AIAgentActions agent={agent} isDeletingAgent={false} onDeleteWithServiceAccount={onDeleteWithServiceAccount} />,
       { transport }
     );
 
@@ -250,18 +233,14 @@ describe('AIAgentActions', () => {
       description: 'Test Description',
       state: AIAgent_State.RUNNING,
       model: 'gpt-4',
+      providerType: 'openai',
       url: 'http://localhost:8080/agents/agent-1',
       mcpServers: {},
       tags: {},
     };
 
     render(
-      <AIAgentActions
-        agent={agent}
-        isDeletingAgent={false}
-        onDeleteWithServiceAccount={onDeleteWithServiceAccount}
-        setIsDeleteDialogOpen={setIsDeleteDialogOpen}
-      />
+      <AIAgentActions agent={agent} isDeletingAgent={false} onDeleteWithServiceAccount={onDeleteWithServiceAccount} />
     );
 
     const actionsButton = screen.getByRole('button', { name: OPEN_MENU_REGEX });
@@ -281,6 +260,7 @@ describe('AIAgentActions', () => {
       description: 'Test Description',
       state: AIAgent_State.STOPPED,
       model: 'gpt-4',
+      providerType: 'openai',
       url: 'http://localhost:8080/agents/agent-1',
       mcpServers: {},
       tags: {},
@@ -289,12 +269,7 @@ describe('AIAgentActions', () => {
     onDeleteWithServiceAccount.mockResolvedValue(undefined);
 
     render(
-      <AIAgentActions
-        agent={agent}
-        isDeletingAgent={false}
-        onDeleteWithServiceAccount={onDeleteWithServiceAccount}
-        setIsDeleteDialogOpen={setIsDeleteDialogOpen}
-      />
+      <AIAgentActions agent={agent} isDeletingAgent={false} onDeleteWithServiceAccount={onDeleteWithServiceAccount} />
     );
 
     const actionsButton = screen.getByRole('button', { name: OPEN_MENU_REGEX });
@@ -328,6 +303,7 @@ describe('AIAgentActions', () => {
       description: 'Test Description',
       state: AIAgent_State.STOPPED,
       model: 'gpt-4',
+      providerType: 'openai',
       url: 'http://localhost:8080/agents/agent-1',
       mcpServers: {},
       tags: {
@@ -339,12 +315,7 @@ describe('AIAgentActions', () => {
     onDeleteWithServiceAccount.mockResolvedValue(undefined);
 
     render(
-      <AIAgentActions
-        agent={agent}
-        isDeletingAgent={false}
-        onDeleteWithServiceAccount={onDeleteWithServiceAccount}
-        setIsDeleteDialogOpen={setIsDeleteDialogOpen}
-      />
+      <AIAgentActions agent={agent} isDeletingAgent={false} onDeleteWithServiceAccount={onDeleteWithServiceAccount} />
     );
 
     const actionsButton = screen.getByRole('button', { name: OPEN_MENU_REGEX });

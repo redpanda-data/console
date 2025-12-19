@@ -82,6 +82,8 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
 
   const deleteSubjectMutation = useDeleteSchemaSubjectMutation();
 
+  type UserDataType = NonNullable<typeof userData>;
+
   // Update page title and breadcrumbs
   useEffect(() => {
     runInAction(() => {
@@ -113,9 +115,15 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
 
   const isSoftDeleted = schemaSubjects?.find((x) => x.name === subjectNameRaw)?.isSoftDeleted;
 
-  const canManageSchemaRegistry = userData?.permissions?.schemaRegistry?.includes(SchemaRegistryCapability.WRITE);
-  const canCreateSchemas = userData?.permissions?.schemaRegistry?.includes(SchemaRegistryCapability.WRITE);
-  const canDeleteSchemas = userData?.permissions?.schemaRegistry?.includes(SchemaRegistryCapability.DELETE);
+  const canManageSchemaRegistry = (userData as UserDataType | undefined)?.permissions?.schemaRegistry?.includes(
+    SchemaRegistryCapability.WRITE
+  );
+  const canCreateSchemas = (userData as UserDataType | undefined)?.permissions?.schemaRegistry?.includes(
+    SchemaRegistryCapability.WRITE
+  );
+  const canDeleteSchemas = (userData as UserDataType | undefined)?.permissions?.schemaRegistry?.includes(
+    SchemaRegistryCapability.DELETE
+  );
 
   const handleDeleteSubject = (permanent: boolean) => {
     const modalCallback = () => {
@@ -165,7 +173,9 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
         <SmallStat title="Compatibility">{subject.compatibility}</SmallStat>
         <Divider height="2ch" orientation="vertical" />
 
-        <SmallStat title="Active Versions">{subject.schemas.count((x) => !x.isSoftDeleted)}</SmallStat>
+        <SmallStat title="Active Versions">
+          {subject.schemas.count((x: { isSoftDeleted?: boolean }) => !x.isSoftDeleted)}
+        </SmallStat>
       </Flex>
 
       {/* Buttons */}
@@ -251,6 +261,8 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
   const deleteVersionMutation = useDeleteSchemaVersionMutation();
   const createSchemaMutation = useCreateSchemaMutation();
 
+  type UserDataType = NonNullable<typeof userData>;
+
   const queryVersion = searchParams.get('version');
   const versionNumber =
     queryVersion && queryVersion !== 'latest' && !Number.isNaN(Number(queryVersion)) ? Number(queryVersion) : null;
@@ -295,8 +307,12 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
     return null;
   }
 
-  const canCreateSchemas = userData?.permissions?.schemaRegistry?.includes(SchemaRegistryCapability.WRITE);
-  const canDeleteSchemas = userData?.permissions?.schemaRegistry?.includes(SchemaRegistryCapability.DELETE);
+  const canCreateSchemas = (userData as UserDataType | undefined)?.permissions?.schemaRegistry?.includes(
+    SchemaRegistryCapability.WRITE
+  );
+  const canDeleteSchemas = (userData as UserDataType | undefined)?.permissions?.schemaRegistry?.includes(
+    SchemaRegistryCapability.DELETE
+  );
 
   const handleVersionChange = (value: number) => {
     setSearchParams({ version: String(value) });

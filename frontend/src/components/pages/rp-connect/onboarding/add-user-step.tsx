@@ -235,6 +235,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     );
 
     const handleSubmit = useCallback(
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex form with dual auth methods requires conditional logic
       async (userData: AddUserFormData): Promise<UserStepSubmissionResult> => {
         // Service account flow
         if (authMethod === AuthenticationMethod.SERVICE_ACCOUNT) {
@@ -363,7 +364,9 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
         <CardContent className="min-h-[300px]">
           <Form {...form}>
             <div className="mt-4 max-w-2xl space-y-8">
-              {(config.featureFlags?.enablePipelineServiceAccount ?? FEATURE_FLAGS.enablePipelineServiceAccount) && (
+              {Boolean(
+                config.featureFlags?.enablePipelineServiceAccount ?? FEATURE_FLAGS.enablePipelineServiceAccount
+              ) && (
                 <div className="flex flex-col gap-2">
                   <FormLabel>Authentication Method</FormLabel>
                   <FormDescription>Choose how to authenticate the pipeline with your Redpanda cluster</FormDescription>
@@ -601,7 +604,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                         )}
                       />
 
-                      {topicName && (
+                      {Boolean(topicName) && (
                         <FormField
                           control={form.control}
                           disabled={isPending || isReadOnly}
@@ -658,7 +661,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                     </>
                   )}
 
-                  {showConsumerGroupFields && (
+                  {Boolean(showConsumerGroupFields) && (
                     <div className="flex flex-col gap-2">
                       <FormLabel>Consumer Group (Optional)</FormLabel>
                       <FormDescription>

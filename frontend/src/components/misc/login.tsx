@@ -62,7 +62,7 @@ const authenticationApi = observable({
       throw new Error('security client is not initialized');
     }
 
-    const { methods } = await client.listAuthenticationMethods({}).catch((e) => {
+    const { methods } = await client.listAuthenticationMethods({}).catch((e: ConnectError) => {
       this.methodsErrorResponse = e;
       return { methods: [] };
     });

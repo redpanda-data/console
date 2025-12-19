@@ -65,12 +65,12 @@ function findGeneric(self: unknown, arg1: unknown, arg2: unknown, returnFirstRes
   }
   if (typeof arg1 === 'function') {
     // findByCallback
-    const isMatch = arg1;
+    const isMatch = arg1 as (object: unknown, key: string | number) => boolean;
     return findByCallback(self, isMatch, returnFirstResult);
   }
-  if (typeof arg1 === 'object') {
+  if (typeof arg1 === 'object' && arg1 !== null) {
     // findByPattern
-    const pattern = arg1;
+    const pattern = arg1 as object;
     return findByPattern(self, pattern, caseSensitive, returnFirstResult);
   }
   throw new Error('first parameter of find() must be: string, or function, or pattern object');
@@ -109,7 +109,7 @@ function findByPattern(
   const log = IsDev
     ? // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.debug
-    : (..._args) => {
+    : (..._args: unknown[]) => {
         /* do nothing */
       };
 
@@ -160,10 +160,15 @@ function findByPattern(
             log(`  primitives not equal: ${currentObjValue} != ${patternValue}`);
             return false;
           }
-        } else {
+        } else if (
+          typeof currentObjValue === 'object' &&
+          currentObjValue !== null &&
+          typeof patternValue === 'object' &&
+          patternValue !== null
+        ) {
           // Compare object
           log(`  -> descending into [${k}]`);
-          if (!isPatternMatch(currentObjValue, patternValue)) {
+          if (!isPatternMatch(currentObjValue as object, patternValue as object)) {
             return false;
           }
         }
@@ -203,9 +208,12 @@ type ObjectSearchContext = {
 // false -> continue
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 function findElement(ctx: PropertySearchContext, obj: unknown): boolean {
+  if (typeof obj !== 'object' || obj === null) {
+    return false;
+  }
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
-      const propValue = obj[key];
+      const propValue = (obj as Record<string, unknown>)[key];
       if (typeof propValue === 'function') {
         continue;
       }
@@ -244,16 +252,20 @@ function findElement(ctx: PropertySearchContext, obj: unknown): boolean {
 }
 
 function findObject(ctx: ObjectSearchContext, obj: unknown): boolean {
-  if (ctx.isMatch(obj, ctx.pattern)) {
-    ctx.results.push(obj);
+  if (typeof obj === 'object' && obj !== null && ctx.isMatch(obj as object, ctx.pattern)) {
+    ctx.results.push(obj as object);
     if (ctx.returnFirstResult) {
       return true;
     }
   }
 
+  if (typeof obj !== 'object' || obj === null) {
+    return false;
+  }
+
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
-      const propValue = obj[key];
+      const propValue = (obj as Record<string, unknown>)[key];
       if (typeof propValue !== 'object') {
         continue;
       }

@@ -31,7 +31,6 @@ describe('artifact duplication bug', () => {
   const createMockMessage = (): ChatMessage => ({
     id: 'test-msg-1',
     role: 'assistant',
-    content: '',
     contextId: 'test-context',
     timestamp: new Date(),
     contentBlocks: [],
@@ -44,6 +43,8 @@ describe('artifact duplication bug', () => {
 
     const event: TaskStatusUpdateEvent = {
       kind: 'status-update',
+      contextId: 'test-context',
+      final: false,
       taskId: 'task-123',
       status: {
         state: 'working',
