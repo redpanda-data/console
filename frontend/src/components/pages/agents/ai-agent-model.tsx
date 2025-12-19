@@ -84,17 +84,21 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     label: 'OpenAI',
     icon: OpenAILogo,
     models: [
-      // TODO: Once we support these models, uncomment the lines below
-      // {
-      //   value: 'gpt-5.2',
-      //   name: 'gpt-5.2',
-      //   description: 'The best model for coding and agentic tasks across industries',
-      // },
-      // {
-      //   value: 'gpt-5.1',
-      //   name: 'gpt-5.1',
-      //   description: 'The best model for coding and agentic tasks with configurable reasoning effort',
-      // },
+      {
+        value: 'gpt-5.2-pro',
+        name: 'gpt-5.2-pro',
+        description: 'Maximum accuracy model for difficult problems requiring deep reasoning',
+      },
+      {
+        value: 'gpt-5.2',
+        name: 'gpt-5.2',
+        description: 'The best model for coding and agentic tasks across industries',
+      },
+      {
+        value: 'gpt-5.1',
+        name: 'gpt-5.1',
+        description: 'The best model for coding and agentic tasks with configurable reasoning effort',
+      },
       {
         value: 'gpt-5',
         name: 'gpt-5',
@@ -121,6 +125,11 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     icon: AnthropicLogo,
     models: [
       {
+        value: 'claude-opus-4-5',
+        name: 'Claude Opus 4.5',
+        description: 'Most capable model for complex reasoning and analysis',
+      },
+      {
         value: 'claude-sonnet-4-5',
         name: 'Claude Sonnet 4.5',
         description: 'Balanced intelligence and speed for most tasks',
@@ -128,7 +137,7 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
       {
         value: 'claude-opus-4-1',
         name: 'Claude Opus 4.1',
-        description: 'Most capable for complex reasoning and analysis',
+        description: 'Previous most capable model',
       },
       {
         value: 'claude-haiku-4-5',
@@ -144,6 +153,11 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     label: 'Google',
     icon: GeminiLogo,
     models: [
+      {
+        value: 'gemini-3-flash-preview',
+        name: 'Gemini 3 Flash Preview',
+        description: 'Latest fast model with reasoning support',
+      },
       {
         value: 'gemini-3-pro-preview',
         name: 'Gemini 3 Pro Preview',
