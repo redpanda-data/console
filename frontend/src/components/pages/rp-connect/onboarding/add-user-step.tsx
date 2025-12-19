@@ -81,7 +81,7 @@ type AddUserStepProps = {
   defaultAuthMethod?: 'sasl' | 'service-account';
   defaultServiceAccountName?: string;
   pipelineName?: string;
-}
+};
 
 export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProps>(
   (
