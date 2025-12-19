@@ -1,3 +1,4 @@
+import { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey } from '@connectrpc/connect-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
@@ -49,6 +50,7 @@ import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { toast } from 'sonner';
 import { generateServiceAccountName } from 'utils/service-account.utils';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { SASL_MECHANISMS } from 'utils/user';
 
 import { useListACLsQuery } from '../../../../react-query/api/acl';
@@ -159,7 +161,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     );
 
     const { createUserWithSecrets, isPending } = useCreateUserWithSecretsMutation();
-    const { mutateAsync: createSecret } = useCreateSecretMutation({ skipInvalidation: true });
+    const { mutateAsync: createSecret } = useCreateSecretMutation();
 
     const [authMethod, setAuthMethod] = useState<AuthenticationMethodType>(
       defaultAuthMethod || AuthenticationMethod.SASL
@@ -261,8 +263,9 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
               success: true,
               data: submissionData,
             };
-          } catch (_error) {
-            toast.error('Failed to create service account');
+          } catch (createServiceAccountError) {
+            const error = ConnectError.from(createServiceAccountError);
+            toast.error(formatToastErrorMessageGRPC({ error, action: 'create', entity: 'service account' }));
             return { success: false };
           }
         }
