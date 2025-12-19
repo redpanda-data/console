@@ -77,7 +77,9 @@ import EditSchemaCompatibilityPage from './pages/schemas/edit-compatibility';
 import { SchemaAddVersionPage, SchemaCreatePage } from './pages/schemas/schema-create';
 import SchemaDetailsView from './pages/schemas/schema-details';
 import SchemaList from './pages/schemas/schema-list';
-import { SecretsStorePage } from './pages/secrets/secrets-store-page';
+import { SecretCreatePage } from './pages/secrets-store/create/secret-create-page';
+import { SecretEditPage } from './pages/secrets-store/edit/secret-edit-page';
+import { SecretsStoreListPage } from './pages/secrets-store/secrets-store-list-page';
 import { ShadowLinkCreatePage } from './pages/shadowlinks/create/shadowlink-create-page';
 import { ShadowLinkDetailsPage } from './pages/shadowlinks/details/shadowlink-details-page';
 import { ShadowLinkEditPage } from './pages/shadowlinks/edit/shadowlink-edit-page';
@@ -429,11 +431,27 @@ export const APP_ROUTES: IRouteEntry[] = [
 
   MakeRoute<{}>(
     '/secrets',
-    SecretsStorePage,
+    SecretsStoreListPage,
     'Secrets Store',
     MdKey,
     true,
     routeVisibility(() => isEmbedded(), [Feature.PipelineService]) // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
+  ),
+  MakeRoute<{}>(
+    '/secrets/create',
+    SecretCreatePage,
+    'Create Secret',
+    undefined,
+    true,
+    routeVisibility(() => isEmbedded(), [Feature.PipelineService])
+  ),
+  MakeRoute<{ id: string }>(
+    '/secrets/:id/edit',
+    SecretEditPage,
+    'Edit Secret',
+    undefined,
+    true,
+    routeVisibility(() => isEmbedded(), [Feature.PipelineService])
   ),
 
   MakeRoute<{}>(
