@@ -30,6 +30,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { LLMConfigSection } from 'components/ui/ai-agent/llm-config-section';
+import { SubagentConfigSection } from 'components/ui/ai-agent/subagent-config-section';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
@@ -49,6 +50,7 @@ import {
   AIAgent_Provider_OpenAISchema,
   AIAgent_ProviderSchema,
   AIAgent_ServiceAccountSchema,
+  AIAgent_SubagentSchema,
   AIAgentCreateSchema,
   CreateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
@@ -262,6 +264,23 @@ export const AIAgentCreatePage = () => {
       mcpServersMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
     }
 
+    // Build subagents map
+    const subagentsMap: Record<string, ReturnType<typeof create<typeof AIAgent_SubagentSchema>>> = {};
+    for (const subagent of values.subagents) {
+      if (subagent.name.trim()) {
+        const subagentMcpMap: Record<string, { id: string }> = {};
+        for (const serverId of subagent.selectedMcpServers) {
+          subagentMcpMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
+        }
+
+        subagentsMap[subagent.name.trim()] = create(AIAgent_SubagentSchema, {
+          description: subagent.description?.trim() ?? '',
+          systemPrompt: subagent.systemPrompt.trim(),
+          mcpServers: subagentMcpMap,
+        });
+      }
+    }
+
     // Get selected resource tier
     const selectedTier = RESOURCE_TIERS.find((tier) => tier.id === values.resourcesTier);
 
@@ -341,6 +360,7 @@ export const AIAgentCreatePage = () => {
           provider: providerConfig,
           maxIterations: values.maxIterations,
           mcpServers: mcpServersMap,
+          subagents: subagentsMap,
           tags: tagsMap,
           resources: {
             cpuShares: selectedTier?.cpu || '200m',
@@ -500,6 +520,7 @@ export const AIAgentCreatePage = () => {
                         <FormControl>
                           {availableMcpServers.length > 0 ? (
                             <MCPServerCardList
+                              idPrefix="root"
                               onValueChange={field.onChange}
                               servers={availableMcpServers}
                               value={field.value || []}
@@ -517,6 +538,20 @@ export const AIAgentCreatePage = () => {
                     )}
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Subagents (Optional) */}
+            <Card size="full">
+              <CardHeader>
+                <CardTitle>Subagents (Optional)</CardTitle>
+                <Text variant="muted">
+                  Configure specialized subagents that inherit the provider and model from the parent agent. Each
+                  subagent has its own system prompt and can access a subset of MCP servers.
+                </Text>
+              </CardHeader>
+              <CardContent>
+                <SubagentConfigSection availableMcpServers={availableMcpServers} control={form.control} />
               </CardContent>
             </Card>
 

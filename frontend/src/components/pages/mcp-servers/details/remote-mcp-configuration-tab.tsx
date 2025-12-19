@@ -967,8 +967,7 @@ export const RemoteMCPConfigurationTab = () => {
 
         {/* Service Account - Show only if feature flag is enabled */}
         {isFeatureFlagEnabled('enableMcpServiceAccount') &&
-          displayData?.tags &&
-          displayData.tags.find((tag) => tag.key === 'service_account_id') && (
+          mcpServerData?.mcpServer?.tags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID] && (
             <Card className="px-0 py-0" size="full">
               <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
                 <CardTitle className="flex items-center gap-2">
@@ -982,7 +981,7 @@ export const RemoteMCPConfigurationTab = () => {
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <ServiceAccountSection
-                  serviceAccountId={displayData.tags.find((tag) => tag.key === 'service_account_id')?.value || ''}
+                  serviceAccountId={mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID]}
                 />
               </CardContent>
             </Card>

@@ -12,6 +12,7 @@ export type MCPServerCardListProps = HTMLAttributes<HTMLDivElement> & {
   onValueChange?: (value: string[]) => void;
   testId?: string;
   showCheckbox?: boolean;
+  idPrefix?: string;
 };
 
 export const MCPServerCardList = ({
@@ -21,6 +22,7 @@ export const MCPServerCardList = ({
   className,
   testId,
   showCheckbox = true,
+  idPrefix = 'default',
   ...props
 }: MCPServerCardListProps) => {
   const handleToggle = (serverId: string) => {
@@ -35,6 +37,7 @@ export const MCPServerCardList = ({
           const isSelected = value.includes(server.id);
           return (
             <MCPServerCard
+              idPrefix={idPrefix}
               isSelected={isSelected}
               key={server.id}
               onToggle={() => handleToggle(server.id)}
@@ -55,9 +58,10 @@ type MCPServerCardProps = {
   isSelected: boolean;
   onToggle: () => void;
   showCheckbox?: boolean;
+  idPrefix?: string;
 };
 
-const MCPServerCard = ({ server, isSelected, onToggle, showCheckbox = true }: MCPServerCardProps) => {
+const MCPServerCard = ({ server, isSelected, onToggle, showCheckbox = true, idPrefix = 'default' }: MCPServerCardProps) => {
   const toolNames = Object.keys(server.tools || {});
 
   const MAX_VISIBLE_TOOLS = 8;
@@ -104,12 +108,12 @@ const MCPServerCard = ({ server, isSelected, onToggle, showCheckbox = true }: MC
         'relative flex cursor-pointer rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50',
         isSelected && 'border-secondary'
       )}
-      htmlFor={`mcp-server-${server.id}`}
+      htmlFor={`mcp-server-${idPrefix}-${server.id}`}
     >
       <Checkbox
         checked={isSelected}
         className="absolute top-4 right-4 shrink-0"
-        id={`mcp-server-${server.id}`}
+        id={`mcp-server-${idPrefix}-${server.id}`}
         onCheckedChange={onToggle}
       />
       <div className="pr-8">{content}</div>

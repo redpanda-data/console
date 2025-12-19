@@ -1093,6 +1093,9 @@ components:
     Subagent:
       description: Subagent configuration for delegating specialized tasks.
       properties:
+        description:
+          description: Optional subagent description.
+          type: string
         mcp_servers:
           additionalProperties:
             $ref: '#/components/schemas/AIAgent.MCPServer'
