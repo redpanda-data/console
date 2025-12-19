@@ -424,6 +424,7 @@ export default function PipelinePage() {
         tags: {
           ...pipeline?.tags,
         },
+        serviceAccount: pipeline?.serviceAccount,
       });
 
       const updateRequestDataPlane = create(UpdatePipelineRequestSchemaDataPlane, {

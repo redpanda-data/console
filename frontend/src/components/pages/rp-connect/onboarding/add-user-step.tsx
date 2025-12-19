@@ -1,6 +1,7 @@
 import { createConnectQueryKey } from '@connectrpc/connect-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
+import { FEATURE_FLAGS } from 'components/constants';
 import { generatePassword } from 'components/pages/acls/user-create';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -33,7 +34,7 @@ import {
   ServiceAccountSelector,
   type ServiceAccountSelectorRef,
 } from 'components/ui/service-account/service-account-selector';
-import { isFeatureFlagEnabled } from 'config';
+import { config } from 'config';
 import { CircleAlert, RefreshCcw, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
 import { ACL_ResourceType } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
@@ -95,7 +96,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       ...motionProps
     },
     ref
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex form with dual auth methods requires conditional logic
   ) => {
     const queryClient = useQueryClient();
 
@@ -359,7 +360,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
         <CardContent className="min-h-[300px]">
           <Form {...form}>
             <div className="mt-4 max-w-2xl space-y-8">
-              {isFeatureFlagEnabled('enablePipelineServiceAccount') && (
+              {(config.featureFlags?.enablePipelineServiceAccount ?? FEATURE_FLAGS.enablePipelineServiceAccount) && (
                 <div className="flex flex-col gap-2">
                   <FormLabel>Authentication Method</FormLabel>
                   <FormDescription>Choose how to authenticate the pipeline with your Redpanda cluster</FormDescription>
