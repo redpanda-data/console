@@ -44,6 +44,8 @@ Element.prototype.scrollIntoView = vi.fn();
 
 import { SecretEditPage } from './secret-edit-page';
 
+const UPDATE_SECRET_BUTTON_REGEX = /update secret/i;
+
 describe('SecretEditPage', () => {
   test('should update an existing secret', async () => {
     const user = userEvent.setup();
@@ -120,7 +122,7 @@ describe('SecretEditPage', () => {
     await user.keyboard('{Escape}');
 
     // Submit the form
-    const submitButton = screen.getByRole('button', { name: /update secret/i });
+    const submitButton = screen.getByRole('button', { name: UPDATE_SECRET_BUTTON_REGEX });
     await waitFor(() => {
       expect(submitButton).toBeEnabled();
     });

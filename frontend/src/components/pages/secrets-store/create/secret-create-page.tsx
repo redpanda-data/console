@@ -37,12 +37,8 @@ import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
-import {
-  initialValues,
-  SCOPE_OPTIONS,
-  SecretCreateFormSchema,
-  type SecretCreateFormValues,
-} from './secret-create-form-schema';
+import { initialValues, SecretCreateFormSchema, type SecretCreateFormValues } from './secret-create-form-schema';
+import { SCOPE_OPTIONS } from '../secret-form-shared';
 
 export const SecretCreatePage = () => {
   const navigate = useNavigate();

@@ -39,6 +39,8 @@ Element.prototype.scrollIntoView = vi.fn();
 
 import { SecretCreatePage } from './secret-create-page';
 
+const CREATE_SECRET_BUTTON_REGEX = /create secret/i;
+
 describe('SecretCreatePage', () => {
   test('should create a new secret with all required fields', async () => {
     const user = userEvent.setup();
@@ -102,7 +104,7 @@ describe('SecretCreatePage', () => {
     await user.keyboard('{Escape}');
 
     // Submit the form
-    const submitButton = screen.getByRole('button', { name: /create secret/i });
+    const submitButton = screen.getByRole('button', { name: CREATE_SECRET_BUTTON_REGEX });
     await waitFor(() => {
       expect(submitButton).toBeEnabled();
     });

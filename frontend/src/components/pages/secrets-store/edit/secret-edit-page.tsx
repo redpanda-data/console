@@ -37,7 +37,8 @@ import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
-import { SCOPE_OPTIONS, SecretUpdateFormSchema, type SecretUpdateFormValues } from './secret-edit-form-schema';
+import { SecretUpdateFormSchema, type SecretUpdateFormValues } from './secret-edit-form-schema';
+import { SCOPE_OPTIONS } from '../secret-form-shared';
 
 export const SecretEditPage = () => {
   const { id } = useParams<{ id: string }>();
