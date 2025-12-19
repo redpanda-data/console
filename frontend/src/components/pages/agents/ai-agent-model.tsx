@@ -85,6 +85,11 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     icon: OpenAILogo,
     models: [
       {
+        value: 'gpt-5.2-pro',
+        name: 'gpt-5.2-pro',
+        description: 'Maximum accuracy model for difficult problems requiring deep reasoning',
+      },
+      {
         value: 'gpt-5.2',
         name: 'gpt-5.2',
         description: 'The best model for coding and agentic tasks across industries',
