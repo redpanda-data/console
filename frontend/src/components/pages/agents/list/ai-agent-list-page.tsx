@@ -37,7 +37,7 @@ import {
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Check, Loader2, Pause, Plus, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import type { AIAgent as APIAIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
@@ -402,9 +402,10 @@ const AIAgentsListPageContent = ({
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-4">
-        <div>
+        <header className="flex flex-col gap-2">
+          <Heading level={1}>AI Agents</Heading>
           <Text variant="muted">Manage your AI agents with custom configurations and LLM providers.</Text>
-        </div>
+        </header>
         <AIAgentDataTableToolbar table={table} />
         <div className="flex items-center justify-between">
           <DataTableViewOptions table={table} />

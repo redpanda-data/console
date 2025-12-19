@@ -38,7 +38,7 @@ import {
 } from 'components/redpanda-ui/components/data-table';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Loader2, Plus, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import type { KnowledgeBase } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
@@ -466,14 +466,15 @@ export const KnowledgeBaseListPage = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      <header className="flex flex-col gap-2">
+        <Heading level={1}>Knowledge Bases</Heading>
         <Text variant="muted">
           Knowledge bases store and organize your documents, data, and content for AI-powered retrieval and chat. They
           enable Retrieval-Augmented Generation (RAG) by connecting language models with your specific information,
           providing accurate, contextual responses grounded in your data. Upload documents, configure embeddings, and
           create intelligent systems that can answer questions and provide insights from your knowledge repository.
         </Text>
-      </div>
+      </header>
       <KnowledgeBaseDataTableToolbar table={table} />
       <div className="flex items-center justify-between">
         <DataTableViewOptions table={table} />

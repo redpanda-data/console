@@ -37,7 +37,7 @@ import {
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Check, Loader2, Pause, Plus, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import React, { useCallback, useEffect } from 'react';
@@ -368,9 +368,10 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-4">
-        <div>
+        <header className="flex flex-col gap-2">
+          <Heading level={1}>Remote MCP</Heading>
           <Text variant="muted">Manage your Model Context Protocol (MCP) servers.</Text>
-        </div>
+        </header>
         <MCPDataTableToolbar table={table} />
         <div className="flex items-center justify-between">
           <DataTableViewOptions table={table} />

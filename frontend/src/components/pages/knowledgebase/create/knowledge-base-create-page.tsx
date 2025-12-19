@@ -296,10 +296,10 @@ export const KnowledgeBaseCreatePage = () => {
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
-      <div className="space-y-2">
+      <header className="flex flex-col gap-2">
         <Heading level={1}>Create Knowledge Base</Heading>
         <Text variant="muted">Set up a new knowledge base from scratch</Text>
-      </div>
+      </header>
 
       <Form {...form}>
         <FormContainer className="w-full" layout="default" onSubmit={form.handleSubmit(onSubmit)} width="full">
