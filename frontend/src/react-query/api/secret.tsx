@@ -20,10 +20,14 @@ import {
 import {
   type GetSecretRequest as GetSecretRequestDataPlane,
   GetSecretRequestSchema as GetSecretRequestSchemaDataPlane,
+  ListResourcesRequest_FilterSchema,
+  ListResourcesRequestSchema,
+  type ListResourcesResponse,
   ListSecretsFilterSchema,
   type ListSecretsRequest as ListSecretsRequestDataPlane,
   ListSecretsRequestSchema as ListSecretsRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { listResources } from 'protogen/redpanda/api/dataplane/v1/secret-SecretService_connectquery';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -77,6 +81,18 @@ export const useGetSecretQuery = (
   const getSecretRequest = create(GetSecretRequestSchema, { request: getSecretRequestDataPlane });
 
   return useQuery(getSecret, getSecretRequest, { enabled: options?.enabled });
+};
+
+export const useListResourcesForSecretQuery = (
+  secretId: string,
+  options?: QueryOptions<GenMessage<ListResourcesResponse>>
+) => {
+  const filter = create(ListResourcesRequest_FilterSchema, { secretId });
+  const request = create(ListResourcesRequestSchema, { filter });
+
+  return useQuery(listResources, request, {
+    enabled: !!secretId && options?.enabled !== false,
+  });
 };
 
 export const useCreateSecretMutation = (options?: { skipInvalidation?: boolean }) => {
