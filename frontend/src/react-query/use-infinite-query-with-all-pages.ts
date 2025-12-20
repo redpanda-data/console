@@ -50,18 +50,34 @@ export function useInfiniteQueryWithAllPages<
   // Use the standard ConnectRPC useInfiniteQuery hook
   const queryResult = useInfiniteQuery(schema, input, options);
 
+  // Auto-fetch all pages automatically when query executes.
+  // fetchNextPage intentionally excluded from deps - its reference changes every render
+  // but the function itself is stable. Including it causes infinite render loops.
   useEffect(() => {
-    if (!(queryResult.isFetching || queryResult.isFetchingNextPage) && queryResult.hasNextPage) {
+    if (
+      queryResult.hasNextPage &&
+      !queryResult.isFetching &&
+      !queryResult.isFetchingNextPage &&
+      !queryResult.isError &&
+      queryResult.data
+    ) {
       queryResult.fetchNextPage();
     }
-  }, [queryResult.hasNextPage, queryResult.isFetching, queryResult.isFetchingNextPage, queryResult.fetchNextPage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    queryResult.hasNextPage,
+    queryResult.isFetching,
+    queryResult.isFetchingNextPage,
+    queryResult.isError,
+    queryResult.data,
+  ]);
 
+  // Override loading states to reflect "all pages loaded" rather than "first page loaded".
+  // This prevents layout shift as additional pages stream in.
   return {
     ...queryResult,
-    isLoading: queryResult?.isLoading || queryResult?.hasNextPage,
-    isFetching: queryResult?.isFetching || queryResult?.isFetchingNextPage,
-    isError: queryResult?.isError || queryResult?.isFetchNextPageError,
+    isLoading: queryResult.isLoading || queryResult.hasNextPage,
+    isFetching: queryResult.isFetching || queryResult.isFetchingNextPage,
+    isError: queryResult.isError || queryResult.isFetchNextPageError,
   } as UseInfiniteQueryResult<InfiniteData<MessageShape<O>>, ConnectError>;
-
-  // If you want the data to stream in, you can return queryResult directly, but it will cause layout shift in the UI as more data is getting retrieved.
 }

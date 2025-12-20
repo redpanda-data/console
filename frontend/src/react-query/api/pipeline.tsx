@@ -32,6 +32,7 @@ import {
   type Pipeline,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { useMemo } from 'react';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -93,18 +94,25 @@ export const useListPipelinesQuery = (
         : undefined,
   });
 
-  const allRetrievedPipelines = listPipelinesResult?.data?.pages?.flatMap(({ response }) => response?.pipelines);
+  const allRetrievedPipelines = useMemo(
+    () => listPipelinesResult?.data?.pages?.flatMap(({ response }) => response?.pipelines),
+    [listPipelinesResult.data]
+  );
 
   // TODO: Remove once nameContains is not required anymore
   // const filteredPipelines = allRetrievedPipelines?.filter(
   //   (pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_type !== 'agent',
   // );
 
+  // Memoize the data object to prevent unnecessary re-renders in components
+  // Only depends on the actual pipelines array, not the entire query result
+  const data = useMemo(() => ({ pipelines: allRetrievedPipelines }), [allRetrievedPipelines]);
+
+  // Just return with the data - don't try to memoize the whole result
+  // React Query handles its own memoization internally
   return {
     ...listPipelinesResult,
-    data: {
-      pipelines: allRetrievedPipelines,
-    },
+    data,
   };
 };
 
