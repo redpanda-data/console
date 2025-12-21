@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { CheckIcon, CloseIcon, MinusIcon } from '@chakra-ui/icons';
 import { Flex } from '@redpanda-data/ui';
+import { CheckIcon, CloseIcon, MinusIcon } from 'components/icons';
 import { observer } from 'mobx-react';
 import type { CSSProperties, FC, ReactElement, ReactNode } from 'react';
 

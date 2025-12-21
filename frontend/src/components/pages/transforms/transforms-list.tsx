@@ -9,9 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { CheckIcon } from '@chakra-ui/icons';
-import { TrashIcon } from '@heroicons/react/outline';
-import { XIcon } from '@heroicons/react/solid';
 import {
   Box,
   Button,
@@ -23,6 +20,7 @@ import {
   Stack,
   Text,
 } from '@redpanda-data/ui';
+import { CheckIcon, CloseIcon, TrashIcon } from 'components/icons';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link, Link as ReactRouterLink } from 'react-router-dom';
@@ -48,7 +46,7 @@ export const PartitionStatus = observer((p: { status: PartitionTransformStatus_P
     case PartitionTransformStatus_PartitionStatus.UNSPECIFIED:
       return (
         <Flex alignItems="center" gap="2">
-          <XIcon color="orange" height="14px" /> Unspecified
+          <CloseIcon color="orange" height="14px" /> Unspecified
         </Flex>
       );
     case PartitionTransformStatus_PartitionStatus.RUNNING:
@@ -60,13 +58,13 @@ export const PartitionStatus = observer((p: { status: PartitionTransformStatus_P
     case PartitionTransformStatus_PartitionStatus.INACTIVE:
       return (
         <Flex alignItems="center" gap="2">
-          <XIcon color="red" height="14px" /> Inactive
+          <CloseIcon color="red" height="14px" /> Inactive
         </Flex>
       );
     case PartitionTransformStatus_PartitionStatus.ERRORED:
       return (
         <Flex alignItems="center" gap="2">
-          <XIcon color="red" height="14px" /> Errored
+          <CloseIcon color="red" height="14px" /> Errored
         </Flex>
       );
     default:

@@ -1,4 +1,3 @@
-import { PencilIcon } from '@heroicons/react/solid';
 import {
   Alert,
   AlertIcon,
@@ -22,6 +21,7 @@ import {
   Tooltip,
   useToast,
 } from '@redpanda-data/ui';
+import { EditIcon, InfoIcon } from 'components/icons';
 import { observer, useLocalObservable } from 'mobx-react';
 import type { FC } from 'react';
 import { useState } from 'react';
@@ -35,7 +35,6 @@ import {
   getInfiniteValueForEntry,
 } from '../../../utils/formatters/config-value-formatter';
 import './TopicConfiguration.scss';
-import { MdInfoOutline } from 'react-icons/md';
 
 import { isServerless } from '../../../config';
 import { api } from '../../../state/backend-api';
@@ -377,7 +376,7 @@ const ConfigEntryComponent = observer(
               }}
               type="button"
             >
-              <Icon as={PencilIcon} />
+              <Icon as={EditIcon} />
             </button>
           </Tooltip>
           {Boolean(entry.documentation) && (
@@ -395,7 +394,7 @@ const ConfigEntryComponent = observer(
               size="lg"
             >
               <Box>
-                <Icon as={MdInfoOutline} />
+                <Icon as={InfoIcon} />
               </Box>
             </Popover>
           )}

@@ -17,13 +17,13 @@ import {
   Tooltip,
   useToast,
 } from '@redpanda-data/ui';
+import { RotateCwIcon } from 'components/icons';
 import {
   UpdateRoleMembershipRequestSchema,
   type UpdateRoleMembershipResponse,
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { SASLMechanism, UpdateUserRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useEffect, useState } from 'react';
-import { MdRefresh } from 'react-icons/md';
 
 import { generatePassword, StateRoleSelector } from './user-create';
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../react-query/api/security';
@@ -107,7 +107,7 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
                     <IconButton
                       aria-label="Refresh"
                       display="inline-flex"
-                      icon={<MdRefresh size={16} />}
+                      icon={<RotateCwIcon size={16} />}
                       onClick={() => setPassword(generatePassword(30, generateWithSpecialChars))}
                       variant="ghost"
                     />

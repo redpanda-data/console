@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { PlusIcon, TrashIcon } from '@primer/octicons-react';
 import { observer } from 'mobx-react';
 import './headersEditor.scss';
 import { Button, Input } from '@redpanda-data/ui';
+import { PlusIcon, TrashIcon } from 'components/icons';
 
 type Header = {
   key: string;

@@ -1,4 +1,3 @@
-import { WarningIcon } from '@chakra-ui/icons';
 import {
   Alert,
   AlertIcon,
@@ -16,6 +15,7 @@ import {
   Text,
   type ThemeTypings,
 } from '@redpanda-data/ui';
+import { WarningIcon } from 'components/icons';
 import { type ReactNode, useState } from 'react';
 
 import { openModal } from '../../../utils/modal-container';
@@ -205,7 +205,9 @@ export function openValidationErrorsModal(
     title: (
       <>
         <Text alignItems="center" color="red.500" display="flex">
-          <WarningIcon fontSize="1.18em" mr="3" />
+          <Box mr="3">
+            <WarningIcon size={18} />
+          </Box>
           Schema validation error
         </Text>
       </>

@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { DeleteIcon } from '@chakra-ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -26,6 +25,7 @@ import {
   RadioGroup,
   useToast,
 } from '@redpanda-data/ui';
+import { TrashIcon } from 'components/icons';
 import { InfoIcon } from 'lucide-react';
 import { observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -612,7 +612,7 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
       <IconButton
         aria-label="delete"
         data-testid={`schema-create-reference-delete-btn-${index}`}
-        icon={<DeleteIcon fontSize="19px" />}
+        icon={<TrashIcon fontSize="19px" />}
         onClick={() => refs.remove(ref)}
         variant="ghost"
       />

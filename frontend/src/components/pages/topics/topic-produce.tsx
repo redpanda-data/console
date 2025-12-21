@@ -17,11 +17,11 @@ import {
   Text,
   useToast,
 } from '@redpanda-data/ui';
+import { TrashIcon } from 'components/icons';
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { type FC, useEffect, useState } from 'react';
 import { Controller, type SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
-import { HiOutlineTrash } from 'react-icons/hi';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
 import { setMonacoTheme } from '../../../config';
@@ -404,7 +404,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
               </FormControl>
               <IconButton
                 aria-label="Remove item"
-                icon={<HiOutlineTrash />}
+                icon={<TrashIcon />}
                 onClick={() => remove(index)}
                 variant="outline"
               />

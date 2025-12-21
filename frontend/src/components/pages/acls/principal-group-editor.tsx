@@ -30,10 +30,10 @@ import {
   useToast,
   VStack,
 } from '@redpanda-data/ui';
+import { TrashIcon } from 'components/icons';
 import { comparer } from 'mobx';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
-import { HiOutlineTrash } from 'react-icons/hi';
 
 import {
   type AclPrincipalGroup,
@@ -508,7 +508,7 @@ export const ResourceACLsEditor = observer(
           <Flex>
             <Box alignSelf="center" bg="gray.300" height="80%" width="1px" />
             <Button alignSelf="center" mx={2} onClick={p.onDelete} variant="ghost">
-              <Icon as={HiOutlineTrash} fontSize="22px" />
+              <Icon as={TrashIcon} fontSize="22px" />
             </Button>
           </Flex>
         )}

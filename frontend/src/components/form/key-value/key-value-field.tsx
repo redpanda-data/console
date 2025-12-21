@@ -11,8 +11,8 @@ import {
   type InputProps,
   Stack,
 } from '@redpanda-data/ui';
+import { TrashIcon } from 'components/icons';
 import type { ReactNode } from 'react';
-import { AiOutlineDelete } from 'react-icons/ai';
 
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
@@ -134,7 +134,7 @@ const KeyValuePairField = ({ index, ...rest }: KeyValuePairFieldProps) => {
         <Flex alignItems="center" height="40px" ml={2}>
           <Icon
             aria-label="Delete key-value pair"
-            as={AiOutlineDelete}
+            as={TrashIcon}
             cursor="pointer"
             data-testid={rest['data-testid'] ? `${rest['data-testid']}-delete-${index}` : undefined}
             onClick={handleDelete}

@@ -11,7 +11,7 @@
 
 import { Box, DataTable, Flex, Text, Tooltip } from '@redpanda-data/ui';
 import type { ColumnDef } from '@tanstack/react-table';
-import { MdInfoOutline, MdOutlineVisibilityOff } from 'react-icons/md';
+import { EyeOffIcon, InfoIcon } from 'components/icons';
 
 import styles from './ConfigList.module.scss';
 import colors from '../../colors';
@@ -44,7 +44,7 @@ export function ConfigList({
         const sensitive = record.isSensitive && (
           <Tooltip hasArrow label="Value has been redacted because it's sensitive" placement="top">
             <Box>
-              <MdOutlineVisibilityOff color={colors.brandOrange} />
+              <EyeOffIcon color={colors.brandOrange} />
             </Box>
           </Tooltip>
         );
@@ -104,7 +104,7 @@ export function ConfigList({
           placement="left"
         >
           <Box>
-            <MdInfoOutline size={12} />
+            <InfoIcon size={12} />
           </Box>
         </Tooltip>
       </span>

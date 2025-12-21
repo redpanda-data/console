@@ -11,23 +11,24 @@
 
 // biome-ignore-all lint/complexity/noBannedTypes: empty object represents pages with no route params
 
+import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import {
+  AIIcon,
   BeakerIcon,
   BookOpenIcon,
   CollectionIcon,
-  CubeTransparentIcon,
+  CubeIcon,
   FilterIcon,
   HomeIcon,
+  KeyIcon,
   LinkIcon,
   ScaleIcon,
   ShieldCheckIcon,
+  ShieldIcon,
   UserCircleIcon,
-} from '@heroicons/react/outline';
-import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
-import { Shield } from 'lucide-react';
+} from 'components/icons';
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v6';
 import React, { Fragment, type FunctionComponent, useEffect } from 'react';
-import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
 import { Navigate, Route, Routes, useLocation, useMatch, useParams } from 'react-router-dom';
 import { appGlobal } from 'state/app-global';
 
@@ -385,7 +386,7 @@ function routeVisibility(
 // If a route has one or more parameters it will not be shown in the main menu (obviously, since the parameter would have to be known!)
 //
 export const APP_ROUTES: IRouteEntry[] = [
-  MakeRoute<{}>('/overview', Overview, 'Overview', HomeIcon),
+  MakeRoute<{}>('/overview', Overview, 'Overview', (props) => <HomeIcon {...props} />),
   MakeRoute<{ brokerId: string }>('/overview/:brokerId', BrokerDetails, 'Broker Details'),
   MakeRoute<{}>(
     '/get-started/api',
@@ -396,11 +397,11 @@ export const APP_ROUTES: IRouteEntry[] = [
     routeVisibility(() => isServerless() && isFeatureFlagEnabled('enableServerlessOnboardingWizard'))
   ),
 
-  MakeRoute<{}>('/topics', TopicList, 'Topics', CollectionIcon),
+  MakeRoute<{}>('/topics', TopicList, 'Topics', (props) => <CollectionIcon {...props} />),
   MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
   MakeRoute<{ topicName: string }>('/topics/:topicName/produce-record', TopicProducePage, 'Produce Record'),
 
-  MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', CubeTransparentIcon),
+  MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', (props) => <CubeIcon {...props} />),
   MakeRoute<{}>('/schema-registry/create', SchemaCreatePage, 'Create schema'),
   MakeRoute<{ subjectName: string }>(
     '/schema-registry/subjects/:subjectName/add-version',
@@ -423,7 +424,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/groups',
     GroupList,
     'Consumer Groups',
-    FilterIcon,
+    (props) => <FilterIcon {...props} />,
     undefined,
     routeVisibility(true, [Feature.ConsumerGroups])
   ),
@@ -433,7 +434,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/secrets',
     SecretsStoreListPage,
     'Secrets Store',
-    MdKey,
+    (props) => <KeyIcon {...props} />,
     true,
     routeVisibility(() => isEmbedded(), [Feature.PipelineService]) // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
   ),
@@ -458,7 +459,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/knowledgebases',
     KnowledgeBaseListPage,
     'Knowledge Bases',
-    BookOpenIcon,
+    (props) => <BookOpenIcon {...props} />,
     true,
     routeVisibility(
       // Do not display knowledge bases if feature flag is disabled
@@ -480,7 +481,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Knowledge Base Details'
   ),
 
-  MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true),
+  MakeRoute<{}>('/security', AclList, 'Security', (props) => <ShieldCheckIcon {...props} />, true),
   MakeRoute<{ tab?: AclListTab }>('/security/:tab?', AclList, 'Security'),
 
   MakeRoute<{}>('/security/acls/create', AclCreatePage, 'Create ACL'),
@@ -498,22 +499,29 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/quotas',
     QuotasList,
     'Quotas',
-    ScaleIcon,
+    (props) => <ScaleIcon {...props} />,
     true,
     routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
   ),
 
-  MakeRoute<{ matchedPath: string }>('/connect-clusters', KafkaConnectOverview, 'Connect', LinkIcon, true, () => {
-    if (isServerless()) {
-      // We are in serverless, there is no kafka connect, so we can ignore it.
-      // Here, we only care about the pipeline service and use that to decide whether to show the entry
-      if (isSupported(Feature.PipelineService)) {
-        return { visible: true, disabledReasons: [] };
+  MakeRoute<{ matchedPath: string }>(
+    '/connect-clusters',
+    KafkaConnectOverview,
+    'Connect',
+    (props) => <LinkIcon {...props} />,
+    true,
+    () => {
+      if (isServerless()) {
+        // We are in serverless, there is no kafka connect, so we can ignore it.
+        // Here, we only care about the pipeline service and use that to decide whether to show the entry
+        if (isSupported(Feature.PipelineService)) {
+          return { visible: true, disabledReasons: [] };
+        }
+        return { visible: false, disabledReasons: [DisabledReasons.notSupported] };
       }
-      return { visible: false, disabledReasons: [DisabledReasons.notSupported] };
+      return { visible: true, disabledReasons: [] };
     }
-    return { visible: true, disabledReasons: [] };
-  }),
+  ),
   MakeRoute<{ clusterName: string }>('/connect-clusters/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
   MakeRoute<{ clusterName: string }>(
     '/connect-clusters/:clusterName/create-connector',
@@ -541,7 +549,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/transforms',
     TransformsList,
     'Transforms',
-    MdOutlineSmartToy,
+    (props) => <AIIcon {...props} />,
     true,
     routeVisibility(true, [Feature.TransformsService])
   ),
@@ -566,7 +574,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/reassign-partitions',
     ReassignPartitions,
     'Reassign Partitions',
-    BeakerIcon,
+    (props) => <BeakerIcon {...props} />,
     false,
     routeVisibility(
       true,
@@ -619,7 +627,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/shadowlinks',
     ShadowLinkListPage,
     'Shadow Links',
-    (props) => <Shield {...props} />,
+    (props) => <ShieldIcon {...props} />,
     true,
     routeVisibility(() => {
       if (isEmbedded()) {
@@ -636,7 +644,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/agents',
     AIAgentsListPage,
     'AI Agents',
-    UserCircleIcon,
+    (props) => <UserCircleIcon {...props} />,
     true,
     routeVisibility(
       () =>

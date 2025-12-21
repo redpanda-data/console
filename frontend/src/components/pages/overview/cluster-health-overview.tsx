@@ -1,5 +1,5 @@
 import { Box, Button, Flex, Grid, Link, List, ListItem, Text } from '@redpanda-data/ui';
-import { MdError, MdOutlineWarning } from 'react-icons/md';
+import { ErrorIcon, WarningIcon } from 'components/icons';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
 import colors from '../../../colors';
@@ -42,7 +42,7 @@ const ClusterHealthOverview = () => {
             <Box fontWeight="bold">Unreachable brokers</Box>
             <Flex gap={1}>
               {api.clusterHealth?.offlineBrokerIds && api.clusterHealth?.offlineBrokerIds.length > 0 && (
-                <MdError color={colors.brandError} size={18} />
+                <ErrorIcon color={colors.brandError} size={18} />
               )}
               <Text>{api.clusterHealth?.offlineBrokerIds.length}</Text>
             </Flex>
@@ -54,7 +54,7 @@ const ClusterHealthOverview = () => {
               <Box fontWeight="bold">{HUMAN_READABLE_UNHEALTHY_REASONS[UnhealthyReason.LEADERLESS_PARTITIONS]}</Box>
               <Flex gap={2}>
                 <Flex gap={1}>
-                  <MdError color={colors.brandError} size={18} />{' '}
+                  <ErrorIcon color={colors.brandError} size={18} />{' '}
                   <Text>{api.clusterHealth?.leaderlessPartitionsCount}</Text>
                 </Flex>{' '}
                 <Link as={ReactRouterLink} to="/topics">
@@ -72,7 +72,7 @@ const ClusterHealthOverview = () => {
               </Box>
               <Flex gap={2}>
                 <Flex gap={1}>
-                  <MdOutlineWarning color={colors.brandWarning} size={18} />{' '}
+                  <WarningIcon color={colors.brandWarning} size={18} />{' '}
                   <Text>{api.clusterHealth?.underReplicatedPartitionsCount}</Text>
                 </Flex>{' '}
                 <Link as={ReactRouterLink} to="/topics">

@@ -10,13 +10,13 @@
  */
 
 import { Badge, Flex, Text } from '@redpanda-data/ui';
+import { BanIcon } from 'components/icons';
 import type { FC } from 'react';
-import { MdDoNotDisturb } from 'react-icons/md';
 
 export const EmptyBadge: FC<{ mode: 'empty' | 'null' }> = ({ mode }) => (
   <Badge variant="inverted">
     <Flex gap={2} verticalAlign="center">
-      <MdDoNotDisturb size={16} />
+      <BanIcon size={16} />
       <Text>
         {
           {

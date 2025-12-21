@@ -9,9 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// Icons
-import { ArchiveIcon, TrashIcon } from '@heroicons/react/outline';
-import { InfoIcon } from '@primer/octicons-react';
 // Redpanda UI (legacy)
 import {
   Alert,
@@ -31,6 +28,8 @@ import {
   Tooltip,
   VStack,
 } from '@redpanda-data/ui';
+// Icons
+import { ArchiveIcon, InfoIcon, TrashIcon } from 'components/icons';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';

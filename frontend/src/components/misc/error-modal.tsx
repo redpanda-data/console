@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { XCircleIcon } from '@heroicons/react/solid';
 import {
   Box,
   Button,
@@ -22,6 +21,7 @@ import {
   ModalOverlay,
   Text,
 } from '@redpanda-data/ui';
+import { ErrorIcon } from 'components/icons';
 import { action, observable } from 'mobx';
 import React, { Component } from 'react';
 
@@ -56,7 +56,7 @@ class ErrorModal extends Component<ErrorModalProps> {
                     alignSelf: 'center',
                   }}
                 >
-                  <XCircleIcon color="#F53649" />
+                  <ErrorIcon color="#F53649" />
                 </div>
 
                 {/* Title */}

@@ -16,7 +16,7 @@ import { api } from '../../../state/backend-api';
 import type { Partition, Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
 import { Alert, AlertIcon, Badge, Box, DataTable, Flex, Popover, Text } from '@redpanda-data/ui';
-import { MdOutlineWarningAmber } from 'react-icons/md';
+import { WarningIcon } from 'components/icons';
 
 import usePaginationParams from '../../../hooks/use-pagination-params';
 import { uiState } from '../../../state/ui-state';
@@ -154,7 +154,7 @@ const PartitionError: FC<{ partition: Partition }> = ({ partition }) => {
       title="Partition Error"
     >
       <Box>
-        <MdOutlineWarningAmber color="orange" size={20} />
+        <WarningIcon color="orange" size={20} />
       </Box>
     </Popover>
   );

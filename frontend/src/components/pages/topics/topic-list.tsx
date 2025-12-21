@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-react';
 import {
   Alert,
   AlertDialog,
@@ -33,13 +32,12 @@ import {
   Tooltip,
   useToast,
 } from '@redpanda-data/ui';
+import { BanIcon, CheckIcon, ErrorIcon, EyeOffIcon, TrashIcon, WarningIcon } from 'components/icons';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useQueryStateWithCallback } from 'hooks/use-query-state-with-callback';
 import { observable } from 'mobx';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { HiOutlineTrash } from 'react-icons/hi';
-import { MdError, MdOutlineWarning } from 'react-icons/md';
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { Link } from 'react-router-dom';
 
@@ -260,7 +258,7 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
                       placement="top"
                     >
                       <Box>
-                        <MdError color={colors.brandError} size={18} />
+                        <ErrorIcon color={colors.brandError} size={18} />
                       </Box>
                     </Tooltip>
                   )}
@@ -271,7 +269,7 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
                       placement="top"
                     >
                       <Box>
-                        <MdOutlineWarning color={colors.brandWarning} size={18} />
+                        <WarningIcon color={colors.brandWarning} size={18} />
                       </Box>
                     </Tooltip>
                   )}
@@ -313,7 +311,7 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
                     }}
                     type="button"
                   >
-                    <Icon as={HiOutlineTrash} />
+                    <Icon as={TrashIcon} />
                   </button>
                 </DeleteDisabledTooltip>
               </Flex>
@@ -342,12 +340,12 @@ const iconAllowed = (
 );
 const iconForbidden = (
   <span style={{ color: '#ca000a' }}>
-    <CircleSlashIcon size={15} />
+    <BanIcon size={15} />
   </span>
 );
 const iconClosedEye = (
   <span style={{ color: '#0008', paddingLeft: '4px', transform: 'translateY(-1px)', display: 'inline-block' }}>
-    <EyeClosedIcon size={14} verticalAlign="middle" />
+    <EyeOffIcon size={14} />
   </span>
 );
 

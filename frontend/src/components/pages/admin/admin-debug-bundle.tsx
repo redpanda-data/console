@@ -35,8 +35,8 @@ import {
   Select,
   Text,
 } from '@redpanda-data/ui';
+import { TrashIcon } from 'components/icons';
 import { makeObservable, observable } from 'mobx';
-import { MdDeleteOutline } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
 import {
@@ -657,7 +657,7 @@ const NewDebugBundleForm: FC<{
                     }}
                     variant="ghost"
                   >
-                    <MdDeleteOutline />
+                    <TrashIcon />
                   </Button>
                 </GridItem>
               </Grid>

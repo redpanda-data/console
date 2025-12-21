@@ -60,7 +60,7 @@ const VirtualizedRows = ({
   columnsLength,
 }: {
   virtualRows: ReturnType<ReturnType<typeof useVirtualizer>['getVirtualItems']>;
-  rows: ReturnType<ReturnType<typeof useReactTable>['getRowModel']>['rows'];
+  rows: ReturnType<ReturnType<typeof useReactTable<ShadowTopic>>['getRowModel']>['rows'];
   isFetchingNextPage?: boolean;
   isFetching?: boolean;
   columnsLength: number;
