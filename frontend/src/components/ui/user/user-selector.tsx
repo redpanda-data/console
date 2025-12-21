@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { FormControl, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import {
   Select,
   SelectContent,
@@ -45,19 +45,13 @@ export const UserSelector = ({
   const users = usersData?.users || [];
 
   return (
-    <FormItem>
-      <FormLabel required={isRequired}>{label}</FormLabel>
-      {helperText && (
-        <Text className="mb-2 text-sm" variant="muted">
-          {helperText}
-        </Text>
-      )}
+    <Field data-invalid={!!errorMessage}>
+      <FieldLabel required={isRequired}>{label}</FieldLabel>
+      {helperText && <FieldDescription>{helperText}</FieldDescription>}
       <Select disabled={isDisabled || isLoading} onValueChange={onChange} value={value}>
-        <FormControl>
-          <SelectTrigger>
-            <SelectValue placeholder={isLoading ? 'Loading users...' : 'Select a user...'} />
-          </SelectTrigger>
-        </FormControl>
+        <SelectTrigger>
+          <SelectValue placeholder={isLoading ? 'Loading users...' : 'Select a user...'} />
+        </SelectTrigger>
         <SelectContent>
           {users.length > 0 ? (
             users.map((user) => (
@@ -72,7 +66,7 @@ export const UserSelector = ({
           )}
         </SelectContent>
       </Select>
-      {errorMessage && <FormMessage>{errorMessage}</FormMessage>}
-    </FormItem>
+      {errorMessage && <FieldError>{errorMessage}</FieldError>}
+    </Field>
   );
 };
