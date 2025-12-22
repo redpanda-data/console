@@ -455,7 +455,7 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
 
       // Extract container ID from error message if available
       const containerIdMatch = startError.message.match(/container ([a-f0-9]+)/);
-      let failedContainerId = containerIdMatch ? containerIdMatch[1] : null;
+      const failedContainerId = containerIdMatch ? containerIdMatch[1] : null;
 
       if (failedContainerId) {
         console.log(`Container ID from error: ${failedContainerId}`);
@@ -472,25 +472,30 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
 
           // Get container state
           console.log('Fetching container state...');
-          const { stdout: stateJson } = await execAsync(`docker inspect ${failedContainerId} --format='{{json .State}}'`);
+          const { stdout: stateJson} = await execAsync(
+            `docker inspect ${failedContainerId} --format='{{json .State}}'`
+          );
           console.log('Container state:');
           const state = JSON.parse(stateJson);
           console.log(JSON.stringify(state, null, 2));
 
           // Get container config to see the actual command and mounts
           console.log('Fetching container config...');
-          const { stdout: configJson } = await execAsync(`docker inspect ${failedContainerId} --format='{{json .Config}}'`);
+          const { stdout: configJson } = await execAsync(
+            `docker inspect ${failedContainerId} --format='{{json .Config}}'`
+          );
           const config = JSON.parse(configJson);
           console.log('Container command:', config.Cmd);
           console.log('Container entrypoint:', config.Entrypoint);
 
           // Get mount info
           console.log('Fetching mount info...');
-          const { stdout: mountsJson } = await execAsync(`docker inspect ${failedContainerId} --format='{{json .Mounts}}'`);
+          const { stdout: mountsJson } = await execAsync(
+            `docker inspect ${failedContainerId} --format='{{json .Mounts}}'`
+          );
           const mounts = JSON.parse(mountsJson);
           console.log('Container mounts:');
           console.log(JSON.stringify(mounts, null, 2));
-
         } catch (inspectError) {
           console.error('Failed to inspect container:', inspectError.message);
         }
@@ -504,7 +509,7 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
 
     console.log(`Container created with ID: ${containerId}`);
     console.log('Waiting 2 seconds for container to initialize...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Check if container is still running
     const { stdout: inspectOutput } = await execAsync(`docker inspect ${containerId} --format='{{.State.Status}}'`);
@@ -539,7 +544,6 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
     console.log('Waiting for port 3000 to be ready...');
     await waitForPort(3000, 60, 1000);
     console.log('✓ Port 3000 is ready');
-
   } catch (error) {
     console.error('Failed to start backend container:', error.message);
 
@@ -775,7 +779,9 @@ export default async function globalSetup(config = {}) {
   const needsShadowlink = config?.metadata?.needsShadowlink ?? false;
 
   console.log('\n\n========================================');
-  console.log(`🚀 GLOBAL SETUP STARTED ${isEnterprise ? '(ENTERPRISE MODE)' : '(OSS MODE)'}${needsShadowlink ? ' + SHADOWLINK' : ''}`);
+  console.log(
+    `🚀 GLOBAL SETUP STARTED ${isEnterprise ? '(ENTERPRISE MODE)' : '(OSS MODE)'}${needsShadowlink ? ' + SHADOWLINK' : ''}`
+  );
   console.log('========================================\n');
   console.log('Starting testcontainers environment...');
 
