@@ -280,7 +280,7 @@ const PipelineListPageContent = () => {
     onRowSelectionChange: setRowSelection,
     initialState: {
       pagination: {
-        pageSize: 10,
+        pageSize: 20,
       },
     },
     state: {
