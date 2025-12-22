@@ -10,6 +10,9 @@ const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Regex for extracting container ID from error messages
+const CONTAINER_ID_REGEX = /container ([a-f0-9]+)/;
+
 const getStateFile = (isEnterprise) =>
   resolve(__dirname, isEnterprise ? '.testcontainers-state-enterprise.json' : '.testcontainers-state.json');
 
@@ -298,14 +301,11 @@ async function buildBackendImage(isEnterprise) {
   try {
     // Copy frontend assets before build (required for both OSS and Enterprise)
     // The pkg/embed/frontend/ directory has .gitignore with *, so assets don't exist in CI
-    if (isEnterprise) {
-      // Check if enterprise backend directory exists
-      if (!existsSync(backendDir)) {
-        throw new Error(
-          `Enterprise backend directory not found: ${backendDir}\n` +
-          'Enterprise E2E tests require console-enterprise repo to be checked out alongside console repo.'
-        );
-      }
+    if (isEnterprise && !existsSync(backendDir)) {
+      throw new Error(
+        `Enterprise backend directory not found: ${backendDir}\n` +
+        'Enterprise E2E tests require console-enterprise repo to be checked out alongside console repo.'
+      );
     }
 
     const frontendBuildDir = resolve(__dirname, '../build');
@@ -313,7 +313,7 @@ async function buildBackendImage(isEnterprise) {
     // Check if frontend build exists
     if (!existsSync(frontendBuildDir)) {
       throw new Error(
-        `Frontend build directory not found: ${frontendBuildDir}\n` + 'Run "bun run build" before running E2E tests.'
+        `Frontend build directory not found: ${frontendBuildDir}\nRun "bun run build" before running E2E tests.`
       );
     }
 
@@ -454,7 +454,7 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
       console.error('Error during container.start():', startError.message);
 
       // Extract container ID from error message if available
-      const containerIdMatch = startError.message.match(/container ([a-f0-9]+)/);
+      const containerIdMatch = startError.message.match(CONTAINER_ID_REGEX);
       const failedContainerId = containerIdMatch ? containerIdMatch[1] : null;
 
       if (failedContainerId) {
@@ -472,7 +472,7 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
 
           // Get container state
           console.log('Fetching container state...');
-          const { stdout: stateJson} = await execAsync(
+          const { stdout: stateJson } = await execAsync(
             `docker inspect ${failedContainerId} --format='{{json .State}}'`
           );
           console.log('Container state:');
