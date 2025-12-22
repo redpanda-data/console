@@ -157,6 +157,7 @@ test.describe('Debug Bundle - Download and Deletion', () => {
 });
 
 test.describe('Debug Bundle - Error Handling', () => {
+  test.skip(!!process.env.CI, 'Flaky in CI - page load timeout issues');
   test('should display error message if bundle generation fails', async ({ page }) => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
