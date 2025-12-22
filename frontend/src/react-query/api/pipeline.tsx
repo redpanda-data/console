@@ -32,6 +32,7 @@ import {
   type Pipeline,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { useMemo } from 'react';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -63,33 +64,57 @@ export const useListPipelinesQuery = (
   input?: MessageInit<ListPipelinesRequestDataPlane>,
   options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse>
 ) => {
-  const listPipelinesRequestDataPlane = create(ListPipelinesRequestSchemaDataPlane, {
-    pageSize: MAX_PAGE_SIZE,
-    pageToken: '',
-    // TODO: Use once nameContains is not required anymore
-    // filter: new ListPipelinesRequest_Filter({
-    //   ...input?.filter,
-    //   tags: {
-    //     ...input?.filter?.tags,
-    //     __redpanda_cloud_pipeline_type: 'pipeline',
-    //   },
-    // }),
-    ...input,
-  });
+  // Stabilize request objects to prevent unnecessary re-renders
+  const listPipelinesRequestDataPlane = useMemo(
+    () =>
+      create(ListPipelinesRequestSchemaDataPlane, {
+        pageSize: MAX_PAGE_SIZE,
+        pageToken: '',
+        // TODO: Use once nameContains is not required anymore
+        // filter: new ListPipelinesRequest_Filter({
+        //   ...input?.filter,
+        //   tags: {
+        //     ...input?.filter?.tags,
+        //     __redpanda_cloud_pipeline_type: 'pipeline',
+        //   },
+        // }),
+        ...input,
+      }),
+    [input]
+  );
 
-  const listPipelinesRequest = create(ListPipelinesRequestSchema, {
-    request: listPipelinesRequestDataPlane,
-  }) as MessageInit<ListPipelinesRequest> & Required<Pick<MessageInit<ListPipelinesRequest>, 'request'>>;
+  const listPipelinesRequest = useMemo(
+    () =>
+      create(ListPipelinesRequestSchema, {
+        request: listPipelinesRequestDataPlane,
+      }) as MessageInit<ListPipelinesRequest> & Required<Pick<MessageInit<ListPipelinesRequest>, 'request'>>,
+    [listPipelinesRequestDataPlane]
+  );
 
-  const listPipelinesResult = useQuery(listPipelines, listPipelinesRequest, {
-    enabled: options?.enabled,
-  });
+  // Stabilize options object to prevent unnecessary re-renders
+  const queryOptions = useMemo(
+    () => ({
+      enabled: options?.enabled,
+    }),
+    [options?.enabled]
+  );
+
+  const listPipelinesResult = useQuery(listPipelines, listPipelinesRequest, queryOptions);
+
+  // Stabilize the pipelines reference
+  const pipelines = listPipelinesResult?.data?.response?.pipelines;
+
+  // Stabilize the data object to prevent component re-renders
+  const data = useMemo(
+    () => ({
+      pipelines,
+    }),
+    [pipelines]
+  );
 
   return {
     ...listPipelinesResult,
-    data: {
-      pipelines: listPipelinesResult?.data?.response?.pipelines,
-    },
+    data,
   };
 };
 
