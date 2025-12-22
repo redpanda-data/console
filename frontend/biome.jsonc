@@ -19,6 +19,7 @@
       "!**/coverage/**/*",
       "!**/.nyc_output/**/*",
       "!**/*.css",
+      "!**/tests/global-setup.mjs",
       "!**/tests/console",
       "!**/tests/console-enterprise",
       "!**/components/redpanda-ui",

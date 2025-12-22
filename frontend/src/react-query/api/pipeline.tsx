@@ -33,7 +33,6 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
-import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const REDPANDA_CONNECT_LOGS_TOPIC = '__redpanda.connect.logs';
@@ -49,7 +48,9 @@ export const useGetPipelineQuery = (
   }
 ) => {
   const getPipelineRequestDataPlane = create(GetPipelineRequestSchemaDataPlane, { id });
-  const getPipelineRequest = create(GetPipelineRequestSchema, { request: getPipelineRequestDataPlane });
+  const getPipelineRequest = create(GetPipelineRequestSchema, {
+    request: getPipelineRequestDataPlane,
+  });
   return useQuery(getPipeline, getPipelineRequest, {
     enabled: options?.enabled,
     refetchInterval: options?.refetchInterval,
@@ -80,30 +81,14 @@ export const useListPipelinesQuery = (
     request: listPipelinesRequestDataPlane,
   }) as MessageInit<ListPipelinesRequest> & Required<Pick<MessageInit<ListPipelinesRequest>, 'request'>>;
 
-  const listPipelinesResult = useInfiniteQueryWithAllPages(listPipelines, listPipelinesRequest, {
-    pageParamKey: 'request',
+  const listPipelinesResult = useQuery(listPipelines, listPipelinesRequest, {
     enabled: options?.enabled,
-    // Required because of protobuf v2 reflection - it does not accept foreign fields when nested under "request", so the format needs to be a dataplane schema
-    getNextPageParam: (lastPage) =>
-      lastPage?.response?.nextPageToken
-        ? {
-            ...listPipelinesRequestDataPlane,
-            pageToken: lastPage.response?.nextPageToken,
-          }
-        : undefined,
   });
-
-  const allRetrievedPipelines = listPipelinesResult?.data?.pages?.flatMap(({ response }) => response?.pipelines);
-
-  // TODO: Remove once nameContains is not required anymore
-  // const filteredPipelines = allRetrievedPipelines?.filter(
-  //   (pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_type !== 'agent',
-  // );
 
   return {
     ...listPipelinesResult,
     data: {
-      pipelines: allRetrievedPipelines,
+      pipelines: listPipelinesResult?.data?.response?.pipelines,
     },
   };
 };
@@ -116,7 +101,7 @@ export const useCreatePipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'infinite',
+          cardinality: 'finite',
         }),
       });
     },
@@ -137,7 +122,7 @@ export const useUpdatePipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'infinite',
+          cardinality: 'finite',
         }),
       });
     },
@@ -158,7 +143,7 @@ export const useStartPipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'infinite',
+          cardinality: 'finite',
         }),
       });
       await queryClient.invalidateQueries({
@@ -186,7 +171,7 @@ export const useStopPipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'infinite',
+          cardinality: 'finite',
         }),
       });
       await queryClient.invalidateQueries({
@@ -214,7 +199,7 @@ export const useDeletePipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'infinite',
+          cardinality: 'finite',
         }),
       });
     },
