@@ -27,46 +27,46 @@ export default async function globalTeardown(config = {}) {
 
     // Stop backend containers
     if (state.sourceBackendId) {
-      console.log(`Stopping source backend container...`);
+      console.log('Stopping source backend container...');
       await execAsync(`docker stop ${state.sourceBackendId}`).catch(() => {});
       await execAsync(`docker rm ${state.sourceBackendId}`).catch(() => {});
     }
 
     if (state.backendId) {
-      console.log(`Stopping backend container...`);
+      console.log('Stopping backend container...');
       await execAsync(`docker stop ${state.backendId}`).catch(() => {});
       await execAsync(`docker rm ${state.backendId}`).catch(() => {});
     }
 
     // Stop Docker containers (testcontainers)
     if (state.connectId) {
-      console.log(`Stopping Kafka Connect container...`);
+      console.log('Stopping Kafka Connect container...');
       await execAsync(`docker stop ${state.connectId}`).catch(() => {});
       await execAsync(`docker rm ${state.connectId}`).catch(() => {});
     }
 
     if (state.owlshopId) {
-      console.log(`Stopping OwlShop container...`);
+      console.log('Stopping OwlShop container...');
       await execAsync(`docker stop ${state.owlshopId}`).catch(() => {});
       await execAsync(`docker rm ${state.owlshopId}`).catch(() => {});
     }
 
     // Stop destination cluster if it exists (shadowlink tests)
     if (state.destRedpandaId) {
-      console.log(`Stopping destination Redpanda container...`);
+      console.log('Stopping destination Redpanda container...');
       await execAsync(`docker stop ${state.destRedpandaId}`).catch(() => {});
       await execAsync(`docker rm ${state.destRedpandaId}`).catch(() => {});
     }
 
     // Stop source cluster (existing/main redpanda)
     if (state.redpandaId) {
-      console.log(`Stopping source Redpanda container...`);
+      console.log('Stopping source Redpanda container...');
       await execAsync(`docker stop ${state.redpandaId}`).catch(() => {});
       await execAsync(`docker rm ${state.redpandaId}`).catch(() => {});
     }
 
     if (state.networkId) {
-      console.log(`Removing Docker network...`);
+      console.log('Removing Docker network...');
       await execAsync(`docker network rm ${state.networkId}`).catch(() => {});
     }
 

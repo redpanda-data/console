@@ -636,7 +636,15 @@ async function verifyDestinationRedpandaServices(state) {
   console.log('✓ Destination Schema Registry ready');
 }
 
-async function startBackendServerWithConfig(network, isEnterprise, imageTag, state, configPath, externalPort, networkAlias) {
+async function startBackendServerWithConfig(
+  network,
+  isEnterprise,
+  imageTag,
+  state,
+  configPath,
+  externalPort,
+  networkAlias
+) {
   console.log(`Starting backend server container on port ${externalPort} with alias ${networkAlias}...`);
 
   const bindMounts = [
@@ -702,7 +710,7 @@ async function startSourceBackendServer(network, isEnterprise, imageTag, state) 
   const sourceBackend = await new GenericContainer(imageTag)
     .withNetwork(network)
     .withNetworkAliases('console-backend-source')
-    .withExposedPorts({ container: 3000, host: 3001 })  // Map to 3001 externally
+    .withExposedPorts({ container: 3000, host: 3001 }) // Map to 3001 externally
     .withBindMounts(bindMounts)
     .withCommand(['--config.filepath=/etc/console/config.yaml'])
     .start();
@@ -824,11 +832,27 @@ export default async function globalSetup(config = {}) {
       const sourceBackendConfigPath = isEnterprise
         ? resolve(__dirname, 'config/console.enterprise.config.yaml')
         : resolve(__dirname, 'config/console.config.yaml');
-      await startBackendServerWithConfig(network, isEnterprise, imageTag, state, sourceBackendConfigPath, 3000, 'console-backend');
+      await startBackendServerWithConfig(
+        network,
+        isEnterprise,
+        imageTag,
+        state,
+        sourceBackendConfigPath,
+        3000,
+        'console-backend'
+      );
 
       // Start destination backend on port 3001 (where shadowlinks are created)
       const destBackendConfigPath = resolve(__dirname, 'config/console.dest.config.yaml');
-      await startBackendServerWithConfig(network, isEnterprise, imageTag, state, destBackendConfigPath, 3001, 'console-backend-dest');
+      await startBackendServerWithConfig(
+        network,
+        isEnterprise,
+        imageTag,
+        state,
+        destBackendConfigPath,
+        3001,
+        'console-backend-dest'
+      );
     } else {
       // Normal setup - single backend on existing cluster
       await startBackendServer(network, isEnterprise, imageTag, state);
