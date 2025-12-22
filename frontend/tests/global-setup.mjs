@@ -267,7 +267,6 @@ topic.creation.enable=false
   }
 }
 
-
 async function buildBackendImage(isEnterprise) {
   console.log(`Building backend Docker image ${isEnterprise ? '(Enterprise)' : '(OSS)'}...`);
 
@@ -314,8 +313,7 @@ async function buildBackendImage(isEnterprise) {
     // Check if frontend build exists
     if (!existsSync(frontendBuildDir)) {
       throw new Error(
-        `Frontend build directory not found: ${frontendBuildDir}\n` +
-        'Run "bun run build" before running E2E tests.'
+        `Frontend build directory not found: ${frontendBuildDir}\n` + 'Run "bun run build" before running E2E tests.'
       );
     }
 
@@ -339,8 +337,7 @@ async function buildBackendImage(isEnterprise) {
     await execAsync(`cp "${dockerfilePath}" "${tempDockerfile}"`);
 
     try {
-      await GenericContainer
-        .fromDockerfile(backendDir, '.dockerfile.e2e.tmp')
+      await GenericContainer.fromDockerfile(backendDir, '.dockerfile.e2e.tmp')
         .withBuildArgs({
           BUILDKIT_INLINE_CACHE: '1',
         })
@@ -411,7 +408,7 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
       if (!fs.existsSync(licensePath)) {
         throw new Error(`License file not found at: ${licensePath}`);
       }
-      console.log(`✓ License file found`);
+      console.log('✓ License file found');
     }
 
     bindMounts.push({
@@ -432,9 +429,9 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
     console.log('Starting container...');
     console.log('Configuration summary:');
     console.log(`  - Network: ${network.getId ? network.getId() : 'unknown'}`);
-    console.log(`  - Alias: console-backend`);
-    console.log(`  - Port: 3000:3000`);
-    console.log(`  - Command: --config.filepath=/etc/console/config.yaml`);
+    console.log('  - Alias: console-backend');
+    console.log('  - Port: 3000:3000');
+    console.log('  - Command: --config.filepath=/etc/console/config.yaml');
 
     // Create container without wait strategy first to get the ID immediately
     const container = new GenericContainer(imageTag)
@@ -567,7 +564,6 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
     throw error;
   }
 }
-
 
 async function startDestinationRedpandaContainer(network, state) {
   console.log('Starting destination Redpanda container for shadowlink...');
