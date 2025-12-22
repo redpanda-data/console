@@ -668,20 +668,43 @@ async function startBackendServerWithConfig(
     });
   }
 
-  const backend = await new GenericContainer(imageTag)
-    .withNetwork(network)
-    .withNetworkAliases(networkAlias)
-    .withExposedPorts({ container: 3000, host: externalPort })
-    .withBindMounts(bindMounts)
-    .withCommand(['--config.filepath=/etc/console/config.yaml'])
-    .start();
+  try {
+    const backend = await new GenericContainer(imageTag)
+      .withNetwork(network)
+      .withNetworkAliases(networkAlias)
+      .withExposedPorts({ container: 3000, host: externalPort })
+      .withBindMounts(bindMounts)
+      .withCommand(['--config.filepath=/etc/console/config.yaml'])
+      .start();
 
-  state.backendId = backend.getId();
-  state.backendContainer = backend;
+    const containerId = backend.getId();
+    state.backendId = containerId;
+    state.backendContainer = backend;
 
-  console.log(`Waiting for backend port ${externalPort}...`);
-  await waitForPort(externalPort, 60, 1000);
-  console.log(`✓ Backend ready at http://localhost:${externalPort}`);
+    console.log(`✓ Container started: ${containerId}`);
+    console.log('Waiting 2 seconds for container to initialize...');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // Check if container is still running
+    const { stdout: status } = await execAsync(`docker inspect ${containerId} --format='{{.State.Status}}'`);
+    const containerStatus = status.trim();
+    console.log(`Container status: ${containerStatus}`);
+
+    if (containerStatus !== 'running') {
+      console.error(`Container stopped with status: ${containerStatus}`);
+      const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
+      console.log('Container logs:');
+      console.log(logs);
+      throw new Error(`Container stopped immediately with status: ${containerStatus}`);
+    }
+
+    console.log(`Waiting for backend port ${externalPort}...`);
+    await waitForPort(externalPort, 60, 1000);
+    console.log(`✓ Backend ready at http://localhost:${externalPort}`);
+  } catch (error) {
+    console.error(`Failed to start backend on port ${externalPort}:`, error.message);
+    throw error;
+  }
 }
 
 async function startSourceBackendServer(network, isEnterprise, imageTag, state) {
