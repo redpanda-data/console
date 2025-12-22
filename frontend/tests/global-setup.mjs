@@ -921,7 +921,7 @@ export default async function globalSetup(config = {}) {
     // Give services extra time to stabilize in CI (especially shadowlink replication)
     if (isEnterprise && needsShadowlink && process.env.CI) {
       console.log('CI detected: Giving services 10 seconds to stabilize...');
-      await new Promise((resolve) => setTimeout(resolve, 10000));
+      await new Promise((resolve) => setTimeout(resolve, 10_000));
       console.log('✓ Stabilization period complete');
     }
 
