@@ -659,8 +659,30 @@ async function startBackendServerWithConfig(
   ];
 
   if (isEnterprise) {
-    const defaultLicensePath = resolve(__dirname, '../../../console-enterprise/configs/shared/redpanda.license');
-    const licensePath = process.env.REDPANDA_LICENSE_PATH || defaultLicensePath;
+    let licensePath;
+    const fs = await import('node:fs');
+
+    // Check if license is provided as GitHub secret (environment variable)
+    if (process.env.ENTERPRISE_LICENSE_CONTENT) {
+      console.log('Using ENTERPRISE_LICENSE_CONTENT from environment variable (GitHub secret)');
+      // Write the license content to a temporary file
+      const { mkdtempSync, writeFileSync } = await import('node:fs');
+      const { tmpdir } = await import('node:os');
+      const tempDir = mkdtempSync(`${tmpdir()}/redpanda-license-`);
+      licensePath = `${tempDir}/redpanda.license`;
+      writeFileSync(licensePath, process.env.ENTERPRISE_LICENSE_CONTENT);
+      console.log(`✓ License written to temporary file: ${licensePath}`);
+    } else {
+      const defaultLicensePath = resolve(__dirname, '../../../console-enterprise/configs/shared/redpanda.license');
+      licensePath = process.env.REDPANDA_LICENSE_PATH || defaultLicensePath;
+      console.log(`Enterprise license path: ${licensePath}`);
+
+      if (!fs.existsSync(licensePath)) {
+        throw new Error(`License file not found at: ${licensePath}`);
+      }
+      console.log('✓ License file found');
+    }
+
     bindMounts.push({
       source: licensePath,
       target: '/etc/console/redpanda.license',
@@ -668,20 +690,69 @@ async function startBackendServerWithConfig(
     });
   }
 
-  const backend = await new GenericContainer(imageTag)
-    .withNetwork(network)
-    .withNetworkAliases(networkAlias)
-    .withExposedPorts({ container: 3000, host: externalPort })
-    .withBindMounts(bindMounts)
-    .withCommand(['--config.filepath=/etc/console/config.yaml'])
-    .start();
+  let containerId;
+  try {
+    const backend = await new GenericContainer(imageTag)
+      .withNetwork(network)
+      .withNetworkAliases(networkAlias)
+      .withExposedPorts({ container: 3000, host: externalPort })
+      .withBindMounts(bindMounts)
+      .withCommand(['--config.filepath=/etc/console/config.yaml'])
+      .start();
 
-  state.backendId = backend.getId();
-  state.backendContainer = backend;
+    containerId = backend.getId();
+    state.backendId = containerId;
+    state.backendContainer = backend;
 
-  console.log(`Waiting for backend port ${externalPort}...`);
-  await waitForPort(externalPort, 60, 1000);
-  console.log(`✓ Backend ready at http://localhost:${externalPort}`);
+    console.log(`✓ Container started: ${containerId}`);
+    console.log('Waiting 2 seconds for container to initialize...');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // Check if container is still running
+    const { stdout: status } = await execAsync(`docker inspect ${containerId} --format='{{.State.Status}}'`);
+    const containerStatus = status.trim();
+    console.log(`Container status: ${containerStatus}`);
+
+    if (containerStatus !== 'running') {
+      console.error(`Container stopped with status: ${containerStatus}`);
+      const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
+      console.log('=== CONTAINER LOGS START ===');
+      console.log(logs);
+      console.log('=== CONTAINER LOGS END ===');
+
+      // Get exit code
+      const { stdout: exitCode } = await execAsync(`docker inspect ${containerId} --format='{{.State.ExitCode}}'`);
+      console.log(`Container exit code: ${exitCode.trim()}`);
+
+      throw new Error(`Container stopped immediately with status: ${containerStatus}`);
+    }
+
+    console.log(`Waiting for backend port ${externalPort}...`);
+    await waitForPort(externalPort, 60, 1000);
+    console.log(`✓ Backend ready at http://localhost:${externalPort}`);
+  } catch (error) {
+    console.error(`Failed to start backend on port ${externalPort}:`, error.message);
+
+    // Try to get container logs if container was created but failed
+    if (containerId) {
+      try {
+        console.log('Attempting to fetch logs from failed container...');
+        const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
+        console.log('=== FULL CONTAINER LOGS ===');
+        console.log(logs);
+
+        // Get container inspect info
+        const { stdout: inspect } = await execAsync(`docker inspect ${containerId}`);
+        console.log('=== CONTAINER STATE ===');
+        const inspectJson = JSON.parse(inspect);
+        console.log(JSON.stringify(inspectJson[0].State, null, 2));
+      } catch (logError) {
+        console.error('Could not fetch logs:', logError.message);
+      }
+    }
+
+    throw error;
+  }
 }
 
 async function startSourceBackendServer(network, isEnterprise, imageTag, state) {
