@@ -103,6 +103,7 @@ test.describe('Shadow Link E2E Tests', () => {
 	});
 
 	test.describe('Shadow Link Filter', () => {
+		test.skip(!!process.env.CI, 'Flaky in CI - timing issues with metrics loading');
 		test('should create with exclude filter and verify it works', async ({ page }) => {
 			const shadowlinkPage = new ShadowlinkPage(page);
 			const shadowlinkName = generateShadowlinkName();

@@ -659,8 +659,24 @@ async function startBackendServerWithConfig(
   ];
 
   if (isEnterprise) {
-    const defaultLicensePath = resolve(__dirname, '../../../console-enterprise/configs/shared/redpanda.license');
-    const licensePath = process.env.REDPANDA_LICENSE_PATH || defaultLicensePath;
+    let licensePath;
+    const fs = await import('node:fs');
+
+    if (process.env.ENTERPRISE_LICENSE_CONTENT) {
+      const { mkdtempSync, writeFileSync } = await import('node:fs');
+      const { tmpdir } = await import('node:os');
+      const tempDir = mkdtempSync(`${tmpdir()}/redpanda-license-`);
+      licensePath = `${tempDir}/redpanda.license`;
+      writeFileSync(licensePath, process.env.ENTERPRISE_LICENSE_CONTENT);
+    } else {
+      const defaultLicensePath = resolve(__dirname, '../../../console-enterprise/configs/shared/redpanda.license');
+      licensePath = process.env.REDPANDA_LICENSE_PATH || defaultLicensePath;
+
+      if (!fs.existsSync(licensePath)) {
+        throw new Error(`License file not found at: ${licensePath}`);
+      }
+    }
+
     bindMounts.push({
       source: licensePath,
       target: '/etc/console/redpanda.license',
@@ -668,20 +684,51 @@ async function startBackendServerWithConfig(
     });
   }
 
-  const backend = await new GenericContainer(imageTag)
-    .withNetwork(network)
-    .withNetworkAliases(networkAlias)
-    .withExposedPorts({ container: 3000, host: externalPort })
-    .withBindMounts(bindMounts)
-    .withCommand(['--config.filepath=/etc/console/config.yaml'])
-    .start();
+  let containerId;
+  try {
+    const backend = await new GenericContainer(imageTag)
+      .withNetwork(network)
+      .withNetworkAliases(networkAlias)
+      .withExposedPorts({ container: 3000, host: externalPort })
+      .withBindMounts(bindMounts)
+      .withCommand(['--config.filepath=/etc/console/config.yaml'])
+      .start();
 
-  state.backendId = backend.getId();
-  state.backendContainer = backend;
+    containerId = backend.getId();
+    state.backendId = containerId;
+    state.backendContainer = backend;
 
-  console.log(`Waiting for backend port ${externalPort}...`);
-  await waitForPort(externalPort, 60, 1000);
-  console.log(`✓ Backend ready at http://localhost:${externalPort}`);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // Check if container is still running
+    const { stdout: status } = await execAsync(`docker inspect ${containerId} --format='{{.State.Status}}'`);
+    if (status.trim() !== 'running') {
+      const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
+      const { stdout: exitCode } = await execAsync(`docker inspect ${containerId} --format='{{.State.ExitCode}}'`);
+      console.error(`Container ${containerId} stopped (exit ${exitCode.trim()}):`);
+      console.error(logs);
+      throw new Error(`Container stopped immediately with status: ${status.trim()}`);
+    }
+
+    await waitForPort(externalPort, 60, 1000);
+    console.log(`✓ Backend ready at http://localhost:${externalPort}`);
+  } catch (error) {
+    console.error(`Failed to start backend on port ${externalPort}:`, error.message);
+
+    if (containerId) {
+      try {
+        const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
+        const { stdout: inspect } = await execAsync(`docker inspect ${containerId}`);
+        const inspectJson = JSON.parse(inspect);
+        console.error('Container state:', JSON.stringify(inspectJson[0].State, null, 2));
+        console.error('Container logs:', logs);
+      } catch (logError) {
+        console.error('Could not fetch container diagnostics:', logError.message);
+      }
+    }
+
+    throw error;
+  }
 }
 
 async function startSourceBackendServer(network, isEnterprise, imageTag, state) {
@@ -870,6 +917,13 @@ export default async function globalSetup(config = {}) {
 
     console.log('Waiting for frontend to be ready...');
     await waitForPort(3000, 60, 1000);
+
+    // Give services extra time to stabilize in CI (especially shadowlink replication)
+    if (isEnterprise && needsShadowlink && process.env.CI) {
+      console.log('CI detected: Giving services 10 seconds to stabilize...');
+      await new Promise((resolve) => setTimeout(resolve, 10_000));
+      console.log('✓ Stabilization period complete');
+    }
 
     writeFileSync(getStateFile(isEnterprise), JSON.stringify(state, null, 2));
 
