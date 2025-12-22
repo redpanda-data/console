@@ -303,8 +303,7 @@ async function buildBackendImage(isEnterprise) {
     // The pkg/embed/frontend/ directory has .gitignore with *, so assets don't exist in CI
     if (isEnterprise && !existsSync(backendDir)) {
       throw new Error(
-        `Enterprise backend directory not found: ${backendDir}\n` +
-        'Enterprise E2E tests require console-enterprise repo to be checked out alongside console repo.'
+        `Enterprise backend directory not found: ${backendDir}\nEnterprise E2E tests require console-enterprise repo to be checked out alongside console repo.`
       );
     }
 
