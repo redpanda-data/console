@@ -3,6 +3,15 @@ import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 /**
+ * Helper to generate unique shadowlink names
+ */
+export function generateShadowlinkName() {
+	const timestamp = Date.now().toString().slice(-8);
+	const random = Math.random().toString(36).substring(2, 6);
+	return `e2e-shadowlink-${timestamp}-${random}`;
+}
+
+/**
  * Page Object Model for Shadow Link pages
  * Handles shadowlink list, create, edit, details, and verification
  *

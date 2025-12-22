@@ -1,15 +1,6 @@
 /** biome-ignore-all lint/performance/useTopLevelRegex: e2e test */
 import { expect, test } from '@playwright/test';
-import { ShadowlinkPage } from './shadowlink-page';
-
-/**
- * Helper to generate unique shadowlink names
- */
-function generateShadowlinkName() {
-	const timestamp = Date.now().toString().slice(-8);
-	const random = Math.random().toString(36).substring(2, 6);
-	return `e2e-shadowlink-${timestamp}-${random}`;
-}
+import { ShadowlinkPage, generateShadowlinkName } from '../../console/utils/shadowlink-page';
 
 test.describe('Shadow Link E2E Tests', () => {
 	test.describe('Shadow Link Creation', () => {
