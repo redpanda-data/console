@@ -942,6 +942,13 @@ export default async function globalSetup(config = {}) {
     console.log('Waiting for frontend to be ready...');
     await waitForPort(3000, 60, 1000);
 
+    // Give services extra time to stabilize in CI (especially shadowlink replication)
+    if (isEnterprise && needsShadowlink && process.env.CI) {
+      console.log('CI detected: Giving services 10 seconds to stabilize...');
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+      console.log('✓ Stabilization period complete');
+    }
+
     writeFileSync(getStateFile(isEnterprise), JSON.stringify(state, null, 2));
 
     console.log('\n✅ All services ready! Starting tests...\n');

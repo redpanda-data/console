@@ -23,8 +23,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Number of parallel workers on CI */
-  workers: process.env.CI ? 8 : undefined,
+  /* Number of parallel workers on CI - reduced for enterprise tests with multiple backend containers */
+  workers: process.env.CI ? 2 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: process.env.CI ? 'list' : 'html',
   /* Global setup and teardown */
@@ -47,9 +47,9 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
 
-    /* Disable screenshots and videos in CI for performance */
-    screenshot: process.env.CI ? 'only-on-failure' : 'off',
-    video: process.env.CI ? 'retain-on-failure' : 'off',
+    /* Disable screenshots and videos in CI for better performance - traces are more useful anyway */
+    screenshot: 'off',
+    video: 'off',
   },
 
   /* Configure projects for major browsers */
