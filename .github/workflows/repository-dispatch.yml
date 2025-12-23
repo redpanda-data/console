@@ -5,6 +5,7 @@ on:
     paths:
       - "frontend/**"
       - "backend/**"
+      - ".github/**"
     tags:
       - '*'
     branches:
@@ -41,3 +42,44 @@ jobs:
           repository: redpanda-data/console-enterprise
           event-type: push
           client-payload: '{"branch": "${{ github.ref_name }}", "commit_sha": "${{ github.sha }}"}'
+      - name: Wait for console-enterprise tests to complete
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        env:
+          GH_TOKEN: ${{ env.ACTIONS_BOT_TOKEN }}
+        run: |
+          echo "Waiting for console-enterprise workflows to start..."
+
+          branch="${{ github.ref_name }}"
+          start_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          echo "Looking for runs created after: $start_time"
+
+          # Wait for workflow runs to appear (retry for up to 3 minutes)
+          for i in {1..18}; do
+            run_ids=$(gh run list \
+              --repo redpanda-data/console-enterprise \
+              --branch "$branch" \
+              --event push \
+              --limit 20 \
+              --json databaseId,name,status,createdAt | \
+              jq --arg start_time "$start_time" -r '[.[] | select(.createdAt >= $start_time) | select(.name == "Backend verify" or .name == "Frontend tests" or .name == "Build Console Enterprise Docker image")] | .[].databaseId')
+
+            if [ -n "$run_ids" ]; then
+              count=$(echo "$run_ids" | wc -l | tr -d ' ')
+              echo "Found $count workflow run(s) created after $start_time"
+              break
+            fi
+
+            echo "No runs found yet, retrying in 10s... ($i/18)"
+            sleep 10
+          done
+
+          if [ -z "$run_ids" ]; then
+            echo "No workflow runs found after 3 minutes"
+            exit 1
+          fi
+
+          # Watch all runs in parallel - exits non-zero if any fail
+          echo "$run_ids" | xargs -P3 -I{} gh run watch {} --repo redpanda-data/console-enterprise --exit-status --compact
+
+          echo "All console-enterprise tests passed!"
