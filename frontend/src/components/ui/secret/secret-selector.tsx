@@ -23,15 +23,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from 'components/redpanda-ui/components/form';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
+import { Form } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import {
   Select,
@@ -233,39 +226,33 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
                 form.handleSubmit(handleCreateSecret)(e);
               }}
             >
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Secret name</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder={customText.secretNamePlaceholder}
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                      />
-                    </FormControl>
-                    <FormDescription>Secrets are stored in uppercase</FormDescription>
-                    <FormMessage />
-                  </FormItem>
+              <Field data-invalid={!!form.formState.errors.name}>
+                <FieldLabel htmlFor="secret-name">Secret name</FieldLabel>
+                <Input
+                  id="secret-name"
+                  placeholder={customText.secretNamePlaceholder}
+                  {...form.register('name')}
+                  onChange={(e) => form.setValue('name', e.target.value.toUpperCase())}
+                />
+                <FieldDescription>Secrets are stored in uppercase</FieldDescription>
+                {form.formState.errors.name && (
+                  <FieldError>{form.formState.errors.name.message}</FieldError>
                 )}
-              />
+              </Field>
 
-              <FormField
-                control={form.control}
-                name="value"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Secret value</FormLabel>
-                    <FormControl>
-                      <Input placeholder={customText.secretValuePlaceholder} type="password" {...field} />
-                    </FormControl>
-                    <FormDescription>{customText.secretValueDescription}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
+              <Field data-invalid={!!form.formState.errors.value}>
+                <FieldLabel htmlFor="secret-value">Secret value</FieldLabel>
+                <Input
+                  id="secret-value"
+                  placeholder={customText.secretValuePlaceholder}
+                  type="password"
+                  {...form.register('value')}
+                />
+                <FieldDescription>{customText.secretValueDescription}</FieldDescription>
+                {form.formState.errors.value && (
+                  <FieldError>{form.formState.errors.value.message}</FieldError>
                 )}
-              />
+              </Field>
 
               <DialogFooter>
                 <Button onClick={() => setIsCreateDialogOpen(false)} type="button" variant="outline">
