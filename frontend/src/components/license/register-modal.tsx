@@ -1,4 +1,3 @@
-import { CheckIcon } from '@chakra-ui/icons';
 import { ConnectError } from '@connectrpc/connect';
 import {
   Alert,
@@ -20,6 +19,7 @@ import {
   Text,
   VStack,
 } from '@redpanda-data/ui';
+import { CheckIcon } from 'components/icons';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
@@ -154,7 +154,7 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
                 justifyContent="center"
                 w="80px"
               >
-                <CheckIcon color="green.500" h="40px" w="40px" />
+                <CheckIcon color="#22c55e" size={40} />
               </Box>
               <VStack align="center" spacing={2}>
                 <Text fontSize="lg" fontWeight="bold" textAlign="center">

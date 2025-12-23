@@ -35,10 +35,10 @@ import {
   Text,
   Tooltip,
 } from '@redpanda-data/ui';
+import { RotateCwIcon } from 'components/icons';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { useEffect, useMemo, useState } from 'react';
-import { MdRefresh } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
 import { useListRolesQuery } from '../../../react-query/api/security';
@@ -247,7 +247,7 @@ const CreateUserModal = observer(
                   <IconButton
                     aria-label="Refresh"
                     display="inline-flex"
-                    icon={<MdRefresh size={16} />}
+                    icon={<RotateCwIcon size={16} />}
                     onClick={() => {
                       state.password = generatePassword(30, state.generateWithSpecialChars);
                     }}

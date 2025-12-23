@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { ChevronLeftIcon, ChevronRightIcon, SkipIcon, TrashIcon } from '@primer/octicons-react';
 import {
   Accordion,
   Box,
@@ -35,10 +34,10 @@ import {
   Tooltip,
   UnorderedList,
 } from '@redpanda-data/ui';
+import { ChevronLeftIcon, ChevronRightIcon, SkipIcon, TrashIcon, WarningIcon } from 'components/icons';
 import { action, autorun, type IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
-import { MdOutlineWarningAmber } from 'react-icons/md';
 
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
@@ -795,7 +794,7 @@ class ColAfter extends Component<{
         return (
           <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
             <InfoText
-              icon={<MdOutlineWarningAmber size={14} />}
+              icon={<WarningIcon size={14} />}
               iconColor="orangered"
               iconSize="18px"
               maxWidth="350px"

@@ -36,9 +36,8 @@ import {
   Tooltip,
 } from '@redpanda-data/ui';
 import type { Row } from '@tanstack/react-table';
+import { AlertIcon, CheckIcon, CrownIcon, ErrorIcon } from 'components/icons';
 import React, { type FC, type ReactNode } from 'react';
-import { FaCrown } from 'react-icons/fa';
-import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
 import ClusterHealthOverview from './cluster-health-overview';
@@ -118,7 +117,7 @@ class Overview extends PageComponent {
           {text}
           <Tooltip hasArrow label="This broker is the current controller of the cluster" placement="right">
             <Box>
-              <FaCrown color="#0008" size={16} />
+              <CrownIcon color="#0008" size={16} />
             </Box>
           </Tooltip>
         </Flex>
@@ -180,12 +179,12 @@ class Overview extends PageComponent {
                         <Flex gap={2}>
                           {api.clusterHealth?.offlineBrokerIds.includes(broker.brokerId) ? (
                             <>
-                              <MdError color={colors.brandError} size={18} />
+                              <ErrorIcon color={colors.brandError} size={18} />
                               Down
                             </>
                           ) : (
                             <>
-                              <MdCheck color={colors.green} size={18} />
+                              <CheckIcon color={colors.green} size={18} />
                               Running
                             </>
                           )}
@@ -411,7 +410,7 @@ function ClusterDetails() {
             ? [
                 [
                   <Flex alignItems="center" gap={1} key="error">
-                    <MdOutlineError color={colors.brandError} size={16} /> Failed to load license info
+                    <AlertIcon color={colors.brandError} size={16} /> Failed to load license info
                   </Flex>,
                 ],
               ]

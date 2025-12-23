@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { AlertIcon } from '@primer/octicons-react';
 import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@redpanda-data/ui';
+import { AlertIcon } from 'components/icons';
 import { observer } from 'mobx-react';
 import React, { type PropsWithChildren, useState } from 'react';
 

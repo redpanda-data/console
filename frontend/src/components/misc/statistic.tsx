@@ -1,5 +1,5 @@
 import { Box, Flex, type SpaceProps, Stat, StatLabel, StatNumber, Tooltip } from '@redpanda-data/ui';
-import { MdInfoOutline } from 'react-icons/md';
+import { InfoIcon } from 'components/icons';
 
 export function Statistic(
   p: {
@@ -21,7 +21,7 @@ export function Statistic(
           {Boolean(hint) && (
             <Tooltip hasArrow label={hint} placement="right">
               <Box alignSelf="start">
-                <MdInfoOutline size={18} />
+                <InfoIcon size={18} />
               </Box>
             </Tooltip>
           )}

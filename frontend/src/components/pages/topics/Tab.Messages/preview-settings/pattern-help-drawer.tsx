@@ -1,4 +1,3 @@
-import { InfoIcon } from '@primer/octicons-react';
 import {
   Button,
   Drawer,
@@ -11,6 +10,7 @@ import {
   Flex,
   useDisclosure,
 } from '@redpanda-data/ui';
+import { InfoIcon } from 'components/icons';
 
 import globExampleImg from '../../../../../assets/globExample.png';
 import { Code } from '../../../../../utils/tsx-utils';

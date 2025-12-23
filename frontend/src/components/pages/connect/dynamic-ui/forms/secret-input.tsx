@@ -1,4 +1,3 @@
-import { EyeIcon, EyeOffIcon } from '@heroicons/react/outline';
 import {
   Button,
   type ButtonProps,
@@ -10,6 +9,7 @@ import {
   Tooltip,
   useBoolean,
 } from '@redpanda-data/ui';
+import { EyeIcon, EyeOffIcon } from 'components/icons';
 import { observer, useLocalObservable } from 'mobx-react';
 
 export type SecretInputProps = {

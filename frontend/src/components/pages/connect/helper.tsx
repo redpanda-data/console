@@ -18,7 +18,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogOverlay,
-  AlertIcon,
   Box,
   Button,
   Empty,
@@ -33,16 +32,10 @@ import {
   useToast,
   VStack,
 } from '@redpanda-data/ui';
+import { AlertIcon, CheckCircleIcon, HourglassIcon, PauseCircleIcon, WarningIcon } from 'components/icons';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
 import { type CSSProperties, useRef, useState } from 'react';
-import {
-  MdCheckCircleOutline,
-  MdErrorOutline,
-  MdHourglassFull,
-  MdOutlinePauseCircle,
-  MdOutlineWarningAmber,
-} from 'react-icons/md';
 
 import AmazonS3 from '../../../assets/connectors/amazon-s3.png';
 import ApacheLogo from '../../../assets/connectors/apache.svg';
@@ -846,13 +839,13 @@ export const TaskState = observer(
   }
 );
 
-export const okIcon = <MdCheckCircleOutline color="#52c41a" />;
-export const warnIcon = <MdOutlineWarningAmber color="orange" />;
-export const errIcon = <MdErrorOutline color="orangered" />;
-const waitIcon = <MdHourglassFull color="#888" />;
+export const okIcon = <CheckCircleIcon color="#52c41a" />;
+export const warnIcon = <WarningIcon color="orange" />;
+export const errIcon = <AlertIcon color="orangered" />;
+const waitIcon = <HourglassIcon color="#888" />;
 const pauseIcon = (
   <span style={{ color: '#555' }}>
-    <MdOutlinePauseCircle />
+    <PauseCircleIcon />
   </span>
 );
 

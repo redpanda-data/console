@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { WarningIcon } from '@chakra-ui/icons';
 import { Flex, Text } from '@redpanda-data/ui';
+import { WarningIcon } from 'components/icons';
 import { observer } from 'mobx-react';
 import type { ReactNode } from 'react';
 

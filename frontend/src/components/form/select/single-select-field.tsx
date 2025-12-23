@@ -1,7 +1,7 @@
 import { FormControl, FormHelperText, FormLabel, HStack, Icon, Stack, Text } from '@redpanda-data/ui';
 import type { SelectOption } from '@redpanda-data/ui/dist/components/Inputs/Select/Select';
+import { PlusIcon } from 'components/icons';
 import type { ReactNode } from 'react';
-import { AiOutlinePlus } from 'react-icons/ai';
 
 import { SingleSelect } from '../../misc/select';
 import { ErrorInfoField } from '../error-info/error-info-field';
@@ -23,7 +23,7 @@ const CREATE_NEW_OPTION = {
   value: CREATE_NEW_OPTION_VALUE,
   label: (
     <HStack spacing={1}>
-      <Icon as={AiOutlinePlus} />
+      <Icon as={PlusIcon} />
       <Text fontWeight="semibold">Create New</Text>
     </HStack>
   ),

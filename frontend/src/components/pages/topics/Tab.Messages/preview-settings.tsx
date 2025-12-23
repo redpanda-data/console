@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { GearIcon, ThreeBarsIcon, XIcon } from '@primer/octicons-react';
 import { Box, Button, Checkbox, Flex, Input, Popover } from '@redpanda-data/ui';
 import { arrayMoveMutable } from 'array-move';
+import { CloseIcon, MenuIcon, SettingsIcon } from 'components/icons';
 import React from 'react';
 import {
   DragDropContext,
@@ -190,7 +190,7 @@ const PreviewTagSettings = ({
     <Flex borderRadius={1} gap={1} mb={1.5} p={1} placeItems="center">
       {/* Move Handle */}
       <span className="moveHandle" {...draggableProvided.dragHandleProps}>
-        <ThreeBarsIcon />
+        <MenuIcon />
       </span>
 
       {/* Enabled */}
@@ -237,7 +237,7 @@ const PreviewTagSettings = ({
         trigger={'click'}
       >
         <span className="inlineButton">
-          <GearIcon />
+          <SettingsIcon />
         </span>
       </Popover>
 
@@ -253,7 +253,7 @@ const PreviewTagSettings = ({
 
       {/* Remove */}
       <button className="inlineButton" onClick={onRemove} type="button">
-        <XIcon />
+        <CloseIcon />
       </button>
     </Flex>
   );

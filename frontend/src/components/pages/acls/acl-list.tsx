@@ -10,7 +10,6 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
 import {
   Alert,
   AlertDescription,
@@ -37,6 +36,7 @@ import {
   Tooltip,
 } from '@redpanda-data/ui';
 import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
+import { EditIcon, MoreHorizontalIcon, TrashIcon } from 'components/icons';
 import { isServerless } from 'config';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -49,7 +49,6 @@ import {
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { type FC, useRef, useState } from 'react';
-import { BsThreeDots } from 'react-icons/bs';
 import { Link as ReactRouterLink, useNavigate } from 'react-router-dom';
 
 import { DeleteRoleConfirmModal } from './delete-role-confirm-modal';
@@ -462,7 +461,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
 
       <Menu>
         <MenuButton as={Button} className="deleteButton" style={{ height: 'auto' }} variant="ghost">
-          <Icon as={BsThreeDots} />
+          <Icon as={MoreHorizontalIcon} />
         </MenuButton>
         <MenuList>
           {Boolean(api.isAdminApiConfigured) && (
@@ -596,7 +595,7 @@ const RolesTab = observer(() => {
                         }}
                         type="button"
                       >
-                        <Icon as={PencilIcon} />
+                        <Icon as={EditIcon} />
                       </button>
                       <DeleteRoleConfirmModal
                         buttonEl={

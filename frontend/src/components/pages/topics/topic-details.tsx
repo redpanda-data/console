@@ -19,9 +19,8 @@ import type { ConfigEntry, Topic, TopicAction } from '../../../state/rest-interf
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
 import '../../../utils/array-extensions';
-import { LockIcon } from '@primer/octicons-react';
 import { Box, Button, Code, Flex, Popover, Result, Tooltip } from '@redpanda-data/ui';
-import { MdError, MdOutlineWarning, MdOutlineWarningAmber } from 'react-icons/md';
+import { ErrorIcon, LockIcon, WarningIcon } from 'components/icons';
 
 import DeleteRecordsModal from './DeleteRecordsModal/delete-records-modal';
 import { TopicQuickInfoStatistic } from './quick-info';
@@ -138,7 +137,7 @@ const mkDocuTip = (text: string, icon?: JSX.Element) => (
 );
 const warnIcon = (
   <span style={{ fontSize: '15px', marginRight: '5px', transform: 'translateY(1px)', display: 'inline-block' }}>
-    <MdOutlineWarningAmber />
+    <WarningIcon />
   </span>
 );
 
@@ -304,7 +303,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
               placement="top"
             >
               <Box>
-                <MdError color={colors.brandError} size={18} />
+                <ErrorIcon color={colors.brandError} size={18} />
               </Box>
             </Tooltip>
           )}
@@ -315,7 +314,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
               placement="top"
             >
               <Box>
-                <MdOutlineWarning color={colors.brandWarning} size={18} />
+                <WarningIcon color={colors.brandWarning} size={18} />
               </Box>
             </Tooltip>
           )}

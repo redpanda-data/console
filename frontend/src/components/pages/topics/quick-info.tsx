@@ -15,8 +15,8 @@ import { api } from '../../../state/backend-api';
 import type { ConfigEntry, Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
 import { Box, Divider, Flex, Text, Tooltip } from '@redpanda-data/ui';
+import { InfoIcon } from 'components/icons';
 import type { ReactNode } from 'react';
-import { MdInfoOutline } from 'react-icons/md';
 
 import type { CleanupPolicyType } from './types';
 import { formatConfigValue } from '../../../utils/formatters/config-value-formatter';
@@ -75,7 +75,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
           placement="bottom"
         >
           <Flex alignItems="flex-end">
-            <MdInfoOutline size={16} />
+            <InfoIcon size={16} />
           </Flex>
         </Tooltip>
         <Text as="dt" fontWeight="bold">

@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { InfoIcon } from '@primer/octicons-react';
 import {
   Box,
   createStandaloneToast,
@@ -26,11 +25,11 @@ import {
   type ToastId,
   Tooltip,
 } from '@redpanda-data/ui';
+import { CopyIcon, DownloadIcon, HelpIcon, InfoIcon } from 'components/icons';
 import { motion } from 'framer-motion';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component, type CSSProperties, type ReactNode, useState } from 'react';
-import { MdContentCopy, MdHelpOutline, MdOutlineDownload } from 'react-icons/md';
 
 import { animProps } from './animation-props';
 import { toJson } from './json-utils';
@@ -514,10 +513,10 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
         {Boolean(this.props.bytesConsumed && this.props.messagesConsumed) && (
           <Flex fontSize="sm" fontWeight="bold" justifyContent="space-between">
             <Flex alignItems="center" gap={2}>
-              <MdOutlineDownload color={colors.brandOrange} size={14} /> {this.props.bytesConsumed}
+              <DownloadIcon color={colors.brandOrange} size={14} /> {this.props.bytesConsumed}
             </Flex>
             <Flex alignItems="center" gap={2}>
-              <MdContentCopy color={colors.brandOrange} size={14} /> {this.props.messagesConsumed} messages
+              <CopyIcon color={colors.brandOrange} size={14} /> {this.props.messagesConsumed} messages
             </Flex>
           </Flex>
         )}
@@ -644,7 +643,7 @@ export function LabelTooltip(p: {
   return (
     <Tooltip hasArrow label={content} maxW={p.maxW} placement="top">
       <Box display="inline-block" transform="translateY(2px)">
-        <MdHelpOutline size={13} />
+        <HelpIcon size={13} />
       </Box>
     </Tooltip>
   );

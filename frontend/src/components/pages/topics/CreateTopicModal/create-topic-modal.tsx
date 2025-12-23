@@ -1,4 +1,3 @@
-import { PlusIcon, XIcon } from '@primer/octicons-react';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import type React from 'react';
@@ -18,6 +17,7 @@ import {
   isSingleValue,
   Select,
 } from '@redpanda-data/ui';
+import { CloseIcon, PlusIcon } from 'components/icons';
 
 import { isServerless } from '../../../../config';
 import { api } from '../../../../state/backend-api';
@@ -506,7 +506,7 @@ const KeyValuePair = observer((p: { entries: TopicConfigEntry[]; entry: TopicCon
         }}
         variant="outline"
       >
-        <XIcon />
+        <CloseIcon />
       </Button>
     </Box>
   );

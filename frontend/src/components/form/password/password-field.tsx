@@ -11,8 +11,8 @@ import {
   Stack,
   useBoolean,
 } from '@redpanda-data/ui';
+import { EyeIcon, EyeOffIcon } from 'components/icons';
 import type { ReactNode } from 'react';
-import { IoMdEye, IoMdEyeOff } from 'react-icons/io';
 
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
@@ -50,7 +50,7 @@ export const PasswordField = ({ label, helperText, ...rest }: PasswordFieldProps
         />
         <InputRightElement>
           <Button onClick={setShowValue.toggle} variant="ghost">
-            {showValue ? <Icon as={IoMdEyeOff} /> : <Icon as={IoMdEye} />}
+            {showValue ? <Icon as={EyeOffIcon} /> : <Icon as={EyeIcon} />}
           </Button>
         </InputRightElement>
       </InputGroup>

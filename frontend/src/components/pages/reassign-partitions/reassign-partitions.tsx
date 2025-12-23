@@ -10,7 +10,6 @@
  */
 /** biome-ignore-all lint/correctness/useUniqueElementIds: legacy, needs refactor */
 
-import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
 import {
   Box,
   Button,
@@ -32,10 +31,10 @@ import {
   StepSeparator,
   StepStatus,
 } from '@redpanda-data/ui';
+import { AlertIcon, ChevronLeftIcon, ChevronRightIcon } from 'components/icons';
 import { motion } from 'framer-motion';
 import { autorun, computed, type IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { observer } from 'mobx-react';
-import { MdOutlineErrorOutline } from 'react-icons/md';
 
 import { ActiveReassignments } from './components/active-reassignments';
 import { type ApiData, computeReassignments, type TopicPartitions } from './logic/reassign-logic';
@@ -372,7 +371,7 @@ class ReassignPartitions extends PageComponent {
             <ModalContent minW="5xl">
               <ModalHeader>
                 <Flex alignItems="center" gap={2}>
-                  <MdOutlineErrorOutline size={18} />
+                  <AlertIcon size={18} />
                   Remove throttle config from topics
                 </Flex>
               </ModalHeader>

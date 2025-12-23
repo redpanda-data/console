@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { PencilIcon, TrashIcon } from '@heroicons/react/solid';
-import { SkipIcon } from '@primer/octicons-react';
 import {
   Accordion,
   Checkbox,
@@ -26,20 +24,21 @@ import {
   Tabs,
   Text,
 } from '@redpanda-data/ui';
+import {
+  CheckCircleIcon,
+  EditIcon,
+  FlameIcon,
+  HelpIcon,
+  HourglassIcon,
+  SkipIcon,
+  TrashIcon,
+  WarningIcon,
+} from 'components/icons';
 import { action, computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { useMemo } from 'react';
-import {
-  MdCheckCircleOutline,
-  MdHourglassBottom,
-  MdHourglassEmpty,
-  MdLocalFireDepartment,
-  MdOutlineQuiz,
-  MdOutlineWarningAmber,
-} from 'react-icons/md';
 
-import type { GroupDeletingMode } from './modals';
-import { DeleteOffsetsModal, EditOffsetsModal, type GroupOffset } from './modals';
+import { DeleteOffsetsModal, EditOffsetsModal, type GroupDeletingMode, type GroupOffset } from './modals';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import type { GroupDescription, GroupMemberDescription } from '../../../state/rest-interfaces';
@@ -362,7 +361,7 @@ const GroupByTopics = observer(
                     e.stopPropagation();
                   }}
                 >
-                  <PencilIcon />
+                  <EditIcon />
                 </IconButton>
                 <IconButton
                   disabledReason={cannotDeleteGroupOffsetsReason(groupProps.group)}
@@ -465,7 +464,7 @@ const GroupByTopics = observer(
                       disabledReason={cannotEditGroupReason(groupProps.group)}
                       onClick={() => groupProps.onEditOffsets([original])}
                     >
-                      <PencilIcon />
+                      <EditIcon />
                     </IconButton>
                     <IconButton
                       disabledReason={cannotDeleteGroupOffsetsReason(groupProps.group)}
@@ -532,12 +531,12 @@ const renderMergedID = (id?: string, clientId?: string) => {
 type StateIcon = 'stable' | 'completingrebalance' | 'preparingrebalance' | 'empty' | 'dead' | 'unknown';
 
 const stateIcons = new Map<StateIcon, JSX.Element>([
-  ['stable', <MdCheckCircleOutline color="#52c41a" key="stable" size={16} />],
-  ['completingrebalance', <MdHourglassBottom color="#52c41a" key="completingrebalance" size={16} />],
-  ['preparingrebalance', <MdHourglassEmpty color="orange" key="preparingrebalance" size={16} />],
-  ['empty', <MdOutlineWarningAmber color="orange" key="empty" size={16} />],
-  ['dead', <MdLocalFireDepartment color="orangered" key="dead" size={16} />],
-  ['unknown', <MdOutlineQuiz key="unknown" size={16} />],
+  ['stable', <CheckCircleIcon color="#52c41a" key="stable" size={16} />],
+  ['completingrebalance', <HourglassIcon color="#52c41a" key="completingrebalance" size={16} />],
+  ['preparingrebalance', <HourglassIcon color="orange" key="preparingrebalance" size={16} />],
+  ['empty', <WarningIcon color="orange" key="empty" size={16} />],
+  ['dead', <FlameIcon color="orangered" key="dead" size={16} />],
+  ['unknown', <HelpIcon key="unknown" size={16} />],
 ]);
 
 const stateIconNames: Record<StateIcon, string> = {
