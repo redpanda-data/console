@@ -280,7 +280,7 @@ const PipelineListPageContent = () => {
     onRowSelectionChange: setRowSelection,
     initialState: {
       pagination: {
-        pageSize: 10,
+        pageSize: 20,
       },
     },
     state: {
@@ -358,6 +358,21 @@ const PipelineListPageContent = () => {
   );
 };
 
+// Separate component to prevent unnecessary remounting
+const RedpandaConnectContent = () => (
+  <div className="flex flex-col gap-6">
+    <Text>
+      Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that drive
+      real-time analytics and actionable business insights. Integrate data across systems with hundreds of prebuilt
+      connectors, change data capture (CDC) capabilities, and YAML-configurable pipelines.{' '}
+      <ExternalLink href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
+        Learn more
+      </ExternalLink>
+    </Text>
+    <PipelineListPageContent />
+  </div>
+);
+
 export const PipelineListPage = () => {
   // Don't block on Kafka Connect query - it's optional and additive
   // If query fails or is loading, we just don't show the Kafka Connect tab (fail gracefully)
@@ -371,21 +386,6 @@ export const PipelineListPage = () => {
   // This is subtle and doesn't block the user experience
   const showKafkaConnectLoadingHint = isLoadingKafkaConnect && !kafkaConnectors;
 
-  // Always show Redpanda Connect content - don't block on Kafka Connect availability
-  const redpandaConnectContent = (
-    <div className="flex flex-col gap-6">
-      <Text>
-        Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that drive
-        real-time analytics and actionable business insights. Integrate data across systems with hundreds of prebuilt
-        connectors, change data capture (CDC) capabilities, and YAML-configurable pipelines.{' '}
-        <ExternalLink href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
-          Learn more
-        </ExternalLink>
-      </Text>
-      <PipelineListPageContent />
-    </div>
-  );
-
   // If Kafka Connect is not enabled, just show Redpanda Connect content
   if (!isKafkaConnectEnabled) {
     return (
@@ -398,7 +398,7 @@ export const PipelineListPage = () => {
         ) : (
           <div className="h-10" />
         )}
-        {redpandaConnectContent}
+        <RedpandaConnectContent />
       </div>
     );
   }
@@ -420,7 +420,9 @@ export const PipelineListPage = () => {
           </TabsTrigger>
         </TabsList>
         <TabsContents className="p-6">
-          <TabsContent value="redpanda-connect">{redpandaConnectContent}</TabsContent>
+          <TabsContent value="redpanda-connect">
+            <RedpandaConnectContent />
+          </TabsContent>
           <TabsContent value="kafka-connect">
             <div className="flex flex-col gap-6">
               <Text>
