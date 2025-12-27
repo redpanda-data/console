@@ -40,6 +40,7 @@ import { EditIcon, MoreHorizontalIcon, TrashIcon } from 'components/icons';
 import { isServerless } from 'config';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+import { parseAsString } from 'nuqs';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -65,6 +66,7 @@ import { AclPrincipalGroupEditor } from './principal-group-editor';
 import { ChangePasswordModal, ChangeRolesModal } from './user-edit-modals';
 import { UserRoleTags } from './user-permission-assignments';
 import ErrorResult from '../../../components/misc/error-result';
+import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 import { useDeleteAclMutation, useListACLAsPrincipalGroups } from '../../../react-query/api/acl';
 import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
@@ -315,13 +317,24 @@ const PermissionsListTab = observer(() => {
 });
 
 const UsersTab = observer(() => {
+  const [searchQuery, setSearchQuery] = useQueryStateWithCallback<string>(
+    {
+      onUpdate: () => {
+        // Query state is managed by the URL
+      },
+      getDefaultValue: () => '',
+    },
+    'q',
+    parseAsString.withDefault('')
+  );
+
   const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({
     name: u,
     type: 'SERVICE_ACCOUNT',
   }));
 
   const usersFiltered = users.filter((u) => {
-    const filter = uiSettings.aclList.usersTab.quickSearch;
+    const filter = searchQuery;
     if (!filter) {
       return true;
     }
@@ -345,11 +358,10 @@ const UsersTab = observer(() => {
       </Box>
 
       <SearchField
+        data-testid="search-field-input"
         placeholderText="Filter by name"
-        searchText={uiSettings.aclList.usersTab.quickSearch}
-        setSearchText={(x) => {
-          uiSettings.aclList.usersTab.quickSearch = x;
-        }}
+        searchText={searchQuery ?? ''}
+        setSearchText={(x) => setSearchQuery(x)}
         width="300px"
       />
 
