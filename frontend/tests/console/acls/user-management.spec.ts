@@ -261,4 +261,35 @@ test.describe('ACL User Management', () => {
     // Cancel and return
     await page.getByRole('button', { name: 'Cancel' }).click();
   });
+
+  test('should delete a user', async ({ page }) => {
+    // 1. Create a unique test user for deletion
+    await page.getByTestId('create-user-button').click();
+    const timestamp = Date.now();
+    const username = `test-user-delete-${timestamp}`;
+    await page.getByTestId('create-user-name').fill(username);
+    await page.getByRole('button', { name: 'Create' }).click();
+    await expect(page.getByRole('heading', { name: 'User created successfully' })).toBeVisible();
+    await page.getByRole('button', { name: 'Done' }).click();
+    await expect(page).toHaveURL('/security/users');
+
+    // 2. Verify user appears in the list
+    await expect(page.getByRole('link', { name: username, exact: true })).toBeVisible();
+
+    // 3. Navigate to user detail page
+    await page.getByRole('link', { name: username, exact: true }).click();
+    await expect(page).toHaveURL(`/security/users/${username}/details`);
+    await expect(page.getByRole('heading', { name: username, exact: true })).toBeVisible();
+
+    // 4. Click Delete user button
+    await page.getByRole('button', { name: 'Delete user' }).click();
+
+    // 5. Confirm deletion
+    const filterInput = page.getByTestId('txt-confirmation-delete');
+    await filterInput.fill(username);
+    await page.getByRole('button', { name: 'Delete' }).click();
+
+    // 6. Verify redirect to users list
+    await page.waitForURL('/security/users/', { timeout: 10000 });
+  });
 });
