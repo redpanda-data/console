@@ -47,7 +47,7 @@ import {
   type DeleteACLsRequest,
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
-import { type FC, useRef, useState } from 'react';
+import { type FC, useEffect, useRef, useState } from 'react';
 import { Link as ReactRouterLink, useNavigate } from 'react-router-dom';
 
 import { DeleteRoleConfirmModal } from './delete-role-confirm-modal';
@@ -99,6 +99,15 @@ const getCreateUserButtonProps = () => ({
 });
 
 const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
+  const navigate = useNavigate();
+
+  // Redirect to users tab if no tab is specified
+  useEffect(() => {
+    if (!tab) {
+      navigate('/security/users', { replace: true });
+    }
+  }, [tab, navigate]);
+
   if (api.serviceAccountsLoading && !api.serviceAccounts) {
     return DefaultSkeleton;
   }
@@ -154,12 +163,7 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
     },
   ].filter((x) => x !== null) as TabsItemProps[];
 
-  // todo: maybe there is a better way to sync the tab control to the path
   const activeTab = tabs.findIndex((x) => x.key === tab);
-  if (activeTab === -1) {
-    // No tab selected, default to users
-    appGlobal.historyPush('/security/users');
-  }
 
   return (
     <>
