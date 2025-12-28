@@ -70,6 +70,7 @@ import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
 import { Features } from '../../../state/supported-features';
+import { uiState } from '../../../state/ui-state';
 import { Code as CodeEl, DefaultSkeleton } from '../../../utils/tsx-utils';
 import { FeatureLicenseNotification } from '../../license/feature-license-notification';
 import { NullFallbackBoundary } from '../../misc/null-fallback-boundary';
@@ -100,6 +101,28 @@ const getCreateUserButtonProps = () => ({
 
 const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
   const navigate = useNavigate();
+
+  // Set up page title and breadcrumbs
+  useEffect(() => {
+    uiState.pageBreadcrumbs = [];
+    uiState.pageTitle = 'Access Control';
+    uiState.pageBreadcrumbs.push({ title: 'Access Control', linkTo: '/security' });
+
+    // Set up refresh handler
+    const refreshData = async () => {
+      await Promise.allSettled([api.refreshServiceAccounts(), rolesApi.refreshRoles(), api.refreshUserData()]);
+      await rolesApi.refreshRoleMembers();
+    };
+
+    appGlobal.onRefresh = async () => {
+      await refreshData();
+    };
+
+    // Initial data load
+    refreshData().catch(() => {
+      // Fail silently for now
+    });
+  }, []);
 
   // Redirect to users tab if no tab is specified
   useEffect(() => {
