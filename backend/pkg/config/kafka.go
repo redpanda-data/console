@@ -18,9 +18,10 @@ import (
 // Kafka required for opening a connection to Kafka
 type Kafka struct {
 	// General
-	Brokers  []string `yaml:"brokers"`
-	ClientID string   `yaml:"clientId"`
-	RackID   string   `yaml:"rackId"`
+	Brokers              []string `yaml:"brokers"`
+	ClientID             string   `yaml:"clientId"`
+	RackID               string   `yaml:"rackId"`
+	KafkaNextGenBalancer bool     `yaml:"kafkaNextGenBalancer"`
 
 	TLS  TLS       `yaml:"tls"`
 	SASL KafkaSASL `yaml:"sasl"`
