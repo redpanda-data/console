@@ -61,11 +61,15 @@ import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/se
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { useAIGatewayStatus } from 'hooks/use-ai-gateway-status';
 
-import { FormSchema, type FormValues, initialValues } from './schemas';
+import { createFormSchema, type FormValues, initialValues } from './schemas';
 
 export const AIAgentCreatePage = () => {
   const navigate = useNavigate();
+  const gatewayStatus = useAIGatewayStatus();
+  const isGatewayMode = gatewayStatus.isDeployed;
+
   const { mutateAsync: createAgent, isPending: isCreateAgentPending } = useCreateAIAgentMutation();
   const { data: secretsData } = useListSecretsQuery();
   const { data: mcpServersData } = useListMCPServersQuery();
@@ -83,10 +87,16 @@ export const AIAgentCreatePage = () => {
   } | null>(null);
   const [isCreateServiceAccountPending, setIsCreateServiceAccountPending] = useState(false);
 
-  // Form setup - always start with fresh values
+  // Form setup with dynamic schema based on gateway status
   const form = useForm<FormValues>({
-    resolver: zodResolver(FormSchema),
-    defaultValues: initialValues,
+    resolver: zodResolver(createFormSchema(isGatewayMode)),
+    defaultValues: {
+      ...initialValues,
+      ...(isGatewayMode && {
+        provider: undefined,
+        apiKeySecret: undefined,
+      }),
+    },
     mode: 'onChange',
   });
 
@@ -131,23 +141,30 @@ export const AIAgentCreatePage = () => {
       }));
   }, [secretsData]);
 
-  // Auto-detect and prefill API key secret based on provider
+  // Auto-detect and prefill API key secret based on provider (only in direct mode)
   const selectedProvider = form.watch('provider');
   useEffect(() => {
+    // Skip auto-detect in gateway mode
+    if (isGatewayMode) {
+      return;
+    }
+
     // Only auto-select if the field is currently empty
     if (form.getValues('apiKeySecret')) {
       return;
     }
 
     // Find the first secret matching the selected provider
-    const providerKeyword = selectedProvider.toUpperCase();
-    const providerSecret = availableSecrets.find((secret) => secret.id.toUpperCase().includes(providerKeyword));
+    if (selectedProvider) {
+      const providerKeyword = selectedProvider.toUpperCase();
+      const providerSecret = availableSecrets.find((secret) => secret.id.toUpperCase().includes(providerKeyword));
 
-    // If found, set it as the default value
-    if (providerSecret) {
-      form.setValue('apiKeySecret', providerSecret.id);
+      // If found, set it as the default value
+      if (providerSecret) {
+        form.setValue('apiKeySecret', providerSecret.id);
+      }
     }
-  }, [availableSecrets, selectedProvider, form]);
+  }, [availableSecrets, selectedProvider, form, isGatewayMode]);
 
   // Get available MCP servers (all servers, regardless of state)
   const availableMcpServers = useMemo(() => {
@@ -279,53 +296,80 @@ export const AIAgentCreatePage = () => {
     });
 
     // Build provider configuration based on selected provider
-    const apiKeyRef = `\${secrets.${values.apiKeySecret}}`;
     let providerConfig: AIAgent_Provider;
 
-    switch (values.provider) {
-      case 'anthropic':
+    if (isGatewayMode) {
+      // Gateway mode: Use special marker and derive provider from model selection
+      if (values.model === 'anthropic') {
         providerConfig = create(AIAgent_ProviderSchema, {
           provider: {
             case: 'anthropic',
             value: create(AIAgent_Provider_AnthropicSchema, {
-              apiKey: apiKeyRef,
-              baseUrl: values.baseUrl || undefined,
+              apiKey: '${ai_gateway}',
+              baseUrl: '',
             }),
           },
         });
-        break;
-      case 'google':
-        providerConfig = create(AIAgent_ProviderSchema, {
-          provider: {
-            case: 'google',
-            value: create(AIAgent_Provider_GoogleSchema, {
-              apiKey: apiKeyRef,
-              baseUrl: values.baseUrl || undefined,
-            }),
-          },
-        });
-        break;
-      case 'openaiCompatible':
-        providerConfig = create(AIAgent_ProviderSchema, {
-          provider: {
-            case: 'openaiCompatible',
-            value: create(AIAgent_Provider_OpenAICompatibleSchema, {
-              apiKey: apiKeyRef,
-              baseUrl: values.baseUrl,
-            }),
-          },
-        });
-        break;
-      default: // openai
+      } else {
         providerConfig = create(AIAgent_ProviderSchema, {
           provider: {
             case: 'openai',
             value: create(AIAgent_Provider_OpenAISchema, {
-              apiKey: apiKeyRef,
-              baseUrl: values.baseUrl || undefined,
+              apiKey: '${ai_gateway}',
+              baseUrl: '',
             }),
           },
         });
+      }
+    } else {
+      // Direct provider mode: Use existing logic
+      const apiKeyRef = `\${secrets.${values.apiKeySecret}}`;
+
+      switch (values.provider) {
+        case 'anthropic':
+          providerConfig = create(AIAgent_ProviderSchema, {
+            provider: {
+              case: 'anthropic',
+              value: create(AIAgent_Provider_AnthropicSchema, {
+                apiKey: apiKeyRef,
+                baseUrl: values.baseUrl || undefined,
+              }),
+            },
+          });
+          break;
+        case 'google':
+          providerConfig = create(AIAgent_ProviderSchema, {
+            provider: {
+              case: 'google',
+              value: create(AIAgent_Provider_GoogleSchema, {
+                apiKey: apiKeyRef,
+                baseUrl: values.baseUrl || undefined,
+              }),
+            },
+          });
+          break;
+        case 'openaiCompatible':
+          providerConfig = create(AIAgent_ProviderSchema, {
+            provider: {
+              case: 'openaiCompatible',
+              value: create(AIAgent_Provider_OpenAICompatibleSchema, {
+                apiKey: apiKeyRef,
+                baseUrl: values.baseUrl,
+              }),
+            },
+          });
+          break;
+        default: // openai
+          providerConfig = create(AIAgent_ProviderSchema, {
+            provider: {
+              case: 'openai',
+              value: create(AIAgent_Provider_OpenAISchema, {
+                apiKey: apiKeyRef,
+                baseUrl: values.baseUrl || undefined,
+              }),
+            },
+          });
+      }
     }
 
     await createAgent(

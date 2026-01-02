@@ -32,8 +32,28 @@ import { AI_AGENT_SECRET_TEXT, SecretSelector } from 'components/ui/secret/secre
 import { type Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect, useMemo } from 'react';
 import { type UseFormReturn } from 'react-hook-form';
+import { Loader2 } from 'lucide-react';
+import { useAIGatewayStatus } from 'hooks/use-ai-gateway-status';
 
 import { detectProvider, MODEL_OPTIONS_BY_PROVIDER } from '../../pages/agents/ai-agent-model';
+
+import OpenAILogo from 'assets/openai.svg';
+import AnthropicLogo from 'assets/anthropic.svg';
+
+const AI_GATEWAY_MODEL_OPTIONS = [
+  {
+    value: 'openai',
+    label: 'OpenAI',
+    icon: OpenAILogo,
+    description: 'GPT models via AI Gateway',
+  },
+  {
+    value: 'anthropic',
+    label: 'Anthropic',
+    icon: AnthropicLogo,
+    description: 'Claude models via AI Gateway',
+  },
+] as const;
 
 export interface LLMConfigSectionProps {
   mode: 'create' | 'edit';
@@ -49,6 +69,7 @@ export interface LLMConfigSectionProps {
   scopes: Scope[];
   showBaseUrl?: boolean;
   showMaxIterations?: boolean;
+  gatewayStatusOverride?: { isDeployed: boolean };
 }
 
 export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
@@ -59,7 +80,11 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
   scopes,
   showBaseUrl = false,
   showMaxIterations = true,
+  gatewayStatusOverride,
 }) => {
+  const gatewayStatus = useAIGatewayStatus();
+  const isGatewayMode = gatewayStatusOverride?.isDeployed ?? gatewayStatus.isDeployed;
+
   const selectedProvider = form.watch(fieldNames.provider) as keyof typeof MODEL_OPTIONS_BY_PROVIDER;
 
   const filteredModels = useMemo(() => {
@@ -81,164 +106,217 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
 
   return (
     <div className="space-y-4">
-      {mode === 'create' ? (
+      {gatewayStatus.isLoading && (
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <Text variant="muted">Checking AI Gateway status...</Text>
+        </div>
+      )}
+
+      {gatewayStatus.error && !isGatewayMode && (
+        <div className="rounded-md bg-yellow-50 p-3 text-sm text-yellow-800">
+          Unable to check AI Gateway status. Using direct provider configuration.
+        </div>
+      )}
+
+      {isGatewayMode ? (
         <FormField
           control={form.control}
-          name={fieldNames.provider}
+          name={fieldNames.model}
           render={({ field }) => (
             <FormItem>
-              <FormLabel required>Provider</FormLabel>
+              <FormLabel required>Model Provider</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select provider" />
+                    <SelectValue placeholder="Select model provider" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([providerId, provider]) => (
-                    <SelectItem key={providerId} value={providerId}>
+                  {AI_GATEWAY_MODEL_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
-                        <img alt={provider.label} className="h-4 w-4" src={provider.icon} />
-                        <span>{provider.label}</span>
+                        <img alt={option.label} className="h-4 w-4" src={option.icon} />
+                        <div className="flex flex-col">
+                          <Text className="font-medium">{option.label}</Text>
+                          <Text className="text-xs" variant="muted">
+                            {option.description}
+                          </Text>
+                        </div>
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <Text variant="muted">
+                AI Gateway is deployed. Authentication is handled automatically.
+              </Text>
               <FormMessage />
             </FormItem>
           )}
         />
       ) : (
-        <div className="space-y-2">
-          <Label>Provider</Label>
-          <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-            <Text variant="default">
-              {selectedProvider === 'openai' && 'OpenAI'}
-              {selectedProvider === 'anthropic' && 'Anthropic'}
-              {selectedProvider === 'google' && 'Google'}
-              {selectedProvider === 'openaiCompatible' && 'OpenAI Compatible'}
-              {!selectedProvider && 'Unknown Provider'}
-            </Text>
-          </div>
-        </div>
-      )}
-
-      <FormField
-        control={form.control}
-        name={fieldNames.model}
-        render={({ field }: { field: any }) => {
-          const providerData = selectedProvider ? MODEL_OPTIONS_BY_PROVIDER[selectedProvider] : null;
-          const detectedProvider = field.value ? detectProvider(field.value as string) : null;
-          const isFreeTextMode = providerData && providerData.models.length === 0;
-
-          if (isFreeTextMode) {
-            return (
-              <FormItem>
-                <FormLabel required>Model</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter model name (e.g., llama-3.1-70b)" {...field} />
-                </FormControl>
-                <Text variant="muted">Enter the model name exactly as supported by your API endpoint</Text>
-                <FormMessage />
-              </FormItem>
-            );
-          }
-
-          return (
-            <FormItem>
-              <FormLabel required>Model</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select AI model">
-                      {field.value && detectedProvider ? (
-                        <div className="flex items-center gap-2">
-                          <img alt={detectedProvider.label} className="h-4 w-4" src={detectedProvider.icon} />
-                          <span>{field.value}</span>
-                        </div>
-                      ) : (
-                        'Select AI model'
-                      )}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {providerData ? (
-                    <SelectGroup>
-                      <SelectLabel>
-                        <div className="flex items-center gap-2">
-                          <img alt={providerData.label} className="h-4 w-4" src={providerData.icon} />
-                          <span>{providerData.label}</span>
-                        </div>
-                      </SelectLabel>
-                      {filteredModels.map((model: { value: string; name: string; description: string }) => (
-                        <SelectItem key={model.value} value={model.value}>
-                          <div className="flex flex-col gap-0.5">
-                            <Text className="font-medium">{model.name}</Text>
-                            <Text className="text-xs" variant="muted">
-                              {model.description}
-                            </Text>
+        <>
+          {mode === 'create' ? (
+            <FormField
+              control={form.control}
+              name={fieldNames.provider}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel required>Provider</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select provider" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([providerId, provider]) => (
+                        <SelectItem key={providerId} value={providerId}>
+                          <div className="flex items-center gap-2">
+                            <img alt={provider.label} className="h-4 w-4" src={provider.icon} />
+                            <span>{provider.label}</span>
                           </div>
                         </SelectItem>
                       ))}
-                    </SelectGroup>
-                  ) : (
-                    <div className="p-2">
-                      <Text variant="muted">Please select a provider first</Text>
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
-      />
-
-      <FormField
-        control={form.control}
-        name={fieldNames.apiKeySecret}
-        render={({ field }: { field: any }) => (
-          <FormItem>
-            <FormLabel required>API Token</FormLabel>
-            <FormControl>
-              <SecretSelector
-                availableSecrets={availableSecrets}
-                customText={AI_AGENT_SECRET_TEXT}
-                onChange={field.onChange}
-                placeholder="Select from secrets store or create new"
-                scopes={scopes}
-                value={field.value}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {showBaseUrl && fieldNames.baseUrl && (
-        <FormField
-          control={form.control}
-          name={fieldNames.baseUrl}
-          render={({ field }: { field: any }) => {
-            const isRequired = selectedProvider === 'openaiCompatible';
-            return (
-              <FormItem>
-                <FormLabel required={isRequired}>Base URL {!isRequired && '(optional)'}</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://api.example.com/v1" {...field} />
-                </FormControl>
-                <Text variant="muted">
-                  {isRequired
-                    ? 'API endpoint URL for your OpenAI-compatible service'
-                    : 'Override the default API endpoint for this provider'}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ) : (
+            <div className="space-y-2">
+              <Label>Provider</Label>
+              <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                <Text variant="default">
+                  {selectedProvider === 'openai' && 'OpenAI'}
+                  {selectedProvider === 'anthropic' && 'Anthropic'}
+                  {selectedProvider === 'google' && 'Google'}
+                  {selectedProvider === 'openaiCompatible' && 'OpenAI Compatible'}
+                  {!selectedProvider && 'Unknown Provider'}
                 </Text>
+              </div>
+            </div>
+          )}
+
+          <FormField
+            control={form.control}
+            name={fieldNames.model}
+            render={({ field }: { field: any }) => {
+              const providerData = selectedProvider ? MODEL_OPTIONS_BY_PROVIDER[selectedProvider] : null;
+              const detectedProvider = field.value ? detectProvider(field.value as string) : null;
+              const isFreeTextMode = providerData && providerData.models.length === 0;
+
+              if (isFreeTextMode) {
+                return (
+                  <FormItem>
+                    <FormLabel required>Model</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter model name (e.g., llama-3.1-70b)" {...field} />
+                    </FormControl>
+                    <Text variant="muted">Enter the model name exactly as supported by your API endpoint</Text>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }
+
+              return (
+                <FormItem>
+                  <FormLabel required>Model</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select AI model">
+                          {field.value && detectedProvider ? (
+                            <div className="flex items-center gap-2">
+                              <img alt={detectedProvider.label} className="h-4 w-4" src={detectedProvider.icon} />
+                              <span>{field.value}</span>
+                            </div>
+                          ) : (
+                            'Select AI model'
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {providerData ? (
+                        <SelectGroup>
+                          <SelectLabel>
+                            <div className="flex items-center gap-2">
+                              <img alt={providerData.label} className="h-4 w-4" src={providerData.icon} />
+                              <span>{providerData.label}</span>
+                            </div>
+                          </SelectLabel>
+                          {filteredModels.map((model: { value: string; name: string; description: string }) => (
+                            <SelectItem key={model.value} value={model.value}>
+                              <div className="flex flex-col gap-0.5">
+                                <Text className="font-medium">{model.name}</Text>
+                                <Text className="text-xs" variant="muted">
+                                  {model.description}
+                                </Text>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ) : (
+                        <div className="p-2">
+                          <Text variant="muted">Please select a provider first</Text>
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
+          />
+
+          <FormField
+            control={form.control}
+            name={fieldNames.apiKeySecret}
+            render={({ field }: { field: any }) => (
+              <FormItem>
+                <FormLabel required>API Token</FormLabel>
+                <FormControl>
+                  <SecretSelector
+                    availableSecrets={availableSecrets}
+                    customText={AI_AGENT_SECRET_TEXT}
+                    onChange={field.onChange}
+                    placeholder="Select from secrets store or create new"
+                    scopes={scopes}
+                    value={field.value}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
-            );
-          }}
-        />
+            )}
+          />
+
+          {showBaseUrl && fieldNames.baseUrl && (
+            <FormField
+              control={form.control}
+              name={fieldNames.baseUrl}
+              render={({ field }: { field: any }) => {
+                const isRequired = selectedProvider === 'openaiCompatible';
+                return (
+                  <FormItem>
+                    <FormLabel required={isRequired}>Base URL {!isRequired && '(optional)'}</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://api.example.com/v1" {...field} />
+                    </FormControl>
+                    <Text variant="muted">
+                      {isRequired
+                        ? 'API endpoint URL for your OpenAI-compatible service'
+                        : 'Override the default API endpoint for this provider'}
+                    </Text>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+          )}
+        </>
       )}
 
       {showMaxIterations && (

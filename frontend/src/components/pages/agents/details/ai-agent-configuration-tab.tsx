@@ -57,6 +57,26 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { AIAgentModel, detectProvider, MODEL_OPTIONS_BY_PROVIDER } from '../ai-agent-model';
 
+import AnthropicLogo from 'assets/anthropic.svg';
+import OpenAILogo from 'assets/openai.svg';
+
+// TODO: Use these for gateway agent edit UI
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const AI_GATEWAY_MODEL_OPTIONS = [
+  {
+    value: 'openai',
+    label: 'OpenAI',
+    icon: OpenAILogo,
+    description: 'GPT models via AI Gateway',
+  },
+  {
+    value: 'anthropic',
+    label: 'Anthropic',
+    icon: AnthropicLogo,
+    description: 'Claude models via AI Gateway',
+  },
+] as const;
+
 type LocalAIAgent = {
   displayName: string;
   description: string;
@@ -277,6 +297,15 @@ export const AIAgentConfigurationTab = () => {
         name: secret.id,
       }));
   }, [secretsData]);
+
+  // Detect if this agent was created with AI Gateway
+  // TODO: Use this to show different UI for gateway agents
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const isGatewayAgent = useMemo(() => {
+    if (!aiAgentData?.aiAgent?.provider) return false;
+    const { apiKeyTemplate } = extractProviderInfo(aiAgentData.aiAgent.provider);
+    return apiKeyTemplate === '${ai_gateway}';
+  }, [aiAgentData]);
 
   const getResourceTierFromAgent = useCallback((resources?: { cpuShares?: string; memoryShares?: string }) => {
     if (!resources) {
