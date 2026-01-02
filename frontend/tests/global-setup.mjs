@@ -270,8 +270,8 @@ topic.creation.enable=false
   }
 }
 
-async function buildBackendImage(isEnterprise) {
-  console.log(`Building backend Docker image ${isEnterprise ? '(Enterprise)' : '(OSS)'}...`);
+async function buildBackendImage(isEnterprise, devMode = false) {
+  console.log(`Building backend Docker image ${isEnterprise ? '(Enterprise)' : '(OSS)'}${devMode ? ' [DEV MODE]' : ''}...`);
 
   let backendDir;
   if (isEnterprise) {
@@ -307,24 +307,33 @@ async function buildBackendImage(isEnterprise) {
       );
     }
 
-    const frontendBuildDir = resolve(__dirname, '../build');
-
-    // Check if frontend build exists
-    if (!existsSync(frontendBuildDir)) {
-      throw new Error(
-        `Frontend build directory not found: ${frontendBuildDir}\nRun "bun run build" before running E2E tests.`
-      );
-    }
-
     embedDir = join(backendDir, 'pkg/embed/frontend');
 
-    console.log(`Copying frontend assets to ${isEnterprise ? 'enterprise' : 'OSS'} backend...`);
-    console.log(`  From: ${frontendBuildDir}`);
-    console.log(`  To: ${embedDir}`);
+    if (devMode) {
+      // In dev mode, create minimal placeholder (backend won't serve frontend)
+      console.log('Dev mode: Creating minimal frontend placeholder...');
+      await execAsync(`mkdir -p "${embedDir}"`);
+      await execAsync(`echo "<!-- Dev mode: Frontend served separately -->" > "${embedDir}/index.html"`);
+      console.log('✓ Placeholder created');
+    } else {
+      // Normal mode: copy full frontend build
+      const frontendBuildDir = resolve(__dirname, '../build');
 
-    // Copy all files from build/ to pkg/embed/frontend/
-    await execAsync(`cp -r "${frontendBuildDir}"/* "${embedDir}"/`);
-    console.log('✓ Frontend assets copied');
+      // Check if frontend build exists
+      if (!existsSync(frontendBuildDir)) {
+        throw new Error(
+          `Frontend build directory not found: ${frontendBuildDir}\nRun "bun run build" before running E2E tests.`
+        );
+      }
+
+      console.log(`Copying frontend assets to ${isEnterprise ? 'enterprise' : 'OSS'} backend...`);
+      console.log(`  From: ${frontendBuildDir}`);
+      console.log(`  To: ${embedDir}`);
+
+      // Copy all files from build/ to pkg/embed/frontend/
+      await execAsync(`cp -r "${frontendBuildDir}"/* "${embedDir}"/`);
+      console.log('✓ Frontend assets copied');
+    }
 
     // Build Docker image using testcontainers
     // Docker doesn't allow Dockerfiles to reference files outside build context,
@@ -360,14 +369,18 @@ async function buildBackendImage(isEnterprise) {
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: (21) nested test environment setup with multiple configuration checks
-async function startBackendServer(network, isEnterprise, imageTag, state) {
-  console.log('Starting backend server container...');
+async function startBackendServer(network, isEnterprise, imageTag, state, devMode = false) {
+  console.log(`Starting backend server container${devMode ? ' [DEV MODE]' : ''}...`);
   console.log(`Image tag: ${imageTag}`);
   console.log(`Enterprise mode: ${isEnterprise}`);
 
-  const backendConfigPath = isEnterprise
-    ? resolve(__dirname, 'config/console.enterprise.config.yaml')
-    : resolve(__dirname, 'config/console.config.yaml');
+  const backendConfigPath = devMode
+    ? (isEnterprise
+        ? resolve(__dirname, 'config/console.enterprise.dev.config.yaml')
+        : resolve(__dirname, 'config/console.dev.config.yaml'))
+    : (isEnterprise
+        ? resolve(__dirname, 'config/console.enterprise.config.yaml')
+        : resolve(__dirname, 'config/console.config.yaml'));
 
   console.log(`Backend config path: ${backendConfigPath}`);
 
@@ -425,11 +438,15 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
   let backend;
   let containerId;
   try {
+    // In dev mode, expose backend on port 9090 (FE dev server proxies to it)
+    // In normal mode, backend serves FE on port 3000
+    const hostPort = devMode ? 9090 : 3000;
+
     console.log('Starting container...');
     console.log('Configuration summary:');
     console.log(`  - Network: ${network.getId ? network.getId() : 'unknown'}`);
     console.log('  - Alias: console-backend');
-    console.log('  - Port: 3000:3000');
+    console.log(`  - Port: 3000:${hostPort}`);
     console.log('  - Command: --config.filepath=/etc/console/config.yaml');
 
     // Create container without wait strategy first to get the ID immediately
@@ -437,7 +454,7 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
       .withNetwork(network)
       .withNetworkAliases('console-backend')
       .withNetworkMode(network.getName())
-      .withExposedPorts({ container: 3000, host: 3000 })
+      .withExposedPorts({ container: 3000, host: hostPort })
       .withBindMounts(bindMounts)
       .withCommand(['--config.filepath=/etc/console/config.yaml']);
 
@@ -540,9 +557,9 @@ async function startBackendServer(network, isEnterprise, imageTag, state) {
     }
 
     // Now wait for port to be ready
-    console.log('Waiting for port 3000 to be ready...');
-    await waitForPort(3000, 60, 1000);
-    console.log('✓ Port 3000 is ready');
+    console.log(`Waiting for port ${hostPort} to be ready...`);
+    await waitForPort(hostPort, 60, 1000);
+    console.log(`✓ Port ${hostPort} is ready`);
   } catch (error) {
     console.error('Failed to start backend container:', error.message);
 
@@ -823,13 +840,21 @@ async function cleanupOnFailure(state) {
 export default async function globalSetup(config = {}) {
   const isEnterprise = config?.metadata?.isEnterprise ?? false;
   const needsShadowlink = config?.metadata?.needsShadowlink ?? false;
+  const devMode = process.env.E2E_DEV_MODE === 'true';
 
   console.log('\n\n========================================');
   console.log(
-    `🚀 GLOBAL SETUP STARTED ${isEnterprise ? '(ENTERPRISE MODE)' : '(OSS MODE)'}${needsShadowlink ? ' + SHADOWLINK' : ''}`
+    `🚀 GLOBAL SETUP STARTED ${isEnterprise ? '(ENTERPRISE MODE)' : '(OSS MODE)'}${needsShadowlink ? ' + SHADOWLINK' : ''}${devMode ? ' [DEV MODE]' : ''}`
   );
   console.log('========================================\n');
   console.log('Starting testcontainers environment...');
+
+  if (devMode) {
+    console.log('\n⚡ DEV MODE ENABLED');
+    console.log('  - Backend will run on port 9090');
+    console.log('  - Start FE dev server with: bun start');
+    console.log('  - FE dev server will proxy to backend at localhost:9090\n');
+  }
 
   const state = {
     networkId: '',
@@ -841,11 +866,12 @@ export default async function globalSetup(config = {}) {
     sourceBackendId: '',
     isEnterprise,
     needsShadowlink,
+    devMode,
   };
 
   try {
     // Build backend Docker image
-    const imageTag = await buildBackendImage(isEnterprise);
+    const imageTag = await buildBackendImage(isEnterprise, devMode);
 
     // Setup Docker infrastructure
     const network = await setupDockerNetwork(state);
@@ -907,16 +933,23 @@ export default async function globalSetup(config = {}) {
       );
     } else {
       // Normal setup - single backend on existing cluster
-      await startBackendServer(network, isEnterprise, imageTag, state);
+      await startBackendServer(network, isEnterprise, imageTag, state, devMode);
     }
 
     // Wait for services to be ready
-    console.log('Waiting for backend to be ready...');
-    await waitForPort(3000, 60, 1000);
+    const backendPort = devMode ? 9090 : 3000;
+    console.log(`Waiting for backend to be ready on port ${backendPort}...`);
+    await waitForPort(backendPort, 60, 1000);
     console.log('Backend is ready');
 
-    console.log('Waiting for frontend to be ready...');
-    await waitForPort(3000, 60, 1000);
+    if (devMode) {
+      console.log('\n⚡ Backend is ready on port 9090');
+      console.log('⚡ Now start FE dev server: bun start');
+      console.log('⚡ Then run Playwright tests - they will use http://localhost:3000\n');
+    } else {
+      console.log('Waiting for frontend to be ready...');
+      await waitForPort(3000, 60, 1000);
+    }
 
     // Give services extra time to stabilize in CI (especially shadowlink replication)
     if (isEnterprise && needsShadowlink && process.env.CI) {
