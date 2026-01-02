@@ -25,7 +25,7 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 4 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
+  reporter: process.env.CI ? [['list'], ['html'], ['github']] : 'html',
   /* Global setup and teardown */
   globalSetup: './tests/global-setup.mjs',
   globalTeardown: './tests/global-teardown.mjs',
@@ -43,7 +43,11 @@ export default defineConfig({
     baseURL: process.env.REACT_APP_ORIGIN ?? 'http://localhost:3000',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
+    /* Capture screenshot on failure */
+    screenshot: 'only-on-failure',
+    /* Record video on failure */
+    video: 'retain-on-failure',
   },
 
   /* Configure projects for major browsers */
