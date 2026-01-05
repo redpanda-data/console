@@ -42,7 +42,6 @@ export const PipelineStatusBadge = ({ state }: { state?: Pipeline_State }) => {
           icon: <AlertCircle className="h-3 w-3" />,
           text: 'Error',
         };
-      case Pipeline_State.UNSPECIFIED:
       default:
         return {
           variant: 'gray' as const,

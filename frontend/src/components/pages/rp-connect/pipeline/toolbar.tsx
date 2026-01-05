@@ -57,6 +57,91 @@ type ToolbarProps = {
   pipelineState?: Pipeline_State;
 };
 
+type ButtonConfigFactoryParams = {
+  handleStart: () => void;
+  handleStop: () => void;
+  isStartPending: boolean;
+  isStopPending: boolean;
+};
+
+function createStoppedConfig({ handleStart, isStartPending }: ButtonConfigFactoryParams): ButtonConfig {
+  return {
+    icon: isStartPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />,
+    text: isStartPending ? 'Starting' : 'Start',
+    action: handleStart,
+    variant: isStartPending ? undefined : 'secondary',
+  };
+}
+
+function createRunningConfig({ handleStop, isStopPending }: ButtonConfigFactoryParams): ButtonConfig {
+  return {
+    icon: isStopPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />,
+    text: isStopPending ? 'Stopping' : 'Stop',
+    action: handleStop,
+    variant: isStopPending ? undefined : 'destructive',
+  };
+}
+
+function createStartingConfig({ handleStart, handleStop }: ButtonConfigFactoryParams): ButtonConfig {
+  return {
+    icon: <Loader2 className="h-4 w-4 animate-spin" />,
+    text: 'Starting',
+    dropdown: [
+      { label: 'Try again', icon: <RotateCcw className="h-4 w-4" />, action: handleStart },
+      { label: 'Stop', icon: <Pause className="h-4 w-4" />, action: handleStop, variant: 'destructive' },
+    ],
+  };
+}
+
+function createStoppingConfig({ handleStop, handleStart }: ButtonConfigFactoryParams): ButtonConfig {
+  return {
+    icon: <Loader2 className="h-4 w-4 animate-spin" />,
+    text: 'Stopping',
+    dropdown: [
+      { label: 'Try again', icon: <RotateCcw className="h-4 w-4" />, action: handleStop },
+      { label: 'Start', icon: <Play className="h-4 w-4" />, action: handleStart },
+    ],
+  };
+}
+
+function createErrorConfig({ handleStart }: ButtonConfigFactoryParams): ButtonConfig {
+  return {
+    icon: <AlertCircle className="h-4 w-4" />,
+    text: 'Error',
+    dropdown: [{ label: 'Start', icon: <Play className="h-4 w-4" />, action: handleStart }],
+  };
+}
+
+function createCompletedConfig({ handleStart }: ButtonConfigFactoryParams): ButtonConfig {
+  return {
+    icon: <Check className="h-4 w-4" />,
+    text: 'Restart',
+    action: handleStart,
+  };
+}
+
+function getPipelineButtonConfig(
+  pipelineState: Pipeline_State | undefined,
+  params: ButtonConfigFactoryParams
+): ButtonConfig | null {
+  switch (pipelineState) {
+    case PipelineState.STOPPED:
+      return createStoppedConfig(params);
+    case PipelineState.RUNNING:
+      return createRunningConfig(params);
+    case PipelineState.STARTING:
+      return createStartingConfig(params);
+    case PipelineState.STOPPING:
+      return createStoppingConfig(params);
+    case PipelineState.ERROR:
+      return createErrorConfig(params);
+    case PipelineState.COMPLETED:
+      return createCompletedConfig(params);
+    default:
+      return null;
+  }
+}
+
 export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: ToolbarProps) => {
   const navigate = useNavigate();
 
@@ -135,59 +220,21 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
     navigate(`/rp-connect/${pipelineId}/edit`);
   }, [navigate, pipelineId]);
 
-  const buttonConfig = useMemo((): ButtonConfig | null => {
-    switch (pipelineState) {
-      case PipelineState.STOPPED:
-        return {
-          icon: isStartPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />,
-          text: isStartPending ? 'Starting' : 'Start',
-          action: handleStart,
-          variant: isStartPending ? undefined : 'secondary',
-        };
-      case PipelineState.RUNNING:
-        return {
-          icon: isStopPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />,
-          text: isStopPending ? 'Stopping' : 'Stop',
-          action: handleStop,
-          variant: isStopPending ? undefined : 'destructive',
-        };
-      case PipelineState.STARTING:
-        return {
-          icon: <Loader2 className="h-4 w-4 animate-spin" />,
-          text: 'Starting',
-          dropdown: [
-            { label: 'Try again', icon: <RotateCcw className="h-4 w-4" />, action: handleStart },
-            { label: 'Stop', icon: <Pause className="h-4 w-4" />, action: handleStop, variant: 'destructive' },
-          ],
-        };
-      case PipelineState.STOPPING:
-        return {
-          icon: <Loader2 className="h-4 w-4 animate-spin" />,
-          text: 'Stopping',
-          dropdown: [
-            { label: 'Try again', icon: <RotateCcw className="h-4 w-4" />, action: handleStop },
-            { label: 'Start', icon: <Play className="h-4 w-4" />, action: handleStart },
-          ],
-        };
-      case PipelineState.ERROR:
-        return {
-          icon: <AlertCircle className="h-4 w-4" />,
-          text: 'Error',
-          dropdown: [{ label: 'Start', icon: <Play className="h-4 w-4" />, action: handleStart }],
-        };
-      case PipelineState.COMPLETED:
-        return {
-          icon: <Check className="h-4 w-4" />,
-          text: 'Restart',
-          action: handleStart,
-        };
-      default:
-        return null;
-    }
-  }, [pipelineState, handleStart, handleStop, isStartPending, isStopPending]);
+  const buttonConfig = useMemo(
+    () =>
+      getPipelineButtonConfig(pipelineState, {
+        handleStart,
+        handleStop,
+        isStartPending,
+        isStopPending,
+      }),
+    [pipelineState, handleStart, handleStop, isStartPending, isStopPending]
+  );
 
   const renderActionButton = useCallback(() => {
-    if (!buttonConfig) return null;
+    if (!buttonConfig) {
+      return null;
+    }
 
     if (buttonConfig.dropdown) {
       return (

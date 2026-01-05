@@ -53,9 +53,9 @@ const DetailRow = ({
   copyable?: boolean;
 }) => (
   <div className="grid h-7 min-w-0 grid-cols-[minmax(0,1.5fr)_minmax(0,2fr)_30px] gap-1">
-    {typeof label === 'string' ? <Text variant="label">{label}</Text> : label}
+    {typeof label === 'string' ? <Text variant="label">{label}</Text> : (label ?? null)}
     <Text className="truncate">{value ?? ''}</Text>
-    {copyable && value && <CopyButton content={value} size="sm" variant="ghost" />}
+    {copyable && value ? <CopyButton content={value} size="sm" variant="ghost" /> : null}
   </div>
 );
 
