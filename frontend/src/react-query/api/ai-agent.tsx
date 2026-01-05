@@ -23,7 +23,7 @@ import {
   stopAIAgent,
   updateAIAgent,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
-import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
+import { type MessageInit, type QueryOptions, SHORT_POLLING_INTERVAL } from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 // TODO: Make this dynamic so that pagination can be used properly
@@ -63,7 +63,7 @@ export const useGetAIAgentQuery = (
         const state = query?.state?.data?.aiAgent?.state;
         // Poll every 2 seconds when agent is starting or in unspecified state
         const shouldPoll = state === AIAgent_State.STARTING || state === AIAgent_State.UNSPECIFIED;
-        return shouldPoll ? 2 * 1000 : false;
+        return shouldPoll ? SHORT_POLLING_INTERVAL : false;
       }),
     refetchIntervalInBackground: options?.refetchIntervalInBackground ?? false,
   });

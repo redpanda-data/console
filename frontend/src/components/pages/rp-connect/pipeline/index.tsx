@@ -552,7 +552,7 @@ export default function PipelinePage() {
   return (
     <div>
       {mode === 'edit' && (
-        <div className="mt-5 mb-4">
+        <div className="mt-12 mb-4">
           <Heading level={1}>Edit pipeline</Heading>
         </div>
       )}

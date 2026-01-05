@@ -14,7 +14,7 @@ import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link as ReactRouterLink, useMatch } from 'react-router-dom';
 
-import { isEmbedded } from '../../config';
+import { isEmbedded, isFeatureFlagEnabled } from '../../config';
 import { api } from '../../state/backend-api';
 import { type BreadcrumbEntry, uiState } from '../../state/ui-state';
 import { IsDev } from '../../utils/env';
@@ -215,10 +215,23 @@ function useShouldHideHeader() {
     end: false,
   });
 
+  const pipelineDetailsMatch = useMatch({
+    path: '/rp-connect/:pipelineId',
+    end: true,
+  });
+
+  const pipelineEditMatch = useMatch({
+    path: '/rp-connect/:pipelineId/edit',
+    end: false,
+  });
+  const isNewRpcnUX = isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded();
+
   return (
     remoteMcpPagesMatch !== null ||
     aiAgentPagesMatch !== null ||
     knowledgeBasePagesMatch !== null ||
-    secretPagesMatch !== null
+    secretPagesMatch !== null ||
+    (pipelineDetailsMatch !== null && isNewRpcnUX) ||
+    (pipelineEditMatch !== null && isNewRpcnUX)
   );
 }

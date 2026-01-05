@@ -34,7 +34,12 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useMemo } from 'react';
-import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
+import {
+  MAX_PAGE_SIZE,
+  type MessageInit,
+  type QueryOptions,
+  SHORT_POLLING_INTERVAL,
+} from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const REDPANDA_CONNECT_LOGS_TOPIC = '__redpanda.connect.logs';
@@ -61,7 +66,7 @@ export const useGetPipelineQuery = (
         const state = query?.state?.data?.response?.pipeline?.state;
         // Poll every 2 seconds when pipeline is in transitional state (STARTING or STOPPING)
         const shouldPoll = state === Pipeline_State.STARTING || state === Pipeline_State.STOPPING;
-        return shouldPoll ? 2000 : false;
+        return shouldPoll ? SHORT_POLLING_INTERVAL : false;
       }),
     refetchIntervalInBackground: options?.refetchIntervalInBackground ?? false,
     refetchOnWindowFocus: options?.refetchOnWindowFocus,
