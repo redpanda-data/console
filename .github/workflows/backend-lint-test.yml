@@ -15,6 +15,7 @@ on:
       - 'backend/**.go'
       - 'backend/go.mod'
       - '.github/workflows/backend-lint-test.yml'
+  workflow_call:
 permissions:
   contents: read
 jobs:
