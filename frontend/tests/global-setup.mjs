@@ -720,11 +720,11 @@ async function startBackendServerWithConfig(
     // Check if container is still running
     const { stdout: status } = await execAsync(`docker inspect ${containerId} --format='{{.State.Status}}'`);
     if (status.trim() !== 'running') {
-      const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
       const { stdout: exitCode } = await execAsync(`docker inspect ${containerId} --format='{{.State.ExitCode}}'`);
-      console.error(`Container ${containerId} stopped (exit ${exitCode.trim()}):`);
+      const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
+      console.error(`Container ${containerId} stopped with exit code ${exitCode.trim()}:`);
       console.error(logs);
-      throw new Error(`Container stopped immediately with status: ${status.trim()}`);
+      throw new Error(`Container stopped immediately (exit code: ${exitCode.trim()})`);
     }
 
     await waitForPort(externalPort, 60, 1000);
@@ -732,15 +732,20 @@ async function startBackendServerWithConfig(
   } catch (error) {
     console.error(`Failed to start backend on port ${externalPort}:`, error.message);
 
+    // Try to extract container ID from error if we don't have it yet
+    if (!containerId && error.message) {
+      const containerIdMatch = error.message.match(CONTAINER_ID_REGEX);
+      containerId = containerIdMatch?.[1];
+    }
+
     if (containerId) {
       try {
         const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
-        const { stdout: inspect } = await execAsync(`docker inspect ${containerId}`);
-        const inspectJson = JSON.parse(inspect);
-        console.error('Container state:', JSON.stringify(inspectJson[0].State, null, 2));
-        console.error('Container logs:', logs);
+        const { stdout: exitCode } = await execAsync(`docker inspect ${containerId} --format='{{.State.ExitCode}}'`);
+        console.error(`Container logs (exit code ${exitCode.trim()}):`);
+        console.error(logs || '(no logs available)');
       } catch (logError) {
-        console.error('Could not fetch container diagnostics:', logError.message);
+        console.error('Could not fetch container logs:', logError.message);
       }
     }
 
