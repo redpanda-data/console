@@ -18,6 +18,7 @@ import { Form } from 'components/redpanda-ui/components/form';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
@@ -549,22 +550,30 @@ export default function PipelinePage() {
   };
 
   return (
-    <div className={cn((mode === 'create' || mode === 'edit') && 'grid grid-cols-[minmax(auto,950px)_260px] gap-4')}>
-      <div className="flex flex-1 flex-col gap-4">
-        {mode === 'view' && pipelineId && (
-          <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />
-        )}
-        {renderContent()}
-      </div>
-      {(mode === 'create' || mode === 'edit') && (
-        <CreatePipelineSidebar
-          componentList={componentListResponse?.components}
-          editorContent={yamlContent}
-          editorInstance={editorInstance}
-          isComponentListLoading={isComponentListLoading}
-          setYamlContent={handleSetYamlContent}
-        />
+    <div>
+      {mode === 'edit' && (
+        <div className="mt-5 mb-4">
+          <Heading level={1}>Edit pipeline</Heading>
+        </div>
       )}
+      <div className={cn((mode === 'create' || mode === 'edit') && 'grid grid-cols-[minmax(auto,950px)_260px] gap-4')}>
+        <div className="flex flex-1 flex-col gap-4">
+          {mode === 'view' && pipelineId && (
+            <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />
+          )}
+
+          {renderContent()}
+        </div>
+        {(mode === 'create' || mode === 'edit') && (
+          <CreatePipelineSidebar
+            componentList={componentListResponse?.components}
+            editorContent={yamlContent}
+            editorInstance={editorInstance}
+            isComponentListLoading={isComponentListLoading}
+            setYamlContent={handleSetYamlContent}
+          />
+        )}
+      </div>
     </div>
   );
 }

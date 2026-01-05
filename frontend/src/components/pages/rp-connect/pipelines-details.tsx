@@ -79,10 +79,16 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
     pipelinesApi.refreshPipelines(_force);
   }
 
+  componentWillUnmount() {
+    uiState.shouldHidePageHeader = false;
+  }
+
   render() {
     if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
+      uiState.shouldHidePageHeader = true;
       return <PipelinePage />;
     }
+
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }

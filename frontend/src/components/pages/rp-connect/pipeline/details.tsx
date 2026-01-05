@@ -70,7 +70,7 @@ export function Details({ readonly = false, pipeline }: DetailsProps) {
       <Card size="full">
         <CardContent>
           <div className="flex flex-col gap-4">
-            <DetailRow label="Name" value={pipeline.displayName} />
+            <DetailRow copyable label="ID" value={pipeline.id} />
             <DetailRow label="Description" value={pipeline.description} />
             <div className="flex flex-col">
               <DetailRow
@@ -88,8 +88,7 @@ export function Details({ readonly = false, pipeline }: DetailsProps) {
                 value={`${cpuToTasks(pipeline.resources?.cpuShares) ?? 0}`}
               />
             </div>
-            <DetailRow copyable label="Id" value={pipeline.id} />
-            <DetailRow copyable label="Url" value={pipeline.url} />
+            <DetailRow copyable label="URL" value={pipeline.url} />
           </div>
         </CardContent>
       </Card>

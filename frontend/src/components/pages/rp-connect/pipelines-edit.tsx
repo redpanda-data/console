@@ -17,6 +17,7 @@ import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { type Pipeline_ServiceAccount, PipelineUpdateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Link } from 'react-router-dom';
+import { uiState } from 'state/ui-state';
 
 import { formatPipelineError } from './errors';
 import PipelinePage from './pipeline';
@@ -64,8 +65,13 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
     pipelinesApi.refreshPipelines(_force);
   }
 
+  componentWillUnmount() {
+    uiState.shouldHidePageHeader = false;
+  }
+
   render() {
     if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
+      uiState.shouldHidePageHeader = true;
       return <PipelinePage />;
     }
     if (!pipelinesApi.pipelines) {

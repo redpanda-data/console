@@ -30,6 +30,7 @@ import {
   type ListPipelinesRequest as ListPipelinesRequestDataPlane,
   ListPipelinesRequestSchema as ListPipelinesRequestSchemaDataPlane,
   type Pipeline,
+  Pipeline_State,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useMemo } from 'react';
@@ -43,7 +44,7 @@ export const REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS = 5;
 export const useGetPipelineQuery = (
   { id }: { id: Pipeline['id'] },
   options?: QueryOptions<GenMessage<GetPipelineResponse>, GetPipelineResponse> & {
-    refetchInterval?: number | false;
+    refetchInterval?: number | false | ((query: { state?: { data?: GetPipelineResponse } }) => number | false);
     refetchIntervalInBackground?: boolean;
     refetchOnWindowFocus?: 'always' | boolean;
   }
@@ -54,8 +55,15 @@ export const useGetPipelineQuery = (
   });
   return useQuery(getPipeline, getPipelineRequest, {
     enabled: options?.enabled,
-    refetchInterval: options?.refetchInterval,
-    refetchIntervalInBackground: options?.refetchIntervalInBackground,
+    refetchInterval:
+      options?.refetchInterval ??
+      ((query) => {
+        const state = query?.state?.data?.response?.pipeline?.state;
+        // Poll every 2 seconds when pipeline is in transitional state (STARTING or STOPPING)
+        const shouldPoll = state === Pipeline_State.STARTING || state === Pipeline_State.STOPPING;
+        return shouldPoll ? 2000 : false;
+      }),
+    refetchIntervalInBackground: options?.refetchIntervalInBackground ?? false,
     refetchOnWindowFocus: options?.refetchOnWindowFocus,
   });
 };

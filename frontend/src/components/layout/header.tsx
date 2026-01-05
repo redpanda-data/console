@@ -42,7 +42,7 @@ const AppPageHeader = observer(() => {
 
   const lastBreadcrumb = breadcrumbItems.pop();
 
-  if (shouldHideHeader) {
+  if (shouldHideHeader || uiState.shouldHidePageHeader) {
     return null;
   }
 
@@ -144,6 +144,16 @@ function useShouldShowRefresh() {
     end: true,
   });
 
+  const connectWizardPagesMatch = useMatch({
+    path: '/rp-connect/wizard',
+    end: false,
+  });
+
+  const getStartedApiMatch = useMatch({
+    path: '/get-started/api',
+    end: false,
+  });
+
   // matches acls
   const aclCreateMatch = useMatch('/security/acls/create');
   const aclUpdateMatch = useMatch('/security/acls/:id/update');
@@ -172,6 +182,12 @@ function useShouldShowRefresh() {
     return false;
   }
   if (isRoleRelated) {
+    return false;
+  }
+  if (connectWizardPagesMatch) {
+    return false;
+  }
+  if (getStartedApiMatch) {
     return false;
   }
 
