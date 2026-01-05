@@ -83,6 +83,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
     if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
       return <PipelinePage />;
     }
+
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }
