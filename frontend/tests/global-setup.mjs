@@ -449,27 +449,14 @@ async function startBackendServer(network, isEnterprise, imageTag, state, devMod
     console.log(`  - Port: 3000:${hostPort}`);
     console.log('  - Command: --config.filepath=/etc/console/config.yaml');
 
-    // Create container with health check and restart policy
+    // Create container - don't use withWaitStrategy so we can see logs if it fails
     const container = new GenericContainer(imageTag)
       .withNetwork(network)
       .withNetworkAliases('console-backend')
       .withNetworkMode(network.getName())
       .withExposedPorts({ container: 3000, host: hostPort })
       .withBindMounts(bindMounts)
-      .withCommand(['--config.filepath=/etc/console/config.yaml'])
-      .withHealthCheck({
-        test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000/api/cluster/config'],
-        interval: 5000, // Check every 5 seconds
-        timeout: 3000,  // 3 second timeout
-        retries: 5,     // Retry 5 times before marking unhealthy
-        startPeriod: 10_000, // Give 10 seconds for app to start
-      })
-      .withRestartPolicy({
-        Name: 'on-failure',
-        MaximumRetryCount: 3, // Restart up to 3 times on failure
-      })
-      .withWaitStrategy(Wait.forHealthCheck())
-      .withStartupTimeout(120_000); // 2 minutes total startup timeout
+      .withCommand(['--config.filepath=/etc/console/config.yaml']);
 
     console.log('Calling container.start()...');
 
@@ -715,44 +702,67 @@ async function startBackendServerWithConfig(
   }
 
   let containerId;
+  let backend;
+
+  console.log(`Attempting to start container on port ${externalPort}...`);
+  console.log('Bind mounts:', JSON.stringify(bindMounts, null, 2));
+
   try {
-    const backend = await new GenericContainer(imageTag)
+    console.log('Calling GenericContainer.start()...');
+    const containerBuilder = new GenericContainer(imageTag)
       .withNetwork(network)
       .withNetworkAliases(networkAlias)
       .withExposedPorts({ container: 3000, host: externalPort })
       .withBindMounts(bindMounts)
       .withCommand(['--config.filepath=/etc/console/config.yaml'])
-      .withHealthCheck({
-        test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000/api/cluster/config'],
-        interval: 5000,
-        timeout: 3000,
-        retries: 5,
-        startPeriod: 10_000,
-      })
-      .withRestartPolicy({
-        Name: 'on-failure',
-        MaximumRetryCount: 3,
-      })
-      .withWaitStrategy(Wait.forHealthCheck())
-      .withStartupTimeout(120_000)
-      .start();
+      .withLogConsumer((stream) => {
+        stream.on('data', (line) => console.log(`[CONTAINER LOG] ${line}`));
+        stream.on('err', (line) => console.error(`[CONTAINER ERR] ${line}`));
+        stream.on('end', () => console.log('[CONTAINER] Stream ended'));
+      });
+
+    // In CI, start container with logs streaming to catch failures
+    if (process.env.CI) {
+      console.log('CI detected - container logs will be streamed in real-time');
+    }
+
+    backend = await containerBuilder.start();
+    console.log('GenericContainer.start() completed successfully');
 
     containerId = backend.getId();
     state.backendId = containerId;
     state.backendContainer = backend;
+    console.log(`✓ Container started with ID: ${containerId}`);
 
+  } catch (startError) {
+    console.error(`Error during container.start() on port ${externalPort}:`, startError.message);
+    // Logs are already captured by withLogConsumer above
+    throw startError;
+  }
+
+  try {
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Check if container is still running
     const { stdout: status } = await execAsync(`docker inspect ${containerId} --format='{{.State.Status}}'`);
     if (status.trim() !== 'running') {
+      console.error(`Container ${containerId} is not running (status: ${status.trim()})`);
       const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
       const { stdout: exitCode } = await execAsync(`docker inspect ${containerId} --format='{{.State.ExitCode}}'`);
-      console.error(`Container ${containerId} stopped (exit ${exitCode.trim()}):`);
+      console.error(`Exit code: ${exitCode.trim()}`);
+      console.error('Container logs:');
       console.error(logs);
       throw new Error(`Container stopped immediately with status: ${status.trim()}`);
     }
 
+    console.log(`✓ Container ${containerId} is running`);
+
+    // Show initial logs
+    console.log('Initial container logs (last 30 lines):');
+    const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1 | tail -30`);
+    console.log(logs || '(no logs yet)');
+
+    console.log(`Waiting for port ${externalPort} to be ready...`);
     await waitForPort(externalPort, 60, 1000);
     console.log(`✓ Backend ready at http://localhost:${externalPort}`);
   } catch (error) {
@@ -760,11 +770,14 @@ async function startBackendServerWithConfig(
 
     if (containerId) {
       try {
+        console.log('Fetching full diagnostics...');
         const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
         const { stdout: inspect } = await execAsync(`docker inspect ${containerId}`);
         const inspectJson = JSON.parse(inspect);
-        console.error('Container state:', JSON.stringify(inspectJson[0].State, null, 2));
-        console.error('Container logs:', logs);
+        console.error('=== FULL CONTAINER LOGS ===');
+        console.error(logs);
+        console.error('=== CONTAINER STATE ===');
+        console.error(JSON.stringify(inspectJson[0].State, null, 2));
       } catch (logError) {
         console.error('Could not fetch container diagnostics:', logError.message);
       }
@@ -978,9 +991,10 @@ export default async function globalSetup(config = {}) {
     }
 
     // Give services extra time to stabilize in CI (especially shadowlink replication)
+    // Shadowlink needs time to establish connection between clusters and start replication
     if (isEnterprise && needsShadowlink && process.env.CI) {
-      console.log('CI detected: Giving services 10 seconds to stabilize...');
-      await new Promise((resolve) => setTimeout(resolve, 10_000));
+      console.log('CI detected: Giving services 30 seconds to stabilize (shadowlink replication)...');
+      await new Promise((resolve) => setTimeout(resolve, 30_000));
       console.log('✓ Stabilization period complete');
     }
 
