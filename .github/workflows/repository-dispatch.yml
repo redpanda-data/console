@@ -1,12 +1,10 @@
 ---
 name: Repository dispatch on push or release
 on:
-  push:
-    paths:
-      - "frontend/**"
-      - "backend/**"
-    tags:
-      - '*'
+  workflow_run:
+    workflows: ["Backend verify", "Frontend Lint & Compile check"]
+    types:
+      - completed
     branches:
       - '**'
 permissions:
@@ -15,6 +13,7 @@ permissions:
 jobs:
   dispatch:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -27,17 +26,17 @@ jobs:
           parse-json-secrets: true
       - name: Repository Dispatch on Release
         uses: peter-evans/repository-dispatch@caebe2a7c967e9f927ff8780fea8e16e50b5ce40
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        if: ${{ startsWith(github.event.workflow_run.head_branch, 'v') }}
         with:
           token: ${{ env.ACTIONS_BOT_TOKEN }}
           repository: redpanda-data/console-enterprise
           event-type: release
-          client-payload: '{"branch": "master", "commit_sha": "${{ github.sha }}", "tag_name": "${{ github.event.release.tag_name }}"}'
+          client-payload: '{"branch": "master", "commit_sha": "${{ github.event.workflow_run.head_sha }}", "tag_name": "${{ github.event.workflow_run.head_branch }}"}'
       - name: Repository Dispatch on push
         uses: peter-evans/repository-dispatch@caebe2a7c967e9f927ff8780fea8e16e50b5ce40
-        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        if: ${{ !startsWith(github.event.workflow_run.head_branch, 'v') }}
         with:
           token: ${{ env.ACTIONS_BOT_TOKEN }}
           repository: redpanda-data/console-enterprise
           event-type: push
-          client-payload: '{"branch": "${{ github.ref_name }}", "commit_sha": "${{ github.sha }}"}'
+          client-payload: '{"branch": "${{ github.event.workflow_run.head_branch }}", "commit_sha": "${{ github.event.workflow_run.head_sha }}"}'
