@@ -18,6 +18,7 @@ import { Form } from 'components/redpanda-ui/components/form';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { useDebounce } from 'hooks/use-debounce';
@@ -171,7 +172,10 @@ const PipelinePageSkeleton = memo(({ mode }: { mode: PipelineMode }) => {
 });
 
 const pipelineFormSchema = z.object({
-  name: z.string().min(1, 'Pipeline name is required').max(100, 'Pipeline name must be less than 100 characters'),
+  name: z
+    .string()
+    .min(3, 'Pipeline name must be at least 3 characters')
+    .max(100, 'Pipeline name must be less than 100 characters'),
   description: z.string().optional(),
   computeUnits: z.number().min(MIN_TASKS).int(),
 });
@@ -192,6 +196,7 @@ export default function PipelinePage() {
 
   const form = useForm<PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema),
+    mode: 'onChange',
     defaultValues: {
       name: '',
       description: '',
@@ -482,7 +487,7 @@ export default function PipelinePage() {
   const content = (
     <>
       <Form {...form}>
-        <Details readonly={mode === 'view'} />
+        <Details pipeline={pipeline} readonly={mode === 'view'} />
       </Form>
 
       <YamlEditorCard
@@ -544,7 +549,7 @@ export default function PipelinePage() {
   };
 
   return (
-    <div className="grid grid-cols-[minmax(auto,_950px)_260px] gap-4">
+    <div className={cn((mode === 'create' || mode === 'edit') && 'grid grid-cols-[minmax(auto,950px)_260px] gap-4')}>
       <div className="flex flex-1 flex-col gap-4">
         {mode === 'view' && pipelineId && (
           <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />

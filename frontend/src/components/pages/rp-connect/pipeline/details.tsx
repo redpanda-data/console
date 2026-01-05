@@ -16,6 +16,7 @@ import {
   AccordionTrigger,
 } from 'components/redpanda-ui/components/accordion';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
   FormControl,
   FormDescription,
@@ -25,49 +26,71 @@ import {
   FormMessage,
 } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Label } from 'components/redpanda-ui/components/label';
+import { SkeletonCard } from 'components/redpanda-ui/components/skeleton';
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { InfoIcon } from 'lucide-react';
+import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import React from 'react';
 import { useFormContext } from 'react-hook-form';
 
-import { MAX_TASKS, MIN_TASKS } from '../tasks';
+import { cpuToTasks, MAX_TASKS, MIN_TASKS } from '../tasks';
 
 type DetailsProps = {
   readonly?: boolean;
+  pipeline?: Pipeline;
 };
 
-export function Details({ readonly = false }: DetailsProps) {
-  const { control, watch } = useFormContext();
-  const name = watch('name');
-  const description = watch('description');
-  const computeUnits = watch('computeUnits');
+const DetailRow = ({
+  label,
+  value,
+  copyable = false,
+}: {
+  label: React.ReactNode;
+  value?: string;
+  copyable?: boolean;
+}) => (
+  <div className="grid h-7 min-w-0 grid-cols-[minmax(0,1.5fr)_minmax(0,2fr)_30px] gap-1">
+    {typeof label === 'string' ? <Text variant="label">{label}</Text> : label}
+    <Text className="truncate">{value ?? ''}</Text>
+    {copyable && value && <CopyButton content={value} size="sm" variant="ghost" />}
+  </div>
+);
+
+export function Details({ readonly = false, pipeline }: DetailsProps) {
+  const { control } = useFormContext();
 
   if (readonly) {
+    if (!pipeline) {
+      return <SkeletonCard />;
+    }
     return (
       <Card size="full">
         <CardContent>
-          <div className="flex items-center gap-4">
-            <Label>Pipeline Name</Label>
-            <Text>{name}</Text>
+          <div className="flex flex-col gap-4">
+            <DetailRow label="Name" value={pipeline.displayName} />
+            <DetailRow label="Description" value={pipeline.description} />
+            <div className="flex flex-col">
+              <DetailRow
+                label={
+                  <Tooltip>
+                    <Text className="flex items-center gap-1" variant="label">
+                      Compute units
+                      <TooltipTrigger>
+                        <InfoIcon className="-mt-0.5 size-3 cursor-pointer text-muted-foreground" />
+                      </TooltipTrigger>
+                    </Text>
+                    <TooltipContent>One compute unit = 0.1 CPU and 400 MB memory</TooltipContent>
+                  </Tooltip>
+                }
+                value={`${cpuToTasks(pipeline.resources?.cpuShares) ?? 0}`}
+              />
+            </div>
+            <DetailRow copyable label="Id" value={pipeline.id} />
+            <DetailRow copyable label="Url" value={pipeline.url} />
           </div>
-
-          <Accordion collapsible type="single">
-            <AccordionItem value="advanced" variant="outlined">
-              <AccordionTrigger>Advanced Settings</AccordionTrigger>
-              <AccordionContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Text>{description || '-'}</Text>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Compute Units: {computeUnits}</Label>
-                  <Text variant="muted">One compute unit = 0.1 CPU and 400 MB memory</Text>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
         </CardContent>
       </Card>
     );
@@ -81,7 +104,7 @@ export function Details({ readonly = false }: DetailsProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel required>Pipeline Name</FormLabel>
+              <FormLabel required>Pipeline name</FormLabel>
               <FormControl>
                 <Input {...field} placeholder="Enter pipeline name" />
               </FormControl>
@@ -91,9 +114,9 @@ export function Details({ readonly = false }: DetailsProps) {
         />
 
         <Accordion collapsible type="single">
-          <AccordionItem value="advanced" variant="outlined">
-            <AccordionTrigger>Advanced Settings</AccordionTrigger>
-            <AccordionContent className="space-y-4">
+          <AccordionItem value="advanced" variant="contained">
+            <AccordionTrigger>Advanced settings</AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-4">
               <FormField
                 control={control}
                 name="description"
@@ -113,7 +136,7 @@ export function Details({ readonly = false }: DetailsProps) {
                 name="computeUnits"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Compute Units: {field.value}</FormLabel>
+                    <FormLabel>Compute units</FormLabel>
                     <FormControl>
                       <div className="flex items-center gap-2">
                         <Slider

@@ -14,6 +14,7 @@ import { ConnectError } from '@connectrpc/connect';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Group } from 'components/redpanda-ui/components/group';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Heading } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { Pause, Pencil, Play } from 'lucide-react';
 import {
@@ -29,6 +30,8 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
+import { PipelineStatusBadge } from './status-badge';
+
 type ToolbarProps = {
   pipelineId: string;
   pipelineName?: string;
@@ -43,9 +46,8 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
   const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
 
   const isRunning = pipelineState === PipelineState.RUNNING;
-  const isTransitioning = pipelineState === PipelineState.STARTING || pipelineState === PipelineState.STOPPING;
-  const isActionLoading = isStartPending || isStopPending || isDeletePending;
-  const isLoading = isActionLoading || isTransitioning;
+  const isStarting = pipelineState === PipelineState.STARTING || isStartPending;
+  const isStopping = pipelineState === PipelineState.STOPPING || isStopPending;
 
   const handleDelete = useCallback(
     (id: string) => {
@@ -118,28 +120,12 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
     navigate(`/rp-connect/${pipelineId}/edit`);
   }, [navigate, pipelineId]);
 
-  const primaryButtonProps = useMemo(() => {
-    if (isLoading) {
-      return {
-        icon: <Spinner size="sm" />,
-        children: isRunning ? 'Stopping...' : 'Starting...',
-      };
-    }
-    if (isRunning) {
-      return {
-        icon: <Pause />,
-        children: 'Stop',
-      };
-    }
-    return {
-      icon: <Play />,
-      children: 'Start',
-    };
-  }, [isRunning, isLoading]);
-
   return (
     <div className="flex items-center justify-between">
-      <Button disabled={isLoading} onClick={handleStartStop} variant="secondary" {...primaryButtonProps} />
+      <div className="flex items-center gap-2">
+        <Heading level={1}>{pipelineName ?? pipelineId}</Heading>
+        <PipelineStatusBadge state={pipelineState} />
+      </div>
 
       <div>
         <Group>
