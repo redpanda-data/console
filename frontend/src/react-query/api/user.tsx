@@ -52,6 +52,8 @@ export const useLegacyListUsersQuery = (
       return data;
     },
     enabled: options?.enabled,
+    refetchOnMount: 'always',
+    staleTime: 0,
   });
 
   const users: ListUsersResponse_User[] =
@@ -151,5 +153,39 @@ export const useUpdateUserMutationWithToast = () => {
         action: 'update',
         entity: 'user',
       }),
+  });
+};
+
+/**
+ * Hook to get a function that invalidates the users cache.
+ * Use this after MobX operations that modify users (create, delete).
+ */
+export const useInvalidateUsersCache = () => {
+  const queryClient = useQueryClient();
+
+  return async () => {
+    await queryClient.invalidateQueries({
+      queryKey: createConnectQueryKey({
+        schema: UserService.method.listUsers,
+        cardinality: 'infinite',
+      }),
+      exact: false,
+    });
+  };
+};
+
+/**
+ * Non-hook function to invalidate users cache.
+ * Use this in class components or outside of React components.
+ * Uses dynamic import to get the query client.
+ */
+export const invalidateUsersCache = async () => {
+  const { default: queryClient } = await import('../../query-client');
+  await queryClient.invalidateQueries({
+    queryKey: createConnectQueryKey({
+      schema: UserService.method.listUsers,
+      cardinality: 'infinite',
+    }),
+    exact: false,
   });
 };

@@ -152,11 +152,12 @@ class UserCreatePage extends PageComponent {
         mechanism: this.mechanism,
       });
 
-      // Refresh user list
+      // Refresh user list and invalidate React Query cache
       if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
         return false;
       }
-      await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), api.refreshServiceAccounts()]);
+      const { invalidateUsersCache } = await import('../../../react-query/api/user');
+      await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), invalidateUsersCache()]);
 
       // Add the user to the selected roles
       const roleAddPromises: Promise<unknown>[] = [];

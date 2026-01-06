@@ -129,7 +129,8 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
                     }
                   }
                   await Promise.allSettled(promises);
-                  await api.refreshServiceAccounts();
+                  const { invalidateUsersCache } = await import('../../../react-query/api/user');
+                  await invalidateUsersCache();
                   await rolesApi.refreshRoleMembers();
                   appGlobal.historyPush('/security/users/');
                 }}

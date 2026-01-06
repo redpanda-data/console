@@ -66,6 +66,7 @@ import { UserRoleTags } from './user-permission-assignments';
 import ErrorResult from '../../../components/misc/error-result';
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 import { useDeleteAclMutation, useListACLAsPrincipalGroups } from '../../../react-query/api/acl';
+import { useInvalidateUsersCache, useLegacyListUsersQuery } from '../../../react-query/api/user';
 import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
@@ -101,6 +102,7 @@ const getCreateUserButtonProps = () => ({
 
 const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
   const navigate = useNavigate();
+  const { data: usersData, isLoading: isUsersLoading } = useLegacyListUsersQuery();
 
   // Set up page title and breadcrumbs
   useEffect(() => {
@@ -110,7 +112,7 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
 
     // Set up refresh handler
     const refreshData = async () => {
-      await Promise.allSettled([api.refreshServiceAccounts(), rolesApi.refreshRoles(), api.refreshUserData()]);
+      await Promise.allSettled([rolesApi.refreshRoles(), api.refreshUserData()]);
       await rolesApi.refreshRoleMembers();
     };
 
@@ -131,7 +133,7 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
     }
   }, [tab, navigate]);
 
-  if (api.serviceAccountsLoading && !api.serviceAccounts) {
+  if (isUsersLoading && !usersData?.users?.length) {
     return DefaultSkeleton;
   }
 
@@ -213,9 +215,10 @@ export default AclList;
 type UsersEntry = { name: string; type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
 const PermissionsListTab = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const { data: usersData } = useLegacyListUsersQuery();
 
-  const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({
-    name: u,
+  const users: UsersEntry[] = (usersData?.users ?? []).map((u) => ({
+    name: u.name,
     type: 'SERVICE_ACCOUNT',
   }));
 
@@ -324,9 +327,10 @@ const UsersTab = () => {
     'q',
     parseAsString.withDefault('')
   );
+  const { data: usersData, isError, error } = useLegacyListUsersQuery();
 
-  const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({
-    name: u,
+  const users: UsersEntry[] = (usersData?.users ?? []).map((u) => ({
+    name: u.name,
     type: 'SERVICE_ACCOUNT',
   }));
 
@@ -344,8 +348,14 @@ const UsersTab = () => {
     }
   });
 
-  if (api.serviceAccountsError) {
-    return <ErrorResult error={api.serviceAccountsError} />;
+  if (isError && error) {
+    return (
+      <Alert status="error">
+        <AlertIcon />
+        <AlertTitle>Failed to load users</AlertTitle>
+        <AlertDescription>{error.message}</AlertDescription>
+      </Alert>
+    );
   }
   return (
     <Flex flexDirection="column" gap="4">
@@ -436,6 +446,7 @@ const UsersTab = () => {
 const UserActions = ({ user }: { user: UsersEntry }) => {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isChangeRolesModalOpen, setIsChangeRolesModalOpen] = useState(false);
+  const invalidateUsersCache = useInvalidateUsersCache();
 
   const onConfirmDelete = async () => {
     await api.deleteServiceAccount(user.name);
@@ -452,7 +463,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
 
     await Promise.allSettled(promises);
     await rolesApi.refreshRoleMembers();
-    await api.refreshServiceAccounts();
+    await invalidateUsersCache();
   };
 
   return (
@@ -636,6 +647,7 @@ const RolesTab = () => {
 const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
   const { data: principalGroups, isLoading } = useListACLAsPrincipalGroups();
   const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
+  const invalidateUsersCache = useInvalidateUsersCache();
 
   const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
   const [editorType, setEditorType] = useState<'create' | 'edit'>('create');
@@ -823,7 +835,7 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
                       }
                     }
 
-                    await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), api.refreshServiceAccounts()]);
+                    await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), invalidateUsersCache()]);
                   };
 
                   return (
