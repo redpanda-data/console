@@ -13,6 +13,7 @@ import {
   UserService,
 } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { createUser, listUsers, updateUser } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
+import queryClient from 'query-client';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import type { GetUsersResponse } from 'state/rest-interfaces';
@@ -53,7 +54,6 @@ export const useLegacyListUsersQuery = (
     },
     enabled: options?.enabled,
     refetchOnMount: 'always',
-    staleTime: 0,
   });
 
   const users: ListUsersResponse_User[] =
@@ -113,11 +113,11 @@ export const getSASLMechanism = (saslMechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512
 };
 
 export const useCreateUserMutation = () => {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
 
   return useMutation(createUser, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
+      await qc.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: UserService.method.listUsers,
           cardinality: 'infinite',
@@ -135,11 +135,11 @@ export const useCreateUserMutation = () => {
 };
 
 export const useUpdateUserMutationWithToast = () => {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
 
   return useMutation(updateUser, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
+      await qc.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: UserService.method.listUsers,
           cardinality: 'infinite',
@@ -161,10 +161,10 @@ export const useUpdateUserMutationWithToast = () => {
  * Use this after MobX operations that modify users (create, delete).
  */
 export const useInvalidateUsersCache = () => {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
 
   return async () => {
-    await queryClient.invalidateQueries({
+    await qc.invalidateQueries({
       queryKey: createConnectQueryKey({
         schema: UserService.method.listUsers,
         cardinality: 'infinite',
@@ -177,15 +177,12 @@ export const useInvalidateUsersCache = () => {
 /**
  * Non-hook function to invalidate users cache.
  * Use this in class components or outside of React components.
- * Uses dynamic import to get the query client.
  */
-export const invalidateUsersCache = async () => {
-  const { default: queryClient } = await import('../../query-client');
-  await queryClient.invalidateQueries({
+export const invalidateUsersCache = () =>
+  queryClient.invalidateQueries({
     queryKey: createConnectQueryKey({
       schema: UserService.method.listUsers,
       cardinality: 'infinite',
     }),
     exact: false,
   });
-};

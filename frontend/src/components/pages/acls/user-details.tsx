@@ -22,6 +22,7 @@ import { DeleteUserConfirmModal } from './delete-user-confirm-modal';
 import type { AclPrincipalGroup } from './models';
 import { ChangePasswordModal, ChangeRolesModal } from './user-edit-modals';
 import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
+import { invalidateUsersCache } from '../../../react-query/api/user';
 import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
@@ -129,7 +130,6 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
                     }
                   }
                   await Promise.allSettled(promises);
-                  const { invalidateUsersCache } = await import('../../../react-query/api/user');
                   await invalidateUsersCache();
                   await rolesApi.refreshRoleMembers();
                   appGlobal.historyPush('/security/users/');

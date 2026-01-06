@@ -42,6 +42,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
 import { useListRolesQuery } from '../../../react-query/api/security';
+import { invalidateUsersCache } from '../../../react-query/api/user';
 import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault, type CreateUserRequest } from '../../../state/rest-interfaces';
@@ -156,7 +157,6 @@ class UserCreatePage extends PageComponent {
       if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
         return false;
       }
-      const { invalidateUsersCache } = await import('../../../react-query/api/user');
       await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), invalidateUsersCache()]);
 
       // Add the user to the selected roles
