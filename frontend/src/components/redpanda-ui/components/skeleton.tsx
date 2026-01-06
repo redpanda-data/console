@@ -1,17 +1,17 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
-const skeletonVariants = cva('bg-accent animate-pulse', {
+const skeletonVariants = cva('animate-pulse bg-accent', {
   variants: {
     variant: {
       default: 'rounded-md',
       circle: 'rounded-full',
-      text: 'rounded-md h-4',
-      heading: 'rounded-md h-6',
-      avatar: 'rounded-full aspect-square',
-      button: 'rounded-md h-9',
+      text: 'h-4 rounded-md',
+      heading: 'h-6 rounded-md',
+      avatar: 'aspect-square rounded-full',
+      button: 'h-9 rounded-md',
       card: 'rounded-lg',
     },
     size: {
@@ -39,28 +39,25 @@ const skeletonVariants = cva('bg-accent animate-pulse', {
   },
 });
 
-interface SkeletonProps extends React.ComponentProps<'div'>, VariantProps<typeof skeletonVariants> {
-  testId?: string;
-}
+interface SkeletonProps extends React.ComponentProps<'div'>, VariantProps<typeof skeletonVariants>, SharedProps {}
 
 function Skeleton({ className, variant, size, width, testId, ...props }: SkeletonProps) {
   return (
     <div
+      className={cn(skeletonVariants({ variant, size, width }), className)}
       data-slot="skeleton"
       data-testid={testId}
-      className={cn(skeletonVariants({ variant, size, width }), className)}
       {...props}
     />
   );
 }
 
 // Compound skeleton components for common patterns
-interface SkeletonGroupProps {
+interface SkeletonGroupProps extends SharedProps {
   children: React.ReactNode;
   direction?: 'horizontal' | 'vertical';
   spacing?: 'none' | 'sm' | 'default' | 'lg';
   className?: string;
-  testId?: string;
 }
 
 function SkeletonGroup({
@@ -79,13 +76,13 @@ function SkeletonGroup({
 
   return (
     <div
-      data-testid={testId}
       className={cn(
         'flex',
         direction === 'horizontal' ? 'flex-row items-center' : 'flex-col',
         spacingClasses[spacing],
-        className,
+        className
       )}
+      data-testid={testId}
     >
       {children}
     </div>
@@ -120,10 +117,10 @@ function SkeletonText({ lines = 1, width = 'default' }: { lines?: number; width?
 
 function SkeletonCard() {
   return (
-    <div className="p-4 border rounded-lg bg-white dark:bg-gray-900">
+    <div className="rounded-lg border bg-card p-4">
       <SkeletonGroup direction="horizontal" spacing="default">
         <SkeletonAvatar />
-        <SkeletonGroup direction="vertical" spacing="sm" className="flex-1">
+        <SkeletonGroup className="flex-1" direction="vertical" spacing="sm">
           <Skeleton variant="heading" width="md" />
           <SkeletonText lines={2} width="lg" />
         </SkeletonGroup>

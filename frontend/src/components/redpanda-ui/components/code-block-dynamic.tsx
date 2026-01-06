@@ -25,7 +25,7 @@ import type {
 
 import { buttonVariants } from './button';
 import { useShiki } from '../lib/use-shiki';
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
 export function useEffectEvent<F extends (...params: never[]) => unknown>(callback: F): F {
   const ref = useRef(callback);
@@ -39,7 +39,9 @@ export function useCopyButton(onCopy: () => void | Promise<void>): [checked: boo
   const timeoutRef = useRef<number | null>(null);
 
   const onClick: MouseEventHandler = useEffectEvent(() => {
-    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    if (timeoutRef.current) {
+      window.clearTimeout(timeoutRef.current);
+    }
     const res = Promise.resolve(onCopy());
 
     // biome-ignore lint/complexity/noVoid: part of clipboard implementation
@@ -52,11 +54,14 @@ export function useCopyButton(onCopy: () => void | Promise<void>): [checked: boo
   });
 
   // Avoid updates after being unmounted
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-    };
-  }, []);
+  useEffect(
+    () => () => {
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current);
+      }
+    },
+    []
+  );
 
   return [checked, onClick];
 }
@@ -108,24 +113,25 @@ export type CodeBlockProps = HTMLAttributes<HTMLElement> & {
   testId?: string;
 };
 
-export const Pre = forwardRef<HTMLPreElement, HTMLAttributes<HTMLPreElement>>(({ className, ...props }, ref) => {
-  return (
-    <pre ref={ref} className={cn('min-w-full w-max *:flex *:flex-col', className)} {...props}>
-      {props.children}
-    </pre>
-  );
-});
+export const Pre = forwardRef<HTMLPreElement, HTMLAttributes<HTMLPreElement>>(({ className, ...props }, ref) => (
+  <pre className={cn('w-max min-w-full *:flex *:flex-col', className)} ref={ref} {...props}>
+    {props.children}
+  </pre>
+));
 
 Pre.displayName = 'Pre';
 
 export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: component requires multiple conditional rendering paths for title/copy/background
   ({ title, allowCopy = true, keepBackground = false, icon, viewportProps, children, testId, ...props }, ref) => {
     const areaRef = useRef<HTMLDivElement>(null);
     const onCopy = () => {
-      const pre = areaRef.current?.getElementsByTagName('pre').item(0);
-      if (!pre) return;
+      const preElement = areaRef.current?.getElementsByTagName('pre').item(0);
+      if (!preElement) {
+        return;
+      }
 
-      const clone = pre.cloneNode(true) as HTMLElement;
+      const clone = preElement.cloneNode(true) as HTMLElement;
       for (const node of Array.from(clone.querySelectorAll('.nd-copy-ignore'))) {
         node.replaceWith('\n');
       }
@@ -136,15 +142,15 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
 
     return (
       <figure
-        ref={ref}
         dir="ltr"
+        ref={ref}
         {...props}
-        data-testid={testId}
         className={cn(
           'group relative my-4 overflow-hidden rounded-lg border bg-fd-card text-sm outline-none',
           keepBackground && 'bg-(--shiki-light-bg) dark:bg-(--shiki-dark-bg)',
-          props.className,
+          props.className
         )}
+        data-testid={testId}
       >
         {title ? (
           <div className="flex items-center gap-2 bg-fd-secondary px-4 py-1.5">
@@ -165,18 +171,18 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
               </div>
             ) : null}
             <figcaption className="flex-1 truncate text-fd-muted-foreground">{title}</figcaption>
-            {allowCopy && <CopyButton className="-me-2" onCopy={onCopy} />}
+            {allowCopy ? <CopyButton className="-me-2" onCopy={onCopy} /> : null}
           </div>
         ) : (
-          allowCopy && <CopyButton className="absolute right-2 top-2 z-[2] backdrop-blur-md" onCopy={onCopy} />
+          allowCopy && <CopyButton className="absolute top-2 right-2 z-[2] backdrop-blur-md" onCopy={onCopy} />
         )}
         <div
           ref={areaRef}
           {...viewportProps}
           className={cn(
-            'text-[13px] py-3.5 overflow-auto [&_.line]:px-4 max-h-[600px] fd-scroll-container',
+            'fd-scroll-container max-h-[600px] overflow-auto py-3.5 text-[13px] [&_.line]:px-4',
             props['data-line-numbers'] && '[&_.line]:pl-3',
-            viewportProps?.className,
+            viewportProps?.className
           )}
           style={{
             counterSet: props['data-line-numbers']
@@ -189,7 +195,7 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
         </div>
       </figure>
     );
-  },
+  }
 );
 
 CodeBlock.displayName = 'CodeBlock';
@@ -205,17 +211,17 @@ function CopyButton({
 
   return (
     <button
-      type="button"
+      aria-label={checked ? 'Copied Text' : 'Copy Text'}
       className={cn(
         buttonVariants({
           variant: 'ghost',
         }),
         'transition-opacity group-hover:opacity-100 [&_svg]:size-3.5',
         !checked && '[@media(hover:hover)]:opacity-0',
-        className,
+        className
       )}
-      aria-label={checked ? 'Copied Text' : 'Copy Text'}
       onClick={onClick}
+      type="button"
       {...props}
     >
       <Check className={cn('transition-transform', !checked && 'scale-0')} />
@@ -224,7 +230,7 @@ function CopyButton({
   );
 }
 
-function pre(props: ComponentProps<'pre'> & { testId?: string }) {
+function pre(props: ComponentProps<'pre'> & SharedProps) {
   return (
     <CodeBlock {...props} className={cn('my-0', props.className)} testId={props.testId}>
       <Pre>{props.children}</Pre>
@@ -250,20 +256,20 @@ export function DynamicCodeBlock({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: initial value only
   const loading = useMemo(() => {
-    const Pre = (components.pre ?? 'pre') as 'pre';
-    const Code = (components.code ?? 'code') as 'code';
+    const PreComponent = (components.pre ?? 'pre') as 'pre';
+    const CodeComponent = (components.code ?? 'code') as 'code';
 
     return (
-      <Pre>
-        <Code>
+      <PreComponent>
+        <CodeComponent>
           {code.split('\n').map((line, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: part of DynamicCodeBlock implementation
-            <span key={i} className="line">
+            <span className="line" key={i}>
               {line}
             </span>
           ))}
-        </Code>
-      </Pre>
+        </CodeComponent>
+      </PreComponent>
     );
   }, []);
 

@@ -15,7 +15,8 @@ import {
 } from 'react-hook-form';
 
 import { Label } from './label';
-import { cn } from '../lib/utils';
+import { Heading, Text } from './typography';
+import { cn, type SharedProps } from '../lib/utils';
 
 const Form = FormProvider;
 
@@ -102,13 +103,11 @@ const FormField = <
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >({
   ...props
-}: ControllerProps<TFieldValues, TName>) => {
-  return (
-    <FormFieldContext.Provider value={{ name: props.name }}>
-      <Controller {...props} />
-    </FormFieldContext.Provider>
-  );
-};
+}: ControllerProps<TFieldValues, TName>) => (
+  <FormFieldContext.Provider value={{ name: props.name }}>
+    <Controller {...props} />
+  </FormFieldContext.Provider>
+);
 
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext);
@@ -139,9 +138,7 @@ type FormItemContextValue = {
 
 const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue);
 
-interface FormItemProps extends React.ComponentProps<'div'>, VariantProps<typeof formItemVariants> {
-  testId?: string;
-}
+interface FormItemProps extends React.ComponentProps<'div'>, VariantProps<typeof formItemVariants>, SharedProps {}
 
 const FormItem = React.forwardRef<HTMLDivElement, FormItemProps>(
   ({ className, layout, spacing, testId, ...props }, ref) => {
@@ -150,15 +147,15 @@ const FormItem = React.forwardRef<HTMLDivElement, FormItemProps>(
     return (
       <FormItemContext.Provider value={{ id }}>
         <div
-          ref={ref}
+          className={cn(formItemVariants({ layout, spacing }), className)}
           data-slot="form-item"
           data-testid={testId}
-          className={cn(formItemVariants({ layout, spacing }), className)}
+          ref={ref}
           {...props}
         />
       </FormItemContext.Provider>
     );
-  },
+  }
 );
 
 FormItem.displayName = 'FormItem';
@@ -171,15 +168,15 @@ const FormLabel = React.forwardRef<
 
   return (
     <Label
-      ref={ref}
-      data-slot="form-label"
+      className={cn('data-[error=true]:text-destructive', className)}
       data-error={!!error}
-      className={cn('data-[error=true]:text-destructive flex-row items-center', className)}
+      data-slot="form-label"
       htmlFor={formItemId}
+      ref={ref}
       {...props}
     >
       {children}
-      {required && <span className="text-destructive ml-1">*</span>}
+      {required ? <span className="ml-1 text-destructive">*</span> : null}
     </Label>
   );
 });
@@ -194,11 +191,11 @@ const FormControl = React.forwardRef<
 
   return (
     <SlotPrimitive.Slot
-      ref={ref}
+      aria-describedby={error ? `${formDescriptionId} ${formMessageId}` : `${formDescriptionId}`}
+      aria-invalid={!!error}
       data-slot="form-control"
       id={formItemId}
-      aria-describedby={!error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`}
-      aria-invalid={!!error}
+      ref={ref}
       {...props}
     />
   );
@@ -212,14 +209,14 @@ const FormDescription = React.forwardRef<HTMLParagraphElement, React.ComponentPr
 
     return (
       <p
-        ref={ref}
+        className={cn('text-muted-foreground text-xs', className)}
         data-slot="form-description"
         id={formDescriptionId}
-        className={cn('text-muted-foreground text-xs', className)}
+        ref={ref}
         {...props}
       />
     );
-  },
+  }
 );
 
 FormDescription.displayName = 'FormDescription';
@@ -235,16 +232,16 @@ const FormMessage = React.forwardRef<HTMLParagraphElement, React.ComponentProps<
 
     return (
       <p
-        ref={ref}
+        className={cn('text-destructive text-sm', className)}
         data-slot="form-message"
         id={formMessageId}
-        className={cn('text-destructive text-sm', className)}
+        ref={ref}
         {...props}
       >
         {body}
       </p>
     );
-  },
+  }
 );
 
 FormMessage.displayName = 'FormMessage';
@@ -256,47 +253,46 @@ interface FormContainerProps extends React.ComponentProps<'form'>, VariantProps<
 }
 
 const FormContainer = React.forwardRef<HTMLFormElement, FormContainerProps>(
-  ({ className, layout, width, testId, ...props }, ref) => {
-    return (
-      <form
-        ref={ref}
-        data-slot="form-container"
-        data-testid={testId}
-        className={cn(formVariants({ layout, width }), className)}
-        {...props}
-      />
-    );
-  },
+  ({ className, layout, width, testId, ...props }, ref) => (
+    <form
+      className={cn(formVariants({ layout, width }), className)}
+      data-slot="form-container"
+      data-testid={testId}
+      ref={ref}
+      {...props}
+    />
+  )
 );
 
 FormContainer.displayName = 'FormContainer';
 
-interface FormSectionProps extends React.ComponentProps<'div'>, VariantProps<typeof formSectionVariants> {
+interface FormSectionProps extends React.ComponentProps<'div'>, VariantProps<typeof formSectionVariants>, SharedProps {
   title?: string;
   description?: string;
-  testId?: string;
 }
 
 const FormSection = React.forwardRef<HTMLDivElement, FormSectionProps>(
-  ({ className, variant, spacing, title, description, children, testId, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        data-slot="form-section"
-        data-testid={testId}
-        className={cn(formSectionVariants({ variant, spacing }), className)}
-        {...props}
-      >
-        {(title || description) && (
-          <div className="mb-4">
-            {title && <h3 className="text-lg font-medium">{title}</h3>}
-            {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
-          </div>
-        )}
-        {children}
-      </div>
-    );
-  },
+  ({ className, variant, spacing, title, description, children, testId, ...props }, ref) => (
+    <div
+      className={cn(formSectionVariants({ variant, spacing }), className)}
+      data-slot="form-section"
+      data-testid={testId}
+      ref={ref}
+      {...props}
+    >
+      {title || description ? (
+        <div className="mb-4">
+          {title ? (
+            <Heading className="font-medium text-lg" level={3}>
+              {title}
+            </Heading>
+          ) : null}
+          {description ? <Text className="mt-1 text-muted-foreground text-sm">{description}</Text> : null}
+        </div>
+      ) : null}
+      {children}
+    </div>
+  )
 );
 
 FormSection.displayName = 'FormSection';
@@ -334,19 +330,19 @@ function SimpleFormField<
     <FormField
       {...fieldProps}
       render={({ field }) => (
-        <FormItem ref={ref} layout={layout}>
-          {label && (
+        <FormItem layout={layout} ref={ref}>
+          {label ? (
             <FormLabel className="leading-normal" required={required}>
               {label}
             </FormLabel>
-          )}
-          {description && descriptionPosition === 'top' && (
+          ) : null}
+          {description && descriptionPosition === 'top' ? (
             <FormDescription className="leading-snug">{description}</FormDescription>
-          )}
+          ) : null}
           <FormControl>{children(field)}</FormControl>
-          {description && descriptionPosition === 'bottom' && (
+          {description && descriptionPosition === 'bottom' ? (
             <FormDescription className="leading-snug">{description}</FormDescription>
-          )}
+          ) : null}
           <FormMessage />
         </FormItem>
       )}

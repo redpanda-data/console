@@ -1,17 +1,19 @@
 'use client';
 
+import { cva, type VariantProps } from 'class-variance-authority';
 import { ChevronDown } from 'lucide-react';
 import { AnimatePresence, type HTMLMotionProps, motion, type Transition } from 'motion/react';
 import { Accordion as AccordionPrimitive } from 'radix-ui';
 import React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
 
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
+
+type AccordionVariant = 'default' | 'contained';
 
 type AccordionItemContextType = {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  variant: 'default' | 'contained' | 'outlined';
+  variant: AccordionVariant;
 };
 
 const AccordionItemContext = React.createContext<AccordionItemContextType | undefined>(undefined);
@@ -24,20 +26,15 @@ const useAccordionItem = (): AccordionItemContextType => {
   return context;
 };
 
-type AccordionProps = React.ComponentProps<typeof AccordionPrimitive.Root> & {
-  testId?: string;
-};
+const AccordionContext = React.createContext<{ variant: AccordionVariant }>({ variant: 'default' });
 
-function Accordion({ testId, ...props }: AccordionProps) {
-  return <AccordionPrimitive.Root data-slot="accordion" data-testid={testId} {...props} />;
-}
+const useAccordion = () => React.useContext(AccordionContext);
 
-const accordionItemVariants = cva('', {
+const accordionVariants = cva('', {
   variants: {
     variant: {
-      default: 'border-b',
-      contained: '',
-      outlined: 'rounded-md border-1 bg-white dark:bg-base-900',
+      default: '',
+      contained: 'space-y-2',
     },
   },
   defaultVariants: {
@@ -45,21 +42,59 @@ const accordionItemVariants = cva('', {
   },
 });
 
-type AccordionItemProps = React.ComponentProps<typeof AccordionPrimitive.Item> &
-  VariantProps<typeof accordionItemVariants> & {
-    children: React.ReactNode;
-    testId?: string;
-  };
+export type AccordionVariants = VariantProps<typeof accordionVariants>;
 
-function AccordionItem({ className, children, testId, variant = 'default', ...props }: AccordionItemProps) {
-  const [isOpen, setIsOpen] = React.useState(false);
+type AccordionProps = React.ComponentProps<typeof AccordionPrimitive.Root> & SharedProps & AccordionVariants;
+
+function Accordion({ testId, variant = 'default', className, ...props }: AccordionProps) {
+  const resolvedVariant: AccordionVariant = variant ?? 'default';
+  const contextValue = React.useMemo(() => ({ variant: resolvedVariant }), [resolvedVariant]);
 
   return (
-    <AccordionItemContext.Provider value={{ isOpen, setIsOpen, variant: variant || 'default' }}>
+    <AccordionContext.Provider value={contextValue}>
+      <AccordionPrimitive.Root
+        className={cn(accordionVariants({ variant: resolvedVariant }), className)}
+        data-slot="accordion"
+        data-testid={testId}
+        data-variant={resolvedVariant}
+        {...props}
+      />
+    </AccordionContext.Provider>
+  );
+}
+
+const accordionItemVariants = cva('', {
+  variants: {
+    variant: {
+      default: 'border-b',
+      contained: 'overflow-hidden rounded-xl border bg-card',
+    },
+  },
+  defaultVariants: {
+    variant: 'default',
+  },
+});
+
+export type AccordionItemVariants = VariantProps<typeof accordionItemVariants>;
+
+type AccordionItemProps = React.ComponentProps<typeof AccordionPrimitive.Item> &
+  SharedProps & {
+    children: React.ReactNode;
+  };
+
+function AccordionItem({ className, children, testId, ...props }: AccordionItemProps) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const { variant } = useAccordion();
+
+  const contextValue = React.useMemo(() => ({ isOpen, setIsOpen, variant }), [isOpen, variant]);
+
+  return (
+    <AccordionItemContext.Provider value={contextValue}>
       <AccordionPrimitive.Item
+        className={cn(accordionItemVariants({ variant }), className)}
         data-slot="accordion-item"
         data-testid={testId}
-        className={cn(accordionItemVariants({ variant }), className)}
+        data-variant={variant}
         {...props}
       >
         {children}
@@ -69,13 +104,12 @@ function AccordionItem({ className, children, testId, variant = 'default', ...pr
 }
 
 const accordionTriggerVariants = cva(
-  'flex flex-1 text-start items-center justify-between font-medium transition-colors',
+  'flex flex-1 items-center gap-4 text-start font-medium outline-none transition-colors focus-visible:underline',
   {
     variants: {
       variant: {
         default: 'py-4 hover:underline',
-        contained: 'w-full rounded-md border bg-muted/50 px-4 py-2 text-sm hover:bg-muted',
-        outlined: 'w-full rounded-t-md px-3 py-2 text-sm hover:bg-muted/50',
+        contained: 'rounded-t-xl bg-muted/50 px-6 py-4 text-base tracking-tight hover:bg-muted/70 active:bg-muted',
       },
     },
     defaultVariants: {
@@ -84,11 +118,15 @@ const accordionTriggerVariants = cva(
   }
 );
 
-type AccordionTriggerProps = React.ComponentProps<typeof AccordionPrimitive.Trigger> & {
-  transition?: Transition;
-  chevron?: boolean;
-  testId?: string;
-};
+export type AccordionTriggerVariants = VariantProps<typeof accordionTriggerVariants>;
+
+type AccordionTriggerProps = React.ComponentProps<typeof AccordionPrimitive.Trigger> &
+  SharedProps & {
+    transition?: Transition;
+    chevron?: boolean;
+    start?: React.ReactNode;
+    end?: React.ReactNode;
+  };
 
 const AccordionTrigger = React.forwardRef<HTMLButtonElement, AccordionTriggerProps>(
   (
@@ -97,10 +135,12 @@ const AccordionTrigger = React.forwardRef<HTMLButtonElement, AccordionTriggerPro
       children,
       transition = { type: 'spring', stiffness: 150, damping: 22 },
       chevron = true,
+      start,
+      end,
       testId,
       ...props
     },
-    ref,
+    ref
   ) => {
     const triggerRef = React.useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => triggerRef.current || document.createElement('button'));
@@ -108,7 +148,9 @@ const AccordionTrigger = React.forwardRef<HTMLButtonElement, AccordionTriggerPro
 
     React.useEffect(() => {
       const node = triggerRef.current;
-      if (!node) return;
+      if (!node) {
+        return;
+      }
 
       const observer = new MutationObserver((mutationsList) => {
         for (const mutation of mutationsList) {
@@ -129,54 +171,69 @@ const AccordionTrigger = React.forwardRef<HTMLButtonElement, AccordionTriggerPro
       };
     }, [setIsOpen]);
 
-    const chevronSize = variant === 'contained' || variant === 'outlined' ? 'size-4' : 'size-5';
-
     return (
-      <AccordionPrimitive.Header data-slot="accordion-header" className="flex">
+      <AccordionPrimitive.Header className="flex" data-slot="accordion-header">
         <AccordionPrimitive.Trigger
-          ref={triggerRef}
+          className={cn(accordionTriggerVariants({ variant }), className)}
           data-slot="accordion-trigger"
           data-testid={testId}
-          className={cn(accordionTriggerVariants({ variant }), className)}
+          data-variant={variant}
+          ref={triggerRef}
           {...props}
         >
-          {children}
+          {start ? (
+            <div className="shrink-0" data-slot="accordion-trigger-start">
+              {start}
+            </div>
+          ) : null}
 
-          {chevron && (
+          <div className="min-w-0 flex-1" data-slot="accordion-trigger-content">
+            {children}
+          </div>
+
+          {end ? (
+            <div className="shrink-0" data-slot="accordion-trigger-end">
+              {end}
+            </div>
+          ) : null}
+
+          {chevron ? (
             <motion.div
-              data-slot="accordion-trigger-chevron"
               animate={{ rotate: isOpen ? 180 : 0 }}
+              className="shrink-0"
+              data-slot="accordion-trigger-chevron"
               transition={transition}
             >
-              <ChevronDown className={cn(chevronSize, 'shrink-0')} />
+              <ChevronDown className="size-5" />
             </motion.div>
-          )}
+          ) : null}
         </AccordionPrimitive.Trigger>
       </AccordionPrimitive.Header>
     );
-  },
+  }
 );
 
 AccordionTrigger.displayName = 'AccordionTrigger';
 
-type AccordionContentProps = React.ComponentProps<typeof AccordionPrimitive.Content> &
-  HTMLMotionProps<'div'> & {
-    transition?: Transition;
-    testId?: string;
-  };
-
-const accordionContentVariants = cva('pb-4 pt-0', {
+const accordionContentVariants = cva('text-sm', {
   variants: {
     variant: {
-      default: 'text-sm',
-      contained: 'text-sm',
-      outlined: 'px-4 pb-4 pt-2 text-sm',
+      default: 'pt-0 pb-4',
+      contained: 'bg-card px-4 py-6',
     },
   },
   defaultVariants: {
     variant: 'default',
   },
 });
+
+export type AccordionContentVariants = VariantProps<typeof accordionContentVariants>;
+
+type AccordionContentProps = React.ComponentProps<typeof AccordionPrimitive.Content> &
+  HTMLMotionProps<'div'> &
+  SharedProps & {
+    transition?: Transition;
+  };
 
 function AccordionContent({
   className,
@@ -189,27 +246,28 @@ function AccordionContent({
 
   return (
     <AnimatePresence>
-      {isOpen && (
+      {isOpen ? (
         <AccordionPrimitive.Content forceMount {...props}>
           <motion.div
-            key="accordion-content"
+            animate={{ height: 'auto', opacity: 1, '--mask-stop': '100%' }}
+            className="overflow-hidden"
             data-slot="accordion-content"
             data-testid={testId}
-            initial={{ height: 0, opacity: 0, '--mask-stop': '0%' }}
-            animate={{ height: 'auto', opacity: 1, '--mask-stop': '100%' }}
+            data-variant={variant}
             exit={{ height: 0, opacity: 0, '--mask-stop': '0%' }}
-            transition={transition}
+            initial={{ height: 0, opacity: 0, '--mask-stop': '0%' }}
+            key="accordion-content"
             style={{
               maskImage: 'linear-gradient(black var(--mask-stop), transparent var(--mask-stop))',
               WebkitMaskImage: 'linear-gradient(black var(--mask-stop), transparent var(--mask-stop))',
             }}
-            className="overflow-hidden"
+            transition={transition}
             {...props}
           >
             <div className={cn(accordionContentVariants({ variant }), className)}>{children}</div>
           </motion.div>
         </AccordionPrimitive.Content>
-      )}
+      ) : null}
     </AnimatePresence>
   );
 }
@@ -220,6 +278,8 @@ export {
   AccordionTrigger,
   AccordionContent,
   useAccordionItem,
+  useAccordion,
+  type AccordionVariant,
   type AccordionItemContextType,
   type AccordionProps,
   type AccordionItemProps,

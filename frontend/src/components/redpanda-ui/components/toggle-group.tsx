@@ -5,11 +5,11 @@ import { AnimatePresence, type HTMLMotionProps, motion, type Transition } from '
 import { ToggleGroup as ToggleGroupPrimitive } from 'radix-ui';
 import React from 'react';
 
-import { type GroupContextValue, type GroupPosition } from './group';
-import { cn } from '../lib/utils';
+import type { GroupContextValue, GroupPosition } from './group';
+import { cn, type SharedProps } from '../lib/utils';
 
 const toggleVariants = cva(
-  "cursor-pointer inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium hover:bg-muted hover:text-muted-foreground transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none focus:outline-none aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive whitespace-nowrap",
+  "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium text-sm outline-none transition-[color,box-shadow] hover:bg-muted hover:text-muted-foreground focus:outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground dark:aria-invalid:ring-destructive/40 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       type: {
@@ -21,16 +21,16 @@ const toggleVariants = cva(
         outline: 'border border-input bg-transparent shadow-xs hover:bg-muted hover:text-muted-foreground',
       },
       size: {
-        default: 'h-9 px-2 min-w-9',
-        sm: 'h-8 px-1.5 min-w-8',
-        lg: 'h-10 px-2.5 min-w-10',
+        default: 'h-9 min-w-9 px-2',
+        sm: 'h-8 min-w-8 px-1.5',
+        lg: 'h-10 min-w-10 px-2.5',
       },
     },
     defaultVariants: {
       variant: 'default',
       size: 'default',
     },
-  },
+  }
 );
 
 type ToggleGroupContextProps = VariantProps<typeof toggleVariants> &
@@ -52,10 +52,10 @@ const useToggleGroup = (): ToggleGroupContextProps => {
 };
 
 type ToggleGroupProps = React.ComponentProps<typeof ToggleGroupPrimitive.Root> &
-  Omit<VariantProps<typeof toggleVariants>, 'type'> & {
+  Omit<VariantProps<typeof toggleVariants>, 'type'> &
+  SharedProps & {
     transition?: Transition;
     activeClassName?: string;
-    testId?: string;
     attached?: boolean;
   };
 
@@ -77,9 +77,15 @@ function ToggleGroup({
 
   const content = childrenArray.map((child, index) => {
     const getPosition = (): GroupPosition | undefined => {
-      if (!attached || childCount === 1) return undefined;
-      if (index === 0) return 'first';
-      if (index === childCount - 1) return 'last';
+      if (!attached || childCount === 1) {
+        return;
+      }
+      if (index === 0) {
+        return 'first';
+      }
+      if (index === childCount - 1) {
+        return 'last';
+      }
       return 'middle';
     };
 
@@ -108,9 +114,9 @@ function ToggleGroup({
 
   return (
     <ToggleGroupPrimitive.Root
+      className={cn('relative flex items-center justify-center', !attached && 'gap-1', className)}
       data-slot="toggle-group"
       data-testid={testId}
-      className={cn('flex items-center justify-center relative', !attached && 'gap-1', className)}
       {...props}
     >
       {content}
@@ -119,11 +125,11 @@ function ToggleGroup({
 }
 
 type ToggleGroupItemProps = React.ComponentProps<typeof ToggleGroupPrimitive.Item> &
-  Omit<VariantProps<typeof toggleVariants>, 'type'> & {
+  Omit<VariantProps<typeof toggleVariants>, 'type'> &
+  SharedProps & {
     children?: React.ReactNode;
     buttonProps?: HTMLMotionProps<'button'>;
     spanProps?: React.ComponentProps<'span'>;
-    testId?: string;
   };
 
 const ToggleGroupItem = React.forwardRef<HTMLButtonElement, ToggleGroupItemProps>(
@@ -144,7 +150,9 @@ const ToggleGroupItem = React.forwardRef<HTMLButtonElement, ToggleGroupItemProps
 
     React.useEffect(() => {
       const node = itemRef.current;
-      if (!node) return;
+      if (!node) {
+        return;
+      }
       const observer = new MutationObserver(() => {
         setIsActive(node.getAttribute('data-state') === 'on');
       });
@@ -156,20 +164,28 @@ const ToggleGroupItem = React.forwardRef<HTMLButtonElement, ToggleGroupItemProps
       return () => observer.disconnect();
     }, []);
 
+    let positionClasses = 'rounded-md';
+    if (attached && position === 'first') {
+      positionClasses = 'rounded-r-none rounded-l-md';
+    } else if (attached && position === 'last') {
+      positionClasses = 'rounded-r-md rounded-l-none';
+    } else if (attached && position === 'middle') {
+      positionClasses = 'rounded-none';
+    }
+
     return (
-      <ToggleGroupPrimitive.Item ref={itemRef} disabled={disabled} {...props} asChild>
+      <ToggleGroupPrimitive.Item disabled={disabled} ref={itemRef} {...props} asChild>
         <motion.button
           data-slot="toggle-group-item"
           data-testid={testId}
+          disabled={disabled}
           initial={{ scale: 1 }}
           whileTap={{ scale: 0.9 }}
-          disabled={disabled}
           {...buttonProps}
           className={cn('relative', buttonProps?.className)}
         >
           <span
             {...spanProps}
-            data-state={isActive ? 'on' : 'off'}
             className={cn(
               'relative z-[1]',
               toggleVariants({
@@ -177,16 +193,11 @@ const ToggleGroupItem = React.forwardRef<HTMLButtonElement, ToggleGroupItemProps
                 size: size || contextSize,
                 type,
               }),
-              attached && position === 'first'
-                ? 'rounded-r-none rounded-l-md'
-                : attached && position === 'last'
-                  ? 'rounded-l-none rounded-r-md'
-                  : attached && position === 'middle'
-                    ? 'rounded-none'
-                    : 'rounded-md',
+              positionClasses,
               className,
-              spanProps?.className,
+              spanProps?.className
             )}
+            data-state={isActive ? 'on' : 'off'}
           >
             {children}
           </span>
@@ -194,30 +205,20 @@ const ToggleGroupItem = React.forwardRef<HTMLButtonElement, ToggleGroupItemProps
           <AnimatePresence initial={false}>
             {isActive && type === 'single' && (
               <motion.span
-                layoutId={`active-toggle-group-item-${globalId}`}
-                data-slot="active-toggle-group-item"
-                initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
+                className={cn('absolute inset-0 z-0 bg-accent', positionClasses, activeClassName)}
+                data-slot="active-toggle-group-item"
                 exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }}
+                layoutId={`active-toggle-group-item-${globalId}`}
                 transition={transition}
-                className={cn(
-                  'absolute inset-0 z-0 bg-accent',
-                  attached && position === 'first'
-                    ? 'rounded-r-none rounded-l-md'
-                    : attached && position === 'last'
-                      ? 'rounded-l-none rounded-r-md'
-                      : attached && position === 'middle'
-                        ? 'rounded-none'
-                        : 'rounded-md',
-                  activeClassName,
-                )}
               />
             )}
           </AnimatePresence>
         </motion.button>
       </ToggleGroupPrimitive.Item>
     );
-  },
+  }
 );
 
 ToggleGroupItem.displayName = 'ToggleGroupItem';

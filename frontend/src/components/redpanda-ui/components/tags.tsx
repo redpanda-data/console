@@ -16,7 +16,7 @@ import {
 import { Button } from './button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './command';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
 type TagsContextType = {
   value?: string;
@@ -30,7 +30,9 @@ const TagsContext = createContext<TagsContextType>({
   value: undefined,
   setValue: undefined,
   open: false,
-  onOpenChange: () => {},
+  onOpenChange: () => {
+    // Default no-op function
+  },
   width: undefined,
   setWidth: undefined,
 });
@@ -50,8 +52,7 @@ export type TagsProps = {
   onOpenChange?: (open: boolean) => void;
   children?: ReactNode;
   className?: string;
-  testId?: string;
-};
+} & SharedProps;
 
 export const Tags = ({
   value,
@@ -81,8 +82,8 @@ export const Tags = ({
   }, []);
   return (
     <TagsContext.Provider value={{ value, setValue, open, onOpenChange, width, setWidth }}>
-      <Popover open={open} onOpenChange={onOpenChange}>
-        <div className={cn('relative w-full', className)} ref={ref} data-testid={testId}>
+      <Popover onOpenChange={onOpenChange} open={open}>
+        <div className={cn('relative w-full', className)} data-testid={testId} ref={ref}>
           {children}
         </div>
       </Popover>
@@ -93,10 +94,13 @@ export type TagsTriggerProps = ComponentProps<typeof Button> & { testId?: string
 export const TagsTrigger = ({ className, children, testId, ...props }: TagsTriggerProps) => (
   <PopoverTrigger asChild>
     <Button
-      variant="outline"
-      role="combobox"
-      className={cn('h-auto w-full justify-between p-2', className)}
+      className={cn(
+        'h-auto w-full justify-between p-2 hover:bg-surface-inverse-hover active:bg-surface-default-hover',
+        className
+      )}
       data-testid={testId}
+      role="combobox"
+      variant="outline"
       {...props}
     >
       <div className="flex flex-wrap items-center gap-1">
@@ -114,7 +118,7 @@ export const TagsValue = ({
   testId,
   ...props
 }: TagsValueProps & { onRemove?: () => void }) => {
-  const handleRemove: MouseEventHandler<HTMLDivElement> = (event) => {
+  const handleRemove: MouseEventHandler<HTMLButtonElement> = (event) => {
     event.preventDefault();
     event.stopPropagation();
     onRemove?.();
@@ -122,19 +126,23 @@ export const TagsValue = ({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 cursor-pointer font-medium rounded-md text-sm px-2 py-1 bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 m-0.5 min-h-6',
-        className,
+        'm-0.5 inline-flex min-h-6 cursor-pointer items-center gap-1.5 rounded-md bg-surface-subtle px-2 py-1 font-medium text-sm text-strong transition-colors hover:bg-surface-strong',
+        className
       )}
       data-testid={testId}
       {...props}
     >
       <span className="leading-tight">{children}</span>
-      {onRemove && (
-        // biome-ignore lint/a11y/noStaticElementInteractions: part of tags component
-        <div onClick={handleRemove} className="size-auto cursor-pointer hover:opacity-70 transition-opacity">
-          <XIcon size={12} className="text-gray-600 dark:text-gray-300" />
-        </div>
-      )}
+      {onRemove ? (
+        <button
+          aria-label="Remove tag"
+          className="size-auto cursor-pointer border-0 bg-transparent p-0 transition-opacity hover:opacity-70"
+          onClick={handleRemove}
+          type="button"
+        >
+          <XIcon className="text-muted-foreground" size={12} />
+        </button>
+      ) : null}
     </span>
   );
 };

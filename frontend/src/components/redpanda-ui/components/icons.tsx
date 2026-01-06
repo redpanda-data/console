@@ -1,7 +1,6 @@
-/** biome-ignore-all lint/correctness/useUniqueElementIds: no need to do this for SVGs */
 export function AnimateUIIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg role="img" fill="currentColor" aria-label="Redpanda UI" viewBox="0 0 40 40" {...props}>
+    <svg aria-label="Redpanda UI" fill="currentColor" role="img" viewBox="0 0 40 40" {...props}>
       <path d="M28.9 38.1H11.1c-1.9 0-3.8-.5-5.4-1.5-1.5-.9-2.8-2.2-3.7-3.8S.6 29.5.6 27.7c0-1.9.5-3.8 1.4-5.4l8.9-15.2c1-1.6 2.3-3 4-3.9 1.5-.9 3.3-1.3 5.1-1.3s3.5.4 5.1 1.3 3 2.3 4 3.9L38 22.3c1 1.7 1.5 3.5 1.4 5.4 0 1.8-.5 3.5-1.4 5.1s-2.2 2.9-3.7 3.8c-1.6 1-3.5 1.5-5.4 1.5m-10-26.3L10 27c-.3.5-.2 1 0 1.3s.5.6 1.1.6h17.8c.6 0 .9-.3 1.1-.6s.3-.7 0-1.3l-8.9-15.2c-.3-.5-.8-.6-1.1-.6s-.8.1-1.1.6" />
     </svg>
   );
@@ -10,14 +9,14 @@ export function AnimateUIIcon(props: React.SVGProps<SVGSVGElement>) {
 export function AwsIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
-      version="1.1"
       id="Layer_1"
+      version="1.1"
+      viewBox="0 0 304 182"
+      x="0px"
       xmlns="http://www.w3.org/2000/svg"
       xmlnsXlink="http://www.w3.org/1999/xlink"
-      x="0px"
-      y="0px"
-      viewBox="0 0 304 182"
       xmlSpace="preserve"
+      y="0px"
       {...props}
     >
       <title>Amazon Web Services</title>
@@ -48,22 +47,22 @@ export function AwsIcon(props: React.SVGProps<SVGSVGElement>) {
         />
         <g>
           <path
-            style={{
-              fillRule: 'evenodd',
-              clipRule: 'evenodd',
-              fill: '#FF9900',
-            }}
             d="M273.5,143.7c-32.9,24.3-80.7,37.2-121.8,37.2c-57.6,0-109.5-21.3-148.7-56.7c-3.1-2.8-0.3-6.6,3.4-4.4
           c42.4,24.6,94.7,39.5,148.8,39.5c36.5,0,76.6-7.6,113.5-23.2C274.2,133.6,278.9,139.7,273.5,143.7z"
-          />
-          <path
             style={{
               fillRule: 'evenodd',
               clipRule: 'evenodd',
               fill: '#FF9900',
             }}
+          />
+          <path
             d="M287.2,128.1c-4.2-5.4-27.8-2.6-38.5-1.3c-3.2,0.4-3.7-2.4-0.8-4.5c18.8-13.2,49.7-9.4,53.3-5
           c3.6,4.5-1,35.4-18.6,50.2c-2.7,2.3-5.3,1.1-4.1-1.9C282.5,155.7,291.4,133.4,287.2,128.1z"
+            style={{
+              fillRule: 'evenodd',
+              clipRule: 'evenodd',
+              fill: '#FF9900',
+            }}
           />
         </g>
       </g>
@@ -73,29 +72,29 @@ export function AwsIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export function AzureIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" {...props}>
+    <svg height="256" viewBox="0 0 256 256" width="256" xmlns="http://www.w3.org/2000/svg" {...props}>
       <title>Azure</title>
       <defs>
         <linearGradient
-          id="e2fe4efc-4a1d-4f70-a980-184ccda75abc"
-          x1="-960.6062"
-          y1="283.3968"
-          x2="-1032.5112"
-          y2="70.9723"
           gradientTransform="matrix(1, 0, 0, -1, 1075, 318)"
           gradientUnits="userSpaceOnUse"
+          id="e2fe4efc-4a1d-4f70-a980-184ccda75abc"
+          x1="-960.6062"
+          x2="-1032.5112"
+          y1="283.3968"
+          y2="70.9723"
         >
           <stop offset="0" stopColor="#114a8b" />
           <stop offset="1" stopColor="#0669bc" />
         </linearGradient>
         <linearGradient
-          id="a82bab42-1271-4deb-816b-fb816e4142d0"
-          x1="-938.1444"
-          y1="184.4016"
-          x2="-954.7776"
-          y2="178.7775"
           gradientTransform="matrix(1, 0, 0, -1, 1075, 318)"
           gradientUnits="userSpaceOnUse"
+          id="a82bab42-1271-4deb-816b-fb816e4142d0"
+          x1="-938.1444"
+          x2="-954.7776"
+          y1="184.4016"
+          y2="178.7775"
         >
           <stop offset="0" stopOpacity="0.3" />
           <stop offset="0.0712" stopOpacity="0.2" />
@@ -104,13 +103,13 @@ export function AzureIcon(props: React.SVGProps<SVGSVGElement>) {
           <stop offset="1" stopOpacity="0" />
         </linearGradient>
         <linearGradient
-          id="a2e5c8d3-be95-49ed-b70a-aecc775398ac"
-          x1="-947.2919"
-          y1="289.5941"
-          x2="-868.3628"
-          y2="79.3082"
           gradientTransform="matrix(1, 0, 0, -1, 1075, 318)"
           gradientUnits="userSpaceOnUse"
+          id="a2e5c8d3-be95-49ed-b70a-aecc775398ac"
+          x1="-947.2919"
+          x2="-868.3628"
+          y1="289.5941"
+          y2="79.3082"
         >
           <stop offset="0" stopColor="#3ccbf4" />
           <stop offset="1" stopColor="#2892df" />
@@ -141,11 +140,11 @@ export function AzureIcon(props: React.SVGProps<SVGSVGElement>) {
 export function ComponentsIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 40 36"
       fill="transparent"
       stroke="currentColor"
       strokeWidth={2}
+      viewBox="0 0 40 36"
+      xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
       <title>Components</title>
@@ -159,11 +158,11 @@ export function ComponentsIcon(props: React.SVGProps<SVGSVGElement>) {
 export function EffectsIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 40 36"
       fill="transparent"
       stroke="currentColor"
       strokeWidth={2}
+      viewBox="0 0 40 36"
+      xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
       <title>Effects</title>
@@ -176,7 +175,7 @@ export function EffectsIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export function GcpIconText(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 181 28" width="181" height="28" {...props}>
+    <svg height="28" viewBox="0 0 181 28" width="181" xmlns="http://www.w3.org/2000/svg" {...props}>
       <title>Google Cloud Platform</title>
       <defs>
         <style>
@@ -226,7 +225,7 @@ export function GcpIconText(props: React.SVGProps<SVGSVGElement>) {
 
 export function GcpIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 97.75 78.62" {...props}>
+    <svg viewBox="0 0 97.75 78.62" xmlns="http://www.w3.org/2000/svg" {...props}>
       <title>Google Cloud Platform</title>
       <path
         d="M62.21 21.73l3.13.06 8.53-8.51.42-3.6a38.2 38.2 0 0 0-62.3 18.57c.88-.64 2.88-.16 2.88-.16l17-2.8s.88-1.44 1.31-1.35a21.19 21.19 0 0 1 29-2.21z"
@@ -250,7 +249,7 @@ export function GcpIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg role="img" viewBox="0 0 24 24" fill="currentColor" aria-label="GitHub" {...props}>
+    <svg aria-label="GitHub" fill="currentColor" role="img" viewBox="0 0 24 24" {...props}>
       <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
     </svg>
   );
@@ -259,33 +258,33 @@ export function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
 export function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="1em"
+      aria-label="Google"
       height="1em"
       viewBox="0 0 128 128"
-      aria-label="Google"
+      width="1em"
+      xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
       <title>Google</title>
       <path
-        fill="#fff"
         d="M44.59 4.21a63.28 63.28 0 0 0 4.33 120.9a67.6 67.6 0 0 0 32.36.35a57.13 57.13 0 0 0 25.9-13.46a57.44 57.44 0 0 0 16-26.26a74.33 74.33 0 0 0 1.61-33.58H65.27v24.69h34.47a29.72 29.72 0 0 1-12.66 19.52a36.16 36.16 0 0 1-13.93 5.5a41.29 41.29 0 0 1-15.1 0A37.16 37.16 0 0 1 44 95.74a39.3 39.3 0 0 1-14.5-19.42a38.31 38.31 0 0 1 0-24.63a39.25 39.25 0 0 1 9.18-14.91A37.17 37.17 0 0 1 76.13 27a34.28 34.28 0 0 1 13.64 8q5.83-5.8 11.64-11.63c2-2.09 4.18-4.08 6.15-6.22A61.22 61.22 0 0 0 87.2 4.59a64 64 0 0 0-42.61-.38z"
+        fill="#fff"
       />
       <path
-        fill="#e33629"
         d="M44.59 4.21a64 64 0 0 1 42.61.37a61.22 61.22 0 0 1 20.35 12.62c-2 2.14-4.11 4.14-6.15 6.22Q95.58 29.23 89.77 35a34.28 34.28 0 0 0-13.64-8a37.17 37.17 0 0 0-37.46 9.74a39.25 39.25 0 0 0-9.18 14.91L8.76 35.6A63.53 63.53 0 0 1 44.59 4.21z"
+        fill="#e33629"
       />
       <path
-        fill="#f8bd00"
         d="M3.26 51.5a62.93 62.93 0 0 1 5.5-15.9l20.73 16.09a38.31 38.31 0 0 0 0 24.63q-10.36 8-20.73 16.08a63.33 63.33 0 0 1-5.5-40.9z"
+        fill="#f8bd00"
       />
       <path
-        fill="#587dbd"
         d="M65.27 52.15h59.52a74.33 74.33 0 0 1-1.61 33.58a57.44 57.44 0 0 1-16 26.26c-6.69-5.22-13.41-10.4-20.1-15.62a29.72 29.72 0 0 0 12.66-19.54H65.27c-.01-8.22 0-16.45 0-24.68z"
+        fill="#587dbd"
       />
       <path
-        fill="#319f43"
         d="M8.75 92.4q10.37-8 20.73-16.08A39.3 39.3 0 0 0 44 95.74a37.16 37.16 0 0 0 14.08 6.08a41.29 41.29 0 0 0 15.1 0a36.16 36.16 0 0 0 13.93-5.5c6.69 5.22 13.41 10.4 20.1 15.62a57.13 57.13 0 0 1-25.9 13.47a67.6 67.6 0 0 1-32.36-.35a63 63 0 0 1-23-11.59A63.73 63.73 0 0 1 8.75 92.4z"
+        fill="#319f43"
       />
     </svg>
   );
@@ -293,11 +292,11 @@ export function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export function MailIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
+    <svg height="1em" viewBox="0 0 24 24" width="1em" xmlns="http://www.w3.org/2000/svg" {...props}>
       <title>Mail</title>
       <path
-        fill="currentColor"
         d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6zm3.519 0L12 11.671L18.481 6H5.52zM20 7.329l-7.341 6.424a1 1 0 0 1-1.318 0L4 7.329V18h16V7.329z"
+        fill="currentColor"
       />
     </svg>
   );
@@ -306,12 +305,12 @@ export function MailIcon(props: React.SVGProps<SVGSVGElement>) {
 export function MCPIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="1em"
-      height="1em"
       fill="currentColor"
       fillRule="evenodd"
+      height="1em"
       viewBox="0 0 24 24"
+      width="1em"
+      xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
       <title>MCP</title>
@@ -323,7 +322,7 @@ export function MCPIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export function MotionIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1260 454" fill="currentColor" aria-label="Motion" {...props}>
+    <svg aria-label="Motion" fill="currentColor" viewBox="0 0 1260 454" xmlns="http://www.w3.org/2000/svg" {...props}>
       <title>Motion</title>
       <path d="M475.753 0 226.8 453.6H0L194.392 99.412C224.526 44.508 299.724 0 362.353 0zM1031.93 113.4c0-62.63 50.77-113.4 113.4-113.4s113.4 50.77 113.4 113.4c0 62.629-50.77 113.4-113.4 113.4s-113.4-50.771-113.4-113.4M518.278 0h226.8L496.125 453.6h-226.8zM786.147 0h226.803L818.555 354.188C788.422 409.092 713.223 453.6 650.594 453.6h-113.4z" />
     </svg>
@@ -332,7 +331,7 @@ export function MotionIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export function OktaIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 169 169" aria-label="Okta" {...props}>
+    <svg aria-label="Okta" height="1em" viewBox="0 0 169 169" width="1em" xmlns="http://www.w3.org/2000/svg" {...props}>
       <title>Okta</title>
       <path
         className="fill-black dark:fill-white"
@@ -345,32 +344,32 @@ export function OktaIcon(props: React.SVGProps<SVGSVGElement>) {
 export function PrimitivesIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 40 36"
       fill="transparent"
       stroke="currentColor"
       strokeWidth={2}
+      viewBox="0 0 40 36"
+      xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
       <title>Primitives</title>
       <path d="M1 5c0-2.21 1.79-4 4-4h30c2.21 0 4 1.79 4 4v26c0 2.21-1.79 4-4 4H5c-2.21 0-4-1.79-4-4z" />
       <path
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
         d="m21.98 18.67-6.99 6.99c-.73.73-1.92.73-2.65 0s-.73-1.92 0-2.65l6.99-6.99M23 11.46c-2.7-1.68-5.99-2.12-9.04-1.2a.887.887 0 0 0 .11 1.55c2.01.69 3.9 1.7 5.58 3"
-      />
-      <path
         fill="none"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+      <path
         d="M24.78 10.92a.88.88 0 0 0-1.24 0l-4.07 4.07c-.34.34-.34.89 0 1.24l2.3 2.3c.34.34.89.34 1.24 0l4.07-4.07c.34-.34.34-.89 0-1.24z"
-      />
-      <path
         fill="none"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+      <path
         d="M26.54 15c1.68 2.7 2.12 5.99 1.2 9.04a.887.887 0 0 1-1.55-.1c-.69-2.01-1.7-3.9-3-5.59"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -378,7 +377,7 @@ export function PrimitivesIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export function RadixIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg role="img" fill="currentColor" aria-label="Radix UI" viewBox="4 0 17 25" {...props}>
+    <svg aria-label="Radix UI" fill="currentColor" role="img" viewBox="4 0 17 25" {...props}>
       <path d="M12 25a8 8 0 1 1 0-16zm0-25H4v8h8zm5 8a4 4 0 1 0 0-8 4 4 0 0 0 0 8" />
     </svg>
   );
@@ -386,7 +385,7 @@ export function RadixIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export function ReactIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" aria-label="React" {...props}>
+    <svg aria-label="React" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" {...props}>
       <title>React</title>
       <path d="M16 13.146c-1.573 0-2.854 1.281-2.854 2.854s1.281 2.854 2.854 2.854 2.854-1.281 2.854-2.854-1.281-2.854-2.854-2.854m-7.99 8.526-.63-.156C2.692 20.328 0 18.318 0 15.995s2.693-4.333 7.38-5.521l.63-.156.177.625a31.4 31.4 0 0 0 1.818 4.771l.135.281-.135.286a31 31 0 0 0-1.818 4.771zm-.921-9.74c-3.563 1-5.75 2.536-5.75 4.063s2.188 3.057 5.75 4.063a33 33 0 0 1 1.578-4.063 33 33 0 0 1-1.578-4.063m16.901 9.74-.177-.625a31 31 0 0 0-1.818-4.766l-.135-.286.135-.286a31 31 0 0 0 1.818-4.771l.177-.62.63.156c4.688 1.188 7.38 3.198 7.38 5.521s-2.693 4.333-7.38 5.521zm-.657-5.677a32.5 32.5 0 0 1 1.578 4.063c3.568-1.005 5.75-2.536 5.75-4.063s-2.188-3.057-5.75-4.063a34 34 0 0 1-1.578 4.063M7.078 11.927l-.177-.625C5.583 6.656 5.984 3.323 8 2.161c1.979-1.141 5.151.208 8.479 3.625l.453.464-.453.464a31.5 31.5 0 0 0-3.229 3.958l-.182.255-.313.026a31.6 31.6 0 0 0-5.047.813zm2.531-8.838c-.359 0-.677.073-.943.229-1.323.766-1.557 3.422-.646 7.005a33 33 0 0 1 4.313-.672 33 33 0 0 1 2.734-3.391c-2.078-2.026-4.047-3.172-5.458-3.172zm12.787 27.145q-.008 0 0 0c-1.901 0-4.344-1.427-6.875-4.031l-.453-.464.453-.464a31.5 31.5 0 0 0 3.229-3.958l.177-.255.313-.031a30.7 30.7 0 0 0 5.052-.813l.63-.156.177.625c1.318 4.646.917 7.974-1.099 9.135a3.1 3.1 0 0 1-1.604.411zm-5.464-4.505c2.078 2.026 4.047 3.172 5.458 3.172h.005c.354 0 .672-.078.938-.229 1.323-.766 1.563-3.422.646-7.005a33 33 0 0 1-4.313.667 33 33 0 0 1-2.734 3.396zm7.99-13.802-.63-.161a32 32 0 0 0-5.052-.813l-.313-.026-.177-.255a31.5 31.5 0 0 0-3.229-3.958l-.453-.464.453-.464c3.328-3.417 6.5-4.766 8.479-3.625 2.016 1.161 2.417 4.495 1.099 9.141zm-5.255-2.276a33 33 0 0 1 4.313.672c.917-3.583.677-6.24-.646-7.005-1.318-.76-3.797.406-6.401 2.943a34 34 0 0 1 2.734 3.391zM9.609 30.234c-.563.01-1.12-.13-1.609-.411-2.016-1.161-2.417-4.49-1.099-9.135l.177-.625.63.156c1.542.391 3.24.661 5.047.813l.313.031.177.255a31.5 31.5 0 0 0 3.229 3.958l.453.464-.453.464c-2.526 2.604-4.969 4.031-6.865 4.031zm-1.588-8.567c-.917 3.583-.677 6.24.646 7.005 1.318.75 3.792-.406 6.401-2.943a33 33 0 0 1-2.734-3.396 32.5 32.5 0 0 1-4.313-.667zm7.979.838c-1.099 0-2.224-.047-3.354-.141l-.313-.026-.182-.26a40 40 0 0 1-1.797-2.828 40 40 0 0 1-1.557-2.969l-.135-.286.135-.286a40.5 40.5 0 0 1 3.354-5.797l.182-.26.313-.026a40 40 0 0 1 6.708 0l.313.026.182.26a40 40 0 0 1 3.354 5.797l.135.286-.135.286a39.6 39.6 0 0 1-3.354 5.797l-.182.26-.313.026a41 41 0 0 1-3.354.141m-2.927-1.448c1.969.151 3.885.151 5.859 0a39 39 0 0 0 2.927-5.063 37.5 37.5 0 0 0-2.932-5.063 38 38 0 0 0-5.854 0 37 37 0 0 0-2.932 5.063 38.6 38.6 0 0 0 2.932 5.063" />
     </svg>
@@ -395,7 +394,7 @@ export function ReactIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export function RedpandaUIIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1118 351" {...props}>
+    <svg viewBox="0 0 1118 351" xmlns="http://www.w3.org/2000/svg" {...props}>
       <title>Redpanda UI</title>
       <path
         d="M218.5 41.2C209.9 41 201.3 42.7 193.4 46.2C185.5 49.7 178.4 54.8 172.7 61.3C160.6 74.6 154.5 92.2 154.5 113.7C154.5 134.7 160.8 151.7 173.3 164.2C185.7 176.7 202 183.2 221.6 183.2C233.6 183.5 245.4 180.8 256.1 175.4C265.8 170.2 272.5 164.9 276.1 159.5V159.3L260.6 130.1V130H258.5V130.2C254.7 136.2 249.6 141.2 243.4 144.7C236.9 148.8 229.4 151 221.7 151.1C213.8 151.3 206.1 148.3 200.3 142.8C197.5 140.2 195.3 137.1 193.7 133.6C192.2 130.1 191.4 126.3 191.5 122.5H282.8L283.1 112.4C283.1 91.5 276.9 74.2 264.7 61C258.9 54.6 251.7 49.5 243.8 46.1C235.7 42.7 227.1 41 218.5 41.2ZM247 97.4H191.9C193.3 91.2 196.4 85.5 200.7 80.9C203.1 78.3 206 76.3 209.2 75C212.4 73.7 215.9 73.1 219.4 73.2C223 73.1 226.6 73.7 229.9 75.1C233.2 76.5 236.2 78.5 238.7 81.2C243.1 85.6 246 91.2 247 97.4Z"
@@ -441,7 +440,7 @@ export function RedpandaUIIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export function RedpandaUILetterIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg width="16" height="19" viewBox="0 0 16 19" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <svg fill="none" height="19" viewBox="0 0 16 19" width="16" xmlns="http://www.w3.org/2000/svg" {...props}>
       <title>Redpanda UI</title>
       <path
         d="M10.9608 12.3803C10.6711 11.8423 10.4484 11.3427 10.2848 10.9474C11.0386 10.6509 11.6744 10.1073 12.2538 9.52535C13.1202 8.65512 13.5521 7.42802 13.5521 5.83855C13.5521 3.99927 12.9646 2.56902 11.787 1.55056C10.6121 0.53209 9.19838 0.0214844 7.54863 0.0214844H0V17.5797H3.67774V11.285H5.07534L5.92838 11.2631C6.2476 12.0509 6.95311 13.7831 7.36353 14.7028L10.9635 12.3831L10.9608 12.3803ZM3.67774 3.53259H7.06041C8.75845 3.53259 9.60881 4.23536 9.60881 5.63815C9.60881 7.14252 8.66188 7.8947 6.76533 7.8947H3.67774V3.53259Z"
@@ -456,32 +455,18 @@ export function RedpandaUILetterIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export function RedpandaUILetterIconColor(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xlinkHref="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 viewBox="0 0 160.5 222" xmlSpace="preserve" {...props}>
-  <title>Redpanda UI</title>
-<path style={{fill: '#E14226'}} d="M114.3,126.4c-2.6-4.8-4.9-9.7-7-14.7c7.8-3.4,14.7-8.3,20.5-14.5c9-8.9,13.6-21.5,13.6-37.7
-	c0-18.8-6.1-33.4-18.4-43.9C110.6,5.2,94.8-0.4,78.7,0H0v179.7h38.3v-64.5h14.6l8.9-0.2c3.3,8.1,10.7,25.8,15,35.2L114.3,126.4z
-	 M38.3,35.9h35.3c17.7,0,26.5,7.2,26.6,21.5c0,15.4-9.9,23.1-29.6,23.1H38.3V35.9z"/>
-<path style={{fill: '#E14226'}} d="M153.9,166.8l-10-7.1l-41.5,27l14.5,5.7l25.3-0.1l18.4-13.1L153.9,166.8z"/>
-<path style={{fill: '#E14226'}} d="M120.6,136.8l-38.5,24.3l10.8,17l41-25.9L120.6,136.8z"/>
-</svg>
-  )
-}
-
 export function ShadcnIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
-      xmlns="http://www.w3.org/2000/svg"
+      aria-label="shadcn"
       fill="none"
       stroke="currentColor"
-      aria-label="shadcn"
       viewBox="0 0 256 256"
+      xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
       <title>shadcn</title>
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="16" d="m208 128-80 80M192 40 40 192" />
+      <path d="m208 128-80 80M192 40 40 192" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16" />
     </svg>
   );
 }
@@ -489,10 +474,10 @@ export function ShadcnIcon(props: React.SVGProps<SVGSVGElement>) {
 export function TailwindIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="currentColor"
       aria-label="Tailwind css"
+      fill="currentColor"
       viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
       <title>Tailwind CSS</title>
@@ -503,9 +488,484 @@ export function TailwindIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export function TSIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-label="Typescript" fill="currentColor" {...props}>
+    <svg aria-label="Typescript" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" {...props}>
       <title>Typescript</title>
       <path d="m0 16v16h32v-32h-32zm25.786-1.276c.813.203 1.432.568 2.005 1.156.292.312.729.885.766 1.026.01.042-1.38.974-2.224 1.495-.031.021-.156-.109-.292-.313-.411-.599-.844-.859-1.505-.906-.969-.063-1.594.443-1.589 1.292-.005.208.042.417.135.599.214.443.615.708 1.854 1.245 2.292.984 3.271 1.635 3.88 2.557.682 1.031.833 2.677.375 3.906-.51 1.328-1.771 2.234-3.542 2.531-.547.099-1.849.083-2.438-.026-1.286-.229-2.505-.865-3.255-1.698-.297-.323-.87-1.172-.833-1.229.016-.021.146-.104.292-.188s.682-.396 1.188-.688l.922-.536.193.286c.271.411.859.974 1.214 1.161 1.021.542 2.422.464 3.115-.156.281-.234.438-.594.417-.958 0-.37-.047-.536-.24-.813-.25-.354-.755-.656-2.198-1.281-1.651-.714-2.365-1.151-3.01-1.854-.406-.464-.708-1.01-.88-1.599-.12-.453-.151-1.589-.057-2.042.339-1.599 1.547-2.708 3.281-3.036.563-.109 1.875-.068 2.427.068zm-7.51 1.339.01 1.307h-4.167v11.839h-2.948v-11.839h-4.161v-1.281c0-.714.016-1.307.036-1.323.016-.021 2.547-.031 5.62-.026l5.594.016z" />
+    </svg>
+  );
+}
+
+export function CursorIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg height="1em" viewBox="0 0 24 24" width="1em" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <title>Cursor</title>
+      <path d="M11.925 24l10.425-6-10.425-6L1.5 18l10.425 6z" fill="url(#cursor-fill-0)" />
+      <path d="M22.35 18V6L11.925 0v12l10.425 6z" fill="url(#cursor-fill-1)" />
+      <path d="M11.925 0L1.5 6v12l10.425-6V0z" fill="url(#cursor-fill-2)" />
+      <path d="M22.35 6L11.925 24V12L22.35 6z" fill="#555" />
+      <path d="M22.35 6l-10.425 6L1.5 6h20.85z" fill="#000" />
+      <defs>
+        <linearGradient gradientUnits="userSpaceOnUse" id="cursor-fill-0" x1="11.925" x2="11.925" y1="12" y2="24">
+          <stop offset=".16" stopColor="#000" stopOpacity=".39" />
+          <stop offset=".658" stopColor="#000" stopOpacity=".8" />
+        </linearGradient>
+        <linearGradient gradientUnits="userSpaceOnUse" id="cursor-fill-1" x1="22.35" x2="11.925" y1="6.037" y2="12.15">
+          <stop offset=".182" stopColor="#000" stopOpacity=".31" />
+          <stop offset=".715" stopColor="#000" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient gradientUnits="userSpaceOnUse" id="cursor-fill-2" x1="11.925" x2="1.5" y1="0" y2="18">
+          <stop stopColor="#000" stopOpacity=".6" />
+          <stop offset=".667" stopColor="#000" stopOpacity=".22" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+export function WindsurfIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      fill="currentColor"
+      fillRule="evenodd"
+      height="1em"
+      viewBox="0 0 24 24"
+      width="1em"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <title>Windsurf</title>
+      <path
+        clipRule="evenodd"
+        d="M23.78 5.004h-.228a2.187 2.187 0 00-2.18 2.196v4.912c0 .98-.804 1.775-1.76 1.775a1.818 1.818 0 01-1.472-.773L13.168 5.95a2.197 2.197 0 00-1.81-.95c-1.134 0-2.154.972-2.154 2.173v4.94c0 .98-.797 1.775-1.76 1.775-.57 0-1.136-.289-1.472-.773L.408 5.098C.282 4.918 0 5.007 0 5.228v4.284c0 .216.066.426.188.604l5.475 7.889c.324.466.8.812 1.351.938 1.377.316 2.645-.754 2.645-2.117V11.89c0-.98.787-1.775 1.76-1.775h.002c.586 0 1.135.288 1.472.773l4.972 7.163a2.15 2.15 0 001.81.95c1.158 0 2.151-.973 2.151-2.173v-4.939c0-.98.787-1.775 1.76-1.775h.194c.122 0 .22-.1.22-.222V5.225a.221.221 0 00-.22-.222z"
+      />
+    </svg>
+  );
+}
+
+export function ClineIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      fill="currentColor"
+      fillRule="evenodd"
+      height="1em"
+      viewBox="0 0 24 24"
+      width="1em"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <title>Cline</title>
+      <path d="M17.035 3.991c2.75 0 4.98 2.24 4.98 5.003v1.667l1.45 2.896a1.01 1.01 0 01-.002.909l-1.448 2.864v1.668c0 2.762-2.23 5.002-4.98 5.002H7.074c-2.751 0-4.98-2.24-4.98-5.002V17.33l-1.48-2.855a1.01 1.01 0 01-.003-.927l1.482-2.887V8.994c0-2.763 2.23-5.003 4.98-5.003h9.962zM8.265 9.6a2.274 2.274 0 00-2.274 2.274v4.042a2.274 2.274 0 004.547 0v-4.042A2.274 2.274 0 008.265 9.6zm7.326 0a2.274 2.274 0 00-2.274 2.274v4.042a2.274 2.274 0 104.548 0v-4.042A2.274 2.274 0 0015.59 9.6z" />
+      <path d="M12.054 5.558a2.779 2.779 0 100-5.558 2.779 2.779 0 000 5.558z" />
+    </svg>
+  );
+}
+
+export function ClaudeDesktopIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg height="1em" viewBox="0 0 1200 1200" width="1em" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <title>Claude Desktop</title>
+      <path
+        d="M 233.959793 800.214905 L 468.644287 668.536987 L 472.590637 657.100647 L 468.644287 650.738403 L 457.208069 650.738403 L 417.986633 648.322144 L 283.892639 644.69812 L 167.597321 639.865845 L 54.926208 633.825623 L 26.577238 627.785339 L 3.3e-05 592.751709 L 2.73832 575.27533 L 26.577238 559.248352 L 60.724873 562.228149 L 136.187973 567.382629 L 249.422867 575.194763 L 331.570496 580.026978 L 453.261841 592.671082 L 472.590637 592.671082 L 475.328857 584.859009 L 468.724915 580.026978 L 463.570557 575.194763 L 346.389313 495.785217 L 219.543671 411.865906 L 153.100723 363.543762 L 117.181267 339.060425 L 99.060455 316.107361 L 91.248367 266.01355 L 123.865784 230.093994 L 167.677887 233.073853 L 178.872513 236.053772 L 223.248367 270.201477 L 318.040283 343.570496 L 441.825592 434.738342 L 459.946411 449.798706 L 467.194672 444.64447 L 468.080597 441.020203 L 459.946411 427.409485 L 392.617493 305.718323 L 320.778564 181.932983 L 288.80542 130.630859 L 280.348999 99.865845 C 277.369171 87.221436 275.194641 76.590698 275.194641 63.624268 L 312.322174 13.20813 L 332.8591 6.604126 L 382.389313 13.20813 L 403.248352 31.328979 L 434.013519 101.71814 L 483.865753 212.537048 L 561.181274 363.221497 L 583.812134 407.919434 L 595.892639 449.315491 L 600.40271 461.959839 L 608.214783 461.959839 L 608.214783 454.711609 L 614.577271 369.825623 L 626.335632 265.61084 L 637.771851 131.516846 L 641.718201 93.745117 L 660.402832 48.483276 L 697.530334 24.000122 L 726.52356 37.852417 L 750.362549 72 L 747.060486 94.067139 L 732.886047 186.201416 L 705.100708 330.52356 L 686.979919 427.167847 L 697.530334 427.167847 L 709.61084 415.087341 L 758.496704 350.174561 L 840.644348 247.490051 L 876.885925 206.738342 L 919.167847 161.71814 L 946.308838 140.29541 L 997.61084 140.29541 L 1035.38269 196.429626 L 1018.469849 254.416199 L 965.637634 321.422852 L 921.825562 378.201538 L 859.006714 462.765259 L 819.785278 530.41626 L 823.409424 535.812073 L 832.75177 534.92627 L 974.657776 504.724915 L 1051.328979 490.872559 L 1142.818848 475.167786 L 1184.214844 494.496582 L 1188.724854 514.147644 L 1172.456421 554.335693 L 1074.604126 578.496765 L 959.838989 601.449829 L 788.939636 641.879272 L 786.845764 643.409485 L 789.261841 646.389343 L 866.255127 653.637634 L 899.194702 655.409424 L 979.812134 655.409424 L 1129.932861 666.604187 L 1169.154419 692.537109 L 1192.671265 724.268677 L 1188.724854 748.429688 L 1128.322144 779.194641 L 1046.818848 759.865845 L 856.590759 714.604126 L 791.355774 698.335754 L 782.335693 698.335754 L 782.335693 703.731567 L 836.69812 756.885986 L 936.322205 846.845581 L 1061.073975 962.81897 L 1067.436279 991.490112 L 1051.409424 1014.120911 L 1034.496704 1011.704712 L 924.885986 929.234924 L 882.604126 892.107544 L 786.845764 811.48999 L 780.483276 811.48999 L 780.483276 819.946289 L 802.550415 852.241699 L 919.087341 1027.409424 L 925.127625 1081.127686 L 916.671204 1098.604126 L 886.469849 1109.154419 L 853.288696 1103.114136 L 785.073914 1007.355835 L 714.684631 899.516785 L 657.906067 802.872498 L 650.979858 806.81897 L 617.476624 1167.704834 L 601.771851 1186.147705 L 565.530212 1200 L 535.328857 1177.046997 L 519.302124 1139.919556 L 535.328857 1066.550537 L 554.657776 970.792053 L 570.362488 894.68457 L 584.536926 800.134277 L 592.993347 768.724976 L 592.429626 766.630859 L 585.503479 767.516968 L 514.22821 865.369263 L 405.825531 1011.865906 L 320.053711 1103.677979 L 299.516815 1111.812256 L 263.919525 1093.369263 L 267.221497 1060.429688 L 287.114136 1031.114136 L 405.825531 880.107361 L 477.422913 786.52356 L 523.651062 732.483276 L 523.328918 724.671265 L 520.590698 724.671265 L 205.288605 929.395935 L 149.154434 936.644409 L 124.993355 914.01355 L 127.973183 876.885986 L 139.409409 864.80542 L 234.201385 799.570435 L 233.879227 799.8927 Z"
+        fill="#d97757"
+        stroke="none"
+      />
+    </svg>
+  );
+}
+
+export function ClaudeCodeIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      fill="currentColor"
+      fillRule="evenodd"
+      height="1em"
+      viewBox="0 0 24 24"
+      width="1em"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <title>Anthropic</title>
+      <path d="M13.827 3.52h3.603L24 20h-3.603l-6.57-16.48zm-7.258 0h3.767L16.906 20h-3.674l-1.343-3.461H5.017l-1.344 3.46H0L6.57 3.522zm4.132 9.959L8.453 7.687 6.205 13.48H10.7z" />
+    </svg>
+  );
+}
+
+export function VscodeIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg fill="none" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <title>VSCode</title>
+      <mask height="100" id="vscode-mask0" maskUnits="userSpaceOnUse" width="100" x="0" y="0">
+        <path
+          clipRule="evenodd"
+          d="M70.9119 99.3171C72.4869 99.9307 74.2828 99.8914 75.8725 99.1264L96.4608 89.2197C98.6242 88.1787 100 85.9892 100 83.5872V16.4133C100 14.0113 98.6243 11.8218 96.4609 10.7808L75.8725 0.873756C73.7862 -0.130129 71.3446 0.11576 69.5135 1.44695C69.252 1.63711 69.0028 1.84943 68.769 2.08341L29.3551 38.0415L12.1872 25.0096C10.589 23.7965 8.35363 23.8959 6.86933 25.2461L1.36303 30.2549C-0.452552 31.9064 -0.454633 34.7627 1.35853 36.417L16.2471 50.0001L1.35853 63.5832C-0.454633 65.2374 -0.452552 68.0938 1.36303 69.7453L6.86933 74.7541C8.35363 76.1043 10.589 76.2037 12.1872 74.9905L29.3551 61.9587L68.769 97.9167C69.3925 98.5406 70.1246 99.0104 70.9119 99.3171ZM75.0152 27.2989L45.1091 50.0001L75.0152 72.7012V27.2989Z"
+          fill="white"
+          fillRule="evenodd"
+        />
+      </mask>
+      <g mask="url(#vscode-mask0)">
+        <path
+          d="M96.4614 10.7962L75.8569 0.875542C73.4719 -0.272773 70.6217 0.211611 68.75 2.08333L1.29858 63.5832C-0.515693 65.2373 -0.513607 68.0937 1.30308 69.7452L6.81272 74.754C8.29793 76.1042 10.5347 76.2036 12.1338 74.9905L93.3609 13.3699C96.086 11.3026 100 13.2462 100 16.6667V16.4275C100 14.0265 98.6246 11.8378 96.4614 10.7962Z"
+          fill="#0065A9"
+        />
+        <g filter="url(#vscode-filter0_d)">
+          <path
+            d="M96.4614 89.2038L75.8569 99.1245C73.4719 100.273 70.6217 99.7884 68.75 97.9167L1.29858 36.4169C-0.515693 34.7627 -0.513607 31.9063 1.30308 30.2548L6.81272 25.246C8.29793 23.8958 10.5347 23.7964 12.1338 25.0095L93.3609 86.6301C96.086 88.6974 100 86.7538 100 83.3334V83.5726C100 85.9735 98.6246 88.1622 96.4614 89.2038Z"
+            fill="#007ACC"
+          />
+        </g>
+        <g filter="url(#vscode-filter1_d)">
+          <path
+            d="M75.8578 99.1263C73.4721 100.274 70.6219 99.7885 68.75 97.9166C71.0564 100.223 75 98.5895 75 95.3278V4.67213C75 1.41039 71.0564 -0.223106 68.75 2.08329C70.6219 0.211402 73.4721 -0.273666 75.8578 0.873633L96.4587 10.7807C98.6234 11.8217 100 14.0112 100 16.4132V83.5871C100 85.9891 98.6234 88.1786 96.4586 89.2196L75.8578 99.1263Z"
+            fill="#1F9CF0"
+          />
+        </g>
+      </g>
+      <defs>
+        <filter
+          colorInterpolationFilters="sRGB"
+          filterUnits="userSpaceOnUse"
+          height="92.2456"
+          id="vscode-filter0_d"
+          width="116.727"
+          x="-8.39411"
+          y="15.8291"
+        >
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
+          <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" />
+          <feOffset />
+          <feGaussianBlur stdDeviation="4.16667" />
+          <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+          <feBlend in2="BackgroundImageFix" mode="overlay" result="effect1_dropShadow" />
+          <feBlend in="SourceGraphic" in2="effect1_dropShadow" mode="normal" result="shape" />
+        </filter>
+        <filter
+          colorInterpolationFilters="sRGB"
+          filterUnits="userSpaceOnUse"
+          height="116.151"
+          id="vscode-filter1_d"
+          width="47.9167"
+          x="60.4167"
+          y="-8.07558"
+        >
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
+          <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" />
+          <feOffset />
+          <feGaussianBlur stdDeviation="4.16667" />
+          <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+          <feBlend in2="BackgroundImageFix" mode="overlay" result="effect1_dropShadow" />
+          <feBlend in="SourceGraphic" in2="effect1_dropShadow" mode="normal" result="shape" />
+        </filter>
+      </defs>
+    </svg>
+  );
+}
+
+export function GeminiIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg height="1em" viewBox="0 0 24 24" width="1em" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <title>Gemini</title>
+      <path
+        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
+        fill="#3186FF"
+      />
+      <path
+        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
+        fill="url(#gemini-fill-0)"
+      />
+      <path
+        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
+        fill="url(#gemini-fill-1)"
+      />
+      <path
+        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
+        fill="url(#gemini-fill-2)"
+      />
+      <defs>
+        <linearGradient gradientUnits="userSpaceOnUse" id="gemini-fill-0" x1="7" x2="11" y1="15.5" y2="12">
+          <stop stopColor="#08B962" />
+          <stop offset="1" stopColor="#08B962" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient gradientUnits="userSpaceOnUse" id="gemini-fill-1" x1="8" x2="11.5" y1="5.5" y2="11">
+          <stop stopColor="#F94543" />
+          <stop offset="1" stopColor="#F94543" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient gradientUnits="userSpaceOnUse" id="gemini-fill-2" x1="3.5" x2="17.5" y1="13.5" y2="12">
+          <stop stopColor="#FABC12" />
+          <stop offset=".46" stopColor="#FABC12" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+export function AuggieIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg fill="none" height="1em" viewBox="0 0 512 512" width="1em" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <title>Auggie</title>
+      <path
+        d="M78.844 464.762c-8.453 0-15.573-1.451-21.359-4.339-5.77-2.888-10.144-7.289-13.076-13.095-2.932-5.807-4.436-12.912-4.436-21.255v-86.028c0-10.605-2.125-18.321-6.329-23.135-4.234-4.798-11.742-7.334-22.507-7.579-3.35 0-6.034-1.253-8.066-3.804C1.008 303.005 0 300.087 0 296.832c0-3.53 1.008-6.448 3.071-8.725 2.048-2.277 4.762-3.53 8.066-3.774 10.765-.26 18.273-2.781 22.507-7.579 4.235-4.798 6.329-12.392 6.329-22.752v-86.028c0-12.637 3.35-22.249 10.005-28.804 6.654-6.555 16.287-9.856 28.866-9.856H181.5c3.862 0 7.042 1.146 9.617 3.408 2.559 2.277 3.862 5.195 3.862 8.694 0 3.301-1.086 6.128-3.257 8.542-2.172 2.414-5.057 3.622-8.671 3.622H87.732c-5.413 0-9.508 1.39-12.316 4.171-2.823 2.781-4.234 7.075-4.234 12.912v86.425c0 7.579-1.551 14.455-4.623 20.644-3.07 6.204-7.181 11.063-12.316 14.623-5.134 3.53-11.137 5.302-18.07 5.302v-1.528c6.933 0 12.936 1.773 18.07 5.303 5.135 3.529 9.245 8.404 12.316 14.623 3.072 6.188 4.623 13.064 4.623 20.643v86.808c0 5.837 1.411 10.115 4.234 12.911 2.823 2.812 6.934 4.172 12.316 4.172h95.318c3.583 0 6.468 1.207 8.671 3.606 2.202 2.414 3.257 5.257 3.257 8.542s-1.272 6.097-3.862 8.511c-2.575 2.414-5.771 3.606-9.617 3.606H78.844v-.092ZM330.501 464.768c-3.862 0-7.042-1.207-9.617-3.606-2.575-2.414-3.863-5.256-3.863-8.511 0-3.255 1.086-6.128 3.258-8.542 2.171-2.414 5.057-3.606 8.671-3.606h95.317c5.414 0 9.509-1.36 12.316-4.171 2.823-2.781 4.235-7.075 4.235-12.912v-86.808c0-7.579 1.551-14.455 4.622-20.643 3.071-6.204 7.182-11.063 12.316-14.623 5.134-3.53 11.137-5.303 18.071-5.303v1.528c-6.934 0-12.937-1.772-18.071-5.302-5.134-3.53-9.245-8.404-12.316-14.623-3.071-6.189-4.622-13.065-4.622-20.644v-86.425c0-5.807-1.412-10.1-4.235-12.912-2.823-2.781-6.933-4.171-12.316-4.171H328.95c-3.583 0-6.469-1.208-8.671-3.622-2.172-2.384-3.258-5.241-3.258-8.542 0-3.529 1.272-6.417 3.863-8.694 2.559-2.277 5.755-3.407 9.617-3.407h102.654c12.58 0 22.181 3.3 28.867 9.855 6.685 6.556 10.005 16.167 10.005 28.804v86.028c0 10.36 2.125 17.969 6.328 22.752 4.235 4.798 11.742 7.334 22.507 7.579 3.351.244 6.034 1.497 8.066 3.774 2.063 2.277 3.071 5.195 3.071 8.725 0 3.301-1.008 6.189-3.071 8.695-2.032 2.521-4.762 3.804-8.066 3.804-10.765.245-18.257 2.781-22.507 7.579-4.234 4.798-6.328 12.5-6.328 23.135v86.028c0 8.358-1.474 15.418-4.437 21.255-2.962 5.837-7.305 10.176-13.076 13.095-5.785 2.888-12.905 4.339-21.359 4.339H330.501v.092Z"
+        fill="currentColor"
+      />
+      <path
+        d="M356.885 329.738c18.691 0 33.846-14.929 33.846-33.342 0-18.412-15.155-33.341-33.846-33.341-18.691 0-33.846 14.929-33.846 33.341 0 18.413 15.155 33.342 33.846 33.342ZM167.305 329.738c18.691 0 33.846-14.929 33.846-33.342 0-18.412-15.155-33.341-33.846-33.341-18.691 0-33.846 14.929-33.846 33.341 0 18.413 15.155 33.342 33.846 33.342ZM244.477 32.846l-2.59 68.135c0 3.82-3.661 5.73-10.983 5.73-7.321 0-10.982-1.91-10.982-5.73-.651-16.976-1.178-30.148-1.613-39.484-.217-9.55-.434-16.35-.651-20.384-.217-4.034-.326-6.479-.326-7.32v-1.268c0-4.874 4.529-7.319 13.572-7.319 9.044 0 13.573 2.552 13.573 7.64Zm54.941 0-2.59 68.135c0 3.82-3.661 5.73-10.982 5.73-7.322 0-10.982-1.91-10.982-5.73-.652-16.976-1.179-30.148-1.613-39.484-.218-9.55-.435-16.35-.652-20.384-.217-4.034-.326-6.479-.326-7.32v-1.268c0-4.874 4.53-7.319 13.573-7.319s13.572 2.552 13.572 7.64Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+export function ManusIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      fill="currentColor"
+      fillRule="evenodd"
+      height="1em"
+      viewBox="0 0 24 24"
+      width="1em"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <title>Manus</title>
+      <path d="M8.047 1.163A.936.936 0 119.863.709c.063.256.132.508.2.76l.005.016c.158.58.315 1.16.416 1.771a.936.936 0 11-1.847.305c-.085-.517-.203-.949-.346-1.473v-.002c-.075-.274-.157-.573-.244-.923zM3.67 2.753a.936.936 0 00.428 1.252c.667.327 1.245.65 1.818 1.295a.936.936 0 001.4-1.242C6.5 3.138 5.66 2.687 4.922 2.325a.936.936 0 00-1.252.428z" />
+      <path
+        clipRule="evenodd"
+        d="M15.672 21.284c-.17-.036-.356-.075-.546-.117-.7-.152-1.65-.365-2.097-.513l-.033-.011-.032-.012c-.198-.074-.534-.156-1.09-.283l-.103-.023c-.48-.11-1.07-.244-1.63-.413-.578-.176-1.294-.437-1.903-.862-.638-.446-1.364-1.232-1.404-2.412a5.024 5.024 0 01.009-.51 2.716 2.716 0 01-.65-1.24 2.632 2.632 0 01.03-1.275c.083-.317.21-.594.316-.8.036-.07.073-.14.11-.206-.35-.111-.747-.248-1.133-.412-.503-.215-1.218-.57-1.752-1.141a2.798 2.798 0 01-.71-1.327 2.55 2.55 0 01.226-1.68c.604-1.208 1.757-1.635 2.782-1.672.926-.033 1.912.226 2.795.536.804.282 1.955.807 2.933 1.264.322-.529.747-1.126 1.149-1.608l.08-.095.092-.084a3.43 3.43 0 012.06-.887 3.559 3.559 0 011.059.08l.036.008.023.007h.003l.002.001s.002 0-.477 1.786l.479-1.786.208.058.19.102c.964.516 1.238 1.406 1.31 1.876a2.9 2.9 0 01-.008.903l-.003.018v.005l-1.858-.37 1.857.371-.01.054-.3 1.19c-.058.292-.065.459-.062.547a.286.286 0 00.016.107v.001c.013.03.043.095.154.263.043.066.088.131.144.214l.058.084c.08.118.174.257.274.412.623.97.684 1.902.68 2.499v.026l.238.078.103.032.153.049c.076.024.173.056.267.09.11-.202.407-.636.945-.636.702 0 .99.987.99.987.275 1.838-.98 8.013-2.794 9.164-1.386.88-2.413-.427-3.176-2.437zM8.72 12.868c.118-.119.47-.37 1.136-.445a4.337 4.337 0 012.228.365c.623.276 1.053.908 1.233 1.667.088.371.104.731.066 1.025-.04.31-.128.465-.169.511-.05.058-.228.157-.721.053a3.417 3.417 0 01-.764-.266l-.006-.003a.936.936 0 00-.861 1.662h.001l.003.002.008.004.024.012a4.888 4.888 0 00.34.152c.215.086.52.194.866.267.615.13 1.75.23 2.52-.652.37-.424.548-.98.615-1.501a4.789 4.789 0 00-.1-1.697c-.268-1.128-.976-2.362-2.297-2.948a6.208 6.208 0 00-3.195-.513c-.619.07-1.211.242-1.69.504l-.02-.006h-.004c-1.183-.338-3.536-1.01-2.956-2.17.44-.88 1.643-.807 3.275-.234.663.232 1.584.647 2.453 1.051.27.125.534.25.784.367l.974.454c.693-.832.962-1.29 1.2-1.695.163-.278.312-.53.573-.862l.025-.032a9.902 9.902 0 01.146-.18.895.895 0 01.02-.017c.642-.567 1.389-.36 1.389-.36.427.228.318.806.318.806l-.296 1.178c-.284 1.386.03 1.845.547 2.6.09.133.188.275.29.433.412.643.392 1.26.377 1.765-.01.324-.019.602.09.809.224.425 1.06.69 1.61.862.132.042.247.078.333.11l.059.023c-.078.24-.148.489-.218.737-.313 1.103-.623 2.202-1.55 2.53-.632.225-1.263.214-1.71.156-.786-.17-1.716-.379-2.066-.495-.363-.135-.871-.25-1.424-.377-1.316-.3-2.883-.656-3.331-1.462a.975.975 0 01-.125-.447c-.026-.74.234-1.404.234-1.404s-.403.002-.685-.27a.853.853 0 01-.238-.431c-.03-.13-.042-.28-.025-.44.008 0 .012-.008.012-.028 0-.234.234-.702.702-1.17z"
+      />
+      <path
+        d="M14.077.604a.936.936 0 01.315 1.285c-.355.584-.561 1.181-.786 2.081a.936.936 0 11-1.816-.454c.243-.971.504-1.778 1.002-2.598a.936.936 0 011.285-.314z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+export function OpenAiIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      fill="currentColor"
+      fillRule="evenodd"
+      height="1em"
+      viewBox="0 0 24 24"
+      width="1em"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <title>OpenAI</title>
+      <path d="M21.55 10.004a5.416 5.416 0 00-.478-4.501c-1.217-2.09-3.662-3.166-6.05-2.66A5.59 5.59 0 0010.831 1C8.39.995 6.224 2.546 5.473 4.838A5.553 5.553 0 001.76 7.496a5.487 5.487 0 00.691 6.5 5.416 5.416 0 00.477 4.502c1.217 2.09 3.662 3.165 6.05 2.66A5.586 5.586 0 0013.168 23c2.443.006 4.61-1.546 5.361-3.84a5.553 5.553 0 003.715-2.66 5.488 5.488 0 00-.693-6.497v.001zm-8.381 11.558a4.199 4.199 0 01-2.675-.954c.034-.018.093-.05.132-.074l4.44-2.53a.71.71 0 00.364-.623v-6.176l1.877 1.069c.02.01.033.029.036.05v5.115c-.003 2.274-1.87 4.118-4.174 4.123zM4.192 17.78a4.059 4.059 0 01-.498-2.763c.032.02.09.055.131.078l4.44 2.53c.225.13.504.13.73 0l5.42-3.088v2.138a.068.068 0 01-.027.057L9.9 19.288c-1.999 1.136-4.552.46-5.707-1.51h-.001zM3.023 8.216A4.15 4.15 0 015.198 6.41l-.002.151v5.06a.711.711 0 00.364.624l5.42 3.087-1.876 1.07a.067.067 0 01-.063.005l-4.489-2.559c-1.995-1.14-2.679-3.658-1.53-5.63h.001zm15.417 3.54l-5.42-3.088L14.896 7.6a.067.067 0 01.063-.006l4.489 2.557c1.998 1.14 2.683 3.662 1.529 5.633a4.163 4.163 0 01-2.174 1.807V12.38a.71.71 0 00-.363-.623zm1.867-2.773a6.04 6.04 0 00-.132-.078l-4.44-2.53a.731.731 0 00-.729 0l-5.42 3.088V7.325a.068.068 0 01.027-.057L14.1 4.713c2-1.137 4.555-.46 5.707 1.513.487.833.664 1.809.499 2.757h.001zm-11.741 3.81l-1.877-1.068a.065.065 0 01-.036-.051V6.559c.001-2.277 1.873-4.122 4.181-4.12.976 0 1.92.338 2.671.954-.034.018-.092.05-.131.073l-4.44 2.53a.71.71 0 00-.365.623l-.003 6.173v.002zm1.02-2.168L12 9.25l2.414 1.375v2.75L12 14.75l-2.415-1.375v-2.75z" />
+    </svg>
+  );
+}
+
+export function WarpIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg height="1em" version="1.1" viewBox="0 0 320 263" width="1em" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <title>Warp</title>
+      <g fill="none" fillRule="evenodd" stroke="none" strokeWidth="1">
+        <g fill="currentColor" transform="translate(0, 2.921)">
+          <path
+            d="M161.804673,0 L281.137743,0 C300.454337,0 316.114376,16.181684 316.114376,36.142777 L316.114376,176.461193 C316.114376,196.422856 300.454337,212.604401 281.137743,212.604401 L110.368317,212.604401 L161.804673,0 Z"
+            fillRule="nonzero"
+          />
+          <path
+            d="M130.80903,40.2777473 L34.6788119,40.2777473 C15.5262099,40.2777473 0,56.4592919 0,76.4203216 L0,216.739054 C0,236.700401 15.5262099,252.881945 34.6788119,252.881945 L152.994218,252.881945 L157.738772,233.102777 L84.5554059,233.102777 L130.80903,40.2777473 Z"
+            fillRule="nonzero"
+          />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+export function GoIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg fill="none" height="1em" viewBox="0 0 32 32" width="1em" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <title>Go</title>
+      <path
+        clipRule="evenodd"
+        d="M18.1177 14.0442C17.7408 14.1497 17.3586 14.2566 16.9162 14.3768C16.7001 14.438 16.6509 14.4519 16.4498 14.2074C16.2086 13.9194 16.0317 13.7331 15.6939 13.5636C14.6807 13.0384 13.6996 13.1909 12.7829 13.8178C11.6893 14.5632 11.1264 15.6644 11.1425 17.0367C11.1585 18.3921 12.0431 19.5103 13.3137 19.6966C14.4073 19.8491 15.324 19.4425 16.0477 18.5785C16.1924 18.3922 16.3212 18.1887 16.482 17.9516H13.378C13.0402 17.9516 12.9598 17.7314 13.0724 17.4433C13.2815 16.9181 13.6675 16.0372 13.8926 15.5967C13.9409 15.495 14.0535 15.3256 14.2947 15.3256H19.4702C19.7027 14.5496 20.0799 13.8164 20.5831 13.1226C21.7572 11.4961 23.1725 10.649 25.0863 10.2933C26.7268 9.9883 28.2707 10.1577 29.6699 11.1573C30.9405 12.0722 31.7285 13.3089 31.9376 14.9354C32.211 17.2225 31.5838 19.0862 30.0881 20.6787C29.0266 21.8138 27.7239 22.5254 26.2282 22.8473C25.9429 22.9029 25.6576 22.9293 25.3768 22.9553C25.2303 22.9689 25.085 22.9823 24.9416 22.9998C23.478 22.9659 22.1432 22.5254 21.0173 21.5089C20.2256 20.7879 19.6803 19.9019 19.4092 18.8705C19.2211 19.2707 18.9962 19.6539 18.7336 20.0185C17.5756 21.628 16.0638 22.6276 14.15 22.8987C12.5738 23.1189 11.1103 22.797 9.82366 21.7805C8.63353 20.8317 7.95805 19.578 7.78114 18.0194C7.57206 16.1727 8.08671 14.5124 9.14818 13.0554C10.2901 11.4798 11.8019 10.4802 13.6514 10.1244C15.1632 9.8364 16.6106 10.0228 17.9134 10.9546C18.7657 11.5475 19.3769 12.3608 19.779 13.3434C19.8755 13.4959 19.8111 13.5806 19.6181 13.6314C19.0545 13.7822 18.5903 13.9121 18.1177 14.0442ZM28.7581 15.974C28.7613 16.0309 28.7646 16.0909 28.7693 16.1552C28.6889 17.6122 27.9973 18.6965 26.7268 19.3911C25.8744 19.8485 24.9898 19.8994 24.1053 19.4928C22.9473 18.9506 22.3361 17.6122 22.6256 16.2907C22.9795 14.6982 23.9444 13.6986 25.4401 13.3428C26.968 12.9701 28.4316 13.9188 28.7211 15.5961C28.7438 15.7161 28.7505 15.836 28.7581 15.974Z"
+        fill="#00ACD7"
+        fillRule="evenodd"
+      />
+      <path
+        d="M2.44461 13.8517C2.41244 13.9025 2.42852 13.9364 2.49285 13.9364L7.2826 13.9534C7.33085 13.9534 7.41126 13.9025 7.44343 13.8517L7.71684 13.4112C7.749 13.3604 7.73292 13.3096 7.66859 13.3096H2.95926C2.89493 13.3096 2.81451 13.3435 2.78235 13.3943L2.44461 13.8517Z"
+        fill="#00ACD7"
+      />
+      <path
+        d="M0.0160829 15.4103C-0.0160829 15.4611 7.45058e-09 15.495 0.0643316 15.495L6.63928 15.4781C6.70361 15.4781 6.76794 15.4442 6.78402 15.3764L6.91269 14.9698C6.92877 14.919 6.8966 14.8682 6.83227 14.8682H0.530735C0.466404 14.8682 0.385989 14.902 0.353823 14.9529L0.0160829 15.4103Z"
+        fill="#00ACD7"
+      />
+      <path
+        d="M3.90813 16.9521C3.87596 17.0029 3.89204 17.0537 3.95638 17.0537L6.43019 17.0707C6.47843 17.0707 6.54277 17.0199 6.54277 16.9521L6.57493 16.5455C6.57493 16.4777 6.54277 16.4269 6.47843 16.4269H4.29412C4.22978 16.4269 4.16545 16.4777 4.13329 16.5285L3.90813 16.9521Z"
+        fill="#00ACD7"
+      />
+    </svg>
+  );
+}
+
+export function JavaIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg height="1em" viewBox="0 0 192.756 192.756" width="1em" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <title>Java</title>
+      <g clipRule="evenodd" fillRule="evenodd">
+        <path d="M0 0h192.756v192.756H0V0z" fill="#ffffff" />
+        <path
+          d="M80.372 101.729s-4.604 2.679 3.28 3.584c9.554 1.091 14.434.934 24.959-1.057 0 0 2.771 1.735 6.639 3.236-23.601 10.113-53.413-.585-34.878-5.763zM77.487 88.532s-5.165 3.823 2.726 4.639c10.206 1.054 18.262 1.14 32.211-1.544 0 0 1.926 1.955 4.957 3.023-28.531 8.345-60.307.657-39.894-6.118z"
+          fill="#3174b9"
+        />
+        <path
+          d="M101.797 66.143c5.818 6.697-1.525 12.72-1.525 12.72s14.766-7.621 7.984-17.168c-6.332-8.899-11.189-13.32 15.102-28.566-.001-.001-41.27 10.303-21.561 33.014z"
+          fill="#ca3132"
+        />
+        <path
+          d="M133.01 111.491s3.408 2.81-3.754 4.983c-13.619 4.125-56.694 5.369-68.659.164-4.298-1.872 3.766-4.467 6.303-5.015 2.646-.572 4.156-.468 4.156-.468-4.783-3.368-30.916 6.615-13.272 9.479 48.112 7.801 87.704-3.512 75.226-9.143zM82.587 74.857s-21.908 5.205-7.757 7.097c5.977.799 17.883.615 28.982-.316 9.068-.761 18.17-2.389 18.17-2.389s-3.195 1.371-5.51 2.949c-22.251 5.853-65.229 3.127-52.855-2.856 10.462-5.061 18.97-4.485 18.97-4.485zM121.891 96.824c22.617-11.75 12.16-23.044 4.859-21.522-1.785.373-2.586.695-2.586.695s.666-1.042 1.932-1.49c14.441-5.075 25.545 14.972-4.656 22.911-.001 0 .347-.314.451-.594z"
+          fill="#3174b9"
+        />
+        <path
+          d="M108.256 8.504s12.523 12.531-11.881 31.794c-19.571 15.458-4.462 24.269-.006 34.34-11.426-10.307-19.807-19.382-14.185-27.826 8.254-12.395 31.125-18.406 26.072-38.308z"
+          fill="#ca3132"
+        />
+        <path
+          d="M84.812 128.674c21.706 1.388 55.045-.771 55.836-11.044 0 0-1.518 3.894-17.941 6.983-18.529 3.488-41.386 3.082-54.938.845 0 0 2.777 2.298 17.043 3.216z"
+          fill="#3174b9"
+        />
+        <path
+          d="M139.645 147.096h-.66v-.37h1.781v.37h-.66v1.848h-.461v-1.848zm3.554.092h-.008l-.656 1.755h-.301l-.652-1.755h-.008v1.755h-.438v-2.218h.643l.604 1.569.604-1.569h.637v2.218h-.424v-1.755h-.001zM81.255 167.921c-2.047 1.774-4.211 2.772-6.154 2.772-2.768 0-4.27-1.663-4.27-4.324 0-2.881 1.608-4.989 8.044-4.989h2.379v6.541h.001zm5.65 6.374v-19.732c0-5.043-2.876-8.371-9.809-8.371-4.045 0-7.591.999-10.474 2.272l.83 3.495c2.271-.834 5.207-1.607 8.089-1.607 3.994 0 5.713 1.607 5.713 4.934v2.495h-1.996c-9.702 0-14.08 3.764-14.08 9.423 0 4.876 2.885 7.648 8.316 7.648 3.491 0 6.099-1.441 8.534-3.55l.443 2.993h4.434zM105.762 174.295h-7.045l-8.483-27.601h6.154l5.265 16.961 1.172 5.096c2.656-7.371 4.541-14.854 5.484-22.057h5.984c-1.602 9.088-4.488 19.066-8.531 27.601zM132.799 167.921c-2.053 1.774-4.217 2.772-6.156 2.772-2.768 0-4.268-1.663-4.268-4.324 0-2.881 1.609-4.989 8.041-4.989h2.383v6.541zm5.652 6.374v-19.732c0-5.043-2.885-8.371-9.811-8.371-4.049 0-7.594.999-10.477 2.272l.83 3.495c2.271-.834 5.213-1.607 8.096-1.607 3.988 0 5.709 1.607 5.709 4.934v2.495h-1.996c-9.703 0-14.078 3.764-14.078 9.423 0 4.876 2.879 7.648 8.311 7.648 3.494 0 6.098-1.441 8.539-3.55l.445 2.993h4.432zM58.983 178.985c-1.61 2.353-4.214 4.216-7.061 5.267l-2.79-3.286c2.169-1.113 4.027-2.91 4.892-4.582.745-1.49 1.056-3.406 1.056-7.992v-31.515h6.005v31.08c0 6.134-.49 8.613-2.102 11.028z"
+          fill="#ca3132"
+        />
+      </g>
+    </svg>
+  );
+}
+
+export function NodeIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      height="1em"
+      viewBox="0 -99 512 512"
+      width="1em"
+      xmlns="http://www.w3.org/2000/svg"
+      xmlnsXlink="http://www.w3.org/1999/xlink"
+      {...props}
+    >
+      <title>Node.js</title>
+      <defs>
+        <linearGradient id="node-b" x1="68.188%" x2="27.823%" y1="17.487%" y2="89.755%">
+          <stop offset="0%" stopColor="#41873F" />
+          <stop offset="32.88%" stopColor="#418B3D" />
+          <stop offset="63.52%" stopColor="#419637" />
+          <stop offset="93.19%" stopColor="#3FA92D" />
+          <stop offset="100%" stopColor="#3FAE2A" />
+        </linearGradient>
+        <path
+          d="M57.903 1.85a5.957 5.957 0 0 0-5.894 0L3.352 29.933c-1.85 1.04-2.89 3.005-2.89 5.085v56.286c0 2.08 1.156 4.045 2.89 5.085l48.657 28.085a5.957 5.957 0 0 0 5.894 0l48.658-28.085c1.849-1.04 2.89-3.005 2.89-5.085V35.019c0-2.08-1.157-4.045-2.89-5.085L57.903 1.85z"
+          id="node-a"
+        />
+        <linearGradient id="node-d" x1="43.277%" x2="159.245%" y1="55.169%" y2="-18.306%">
+          <stop offset="13.76%" stopColor="#41873F" />
+          <stop offset="40.32%" stopColor="#54A044" />
+          <stop offset="71.36%" stopColor="#66B848" />
+          <stop offset="90.81%" stopColor="#6CC04A" />
+        </linearGradient>
+      </defs>
+      <g fill="none">
+        <path
+          d="M253.11 313.094c-1.733 0-3.351-.462-4.854-1.271l-15.371-9.13c-2.312-1.272-1.156-1.734-.462-1.965 3.12-1.04 3.698-1.272 6.934-3.12.347-.232.81-.116 1.156.115l11.789 7.05c.462.231 1.04.231 1.386 0l46.115-26.698c.462-.231.694-.694.694-1.271v-53.28c0-.579-.232-1.04-.694-1.272l-46.115-26.582c-.462-.232-1.04-.232-1.386 0l-46.115 26.582c-.462.231-.694.809-.694 1.271v53.28c0 .463.232 1.04.694 1.272l12.598 7.281c6.819 3.467 11.095-.578 11.095-4.623v-52.587c0-.693.578-1.387 1.387-1.387h5.894c.694 0 1.387.578 1.387 1.387v52.587c0 9.13-4.97 14.447-13.638 14.447-2.658 0-4.738 0-10.633-2.89l-12.135-6.934c-3.005-1.733-4.854-4.97-4.854-8.437v-53.28c0-3.467 1.849-6.704 4.854-8.437l46.114-26.698c2.89-1.618 6.82-1.618 9.709 0l46.114 26.698c3.005 1.733 4.855 4.97 4.855 8.437v53.28c0 3.467-1.85 6.704-4.855 8.437l-46.114 26.698c-1.503.694-3.236 1.04-4.854 1.04zm14.216-36.637c-20.225 0-24.386-9.246-24.386-17.105 0-.694.578-1.387 1.387-1.387h6.01c.693 0 1.271.462 1.271 1.156.925 6.125 3.583 9.13 15.834 9.13 9.708 0 13.87-2.196 13.87-7.397 0-3.005-1.157-5.2-16.297-6.703-12.598-1.272-20.457-4.045-20.457-14.1 0-9.362 7.86-14.91 21.035-14.91 14.793 0 22.075 5.086 23 16.18 0 .348-.116.694-.347 1.041-.232.231-.578.462-.925.462h-6.01c-.578 0-1.156-.462-1.271-1.04-1.387-6.356-4.97-8.437-14.447-8.437-10.633 0-11.905 3.699-11.905 6.472 0 3.352 1.503 4.392 15.834 6.241 14.216 1.85 20.92 4.508 20.92 14.447-.116 10.171-8.437 15.95-23.116 15.95z"
+          fill="#539E43"
+        />
+        <path
+          d="M110.028 104.712c0-2.08-1.156-4.046-3.005-5.086l-49.004-28.2c-.81-.463-1.734-.694-2.658-.81h-.463c-.924 0-1.849.347-2.658.81l-49.004 28.2c-1.85 1.04-3.005 3.005-3.005 5.086l.116 75.817c0 1.04.578 2.08 1.502 2.543.925.578 2.08.578 2.89 0l29.125-16.643c1.849-1.04 3.005-3.005 3.005-5.085v-35.482c0-2.08 1.155-4.045 3.005-5.085l12.366-7.166c.925-.578 1.965-.81 3.005-.81 1.04 0 2.08.232 2.89.81l12.366 7.166c1.85 1.04 3.005 3.004 3.005 5.085v35.482c0 2.08 1.156 4.045 3.005 5.085l29.125 16.643c.925.578 2.08.578 3.005 0 .925-.463 1.503-1.503 1.503-2.543l-.116-75.817zM345.571.347c-.924-.463-2.08-.463-2.89 0-.924.578-1.502 1.502-1.502 2.542v75.125c0 .693-.346 1.386-1.04 1.849-.693.346-1.387.346-2.08 0l-12.251-7.05a5.957 5.957 0 0 0-5.895 0l-49.004 28.316c-1.849 1.04-3.005 3.005-3.005 5.085v56.516c0 2.08 1.156 4.046 3.005 5.086l49.004 28.316a5.957 5.957 0 0 0 5.895 0l49.004-28.316c1.849-1.04 3.005-3.005 3.005-5.086V21.844c0-2.196-1.156-4.16-3.005-5.201L345.572.347zm-4.507 143.776c0 .578-.231 1.04-.694 1.271l-16.758 9.708a1.714 1.714 0 0 1-1.503 0l-16.758-9.708c-.463-.231-.694-.809-.694-1.271v-19.417c0-.578.231-1.04.694-1.271l16.758-9.709a1.714 1.714 0 0 1 1.503 0l16.758 9.709c.463.23.694.809.694 1.271v19.417zM508.648 124.244c1.85-1.04 2.89-3.005 2.89-5.086v-13.753c0-2.08-1.156-4.045-2.89-5.085l-48.657-28.2a5.957 5.957 0 0 0-5.894 0l-49.004 28.315c-1.85 1.04-3.005 3.005-3.005 5.086v56.516c0 2.08 1.155 4.045 3.005 5.085l48.657 27.738c1.85 1.04 4.045 1.04 5.779 0L489 178.45c.925-.463 1.503-1.503 1.503-2.543 0-1.04-.578-2.08-1.503-2.543l-49.235-28.316c-.924-.577-1.502-1.502-1.502-2.542v-17.683c0-1.04.578-2.08 1.502-2.543l15.372-8.784a2.821 2.821 0 0 1 3.005 0l15.371 8.784c.925.578 1.503 1.502 1.503 2.543v13.869c0 1.04.578 2.08 1.502 2.542.925.578 2.08.578 3.005 0l29.125-16.99z"
+          fill="#333"
+        />
+        <path
+          d="M456.293 121.586a1.05 1.05 0 0 1 1.155 0l9.362 5.432c.347.23.578.577.578 1.04v10.864c0 .462-.231.809-.578 1.04l-9.362 5.432a1.05 1.05 0 0 1-1.155 0l-9.362-5.432c-.347-.231-.578-.578-.578-1.04v-10.864c0-.463.231-.81.578-1.04l9.362-5.432z"
+          fill="#539E43"
+        />
+        <g transform="translate(134.068 70.501)">
+          <mask fill="#ffffff" id="node-c">
+            <use xlinkHref="#node-a" />
+          </mask>
+          <use fill="url(#node-b)" xlinkHref="#node-a" />
+          <g mask="url(#node-c)">
+            <path d="M51.893 1.85L3.121 29.933C1.27 30.974 0 32.94 0 35.02v56.286c0 1.387.578 2.658 1.502 3.698L56.285 1.156c-1.387-.231-3.005-.116-4.392.693zM56.632 125.053c.462-.116.925-.347 1.387-.578l48.773-28.085c1.85-1.04 3.005-3.005 3.005-5.085V35.019c0-1.502-.694-3.005-1.734-4.045l-51.43 94.079z" />
+            <path
+              d="M106.676 29.934L57.788 1.85a8.025 8.025 0 0 0-1.503-.578L1.502 95.12a6.082 6.082 0 0 0 1.619 1.387l48.888 28.085c1.387.809 3.005 1.04 4.507.577l51.432-94.078c-.347-.462-.81-.81-1.272-1.156z"
+              fill="url(#node-d)"
+            />
+          </g>
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+export function PythonIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      height="1em"
+      viewBox="5.591 -165.238 474.801 474.801"
+      width="1em"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <title>Python</title>
+      <path
+        d="M184.614 61.929c0-14.562-4.152-22.038-12.457-22.447-3.305-.156-6.53.37-9.669 1.589-2.505.896-4.191 1.784-5.078 2.681V78.51c5.312 3.334 10.029 4.884 14.143 4.64 8.703-.577 13.061-7.643 13.061-21.221zm10.244.604c0 7.398-1.735 13.539-5.225 18.422-3.889 5.527-9.279 8.373-16.17 8.529-5.195.165-10.547-1.462-16.054-4.874v31.591l-8.909-3.178v-70.12c1.462-1.793 3.344-3.333 5.624-4.64 5.303-3.09 11.745-4.678 19.329-4.756l.126.126c6.931-.087 12.271 2.759 16.024 8.529 3.5 5.293 5.255 12.077 5.255 20.371zM249.305 83.266c0 9.923-.994 16.794-2.982 20.615-1.998 3.82-5.8 6.871-11.414 9.143-4.552 1.793-9.475 2.768-14.757 2.934l-1.473-5.614c5.371-.73 9.153-1.462 11.346-2.193 4.318-1.462 7.281-3.703 8.909-6.706 1.306-2.446 1.949-7.115 1.949-14.025V85.1c-6.092 2.769-12.476 4.143-19.152 4.143-4.387 0-8.256-1.374-11.59-4.143-3.743-3.012-5.614-6.832-5.614-11.462v-37.08l8.909-3.051v37.321c0 3.986 1.286 7.057 3.859 9.211s5.907 3.188 9.991 3.109c4.084-.088 8.46-1.667 13.109-4.757v-43.54h8.909v48.415zM284.082 88.997a35.51 35.51 0 0 1-2.934.126c-5.039 0-8.968-1.198-11.774-3.606-2.798-2.407-4.201-5.73-4.201-9.971v-35.09h-6.102v-5.604h6.102V19.968l8.899-3.168v18.052h10.01v5.604h-10.01v34.846c0 3.344.896 5.712 2.689 7.097 1.54 1.14 3.987 1.793 7.32 1.959v4.639zM338.023 88.266h-8.909V53.878c0-3.499-.818-6.511-2.446-9.025-1.881-2.847-4.493-4.27-7.847-4.27-4.084 0-9.191 2.154-15.322 6.462v41.221h-8.908V6.069l8.908-2.807V40.7c5.692-4.143 11.911-6.219 18.666-6.219 4.718 0 8.538 1.589 11.463 4.757 2.934 3.167 4.396 7.115 4.396 11.833v37.195h-.001zM385.374 60.526c0-5.595-1.062-10.215-3.178-13.87-2.515-4.454-6.423-6.804-11.706-7.047-9.767.565-14.641 7.563-14.641 20.976 0 6.15 1.014 11.287 3.061 15.41 2.612 5.254 6.531 7.847 11.756 7.759 9.805-.079 14.708-7.818 14.708-23.228zm9.757.058c0 7.964-2.037 14.592-6.102 19.884-4.475 5.927-10.653 8.899-18.539 8.899-7.817 0-13.909-2.973-18.305-8.899-3.987-5.292-5.976-11.92-5.976-19.884 0-7.485 2.154-13.782 6.463-18.909 4.552-5.439 10.536-8.168 17.935-8.168 7.397 0 13.421 2.729 18.061 8.168 4.309 5.127 6.463 11.424 6.463 18.909zM446.205 88.266h-8.909V51.929c0-3.986-1.198-7.096-3.596-9.338-2.398-2.232-5.596-3.314-9.582-3.227-4.229.078-8.256 1.462-12.076 4.143v44.759h-8.909v-45.86c5.127-3.732 9.845-6.17 14.153-7.31 4.064-1.062 7.651-1.589 10.741-1.589 2.114 0 4.104.204 5.975.614 3.499.809 6.346 2.31 8.538 4.513 2.447 2.437 3.665 5.36 3.665 8.782v40.85z"
+        fill="#646464"
+      />
+      <defs>
+        <linearGradient
+          gradientTransform="matrix(.5625 0 0 -.568 1145.56 166.282)"
+          gradientUnits="userSpaceOnUse"
+          id="python-a"
+          x1="-2031.312"
+          x2="-1922.296"
+          y1="275.868"
+          y2="182.075"
+        >
+          <stop offset="0" stopColor="#5a9fd4" />
+          <stop offset="1" stopColor="#306998" />
+        </linearGradient>
+        <linearGradient
+          gradientTransform="matrix(.5625 0 0 -.568 1145.56 166.282)"
+          gradientUnits="userSpaceOnUse"
+          id="python-b"
+          x1="-1880.151"
+          x2="-1919.08"
+          y1="125.305"
+          y2="180.384"
+        >
+          <stop offset="0" stopColor="#ffd43b" />
+          <stop offset="1" stopColor="#ffe873" />
+        </linearGradient>
+        <radialGradient
+          cx="-3393.238"
+          cy="376.791"
+          gradientTransform="matrix(0 -.2399 -1.0547 0 458.797 -680.1)"
+          gradientUnits="userSpaceOnUse"
+          id="python-c"
+          r="29.037"
+        >
+          <stop offset="0" stopColor="#b8b8b8" stopOpacity=".498" />
+          <stop offset="1" stopColor="#7f7f7f" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <path
+        d="M60.51 6.398c-4.584.021-8.961.412-12.812 1.094-11.346 2.005-13.406 6.2-13.406 13.938v10.219h26.812v3.406H24.229c-7.792 0-14.616 4.684-16.75 13.594-2.462 10.213-2.571 16.586 0 27.25 1.906 7.938 6.458 13.594 14.25 13.594h9.219v-12.25c0-8.85 7.657-16.656 16.75-16.656h26.781c7.455 0 13.406-6.138 13.406-13.625V21.429c0-7.266-6.13-12.725-13.406-13.938-4.607-.766-9.385-1.115-13.969-1.093zm-14.5 8.218c2.77 0 5.031 2.299 5.031 5.125 0 2.816-2.262 5.094-5.031 5.094-2.779 0-5.031-2.277-5.031-5.094 0-2.826 2.252-5.125 5.031-5.125z"
+        fill="url(#python-a)"
+      />
+      <path
+        d="M91.229 35.054V46.96c0 9.231-7.826 17-16.75 17H47.698c-7.336 0-13.406 6.278-13.406 13.625v25.531c0 7.267 6.318 11.541 13.406 13.625 8.487 2.496 16.626 2.947 26.781 0 6.75-1.954 13.406-5.888 13.406-13.625V92.898H61.104v-3.406h40.187c7.793 0 10.696-5.436 13.406-13.594 2.8-8.398 2.681-16.476 0-27.25-1.926-7.757-5.604-13.594-13.406-13.594H91.229zM76.166 99.71c2.779 0 5.031 2.277 5.031 5.094 0 2.826-2.252 5.125-5.031 5.125-2.77 0-5.031-2.299-5.031-5.125 0-2.816 2.262-5.094 5.031-5.094z"
+        fill="url(#python-b)"
+      />
+      <path
+        d="M463.554 26.909h1.562v-9.796h3.699v-1.168h-8.962v1.168h3.7v9.796m6.648 0h1.334v-8.947l2.896 8.946h1.485l3.019-8.916v8.917h1.456V15.946h-1.926l-3.299 9.393-2.812-9.393h-2.153v10.963"
+        fill="#646464"
+      />
+      <path
+        d="M97.339 134.098c0 3.848-16.087 6.967-35.932 6.967-19.844 0-35.931-3.119-35.931-6.967s16.087-6.968 35.931-6.968c19.845 0 35.932 3.12 35.932 6.968z"
+        fill="url(#python-c)"
+        opacity=".444"
+      />
     </svg>
   );
 }

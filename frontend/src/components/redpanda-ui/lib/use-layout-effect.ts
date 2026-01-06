@@ -1,4 +1,6 @@
-import * as React from 'react';
+'use client';
+
+import React from 'react';
 
 /**
  * Taken from Radix UI
@@ -9,6 +11,10 @@ import * as React from 'react';
  * @see https://github.com/radix-ui/primitives/blob/main/packages/react/use-layout-effect/src/use-layout-effect.tsx
  * @see https://reactjs.org/docs/hooks-reference.html#uselayouteffect
  */
-const useLayoutEffect = globalThis?.document ? React.useLayoutEffect : () => {};
+const useLayoutEffect = globalThis?.document
+  ? React.useLayoutEffect
+  : () => {
+      // Server-side no-op
+    };
 
 export { useLayoutEffect };

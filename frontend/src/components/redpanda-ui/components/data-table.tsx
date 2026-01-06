@@ -55,7 +55,8 @@ import { Input } from './input';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
 import { Separator } from './separator';
-import { cn } from '../lib/utils';
+import { Text } from './typography';
+import { cn, type SharedProps } from '../lib/utils';
 
 // Schema
 export const taskSchema = z.object({
@@ -204,10 +205,9 @@ export const dataTableMockData: Task[] = [
 ];
 
 // Components
-interface DataTableColumnHeaderProps<TData, TValue> extends React.HTMLAttributes<HTMLDivElement> {
+interface DataTableColumnHeaderProps<TData, TValue> extends React.HTMLAttributes<HTMLDivElement>, SharedProps {
   column: Column<TData, TValue>;
   title: string;
-  testId?: string;
 }
 
 export function DataTableColumnHeader<TData, TValue>({
@@ -228,15 +228,11 @@ export function DataTableColumnHeader<TData, TValue>({
     <div className={cn('flex items-center gap-2', className)} data-testid={testId}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="data-[state=open]:bg-accent -ml-3 h-8">
+          <Button className="-ml-3 h-8 data-[state=open]:bg-accent" size="sm" variant="ghost">
             <span>{title}</span>
-            {column.getIsSorted() === 'desc' ? (
-              <ArrowDown />
-            ) : column.getIsSorted() === 'asc' ? (
-              <ArrowUp />
-            ) : (
-              <ChevronsUpDown />
-            )}
+            {column.getIsSorted() === 'desc' && <ArrowDown />}
+            {column.getIsSorted() === 'asc' && <ArrowUp />}
+            {!column.getIsSorted() && <ChevronsUpDown />}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
@@ -259,7 +255,7 @@ export function DataTableColumnHeader<TData, TValue>({
   );
 }
 
-interface DataTableFacetedFilterProps<TData, TValue> {
+interface DataTableFacetedFilterProps<TData, TValue> extends SharedProps {
   column?: Column<TData, TValue>;
   title?: string;
   options: {
@@ -267,7 +263,7 @@ interface DataTableFacetedFilterProps<TData, TValue> {
     value: string;
     icon?: React.ComponentType<{ className?: string }>;
   }[];
-  testId?: string;
+  labelClassName?: string;
 }
 
 export function DataTableFacetedFilter<TData, TValue>({
@@ -275,6 +271,7 @@ export function DataTableFacetedFilter<TData, TValue>({
   title,
   options,
   testId,
+  labelClassName,
 }: DataTableFacetedFilterProps<TData, TValue>) {
   const facets = column?.getFacetedUniqueValues();
   const selectedValues = new Set(column?.getFilterValue() as string[]);
@@ -282,24 +279,24 @@ export function DataTableFacetedFilter<TData, TValue>({
   return (
     <Popover testId={testId}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 border-dashed">
+        <Button className="h-8 border-dashed" size="sm" variant="outline">
           {title}
           {selectedValues?.size > 0 && (
             <>
-              <Separator orientation="vertical" className="mx-2 h-4" />
-              <Badge variant="secondary" className="rounded-sm px-1 font-normal lg:hidden">
+              <Separator className="mx-2 h-4" orientation="vertical" />
+              <Badge className="rounded-sm px-1 font-normal lg:hidden" variant="secondary">
                 {selectedValues.size}
               </Badge>
               <div className="hidden gap-1 lg:flex">
                 {selectedValues.size > 2 ? (
-                  <Badge variant="secondary" className="rounded-sm px-1 font-normal">
+                  <Badge className="rounded-sm px-1 font-normal" variant="secondary">
                     {selectedValues.size} selected
                   </Badge>
                 ) : (
                   options
                     .filter((option) => selectedValues.has(option.value))
                     .map((option) => (
-                      <Badge variant="secondary" key={option.value} className="rounded-sm px-1 font-normal">
+                      <Badge className="rounded-sm px-1 font-normal" key={option.value} variant="secondary">
                         {option.label}
                       </Badge>
                     ))
@@ -309,7 +306,7 @@ export function DataTableFacetedFilter<TData, TValue>({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="start">
+      <PopoverContent align="start" className="w-[200px] p-0">
         <Command>
           <CommandInput placeholder={title} />
           <CommandList>
@@ -319,8 +316,8 @@ export function DataTableFacetedFilter<TData, TValue>({
                 const isSelected = selectedValues.has(option.value);
                 return (
                   <CommandItem
-                    key={option.value}
                     className="gap-3"
+                    key={option.value}
                     onSelect={() => {
                       if (isSelected) {
                         selectedValues.delete(option.value);
@@ -333,7 +330,6 @@ export function DataTableFacetedFilter<TData, TValue>({
                   >
                     <Checkbox
                       checked={isSelected}
-                      className="size-4 shrink-0"
                       onCheckedChange={(checked) => {
                         if (checked) {
                           selectedValues.add(option.value);
@@ -344,14 +340,14 @@ export function DataTableFacetedFilter<TData, TValue>({
                         column?.setFilterValue(filterValues.length ? filterValues : undefined);
                       }}
                     />
-                    <div className="flex items-center gap-2 flex-1">
-                      {option.icon && <option.icon className="text-muted-foreground size-4 shrink-0" />}
-                      <span className={cn('flex-1', title === 'Region' ? 'font-mono' : '')}>{option.label}</span>
-                      {facets?.get(option.value) && (
-                        <span className="text-muted-foreground ml-auto flex size-4 items-center justify-center font-mono text-xs shrink-0">
+                    <div className="flex flex-1 items-center gap-2">
+                      {option.icon ? <option.icon className="size-4 shrink-0 text-muted-foreground" /> : null}
+                      <span className={cn('flex-1', labelClassName)}>{option.label}</span>
+                      {facets?.get(option.value) ? (
+                        <span className="ml-auto flex size-4 items-center justify-center font-mono text-muted-foreground text-xs">
                           {facets.get(option.value)}
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </CommandItem>
                 );
@@ -362,8 +358,8 @@ export function DataTableFacetedFilter<TData, TValue>({
                 <CommandSeparator />
                 <CommandGroup>
                   <CommandItem
-                    onSelect={() => column?.setFilterValue(undefined)}
                     className="justify-center text-center"
+                    onSelect={() => column?.setFilterValue(undefined)}
                   >
                     Clear filters
                   </CommandItem>
@@ -377,27 +373,24 @@ export function DataTableFacetedFilter<TData, TValue>({
   );
 }
 
-interface DataTablePaginationProps<TData> {
+interface DataTablePaginationProps<TData> extends SharedProps {
   table: Table<TData>;
-  testId?: string;
 }
 
 export function DataTablePagination<TData>({ table, testId }: DataTablePaginationProps<TData>) {
   return (
-    <div className="flex items-center justify-end px-2" data-testid={testId}>
+    <div className="flex items-center justify-between px-2" data-testid={testId}>
+      <div className="flex-1 text-muted-foreground text-sm">
+        {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
+      </div>
       <div className="flex items-center space-x-6 lg:space-x-8">
-        {table.getPageCount() > 0 && (
-          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-          </div>
-        )}
         <div className="flex items-center space-x-2">
-          <p className="text-sm font-medium">Rows per page</p>
+          <Text className="font-medium text-sm">Rows per page</Text>
           <Select
-            value={`${table.getState().pagination.pageSize}`}
             onValueChange={(value) => {
               table.setPageSize(Number(value));
             }}
+            value={`${table.getState().pagination.pageSize}`}
           >
             <SelectTrigger className="h-8 w-[70px]">
               <SelectValue placeholder={table.getState().pagination.pageSize} />
@@ -411,43 +404,46 @@ export function DataTablePagination<TData>({ table, testId }: DataTablePaginatio
             </SelectContent>
           </Select>
         </div>
+        <div className="flex w-[100px] items-center justify-center font-medium text-sm">
+          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+        </div>
         <div className="flex items-center space-x-2">
           <Button
-            variant="outline"
-            size="icon"
             className="hidden size-8 lg:flex"
-            onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
+            onClick={() => table.setPageIndex(0)}
+            size="icon"
+            variant="outline"
           >
             <span className="sr-only">Go to first page</span>
             <ChevronsLeft />
           </Button>
           <Button
-            variant="outline"
-            size="icon"
             className="size-8"
-            onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
+            onClick={() => table.previousPage()}
+            size="icon"
+            variant="outline"
           >
             <span className="sr-only">Go to previous page</span>
             <ChevronLeft />
           </Button>
           <Button
-            variant="outline"
-            size="icon"
             className="size-8"
-            onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            onClick={() => table.nextPage()}
+            size="icon"
+            variant="outline"
           >
             <span className="sr-only">Go to next page</span>
             <ChevronRight />
           </Button>
           <Button
-            variant="outline"
-            size="icon"
             className="hidden size-8 lg:flex"
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
+            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            size="icon"
+            variant="outline"
           >
             <span className="sr-only">Go to last page</span>
             <ChevronsRight />
@@ -458,9 +454,9 @@ export function DataTablePagination<TData>({ table, testId }: DataTablePaginatio
   );
 }
 
-interface DataTableRowActionsProps<TData> {
+type DataTableRowActionsProps<TData> = {
   row: Row<TData>;
-}
+};
 
 export function DataTableRowActions<TData>({ row }: DataTableRowActionsProps<TData>) {
   const task = taskSchema.parse(row.original);
@@ -468,7 +464,7 @@ export function DataTableRowActions<TData>({ row }: DataTableRowActionsProps<TDa
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="data-[state=open]:bg-muted size-8">
+        <Button className="size-8 data-[state=open]:bg-muted" size="icon" variant="ghost">
           <MoreHorizontal />
           <span className="sr-only">Open menu</span>
         </Button>
@@ -500,9 +496,8 @@ export function DataTableRowActions<TData>({ row }: DataTableRowActionsProps<TDa
   );
 }
 
-interface DataTableToolbarProps<TData> {
+interface DataTableToolbarProps<TData> extends SharedProps {
   table: Table<TData>;
-  testId?: string;
 }
 
 export function DataTableToolbar<TData>({ table, testId }: DataTableToolbarProps<TData>) {
@@ -512,23 +507,23 @@ export function DataTableToolbar<TData>({ table, testId }: DataTableToolbarProps
     <div className="flex items-center justify-between" data-testid={testId}>
       <div className="flex flex-1 items-center gap-2">
         <Input
+          className="h-8 w-[150px] lg:w-[250px]"
+          onChange={(event) => table.getColumn('title')?.setFilterValue(event.target.value)}
           placeholder="Filter tasks..."
           value={(table.getColumn('title')?.getFilterValue() as string) ?? ''}
-          onChange={(event) => table.getColumn('title')?.setFilterValue(event.target.value)}
-          className="h-8 w-[150px] lg:w-[250px]"
         />
         {table.getColumn('status') && (
-          <DataTableFacetedFilter column={table.getColumn('status')} title="Status" options={statuses} />
+          <DataTableFacetedFilter column={table.getColumn('status')} options={statuses} title="Status" />
         )}
         {table.getColumn('priority') && (
-          <DataTableFacetedFilter column={table.getColumn('priority')} title="Priority" options={priorities} />
+          <DataTableFacetedFilter column={table.getColumn('priority')} options={priorities} title="Priority" />
         )}
-        {isFiltered && (
-          <Button variant="ghost" size="sm" onClick={() => table.resetColumnFilters()}>
+        {isFiltered ? (
+          <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
             Reset
             <X />
           </Button>
-        )}
+        ) : null}
       </div>
       <div className="flex items-center gap-2">
         <DataTableViewOptions table={table} />
@@ -538,34 +533,32 @@ export function DataTableToolbar<TData>({ table, testId }: DataTableToolbarProps
   );
 }
 
-export function DataTableViewOptions<TData>({ table, testId }: { table: Table<TData>; testId?: string }) {
+export function DataTableViewOptions<TData>({ table, testId }: { table: Table<TData> } & SharedProps) {
   return (
     <div data-testid={testId}>
       <DropdownMenu>
         <DropdownMenuPrimitive.Trigger asChild>
-          <Button variant="outline" size="sm" className="ml-auto hidden h-8 lg:flex">
+          <Button className="ml-auto hidden h-8 lg:flex" size="sm" variant="outline">
             <Settings2 />
             View
           </Button>
         </DropdownMenuPrimitive.Trigger>
-        <DropdownMenuContent align="end" className="w-auto min-w-[150px] max-w-[300px]">
+        <DropdownMenuContent align="end" className="w-[150px]">
           <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {table
             .getAllColumns()
             .filter((column) => typeof column.accessorFn !== 'undefined' && column.getCanHide())
-            .map((column) => {
-              return (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  className="capitalize"
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                >
-                  {column.id}
-                </DropdownMenuCheckboxItem>
-              );
-            })}
+            .map((column) => (
+              <DropdownMenuCheckboxItem
+                checked={column.getIsVisible()}
+                className="capitalize"
+                key={column.id}
+                onCheckedChange={(value) => column.toggleVisibility(!!value)}
+              >
+                {column.id}
+              </DropdownMenuCheckboxItem>
+            ))}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -577,18 +570,18 @@ export const dataTableColumns: ColumnDef<Task>[] = [
     id: 'select',
     header: ({ table }) => (
       <Checkbox
-        checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
+        checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
         className="translate-y-[2px]"
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
       />
     ),
     cell: ({ row }) => (
       <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
+        checked={row.getIsSelected()}
         className="translate-y-[2px]"
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
       />
     ),
     enableSorting: false,
@@ -609,7 +602,7 @@ export const dataTableColumns: ColumnDef<Task>[] = [
 
       return (
         <div className="flex gap-2">
-          {label && <Badge variant="outline">{label.label}</Badge>}
+          {label ? <Badge variant="outline">{label.label}</Badge> : null}
           <span className="max-w-[500px] truncate font-medium">{row.getValue('title')}</span>
         </div>
       );
@@ -627,14 +620,12 @@ export const dataTableColumns: ColumnDef<Task>[] = [
 
       return (
         <div className="flex w-[100px] items-center gap-2">
-          {status.icon && <status.icon className="text-muted-foreground size-4" />}
+          {status.icon ? <status.icon className="size-4 text-muted-foreground" /> : null}
           <span>{status.label}</span>
         </div>
       );
     },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
+    filterFn: (row, id, value) => value.includes(row.getValue(id)),
   },
   {
     accessorKey: 'priority',
@@ -648,14 +639,12 @@ export const dataTableColumns: ColumnDef<Task>[] = [
 
       return (
         <div className="flex items-center gap-2">
-          {priority.icon && <priority.icon className="text-muted-foreground size-4" />}
+          {priority.icon ? <priority.icon className="size-4 text-muted-foreground" /> : null}
           <span>{priority.label}</span>
         </div>
       );
     },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
+    filterFn: (row, id, value) => value.includes(row.getValue(id)),
   },
   {
     id: 'actions',

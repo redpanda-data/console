@@ -4,7 +4,7 @@ import { AnimatePresence, type HTMLMotionProps, motion, type Transition } from '
 import { Popover as PopoverPrimitive } from 'radix-ui';
 import React from 'react';
 
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
 type PopoverContextType = {
   isOpen: boolean;
@@ -32,16 +32,20 @@ const getInitialPosition = (side: Side) => {
       return { x: 15 };
     case 'right':
       return { x: -15 };
+    default:
+      return {};
   }
 };
 
-type PopoverProps = React.ComponentProps<typeof PopoverPrimitive.Root> & { testId?: string };
+type PopoverProps = React.ComponentProps<typeof PopoverPrimitive.Root> & SharedProps;
 
 function Popover({ children, testId, ...props }: PopoverProps) {
   const [isOpen, setIsOpen] = React.useState(props?.open ?? props?.defaultOpen ?? false);
 
   React.useEffect(() => {
-    if (props?.open !== undefined) setIsOpen(props.open);
+    if (props?.open !== undefined) {
+      setIsOpen(props.open);
+    }
   }, [props?.open]);
 
   const handleOpenChange = React.useCallback(
@@ -51,7 +55,7 @@ function Popover({ children, testId, ...props }: PopoverProps) {
     },
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: part of popover implementation
-    [props],
+    [props]
   );
 
   return (
@@ -63,16 +67,16 @@ function Popover({ children, testId, ...props }: PopoverProps) {
   );
 }
 
-type PopoverTriggerProps = React.ComponentProps<typeof PopoverPrimitive.Trigger> & { testId?: string };
+type PopoverTriggerProps = React.ComponentProps<typeof PopoverPrimitive.Trigger> & SharedProps;
 
 function PopoverTrigger({ testId, ...props }: PopoverTriggerProps) {
   return <PopoverPrimitive.Trigger data-slot="popover-trigger" data-testid={testId} {...props} />;
 }
 
 type PopoverContentProps = React.ComponentProps<typeof PopoverPrimitive.Content> &
-  HTMLMotionProps<'div'> & {
+  HTMLMotionProps<'div'> &
+  SharedProps & {
     transition?: Transition;
-    testId?: string;
     container?: Element;
   };
 
@@ -92,28 +96,28 @@ function PopoverContent({
 
   return (
     <AnimatePresence>
-      {isOpen && (
-        <PopoverPrimitive.Portal forceMount data-slot="popover-portal" container={container}>
-          <PopoverPrimitive.Content forceMount align={align} sideOffset={sideOffset} className="z-50" {...props}>
+      {isOpen ? (
+        <PopoverPrimitive.Portal container={container} data-slot="popover-portal" forceMount>
+          <PopoverPrimitive.Content align={align} className="z-50" forceMount sideOffset={sideOffset} {...props}>
             <motion.div
-              key="popover-content"
-              data-slot="popover-content"
-              data-testid={testId}
-              initial={{ opacity: 0, scale: 0.5, ...initialPosition }}
               animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
-              exit={{ opacity: 0, scale: 0.5, ...initialPosition }}
-              transition={transition}
               className={cn(
                 'w-72 rounded-lg border bg-popover p-4 text-popover-foreground shadow-md outline-none',
-                className,
+                className
               )}
+              data-slot="popover-content"
+              data-testid={testId}
+              exit={{ opacity: 0, scale: 0.5, ...initialPosition }}
+              initial={{ opacity: 0, scale: 0.5, ...initialPosition }}
+              key="popover-content"
+              transition={transition}
               {...props}
             >
               {children}
             </motion.div>
           </PopoverPrimitive.Content>
         </PopoverPrimitive.Portal>
-      )}
+      ) : null}
     </AnimatePresence>
   );
 }

@@ -2,32 +2,33 @@ import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from 'lucide-re
 import React from 'react';
 
 import { type Button, buttonVariants } from './button';
-import { cn } from '../lib/utils';
+import { Text } from './typography';
+import { cn, type SharedProps } from '../lib/utils';
 
-function Pagination({ className, testId, ...props }: React.ComponentProps<'nav'> & { testId?: string }) {
+function Pagination({ className, testId, ...props }: React.ComponentProps<'nav'> & SharedProps) {
   return (
     <nav
       aria-label="pagination"
+      className={cn('mx-auto flex w-full justify-center', className)}
       data-slot="pagination"
       data-testid={testId}
-      className={cn('mx-auto flex w-full justify-center', className)}
       {...props}
     />
   );
 }
 
-function PaginationContent({ className, testId, ...props }: React.ComponentProps<'ul'> & { testId?: string }) {
+function PaginationContent({ className, testId, ...props }: React.ComponentProps<'ul'> & SharedProps) {
   return (
     <ul
+      className={cn('flex flex-row items-center gap-1', className)}
       data-slot="pagination-content"
       data-testid={testId}
-      className={cn('flex flex-row items-center gap-1', className)}
       {...props}
     />
   );
 }
 
-function PaginationItem({ testId, ...props }: React.ComponentProps<'li'> & { testId?: string }) {
+function PaginationItem({ testId, ...props }: React.ComponentProps<'li'> & SharedProps) {
   return <li data-slot="pagination-item" data-testid={testId} {...props} />;
 }
 
@@ -41,16 +42,16 @@ function PaginationLink({ className, isActive, size = 'icon', testId, ...props }
   return (
     <a
       aria-current={isActive ? 'page' : undefined}
-      data-slot="pagination-link"
-      data-testid={testId}
-      data-active={isActive}
       className={cn(
         buttonVariants({
           variant: isActive ? 'outline' : 'ghost',
           size,
         }),
-        className,
+        className
       )}
+      data-active={isActive}
+      data-slot="pagination-link"
+      data-testid={testId}
       {...props}
     />
   );
@@ -60,12 +61,14 @@ function PaginationPrevious({ className, ...props }: React.ComponentProps<typeof
   return (
     <PaginationLink
       aria-label="Go to previous page"
-      size="default"
       className={cn('gap-1 px-2.5 sm:pl-2.5', className)}
+      size="default"
       {...props}
     >
       <ChevronLeftIcon />
-      <span className="hidden sm:block">Previous</span>
+      <Text as="span" className="hidden sm:block">
+        Previous
+      </Text>
     </PaginationLink>
   );
 }
@@ -74,32 +77,36 @@ function PaginationNext({ className, ...props }: React.ComponentProps<typeof Pag
   return (
     <PaginationLink
       aria-label="Go to next page"
-      size="default"
       className={cn('gap-1 px-2.5 sm:pr-2.5', className)}
+      size="default"
       {...props}
     >
-      <span className="hidden sm:block">Next</span>
+      <Text as="span" className="hidden sm:block">
+        Next
+      </Text>
       <ChevronRightIcon />
     </PaginationLink>
   );
 }
 
-function PaginationEllipsis({ className, testId, ...props }: React.ComponentProps<'span'> & { testId?: string }) {
+function PaginationEllipsis({ className, testId, ...props }: React.ComponentProps<'span'> & SharedProps) {
   return (
     <span
       aria-hidden
+      className={cn('flex size-9 items-center justify-center', className)}
       data-slot="pagination-ellipsis"
       data-testid={testId}
-      className={cn('flex size-9 items-center justify-center', className)}
       {...props}
     >
       <MoreHorizontalIcon className="size-4" />
-      <span className="sr-only">More pages</span>
+      <Text as="span" className="sr-only">
+        More pages
+      </Text>
     </span>
   );
 }
 
-interface SimplePaginationProps {
+type SimplePaginationProps = {
   currentPage: number;
   totalPages: number;
   onPageChange?: (page: number) => void;
@@ -107,7 +114,7 @@ interface SimplePaginationProps {
   maxVisiblePages?: number;
   className?: string;
   testId?: string;
-}
+};
 
 function SimplePagination({
   currentPage,
@@ -118,8 +125,8 @@ function SimplePagination({
   className,
   testId,
 }: SimplePaginationProps) {
-  const generatePages = () => {
-    const pages = [];
+  const generatePages = (): (number | string)[] => {
+    const pages: (number | string)[] = [];
     const halfVisible = Math.floor(maxVisiblePages / 2);
 
     let startPage = Math.max(1, currentPage - halfVisible);

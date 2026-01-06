@@ -6,7 +6,7 @@ import { DropdownMenu as DropdownMenuPrimitive } from 'radix-ui';
 import React from 'react';
 
 import { MotionHighlight, MotionHighlightItem } from './motion-highlight';
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
 type DropdownMenuContextType = {
   isOpen: boolean;
@@ -24,21 +24,25 @@ const useDropdownMenu = (): DropdownMenuContextType => {
   return context;
 };
 
-type DropdownMenuProps = React.ComponentProps<typeof DropdownMenuPrimitive.Root> & {
-  transition?: Transition;
-  animateOnHover?: boolean;
-};
+type DropdownMenuProps = React.ComponentProps<typeof DropdownMenuPrimitive.Root> &
+  SharedProps & {
+    transition?: Transition;
+    animateOnHover?: boolean;
+  };
 
 function DropdownMenu({
   children,
   transition = { type: 'spring', stiffness: 350, damping: 35 },
   animateOnHover = true,
+  testId,
   ...props
 }: DropdownMenuProps) {
   const [isOpen, setIsOpen] = React.useState(props?.open ?? props?.defaultOpen ?? false);
 
   React.useEffect(() => {
-    if (props?.open !== undefined) setIsOpen(props.open);
+    if (props?.open !== undefined) {
+      setIsOpen(props.open);
+    }
   }, [props?.open]);
 
   const handleOpenChange = React.useCallback(
@@ -47,12 +51,17 @@ function DropdownMenu({
       props.onOpenChange?.(open);
     },
     // biome-ignore lint/correctness/useExhaustiveDependencies: part of dropdown menu behavior
-    [props],
+    [props]
   );
 
   return (
     <DropdownMenuContext.Provider value={{ isOpen, highlightTransition: transition, animateOnHover }}>
-      <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} onOpenChange={handleOpenChange}>
+      <DropdownMenuPrimitive.Root
+        data-slot="dropdown-menu"
+        data-testid={testId}
+        {...props}
+        onOpenChange={handleOpenChange}
+      >
         {children}
       </DropdownMenuPrimitive.Root>
     </DropdownMenuContext.Provider>
@@ -96,20 +105,20 @@ type DropdownMenuSubTriggerProps = React.ComponentProps<typeof DropdownMenuPrimi
 function DropdownMenuSubTrigger({ className, children, inset, disabled, ...props }: DropdownMenuSubTriggerProps) {
   return (
     <MotionHighlightItem disabled={disabled}>
-      <DropdownMenuPrimitive.SubTrigger {...props} disabled={disabled} asChild>
+      <DropdownMenuPrimitive.SubTrigger {...props} asChild disabled={disabled}>
         <motion.div
-          data-slot="dropdown-menu-sub-trigger"
-          data-inset={inset}
-          data-disabled={disabled}
-          whileTap={{ scale: 0.95 }}
           className={cn(
-            "[&:not([data-highlight])]:focus:bg-accent focus:text-accent-foreground [&:not([data-highlight])]:data-[state=open]:bg-accent data-[state=open]:text-accent-foreground data-[state=open]:[&_[data-chevron]]:rotate-90 [&_[data-chevron]]:transition-transform [&_[data-chevron]]:duration-150 [&_[data-chevron]]:ease-in-out [&_svg:not([class*='text-'])]:text-muted-foreground relative z-[1] flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+            "relative z-[1] flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:text-accent-foreground data-[state=open]:text-accent-foreground [&:not([data-highlight])]:focus:bg-accent [&:not([data-highlight])]:data-[state=open]:bg-accent [&_[data-chevron]]:transition-transform [&_[data-chevron]]:duration-150 [&_[data-chevron]]:ease-in-out data-[state=open]:[&_[data-chevron]]:rotate-90 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
             inset && 'pl-8',
-            className,
+            className
           )}
+          data-disabled={disabled}
+          data-inset={inset}
+          data-slot="dropdown-menu-sub-trigger"
+          whileTap={{ scale: 0.95 }}
         >
           {children}
-          <ChevronRight data-chevron className="ml-auto" />
+          <ChevronRight className="ml-auto" data-chevron />
         </motion.div>
       </DropdownMenuPrimitive.SubTrigger>
     </MotionHighlightItem>
@@ -121,11 +130,11 @@ type DropdownMenuSubContentProps = React.ComponentProps<typeof DropdownMenuPrimi
 function DropdownMenuSubContent({ className, ...props }: DropdownMenuSubContentProps) {
   return (
     <DropdownMenuPrimitive.SubContent
-      data-slot="dropdown-menu-sub-content"
       className={cn(
-        'z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-dropdown-menu-content-transform-origin]',
-        className,
+        'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-[8rem] origin-[--radix-dropdown-menu-content-transform-origin] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=closed]:animate-out data-[state=open]:animate-in',
+        className
       )}
+      data-slot="dropdown-menu-sub-content"
       {...props}
     />
   );
@@ -134,6 +143,7 @@ function DropdownMenuSubContent({ className, ...props }: DropdownMenuSubContentP
 type DropdownMenuContentProps = React.ComponentProps<typeof DropdownMenuPrimitive.Content> &
   HTMLMotionProps<'div'> & {
     transition?: Transition;
+    container?: Element;
   };
 
 function DropdownMenuContent({
@@ -141,51 +151,52 @@ function DropdownMenuContent({
   children,
   sideOffset = 4,
   transition = { duration: 0.2 },
+  container,
   ...props
 }: DropdownMenuContentProps) {
   const { isOpen, highlightTransition, animateOnHover } = useDropdownMenu();
 
   return (
     <AnimatePresence>
-      {isOpen && (
-        <DropdownMenuPrimitive.Portal forceMount data-slot="dropdown-menu-portal">
-          <DropdownMenuPrimitive.Content sideOffset={sideOffset} asChild {...props}>
+      {isOpen ? (
+        <DropdownMenuPrimitive.Portal container={container} data-slot="dropdown-menu-portal" forceMount>
+          <DropdownMenuPrimitive.Content asChild sideOffset={sideOffset} {...props}>
             <motion.div
-              key="dropdown-menu-content"
-              data-slot="dropdown-menu-content"
-              className={cn(
-                'z-50 max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-dropdown-menu-content-transform-origin]',
-                className,
-              )}
-              initial={{
-                opacity: 0,
-                scale: 0.95,
-              }}
               animate={{
                 opacity: 1,
                 scale: 1,
               }}
+              className={cn(
+                'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-[8rem] origin-[--radix-dropdown-menu-content-transform-origin] overflow-y-auto overflow-x-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=closed]:animate-out data-[state=open]:animate-in',
+                className
+              )}
+              data-slot="dropdown-menu-content"
               exit={{
                 opacity: 0,
                 scale: 0.95,
               }}
-              transition={transition}
+              initial={{
+                opacity: 0,
+                scale: 0.95,
+              }}
+              key="dropdown-menu-content"
               style={{ willChange: 'opacity, transform' }}
+              transition={transition}
               {...props}
             >
               <MotionHighlight
-                hover
                 className="rounded-sm"
                 controlledItems
-                transition={highlightTransition}
                 enabled={animateOnHover}
+                hover
+                transition={highlightTransition}
               >
                 {children}
               </MotionHighlight>
             </motion.div>
           </DropdownMenuPrimitive.Content>
         </DropdownMenuPrimitive.Portal>
-      )}
+      ) : null}
     </AnimatePresence>
   );
 }
@@ -208,18 +219,18 @@ function DropdownMenuItem({
       activeClassName={variant === 'default' ? 'bg-accent' : 'bg-destructive/10 dark:bg-destructive/20'}
       disabled={disabled}
     >
-      <DropdownMenuPrimitive.Item {...props} disabled={disabled} asChild>
+      <DropdownMenuPrimitive.Item {...props} asChild disabled={disabled}>
         <motion.div
-          data-slot="dropdown-menu-item"
-          data-inset={inset}
-          data-variant={variant}
-          data-disabled={disabled}
-          whileTap={{ scale: 0.95 }}
           className={cn(
-            "[&:not([data-highlight])]:focus:bg-accent focus:text-accent-foreground data-[variant=destructive]:text-destructive [&:not([data-highlight])]:data-[variant=destructive]:focus:bg-destructive/10 dark:[&:not([data-highlight])]:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:focus:text-destructive data-[variant=destructive]:*:[svg]:!text-destructive [&_svg:not([class*='text-'])]:text-muted-foreground relative z-[1] flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus-visible:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+            "data-[variant=destructive]:*:[svg]:!text-destructive relative z-[1] flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:text-accent-foreground focus-visible:text-accent-foreground data-[disabled]:pointer-events-none data-[variant=destructive]:text-destructive data-[disabled]:opacity-50 data-[variant=destructive]:focus:text-destructive [&:not([data-highlight])]:focus:bg-accent [&:not([data-highlight])]:data-[variant=destructive]:focus:bg-destructive/10 dark:[&:not([data-highlight])]:data-[variant=destructive]:focus:bg-destructive/20 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
             inset && 'pl-8',
-            className,
+            className
           )}
+          data-disabled={disabled}
+          data-inset={inset}
+          data-slot="dropdown-menu-item"
+          data-variant={variant}
+          whileTap={{ scale: 0.95 }}
         >
           {children}
         </motion.div>
@@ -233,15 +244,15 @@ type DropdownMenuCheckboxItemProps = React.ComponentProps<typeof DropdownMenuPri
 function DropdownMenuCheckboxItem({ className, children, checked, disabled, ...props }: DropdownMenuCheckboxItemProps) {
   return (
     <MotionHighlightItem disabled={disabled}>
-      <DropdownMenuPrimitive.CheckboxItem {...props} checked={checked} disabled={disabled} asChild>
+      <DropdownMenuPrimitive.CheckboxItem {...props} asChild checked={checked} disabled={disabled}>
         <motion.div
-          data-slot="dropdown-menu-checkbox-item"
-          data-disabled={disabled}
-          whileTap={{ scale: 0.95 }}
           className={cn(
-            "[&:not([data-highlight])]:focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-            className,
+            "relative flex cursor-default select-none items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm outline-hidden focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&:not([data-highlight])]:focus:bg-accent [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+            className
           )}
+          data-disabled={disabled}
+          data-slot="dropdown-menu-checkbox-item"
+          whileTap={{ scale: 0.95 }}
         >
           <span className="absolute left-2 flex size-3.5 items-center justify-center">
             <DropdownMenuPrimitive.ItemIndicator data-slot="dropdown-menu-checkbox-item-indicator">
@@ -260,15 +271,15 @@ type DropdownMenuRadioItemProps = React.ComponentProps<typeof DropdownMenuPrimit
 function DropdownMenuRadioItem({ className, children, disabled, ...props }: DropdownMenuRadioItemProps) {
   return (
     <MotionHighlightItem disabled={disabled}>
-      <DropdownMenuPrimitive.RadioItem {...props} disabled={disabled} asChild>
+      <DropdownMenuPrimitive.RadioItem {...props} asChild disabled={disabled}>
         <motion.div
-          data-slot="dropdown-menu-radio-item"
-          data-disabled={disabled}
-          whileTap={{ scale: 0.95 }}
           className={cn(
-            "[&:not([data-highlight])]:focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-            className,
+            "relative flex cursor-default select-none items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm outline-hidden focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&:not([data-highlight])]:focus:bg-accent [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+            className
           )}
+          data-disabled={disabled}
+          data-slot="dropdown-menu-radio-item"
+          whileTap={{ scale: 0.95 }}
         >
           <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
             <DropdownMenuPrimitive.ItemIndicator data-slot="dropdown-menu-radio-item-indicator">
@@ -289,9 +300,9 @@ type DropdownMenuLabelProps = React.ComponentProps<typeof DropdownMenuPrimitive.
 function DropdownMenuLabel({ className, inset, ...props }: DropdownMenuLabelProps) {
   return (
     <DropdownMenuPrimitive.Label
-      data-slot="dropdown-menu-label"
+      className={cn('px-2 py-1.5 font-semibold text-sm', inset && 'pl-8', className)}
       data-inset={inset}
-      className={cn('px-2 py-1.5 text-sm font-semibold', inset && 'pl-8', className)}
+      data-slot="dropdown-menu-label"
       {...props}
     />
   );
@@ -302,8 +313,8 @@ type DropdownMenuSeparatorProps = React.ComponentProps<typeof DropdownMenuPrimit
 function DropdownMenuSeparator({ className, ...props }: DropdownMenuSeparatorProps) {
   return (
     <DropdownMenuPrimitive.Separator
-      data-slot="dropdown-menu-separator"
       className={cn('-mx-1 my-1 h-px bg-border', className)}
+      data-slot="dropdown-menu-separator"
       {...props}
     />
   );
@@ -314,8 +325,8 @@ type DropdownMenuShortcutProps = React.ComponentProps<'span'>;
 function DropdownMenuShortcut({ className, ...props }: DropdownMenuShortcutProps) {
   return (
     <span
+      className={cn('ml-auto text-muted-foreground text-xs tracking-widest', className)}
       data-slot="dropdown-menu-shortcut"
-      className={cn('text-muted-foreground ml-auto text-xs tracking-widest', className)}
       {...props}
     />
   );

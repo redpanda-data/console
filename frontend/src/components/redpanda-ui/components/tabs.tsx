@@ -6,7 +6,7 @@ import { Tabs as TabsPrimitive } from 'radix-ui';
 import React from 'react';
 
 import { MotionHighlight, MotionHighlightItem } from './motion-highlight';
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
 const tabsVariants = cva('flex flex-col', {
   variants: {
@@ -15,12 +15,12 @@ const tabsVariants = cva('flex flex-col', {
       md: 'gap-2',
       lg: 'gap-3',
       xl: 'gap-4',
-      full: 'gap-2 w-full',
+      full: 'w-full gap-2',
     },
     variant: {
       default: '',
-      card: 'bg-card rounded-xl border',
-      contained: 'bg-muted rounded-lg',
+      card: 'rounded-xl border bg-card',
+      contained: 'rounded-lg bg-muted',
     },
   },
   defaultVariants: {
@@ -29,26 +29,25 @@ const tabsVariants = cva('flex flex-col', {
   },
 });
 
-type TabsProps = React.ComponentProps<typeof TabsPrimitive.Root> &
-  VariantProps<typeof tabsVariants> & { testId?: string };
+type TabsProps = React.ComponentProps<typeof TabsPrimitive.Root> & VariantProps<typeof tabsVariants> & SharedProps;
 
 function Tabs({ className, size, variant, testId, ...props }: TabsProps) {
   return (
     <TabsPrimitive.Root
+      className={cn(tabsVariants({ size, variant }), className)}
       data-slot="tabs"
       data-testid={testId}
-      className={cn(tabsVariants({ size, variant }), className)}
       {...props}
     />
   );
 }
 
-const tabsListVariants = cva('text-muted-foreground inline-flex h-10 items-center justify-center', {
+const tabsListVariants = cva('inline-flex h-10 items-center justify-center text-muted-foreground', {
   variants: {
     variant: {
-      default: 'bg-muted w-fit rounded-lg p-1 gap-1',
+      default: 'w-fit gap-1 rounded-lg bg-muted p-1',
       underline:
-        'w-full relative justify-start rounded-t-xl bg-background border-b border-border text-current py-0 px-4',
+        'relative w-full justify-start rounded-t-xl border-border border-b bg-background px-4 py-0 text-current',
     },
     layout: {
       auto: '',
@@ -74,7 +73,7 @@ const tabsListActiveVariants = cva('rounded-sm bg-background shadow-sm', {
     variant: {
       default: '',
       underline:
-        "rounded-none shadow-none bg-transparent after:content-[''] after:absolute after:inset-x-0 after:h-0.5 after:bottom-0 after:bg-selected after:rounded-t-full",
+        "rounded-none bg-transparent shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-full after:bg-selected after:content-['']",
     },
   },
   defaultVariants: {
@@ -83,11 +82,11 @@ const tabsListActiveVariants = cva('rounded-sm bg-background shadow-sm', {
 });
 
 type TabsListProps = React.ComponentProps<typeof TabsPrimitive.List> &
-  VariantProps<typeof tabsListVariants> & {
+  VariantProps<typeof tabsListVariants> &
+  SharedProps & {
     activeClassName?: string;
     transition?: Transition;
     columns?: number;
-    testId?: string;
   };
 
 const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
@@ -108,7 +107,7 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
       },
       ...props
     },
-    ref,
+    ref
   ) => {
     const localRef = React.useRef<HTMLDivElement>(null);
     React.useImperativeHandle(ref, () => localRef.current || document.createElement('div'));
@@ -117,9 +116,13 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
     const lastKnownActiveValue = React.useRef<string | undefined>(undefined);
 
     const getActiveValue = React.useCallback(() => {
-      if (!localRef.current) return;
+      if (!localRef.current) {
+        return;
+      }
       const activeTab = localRef.current.querySelector<HTMLElement>('[data-state="active"]');
-      if (!activeTab) return;
+      if (!activeTab) {
+        return;
+      }
       const newValue = activeTab.getAttribute('data-value') ?? undefined;
       if (newValue) {
         lastKnownActiveValue.current = newValue;
@@ -151,58 +154,58 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
 
     return (
       <MotionHighlight
-        controlledItems
         className={cn(tabsListActiveVariants({ variant }), activeClassName)}
-        value={activeValue || lastKnownActiveValue.current}
+        controlledItems
         transition={transition}
+        value={activeValue || lastKnownActiveValue.current}
       >
         <TabsPrimitive.List
-          ref={localRef}
-          data-slot="tabs-list"
-          data-testid={testId}
           className={cn(
             tabsListVariants({ variant, layout, gap }),
             layout === 'equal' && columns && `grid-cols-${columns}`,
-            className,
+            className
           )}
+          data-slot="tabs-list"
+          data-testid={testId}
+          ref={localRef}
           {...props}
         >
           {children}
         </TabsPrimitive.List>
       </MotionHighlight>
     );
-  },
+  }
 );
 
 TabsList.displayName = 'TabsList';
 
 const tabsTriggerVariants = cva(
-  'inline-flex cursor-pointer items-center size-full justify-center whitespace-nowrap rounded-sm text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:text-foreground z-[1]',
+  'z-[1] inline-flex size-full cursor-pointer items-center justify-center whitespace-nowrap rounded-sm font-medium text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:text-foreground',
   {
     variants: {
       variant: {
         default: 'px-3 py-1.5',
-        underline: 'text-muted-foreground data-[state=active]:text-selected px-4 py-2',
+        underline: 'px-4 py-2 text-muted-foreground data-[state=active]:text-selected',
       },
     },
     defaultVariants: {
       variant: 'default',
     },
-  },
+  }
 );
 
-type TabsTriggerProps = React.ComponentProps<typeof TabsPrimitive.Trigger> & {
-  variant?: VariantProps<typeof tabsTriggerVariants>['variant'];
-  testId?: string;
-};
+type TabsTriggerProps = React.ComponentProps<typeof TabsPrimitive.Trigger> &
+  SharedProps & {
+    variant?: VariantProps<typeof tabsTriggerVariants>['variant'];
+  };
 
 function TabsTrigger({ className, value, variant, testId, ...props }: TabsTriggerProps) {
   return (
-    <MotionHighlightItem value={value} className="size-full">
+    <MotionHighlightItem className="size-full" value={value}>
       <TabsPrimitive.Trigger
+        className={cn(tabsTriggerVariants({ variant }), className)}
         data-slot="tabs-trigger"
         data-testid={testId}
-        className={cn(tabsTriggerVariants({ variant }), className)}
         value={value}
         {...props}
       />
@@ -211,9 +214,9 @@ function TabsTrigger({ className, value, variant, testId, ...props }: TabsTrigge
 }
 
 type TabsContentProps = React.ComponentProps<typeof TabsPrimitive.Content> &
-  HTMLMotionProps<'div'> & {
+  HTMLMotionProps<'div'> &
+  SharedProps & {
     transition?: Transition;
-    testId?: string;
   };
 
 function TabsContent({
@@ -229,13 +232,13 @@ function TabsContent({
   return (
     <TabsPrimitive.Content asChild {...props}>
       <motion.div
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        className={cn('flex-1 space-y-6 outline-none', className)}
         data-slot="tabs-content"
         data-testid={testId}
-        className={cn('flex-1 outline-none space-y-6', className)}
-        layout
-        initial={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
-        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         exit={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
+        initial={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
+        layout
         transition={transition}
         {...props}
       >
@@ -259,11 +262,11 @@ function TabsContents({
 }: TabsContentsProps) {
   return (
     <motion.div
+      className={cn('overflow-visible', className)}
       data-slot="tabs-contents"
       layout
-      transition={transition}
-      className={cn('overflow-visible', className)}
       style={{ height: 'auto' }}
+      transition={transition}
       {...props}
     >
       {children}
@@ -271,13 +274,12 @@ function TabsContents({
   );
 }
 
-// Content layout helpers
 const tabsContentWrapperVariants = cva('', {
   variants: {
     variant: {
       default: '',
       card: 'p-6',
-      contained: 'mx-1 mb-1 -mt-2 rounded-sm h-full bg-background p-6',
+      contained: 'mx-1 -mt-2 mb-1 h-full rounded-sm bg-background p-6',
     },
     spacing: {
       none: '',

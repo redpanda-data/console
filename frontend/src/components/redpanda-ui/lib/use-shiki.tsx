@@ -67,8 +67,9 @@ export async function _highlight(code: string, options: HighlightOptions) {
     });
 
     if (process.env.NODE_ENV === 'development') {
+      // biome-ignore lint/suspicious/noConsole: needed for shiki implementation
       console.warn(
-        '[Fumadocs `highlight()`] Avoid passing `engine` directly. For custom engines, use `shiki` directly instead.',
+        '[Fumadocs `highlight()`] Avoid passing `engine` directly. For custom engines, use `shiki` directly instead.'
       );
     }
   }
@@ -106,7 +107,7 @@ export function _renderHighlight(hast: Root, options?: HighlightOptions) {
  */
 export async function getHighlighter(
   engineType: 'js' | 'oniguruma' | 'custom',
-  options: BundledHighlighterOptions<BundledLanguage, BundledTheme>,
+  options: BundledHighlighterOptions<BundledLanguage, BundledTheme>
 ) {
   const { createHighlighter } = await import('shiki');
   let highlighter = highlighters.get(engineType);
@@ -147,10 +148,10 @@ export async function highlight(code: string, options: HighlightOptions): Promis
   return _renderHighlight(await _highlight(code, options), options);
 }
 
-interface Task {
+type Task = {
   key: string;
   aborted: boolean;
-}
+};
 
 export function useShiki(
   code: string,
@@ -166,7 +167,7 @@ export function useShiki(
      */
     loading?: ReactNode;
   },
-  deps?: DependencyList,
+  deps?: DependencyList
 ): ReactNode {
   const markupId = useId();
   const key = useMemo(() => (deps ? JSON.stringify(deps) : `${options.lang}:${code}`), [code, deps, options.lang]);
@@ -198,7 +199,9 @@ export function useShiki(
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: listen for defined deps only
   useEffect(() => {
-    if (currentTask.current?.key === key) return;
+    if (currentTask.current?.key === key) {
+      return;
+    }
 
     if (currentTask.current) {
       currentTask.current.aborted = true;
@@ -212,7 +215,9 @@ export function useShiki(
 
     // biome-ignore lint/complexity/noVoid: part of shiki implementation
     void highlight(code, shikiOptions).then((result) => {
-      if (!task.aborted) setRendered(result);
+      if (!task.aborted) {
+        setRendered(result);
+      }
     });
   }, [key]);
 
@@ -232,7 +237,7 @@ function renderHighlightWithMarkup(id: string, tree: Root, shikiOptions: Highlig
     ...shikiOptions,
     components: {
       ...shikiOptions.components,
-      pre: (props) => <Pre {...props} data-markup-id={id} data-markup={rawAttr ?? JSON.stringify(tree)} />,
+      pre: (props) => <Pre {...props} data-markup={rawAttr ?? JSON.stringify(tree)} data-markup-id={id} />,
     },
   });
 }
