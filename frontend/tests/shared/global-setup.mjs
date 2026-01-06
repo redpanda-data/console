@@ -1,7 +1,7 @@
 import { GenericContainer, Network, Wait } from 'testcontainers';
 
 import { exec } from 'node:child_process';
-import { existsSync, realpathSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -13,31 +13,24 @@ const __dirname = dirname(__filename);
 // Regex for extracting container ID from error messages
 const CONTAINER_ID_REGEX = /container ([a-f0-9]+)/;
 
-const getStateFile = (variantName) =>
-  resolve(__dirname, '..', `.testcontainers-state-${variantName}.json`);
+const getStateFile = (variantName) => resolve(__dirname, '..', `.testcontainers-state-${variantName}.json`);
 
-// Port configuration for variants
-const VARIANT_PORTS = {
-  console: {
-    backend: 3000,
-    redpandaKafka: 19092,
-    redpandaSchemaRegistry: 18081,
-    redpandaAdmin: 19644,
-    kafkaConnect: 18083,
-  },
-  'console-enterprise': {
-    backend: 3100,
-    backendDest: 3101,
-    redpandaKafka: 19192,
-    redpandaSchemaRegistry: 18181,
-    redpandaAdmin: 19744,
-    kafkaConnect: 18183,
-    // Shadowlink destination cluster ports
-    destRedpandaKafka: 19193,
-    destRedpandaSchemaRegistry: 18191,
-    destRedpandaAdmin: 19745,
-  },
-};
+/**
+ * Load variant configuration from test-variant-{name}/config/variant.json
+ * @param {string} variantName - The variant name (e.g., "console", "console-enterprise")
+ * @returns {object} - The variant configuration including ports
+ */
+function loadVariantConfig(variantName) {
+  const variantDir = resolve(__dirname, '..', `test-variant-${variantName}`);
+  const configPath = join(variantDir, 'config', 'variant.json');
+
+  if (!existsSync(configPath)) {
+    throw new Error(`Variant config not found: ${configPath}`);
+  }
+
+  const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+  return config;
+}
 
 async function waitForPort(port, maxAttempts = 30, delayMs = 1000) {
   for (let i = 0; i < maxAttempts; i++) {
@@ -388,7 +381,7 @@ async function startBackendServer(network, isEnterprise, imageTag, state, varian
   console.log(`Image tag: ${imageTag}`);
   console.log(`Enterprise mode: ${isEnterprise}`);
 
-  const backendConfigPath = resolve(__dirname, '..', variantName, configFile);
+  const backendConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
 
   console.log(`Backend config path: ${backendConfigPath}`);
 
@@ -691,7 +684,10 @@ async function startBackendServerWithConfig(
       licensePath = `${tempDir}/redpanda.license`;
       writeFileSync(licensePath, process.env.ENTERPRISE_LICENSE_CONTENT);
     } else {
-      const defaultLicensePath = resolve(__dirname, '../../../../console-enterprise/frontend/tests/config/redpanda.license');
+      const defaultLicensePath = resolve(
+        __dirname,
+        '../../../../console-enterprise/frontend/tests/config/redpanda.license'
+      );
       licensePath = process.env.REDPANDA_LICENSE_PATH || defaultLicensePath;
 
       if (!fs.existsSync(licensePath)) {
@@ -806,19 +802,20 @@ export default async function globalSetup(config = {}) {
   const configFile = config?.metadata?.configFile ?? 'console.config.yaml';
   const isEnterprise = config?.metadata?.isEnterprise ?? false;
   const needsShadowlink = config?.metadata?.needsShadowlink ?? false;
-  const ports = VARIANT_PORTS[variantName];
+
+  // Load ports from variant's config/variant.json
+  const variantConfig = loadVariantConfig(variantName);
+  const ports = variantConfig.ports;
 
   console.log('\n\n========================================');
-  console.log(
-    `🚀 GLOBAL SETUP: ${variantName}${needsShadowlink ? ' + SHADOWLINK' : ''}`
-  );
+  console.log(`🚀 GLOBAL SETUP: ${variantName}${needsShadowlink ? ' + SHADOWLINK' : ''}`);
   console.log('========================================\n');
   console.log('DEBUG - Config metadata:', {
     variantName,
     configFile,
     isEnterprise,
     needsShadowlink,
-    ports
+    ports,
   });
   console.log('Starting testcontainers environment...');
 
@@ -872,7 +869,7 @@ export default async function globalSetup(config = {}) {
     // Start backend server(s)
     if (needsShadowlink) {
       // For shadowlink tests: start source backend on port ports.backend (existing data)
-      const sourceBackendConfigPath = resolve(__dirname, '..', variantName, configFile);
+      const sourceBackendConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
       await startBackendServerWithConfig(
         network,
         isEnterprise,

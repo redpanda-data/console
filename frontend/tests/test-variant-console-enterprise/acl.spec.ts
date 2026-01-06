@@ -17,8 +17,8 @@ import {
   ResourceTypeTransactionalId,
   type Rule,
 } from '../../src/components/pages/acls/new-acl/acl.model';
-import { AclPage } from '../console/utils/acl-page';
-import { RolePage } from '../console/utils/role-page';
+import { AclPage } from '../test-variant-console/utils/acl-page';
+import { RolePage } from '../test-variant-console/utils/role-page';
 
 /**
  * Generates a unique principal name for testing

@@ -8,8 +8,7 @@ const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const getStateFile = (variantName) =>
-  resolve(__dirname, '..', `.testcontainers-state-${variantName}.json`);
+const getStateFile = (variantName) => resolve(__dirname, '..', `.testcontainers-state-${variantName}.json`);
 
 export default async function globalTeardown(config = {}) {
   const variantName = config?.metadata?.variantName ?? 'console';

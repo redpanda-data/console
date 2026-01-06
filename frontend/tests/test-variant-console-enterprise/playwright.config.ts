@@ -40,7 +40,7 @@ export default defineConfig({
   metadata: {
     variant: 'console-enterprise',
     variantName: 'console-enterprise',
-    configFile: 'console.enterprise.config.yaml',
+    configFile: 'console.config.yaml',
     isEnterprise: true,
     needsShadowlink: true,
   },

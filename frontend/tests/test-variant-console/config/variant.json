@@ -1,0 +1,14 @@
+{
+  "name": "console",
+  "displayName": "Console OSS",
+  "isEnterprise": false,
+  "needsShadowlink": false,
+  "needsAuth": false,
+  "ports": {
+    "backend": 3000,
+    "redpandaKafka": 19092,
+    "redpandaSchemaRegistry": 18081,
+    "redpandaAdmin": 19644,
+    "kafkaConnect": 18083
+  }
+}
