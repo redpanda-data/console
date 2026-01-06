@@ -139,6 +139,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
                     placeholder="Enter model name (e.g., llama-3.1-70b)"
                     {...field}
                     aria-invalid={!!form.formState.errors[fieldNames.model]}
+                    aria-describedby={form.formState.errors[fieldNames.model] ? 'model-error' : undefined}
                   />
                   <FieldDescription>Enter the model name exactly as supported by your API endpoint</FieldDescription>
                 </>
@@ -190,7 +191,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
           }}
         />
         {form.formState.errors[fieldNames.model] && (
-          <FieldError>{form.formState.errors[fieldNames.model]?.message as string}</FieldError>
+          <FieldError id="model-error">{form.formState.errors[fieldNames.model]?.message as string}</FieldError>
         )}
       </Field>
 
@@ -227,6 +228,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
             placeholder="https://api.example.com/v1"
             {...form.register(fieldNames.baseUrl)}
             aria-invalid={!!form.formState.errors[fieldNames.baseUrl]}
+            aria-describedby={form.formState.errors[fieldNames.baseUrl] ? 'baseUrl-error' : undefined}
           />
           <FieldDescription>
             {selectedProvider === 'openaiCompatible'
@@ -234,7 +236,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
               : 'Override the default API endpoint for this provider'}
           </FieldDescription>
           {form.formState.errors[fieldNames.baseUrl] && (
-            <FieldError>{form.formState.errors[fieldNames.baseUrl]?.message as string}</FieldError>
+            <FieldError id="baseUrl-error">{form.formState.errors[fieldNames.baseUrl]?.message as string}</FieldError>
           )}
         </Field>
       )}

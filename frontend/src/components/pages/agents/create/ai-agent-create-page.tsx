@@ -400,10 +400,11 @@ export const AIAgentCreatePage = () => {
                       <Input
                         id="displayName"
                         {...form.register('displayName')}
+                        aria-describedby={form.formState.errors.displayName ? 'displayName-error' : undefined}
                         aria-invalid={!!form.formState.errors.displayName}
                       />
                       {!!form.formState.errors.displayName && (
-                        <FieldError>{form.formState.errors.displayName.message}</FieldError>
+                        <FieldError id="displayName-error">{form.formState.errors.displayName.message}</FieldError>
                       )}
                     </Field>
 
@@ -413,10 +414,11 @@ export const AIAgentCreatePage = () => {
                         id="description"
                         placeholder="Describe what this agent does and its purpose..."
                         {...form.register('description')}
+                        aria-describedby={form.formState.errors.description ? 'description-error' : undefined}
                         aria-invalid={!!form.formState.errors.description}
                       />
                       {!!form.formState.errors.description && (
-                        <FieldError>{form.formState.errors.description.message}</FieldError>
+                        <FieldError id="description-error">{form.formState.errors.description.message}</FieldError>
                       )}
                     </Field>
 
@@ -487,10 +489,11 @@ export const AIAgentCreatePage = () => {
                     placeholder="You are a helpful AI agent that..."
                     rows={8}
                     {...form.register('systemPrompt')}
+                    aria-describedby={form.formState.errors.systemPrompt ? 'systemPrompt-error' : undefined}
                     aria-invalid={!!form.formState.errors.systemPrompt}
                   />
                   {!!form.formState.errors.systemPrompt && (
-                    <FieldError>{form.formState.errors.systemPrompt.message}</FieldError>
+                    <FieldError id="systemPrompt-error">{form.formState.errors.systemPrompt.message}</FieldError>
                   )}
                 </Field>
               </CardContent>
@@ -516,7 +519,7 @@ export const AIAgentCreatePage = () => {
                           value={field.value || []}
                         />
                       ) : (
-                        <MCPEmpty>
+                        <MCPEmpty data-testid="mcp-servers-empty-state">
                           <Text className="mb-4 text-center" variant="muted">
                             Create MCP servers first to enable additional tools for your AI agent
                           </Text>
@@ -558,13 +561,16 @@ export const AIAgentCreatePage = () => {
                     id="serviceAccountName"
                     placeholder="e.g., cluster-abc123-agent-my-agent-sa"
                     {...form.register('serviceAccountName')}
+                    aria-describedby={form.formState.errors.serviceAccountName ? 'serviceAccountName-error' : undefined}
                     aria-invalid={!!form.formState.errors.serviceAccountName}
                   />
                   <FieldDescription>
                     This service account will be created automatically when you create the AI agent.
                   </FieldDescription>
                   {!!form.formState.errors.serviceAccountName && (
-                    <FieldError>{form.formState.errors.serviceAccountName.message}</FieldError>
+                    <FieldError id="serviceAccountName-error">
+                      {form.formState.errors.serviceAccountName.message}
+                    </FieldError>
                   )}
                 </Field>
               </CardContent>
