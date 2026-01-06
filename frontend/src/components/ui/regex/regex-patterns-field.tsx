@@ -10,7 +10,7 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
-import { FormControl, FormItem, FormLabel } from 'components/redpanda-ui/components/form';
+import { FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Check, Plus, Trash2, X } from 'lucide-react';
@@ -72,7 +72,7 @@ export const RegexPatternsField = ({
 
   return (
     <div className="flex flex-col gap-2">
-      <FormLabel>{label}</FormLabel>
+      <FieldLabel>{label}</FieldLabel>
       <Text className="text-muted-foreground text-sm">{helperText}</Text>
 
       {patterns.map((pattern, idx) => {
@@ -84,17 +84,15 @@ export const RegexPatternsField = ({
 
         return (
           <div className="flex items-start gap-2" key={idx}>
-            <FormItem className="mb-0 flex-1">
+            <div className="mb-0 flex-1">
               <div className="relative">
-                <FormControl>
-                  <Input
-                    className={inputClassName}
-                    disabled={isReadOnly}
-                    onChange={(e) => handlePatternChange(idx, e.target.value)}
-                    placeholder="e.g., my-topics-.*"
-                    value={pattern}
-                  />
-                </FormControl>
+                <Input
+                  className={inputClassName}
+                  disabled={isReadOnly}
+                  onChange={(e) => handlePatternChange(idx, e.target.value)}
+                  placeholder="e.g., my-topics-.*"
+                  value={pattern}
+                />
                 {pattern && !isReadOnly && (
                   <div className="-translate-y-1/2 pointer-events-none absolute top-1/2 right-3">
                     {validation.valid ? (
@@ -108,7 +106,7 @@ export const RegexPatternsField = ({
               {!validation.valid && pattern && (
                 <Text className="mt-1 text-destructive text-xs">{validation.error}</Text>
               )}
-            </FormItem>
+            </div>
 
             {!isReadOnly && (
               <Button onClick={() => handleRemovePattern(idx)} size="icon" type="button" variant="outline">

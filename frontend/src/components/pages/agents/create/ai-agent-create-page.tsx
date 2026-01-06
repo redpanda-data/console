@@ -17,15 +17,7 @@ import { Code as ConnectCode } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import {
-  Form,
-  FormContainer,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from 'components/redpanda-ui/components/form';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
@@ -55,7 +47,7 @@ import {
   CreateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { useCreateAIAgentMutation } from 'react-query/api/ai-agent';
 import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
@@ -388,8 +380,8 @@ export const AIAgentCreatePage = () => {
         <Heading level={1}>Create AI Agent</Heading>
       </header>
 
-      <Form {...form}>
-        <FormContainer className="w-full" layout="default" onSubmit={form.handleSubmit(onSubmit)} width="full">
+      <form className="w-full" onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="space-y-4">
           <div className="space-y-4">
             {/* Basic Information and OpenAI Configuration - Side by Side */}
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -401,47 +393,48 @@ export const AIAgentCreatePage = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="displayName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel required>Agent Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                    <Field data-invalid={!!form.formState.errors.displayName}>
+                      <FieldLabel htmlFor="displayName" required>
+                        Agent Name
+                      </FieldLabel>
+                      <Input
+                        id="displayName"
+                        {...form.register('displayName')}
+                        aria-describedby={form.formState.errors.displayName ? 'displayName-error' : undefined}
+                        aria-invalid={!!form.formState.errors.displayName}
+                      />
+                      {!!form.formState.errors.displayName && (
+                        <FieldError id="displayName-error">{form.formState.errors.displayName.message}</FieldError>
                       )}
-                    />
+                    </Field>
 
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Description</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="Describe what this agent does and its purpose..." {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                    <Field data-invalid={!!form.formState.errors.description}>
+                      <FieldLabel htmlFor="description">Description</FieldLabel>
+                      <Textarea
+                        id="description"
+                        placeholder="Describe what this agent does and its purpose..."
+                        {...form.register('description')}
+                        aria-describedby={form.formState.errors.description ? 'description-error' : undefined}
+                        aria-invalid={!!form.formState.errors.description}
+                      />
+                      {!!form.formState.errors.description && (
+                        <FieldError id="description-error">{form.formState.errors.description.message}</FieldError>
                       )}
-                    />
+                    </Field>
 
-                    <FormField
-                      control={form.control}
-                      name="resourcesTier"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Resources</FormLabel>
-                          <FormControl>
-                            <ResourceTierSelect onValueChange={field.onChange} value={field.value} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                    <Field data-invalid={!!form.formState.errors.resourcesTier}>
+                      <FieldLabel htmlFor="resourcesTier">Resources</FieldLabel>
+                      <Controller
+                        control={form.control}
+                        name="resourcesTier"
+                        render={({ field }) => (
+                          <ResourceTierSelect onValueChange={field.onChange} value={field.value} />
+                        )}
+                      />
+                      {!!form.formState.errors.resourcesTier && (
+                        <FieldError>{form.formState.errors.resourcesTier.message}</FieldError>
                       )}
-                    />
+                    </Field>
 
                     <TagsFieldList
                       appendTag={appendTag}
@@ -487,19 +480,22 @@ export const AIAgentCreatePage = () => {
                 <Text variant="muted">Define the agent's behavior and instructions</Text>
               </CardHeader>
               <CardContent>
-                <FormField
-                  control={form.control}
-                  name="systemPrompt"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel required>System Prompt</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="You are a helpful AI agent that..." rows={8} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                <Field data-invalid={!!form.formState.errors.systemPrompt}>
+                  <FieldLabel htmlFor="systemPrompt" required>
+                    System Prompt
+                  </FieldLabel>
+                  <Textarea
+                    id="systemPrompt"
+                    placeholder="You are a helpful AI agent that..."
+                    rows={8}
+                    {...form.register('systemPrompt')}
+                    aria-describedby={form.formState.errors.systemPrompt ? 'systemPrompt-error' : undefined}
+                    aria-invalid={!!form.formState.errors.systemPrompt}
+                  />
+                  {!!form.formState.errors.systemPrompt && (
+                    <FieldError id="systemPrompt-error">{form.formState.errors.systemPrompt.message}</FieldError>
                   )}
-                />
+                </Field>
               </CardContent>
             </Card>
 
@@ -510,34 +506,31 @@ export const AIAgentCreatePage = () => {
                 <Text variant="muted">Select MCP servers to enable tools for this agent</Text>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  {/* MCP Servers */}
-                  <FormField
+                <Field data-invalid={!!form.formState.errors.selectedMcpServers}>
+                  <Controller
                     control={form.control}
                     name="selectedMcpServers"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          {availableMcpServers.length > 0 ? (
-                            <MCPServerCardList
-                              idPrefix="root"
-                              onValueChange={field.onChange}
-                              servers={availableMcpServers}
-                              value={field.value || []}
-                            />
-                          ) : (
-                            <MCPEmpty>
-                              <Text className="mb-4 text-center" variant="muted">
-                                Create MCP servers first to enable additional tools for your AI agent
-                              </Text>
-                            </MCPEmpty>
-                          )}
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    render={({ field }) =>
+                      availableMcpServers.length > 0 ? (
+                        <MCPServerCardList
+                          idPrefix="root"
+                          onValueChange={field.onChange}
+                          servers={availableMcpServers}
+                          value={field.value || []}
+                        />
+                      ) : (
+                        <MCPEmpty data-testid="mcp-servers-empty-state">
+                          <Text className="mb-4 text-center" variant="muted">
+                            Create MCP servers first to enable additional tools for your AI agent
+                          </Text>
+                        </MCPEmpty>
+                      )
+                    }
                   />
-                </div>
+                  {!!form.formState.errors.selectedMcpServers && (
+                    <FieldError>{form.formState.errors.selectedMcpServers.message}</FieldError>
+                  )}
+                </Field>
               </CardContent>
             </Card>
 
@@ -562,20 +555,24 @@ export const AIAgentCreatePage = () => {
                 <Text variant="muted">Create a service account for agent authentication</Text>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <label className="font-medium text-sm" htmlFor="serviceAccountName">
-                    Service Account Name
-                  </label>
+                <Field data-invalid={!!form.formState.errors.serviceAccountName}>
+                  <FieldLabel htmlFor="serviceAccountName">Service Account Name</FieldLabel>
                   <Input
                     id="serviceAccountName"
-                    onChange={(e) => form.setValue('serviceAccountName', e.target.value, { shouldValidate: true })}
                     placeholder="e.g., cluster-abc123-agent-my-agent-sa"
-                    value={serviceAccountName}
+                    {...form.register('serviceAccountName')}
+                    aria-describedby={form.formState.errors.serviceAccountName ? 'serviceAccountName-error' : undefined}
+                    aria-invalid={!!form.formState.errors.serviceAccountName}
                   />
-                  <Text className="text-sm" variant="muted">
+                  <FieldDescription>
                     This service account will be created automatically when you create the AI agent.
-                  </Text>
-                </div>
+                  </FieldDescription>
+                  {!!form.formState.errors.serviceAccountName && (
+                    <FieldError id="serviceAccountName-error">
+                      {form.formState.errors.serviceAccountName.message}
+                    </FieldError>
+                  )}
+                </Field>
               </CardContent>
             </Card>
             <ServiceAccountSelector
@@ -617,8 +614,8 @@ export const AIAgentCreatePage = () => {
               </Button>
             </div>
           </div>
-        </FormContainer>
-      </Form>
+        </div>
+      </form>
     </div>
   );
 };
