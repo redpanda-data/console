@@ -68,14 +68,14 @@ message ListTracesRequest {
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "End time for the query (exclusive). Defaults to current time + 5 minutes if not provided. Must be after start_time."}
   ];
 
-  // Maximum number of traces to return (pagination). Defaults to 100 if not specified or set to 0.
+  // Maximum number of traces to return (pagination). Defaults to 500 if not specified or set to 0.
   int32 page_size = 3 [
     (buf.validate.field).int32 = {
-      gte: -1 /* -1 = disable pagination (return all), 0 = default (100) */
+      gte: -1 /* -1 = disable pagination (return all), 0 = default (500) */
       lte: 1000
     },
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Maximum number of traces to return per page. Defaults to 100 if not specified or set to 0. Use -1 to disable pagination."
+      description: "Maximum number of traces to return per page. Defaults to 500 if not specified or set to 0. Use -1 to disable pagination."
       minimum: -1
       maximum: 1000
     }

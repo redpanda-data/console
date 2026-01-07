@@ -2629,7 +2629,7 @@ paths:
           schema:
             format: date-time
             type: string
-        - description: Maximum number of traces to return per page. Defaults to 100 if not specified or set to 0. Use -1 to disable pagination.
+        - description: Maximum number of traces to return per page. Defaults to 500 if not specified or set to 0. Use -1 to disable pagination.
           in: query
           name: page_size
           schema:
