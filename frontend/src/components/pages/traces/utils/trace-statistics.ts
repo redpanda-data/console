@@ -88,7 +88,7 @@ export const isIncompleteTrace = (rootSpanName: string | undefined): boolean => 
 
 export const getConversationId = (trace: Trace | undefined): string | undefined => {
   if (!trace?.spans) {
-    return undefined;
+    return;
   }
 
   // Look for conversation ID in any span's attributes
@@ -99,5 +99,5 @@ export const getConversationId = (trace: Trace | undefined): string | undefined 
     }
   }
 
-  return undefined;
+  return;
 };

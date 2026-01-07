@@ -100,7 +100,7 @@ export const TraceDetailsTabs: FC<Props> = ({ span, trace, value, onValueChange 
   ];
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-col">
       {/* Custom Tab Navigation */}
       <div className="shrink-0 border-b px-3">
         <div className="flex gap-1">
@@ -122,7 +122,7 @@ export const TraceDetailsTabs: FC<Props> = ({ span, trace, value, onValueChange 
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1">
         {activeTab === 'overview' && showOverviewTab && <OverviewTab trace={trace} />}
         {activeTab === 'llm-io' && showLLMTab && !showOverviewTab && <LLMIOTab span={span} />}
         {activeTab === 'tool-call' && showToolTab && <ToolCallTab span={span} />}

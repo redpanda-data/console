@@ -99,6 +99,8 @@ export const TraceListPage: FC = () => {
   useEffect(() => {
     const previousHandler = appGlobal.onRefresh;
     appGlobal.onRefresh = () => {
+      // Update the time window to "now" before refetching
+      setNowMs(Date.now());
       refetch();
     };
     return () => {
@@ -191,6 +193,8 @@ export const TraceListPage: FC = () => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
+      // Update the time window to "now" before refetching
+      setNowMs(Date.now());
       await refetch();
     } finally {
       setIsRefreshing(false);

@@ -190,8 +190,8 @@ const SpanRow: FC<SpanRowProps> = ({
   const startOffsetMs = Number((span.startTime - timeline.minTime) / 1_000_000n);
   const spanTimestamp = new Date(baseTimestamp.getTime() + startOffsetMs);
 
-  const Icon = getIconForServiceName(span.name);
-  const serviceName = getServiceName(span.name);
+  const Icon = getIconForServiceName(span.span);
+  const serviceName = getServiceName(span.span);
 
   // parentDepths is a set of "gutter column indices" (0-based) that should show a full-height
   // continuation vertical line for THIS row.
@@ -294,7 +294,7 @@ const SpanRow: FC<SpanRowProps> = ({
                   <div className="absolute top-1/2 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
                 )}
                 <Button
-                  className={cn('-translate-x-1/2 absolute z-10 h-4 w-4 shrink-0', !hasChildren && 'invisible')}
+                  className={cn('absolute z-10 h-4 w-4 shrink-0 -translate-x-1/2', !hasChildren && 'invisible')}
                   onClick={(e) => {
                     e.stopPropagation();
                     onToggle();
@@ -565,7 +565,7 @@ const TraceGroup: FC<{
               <div className="absolute top-1/2 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
             )}
             <Button
-              className="-translate-x-1/2 absolute z-10 h-4 w-4 shrink-0"
+              className="absolute z-10 h-4 w-4 shrink-0 -translate-x-1/2"
               onClick={(e) => {
                 e.stopPropagation();
                 onToggle();
@@ -831,10 +831,10 @@ export const TracesTable: FC<Props> = ({
       {!hideToolbar && <TracesDataTableToolbar table={table} traces={traces} />}
 
       {/* Split Panel Layout - With border */}
-      <div className="flex overflow-hidden rounded-lg border">
+      <div className="flex h-[calc(100vh-300px)] min-h-[500px] overflow-hidden rounded-lg border">
         {/* Traces Table - Left Side */}
-        <div className={selectedTraceId ? 'min-w-0 flex-1' : 'w-full'}>
-          <div className="flex flex-col bg-background">
+        <div className={selectedTraceId ? 'flex h-full min-w-0 flex-1 flex-col' : 'flex h-full w-full flex-col'}>
+          <div className="flex flex-1 flex-col overflow-hidden bg-background">
             {/* Column Headers */}
             <div className="sticky top-0 flex items-center border-b bg-muted/50 font-medium text-[10px] text-muted-foreground">
               <button
@@ -931,7 +931,7 @@ export const TracesTable: FC<Props> = ({
 
         {/* Details Panel - Right Side */}
         {selectedTraceId && selectedSpanId && (
-          <div className="h-[calc(100vh-400px)] w-[380px] flex-shrink-0 border-l">
+          <div className="h-full w-[380px] flex-shrink-0 border-l">
             <TraceDetailsSheet
               isOpen={!!selectedTraceId && !!selectedSpanId}
               onClose={() => {

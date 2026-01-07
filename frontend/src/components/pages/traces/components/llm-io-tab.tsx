@@ -276,7 +276,7 @@ const findLastAssistantMessage = (inputMessages: Message[]): Message | undefined
       return msg;
     }
   }
-  return undefined;
+  return;
 };
 
 // Helper: Process input and output messages

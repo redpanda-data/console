@@ -17,8 +17,8 @@ import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import {
   GetTraceResponseSchema,
   ListTracesResponseSchema,
-  TraceSummarySchema,
   TraceSchema,
+  TraceSummarySchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import { getTrace, listTraces } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing-TracingService_connectquery';
 import { SpanSchema } from 'protogen/redpanda/otel/v1/trace_pb';

@@ -158,7 +158,7 @@ export const AttributesTab: FC<Props> = ({ span }) => {
   return (
     <div className="space-y-3 p-3">
       <div className="relative">
-        <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-2 h-3 w-3 text-muted-foreground" />
+        <Search className="pointer-events-none absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
         <Input
           className="h-7 pl-7 text-xs"
           onChange={(e) => setSearchQuery(e.target.value)}

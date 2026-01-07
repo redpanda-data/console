@@ -116,10 +116,10 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
     return null;
   }
 
-  const spanKind = selectedSpan ? getSpanKind(selectedSpan.name) : 'span';
+  const spanKind = selectedSpan ? getSpanKind(selectedSpan) : 'span';
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-background">
+    <div className="flex h-full flex-col bg-background">
       {/* Header - Compact v0 style */}
       <div className="flex shrink-0 items-center justify-between border-b px-3 py-3">
         <div className="flex items-center gap-2">
@@ -162,7 +162,7 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-auto">
         {isLoading && (
           <div className="space-y-4 p-4">
             <Skeleton className="h-20 w-full" />
