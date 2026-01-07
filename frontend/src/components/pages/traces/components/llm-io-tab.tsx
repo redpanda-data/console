@@ -452,7 +452,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
 
             {/* Tool responses in input */}
             {llmData.lastInputMessage?.toolResponses && llmData.lastInputMessage.toolResponses.length > 0 && (
-              <div className="space-y-1.5">
+              <div className="space-y-4">
                 {llmData.lastInputMessage.toolResponses.map((toolResp, idx) => (
                   <ToolResponseDisplay key={idx} response={toolResp} />
                 ))}
@@ -461,7 +461,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
 
             {/* Tool calls in input (rare but possible) */}
             {llmData.lastInputMessage?.toolCalls && llmData.lastInputMessage.toolCalls.length > 0 && (
-              <div className="space-y-1.5">
+              <div className="space-y-4">
                 {llmData.lastInputMessage.toolCalls.map((toolCall, idx) => (
                   <ToolCallDisplay key={idx} toolCall={toolCall} />
                 ))}
@@ -492,7 +492,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
 
             {/* Tool calls in output (LLM making tool calls) */}
             {llmData.lastOutputMessage?.toolCalls && llmData.lastOutputMessage.toolCalls.length > 0 && (
-              <div className="space-y-1.5">
+              <div className="space-y-4">
                 {llmData.lastOutputMessage.toolCalls.map((toolCall, idx) => (
                   <ToolCallDisplay key={idx} toolCall={toolCall} />
                 ))}
@@ -501,7 +501,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
 
             {/* Tool responses in output (rare but possible) */}
             {llmData.lastOutputMessage?.toolResponses && llmData.lastOutputMessage.toolResponses.length > 0 && (
-              <div className="space-y-1.5">
+              <div className="space-y-4">
                 {llmData.lastOutputMessage.toolResponses.map((toolResp, idx) => (
                   <ToolResponseDisplay key={idx} response={toolResp} />
                 ))}
@@ -558,7 +558,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
 
                   {/* Tool calls */}
                   {hasToolCalls && (
-                    <div className="mt-2 space-y-1.5">
+                    <div className="mt-2 space-y-4">
                       {message.toolCalls?.map((toolCall, tcIdx) => (
                         <ToolCallDisplay key={tcIdx} toolCall={toolCall} />
                       ))}
@@ -567,7 +567,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
 
                   {/* Tool responses */}
                   {hasToolResponses && (
-                    <div className="mt-2 space-y-1.5">
+                    <div className="mt-2 space-y-4">
                       {message.toolResponses?.map((toolResp, trIdx) => (
                         <ToolResponseDisplay key={trIdx} response={toolResp} />
                       ))}
