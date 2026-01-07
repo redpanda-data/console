@@ -14,6 +14,11 @@ async function runVariant(variant, playwrightArgs = []) {
   const child = spawn('npx', args, {
     stdio: 'inherit',
     cwd: variant.path,
+    env: {
+      ...process.env,
+      // Prevent Playwright from starting interactive HTML report server
+      CI: 'true',
+    },
   });
 
   return new Promise((resolve) => {

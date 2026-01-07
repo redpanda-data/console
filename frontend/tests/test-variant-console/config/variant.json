@@ -9,6 +9,7 @@
     "redpandaKafka": 19092,
     "redpandaSchemaRegistry": 18081,
     "redpandaAdmin": 19644,
+    "redpandaPandaproxy": 18082,
     "kafkaConnect": 18083
   }
 }

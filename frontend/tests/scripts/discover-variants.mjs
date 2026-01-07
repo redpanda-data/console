@@ -13,34 +13,6 @@ const DEFAULT_LICENSE_PATH = resolve(
 );
 
 /**
- * Parse license content and extract expiry timestamp
- * License format: base64(JSON payload).signature
- * @param {string} licenseContent - The full license string
- * @returns {{valid: boolean, expiry: number|null, error: string|null}}
- */
-function parseLicense(licenseContent) {
-  try {
-    // License format: base64payload.signature
-    const parts = licenseContent.split('.');
-    if (parts.length < 1) {
-      return { valid: false, expiry: null, error: 'Invalid license format' };
-    }
-
-    const payloadBase64 = parts[0];
-    const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf-8');
-    const payload = JSON.parse(payloadJson);
-
-    if (typeof payload.expiry !== 'number') {
-      return { valid: false, expiry: null, error: 'License missing expiry field' };
-    }
-
-    return { valid: true, expiry: payload.expiry, error: null };
-  } catch (error) {
-    return { valid: false, expiry: null, error: `Failed to parse license: ${error.message}` };
-  }
-}
-
-/**
  * Check if a variant can run based on its requirements
  * @param {object} config - Variant configuration
  * @returns {{canRun: boolean, reason: string|null}}
@@ -57,33 +29,6 @@ function checkVariantRequirements(config) {
         canRun: false,
         reason: `License required but not found. Set ENTERPRISE_LICENSE_CONTENT env var or place license at ${licensePath}`,
       };
-    }
-
-    // Check if the license is expired
-    let licenseContent = null;
-    if (hasLicenseEnv) {
-      licenseContent = process.env.ENTERPRISE_LICENSE_CONTENT;
-    } else if (hasLicenseFile) {
-      licenseContent = readFileSync(licensePath, 'utf-8').trim();
-    }
-
-    if (licenseContent) {
-      const { valid, expiry, error } = parseLicense(licenseContent);
-      if (!valid) {
-        return {
-          canRun: false,
-          reason: `License validation failed: ${error}`,
-        };
-      }
-
-      const now = Math.floor(Date.now() / 1000);
-      if (expiry < now) {
-        const expiryDate = new Date(expiry * 1000).toISOString().split('T')[0];
-        return {
-          canRun: false,
-          reason: `License expired on ${expiryDate}. Please provide a valid license.`,
-        };
-      }
     }
   }
 

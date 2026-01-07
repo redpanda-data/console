@@ -36,19 +36,21 @@ async function waitForPort(port, maxAttempts = 30, delayMs = 1000) {
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const { stdout } = await execAsync(
-        `curl -s -o /dev/null -w "%{http_code}" http://localhost:${port}/ || echo "0"`
+        `curl -s -m 5 -o /dev/null -w "%{http_code}" http://localhost:${port}/ || echo "0"`
       );
       const statusCode = Number.parseInt(stdout.trim(), 10);
       if (statusCode > 0 && statusCode < 500) {
         return true;
       }
-      if ((i + 1) % 10 === 0) {
-        console.log(`  Still waiting... (attempt ${i + 1}/${maxAttempts})`);
+      if ((i + 1) % 5 === 0) {
+        console.log(
+          `  Still waiting for port ${port}... (attempt ${i + 1}/${maxAttempts}, last status: ${statusCode})`
+        );
       }
-    } catch (_error) {
+    } catch (error) {
       // Port not ready yet
-      if ((i + 1) % 10 === 0) {
-        console.log(`  Still waiting... (attempt ${i + 1}/${maxAttempts})`);
+      if ((i + 1) % 5 === 0) {
+        console.log(`  Still waiting for port ${port}... (attempt ${i + 1}/${maxAttempts}, error: ${error.message})`);
       }
     }
     await new Promise((resolve) => setTimeout(resolve, delayMs));
@@ -72,7 +74,7 @@ async function startRedpandaContainer(network, state, ports) {
     .withExposedPorts(
       { container: 19_092, host: ports.redpandaKafka },
       { container: 18_081, host: ports.redpandaSchemaRegistry },
-      { container: 18_082, host: 18_082 },
+      { container: 18_082, host: ports.redpandaPandaproxy },
       { container: 9644, host: ports.redpandaAdmin }
     )
     .withCommand([
@@ -89,7 +91,7 @@ async function startRedpandaContainer(network, state, ports) {
       '--pandaproxy-addr',
       'internal://0.0.0.0:8082,external://0.0.0.0:18082',
       '--advertise-pandaproxy-addr',
-      'internal://redpanda:8082,external://localhost:18082',
+      `internal://redpanda:8082,external://localhost:${ports.redpandaPandaproxy}`,
       '--schema-registry-addr',
       'internal://0.0.0.0:8081,external://0.0.0.0:18081',
       '--rpc-addr',
@@ -591,7 +593,7 @@ async function startDestinationRedpandaContainer(network, state, ports) {
     .withExposedPorts(
       { container: 19_093, host: ports.destRedpandaKafka },
       { container: 18_091, host: ports.destRedpandaSchemaRegistry },
-      { container: 18_092, host: 18_092 },
+      { container: 18_092, host: ports.destRedpandaPandaproxy },
       { container: 9644, host: ports.destRedpandaAdmin }
     )
     .withCommand([
@@ -608,7 +610,7 @@ async function startDestinationRedpandaContainer(network, state, ports) {
       '--pandaproxy-addr',
       'internal://0.0.0.0:8082,external://0.0.0.0:18092',
       '--advertise-pandaproxy-addr',
-      'internal://dest-cluster:8082,external://localhost:18092',
+      `internal://dest-cluster:8082,external://localhost:${ports.destRedpandaPandaproxy}`,
       '--schema-registry-addr',
       'internal://0.0.0.0:8081,external://0.0.0.0:18091',
       '--rpc-addr',
@@ -639,11 +641,33 @@ async function startDestinationRedpandaContainer(network, state, ports) {
   state.destRedpandaId = destRedpanda.getId();
   state.destRedpandaContainer = destRedpanda;
   console.log(`✓ Destination Redpanda container started: ${state.destRedpandaId}`);
+
+  // Debug: Check port mappings
+  try {
+    const { stdout: portOutput } = await execAsync(`docker port ${state.destRedpandaId}`);
+    console.log('Destination container port mappings:');
+    console.log(portOutput);
+  } catch (e) {
+    console.log('Could not get port mappings:', e.message);
+  }
 }
 
 async function verifyDestinationRedpandaServices(state, ports) {
   console.log('Waiting for destination Redpanda services...');
   await new Promise((resolve) => setTimeout(resolve, 5000));
+
+  // Debug: Check if container is still running
+  try {
+    const { stdout: status } = await execAsync(`docker inspect ${state.destRedpandaId} --format='{{.State.Status}}'`);
+    console.log(`Destination container status: ${status.trim()}`);
+    if (status.trim() !== 'running') {
+      const { stdout: logs } = await execAsync(`docker logs ${state.destRedpandaId} 2>&1 | tail -30`);
+      console.log('Destination container logs:');
+      console.log(logs);
+    }
+  } catch (e) {
+    console.log('Could not check container status:', e.message);
+  }
 
   console.log(`Checking destination Admin API (port ${ports.destRedpandaAdmin})...`);
   await waitForPort(ports.destRedpandaAdmin, 60, 2000);
