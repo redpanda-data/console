@@ -24,7 +24,7 @@ import {
   UserCircleIcon,
 } from '@heroicons/react/outline';
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
-import { Shield } from 'lucide-react';
+import { Activity, Shield } from 'lucide-react';
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v6';
 import React, { Fragment, type FunctionComponent, useEffect } from 'react';
 import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
@@ -84,6 +84,7 @@ import { ShadowLinkListPage } from './pages/shadowlinks/list/shadowlink-list-pag
 import TopicDetails from './pages/topics/topic-details';
 import TopicList from './pages/topics/topic-list';
 import { TopicProducePage } from './pages/topics/topic-produce';
+import { TraceListPage } from './pages/traces/trace-list-page';
 import TransformDetails from './pages/transforms/transform-details';
 import TransformsList from './pages/transforms/transforms-list';
 import { TransformsSetup } from './pages/transforms/transforms-setup';
@@ -622,4 +623,13 @@ export const APP_ROUTES: IRouteEntry[] = [
   ),
   MakeRoute<{}>('/agents/create', AIAgentCreatePage, 'Create AI Agent'),
   MakeRoute<{ id: string }>('/agents/:id', AIAgentDetailsPage, 'AI Agent Details'),
+
+  MakeRoute<{}>(
+    '/traces',
+    TraceListPage,
+    'Traces',
+    (props) => <Activity {...props} />,
+    true,
+    routeVisibility(true, [Feature.TracingService])
+  ),
 ].filterNull();
