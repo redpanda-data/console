@@ -55,7 +55,8 @@ const extractProtoValue = (value: unknown): unknown => {
             return new TextDecoder().decode(protoValue.value.value);
           }
           return protoValue.value.value;
-        } catch {
+        } catch (error) {
+          console.warn('Failed to decode bytes value:', error);
           return '[binary data]';
         }
       case 'arrayValue': {
@@ -116,7 +117,8 @@ const getAttributeValue = (value: unknown): string => {
   // For arrays and objects, pretty-print as JSON using JSONBigInt to preserve large integers
   try {
     return JSONBigInt.stringify(extractedValue, null, 2);
-  } catch {
+  } catch (error) {
+    console.warn('Failed to stringify attribute value:', error);
     return String(extractedValue);
   }
 };
