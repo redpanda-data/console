@@ -64,7 +64,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
   }
 
   async refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListAcls) {
+    if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
       return;
     }
 
@@ -89,15 +89,27 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
       <PageContent>
         <div className="flex flex-col gap-4">
           <UserInformationCard
-            onEditPassword={api.isAdminApiConfigured ? () => (this.isChangePasswordModalOpen = true) : undefined}
+            onEditPassword={
+              api.isAdminApiConfigured
+                ? () => {
+                    this.isChangePasswordModalOpen = true;
+                  }
+                : undefined
+            }
             username={userName}
           />
           <UserPermissionDetailsContent
-            onChangeRoles={Features.rolesApi ? () => (this.isChangeRolesModalOpen = true) : undefined}
+            onChangeRoles={
+              Features.rolesApi
+                ? () => {
+                    this.isChangeRolesModalOpen = true;
+                  }
+                : undefined
+            }
             userName={userName}
           />
           <div>
-            {isServiceAccount && (
+            {Boolean(isServiceAccount) && (
               <DeleteUserConfirmModal
                 buttonEl={
                   <Button disabled={!isServiceAccount} variant="destructive">
@@ -127,18 +139,22 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
           </div>
 
           {/*Modals*/}
-          {api.isAdminApiConfigured && (
+          {Boolean(api.isAdminApiConfigured) && (
             <ChangePasswordModal
               isOpen={this.isChangePasswordModalOpen}
-              setIsOpen={(value: boolean) => (this.isChangePasswordModalOpen = value)}
+              setIsOpen={(value: boolean) => {
+                this.isChangePasswordModalOpen = value;
+              }}
               userName={userName}
             />
           )}
 
-          {Features.rolesApi && (
+          {Boolean(Features.rolesApi) && (
             <ChangeRolesModal
               isOpen={this.isChangeRolesModalOpen}
-              setIsOpen={(value: boolean) => (this.isChangeRolesModalOpen = value)}
+              setIsOpen={(value: boolean) => {
+                this.isChangeRolesModalOpen = value;
+              }}
               userName={userName}
             />
           )}

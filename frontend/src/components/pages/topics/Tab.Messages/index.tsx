@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { DownloadIcon, KebabHorizontalIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
 import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { api, createMessageSearch, type MessageSearchRequest } from '../../../../state/backend-api';
@@ -26,7 +25,6 @@ import '../../../../utils/array-extensions';
 import {
   Alert,
   AlertDescription,
-  AlertIcon,
   AlertTitle,
   Badge,
   Box,
@@ -47,19 +45,23 @@ import {
   useToast,
 } from '@redpanda-data/ui';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
-import { parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import {
-  MdCalendarToday,
-  MdDownload,
-  MdJavascript,
-  MdKeyboardTab,
-  MdOutlineLayers,
-  MdOutlinePlayCircle,
-  MdOutlineQuickreply,
-  MdOutlineSettings,
-  MdOutlineSkipPrevious,
-  MdOutlineTimer,
-} from 'react-icons/md';
+  AlertIcon,
+  CalendarIcon,
+  CodeIcon,
+  DownloadIcon,
+  ErrorIcon,
+  LayersIcon,
+  MoreHorizontalIcon,
+  PlayIcon,
+  RefreshIcon,
+  ReplyIcon,
+  SettingsIcon,
+  SkipBackIcon,
+  TabIcon,
+  TimerIcon,
+} from 'components/icons';
+import { parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 
 import { MessageSearchFilterBar } from './common/message-search-filter-bar';
 import { SaveMessagesDialog } from './dialogs/save-messages-dialog';
@@ -161,7 +163,7 @@ function getMessageAsString(value: string | TopicMessage): string {
 }
 
 function getPayloadAsString(value: string | Uint8Array | object): string {
-  if (value == null) {
+  if (value === null) {
     return '';
   }
 
@@ -230,14 +232,14 @@ function onCopyKey(original: TopicMessage, toast: ReturnType<typeof useToast>) {
     .catch(navigatorClipboardErrorHandler);
 }
 
-interface LoadLargeMessageParams {
+type LoadLargeMessageParams = {
   topicName: string;
   messagePartitionID: number;
   offset: number;
   setMessages: React.Dispatch<React.SetStateAction<TopicMessage[]>>;
   keyDeserializer: PayloadEncoding;
   valueDeserializer: PayloadEncoding;
-}
+};
 
 async function loadLargeMessage({
   topicName,
@@ -482,6 +484,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   );
 
   // Convert executeMessageSearch to useCallback
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const executeMessageSearch = useCallback(async (): Promise<TopicMessage[]> => {
     const canUseFilters =
       (api.topicPermissions.get(props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
@@ -793,7 +796,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       cell: ({ row: { original } }) => (
         <Menu computePositionOnMount>
           <MenuButton as={Button} className="iconButton" variant="link">
-            <KebabHorizontalIcon />
+            <MoreHorizontalIcon />
           </MenuButton>
           <MenuList>
             <MenuItem
@@ -855,7 +858,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       value: PartitionOffsetOrigin.End,
       label: (
         <Flex alignItems="center" gap={2}>
-          <MdOutlinePlayCircle />
+          <PlayIcon />
           <span data-testid="start-offset-latest-live">Latest / Live</span>
         </Flex>
       ),
@@ -864,7 +867,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       value: PartitionOffsetOrigin.EndMinusResults,
       label: (
         <Flex alignItems="center" gap={2}>
-          <MdOutlineQuickreply />
+          <ReplyIcon />
           <span data-testid="start-offset-newest">{`Newest - ${String(maxResults)}`}</span>
         </Flex>
       ),
@@ -873,7 +876,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       value: PartitionOffsetOrigin.Start,
       label: (
         <Flex alignItems="center" gap={2}>
-          <MdOutlineSkipPrevious />
+          <SkipBackIcon />
           <span data-testid="start-offset-beginning">Beginning</span>
         </Flex>
       ),
@@ -882,7 +885,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       value: PartitionOffsetOrigin.Custom,
       label: (
         <Flex alignItems="center" gap={2}>
-          <MdKeyboardTab />
+          <TabIcon />
           <span data-testid="start-offset-custom">Offset</span>
         </Flex>
       ),
@@ -891,7 +894,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       value: PartitionOffsetOrigin.Timestamp,
       label: (
         <Flex alignItems="center" gap={2}>
-          <MdCalendarToday />
+          <CalendarIcon />
           <span data-testid="start-offset-timestamp">Timestamp</span>
         </Flex>
       ),
@@ -998,7 +1001,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
               <MenuList>
                 <MenuItem
                   data-testid="add-topic-filter-partition"
-                  icon={<MdOutlineLayers size="1.5rem" />}
+                  icon={<LayersIcon size="1.5rem" />}
                   isDisabled={dynamicFilters.includes('partition')}
                   onClick={() => addDynamicFilter('partition')}
                 >
@@ -1007,7 +1010,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                 <MenuDivider />
                 <MenuItem
                   data-testid="add-topic-filter-javascript"
-                  icon={<MdJavascript size="1.5rem" />}
+                  icon={<CodeIcon size="1.5rem" />}
                   isDisabled={!canUseFilters}
                   onClick={() => {
                     const filter = new FilterEntry();
@@ -1039,7 +1042,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             <MenuButton
               as={IconButton}
               data-testid="message-settings-button"
-              icon={<MdOutlineSettings size="1.5rem" />}
+              icon={<SettingsIcon size="1.5rem" />}
               variant="outline"
             />
             <MenuList>
@@ -1071,24 +1074,24 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           </Menu>
           <Flex alignItems="flex-end">
             {/* Refresh Button */}
-            {searchPhase == null && (
+            {searchPhase === null && (
               <Tooltip hasArrow label="Repeat current search" placement="top">
                 <IconButton
                   aria-label="Repeat current search"
                   data-testid="refresh-messages-button"
-                  icon={<SyncIcon />}
+                  icon={<RefreshIcon />}
                   onClick={() => searchFunc('manual')}
                   variant="outline"
                 />
               </Tooltip>
             )}
-            {searchPhase != null && (
+            {searchPhase !== null && (
               <Tooltip hasArrow label="Stop searching" placement="top">
                 <IconButton
                   aria-label="Stop searching"
                   colorScheme="red"
                   data-testid="stop-search-button"
-                  icon={<XCircleIcon />}
+                  icon={<ErrorIcon />}
                   onClick={() => {
                     if (abortControllerRef.current) {
                       abortControllerRef.current.abort();
@@ -1130,10 +1133,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             {searchPhase === null || searchPhase === 'Done' ? (
               <>
                 <Flex alignItems="center" gap={2}>
-                  <MdDownload size={14} /> {prettyBytes(bytesConsumed)}
+                  <DownloadIcon size={14} /> {prettyBytes(bytesConsumed)}
                 </Flex>
                 <Flex alignItems="center" gap={2}>
-                  <MdOutlineTimer size={14} /> {elapsedMs ? prettyMilliseconds(elapsedMs) : ''}
+                  <TimerIcon size={14} /> {elapsedMs ? prettyMilliseconds(elapsedMs) : ''}
                 </Flex>
               </>
             ) : (
@@ -1146,7 +1149,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         </GridItem>
       </Grid>
 
-      {currentJSFilter && (
+      {currentJSFilter ? (
         <JavascriptFilterModal
           currentFilter={currentJSFilter}
           onClose={() => setCurrentJSFilter(null)}
@@ -1163,12 +1166,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             searchFunc('manual');
           }}
         />
-      )}
+      ) : null}
 
       {/* Message Table (or error display) */}
       {fetchError ? (
         <Alert status="error">
-          <AlertIcon alignSelf="flex-start" />
+          <Box alignSelf="flex-start">
+            <AlertIcon />
+          </Box>
           <Box>
             <AlertTitle>Backend Error</AlertTitle>
             <AlertDescription>

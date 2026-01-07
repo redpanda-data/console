@@ -39,10 +39,10 @@ const createConsumerGroupACLs = (consumerGroupName: string, username: string) =>
   }));
 };
 
-interface TopicPermissionCheck {
+type TopicPermissionCheck = {
   hasPermissions: ACL_Operation[];
   missingPermissions: ACL_Operation[];
-}
+};
 
 export const getACLOperationName = (operation: ACL_Operation): string => {
   switch (operation) {
@@ -360,12 +360,12 @@ const createKafkaUser = async (
   }
 };
 
-interface CreateUserWithSecretsParams {
+type CreateUserWithSecretsParams = {
   userData: AddUserFormData;
   topicName?: string;
   consumerGroup?: string;
   existingUserSelected: boolean;
-}
+};
 
 const handleOperationResult = (result: OperationResult) => {
   if (result.success && result.message) {
@@ -384,6 +384,7 @@ export const useCreateUserWithSecretsMutation = () => {
   // Aggregate isPending from all mutations
   const isPending = createUserMutation.isPending || createACLMutation.isPending || createSecretMutation.isPending;
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const createUserWithSecrets = async (params: CreateUserWithSecretsParams) => {
     const { userData, topicName, consumerGroup, existingUserSelected } = params;
 

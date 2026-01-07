@@ -10,11 +10,10 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
-import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { describe, expect, test, vi } from 'vitest';
 
 import { ShadowLinkMetrics } from './shadow-link-metrics';
+import { type UnifiedShadowLink, UnifiedShadowLinkState } from '../model';
 
 // Mock the useGetShadowMetricsQuery hook
 vi.mock('react-query/api/shadowlink', () => ({
@@ -23,11 +22,13 @@ vi.mock('react-query/api/shadowlink', () => ({
 
 import { useGetShadowMetricsQuery } from 'react-query/api/shadowlink';
 
-const mockShadowLink: ShadowLink = {
+const mockShadowLink: UnifiedShadowLink = {
   name: 'test-link',
-  uid: 'test-uid',
-  state: ShadowLinkState.ACTIVE,
+  id: 'test-uid',
+  state: UnifiedShadowLinkState.ACTIVE,
   configurations: undefined,
+  tasksStatus: [],
+  syncedShadowTopicProperties: [],
 };
 
 describe('ShadowLinkMetrics', () => {

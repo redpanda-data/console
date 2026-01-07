@@ -20,12 +20,15 @@ import {
 import {
   type GetSecretRequest as GetSecretRequestDataPlane,
   GetSecretRequestSchema as GetSecretRequestSchemaDataPlane,
+  ListResourcesRequest_FilterSchema,
+  ListResourcesRequestSchema,
+  type ListResourcesResponse,
   ListSecretsFilterSchema,
   type ListSecretsRequest as ListSecretsRequestDataPlane,
   ListSecretsRequestSchema as ListSecretsRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { listResources } from 'protogen/redpanda/api/dataplane/v1/secret-SecretService_connectquery';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
-import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useListSecretsQuery = (
@@ -33,7 +36,6 @@ export const useListSecretsQuery = (
   options?: QueryOptions<GenMessage<ListSecretsRequest>, ListSecretsResponse>
 ) => {
   const listSecretsRequestDataPlane = create(ListSecretsRequestSchemaDataPlane, {
-    pageToken: '',
     pageSize: MAX_PAGE_SIZE,
     filter: input?.filter?.nameContains
       ? create(ListSecretsFilterSchema, {
@@ -44,29 +46,14 @@ export const useListSecretsQuery = (
 
   const listSecretsRequest = create(ListSecretsRequestSchema, {
     request: listSecretsRequestDataPlane,
-  }) as MessageInit<ListSecretsRequest> & Required<Pick<MessageInit<ListSecretsRequest>, 'request'>>;
-
-  const listSecretsResult = useInfiniteQueryWithAllPages(listSecrets, listSecretsRequest, {
-    pageParamKey: 'request',
-    enabled: options?.enabled,
-    // Required because of protobuf v2 reflection - it does not accept foreign fields when nested under "request", so the format needs to be a dataplane schema
-    getNextPageParam: (lastPage) =>
-      lastPage.response?.nextPageToken
-        ? {
-            ...listSecretsRequestDataPlane,
-            pageToken: lastPage.response?.nextPageToken,
-          }
-        : undefined,
   });
 
-  const allRetrievedSecrets = listSecretsResult.data?.pages?.flatMap(({ response }) => response?.secrets);
-
-  return {
-    ...listSecretsResult,
-    data: {
-      secrets: allRetrievedSecrets,
-    },
-  };
+  return useQuery(listSecrets, listSecretsRequest, {
+    enabled: options?.enabled,
+    select: (data) => ({
+      secrets: data.response?.secrets || [],
+    }),
+  });
 };
 
 export const useGetSecretQuery = (
@@ -79,6 +66,18 @@ export const useGetSecretQuery = (
   return useQuery(getSecret, getSecretRequest, { enabled: options?.enabled });
 };
 
+export const useListResourcesForSecretQuery = (
+  secretId: string,
+  options?: QueryOptions<GenMessage<ListResourcesResponse>>
+) => {
+  const filter = create(ListResourcesRequest_FilterSchema, { secretId });
+  const request = create(ListResourcesRequestSchema, { filter });
+
+  return useQuery(listResources, request, {
+    enabled: !!secretId && options?.enabled !== false,
+  });
+};
+
 export const useCreateSecretMutation = (options?: { skipInvalidation?: boolean }) => {
   const queryClient = useQueryClient();
 
@@ -88,7 +87,7 @@ export const useCreateSecretMutation = (options?: { skipInvalidation?: boolean }
         await queryClient.invalidateQueries({
           queryKey: createConnectQueryKey({
             schema: SecretService.method.listSecrets,
-            cardinality: 'infinite',
+            cardinality: 'finite',
           }),
           exact: false,
         });
@@ -111,7 +110,7 @@ export const useUpdateSecretMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: SecretService.method.listSecrets,
-          cardinality: 'infinite',
+          cardinality: 'finite',
         }),
         exact: false,
       });
@@ -134,7 +133,7 @@ export const useDeleteSecretMutation = (options?: { skipInvalidation?: boolean }
         await queryClient.invalidateQueries({
           queryKey: createConnectQueryKey({
             schema: SecretService.method.listSecrets,
-            cardinality: 'infinite',
+            cardinality: 'finite',
           }),
           exact: false,
         });

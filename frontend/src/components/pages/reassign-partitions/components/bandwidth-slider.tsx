@@ -48,7 +48,7 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
     const sliderValue = Math.log10(value);
 
     const tipText = (f: number | null) => {
-      if (f == null) {
+      if (f === null) {
         return null;
       }
       if (f < 3) {
@@ -80,8 +80,12 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
               return;
           }
         }}
-        onMouseEnter={() => (this.isDragging = true)}
-        onMouseLeave={() => (this.isDragging = false)}
+        onMouseEnter={() => {
+          this.isDragging = true;
+        }}
+        onMouseLeave={() => {
+          this.isDragging = false;
+        }}
         step={0.1}
         value={sliderValue}
       >

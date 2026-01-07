@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { XCircleIcon } from '@heroicons/react/solid';
 import {
   Box,
   Button,
@@ -22,6 +21,7 @@ import {
   ModalOverlay,
   Text,
 } from '@redpanda-data/ui';
+import { ErrorIcon } from 'components/icons';
 import { action, observable } from 'mobx';
 import React, { Component } from 'react';
 
@@ -56,7 +56,7 @@ class ErrorModal extends Component<ErrorModalProps> {
                     alignSelf: 'center',
                   }}
                 >
-                  <XCircleIcon color="#F53649" />
+                  <ErrorIcon color="#F53649" />
                 </div>
 
                 {/* Title */}
@@ -66,7 +66,7 @@ class ErrorModal extends Component<ErrorModalProps> {
               </Flex>
 
               {/* Content */}
-              {this.content && (
+              {Boolean(this.content) && (
                 <Box alignSelf="stretch" maxHeight="300px" overflowY="auto">
                   {this.content}
                 </Box>
@@ -100,7 +100,8 @@ const errorModals: ErrorModalProps[] = observable([]);
 
 let nextErrorKey = 0;
 export function showErrorModal(title: string, subTitle: React.ReactNode, content: React.ReactNode) {
-  const key = nextErrorKey++;
+  const key = nextErrorKey;
+  nextErrorKey += 1;
 
   // keep formatting for strings
   let formattedContent = content;

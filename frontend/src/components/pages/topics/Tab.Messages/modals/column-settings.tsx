@@ -103,7 +103,9 @@ export const ColumnSettings: FC<{
             <GridItem>
               <Label text="Timestamp format">
                 <SingleSelect<TimestampDisplayFormat>
-                  onChange={(e) => (uiState.topicSettings.previewTimestamps = e)}
+                  onChange={(e) => {
+                    uiState.topicSettings.previewTimestamps = e;
+                  }}
                   options={[
                     { label: 'Local DateTime', value: 'default' },
                     { label: 'Unix DateTime', value: 'unixTimestamp' },

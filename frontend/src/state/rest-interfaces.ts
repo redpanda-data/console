@@ -171,7 +171,10 @@ export type MessageDataType =
   | 'null'
   | 'avro'
   | 'protobuf'
+  | 'protobufSchema'
+  | 'protobufBSR'
   | 'json'
+  | 'jsonSchema'
   | 'xml'
   | 'text'
   | 'utf8WithControlChars'
@@ -1538,6 +1541,9 @@ export type SchemaRegistryCreateSchema = {
   schema: string;
   schemaType: SchemaTypeType;
   references: SchemaReference[];
+  params?: {
+    normalize?: boolean;
+  };
 };
 
 export type SchemaRegistryCreateSchemaResponse = {

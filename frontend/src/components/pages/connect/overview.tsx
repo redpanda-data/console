@@ -107,9 +107,18 @@ class KafkaConnectOverview extends PageComponent<{
     p.title = 'Overview';
     p.addBreadcrumb('Connect', '/connect-clusters');
 
-    void this.checkRPCNSecretEnable();
-    void this.refreshData();
-    appGlobal.onRefresh = () => void this.refreshData();
+    // biome-ignore lint/nursery/noFloatingPromises: Fire-and-forget with internal error handling
+    this.initializeData();
+    appGlobal.onRefresh = async () => await this.refreshData();
+  }
+
+  private async initializeData(): Promise<void> {
+    try {
+      await this.checkRPCNSecretEnable();
+      await this.refreshData();
+    } catch {
+      // Error during initialization - component will show error state
+    }
   }
 
   async checkRPCNSecretEnable() {
@@ -182,21 +191,20 @@ class KafkaConnectOverview extends PageComponent<{
 
     return (
       <PageContent>
-        {this.props.isKafkaConnectEnabled && (
+        {Boolean(this.props.isKafkaConnectEnabled) && (
           <Text>
             There are two ways to integrate your Redpanda data with data from external systems: Redpanda Connect and
             Kafka Connect.
           </Text>
         )}
-        {tabs.length === 1 ? (
-          typeof tabs[0].content === 'function' ? (
-            tabs[0].content()
-          ) : (
-            tabs[0].content
-          )
-        ) : (
-          <Tabs defaultSelectedTabKey={getDefaultView(this.props.defaultView).initialTab} tabs={tabs} />
-        )}
+        {(() => {
+          if (tabs.length !== 1) {
+            return <Tabs defaultSelectedTabKey={getDefaultView(this.props.defaultView).initialTab} tabs={tabs} />;
+          }
+
+          const tabContent = tabs[0].content;
+          return typeof tabContent === 'function' ? tabContent() : tabContent;
+        })()}
       </PageContent>
     );
   }

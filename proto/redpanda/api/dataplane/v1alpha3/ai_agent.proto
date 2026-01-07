@@ -87,6 +87,16 @@ message AIAgent {
     (buf.validate.field).required = true
   ];
 
+  // Map of subagents for delegating specialized tasks.
+  // Key is the subagent name (used for routing/invocation).
+  map<string, Subagent> subagents = 15 [(buf.validate.field).map.keys = {
+    string: {
+      pattern: "^[A-Za-z0-9_-]+$"
+      min_len: 1
+      max_len: 64
+    }
+  }];
+
   message Provider {
     message OpenAI {
       string api_key = 1 [
@@ -168,6 +178,29 @@ message AIAgent {
   message MCPServer {
     // ID of the Redpanda MCP server.
     string id = 1;
+
+    // Optional regex pattern to filter which tools from the MCP server should be available.
+    // If not specified, all tools from the MCP server are available.
+    // The pattern is matched against tool names.
+    string tool_filter_regex = 2 [(buf.validate.field).string.max_len = 256];
+  }
+
+  // Subagent configuration for delegating specialized tasks.
+  message Subagent {
+    // System prompt defining the subagent's specialized behavior.
+    string system_prompt = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 10,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "System instructions that define how this subagent should behave. The subagent inherits the provider and model from its parent agent."}
+    ];
+
+    // Map of MCP servers that this subagent can use.
+    // References Redpanda MCP servers by ID.
+    map<string, MCPServer> mcp_servers = 2;
+
+    // Optional subagent description.
+    string description = 3 [(buf.validate.field).string.max_len = 256];
   }
 }
 
@@ -437,6 +470,15 @@ message AIAgentCreate {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
+
+  // Map of subagents for delegating specialized tasks.
+  map<string, AIAgent.Subagent> subagents = 12 [(buf.validate.field).map.keys = {
+    string: {
+      pattern: "^[A-Za-z0-9_-]+$"
+      min_len: 1
+      max_len: 64
+    }
+  }];
 }
 
 // CreateAIAgentRequest is the request of CreateAIAgent.
@@ -562,6 +604,16 @@ message AIAgentUpdate {
   }];
 
   AIAgent.ServiceAccount service_account = 11;
+
+  // Map of subagents to add, update, or delete.
+  // If a subagent's value is empty/null, the server interprets that as deletion.
+  map<string, AIAgent.Subagent> subagents = 12 [(buf.validate.field).map.keys = {
+    string: {
+      pattern: "^[A-Za-z0-9_-]+$"
+      min_len: 1
+      max_len: 64
+    }
+  }];
 }
 
 message UpdateAIAgentRequest {

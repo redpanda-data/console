@@ -67,7 +67,7 @@ export const ShadowLinkDetailsPage = () => {
   const { deleteShadowLink, isPending: isDeleting } = useDeleteShadowLinkUnified({ name: name ?? '' });
 
   const { mutate: failoverShadowLink, isPending: isFailingOver } = useFailoverShadowLinkMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success(
         failoverTopicName
           ? `Topic ${failoverTopicName} failed over successfully`
@@ -75,7 +75,7 @@ export const ShadowLinkDetailsPage = () => {
       );
       setShowFailoverDialog(false);
       setFailoverTopicName('');
-      void refetch();
+      await refetch();
     },
     onError: (error) => {
       toast.error(`Failed to failover: ${error.message}`);
@@ -167,7 +167,7 @@ export const ShadowLinkDetailsPage = () => {
       </div>
 
       {/* Partial Data Warning Banner */}
-      {hasPartialData && (
+      {Boolean(hasPartialData) && (
         <Alert testId="partial-data-warning" variant="warning">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Limited data available</AlertTitle>

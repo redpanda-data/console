@@ -23,7 +23,7 @@ import { useWatch } from 'react-hook-form';
 import { Item } from '../../../../redpanda-ui/components/item';
 import { getFilterTypeLabel } from '../../shadowlink-helpers';
 
-interface FilterItemProps<TFieldValues extends FieldValues> {
+type FilterItemProps<TFieldValues extends FieldValues> = {
   control: Control<TFieldValues>;
   index: number;
   fieldNamePrefix: string;
@@ -32,7 +32,7 @@ interface FilterItemProps<TFieldValues extends FieldValues> {
   viewType: boolean; // true = editable, false = resume/summary
   'data-testid'?: string;
   errorMessage?: string; // Error message to display in resume/summary view
-}
+};
 
 export const FilterItem = <TFieldValues extends FieldValues>({
   control,
@@ -76,7 +76,7 @@ export const FilterItem = <TFieldValues extends FieldValues>({
               </Badge>
             )}
           </div>
-          {errorMessage && (
+          {Boolean(errorMessage) && (
             <p className="mt-1 text-destructive text-sm" data-slot="form-message">
               {errorMessage}
             </p>
@@ -97,7 +97,9 @@ export const FilterItem = <TFieldValues extends FieldValues>({
             <FormField
               control={control}
               name={filterFieldName}
+              // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
               render={({ field: filterField }) => {
+                // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
                 const getTabValue = () => {
                   if (patternField.value === PatternType.LITERAL && filterField.value === FilterType.INCLUDE) {
                     return 'include-specific';
@@ -180,7 +182,7 @@ export const FilterItem = <TFieldValues extends FieldValues>({
                     </div>
                     {children}
                     <FormMessage />
-                    {showMatchAllMessage && (
+                    {Boolean(showMatchAllMessage) && (
                       <Alert variant="warning">
                         <Info className="h-4 w-4" />
                         <AlertDescription>This filter will match all {resourceType}.</AlertDescription>

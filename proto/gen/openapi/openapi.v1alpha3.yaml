@@ -31,6 +31,13 @@ components:
           $ref: '#/components/schemas/AIAgent.ServiceAccount'
         state:
           $ref: '#/components/schemas/AIAgent.State'
+        subagents:
+          additionalProperties:
+            $ref: '#/components/schemas/Subagent'
+          description: |-
+            Map of subagents for delegating specialized tasks.
+            Key is the subagent name (used for routing/invocation).
+          type: object
         system_prompt:
           description: System instructions that define how the AI agent should behave and respond.
           type: string
@@ -57,6 +64,12 @@ components:
       properties:
         id:
           description: ID of the Redpanda MCP server.
+          type: string
+        tool_filter_regex:
+          description: |-
+            Optional regex pattern to filter which tools from the MCP server should be available.
+            If not specified, all tools from the MCP server are available.
+            The pattern is matched against tool names.
           type: string
       type: object
     AIAgent.Provider:
@@ -130,6 +143,11 @@ components:
           $ref: '#/components/schemas/Resources'
         service_account:
           $ref: '#/components/schemas/AIAgent.ServiceAccount'
+        subagents:
+          additionalProperties:
+            $ref: '#/components/schemas/Subagent'
+          description: Map of subagents for delegating specialized tasks.
+          type: object
         system_prompt:
           description: System instructions that define how the AI agent should behave and respond.
           type: string
@@ -169,6 +187,13 @@ components:
           $ref: '#/components/schemas/Resources'
         service_account:
           $ref: '#/components/schemas/AIAgent.ServiceAccount'
+        subagents:
+          additionalProperties:
+            $ref: '#/components/schemas/Subagent'
+          description: |-
+            Map of subagents to add, update, or delete.
+            If a subagent's value is empty/null, the server interprets that as deletion.
+          type: object
         system_prompt:
           description: System instructions that define how the AI agent should behave and respond.
           type: string
@@ -1515,6 +1540,25 @@ components:
       properties:
         mcp_server:
           $ref: '#/components/schemas/v1alpha3.MCPServer'
+      type: object
+    Subagent:
+      description: Subagent configuration for delegating specialized tasks.
+      properties:
+        description:
+          description: Optional subagent description.
+          type: string
+        mcp_servers:
+          additionalProperties:
+            $ref: '#/components/schemas/AIAgent.MCPServer'
+          description: |-
+            Map of MCP servers that this subagent can use.
+            References Redpanda MCP servers by ID.
+          type: object
+        system_prompt:
+          description: System instructions that define how this subagent should behave. The subagent inherits the provider and model from its parent agent.
+          type: string
+      required:
+        - system_prompt
       type: object
     Tool:
       description: A configuration tool for the MCP server.

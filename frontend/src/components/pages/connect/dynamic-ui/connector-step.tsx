@@ -40,19 +40,19 @@ export const ConnectorStepComponent = observer(
           {step.name}
         </Heading>
 
-        {step.description && (
+        {Boolean(step.description) && (
           <Text mb="4" size="sm">
             {step.description}
           </Text>
         )}
 
-        {groups.map((g, i) => (
+        {groups.map((g) => (
           <PropertyGroupComponent
             allGroups={props.allGroups}
             connectorType={props.connectorType}
             context={props.context}
             group={g}
-            key={i}
+            key={g.group.name}
             showAdvancedOptions={props.showAdvancedOptions}
           />
         ))}

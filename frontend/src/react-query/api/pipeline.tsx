@@ -30,10 +30,16 @@ import {
   type ListPipelinesRequest as ListPipelinesRequestDataPlane,
   ListPipelinesRequestSchema as ListPipelinesRequestSchemaDataPlane,
   type Pipeline,
+  Pipeline_State,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
-import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
+import { useMemo } from 'react';
+import {
+  MAX_PAGE_SIZE,
+  type MessageInit,
+  type QueryOptions,
+  SHORT_POLLING_INTERVAL,
+} from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const REDPANDA_CONNECT_LOGS_TOPIC = '__redpanda.connect.logs';
@@ -43,17 +49,26 @@ export const REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS = 5;
 export const useGetPipelineQuery = (
   { id }: { id: Pipeline['id'] },
   options?: QueryOptions<GenMessage<GetPipelineResponse>, GetPipelineResponse> & {
-    refetchInterval?: number | false;
+    refetchInterval?: number | false | ((query: { state?: { data?: GetPipelineResponse } }) => number | false);
     refetchIntervalInBackground?: boolean;
     refetchOnWindowFocus?: 'always' | boolean;
   }
 ) => {
   const getPipelineRequestDataPlane = create(GetPipelineRequestSchemaDataPlane, { id });
-  const getPipelineRequest = create(GetPipelineRequestSchema, { request: getPipelineRequestDataPlane });
+  const getPipelineRequest = create(GetPipelineRequestSchema, {
+    request: getPipelineRequestDataPlane,
+  });
   return useQuery(getPipeline, getPipelineRequest, {
     enabled: options?.enabled,
-    refetchInterval: options?.refetchInterval,
-    refetchIntervalInBackground: options?.refetchIntervalInBackground,
+    refetchInterval:
+      options?.refetchInterval ??
+      ((query) => {
+        const state = query?.state?.data?.response?.pipeline?.state;
+        // Poll every 2 seconds when pipeline is in transitional state (STARTING or STOPPING)
+        const shouldPoll = state === Pipeline_State.STARTING || state === Pipeline_State.STOPPING;
+        return shouldPoll ? SHORT_POLLING_INTERVAL : false;
+      }),
+    refetchIntervalInBackground: options?.refetchIntervalInBackground ?? false,
     refetchOnWindowFocus: options?.refetchOnWindowFocus,
   });
 };
@@ -62,49 +77,57 @@ export const useListPipelinesQuery = (
   input?: MessageInit<ListPipelinesRequestDataPlane>,
   options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse>
 ) => {
-  const listPipelinesRequestDataPlane = create(ListPipelinesRequestSchemaDataPlane, {
-    pageSize: MAX_PAGE_SIZE,
-    pageToken: '',
-    // TODO: Use once nameContains is not required anymore
-    // filter: new ListPipelinesRequest_Filter({
-    //   ...input?.filter,
-    //   tags: {
-    //     ...input?.filter?.tags,
-    //     __redpanda_cloud_pipeline_type: 'pipeline',
-    //   },
-    // }),
-    ...input,
-  });
+  // Stabilize request objects to prevent unnecessary re-renders
+  const listPipelinesRequestDataPlane = useMemo(
+    () =>
+      create(ListPipelinesRequestSchemaDataPlane, {
+        pageSize: MAX_PAGE_SIZE,
+        pageToken: '',
+        // TODO: Use once nameContains is not required anymore
+        // filter: new ListPipelinesRequest_Filter({
+        //   ...input?.filter,
+        //   tags: {
+        //     ...input?.filter?.tags,
+        //     __redpanda_cloud_pipeline_type: 'pipeline',
+        //   },
+        // }),
+        ...input,
+      }),
+    [input]
+  );
 
-  const listPipelinesRequest = create(ListPipelinesRequestSchema, {
-    request: listPipelinesRequestDataPlane,
-  }) as MessageInit<ListPipelinesRequest> & Required<Pick<MessageInit<ListPipelinesRequest>, 'request'>>;
+  const listPipelinesRequest = useMemo(
+    () =>
+      create(ListPipelinesRequestSchema, {
+        request: listPipelinesRequestDataPlane,
+      }) as MessageInit<ListPipelinesRequest> & Required<Pick<MessageInit<ListPipelinesRequest>, 'request'>>,
+    [listPipelinesRequestDataPlane]
+  );
 
-  const listPipelinesResult = useInfiniteQueryWithAllPages(listPipelines, listPipelinesRequest, {
-    pageParamKey: 'request',
-    enabled: options?.enabled,
-    // Required because of protobuf v2 reflection - it does not accept foreign fields when nested under "request", so the format needs to be a dataplane schema
-    getNextPageParam: (lastPage) =>
-      lastPage?.response?.nextPageToken
-        ? {
-            ...listPipelinesRequestDataPlane,
-            pageToken: lastPage.response?.nextPageToken,
-          }
-        : undefined,
-  });
+  // Stabilize options object to prevent unnecessary re-renders
+  const queryOptions = useMemo(
+    () => ({
+      enabled: options?.enabled,
+    }),
+    [options?.enabled]
+  );
 
-  const allRetrievedPipelines = listPipelinesResult?.data?.pages?.flatMap(({ response }) => response?.pipelines);
+  const listPipelinesResult = useQuery(listPipelines, listPipelinesRequest, queryOptions);
 
-  // TODO: Remove once nameContains is not required anymore
-  // const filteredPipelines = allRetrievedPipelines?.filter(
-  //   (pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_type !== 'agent',
-  // );
+  // Stabilize the pipelines reference
+  const pipelines = listPipelinesResult?.data?.response?.pipelines;
+
+  // Stabilize the data object to prevent component re-renders
+  const data = useMemo(
+    () => ({
+      pipelines,
+    }),
+    [pipelines]
+  );
 
   return {
     ...listPipelinesResult,
-    data: {
-      pipelines: allRetrievedPipelines,
-    },
+    data,
   };
 };
 
@@ -116,7 +139,7 @@ export const useCreatePipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'infinite',
+          cardinality: 'finite',
         }),
       });
     },
@@ -137,7 +160,7 @@ export const useUpdatePipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'infinite',
+          cardinality: 'finite',
         }),
       });
     },
@@ -158,7 +181,7 @@ export const useStartPipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'infinite',
+          cardinality: 'finite',
         }),
       });
       await queryClient.invalidateQueries({
@@ -186,7 +209,7 @@ export const useStopPipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'infinite',
+          cardinality: 'finite',
         }),
       });
       await queryClient.invalidateQueries({
@@ -214,7 +237,7 @@ export const useDeletePipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'infinite',
+          cardinality: 'finite',
         }),
       });
     },

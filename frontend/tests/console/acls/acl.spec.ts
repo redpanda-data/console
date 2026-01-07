@@ -1,7 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
 import {
-  getRuleDataTestId,
   ModeAllowAll,
   ModeCustom,
   ModeDenyAll,
@@ -132,10 +131,6 @@ test.describe('ACL Creation', () => {
 
         await test.step('Verify ACL Rules count matches', async () => {
           await aclPage.validateRulesCount(operation.length);
-        });
-
-        await test.step('Add small delay for stability', async () => {
-          await aclPage.waitForStability(100);
         });
 
         await test.step('Check the Detail page - verify all rules are present', async () => {
@@ -1003,10 +998,6 @@ test.describe('Allow all operations', () => {
 
         await test.step('Verify ACL Rules count matches', async () => {
           await aclPage.validateRulesCount(allRules.length);
-        });
-
-        await test.step('Add small delay for stability', async () => {
-          await aclPage.waitForStability(100);
         });
 
         await test.step('Check the Detail page - verify all rules are present', async () => {

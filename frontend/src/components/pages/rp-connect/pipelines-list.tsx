@@ -9,15 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { CheckIcon } from '@chakra-ui/icons';
-import { TrashIcon } from '@heroicons/react/outline';
 import { Box, Button, createStandaloneToast, DataTable, Flex, Image, SearchField, Text } from '@redpanda-data/ui';
+import { CheckIcon, CloseIcon, HelpIcon, RotateCwIcon, StopCircleIcon, TrashIcon } from 'components/icons';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { FaRegStopCircle } from 'react-icons/fa';
-import { HiX } from 'react-icons/hi';
-import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 
 import { openDeleteModal } from './modals';
@@ -61,13 +57,13 @@ export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
     case Pipeline_State.UNSPECIFIED:
       return (
         <Flex alignItems="center" gap="2">
-          <HiX color="orange" fontSize="17px" width="auto" /> Unspecified
+          <CloseIcon color="orange" fontSize="17px" width="auto" /> Unspecified
         </Flex>
       );
     case Pipeline_State.STARTING:
       return (
         <Flex alignItems="center" gap="2">
-          <MdRefresh color="#444" fontSize="17px" width="auto" /> Starting
+          <RotateCwIcon color="#444" fontSize="17px" width="auto" /> Starting
         </Flex>
       );
     case Pipeline_State.RUNNING:
@@ -85,25 +81,25 @@ export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
     case Pipeline_State.STOPPING:
       return (
         <Flex alignItems="center" gap="2">
-          <MdRefresh color="#444" fontSize="17px" width="auto" /> Stopping
+          <RotateCwIcon color="#444" fontSize="17px" width="auto" /> Stopping
         </Flex>
       );
     case Pipeline_State.STOPPED:
       return (
         <Flex alignItems="center" gap="2">
-          <FaRegStopCircle color="#444" fontSize="17px" width="auto" /> Stopped
+          <StopCircleIcon color="#444" fontSize="17px" width="auto" /> Stopped
         </Flex>
       );
     case Pipeline_State.ERROR:
       return (
         <Flex alignItems="center" gap="2">
-          <HiX color="red" fontSize="17px" width="auto" /> Error
+          <CloseIcon color="red" fontSize="17px" width="auto" /> Error
         </Flex>
       );
     default:
       return (
         <Flex alignItems="center" gap="2">
-          <MdOutlineQuestionMark color="red" fontSize="17px" width="auto" /> Unknown
+          <HelpIcon color="red" fontSize="17px" width="auto" /> Unknown
         </Flex>
       );
   }
@@ -201,7 +197,9 @@ class RpConnectPipelinesList extends PageComponent<{}> {
             <SearchField
               placeholderText="Enter search term / regex..."
               searchText={uiSettings.pipelinesList.quickSearch}
-              setSearchText={(x) => (uiSettings.pipelinesList.quickSearch = x)}
+              setSearchText={(x) => {
+                uiSettings.pipelinesList.quickSearch = x;
+              }}
               width="350px"
             />
           </div>

@@ -11,23 +11,25 @@
 
 // biome-ignore-all lint/complexity/noBannedTypes: empty object represents pages with no route params
 
+import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import {
+  ActivityIcon,
+  AIIcon,
   BeakerIcon,
   BookOpenIcon,
   CollectionIcon,
-  CubeTransparentIcon,
+  CubeIcon,
   FilterIcon,
   HomeIcon,
+  KeyIcon,
   LinkIcon,
   ScaleIcon,
   ShieldCheckIcon,
+  ShieldIcon,
   UserCircleIcon,
-} from '@heroicons/react/outline';
-import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
-import { Activity, Shield } from 'lucide-react';
+} from 'components/icons';
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v6';
 import React, { Fragment, type FunctionComponent, useEffect } from 'react';
-import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
 import { Navigate, Route, Routes, useLocation, useMatch, useParams } from 'react-router-dom';
 import { appGlobal } from 'state/app-global';
 
@@ -51,9 +53,10 @@ import CreateConnector from './pages/connect/create-connector';
 import KafkaConnectOverview from './pages/connect/overview';
 import GroupDetails from './pages/consumers/group-details';
 import GroupList from './pages/consumers/group-list';
-import KnowledgeBaseCreate from './pages/knowledgebase/knowledge-base-create';
-import KnowledgeBaseDetails from './pages/knowledgebase/knowledge-base-details';
-import KnowledgeBaseList from './pages/knowledgebase/knowledge-base-list';
+import { KnowledgeBaseCreatePage } from './pages/knowledgebase/create/knowledge-base-create-page';
+import { KnowledgeBaseDetailsPage } from './pages/knowledgebase/details/knowledge-base-details-page';
+import { KnowledgeBaseDocumentDetailsPage } from './pages/knowledgebase/details/knowledge-base-document-details-page';
+import { KnowledgeBaseListPage } from './pages/knowledgebase/list/knowledge-base-list-page';
 import { RemoteMCPCreatePage } from './pages/mcp-servers/create/remote-mcp-create-page';
 import { RemoteMCPDetailsPage } from './pages/mcp-servers/details/remote-mcp-details-page';
 import { RemoteMCPListPage } from './pages/mcp-servers/list/remote-mcp-list-page';
@@ -76,7 +79,9 @@ import EditSchemaCompatibilityPage from './pages/schemas/edit-compatibility';
 import { SchemaAddVersionPage, SchemaCreatePage } from './pages/schemas/schema-create';
 import SchemaDetailsView from './pages/schemas/schema-details';
 import SchemaList from './pages/schemas/schema-list';
-import { SecretsStorePage } from './pages/secrets/secrets-store-page';
+import { SecretCreatePage } from './pages/secrets-store/create/secret-create-page';
+import { SecretEditPage } from './pages/secrets-store/edit/secret-edit-page';
+import { SecretsStoreListPage } from './pages/secrets-store/secrets-store-list-page';
 import { ShadowLinkCreatePage } from './pages/shadowlinks/create/shadowlink-create-page';
 import { ShadowLinkDetailsPage } from './pages/shadowlinks/details/shadowlink-details-page';
 import { ShadowLinkEditPage } from './pages/shadowlinks/edit/shadowlink-edit-page';
@@ -103,7 +108,7 @@ import { type AppFeature, AppFeatures } from '../utils/env';
 //
 // biome-ignore lint/suspicious/noExplicitAny: route definitions have varying type parameters
 export type IRouteEntry = PageDefinition<any>;
-export interface PageDefinition<TRouteParams = {}> {
+export type PageDefinition<TRouteParams = {}> = {
   title: string;
   path: string;
   pageType: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>;
@@ -111,7 +116,7 @@ export interface PageDefinition<TRouteParams = {}> {
   icon?: (props: React.ComponentProps<'svg'>) => JSX.Element;
   menuItemKey?: string; // set by 'CreateRouteMenuItems'
   visibilityCheck?: () => MenuItemState;
-}
+};
 
 // Generate content for <Menu> from all routes
 export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[] {
@@ -140,9 +145,9 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
       }
       const isDisabled = !isEnabled;
 
-      // Handle Knowledge Base, MCP server and AI Agent routes with beta badge
+      // Handle Knowledge Base and AI Agent routes with beta badge
       const title =
-        entry.path === '/knowledgebases' || entry.path === '/mcp-servers' || entry.path === '/agents'
+        entry.path === '/knowledgebases' || entry.path === '/agents'
           ? getSidebarItemTitleWithBetaBadge({ route: entry })
           : entry.title;
 
@@ -154,7 +159,7 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
         disabledText: disabledText as unknown as string,
       };
     })
-    .filter((x) => x != null && x !== undefined) as NavLinkProps[];
+    .filter((x) => x !== null && x !== undefined) as NavLinkProps[];
 }
 
 // Convert routes to <Route/> JSX declarations
@@ -219,10 +224,10 @@ const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
   [DisabledReasons.notSupportedServerless]: <span>This feature is not yet supported for Serverless.</span>,
 } as const;
 
-export interface MenuItemState {
+export type MenuItemState = {
   visible: boolean;
   disabledReasons: DisabledReasons[];
-}
+};
 
 // Separate component to handle the route rendering logic
 function RouteRenderer<TRouteParams>({ route }: { route: PageDefinition<TRouteParams> }): JSX.Element {
@@ -334,6 +339,7 @@ function routeVisibility(
   requiredPermissions?: UserPermissions[],
   requiredAppFeatures?: AppFeature[]
 ): () => MenuItemState {
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: route configuration with conditional rendering and permissions
   return () => {
     let v = typeof visible === 'boolean' ? visible : visible();
 
@@ -382,7 +388,7 @@ function routeVisibility(
 // If a route has one or more parameters it will not be shown in the main menu (obviously, since the parameter would have to be known!)
 //
 export const APP_ROUTES: IRouteEntry[] = [
-  MakeRoute<{}>('/overview', Overview, 'Overview', HomeIcon),
+  MakeRoute<{}>('/overview', Overview, 'Overview', (props) => <HomeIcon {...props} />),
   MakeRoute<{ brokerId: string }>('/overview/:brokerId', BrokerDetails, 'Broker Details'),
   MakeRoute<{}>(
     '/get-started/api',
@@ -393,11 +399,11 @@ export const APP_ROUTES: IRouteEntry[] = [
     routeVisibility(() => isServerless() && isFeatureFlagEnabled('enableServerlessOnboardingWizard'))
   ),
 
-  MakeRoute<{}>('/topics', TopicList, 'Topics', CollectionIcon),
+  MakeRoute<{}>('/topics', TopicList, 'Topics', (props) => <CollectionIcon {...props} />),
   MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
   MakeRoute<{ topicName: string }>('/topics/:topicName/produce-record', TopicProducePage, 'Produce Record'),
 
-  MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', CubeTransparentIcon),
+  MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', (props) => <CubeIcon {...props} />),
   MakeRoute<{}>('/schema-registry/create', SchemaCreatePage, 'Create schema'),
   MakeRoute<{ subjectName: string }>(
     '/schema-registry/subjects/:subjectName/add-version',
@@ -405,12 +411,12 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Add version'
   ),
   MakeRoute<{ subjectName: string }>('/schema-registry/subjects/:subjectName', SchemaDetailsView, 'Schema Registry'),
-  MakeRoute<{ subjectName: string }>(
+  MakeRoute<{ subjectName?: string }>(
     '/schema-registry/edit-compatibility',
     EditSchemaCompatibilityPage,
     'Edit Schema Compatibility'
   ),
-  MakeRoute<{ subjectName: string }>(
+  MakeRoute<{ subjectName?: string }>(
     '/schema-registry/subjects/:subjectName/edit-compatibility',
     EditSchemaCompatibilityPage,
     'Edit Schema Compatibility'
@@ -420,7 +426,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/groups',
     GroupList,
     'Consumer Groups',
-    FilterIcon,
+    (props) => <FilterIcon {...props} />,
     undefined,
     routeVisibility(true, [Feature.ConsumerGroups])
   ),
@@ -428,35 +434,56 @@ export const APP_ROUTES: IRouteEntry[] = [
 
   MakeRoute<{}>(
     '/secrets',
-    SecretsStorePage,
+    SecretsStoreListPage,
     'Secrets Store',
-    MdKey,
+    (props) => <KeyIcon {...props} />,
     true,
     routeVisibility(() => isEmbedded(), [Feature.PipelineService]) // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
+  ),
+  MakeRoute<{}>(
+    '/secrets/create',
+    SecretCreatePage,
+    'Create Secret',
+    undefined,
+    true,
+    routeVisibility(() => isEmbedded(), [Feature.PipelineService])
+  ),
+  MakeRoute<{ id: string }>(
+    '/secrets/:id/edit',
+    SecretEditPage,
+    'Edit Secret',
+    undefined,
+    true,
+    routeVisibility(() => isEmbedded(), [Feature.PipelineService])
   ),
 
   MakeRoute<{}>(
     '/knowledgebases',
-    KnowledgeBaseList,
+    KnowledgeBaseListPage,
     'Knowledge Bases',
-    BookOpenIcon,
+    (props) => <BookOpenIcon {...props} />,
     true,
     routeVisibility(
-      // Do not display knowledge bases if feature flag is disabled or in serverless mode
-      () => isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi') && !isServerless(), // Needed to pass flags to current routing solution
+      // Do not display knowledge bases if feature flag is disabled
+      () => isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi'), // Needed to pass flags to current routing solution
       [Feature.PipelineService],
       [],
       []
     )
   ),
-  MakeRoute<{}>('/knowledgebases/create', KnowledgeBaseCreate, 'Create Knowledge Base'),
+  MakeRoute<{}>('/knowledgebases/create', KnowledgeBaseCreatePage, 'Create Knowledge Base'),
+  MakeRoute<{ knowledgebaseId: string; documentId: string }>(
+    '/knowledgebases/:knowledgebaseId/documents/:documentId',
+    KnowledgeBaseDocumentDetailsPage,
+    'Document Details'
+  ),
   MakeRoute<{ knowledgebaseId: string }>(
     '/knowledgebases/:knowledgebaseId',
-    KnowledgeBaseDetails,
+    KnowledgeBaseDetailsPage,
     'Knowledge Base Details'
   ),
 
-  MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true),
+  MakeRoute<{}>('/security', AclList, 'Security', (props) => <ShieldCheckIcon {...props} />, true),
   MakeRoute<{ tab?: AclListTab }>('/security/:tab?', AclList, 'Security'),
 
   MakeRoute<{}>('/security/acls/create', AclCreatePage, 'Create ACL'),
@@ -474,22 +501,29 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/quotas',
     QuotasList,
     'Quotas',
-    ScaleIcon,
+    (props) => <ScaleIcon {...props} />,
     true,
     routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
   ),
 
-  MakeRoute<{ matchedPath: string }>('/connect-clusters', KafkaConnectOverview, 'Connect', LinkIcon, true, () => {
-    if (isServerless()) {
-      // We are in serverless, there is no kafka connect, so we can ignore it.
-      // Here, we only care about the pipeline service and use that to decide whether to show the entry
-      if (isSupported(Feature.PipelineService)) {
-        return { visible: true, disabledReasons: [] };
+  MakeRoute<{ matchedPath: string }>(
+    '/connect-clusters',
+    KafkaConnectOverview,
+    'Connect',
+    (props) => <LinkIcon {...props} />,
+    true,
+    () => {
+      if (isServerless()) {
+        // We are in serverless, there is no kafka connect, so we can ignore it.
+        // Here, we only care about the pipeline service and use that to decide whether to show the entry
+        if (isSupported(Feature.PipelineService)) {
+          return { visible: true, disabledReasons: [] };
+        }
+        return { visible: false, disabledReasons: [DisabledReasons.notSupported] };
       }
-      return { visible: false, disabledReasons: [DisabledReasons.notSupported] };
+      return { visible: true, disabledReasons: [] };
     }
-    return { visible: true, disabledReasons: [] };
-  }),
+  ),
   MakeRoute<{ clusterName: string }>('/connect-clusters/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
   MakeRoute<{ clusterName: string }>(
     '/connect-clusters/:clusterName/create-connector',
@@ -517,7 +551,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/transforms',
     TransformsList,
     'Transforms',
-    MdOutlineSmartToy,
+    (props) => <AIIcon {...props} />,
     true,
     routeVisibility(true, [Feature.TransformsService])
   ),
@@ -542,7 +576,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/reassign-partitions',
     ReassignPartitions,
     'Reassign Partitions',
-    BeakerIcon,
+    (props) => <BeakerIcon {...props} />,
     false,
     routeVisibility(
       true,
@@ -595,7 +629,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/shadowlinks',
     ShadowLinkListPage,
     'Shadow Links',
-    (props) => <Shield {...props} />,
+    (props) => <ShieldIcon {...props} />,
     true,
     routeVisibility(() => {
       if (isEmbedded()) {
@@ -612,7 +646,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/agents',
     AIAgentsListPage,
     'AI Agents',
-    UserCircleIcon,
+    (props) => <UserCircleIcon {...props} />,
     true,
     routeVisibility(
       () =>
@@ -628,7 +662,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/traces',
     TraceListPage,
     'Traces',
-    (props) => <Activity {...props} />,
+    (props) => <ActivityIcon {...props} />,
     true,
     routeVisibility(true, [Feature.TracingService])
   ),

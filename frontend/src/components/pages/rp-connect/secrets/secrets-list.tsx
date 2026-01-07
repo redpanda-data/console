@@ -1,5 +1,4 @@
 import { create } from '@bufbuild/protobuf';
-import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
 import {
   Box,
   Button,
@@ -16,6 +15,7 @@ import {
   Text,
   Tooltip,
 } from '@redpanda-data/ui';
+import { EditIcon, TrashIcon } from 'components/icons';
 import { observer } from 'mobx-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
@@ -113,7 +113,9 @@ class RpConnectSecretsList extends PageComponent {
               <SearchField
                 placeholderText="Enter search term / regex..."
                 searchText={uiSettings.rpcnSecretList.quickSearch}
-                setSearchText={(x) => (uiSettings.rpcnSecretList.quickSearch = x)}
+                setSearchText={(x) => {
+                  uiSettings.rpcnSecretList.quickSearch = x;
+                }}
                 width="350px"
               />
             </Flex>
@@ -185,7 +187,7 @@ class RpConnectSecretsList extends PageComponent {
                           }}
                           variant="icon"
                         >
-                          <PencilIcon />
+                          <EditIcon />
                         </Button>
                         <ConfirmItemDeleteModal
                           inputMatchText={r.id}

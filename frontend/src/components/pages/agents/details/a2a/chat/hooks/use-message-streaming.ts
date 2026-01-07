@@ -54,6 +54,7 @@ export const streamMessage = async ({
   model,
   contextId,
   onMessageUpdate,
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 }: StreamMessageParams): Promise<StreamMessageResult> => {
   // Create assistant message placeholder
   const assistantMessage = createAssistantMessage(contextId);

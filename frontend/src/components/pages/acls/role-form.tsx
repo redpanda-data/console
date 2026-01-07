@@ -178,7 +178,9 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                   data-testid="create-role__role-name"
                   isDisabled={editMode}
                   isRequired
-                  onChange={(v) => (formState.roleName = v.target.value)}
+                  onChange={(v) => {
+                    formState.roleName = v.target.value;
+                  }}
                   pattern="^[^,=]+$"
                   title="Please avoid using commas or equal signs."
                   value={formState.roleName}
@@ -221,14 +223,20 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             description="The host the user needs to connect from in order for the permissions to apply."
             label="Host"
           >
-            <Input onChange={(v) => (formState.host = v.target.value)} value={formState.host} width={600} />
+            <Input
+              onChange={(v) => {
+                formState.host = v.target.value;
+              }}
+              value={formState.host}
+              width={600}
+            />
           </FormField>
 
           <Flex data-testid="create-role-topics-section" flexDirection="column" gap={4}>
             <Heading>Topics</Heading>
             {formState.topicACLs.map((topicACL, index) => (
               <ResourceACLsEditor
-                key={index}
+                key={`topic-${topicACL.selector}-${index}`}
                 onDelete={() => {
                   formState.topicACLs.splice(index, 1);
                 }}
@@ -254,7 +262,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             <Heading>Consumer Groups</Heading>
             {formState.consumerGroupsACLs.map((acl, index) => (
               <ResourceACLsEditor
-                key={index}
+                key={`consumer-group-${acl.selector}-${index}`}
                 onDelete={() => {
                   formState.consumerGroupsACLs.splice(index, 1);
                 }}
@@ -280,7 +288,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             <Heading>Transactional IDs</Heading>
             {formState.transactionalIDACLs.map((acl, index) => (
               <ResourceACLsEditor
-                key={index}
+                key={`transactional-id-${acl.selector}-${index}`}
                 onDelete={() => {
                   formState.transactionalIDACLs.splice(index, 1);
                 }}
@@ -429,8 +437,8 @@ const PrincipalSelector = observer((p: { state: RolePrincipal[] }) => {
       </Box>
 
       <Flex gap={2}>
-        {state.map((principal, idx) => (
-          <Tag cursor="pointer" key={idx}>
+        {state.map((principal) => (
+          <Tag cursor="pointer" key={principal.name}>
             <TagLabel>{principal.name}</TagLabel>
             <TagCloseButton onClick={() => state.remove(principal)} />
           </Tag>

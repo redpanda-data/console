@@ -18,30 +18,36 @@ import { Button } from '../../redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../redpanda-ui/components/card';
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
+import type { AclDetail } from '../acls/new-acl/acl.model';
 import { getRuleDataTestId, handleUrlWithHost } from '../acls/new-acl/acl.model';
 import { OperationsBadge } from '../acls/new-acl/operations-badge';
 
-interface Role {
+type Role = {
   principalType: string;
   principalName: string;
-}
+};
 
-interface UserRolesCardProps {
+type UserRolesCardProps = {
   roles: Role[];
   onChangeRoles?: () => void;
-}
+};
 
-interface RoleTableRowProps {
+type RoleTableRowProps = {
   role: Role;
   isExpanded: boolean;
   onToggle: () => void;
-}
+};
 
 const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
   const navigate = useNavigate();
-  const { data: acls, isLoading } = useGetAclsByPrincipal(`RedpandaRole:${role.principalName}`, undefined, undefined, {
-    enabled: isExpanded,
-  });
+  const { data: acls, isLoading } = useGetAclsByPrincipal<AclDetail[]>(
+    `RedpandaRole:${role.principalName}`,
+    undefined,
+    undefined,
+    {
+      enabled: isExpanded,
+    }
+  );
   const rowKey = role.principalName;
 
   return [
@@ -81,9 +87,9 @@ const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
         <TableCell className="bg-gray-50 p-6" colSpan={2}>
           <div className="space-y-4">
             <div className="font-semibold text-gray-700 text-sm">
-              ACL Rules ({acls.reduce((sum, acl) => sum + acl.rules.length, 0)})
+              ACL Rules ({acls.reduce((sum: number, acl: AclDetail) => sum + acl.rules.length, 0)})
             </div>
-            {acls.map((acl) => (
+            {acls.map((acl: AclDetail) => (
               <div key={`${acl.sharedConfig.principal}-${acl.sharedConfig.host}`}>
                 <div className="mb-2 text-gray-600 text-xs">Host: {acl.sharedConfig.host}</div>
                 {acl.rules.map((rule) => (
@@ -125,7 +131,7 @@ export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
         <CardHeader className="flex items-center justify-between">
           <CardTitle>Roles</CardTitle>
           <CardAction>
-            {onChangeRoles && (
+            {Boolean(onChangeRoles) && (
               <Button onClick={onChangeRoles} testId="assign-role-button" variant="outline">
                 Assign role
               </Button>
@@ -144,7 +150,7 @@ export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
       <CardHeader className="flex items-center justify-between">
         <CardTitle>Roles</CardTitle>
         <CardAction>
-          {onChangeRoles && (
+          {Boolean(onChangeRoles) && (
             <Button onClick={onChangeRoles} testId="change-role-button" variant="outline">
               Change Role
             </Button>

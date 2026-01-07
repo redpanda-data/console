@@ -5,20 +5,20 @@ import { RadioCard, type Sizes } from './radio-card';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
-interface RadioGroupOption {
+type RadioGroupOption = {
   value: string;
   label: string;
   disabled?: boolean;
   invalid?: boolean;
-}
+};
 
-export interface RadioGroupFieldProps {
+export type RadioGroupFieldProps = {
   label?: ReactNode;
   helperText?: ReactNode;
   options: RadioGroupOption[];
   direction?: StackDirection;
   size?: Sizes;
-}
+};
 
 export const RadioGroupField = ({
   label,
@@ -34,12 +34,12 @@ export const RadioGroupField = ({
   return (
     <FormControl isInvalid={!!field.state.meta.errors?.length}>
       <Stack spacing={0.5}>
-        {label && (
+        {Boolean(label) && (
           <FormLabel fontWeight="medium" mb={0}>
             {label}
           </FormLabel>
         )}
-        {helperText && (
+        {Boolean(helperText) && (
           <FormHelperText mb={1} mt={0}>
             {helperText}
           </FormHelperText>

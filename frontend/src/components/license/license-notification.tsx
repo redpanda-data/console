@@ -15,6 +15,7 @@ import { License_Source, License_Type } from '../../protogen/redpanda/api/consol
 import { api } from '../../state/backend-api';
 import { capitalizeFirst } from '../../utils/utils';
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const LicenseNotification = observer(() => {
   const location = useLocation();
 
@@ -105,7 +106,7 @@ export const LicenseNotification = observer(() => {
               You're using {activeEnterpriseFeatures.length === 1 ? 'an enterprise feature' : 'enterprise features'}{' '}
               <strong>{activeEnterpriseFeatures.map((x) => x.name).join(', ')}</strong> in your connected Redpanda
               cluster.{' '}
-              {api.licenseViolation &&
+              {Boolean(api.licenseViolation) &&
                 (activeEnterpriseFeatures.length === 1
                   ? 'This feature requires a license.'
                   : 'These features require a license.')}
@@ -113,7 +114,7 @@ export const LicenseNotification = observer(() => {
           )}
 
           <Flex gap={2} my={2}>
-            {api.isAdminApiConfigured && (
+            {Boolean(api.isAdminApiConfigured) && (
               <Button as={ReactRouterLink} size="sm" to="/upload-license" variant="outline">
                 Upload license
               </Button>

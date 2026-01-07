@@ -79,16 +79,16 @@ export const PropertyGroupComponent = observer(
     // Normal group
     return (
       <Box>
-        {g.group.name && (
+        {Boolean(g.group.name) && (
           <Heading as="h3" mb="4" mt="8" size="md">
             {g.group.name}
           </Heading>
         )}
 
-        {g.group.description && (
+        {Boolean(g.group.description) && (
           <Text>
             {g.group.description}
-            {g.group.documentation_link && (
+            {Boolean(g.group.documentation_link) && (
               <>
                 {' '}
                 <Link href={g.group.documentation_link}>Documentation</Link>

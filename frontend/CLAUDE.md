@@ -322,6 +322,53 @@ const { data, isLoading } = useQuery({
 });
 ```
 
+### 6. Icons
+**Central Icon System**: All icons are imported from `src/components/icons/index.tsx`
+
+**Allowed Icon Packages:**
+- `lucide-react` - Primary icon library (1600+ icons)
+- Custom SVGs - For brand-specific or unique icons
+- `@icons-pack/react-simple-icons` - **ONLY for Redpanda Connect brand logos** (GitHub, Slack, etc.)
+
+**Forbidden Packages** (removed from codebase):
+- ❌ `react-icons`
+- ❌ `@chakra-ui/icons`
+- ❌ `@heroicons/react`
+- ❌ `@primer/octicons-react`
+
+**Usage:**
+```tsx
+// ✅ GOOD - Import from central icon system
+import { CheckIcon, TrashIcon, AlertIcon } from 'components/icons';
+
+<CheckIcon size={20} />
+<TrashIcon size={16} color="#ff0000" />
+
+// ✅ GOOD - Brand icons for Redpanda Connect features only
+import { GitHubIcon, SlackIcon } from 'components/icons';
+
+// ❌ BAD - Direct imports from icon packages
+import { Check } from 'lucide-react';
+import { FaGithub } from 'react-icons/fa';
+import { CheckIcon } from '@chakra-ui/icons';
+```
+
+**Icon Props:**
+- `size`: Number or string (e.g., `16`, `"20px"`)
+- `color`: CSS color value (e.g., `"#ff0000"`, `"currentColor"`)
+- `strokeWidth`: Number (lucide icons only, default: 2)
+- Standard SVG props: `className`, `style`, etc.
+
+**Adding New Icons:**
+1. Check if icon exists in `src/components/icons/index.tsx`
+2. If not, add export from `lucide-react` with descriptive name
+3. Document the mapping if replacing a legacy icon
+4. For brand logos, use `@icons-pack/react-simple-icons` (Redpanda Connect only)
+
+**Icon Naming Convention:**
+- Suffix with `Icon` for consistency: `CheckIcon`, `TrashIcon`, `AlertIcon`
+- Use semantic names: `ErrorIcon` (not `XCircleIcon`), `WarningIcon` (not `AlertTriangleIcon`)
+
 ## Development Workflow
 
 ### Adding New Feature

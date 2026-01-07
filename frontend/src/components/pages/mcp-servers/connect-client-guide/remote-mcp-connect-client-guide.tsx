@@ -60,14 +60,14 @@ const CLIENT_INFO: Record<ClientType, { name: string; logo: string; alt: string 
   [ClientType.MANUS]: { name: 'Manus', logo: ManusLogo, alt: 'Manus CLI' },
 };
 
-interface RemoteMCPConnectClientGuideProps {
+type RemoteMCPConnectClientGuideProps = {
   mcpServer: MCPServer;
-}
+};
 
-interface RemoteMCPClientGuideContentProps {
+type RemoteMCPClientGuideContentProps = {
   client: ClientType;
   mcpServer: MCPServer;
-}
+};
 
 const RemoteMCPClientGuideContent = ({ client, mcpServer }: RemoteMCPClientGuideContentProps) => {
   switch (client) {

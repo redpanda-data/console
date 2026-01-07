@@ -1,7 +1,7 @@
-import { defineConfig } from 'vitest/config';
 import { loadEnv } from 'vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
 import envCompatible from 'vite-plugin-env-compatible';
+import tsconfigPaths from 'vite-tsconfig-paths';
+import { defineConfig } from 'vitest/config';
 
 const ENV_PREFIX = 'REACT_APP_';
 
@@ -11,14 +11,8 @@ export default defineConfig(({ mode }) => {
   return {
     test: {
       fileParallelism: true,
-      poolOptions: {
-        threads: {
-          useAtomics: true,
-          singleThread: false,
-        },
-      },
-      pool: 'threads',
-      testTimeout: 30000,
+      vmMemoryLimit: '1000Mb',
+      testTimeout: 30_000,
       globals: true,
       environment: 'node', // Unit tests use node environment
       include: ['src/**/*.test.ts'], // Only .test.ts files (unit tests)

@@ -9,26 +9,35 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import { useState } from 'react';
-
-import { appGlobal } from '../../../state/app-global';
-import { api } from '../../../state/backend-api';
-import { Button, DefaultSkeleton } from '../../../utils/tsx-utils';
-import { PageComponent, type PageInitHelper } from '../page';
-import './Schema.List.scss';
 import { Box, CodeBlock, Empty, Flex, Grid, GridItem, RadioGroup, Text, useToast, VStack } from '@redpanda-data/ui';
+import type { FC } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './schema-details';
-import type { SchemaRegistryCompatibilityMode } from '../../../state/rest-interfaces';
+import {
+  useSchemaCompatibilityQuery,
+  useSchemaDetailsQuery,
+  useSchemaModeQuery,
+  useUpdateGlobalCompatibilityMutation,
+  useUpdateSubjectCompatibilityMutation,
+} from '../../../react-query/api/schema-registry';
+import { api } from '../../../state/backend-api';
+import type {
+  SchemaRegistryCompatibilityMode,
+  SchemaRegistrySubjectDetails,
+  SchemaRegistryVersionedSchema,
+} from '../../../state/rest-interfaces';
+import { uiState } from '../../../state/ui-state';
+import { Button, DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 
-function renderNotConfigured() {
+const SchemaNotConfiguredPage: FC = () => {
   return (
     <PageContent>
       <Section>
-        <VStack gap={4}>
+        <VStack data-testid="edit-compatibility-not-configured" gap={4}>
           <Empty description="Not Configured" />
           <Text textAlign="center">
             Schema Registry is not configured in Redpanda Console.
@@ -44,83 +53,85 @@ function renderNotConfigured() {
       </Section>
     </PageContent>
   );
-}
+};
 
-@observer
-class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }> {
-  initPage(p: PageInitHelper): void {
-    const subjectName = this.props.subjectName;
+const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName: subjectNameEncoded }) => {
+  const navigate = useNavigate();
+  const subjectName = subjectNameEncoded ? decodeURIComponent(subjectNameEncoded) : undefined;
 
-    p.title = 'Edit Schema Compatibility';
-    p.addBreadcrumb('Schema Registry', '/schema-registry');
+  const { data: schemaMode, isLoading: isModeLoading } = useSchemaModeQuery();
+  const { data: schemaCompatibility, isLoading: isCompatibilityLoading } = useSchemaCompatibilityQuery();
+  const { data: schemaDetails, isLoading: isDetailsLoading } = useSchemaDetailsQuery(subjectName, {
+    enabled: !!subjectName,
+  });
+
+  useEffect(() => {
+    uiState.pageTitle = 'Edit Schema Compatibility';
+    uiState.pageBreadcrumbs = [{ title: 'Schema Registry', linkTo: '/schema-registry' }];
+
     if (subjectName) {
-      p.addBreadcrumb(subjectName, `/schema-registry/subjects/${subjectName}`, undefined, {
-        canBeTruncated: true,
+      uiState.pageBreadcrumbs.push({
+        title: subjectName,
+        linkTo: `/schema-registry/subjects/${subjectName}`,
       });
-      p.addBreadcrumb('Edit Compatibility', `/schema-registry/subjects/${subjectName}/edit-compatibility`);
+      uiState.pageBreadcrumbs.push({
+        title: 'Edit Compatibility',
+        linkTo: `/schema-registry/subjects/${subjectName}/edit-compatibility`,
+      });
     } else {
-      p.addBreadcrumb('Edit Compatibility', '/schema-registry/edit-compatibility');
+      uiState.pageBreadcrumbs.push({
+        title: 'Edit Compatibility',
+        linkTo: '/schema-registry/edit-compatibility',
+      });
     }
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+  }, [subjectName]);
+
+  if (api.schemaOverviewIsConfigured === false) {
+    return <SchemaNotConfiguredPage />;
+  }
+  if (isModeLoading || isCompatibilityLoading || (subjectName && isDetailsLoading)) {
+    return DefaultSkeleton;
   }
 
-  refreshData(force?: boolean) {
-    api.refreshSchemaCompatibilityConfig();
-    api.refreshSchemaMode();
-    const subjectName = this.props.subjectName ? decodeURIComponent(this.props.subjectName) : undefined;
+  return (
+    <PageContent>
+      <EditSchemaCompatibility
+        onClose={() => {
+          if (subjectName) {
+            navigate(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
+          } else {
+            navigate('/schema-registry');
+          }
+        }}
+        schemaCompatibility={schemaCompatibility}
+        schemaDetails={schemaDetails}
+        schemaMode={schemaMode}
+        subjectName={subjectName}
+      />
+    </PageContent>
+  );
+};
 
-    if (subjectName) {
-      api.refreshSchemaDetails(subjectName, force);
-    }
-  }
-
-  render() {
-    if (api.schemaOverviewIsConfigured === false) {
-      return renderNotConfigured();
-    }
-    if (!api.schemaMode) {
-      return DefaultSkeleton; // request in progress
-    }
-
-    if (!(api.schemaDetails || api.schemaCompatibility)) {
-      return DefaultSkeleton;
-    }
-
-    const subjectName = this.props.subjectName ? decodeURIComponent(this.props.subjectName) : undefined;
-
-    return (
-      <PageContent key="b">
-        <EditSchemaCompatibility
-          onClose={() => {
-            // Navigate back to the "caller" of the page, depending on what
-            // variant of the editCompatibility page we are on(can be global, or subject)
-            if (subjectName) {
-              appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
-            } else {
-              appGlobal.historyReplace('/schema-registry');
-            }
-          }}
-          subjectName={subjectName}
-        />
-      </PageContent>
-    );
-  }
-}
 export default EditSchemaCompatibilityPage;
 
 function EditSchemaCompatibility(p: {
   subjectName?: string;
-  onClose: () => void; // called after save/cancel
+  schemaMode: string | null | undefined;
+  schemaCompatibility: string | null | undefined;
+  schemaDetails: SchemaRegistrySubjectDetails | undefined;
+  onClose: () => void;
 }) {
   const toast = useToast();
-  const { subjectName } = p;
-  const subject = subjectName ? api.schemaDetails.get(subjectName) : undefined;
-  const schema = subject?.schemas.first((x) => x.version === subject.latestActiveVersion);
+  const { subjectName, schemaDetails, schemaCompatibility } = p;
+  const updateGlobalMutation = useUpdateGlobalCompatibilityMutation();
+  const updateSubjectMutation = useUpdateSubjectCompatibilityMutation();
 
-  // type should be just "SchemaRegistryCompatibilityMode"
+  const schema = schemaDetails?.schemas.first(
+    (x: SchemaRegistryVersionedSchema) => x.version === schemaDetails.latestActiveVersion
+  );
+
   const [configMode, setConfigMode] = useState<string>(
-    (subjectName ? subject?.compatibility : api.schemaCompatibility) ?? 'DEFAULT'
+    (subjectName ? schemaDetails?.compatibility : schemaCompatibility) ?? 'DEFAULT'
   );
 
   if (subjectName && !schema) {
@@ -128,171 +139,201 @@ function EditSchemaCompatibility(p: {
   }
 
   const onSave = () => {
-    const changeReq = subjectName
-      ? api.setSchemaRegistrySubjectCompatibilityMode(subjectName, configMode as SchemaRegistryCompatibilityMode)
-      : api.setSchemaRegistryCompatibilityMode(configMode as SchemaRegistryCompatibilityMode);
-
-    changeReq
-      .then(async () => {
-        toast({
-          status: 'success',
-          duration: 4000,
-          isClosable: false,
-          title: `Compatibility mode updated to ${configMode}`,
-          position: 'top-right',
-        });
-
-        if (subjectName) {
-          await api.refreshSchemaDetails(subjectName, true);
-        } else {
-          await api.refreshSchemaCompatibilityConfig();
+    if (subjectName) {
+      updateSubjectMutation.mutate(
+        { subjectName, mode: configMode as 'DEFAULT' | SchemaRegistryCompatibilityMode },
+        {
+          onSuccess: () => {
+            toast({
+              status: 'success',
+              duration: 4000,
+              isClosable: false,
+              title: `Compatibility mode updated to ${configMode}`,
+              position: 'top-right',
+            });
+            p.onClose();
+          },
+          onError: (err) => {
+            toast({
+              status: 'error',
+              duration: null,
+              isClosable: true,
+              title: 'Failed to update compatibility mode',
+              description: String(err),
+              position: 'top-right',
+            });
+          },
         }
-
-        p.onClose();
-      })
-      .catch((err) => {
-        toast({
-          status: 'error',
-          duration: null,
-          isClosable: true,
-          title: 'Failed to update compatibility mode',
-          description: String(err),
-          position: 'top-right',
-        });
+      );
+    } else {
+      updateGlobalMutation.mutate(configMode as SchemaRegistryCompatibilityMode, {
+        onSuccess: () => {
+          toast({
+            status: 'success',
+            duration: 4000,
+            isClosable: false,
+            title: `Compatibility mode updated to ${configMode}`,
+            position: 'top-right',
+          });
+          p.onClose();
+        },
+        onError: (err) => {
+          toast({
+            status: 'error',
+            duration: null,
+            isClosable: true,
+            title: 'Failed to update compatibility mode',
+            description: String(err),
+            position: 'top-right',
+          });
+        },
       });
+    }
   };
 
   return (
     <>
-      <Text>
+      <Text data-testid="edit-compatibility-description">
         Compatibility determines how schema validation occurs when producers are sending messages to Redpanda.
         {/* <Link>Learn more.</Link> */}
       </Text>
 
       <Grid gap="4rem" templateColumns="1fr 1fr">
         <GridItem mb="8" mt="4">
-          <RadioGroup
-            direction="column"
-            isAttached={false}
-            name="configMode"
-            onChange={(e) => {
-              setConfigMode(e);
-            }}
-            options={[
-              {
-                value: 'DEFAULT',
-                disabled: !subject,
-                label: (
-                  <Box>
-                    <Text>Default</Text>
-                    <Text fontSize="small">Use the globally configured default.</Text>
-                  </Box>
-                ),
-              },
-              {
-                value: 'NONE',
-                label: (
-                  <Box>
-                    <Text>None</Text>
-                    <Text fontSize="small">No schema compatibility checks are done.</Text>
-                  </Box>
-                ),
-              },
-              {
-                value: 'BACKWARD',
-                label: (
-                  <Box>
-                    <Text>Backward</Text>
-                    <Text fontSize="small">
-                      Consumers using the new schema (for example, version 10) can read data from producers using the
-                      previous schema (for example, version 9).
-                    </Text>
-                  </Box>
-                ),
-              },
-              {
-                value: 'BACKWARD_TRANSITIVE',
-                label: (
-                  <Box>
-                    <Text>Transitive Backward</Text>
-                    <Text fontSize="small">
-                      Consumers using the new schema (for example, version 10) can read data from producers using all
-                      previous schemas (for example, versions 1-9).
-                    </Text>
-                  </Box>
-                ),
-              },
-              {
-                value: 'FORWARD',
-                label: (
-                  <Box>
-                    <Text>Forward</Text>
-                    <Text fontSize="small">
-                      Consumers using the previous schema (for example, version 9) can read data from producers using
-                      the new schema (for example, version 10).
-                    </Text>
-                  </Box>
-                ),
-              },
-              {
-                value: 'FORWARD_TRANSITIVE',
-                label: (
-                  <Box>
-                    <Text>Transitive Forward</Text>
-                    <Text fontSize="small">
-                      Consumers using any previous schema (for example, versions 1-9) can read data from producers using
-                      the new schema (for example, version 10).
-                    </Text>
-                  </Box>
-                ),
-              },
-              {
-                value: 'FULL',
-                label: (
-                  <Box>
-                    <Text>Full</Text>
-                    <Text fontSize="small">
-                      A new schema and the previous schema (for example, versions 10 and 9) are both backward and
-                      forward compatible with each other.
-                    </Text>
-                  </Box>
-                ),
-              },
-              {
-                value: 'FULL_TRANSITIVE',
-                label: (
-                  <Box>
-                    <Text>Transitive Full</Text>
-                    <Text fontSize="small">
-                      Each schema is both backward and forward compatible with all registered schemas.
-                    </Text>
-                  </Box>
-                ),
-              },
-            ]}
-            value={configMode}
-          />
+          <Box data-testid="edit-compatibility-mode-radio">
+            <RadioGroup
+              direction="column"
+              isAttached={false}
+              name="configMode"
+              onChange={(e) => {
+                setConfigMode(e);
+              }}
+              options={[
+                {
+                  value: 'DEFAULT',
+                  disabled: !schemaDetails,
+                  label: (
+                    <Box>
+                      <Text>Default</Text>
+                      <Text fontSize="small">Use the globally configured default.</Text>
+                    </Box>
+                  ),
+                },
+                {
+                  value: 'NONE',
+                  label: (
+                    <Box>
+                      <Text>None</Text>
+                      <Text fontSize="small">No schema compatibility checks are done.</Text>
+                    </Box>
+                  ),
+                },
+                {
+                  value: 'BACKWARD',
+                  label: (
+                    <Box>
+                      <Text>Backward</Text>
+                      <Text fontSize="small">
+                        Consumers using the new schema (for example, version 10) can read data from producers using the
+                        previous schema (for example, version 9).
+                      </Text>
+                    </Box>
+                  ),
+                },
+                {
+                  value: 'BACKWARD_TRANSITIVE',
+                  label: (
+                    <Box>
+                      <Text>Transitive Backward</Text>
+                      <Text fontSize="small">
+                        Consumers using the new schema (for example, version 10) can read data from producers using all
+                        previous schemas (for example, versions 1-9).
+                      </Text>
+                    </Box>
+                  ),
+                },
+                {
+                  value: 'FORWARD',
+                  label: (
+                    <Box>
+                      <Text>Forward</Text>
+                      <Text fontSize="small">
+                        Consumers using the previous schema (for example, version 9) can read data from producers using
+                        the new schema (for example, version 10).
+                      </Text>
+                    </Box>
+                  ),
+                },
+                {
+                  value: 'FORWARD_TRANSITIVE',
+                  label: (
+                    <Box>
+                      <Text>Transitive Forward</Text>
+                      <Text fontSize="small">
+                        Consumers using any previous schema (for example, versions 1-9) can read data from producers
+                        using the new schema (for example, version 10).
+                      </Text>
+                    </Box>
+                  ),
+                },
+                {
+                  value: 'FULL',
+                  label: (
+                    <Box>
+                      <Text>Full</Text>
+                      <Text fontSize="small">
+                        A new schema and the previous schema (for example, versions 10 and 9) are both backward and
+                        forward compatible with each other.
+                      </Text>
+                    </Box>
+                  ),
+                },
+                {
+                  value: 'FULL_TRANSITIVE',
+                  label: (
+                    <Box>
+                      <Text>Transitive Full</Text>
+                      <Text fontSize="small">
+                        Each schema is both backward and forward compatible with all registered schemas.
+                      </Text>
+                    </Box>
+                  ),
+                },
+              ]}
+              value={configMode}
+            />
+          </Box>
         </GridItem>
 
         <GridItem>
-          {subjectName && schema && (
+          {Boolean(subjectName && schema) && (
             <>
-              <Text fontSize="lg" fontWeight="bold" mt="4" whiteSpace="break-spaces" wordBreak="break-word">
+              <Text
+                data-testid="edit-compatibility-subject-name"
+                fontSize="lg"
+                fontWeight="bold"
+                mt="4"
+                whiteSpace="break-spaces"
+                wordBreak="break-word"
+              >
                 {subjectName}
               </Text>
 
               <Text fontSize="lg" fontWeight="bold" mb="4" mt="8">
                 Schema
               </Text>
-              <Box maxHeight="600px" overflow="scroll">
-                <CodeBlock
-                  codeString={getFormattedSchemaText(schema)}
-                  language={schemaTypeToCodeBlockLanguage(schema.type)}
-                  showCopyButton={false}
-                  showLineNumbers
-                  theme="light"
-                />
-              </Box>
+              {schema ? (
+                <Box maxHeight="600px" overflow="scroll">
+                  <CodeBlock
+                    codeString={getFormattedSchemaText(schema)}
+                    data-testid="edit-compatibility-schema-code"
+                    language={schemaTypeToCodeBlockLanguage(schema.type)}
+                    showCopyButton={false}
+                    showLineNumbers
+                    theme="light"
+                  />
+                </Box>
+              ) : null}
             </>
           )}
         </GridItem>
@@ -301,6 +342,7 @@ function EditSchemaCompatibility(p: {
       <Flex gap="4">
         <Button
           colorScheme="brand"
+          data-testid="edit-compatibility-save-btn"
           disabledReason={
             api.userData?.canManageSchemaRegistry === false
               ? "You don't have the 'canManageSchemaRegistry' permission"
@@ -310,7 +352,7 @@ function EditSchemaCompatibility(p: {
         >
           Save
         </Button>
-        <Button onClick={p.onClose} variant="link">
+        <Button data-testid="edit-compatibility-cancel-btn" onClick={p.onClose} variant="link">
           Cancel
         </Button>
       </Flex>

@@ -1,4 +1,3 @@
-import { PencilIcon } from '@heroicons/react/solid';
 import {
   Alert,
   AlertIcon,
@@ -22,6 +21,7 @@ import {
   Tooltip,
   useToast,
 } from '@redpanda-data/ui';
+import { EditIcon, InfoIcon } from 'components/icons';
 import { observer, useLocalObservable } from 'mobx-react';
 import type { FC } from 'react';
 import { useState } from 'react';
@@ -35,7 +35,6 @@ import {
   getInfiniteValueForEntry,
 } from '../../../utils/formatters/config-value-formatter';
 import './TopicConfiguration.scss';
-import { MdInfoOutline } from 'react-icons/md';
 
 import { isServerless } from '../../../config';
 import { api } from '../../../state/backend-api';
@@ -61,6 +60,15 @@ const ConfigEditorForm: FC<{
   const toast = useToast();
   const [globalError, setGlobalError] = useState<string | null>(null);
 
+  const defaultValueType = (() => {
+    if (!editedEntry.isExplicitlySet) {
+      return 'default';
+    }
+    return entryHasInfiniteValue(editedEntry) ? 'infinite' : 'custom';
+  })();
+  const defaultCustomValue =
+    editedEntry.isExplicitlySet && !entryHasInfiniteValue(editedEntry) ? editedEntry.value : '';
+
   const {
     control,
     handleSubmit,
@@ -68,8 +76,8 @@ const ConfigEditorForm: FC<{
     watch,
   } = useForm<Inputs>({
     defaultValues: {
-      valueType: editedEntry.isExplicitlySet ? (entryHasInfiniteValue(editedEntry) ? 'infinite' : 'custom') : 'default',
-      customValue: editedEntry.isExplicitlySet && !entryHasInfiniteValue(editedEntry) ? editedEntry.value : '',
+      valueType: defaultValueType,
+      customValue: defaultCustomValue,
     },
   });
 
@@ -187,7 +195,7 @@ const ConfigEditorForm: FC<{
                 </Box>
               )}
             </Flex>
-            {globalError && (
+            {Boolean(globalError) && (
               <Alert my={2} status="error">
                 <AlertIcon />
                 {globalError}
@@ -280,7 +288,9 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
       {$state.editedEntry !== null && (
         <ConfigEditorForm
           editedEntry={$state.editedEntry}
-          onClose={() => ($state.editedEntry = null)}
+          onClose={() => {
+            $state.editedEntry = null;
+          }}
           onSuccess={() => {
             props.onForceRefresh();
           }}
@@ -292,7 +302,9 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
           icon="filter"
           placeholderText="Filter"
           searchText={$state.filter || ''}
-          setSearchText={(value) => ($state.filter = value)}
+          setSearchText={(value) => {
+            $state.filter = value;
+          }}
         />
         {categories.map((x) => (
           <ConfigGroup
@@ -319,7 +331,7 @@ const ConfigGroup = observer(
   }) => (
     <>
       <div className="configGroupSpacer" />
-      {p.groupName && <div className="configGroupTitle">{p.groupName}</div>}
+      {Boolean(p.groupName) && <div className="configGroupTitle">{p.groupName}</div>}
       {p.entries.map((e) => (
         <ConfigEntryComponent
           entry={e}
@@ -351,7 +363,7 @@ const ConfigEntryComponent = observer(
 
         <Text>{friendlyValue}</Text>
 
-        <span className="isEditted">{entry.isExplicitlySet && 'Custom'}</span>
+        <span className="isEditted">{Boolean(entry.isExplicitlySet) && 'Custom'}</span>
 
         <span className="configButtons">
           <Tooltip hasArrow isDisabled={canEdit} label={nonEdittableReason} placement="left">
@@ -364,10 +376,10 @@ const ConfigEntryComponent = observer(
               }}
               type="button"
             >
-              <Icon as={PencilIcon} />
+              <Icon as={EditIcon} />
             </button>
           </Tooltip>
-          {entry.documentation && (
+          {Boolean(entry.documentation) && (
             <Popover
               content={
                 <Flex flexDirection="column" gap={2}>
@@ -382,7 +394,7 @@ const ConfigEntryComponent = observer(
               size="lg"
             >
               <Box>
-                <Icon as={MdInfoOutline} />
+                <Icon as={InfoIcon} />
               </Box>
             </Popover>
           )}

@@ -12,6 +12,7 @@
 export {};
 
 declare global {
+  // biome-ignore lint/style/useConsistentTypeDefinitions: leave as interface due to type checker
   interface Number {
     /**
      * linear interpolation to another number

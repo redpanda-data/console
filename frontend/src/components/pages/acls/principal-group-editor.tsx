@@ -30,10 +30,10 @@ import {
   useToast,
   VStack,
 } from '@redpanda-data/ui';
+import { TrashIcon } from 'components/icons';
 import { comparer } from 'mobx';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
-import { HiOutlineTrash } from 'react-icons/hi';
 
 import {
   type AclPrincipalGroup,
@@ -70,6 +70,7 @@ export const AclPrincipalGroupEditor = observer(
       (!group.principalName ||
         api.ACLs?.aclResources.any((r) => r.acls.any((a) => a.principal === `User:${group.principalName}`)));
 
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
     const onOK = async () => {
       setError(undefined);
       setIsLoading(true);
@@ -173,7 +174,7 @@ export const AclPrincipalGroupEditor = observer(
           <ModalBody>
             <VStack gap={6} w="full">
               <AnimatePresence>
-                {error && (
+                {Boolean(error) && (
                   <MotionDiv animProps={animProps_radioOptionGroup} style={{ color: 'red', fontWeight: 500 }}>
                     Error: {error}
                   </MotionDiv>
@@ -198,7 +199,9 @@ export const AclPrincipalGroupEditor = observer(
                     <Box minW={180} mr={2} zIndex={1}>
                       <SingleSelect<PrincipalType>
                         isDisabled
-                        onChange={(value) => (group.principalType = value)}
+                        onChange={(value) => {
+                          group.principalType = value;
+                        }}
                         options={[
                           {
                             label: 'User',
@@ -234,7 +237,9 @@ export const AclPrincipalGroupEditor = observer(
                   }
                 >
                   <Input
-                    onChange={(e) => (group.host = e.target.value)}
+                    onChange={(e) => {
+                      group.host = e.target.value;
+                    }}
                     spellCheck={false}
                     value={group.host}
                     width="200px"
@@ -283,7 +288,7 @@ export const AclPrincipalGroupEditor = observer(
                   <Flex flexDirection="column" gap={4}>
                     {group.topicAcls.map((t, i) => (
                       <ResourceACLsEditor
-                        key={i}
+                        key={`topic-${t.selector}-${i}`}
                         onDelete={() => group.topicAcls.remove(t)}
                         resource={t}
                         resourceType="Topic"
@@ -303,7 +308,7 @@ export const AclPrincipalGroupEditor = observer(
                   <Flex flexDirection="column" gap={4}>
                     {group.consumerGroupAcls.map((t, i) => (
                       <ResourceACLsEditor
-                        key={i}
+                        key={`consumer-group-${t.selector}-${i}`}
                         onDelete={() => group.consumerGroupAcls.remove(t)}
                         resource={t}
                         resourceType="Group"
@@ -327,7 +332,7 @@ export const AclPrincipalGroupEditor = observer(
                   <Flex flexDirection="column" gap={4}>
                     {group.transactionalIdAcls.map((t, i) => (
                       <ResourceACLsEditor
-                        key={i}
+                        key={`transactional-id-${t.selector}-${i}`}
                         onDelete={() => group.transactionalIdAcls.remove(t)}
                         resource={t}
                         resourceType="TransactionalID"
@@ -461,7 +466,9 @@ export const ResourceACLsEditor = observer(
                 <Input
                   data-testid={`${resourceName}-selector`}
                   isDisabled={res.patternType === 'Any'}
-                  onChange={(e) => (res.selector = e.target.value)}
+                  onChange={(e) => {
+                    res.selector = e.target.value;
+                  }}
                   spellCheck={false}
                   value={res.selector}
                 />
@@ -471,7 +478,13 @@ export const ResourceACLsEditor = observer(
 
           <Label style={{ width: '100%' }} text="Operations">
             <Grid gap={6} templateColumns="repeat(auto-fill, minmax(125px, 1fr))" width="full">
-              <Operation onChange={(perm) => (res.all = perm)} operation={AclOperation.All} value={res.all} />
+              <Operation
+                onChange={(perm) => {
+                  res.all = perm;
+                }}
+                operation={AclOperation.All}
+                value={res.all}
+              />
 
               {Object.entries(res.permissions)
                 .sort(([op1], [op2]) => op1.localeCompare(op2))
@@ -480,7 +493,9 @@ export const ResourceACLsEditor = observer(
                     data-testid={`${resourceName}-${operation}`}
                     disabled={isAllSet}
                     key={operation}
-                    onChange={(perm) => ((res.permissions as Record<string, unknown>)[operation] = perm)}
+                    onChange={(perm) => {
+                      (res.permissions as Record<string, unknown>)[operation] = perm;
+                    }}
                     operation={operation}
                     value={isAllSet ? res.all : permission}
                   />
@@ -489,11 +504,11 @@ export const ResourceACLsEditor = observer(
           </Label>
         </Flex>
 
-        {p.onDelete && (
+        {Boolean(p.onDelete) && (
           <Flex>
             <Box alignSelf="center" bg="gray.300" height="80%" width="1px" />
             <Button alignSelf="center" mx={2} onClick={p.onDelete} variant="ghost">
-              <Icon as={HiOutlineTrash} fontSize="22px" />
+              <Icon as={TrashIcon} fontSize="22px" />
             </Button>
           </Flex>
         )}

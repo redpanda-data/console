@@ -255,10 +255,10 @@ const ManualOffsetContent = observer(
     if (api.topicPartitionErrors?.get(topicName) || api.topicWatermarksErrors?.get(topicName)) {
       const partitionErrors = api.topicPartitionErrors
         .get(topicName)
-        ?.map(({ partitionError }, idx) => <li key={`${topicName}-partitionErrors-${idx}`}>{partitionError}</li>);
+        ?.map(({ partitionError }) => <li key={`${topicName}-${partitionError}`}>{partitionError}</li>);
       const waterMarksErrors = api.topicWatermarksErrors
         .get(topicName)
-        ?.map(({ waterMarksError }, idx) => <li key={`${topicName}-watermarkErrors-${idx}`}>{waterMarksError}</li>);
+        ?.map(({ waterMarksError }) => <li key={`${topicName}-${waterMarksError}`}>{waterMarksError}</li>);
       const message = (
         <>
           {partitionErrors && partitionErrors.length > 0 ? (
@@ -305,12 +305,13 @@ const ManualOffsetContent = observer(
     return (
       <Flex alignItems="center" gap={2}>
         <Slider max={max} min={min} onChange={updateOffsetFromSlider} value={sliderValue}>
-          {marks &&
-            Object.entries(marks).map(([value, label]) => (
-              <SliderMark key={value} value={Number(value)}>
-                {label}
-              </SliderMark>
-            ))}
+          {marks
+            ? Object.entries(marks).map(([value, label]) => (
+                <SliderMark key={value} value={Number(value)}>
+                  {label}
+                </SliderMark>
+              ))
+            : null}
           <SliderTrack>
             <SliderFilledTrack />
           </SliderTrack>
@@ -421,7 +422,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
 
   // biome-ignore lint/suspicious/noConfusingVoidType: needed to fix error TS2345
   const handleFinish = (responseData: void | DeleteRecordsResponseData | null | undefined) => {
-    if (responseData == null) {
+    if (responseData === null || responseData === undefined || typeof responseData === 'undefined') {
       setErrors(['You are not allowed to delete records on this topic. Please contact your Kafka administrator.']);
       return;
     }
@@ -460,6 +461,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     return offsetOption === null;
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const onOk = () => {
     if (!topic) {
       return;
@@ -483,7 +485,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     } else if (isSpecficPartition && isManualOffset) {
       // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
       api.deleteTopicRecords(topicName, specifiedOffset, specifiedPartition!)?.then(handleFinish);
-    } else if (isTimestamp && timestamp != null) {
+    } else if (isTimestamp && timestamp !== null) {
       api.getTopicOffsetsByTimestamp([topicName], timestamp).then((topicOffsets) => {
         if (isAllPartitions) {
           const pairs = topicOffsets[0].partitions.map(({ partitionId, offset }) => ({
@@ -494,7 +496,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
         } else if (isSpecficPartition) {
           const partitionOffset = topicOffsets[0].partitions.find((p) => specifiedPartition === p.partitionId)?.offset;
 
-          if (partitionOffset != null) {
+          if (partitionOffset !== null && partitionOffset !== undefined) {
             // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
             api.deleteTopicRecords(topicName, partitionOffset, specifiedPartition!)?.then(handleFinish);
           } else {
@@ -510,7 +512,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
   };
 
   const getPartitionInfo = (): PartitionInfo => {
-    if (specifiedPartition != null && partitionOption === 'specificPartition') {
+    if (specifiedPartition !== null && partitionOption === 'specificPartition') {
       return ['specificPartition', specifiedPartition];
     }
     return 'allPartitions';
@@ -522,7 +524,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
       <ModalContent minW="2xl">
         <ModalHeader>Delete records in topic</ModalHeader>
         <ModalBody>
-          {hasErrors && (
+          {Boolean(hasErrors) && (
             <Alert mb={2} status="error">
               <AlertIcon />
               <Flex flexDirection="column" gap={4} p={2}>
@@ -544,7 +546,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
               specificPartition={specifiedPartition}
             />
           )}
-          {!hasErrors && step === 2 && partitionOption != null && (
+          {!hasErrors && step === 2 && partitionOption !== null && (
             <SelectOffsetStep
               offsetOption={offsetOption}
               onOffsetOptionSelected={setOffsetOption}

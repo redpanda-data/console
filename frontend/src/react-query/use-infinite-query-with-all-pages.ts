@@ -50,11 +50,12 @@ export function useInfiniteQueryWithAllPages<
   // Use the standard ConnectRPC useInfiniteQuery hook
   const queryResult = useInfiniteQuery(schema, input, options);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchNextPage intentionally excluded - its reference changes every render but the function is stable. Including it causes infinite loops.
   useEffect(() => {
     if (!(queryResult.isFetching || queryResult.isFetchingNextPage) && queryResult.hasNextPage) {
       queryResult.fetchNextPage();
     }
-  }, [queryResult.hasNextPage, queryResult.isFetching, queryResult.isFetchingNextPage, queryResult.fetchNextPage]);
+  }, [queryResult.hasNextPage, queryResult.isFetching, queryResult.isFetchingNextPage]);
 
   return {
     ...queryResult,

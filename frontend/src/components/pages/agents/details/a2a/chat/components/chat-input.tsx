@@ -99,7 +99,7 @@ const ChatInputComponent = ({
         </PromptInputBody>
         <PromptInputFooter>
           <PromptInputTools>
-            {agent.model && (
+            {Boolean(agent.model) && (
               <PromptInputModelSelect disabled value={agent.model}>
                 <PromptInputModelSelectTrigger>
                   <PromptInputModelSelectValue>
@@ -113,12 +113,12 @@ const ChatInputComponent = ({
                 </PromptInputModelSelectContent>
               </PromptInputModelSelect>
             )}
-            {usage.max_input_tokens && (
+            {usage.max_input_tokens !== undefined && (
               <Context
                 maxTokens={usage.max_input_tokens}
                 modelId={modelId}
                 usage={contextUsage}
-                usedTokens={usage.input_tokens}
+                usedTokens={usage.input_tokens ?? 0}
               >
                 <ContextTrigger />
                 <ContextContent align="start" side="top">

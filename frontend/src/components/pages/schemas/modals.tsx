@@ -1,4 +1,3 @@
-import { WarningIcon } from '@chakra-ui/icons';
 import {
   Alert,
   AlertIcon,
@@ -16,34 +15,79 @@ import {
   Text,
   type ThemeTypings,
 } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
+import { WarningIcon } from 'components/icons';
 import { type ReactNode, useState } from 'react';
 
 import { openModal } from '../../../utils/modal-container';
 
-const GenericModal = observer(
-  (p: {
-    title: JSX.Element;
-    body: JSX.Element;
-    primaryButtonContent: JSX.Element;
-    secondaryButtonContent: JSX.Element;
+const GenericModal = (p: {
+  title: JSX.Element;
+  body: JSX.Element;
+  primaryButtonContent: JSX.Element;
+  secondaryButtonContent: JSX.Element;
 
-    onPrimaryButton: (closeModal: () => void) => void;
-    onSecondaryButton: (closeModal: () => void) => void;
+  onPrimaryButton: (closeModal: () => void) => void;
+  onSecondaryButton: (closeModal: () => void) => void;
 
-    primaryColorScheme?: ThemeTypings['colorSchemes'];
+  primaryColorScheme?: ThemeTypings['colorSchemes'];
 
-    closeModal: () => void;
-  }) => (
+  closeModal: () => void;
+}) => (
+  <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
+    <ModalOverlay />
+    <ModalContent>
+      <ModalHeader mr="4">{p.title}</ModalHeader>
+      <ModalCloseButton />
+      <ModalBody>{p.body}</ModalBody>
+
+      <ModalFooter>
+        <Button colorScheme={p.primaryColorScheme} mr={3} onClick={() => p.onPrimaryButton(p.closeModal)}>
+          {p.primaryButtonContent}
+        </Button>
+        <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="outline">
+          {p.secondaryButtonContent}
+        </Button>
+      </ModalFooter>
+    </ModalContent>
+  </Modal>
+);
+
+const ExplicitConfirmModal = (p: {
+  title: JSX.Element;
+  body: JSX.Element;
+  primaryButtonContent: JSX.Element;
+  secondaryButtonContent: JSX.Element;
+
+  onPrimaryButton: (closeModal: () => void) => void;
+  onSecondaryButton: (closeModal: () => void) => void;
+
+  closeModal: () => void;
+}) => {
+  const [confirmBoxText, setConfirmBoxText] = useState('');
+  const isConfirmEnabled = confirmBoxText === 'delete';
+
+  return (
     <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
       <ModalOverlay />
       <ModalContent>
         <ModalHeader mr="4">{p.title}</ModalHeader>
         <ModalCloseButton />
-        <ModalBody>{p.body}</ModalBody>
+        <ModalBody>
+          {p.body}
+
+          <Box mt="4">
+            To confirm, enter "delete":
+            <Input autoFocus onChange={(e) => setConfirmBoxText(e.target.value)} />
+          </Box>
+        </ModalBody>
 
         <ModalFooter>
-          <Button colorScheme={p.primaryColorScheme} mr={3} onClick={() => p.onPrimaryButton(p.closeModal)}>
+          <Button
+            colorScheme="red"
+            isDisabled={!isConfirmEnabled}
+            mr={3}
+            onClick={() => p.onPrimaryButton(p.closeModal)}
+          >
             {p.primaryButtonContent}
           </Button>
           <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="outline">
@@ -52,88 +96,37 @@ const GenericModal = observer(
         </ModalFooter>
       </ModalContent>
     </Modal>
-  )
-);
-
-const ExplicitConfirmModal = observer(
-  (p: {
-    title: JSX.Element;
-    body: JSX.Element;
-    primaryButtonContent: JSX.Element;
-    secondaryButtonContent: JSX.Element;
-
-    onPrimaryButton: (closeModal: () => void) => void;
-    onSecondaryButton: (closeModal: () => void) => void;
-
-    closeModal: () => void;
-  }) => {
-    const [confirmBoxText, setConfirmBoxText] = useState('');
-    const isConfirmEnabled = confirmBoxText === 'delete';
-
-    return (
-      <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader mr="4">{p.title}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            {p.body}
-
-            <Box mt="4">
-              To confirm, enter "delete":
-              <Input autoFocus onChange={(e) => setConfirmBoxText(e.target.value)} />
-            </Box>
-          </ModalBody>
-
-          <ModalFooter>
-            <Button
-              colorScheme="red"
-              isDisabled={!isConfirmEnabled}
-              mr={3}
-              onClick={() => p.onPrimaryButton(p.closeModal)}
-            >
-              {p.primaryButtonContent}
-            </Button>
-            <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="outline">
-              {p.secondaryButtonContent}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  }
-);
+  );
+};
 
 // A type of modal that simply shows some stuff and only has an "ok" button
-const InfoModal = observer(
-  (p: {
-    title: JSX.Element;
-    body: JSX.Element;
-    primaryButtonContent: ReactNode;
-    onClose?: () => void;
-    closeModal: () => void;
-  }) => (
-    <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader mr="4">{p.title}</ModalHeader>
-        <ModalBody>{p.body}</ModalBody>
-        <ModalFooter>
-          <Button
-            mr={3}
-            onClick={() => {
-              if (p.onClose) {
-                p.onClose();
-              }
-              p.closeModal();
-            }}
-          >
-            {p.primaryButtonContent}
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-  )
+const InfoModal = (p: {
+  title: JSX.Element;
+  body: JSX.Element;
+  primaryButtonContent: ReactNode;
+  onClose?: () => void;
+  closeModal: () => void;
+}) => (
+  <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
+    <ModalOverlay />
+    <ModalContent>
+      <ModalHeader mr="4">{p.title}</ModalHeader>
+      <ModalBody>{p.body}</ModalBody>
+      <ModalFooter>
+        <Button
+          mr={3}
+          onClick={() => {
+            if (p.onClose) {
+              p.onClose();
+            }
+            p.closeModal();
+          }}
+        >
+          {p.primaryButtonContent}
+        </Button>
+      </ModalFooter>
+    </ModalContent>
+  </Modal>
 );
 
 export function openInfoModal(p: {
@@ -161,25 +154,24 @@ export function openValidationErrorsModal(
 ) {
   const { isValid, errorDetails, isCompatible, compatibilityError } = result;
 
-  const compatBox = (() => {
-    if (isCompatible === undefined || isValid === false) {
-      return null;
-    }
+  let compatBox: JSX.Element | null = null;
+  if (isCompatible !== undefined && isValid !== false) {
     if (isCompatible) {
-      return (
+      compatBox = (
         <Alert status="success" variant="subtle">
           <AlertIcon />
           No compatibility issues
         </Alert>
       );
+    } else {
+      compatBox = (
+        <Alert status="error" variant="subtle">
+          <AlertIcon />
+          Compatibility issues found
+        </Alert>
+      );
     }
-    return (
-      <Alert status="error" variant="subtle">
-        <AlertIcon />
-        Compatibility issues found
-      </Alert>
-    );
-  })();
+  }
 
   const compatErrorBox =
     compatibilityError && (compatibilityError.errorType || compatibilityError.description) ? (
@@ -188,12 +180,12 @@ export function openValidationErrorsModal(
           Compatibility Error Details:
         </Text>
         <Box background="gray.100" maxHeight="400px" overflowY="auto" p="6">
-          {compatibilityError.errorType && (
+          {Boolean(compatibilityError.errorType) && (
             <Text color="red.600" fontWeight="bold" mb="2">
               Error: {compatibilityError.errorType.replace(/_/g, ' ')}
             </Text>
           )}
-          {compatibilityError.description && <Text lineHeight="1.6">{compatibilityError.description}</Text>}
+          {Boolean(compatibilityError.description) && <Text lineHeight="1.6">{compatibilityError.description}</Text>}
         </Box>
       </Box>
     ) : null;
@@ -213,7 +205,9 @@ export function openValidationErrorsModal(
     title: (
       <>
         <Text alignItems="center" color="red.500" display="flex">
-          <WarningIcon fontSize="1.18em" mr="3" />
+          <Box mr="3">
+            <WarningIcon size={18} />
+          </Box>
           Schema validation error
         </Text>
       </>

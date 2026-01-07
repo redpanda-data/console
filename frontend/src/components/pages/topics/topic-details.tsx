@@ -19,9 +19,8 @@ import type { ConfigEntry, Topic, TopicAction } from '../../../state/rest-interf
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
 import '../../../utils/array-extensions';
-import { LockIcon } from '@primer/octicons-react';
 import { Box, Button, Code, Flex, Popover, Result, Tooltip } from '@redpanda-data/ui';
-import { MdError, MdOutlineWarning, MdOutlineWarningAmber } from 'react-icons/md';
+import { ErrorIcon, LockIcon, WarningIcon } from 'components/icons';
 
 import DeleteRecordsModal from './DeleteRecordsModal/delete-records-modal';
 import { TopicQuickInfoStatistic } from './quick-info';
@@ -48,10 +47,10 @@ export type TopicTabId = (typeof TopicTabIds)[number];
 class TopicTab {
   readonly topicGetter: () => Topic | undefined | null;
   id: TopicTabId;
-  private requiredPermission: TopicAction;
+  private readonly requiredPermission: TopicAction;
   titleText: React.ReactNode;
-  private contentFunc: (topic: Topic) => React.ReactNode;
-  private disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[];
+  private readonly contentFunc: (topic: Topic) => React.ReactNode;
+  private readonly disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[];
 
   // biome-ignore lint/nursery/useMaxParams: Legacy class with many constructor parameters
   constructor(
@@ -138,7 +137,7 @@ const mkDocuTip = (text: string, icon?: JSX.Element) => (
 );
 const warnIcon = (
   <span style={{ fontSize: '15px', marginRight: '5px', transform: 'translateY(1px)', display: 'inline-block' }}>
-    <MdOutlineWarningAmber />
+    <WarningIcon />
   </span>
 );
 
@@ -209,20 +208,19 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   @computed get topic(): undefined | Topic | null {
     // undefined = not yet known, null = known to be null
     if (!api.topics) {
-      return undefined;
+      // biome-ignore lint/suspicious/useGetterReturn: early return for undefined case
+      return;
     }
     const topic = api.topics.find((e) => e.topicName === this.props.topicName);
-    if (!topic) {
-      return null;
-    }
-    return topic;
+    return topic ?? null;
   }
   @computed get topicConfig(): undefined | ConfigEntry[] | null {
     const config = api.topicConfig.get(this.props.topicName);
     if (config === undefined) {
-      return undefined;
+      // biome-ignore lint/suspicious/useGetterReturn: early return for undefined case
+      return;
     }
-    if (config === null || config.error != null) {
+    if (config === null || config.error !== null) {
       return null;
     }
     return config.configEntries;
@@ -305,7 +303,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
               placement="top"
             >
               <Box>
-                <MdError color={colors.brandError} size={18} />
+                <ErrorIcon color={colors.brandError} size={18} />
               </Box>
             </Tooltip>
           )}
@@ -316,7 +314,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
               placement="top"
             >
               <Box>
-                <MdOutlineWarning color={colors.brandWarning} size={18} />
+                <WarningIcon color={colors.brandWarning} size={18} />
               </Box>
             </Tooltip>
           )}
@@ -338,7 +336,12 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         (t) => <AclList acl={api.topicAcls.get(t.topicName)} />,
         [
           () => {
-            if (AppFeatures.SINGLE_SIGN_ON && api.userData != null && !api.userData.canListAcls) {
+            if (
+              AppFeatures.SINGLE_SIGN_ON &&
+              api.userData !== null &&
+              api.userData !== undefined &&
+              !api.userData.canListAcls
+            ) {
               return (
                 <Popover content={"You need the cluster-permission 'viewAcl' to view this tab"} hideCloseButton={true}>
                   <div>
@@ -371,7 +374,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     return (
       <>
         <PageContent key={'b'}>
-          {uiSettings.topicDetailsShowStatisticsBar && <TopicQuickInfoStatistic topic={topic} />}
+          {Boolean(uiSettings.topicDetailsShowStatisticsBar) && <TopicQuickInfoStatistic topic={topic} />}
 
           <Flex gap={2} mb={4}>
             <Button
@@ -383,11 +386,9 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             >
               Produce Record
             </Button>
-            {DeleteRecordsMenuItem(
-              topic.cleanupPolicy === 'compact',
-              topic.allowedActions,
-              () => (this.deleteRecordsModalAlive = true)
-            )}
+            {DeleteRecordsMenuItem(topic.cleanupPolicy === 'compact', topic.allowedActions, () => {
+              this.deleteRecordsModalAlive = true;
+            })}
           </Flex>
 
           {/* Tabs:  Messages, Configuration */}
@@ -406,10 +407,14 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             />
           </Section>
         </PageContent>
-        {this.deleteRecordsModalAlive && (
+        {Boolean(this.deleteRecordsModalAlive) && (
           <DeleteRecordsModal
-            afterClose={() => (this.deleteRecordsModalAlive = false)}
-            onCancel={() => (this.deleteRecordsModalAlive = false)}
+            afterClose={() => {
+              this.deleteRecordsModalAlive = false;
+            }}
+            onCancel={() => {
+              this.deleteRecordsModalAlive = false;
+            }}
             onFinish={() => {
               this.deleteRecordsModalAlive = false;
               this.refreshData(true);

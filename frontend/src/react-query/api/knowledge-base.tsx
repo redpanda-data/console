@@ -1,6 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
-import { useMutation, useQuery } from '@connectrpc/connect-query';
+import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   GetKnowledgeBaseRequestSchema,
   type ListKnowledgeBasesRequest,
@@ -48,8 +49,17 @@ export const useCreateKnowledgeBaseMutation = () =>
       }),
   });
 
-export const useUpdateKnowledgeBaseMutation = () =>
-  useMutation(updateKnowledgeBase, {
+export const useUpdateKnowledgeBaseMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation(updateKnowledgeBase, {
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: listKnowledgeBases,
+          cardinality: 'finite',
+        }),
+      });
+    },
     onError: (error) =>
       formatToastErrorMessageGRPC({
         error,
@@ -57,9 +67,19 @@ export const useUpdateKnowledgeBaseMutation = () =>
         entity: 'knowledge base',
       }),
   });
+};
 
-export const useDeleteKnowledgeBaseMutation = () =>
-  useMutation(deleteKnowledgeBase, {
+export const useDeleteKnowledgeBaseMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation(deleteKnowledgeBase, {
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: listKnowledgeBases,
+          cardinality: 'finite',
+        }),
+      });
+    },
     onError: (error) =>
       formatToastErrorMessageGRPC({
         error,
@@ -67,3 +87,4 @@ export const useDeleteKnowledgeBaseMutation = () =>
         entity: 'knowledge base',
       }),
   });
+};

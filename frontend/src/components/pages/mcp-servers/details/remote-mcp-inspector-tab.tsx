@@ -22,7 +22,7 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { RedpandaConnectComponentTypeBadge } from 'components/ui/connect/redpanda-connect-component-type-badge';
 import { DynamicJSONForm } from 'components/ui/json/dynamic-json-form';
 import type { JSONSchemaType, JSONValue } from 'components/ui/json/json-utils';
-import JSONView from 'components/ui/json/json-view';
+import { JSONView } from 'components/ui/json/json-view';
 import { Clock, Hammer, Send, X } from 'lucide-react';
 import {
   CreateTopicRequest_Topic_ConfigSchema,
@@ -38,6 +38,7 @@ import { toast } from 'sonner';
 
 import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 const generateDefaultValue = (fieldSchema: JSONSchemaType): JSONValue => {
   if ('default' in fieldSchema && fieldSchema.default !== undefined) {
     return fieldSchema.default;
@@ -139,6 +140,7 @@ const getComponentTypeFromToolName = (toolName: string): MCPServer_Tool_Componen
 const DEFAULT_TOPIC_PARTITION_COUNT = 1;
 const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const RemoteMCPInspectorTab = () => {
   const { id } = useParams<{ id: string }>();
   const [selectedTool, setSelectedTool] = useState<string>('');
@@ -191,6 +193,7 @@ export const RemoteMCPInspectorTab = () => {
   );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Remote MCP Inspector Tab useEffect dependencies
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   useEffect(() => {
     if (
       selectedTool &&
@@ -359,6 +362,7 @@ export const RemoteMCPInspectorTab = () => {
     return { isValid: Object.keys(errors).length === 0, errors };
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const getToolResponseData = () => {
     if (!serverToolResponse) {
       return null;
@@ -421,7 +425,7 @@ export const RemoteMCPInspectorTab = () => {
           {/* Tools List */}
           {mcpServerData?.mcpServer?.state === MCPServer_State.RUNNING && (
             <div className="space-y-2">
-              {(isLoadingTools || isRefetchingTools) && (
+              {Boolean(isLoadingTools || isRefetchingTools) && (
                 <div className="flex items-center justify-center py-4">
                   <Badge className="text-xs" variant="outline">
                     <Clock className="mr-1 h-3 w-3 animate-spin" />
@@ -587,7 +591,7 @@ export const RemoteMCPInspectorTab = () => {
                       )}
 
                       {/* Response Section */}
-                      {isServerToolPending && (
+                      {Boolean(isServerToolPending) && (
                         <div className="space-y-2">
                           <Label className="font-medium text-sm">Response</Label>
                           <div className="flex flex-col space-y-3">

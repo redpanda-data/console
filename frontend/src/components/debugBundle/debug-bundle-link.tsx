@@ -1,6 +1,6 @@
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { Box, Flex, IconButton, Link, Text, Tooltip } from '@redpanda-data/ui';
-import { MdDeleteOutline } from 'react-icons/md';
+import { TrashIcon } from 'components/icons';
 
 import { config } from '../../config';
 import type {
@@ -64,11 +64,11 @@ const DebugBundleLink = ({
         >
           {downloadFilename}
         </Link>
-        {showDeleteButton && (
+        {Boolean(showDeleteButton) && (
           <Tooltip hasArrow label="Delete bundle" placement="top">
             <IconButton
               aria-label="Delete file"
-              icon={<MdDeleteOutline />}
+              icon={<TrashIcon />}
               onClick={() => {
                 api.deleteDebugBundleFile().catch(() => {
                   // Error handling should be managed by the API layer
@@ -79,10 +79,8 @@ const DebugBundleLink = ({
           </Tooltip>
         )}
       </Flex>
-      {showDatetime && (
-        <Text>
-          Generated {statusWithFilename.createdAt && timestampDate(statusWithFilename.createdAt).toLocaleString()}
-        </Text>
+      {Boolean(showDatetime) && statusWithFilename.createdAt && (
+        <Text>Generated {timestampDate(statusWithFilename.createdAt).toLocaleString()}</Text>
       )}
     </Box>
   );

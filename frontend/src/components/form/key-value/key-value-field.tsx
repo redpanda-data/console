@@ -11,8 +11,8 @@ import {
   type InputProps,
   Stack,
 } from '@redpanda-data/ui';
+import { TrashIcon } from 'components/icons';
 import type { ReactNode } from 'react';
-import { AiOutlineDelete } from 'react-icons/ai';
 
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
@@ -39,22 +39,22 @@ export const KeyValueField = ({ label, helperText, showAddButton = true, ...rest
   return (
     <FormControl mb={4}>
       <Stack spacing={0.5}>
-        {label && (
+        {Boolean(label) && (
           <FormLabel fontWeight="medium" mb={0}>
             {label}
           </FormLabel>
         )}
-        {helperText && (
+        {Boolean(helperText) && (
           <FormHelperText mb={1} mt={0}>
             {helperText}
           </FormHelperText>
         )}
       </Stack>
-      {field?.state?.value?.map((_, index) => (
-        <KeyValuePairField index={index} key={index} {...rest} />
+      {field?.state?.value?.map((pair, index) => (
+        <KeyValuePairField index={index} key={`${pair.key}-${pair.value}-${index}`} {...rest} />
       ))}
 
-      {showAddButton && (
+      {Boolean(showAddButton) && (
         <ButtonGroup>
           <Button
             data-testid="add-label-button"
@@ -134,7 +134,7 @@ const KeyValuePairField = ({ index, ...rest }: KeyValuePairFieldProps) => {
         <Flex alignItems="center" height="40px" ml={2}>
           <Icon
             aria-label="Delete key-value pair"
-            as={AiOutlineDelete}
+            as={TrashIcon}
             cursor="pointer"
             data-testid={rest['data-testid'] ? `${rest['data-testid']}-delete-${index}` : undefined}
             onClick={handleDelete}

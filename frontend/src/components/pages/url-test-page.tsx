@@ -52,7 +52,12 @@ export class UrlTestPage extends PageComponent {
         <div>
           <h4>Test</h4>
           <div>
-            <Checkbox isChecked={this.test} onChange={(e) => (this.test = e.target.checked)}>
+            <Checkbox
+              isChecked={this.test}
+              onChange={(e) => {
+                this.test = e.target.checked;
+              }}
+            >
               Test Prop
             </Checkbox>
           </div>

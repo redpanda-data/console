@@ -42,7 +42,7 @@ function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
     }
 
     if (maxLength !== undefined) {
-      numChars++;
+      numChars += 1;
       if (numChars >= maxLength) {
         break;
       }
@@ -56,6 +56,7 @@ function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
   return elements;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () => Promise<void> }) => {
   const { payload, loadLargeMessage } = p;
   const toast = useToast();

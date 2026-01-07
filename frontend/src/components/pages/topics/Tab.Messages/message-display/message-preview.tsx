@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { InfoIcon, WarningIcon } from '@chakra-ui/icons';
 import { Flex, Text } from '@redpanda-data/ui';
+import { InfoIcon, WarningIcon } from 'components/icons';
 import { observer } from 'mobx-react';
 import React, { type ReactNode } from 'react';
 
@@ -32,6 +32,7 @@ export const MessagePreview = observer(
     previewFields: () => PreviewTagV2[];
     isCompactTopic: boolean;
     previewDisplayMode?: 'single' | 'wrap' | 'rows';
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   }) => {
     const value = msg.value;
 
@@ -64,7 +65,7 @@ export const MessagePreview = observer(
       }
       if (
         value.encoding === 'null' ||
-        value.payload == null ||
+        value.payload === null ||
         (typeof value.payload === 'string' && value.payload.length === 0)
       ) {
         return <EmptyBadge mode="empty" />;
@@ -85,11 +86,7 @@ export const MessagePreview = observer(
           const displayMode = previewDisplayMode ?? uiState.topicSettings.previewDisplayMode;
           text = (
             <span className="cellDiv fade" style={{ fontSize: '95%' }}>
-              <div className={`previewTags previewTags-${displayMode}`}>
-                {tags.map((t, i) => (
-                  <React.Fragment key={i}>{t}</React.Fragment>
-                ))}
-              </div>
+              <div className={`previewTags previewTags-${displayMode}`}>{tags}</div>
             </span>
           );
           return text;
@@ -106,7 +103,7 @@ export const MessagePreview = observer(
             </span>
           </code>
           <Text color="gray.500">
-            {value.encoding.toUpperCase()} - {prettyBytes(value.size)}
+            {value.encoding?.toUpperCase() || 'UNKNOWN'} - {prettyBytes(value.size)}
           </Text>
         </Flex>
       );

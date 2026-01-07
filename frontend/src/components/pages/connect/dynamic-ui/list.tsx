@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { ThreeBarsIcon, XIcon } from '@primer/octicons-react';
 import { Button, Input, Tooltip } from '@redpanda-data/ui';
 import { arrayMoveMutable } from 'array-move';
+import { CloseIcon, MenuIcon } from 'components/icons';
 import { autorun, computed, type IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component, useState } from 'react';
@@ -129,7 +129,7 @@ export class CommaSeparatedStringList extends Component<{
           }}
           type="button"
         >
-          <XIcon />
+          <CloseIcon />
         </button>
       </>
     );
@@ -167,7 +167,7 @@ export class CommaSeparatedStringList extends Component<{
         </div>
 
         <Button
-          disabled={this.newEntryError != null || !this.newEntry || this.newEntry.trim().length === 0}
+          disabled={this.newEntryError !== null || !this.newEntry || this.newEntry.trim().length === 0}
           onClick={() => {
             // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
             this.data.push({ id: this.newEntry! });
@@ -210,7 +210,7 @@ export class List<T extends { id: string }> extends Component<{
                       <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
                         <div className="draggableItem">
                           <div className="dragHandle" {...draggableProvided.dragHandleProps}>
-                            <ThreeBarsIcon />
+                            <MenuIcon />
                           </div>
                           {renderItem(tag, index)}
                         </div>

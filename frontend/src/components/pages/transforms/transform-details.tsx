@@ -211,7 +211,13 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
 
     // Start search immediately
     const searchPromise = executeMessageSearch(search, topicName, p.transform.name);
-    searchPromise.catch((x) => (tabState.error = String(x))).finally(() => (tabState.isComplete = true));
+    searchPromise
+      .catch((x) => {
+        tabState.error = String(x);
+      })
+      .finally(() => {
+        tabState.isComplete = true;
+      });
     return tabState;
   };
 
@@ -298,7 +304,9 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
         <Flex mb="6">
           <SearchField
             searchText={uiSettings.connectorsDetails.logsQuickSearch}
-            setSearchText={(x) => (uiSettings.connectorsDetails.logsQuickSearch = x)}
+            setSearchText={(x) => {
+              uiSettings.connectorsDetails.logsQuickSearch = x;
+            }}
             width="230px"
           />
           <Button ml="auto" onClick={() => setState(createLogsTabState())} variant="outline">

@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { SkipIcon } from '@primer/octicons-react';
 import { Tooltip } from '@redpanda-data/ui';
+import { SkipIcon } from 'components/icons';
 
 export function renderEmptyIcon(tooltipText?: string) {
   const text = tooltipText || 'Empty';

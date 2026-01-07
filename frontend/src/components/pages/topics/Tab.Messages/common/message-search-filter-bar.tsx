@@ -10,17 +10,17 @@
  */
 
 import { Box, GridItem, Tag, TagCloseButton, TagLabel } from '@redpanda-data/ui';
+import { SettingsIcon } from 'components/icons';
 import type { FC } from 'react';
-import { MdOutlineSettings } from 'react-icons/md';
 
 import type { FilterEntry } from '../../../../../state/ui';
 
-interface MessageSearchFilterBarProps {
+type MessageSearchFilterBarProps = {
   filters: FilterEntry[];
   onEdit: (filter: FilterEntry) => void;
   onToggle: (filterId: string) => void;
   onRemove: (filterId: string) => void;
-}
+};
 
 export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filters, onEdit, onToggle, onRemove }) => {
   return (
@@ -34,7 +34,7 @@ export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filter
             key={e.id}
             style={{ userSelect: 'none' }}
           >
-            <MdOutlineSettings
+            <SettingsIcon
               data-testid={`message-filter-edit-${e.id}`}
               onClick={() => {
                 onEdit(e);

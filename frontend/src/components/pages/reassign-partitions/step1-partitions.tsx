@@ -11,11 +11,11 @@
 
 import { Box, Checkbox, DataTable, Flex, Popover, Text } from '@redpanda-data/ui';
 import type { Row } from '@tanstack/react-table';
+import { WarningIcon } from 'components/icons';
 import { computed, type IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import Highlighter from 'react-highlight-words';
-import { MdOutlineWarningAmber } from 'react-icons/md';
 
 import { SelectionInfoBar } from './components/statistics-bar';
 import type { PartitionSelection } from './reassign-partitions';
@@ -264,7 +264,7 @@ export class StepSelectPartitions extends Component<{
   }
 
   @computed get topicPartitions(): TopicWithPartitions[] {
-    if (api.topics == null) {
+    if (api.topics === null) {
       return [];
     }
     return api.topics
@@ -360,7 +360,7 @@ function renderPartitionError(partition: Partition) {
     >
       <span>
         <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
-          <MdOutlineWarningAmber color="orange" size={19} />
+          <WarningIcon color="orange" size={19} />
         </ZeroSizeWrapper>
       </span>
     </Popover>
@@ -384,7 +384,7 @@ function renderPartitionErrorsForTopic(_partitionsWithErrors: number) {
     >
       <span>
         <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
-          <MdOutlineWarningAmber color="orange" size={20} />
+          <WarningIcon color="orange" size={20} />
         </ZeroSizeWrapper>
       </span>
     </Popover>

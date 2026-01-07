@@ -32,8 +32,8 @@ export class FilterableDataSource<T> {
     return this.resultData;
   }
 
-  private dataSource: () => T[] | undefined;
-  private filter: (filterText: string, item: T) => boolean;
+  private readonly dataSource: () => T[] | undefined;
+  private readonly filter: (filterText: string, item: T) => boolean;
 
   constructor(
     dataSource: () => T[] | undefined,

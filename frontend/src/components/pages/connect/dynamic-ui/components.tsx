@@ -62,7 +62,9 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
       <Box mb="8">
         <RadioGroup
           name="settingsMode"
-          onChange={(x) => (connectorStore.viewMode = x)}
+          onChange={(x) => {
+            connectorStore.viewMode = x;
+          }}
           options={[
             { value: 'form', label: <Box mx="4">Form</Box> },
             { value: 'json', label: <Box mx="4">JSON</Box> },
@@ -75,7 +77,9 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
         <>
           <Switch
             isChecked={connectorStore.showAdvancedOptions}
-            onChange={(s) => (connectorStore.showAdvancedOptions = s.target.checked)}
+            onChange={(s) => {
+              connectorStore.showAdvancedOptions = s.target.checked;
+            }}
           >
             Show advanced options
           </Switch>

@@ -35,6 +35,7 @@ const getLicenseAlertContentForFeature = (
   enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[],
   bakedInTrial: boolean,
   onRegisterModalOpen: () => void
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 ): { message: ReactElement; status: 'warning' | 'info' } | null => {
   if (license === undefined) {
     return null;

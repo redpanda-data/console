@@ -17,11 +17,11 @@ import {
   Text,
   useToast,
 } from '@redpanda-data/ui';
+import { TrashIcon } from 'components/icons';
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { type FC, useEffect, useState } from 'react';
 import { Controller, type SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
-import { HiOutlineTrash } from 'react-icons/hi';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
 import { setMonacoTheme } from '../../../config';
@@ -127,6 +127,7 @@ type Inputs = {
   value: PayloadOptions;
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => {
   const toast = useToast();
 
@@ -403,7 +404,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
               </FormControl>
               <IconButton
                 aria-label="Remove item"
-                icon={<HiOutlineTrash />}
+                icon={<TrashIcon />}
                 onClick={() => remove(index)}
                 variant="outline"
               />
@@ -438,7 +439,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
               </Label>
             </GridItem>
             <GridItem colSpan={2}>
-              {showKeySchemaSelection && (
+              {Boolean(showKeySchemaSelection) && (
                 <Label text="Schema">
                   <Controller
                     control={control}
@@ -475,7 +476,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
               )}
             </GridItem>
             <GridItem colSpan={1}>
-              {showKeySchemaSelection && (
+              {Boolean(showKeySchemaSelection) && (
                 <Label text="Version">
                   <Controller
                     control={control}
@@ -541,7 +542,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
               </Box>
             </Label>
           )}
-          {errors?.key?.data && <Text color="red.500">{errors.key.data.message}</Text>}
+          {Boolean(errors?.key?.data) && <Text color="red.500">{errors?.key?.data?.message}</Text>}
         </Flex>
 
         <Divider />
@@ -566,7 +567,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                 </Label>
               </GridItem>
               <GridItem colSpan={2}>
-                {showValueSchemaSelection && (
+                {Boolean(showValueSchemaSelection) && (
                   <Label text="Schema">
                     <Controller
                       control={control}
@@ -598,7 +599,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                 )}
               </GridItem>
               <GridItem colSpan={1}>
-                {showValueSchemaSelection && (
+                {Boolean(showValueSchemaSelection) && (
                   <Label text="Version">
                     <Controller
                       control={control}
@@ -654,7 +655,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                 </Box>
               </Label>
             )}
-            {errors?.value?.data && <Text color="red.500">{errors.value.data.message}</Text>}
+            {Boolean(errors?.value?.data) && <Text color="red.500">{errors?.value?.data?.message}</Text>}
             <input {...register('value.data')} data-testid="valueData" />
           </Flex>
         </Flex>

@@ -10,7 +10,6 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
 import {
   Alert,
   AlertDescription,
@@ -37,9 +36,11 @@ import {
   Tooltip,
 } from '@redpanda-data/ui';
 import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
+import { EditIcon, MoreHorizontalIcon, TrashIcon } from 'components/icons';
 import { isServerless } from 'config';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+import { parseAsString } from 'nuqs';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -49,7 +50,6 @@ import {
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { type FC, useRef, useState } from 'react';
-import { BsThreeDots } from 'react-icons/bs';
 import { Link as ReactRouterLink, useNavigate } from 'react-router-dom';
 
 import { DeleteRoleConfirmModal } from './delete-role-confirm-modal';
@@ -66,6 +66,7 @@ import { AclPrincipalGroupEditor } from './principal-group-editor';
 import { ChangePasswordModal, ChangeRolesModal } from './user-edit-modals';
 import { UserRoleTags } from './user-permission-assignments';
 import ErrorResult from '../../../components/misc/error-result';
+import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 import { useDeleteAclMutation, useListACLAsPrincipalGroups } from '../../../react-query/api/acl';
 import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
@@ -263,7 +264,9 @@ const PermissionsListTab = observer(() => {
       <SearchField
         placeholderText="Filter by name"
         searchText={uiSettings.aclList.permissionsTab.quickSearch}
-        setSearchText={(x) => (uiSettings.aclList.permissionsTab.quickSearch = x)}
+        setSearchText={(x) => {
+          uiSettings.aclList.permissionsTab.quickSearch = x;
+        }}
         width="300px"
       />
 
@@ -314,13 +317,24 @@ const PermissionsListTab = observer(() => {
 });
 
 const UsersTab = observer(() => {
+  const [searchQuery, setSearchQuery] = useQueryStateWithCallback<string>(
+    {
+      onUpdate: () => {
+        // Query state is managed by the URL
+      },
+      getDefaultValue: () => '',
+    },
+    'q',
+    parseAsString.withDefault('')
+  );
+
   const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({
     name: u,
     type: 'SERVICE_ACCOUNT',
   }));
 
   const usersFiltered = users.filter((u) => {
-    const filter = uiSettings.aclList.usersTab.quickSearch;
+    const filter = searchQuery;
     if (!filter) {
       return true;
     }
@@ -344,9 +358,10 @@ const UsersTab = observer(() => {
       </Box>
 
       <SearchField
+        data-testid="search-field-input"
         placeholderText="Filter by name"
-        searchText={uiSettings.aclList.usersTab.quickSearch}
-        setSearchText={(x) => (uiSettings.aclList.usersTab.quickSearch = x)}
+        searchText={searchQuery ?? ''}
+        setSearchText={(x) => setSearchQuery(x)}
         width="300px"
       />
 
@@ -445,23 +460,23 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
 
   return (
     <>
-      {api.isAdminApiConfigured && (
+      {Boolean(api.isAdminApiConfigured) && (
         <ChangePasswordModal
           isOpen={isChangePasswordModalOpen}
           setIsOpen={setIsChangePasswordModalOpen}
           userName={user.name}
         />
       )}
-      {Features.rolesApi && (
+      {Boolean(Features.rolesApi) && (
         <ChangeRolesModal isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} userName={user.name} />
       )}
 
       <Menu>
         <MenuButton as={Button} className="deleteButton" style={{ height: 'auto' }} variant="ghost">
-          <Icon as={BsThreeDots} />
+          <Icon as={MoreHorizontalIcon} />
         </MenuButton>
         <MenuList>
-          {api.isAdminApiConfigured && (
+          {Boolean(api.isAdminApiConfigured) && (
             <MenuItem
               onClick={(e) => {
                 e.stopPropagation();
@@ -471,7 +486,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
               Change password
             </MenuItem>
           )}
-          {Features.rolesApi && (
+          {Boolean(Features.rolesApi) && (
             <MenuItem
               onClick={(e) => {
                 e.stopPropagation();
@@ -506,7 +521,7 @@ const RolesTab = observer(() => {
     }
   });
   // @ts-expect-error perhaps required for MobX?
-  const _isLoading = rolesApi.roles == null;
+  const _isLoading = rolesApi.roles === null;
 
   const rolesWithMembers = roles.map((r) => {
     const members = rolesApi.roleMembers.get(r) ?? [];
@@ -530,7 +545,9 @@ const RolesTab = observer(() => {
       <SearchField
         placeholderText="Filter by name"
         searchText={uiSettings.aclList.rolesTab.quickSearch}
-        setSearchText={(x) => (uiSettings.aclList.rolesTab.quickSearch = x)}
+        setSearchText={(x) => {
+          uiSettings.aclList.rolesTab.quickSearch = x;
+        }}
         width="300px"
       />
       <Section>
@@ -590,7 +607,7 @@ const RolesTab = observer(() => {
                         }}
                         type="button"
                       >
-                        <Icon as={PencilIcon} />
+                        <Icon as={EditIcon} />
                       </button>
                       <DeleteRoleConfirmModal
                         buttonEl={
@@ -676,7 +693,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
         identity, or mTLS client). The ACLs tab shows only the permissions directly granted to each principal. For a
         complete view of all permissions, including permissions granted through roles, see the Permissions List tab.
       </Box>
-      {Features.rolesApi && (
+      {Boolean(Features.rolesApi) && (
         <Alert status="info">
           <AlertIcon />
           Roles are a more flexible and efficient way to manage user permissions, especially with complex organizational
@@ -686,11 +703,13 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
       <SearchField
         placeholderText="Filter by name"
         searchText={uiSettings.aclList.configTable.quickSearch}
-        setSearchText={(x) => (uiSettings.aclList.configTable.quickSearch = x)}
+        setSearchText={(x) => {
+          uiSettings.aclList.configTable.quickSearch = x;
+        }}
         width="300px"
       />
       <Section>
-        {edittingPrincipalGroup && (
+        {edittingPrincipalGroup ? (
           <AclPrincipalGroupEditor
             onClose={() => {
               setEdittingPrincipalGroup(null);
@@ -700,7 +719,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
             principalGroup={edittingPrincipalGroup}
             type={editorType}
           />
-        )}
+        ) : null}
 
         <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />
 

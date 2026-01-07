@@ -12,6 +12,8 @@
 
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
+import { ConnectError } from '@connectrpc/connect';
+import { CLOUD_MANAGED_TAG_KEYS, isCloudManagedTagKey } from 'components/constants';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
@@ -78,6 +80,7 @@ type LocalMCPServer = {
   url: string;
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: This component manages complex configuration UI with multiple states and conditional renders
 export const RemoteMCPConfigurationTab = () => {
   const { id } = useParams<{ id: string }>();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
@@ -118,7 +121,9 @@ export const RemoteMCPConfigurationTab = () => {
         id: mcpServerData.mcpServer.id,
         displayName: mcpServerData.mcpServer.displayName,
         description: mcpServerData.mcpServer.description,
-        tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
+        tags: Object.entries(mcpServerData.mcpServer.tags)
+          .filter(([key]) => !isCloudManagedTagKey(key))
+          .map(([key, value]) => ({ key, value })),
         resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
         tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
           id: name,
@@ -162,6 +167,7 @@ export const RemoteMCPConfigurationTab = () => {
     });
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const handleSave = async () => {
     if (!(mcpServerData?.mcpServer && id)) {
       return;
@@ -187,7 +193,26 @@ export const RemoteMCPConfigurationTab = () => {
         };
       }
 
+      // Validate that user tags don't use reserved keys
+      for (const tag of currentData.tags) {
+        if (isCloudManagedTagKey(tag.key.trim())) {
+          toast.error(`Tag key "${tag.key.trim()}" is reserved for system use`);
+          return;
+        }
+      }
+
       const tagsMap: { [key: string]: string } = {};
+
+      // Preserve system-generated tags
+      if (mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID]) {
+        tagsMap[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID] =
+          mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID];
+      }
+      if (mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SECRET_ID]) {
+        tagsMap[CLOUD_MANAGED_TAG_KEYS.SECRET_ID] = mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SECRET_ID];
+      }
+
+      // Add user-defined tags
       for (const tag of currentData.tags) {
         if (tag.key.trim() && tag.value.trim()) {
           tagsMap[tag.key.trim()] = tag.value.trim();
@@ -271,6 +296,7 @@ export const RemoteMCPConfigurationTab = () => {
     }
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const handleUpdateTool = (toolId: string, updates: Partial<LocalTool>) => {
     const currentData = getCurrentData();
     if (!currentData) {
@@ -354,6 +380,7 @@ export const RemoteMCPConfigurationTab = () => {
     }));
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const handleLintAllTools = async (): Promise<boolean> => {
     const currentData = getCurrentData();
     if (!currentData) {
@@ -396,9 +423,9 @@ export const RemoteMCPConfigurationTab = () => {
       }
 
       return true;
-    } catch (_error) {
-      // If linting fails, allow save but show warning
-      toast.warning('Unable to validate configuration. Proceeding with save.');
+    } catch (error) {
+      const connectError = ConnectError.from(error);
+      toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'lint', entity: 'MCP config' }));
       return true;
     }
   };
@@ -693,7 +720,7 @@ export const RemoteMCPConfigurationTab = () => {
                     </div>
                   </div>
 
-                  {(displayData.tags.length > 0 || isEditing) && (
+                  {Boolean(displayData.tags.length > 0 || isEditing) && (
                     <div className="flex flex-col gap-2 space-y-4">
                       <Heading className="font-medium text-sm" level={4}>
                         Tags
@@ -708,7 +735,7 @@ export const RemoteMCPConfigurationTab = () => {
                           const duplicateKeys = isEditing ? getDuplicateKeys(displayData.tags) : new Set();
                           const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
                           return (
-                            <div className="flex items-center gap-2" key={`tag-${index}`}>
+                            <div className="flex items-center gap-2" key={`tag-${tag.key}-${tag.value}`}>
                               <div className="flex-1">
                                 <Input
                                   className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
@@ -726,7 +753,7 @@ export const RemoteMCPConfigurationTab = () => {
                                   value={tag.value}
                                 />
                               </div>
-                              {isEditing && (
+                              {Boolean(isEditing) && (
                                 <div className="flex h-9 items-end">
                                   <Button onClick={() => handleRemoveTag(index)} size="sm" variant="outline">
                                     <Trash2 className="h-4 w-4" />
@@ -736,7 +763,7 @@ export const RemoteMCPConfigurationTab = () => {
                             </div>
                           );
                         })}
-                        {isEditing && (
+                        {Boolean(isEditing) && (
                           <Button className="w-full" onClick={handleAddTag} variant="dashed">
                             <Plus className="h-4 w-4" />
                             Add Tag
@@ -783,9 +810,9 @@ export const RemoteMCPConfigurationTab = () => {
                     </div>
                   </div>
 
-                  {selectedTool && (
+                  {selectedTool ? (
                     <div className="space-y-4">
-                      {isEditing && (
+                      {isEditing ? (
                         <div className="grid grid-cols-1 gap-4 rounded-lg bg-muted/30 p-4 md:grid-cols-3">
                           <div className="space-y-2">
                             <Label className="font-medium text-sm">Component Type</Label>
@@ -880,7 +907,7 @@ export const RemoteMCPConfigurationTab = () => {
                             </Select>
                           </div>
                         </div>
-                      )}
+                      ) : null}
                       <div className="space-y-2">
                         <YamlEditorCard
                           height="500px"
@@ -897,10 +924,10 @@ export const RemoteMCPConfigurationTab = () => {
                           showLint={isEditing}
                           value={selectedTool.config}
                         />
-                        {isEditing && <LintHintList lintHints={lintHints[selectedTool.id] || {}} />}
+                        {isEditing ? <LintHintList lintHints={lintHints[selectedTool.id] || {}} /> : null}
                       </div>
                     </div>
-                  )}
+                  ) : null}
 
                   {!selectedTool && displayData.tools.length > 0 && (
                     <div className="flex items-center justify-center rounded-lg border-2 border-muted border-dashed py-12 text-center">
@@ -913,7 +940,7 @@ export const RemoteMCPConfigurationTab = () => {
                     </div>
                   )}
 
-                  {isEditing && (
+                  {Boolean(isEditing) && (
                     <Button className="w-full" onClick={handleAddTool} variant="dashed">
                       <Plus className="h-4 w-4" />
                       Add Tool
@@ -925,7 +952,7 @@ export const RemoteMCPConfigurationTab = () => {
           </div>
 
           {/* Secrets panel - takes 1 column on xl screens, only shown when editing and there are missing secrets */}
-          {hasSecretWarnings && isEditing && (
+          {Boolean(hasSecretWarnings && isEditing) && (
             <div className="xl:col-span-1">
               <div className="sticky top-4">
                 <QuickAddSecrets
@@ -940,8 +967,7 @@ export const RemoteMCPConfigurationTab = () => {
 
         {/* Service Account - Show only if feature flag is enabled */}
         {isFeatureFlagEnabled('enableMcpServiceAccount') &&
-          displayData?.tags &&
-          displayData.tags.find((tag) => tag.key === 'service_account_id') && (
+          mcpServerData?.mcpServer?.tags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID] && (
             <Card className="px-0 py-0" size="full">
               <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
                 <CardTitle className="flex items-center gap-2">
@@ -955,7 +981,7 @@ export const RemoteMCPConfigurationTab = () => {
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <ServiceAccountSection
-                  serviceAccountId={displayData.tags.find((tag) => tag.key === 'service_account_id')?.value || ''}
+                  serviceAccountId={mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID]}
                 />
               </CardContent>
             </Card>
@@ -963,7 +989,7 @@ export const RemoteMCPConfigurationTab = () => {
       </div>
 
       {/* Expanded YAML Editor Dialog */}
-      {selectedTool && (
+      {selectedTool ? (
         <ExpandedYamlDialog
           isLintConfigPending={isLintConfigPending}
           isOpen={isExpandedDialogOpen}
@@ -976,7 +1002,7 @@ export const RemoteMCPConfigurationTab = () => {
           toolName={selectedTool.name}
           value={selectedTool.config}
         />
-      )}
+      ) : null}
     </div>
   );
 };

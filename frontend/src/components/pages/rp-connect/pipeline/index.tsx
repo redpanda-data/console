@@ -18,6 +18,8 @@ import { Form } from 'components/redpanda-ui/components/form';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { Heading } from 'components/redpanda-ui/components/typography';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { useDebounce } from 'hooks/use-debounce';
@@ -31,6 +33,7 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
   CreatePipelineRequestSchema as CreatePipelineRequestSchemaDataPlane,
+  Pipeline_ServiceAccountSchema,
   PipelineCreateSchema,
   PipelineUpdateSchema,
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
@@ -45,7 +48,12 @@ import {
 import { useCreatePipelineMutation, useGetPipelineQuery, useUpdatePipelineMutation } from 'react-query/api/pipeline';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useOnboardingWizardDataStore, useOnboardingYamlContentStore } from 'state/onboarding-wizard-store';
+import {
+  useOnboardingUserDataStore,
+  useOnboardingWizardDataStore,
+  useOnboardingYamlContentStore,
+} from 'state/onboarding-wizard-store';
+import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { z } from 'zod';
 
@@ -59,13 +67,13 @@ import { parseSchema } from '../utils/schema';
 import { type PipelineMode, usePipelineMode } from '../utils/use-pipeline-mode';
 import { getConnectTemplate } from '../utils/yaml';
 
-interface FooterProps {
+type FooterProps = {
   mode: PipelineMode;
   onSave?: () => void;
   onCancel: () => void;
   isSaving?: boolean;
   disabled?: boolean;
-}
+};
 
 const Footer = memo(({ mode, onSave, onCancel, isSaving, disabled }: FooterProps) => {
   if (mode === 'view') {
@@ -85,7 +93,7 @@ const Footer = memo(({ mode, onSave, onCancel, isSaving, disabled }: FooterProps
       </Button>
       <Button className="min-w-[70px]" disabled={isSaving || disabled} onClick={onSave}>
         {mode === 'create' ? 'Create Pipeline' : 'Update Pipeline'}
-        {isSaving && <Spinner size="sm" />}
+        {Boolean(isSaving) && <Spinner size="sm" />}
       </Button>
     </div>
   );
@@ -165,7 +173,10 @@ const PipelinePageSkeleton = memo(({ mode }: { mode: PipelineMode }) => {
 });
 
 const pipelineFormSchema = z.object({
-  name: z.string().min(1, 'Pipeline name is required').max(100, 'Pipeline name must be less than 100 characters'),
+  name: z
+    .string()
+    .min(3, 'Pipeline name must be at least 3 characters')
+    .max(100, 'Pipeline name must be less than 100 characters'),
   description: z.string().optional(),
   computeUnits: z.number().min(MIN_TASKS).int(),
 });
@@ -186,6 +197,7 @@ export default function PipelinePage() {
 
   const form = useForm<PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema),
+    mode: 'onChange',
     defaultValues: {
       name: '',
       description: '',
@@ -216,7 +228,7 @@ export default function PipelinePage() {
   const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
   const yamlEditorSchema = useMemo(() => {
     if (!schemaResponse?.configSchema) {
-      return undefined;
+      return;
     }
 
     try {
@@ -227,7 +239,7 @@ export default function PipelinePage() {
       };
     } catch {
       // Fallback to undefined if schema parsing fails - editor will use basic YAML schema
-      return undefined;
+      return;
     }
   }, [schemaResponse]);
 
@@ -346,14 +358,30 @@ export default function PipelinePage() {
     const { name, description, computeUnits } = form.getValues();
 
     if (mode === 'create') {
+      const userData = useOnboardingUserDataStore.getState();
+      const tags: Record<string, string> = {
+        __redpanda_cloud_pipeline_type: 'pipeline',
+      };
+
+      let serviceAccountConfig: ReturnType<typeof create<typeof Pipeline_ServiceAccountSchema>> | undefined;
+      if (userData.authMethod === 'service-account' && userData.serviceAccountId && userData.serviceAccountSecretName) {
+        // Add cloud-managed tags for cleanup
+        addServiceAccountTags(tags, userData.serviceAccountId, userData.serviceAccountSecretName);
+
+        // Service account passed in proto spec, NOT in YAML
+        serviceAccountConfig = create(Pipeline_ServiceAccountSchema, {
+          clientId: `\${secrets.${userData.serviceAccountSecretName}.client_id}`,
+          clientSecret: `\${secrets.${userData.serviceAccountSecretName}.client_secret}`,
+        });
+      }
+
       const pipelineCreate = create(PipelineCreateSchema, {
         displayName: name,
         configYaml: yamlContent,
         description: description || '',
         resources: { cpuShares: tasksToCPU(computeUnits) || '0', memoryShares: '0' },
-        tags: {
-          __redpanda_cloud_pipeline_type: 'pipeline',
-        },
+        tags,
+        serviceAccount: serviceAccountConfig,
       });
 
       const createRequestDataPlane = create(CreatePipelineRequestSchemaDataPlane, {
@@ -402,6 +430,7 @@ export default function PipelinePage() {
         tags: {
           ...pipeline?.tags,
         },
+        serviceAccount: pipeline?.serviceAccount,
       });
 
       const updateRequestDataPlane = create(UpdatePipelineRequestSchemaDataPlane, {
@@ -459,7 +488,7 @@ export default function PipelinePage() {
   const content = (
     <>
       <Form {...form}>
-        <Details readonly={mode === 'view'} />
+        <Details pipeline={pipeline} readonly={mode === 'view'} />
       </Form>
 
       <YamlEditorCard
@@ -521,22 +550,30 @@ export default function PipelinePage() {
   };
 
   return (
-    <div className="grid grid-cols-[minmax(auto,_950px)_260px] gap-4">
-      <div className="flex flex-1 flex-col gap-4">
-        {mode === 'view' && pipelineId && (
-          <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />
-        )}
-        {renderContent()}
-      </div>
-      {(mode === 'create' || mode === 'edit') && (
-        <CreatePipelineSidebar
-          componentList={componentListResponse?.components}
-          editorContent={yamlContent}
-          editorInstance={editorInstance}
-          isComponentListLoading={isComponentListLoading}
-          setYamlContent={handleSetYamlContent}
-        />
+    <div>
+      {mode === 'edit' && (
+        <div className="mt-12 mb-4">
+          <Heading level={1}>Edit pipeline</Heading>
+        </div>
       )}
+      <div className={cn((mode === 'create' || mode === 'edit') && 'grid grid-cols-[minmax(auto,950px)_260px] gap-4')}>
+        <div className="flex flex-1 flex-col gap-4">
+          {mode === 'view' && pipelineId && (
+            <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />
+          )}
+
+          {renderContent()}
+        </div>
+        {(mode === 'create' || mode === 'edit') && (
+          <CreatePipelineSidebar
+            componentList={componentListResponse?.components}
+            editorContent={yamlContent}
+            editorInstance={editorInstance}
+            isComponentListLoading={isComponentListLoading}
+            setYamlContent={handleSetYamlContent}
+          />
+        )}
+      </div>
     </div>
   );
 }

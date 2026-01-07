@@ -1,6 +1,6 @@
 import { Alert, AlertDescription, AlertTitle, Box, Flex, Icon, ListItem, UnorderedList } from '@redpanda-data/ui';
+import { AlertIcon } from 'components/icons';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { AiOutlineExclamationCircle } from 'react-icons/ai';
 
 type ResourceInUseAlertProps = {
   resource: string;
@@ -26,7 +26,7 @@ export const ResourceInUseAlert = ({ resource, usedBy, pipelines }: ResourceInUs
       variant="subtle"
     >
       <Flex gap="12px">
-        <Icon as={AiOutlineExclamationCircle} boxSize={4} color="red.600" />
+        <Icon as={AlertIcon} boxSize={4} color="red.600" />
         <Box>
           <AlertTitle color="red.600" fontSize="16px" fontWeight="500" lineHeight="1em" mb="4px">
             Resource is in use

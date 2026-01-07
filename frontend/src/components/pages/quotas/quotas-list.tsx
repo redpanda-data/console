@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { SkipIcon } from '@primer/octicons-react';
 import { Alert, AlertIcon, Button, DataTable, Result } from '@redpanda-data/ui';
+import { SkipIcon } from 'components/icons';
 import { computed, makeObservable } from 'mobx';
 import { observer } from 'mobx-react';
 
@@ -40,14 +40,14 @@ class QuotasList extends PageComponent {
   }
 
   refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListQuotas) {
+    if (api.userData !== null && api.userData !== undefined && !api.userData.canListQuotas) {
       return;
     }
     api.refreshQuotas(force);
   }
 
   render() {
-    if (api.userData != null && !api.userData.canListQuotas) {
+    if (api.userData !== null && api.userData !== undefined && !api.userData.canListQuotas) {
       return PermissionDenied;
     }
     if (api.Quotas === undefined) {

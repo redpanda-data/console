@@ -1,0 +1,40 @@
+# Destination cluster config (where shadowlink is configured)
+serveFrontend: true
+
+kafka:
+  brokers: ["dest-cluster:9092"]
+  sasl:
+    enabled: true
+    mechanism: SCRAM-SHA-256
+    username: e2euser
+    password: very-secret
+    impersonateUser: true
+
+authentication:
+  jwtSigningKey: vazxnT+ZHtxKslK6QlDGovcYnSjTk/lKMmZ+mHrBVE+YdVDkLgSuP6AszAKe9999
+  useSecureCookies: false
+  basic:
+    enabled: true
+
+redpanda:
+  adminApi:
+    enabled: true
+    urls: ["http://dest-cluster:9644"]
+
+schemaRegistry:
+  enabled: true
+  urls: ["http://dest-cluster:8081"]
+
+server:
+  listenPort: 3000
+  allowedOrigins: ["http://localhost:3001"]
+
+licenseFilepath: /etc/console/redpanda.license
+
+authorization:
+  roleBindings:
+    - roleName: admin
+      users:
+        - loginType: basic
+
+          name: e2euser

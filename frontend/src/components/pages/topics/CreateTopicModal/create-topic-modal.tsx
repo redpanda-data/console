@@ -1,4 +1,3 @@
-import { PlusIcon, XIcon } from '@primer/octicons-react';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import type React from 'react';
@@ -18,6 +17,7 @@ import {
   isSingleValue,
   Select,
 } from '@redpanda-data/ui';
+import { CloseIcon, PlusIcon } from 'components/icons';
 
 import { isServerless } from '../../../../config';
 import { api } from '../../../../state/backend-api';
@@ -76,7 +76,7 @@ export class CreateTopicModalContent extends Component<Props> {
     const state = this.props.state;
 
     let replicationFactorError = '';
-    if (api.clusterOverview && state.replicationFactor != null) {
+    if (api.clusterOverview && state.replicationFactor !== null && state.replicationFactor !== undefined) {
       replicationFactorError = validateReplicationFactor(state.replicationFactor, api.isRedpanda);
     }
 
@@ -87,7 +87,9 @@ export class CreateTopicModalContent extends Component<Props> {
             <Input
               autoFocus
               data-testid="topic-name"
-              onChange={(e) => (state.topicName = e.target.value)}
+              onChange={(e) => {
+                state.topicName = e.target.value;
+              }}
               value={state.topicName}
               width="100%"
             />
@@ -97,7 +99,9 @@ export class CreateTopicModalContent extends Component<Props> {
             <Label style={{ flexBasis: '160px' }} text="Partitions">
               <NumInput
                 min={1}
-                onChange={(e) => (state.partitions = e)}
+                onChange={(e) => {
+                  state.partitions = e;
+                }}
                 placeholder={state.defaults.partitions}
                 value={state.partitions}
               />
@@ -107,7 +111,9 @@ export class CreateTopicModalContent extends Component<Props> {
                 <NumInput
                   disabled={isServerless()}
                   min={1}
-                  onChange={(e) => (state.replicationFactor = e)}
+                  onChange={(e) => {
+                    state.replicationFactor = e;
+                  }}
                   placeholder={state.defaults.replicationFactor}
                   value={state.replicationFactor}
                 />
@@ -126,7 +132,9 @@ export class CreateTopicModalContent extends Component<Props> {
               <Label style={{ flexBasis: '160px' }} text="Min In-Sync Replicas">
                 <NumInput
                   min={1}
-                  onChange={(e) => (state.minInSyncReplicas = e)}
+                  onChange={(e) => {
+                    state.minInSyncReplicas = e;
+                  }}
                   placeholder={state.defaults.minInSyncReplicas}
                   value={state.minInSyncReplicas}
                 />
@@ -139,7 +147,9 @@ export class CreateTopicModalContent extends Component<Props> {
               <Label style={{ flexBasis: '160px' }} text="Cleanup Policy">
                 <SingleSelect<CleanupPolicyType>
                   isReadOnly={isServerless()}
-                  onChange={(e) => (state.cleanupPolicy = e)}
+                  onChange={(e) => {
+                    state.cleanupPolicy = e;
+                  }}
                   options={[
                     { value: 'delete', label: 'delete' },
                     { value: 'compact', label: 'compact' },
@@ -152,8 +162,12 @@ export class CreateTopicModalContent extends Component<Props> {
             <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Time">
               <RetentionTimeSelect
                 defaultConfigValue={state.defaults.retentionTime}
-                onChangeUnit={(x) => (state.retentionTimeUnit = x)}
-                onChangeValue={(x) => (state.retentionTimeMs = x)}
+                onChangeUnit={(x) => {
+                  state.retentionTimeUnit = x;
+                }}
+                onChangeValue={(x) => {
+                  state.retentionTimeMs = x;
+                }}
                 unit={state.retentionTimeUnit}
                 value={state.retentionTimeMs}
               />
@@ -161,8 +175,12 @@ export class CreateTopicModalContent extends Component<Props> {
             <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Size">
               <RetentionSizeSelect
                 defaultConfigValue={state.defaults.retentionBytes}
-                onChangeUnit={(x) => (state.retentionSizeUnit = x)}
-                onChangeValue={(x) => (state.retentionSize = x)}
+                onChangeUnit={(x) => {
+                  state.retentionSizeUnit = x;
+                }}
+                onChangeValue={(x) => {
+                  state.retentionSize = x;
+                }}
                 unit={state.retentionSizeUnit}
                 value={state.retentionSize}
               />
@@ -195,18 +213,30 @@ export function NumInput(p: {
   // We need to keep track of intermediate values.
   // Otherwise, typing '2e' for example, would be rejected.
   // But the user might still add '5', and '2e5' is a valid number.
-  const [editValue, setEditValue] = useState(p.value == null ? undefined : String(p.value));
-  useEffect(() => setEditValue(p.value == null ? undefined : String(p.value)), [p.value]);
+  const [editValue, setEditValue] = useState(p.value === null ? undefined : String(p.value));
+  useEffect(() => setEditValue(p.value === null ? undefined : String(p.value)), [p.value]);
 
   const commit = (x: number | undefined) => {
     if (p.disabled) {
       return;
     }
     let clampedValue = x;
-    if (clampedValue != null && p.min != null && clampedValue < p.min) {
+    if (
+      clampedValue !== null &&
+      clampedValue !== undefined &&
+      p.min !== null &&
+      p.min !== undefined &&
+      clampedValue < p.min
+    ) {
       clampedValue = p.min;
     }
-    if (clampedValue != null && p.max != null && clampedValue > p.max) {
+    if (
+      clampedValue !== null &&
+      clampedValue !== undefined &&
+      p.max !== null &&
+      p.max !== undefined &&
+      clampedValue > p.max
+    ) {
       clampedValue = p.max;
     }
     setEditValue(clampedValue === undefined ? clampedValue : String(clampedValue));
@@ -224,7 +254,7 @@ export function NumInput(p: {
 
   return (
     <InputGroup>
-      {p.addonBefore && <InputLeftAddon>{p.addonBefore}</InputLeftAddon>}
+      {Boolean(p.addonBefore) && <InputLeftAddon>{p.addonBefore}</InputLeftAddon>}
 
       <Input
         className={`numericInput ${p.className ?? ''}`}
@@ -260,10 +290,10 @@ export function NumInput(p: {
         placeholder={p.placeholder}
         spellCheck={false}
         style={{ minWidth: '120px', width: '100%' }}
-        value={p.disabled && p.placeholder && p.value == null ? undefined : editValue}
+        value={p.disabled && p.placeholder && p.value === null ? undefined : editValue}
       />
 
-      {p.addonAfter && <InputRightAddon p="0">{p.addonAfter}</InputRightAddon>}
+      {Boolean(p.addonAfter) && <InputRightAddon p="0">{p.addonAfter}</InputRightAddon>}
     </InputGroup>
   );
 }
@@ -279,7 +309,7 @@ function RetentionTimeSelect(p: {
   const numDisabled = unit === 'default' || unit === 'infinite';
 
   let placeholder: string | undefined;
-  if (unit === 'default' && p.defaultConfigValue != null) {
+  if (unit === 'default' && p.defaultConfigValue !== null && p.defaultConfigValue !== undefined) {
     if (Number.isFinite(Number(p.defaultConfigValue))) {
       placeholder = prettyMilliseconds(p.defaultConfigValue, {
         showLargeAsInfinite: true,
@@ -302,6 +332,7 @@ function RetentionTimeSelect(p: {
           <Select<RetentionTimeUnit>
             // style={{ minWidth: '90px', background: 'transparent' }}
             // bordered={false}
+            // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
             onChange={(arg) => {
               if (isSingleValue(arg) && arg && arg.value) {
                 const u = arg.value;
@@ -360,7 +391,7 @@ function RetentionSizeSelect(p: {
 
   let placeholder: string | undefined;
   if (unit === 'default') {
-    if (p.defaultConfigValue != null && p.defaultConfigValue !== '' && Number.isFinite(Number(p.defaultConfigValue))) {
+    if (p.defaultConfigValue !== null && p.defaultConfigValue !== '' && Number.isFinite(Number(p.defaultConfigValue))) {
       placeholder = prettyBytes(p.defaultConfigValue, { showLargeAsInfinite: true, showNullAs: 'default' });
     } else {
       placeholder = 'default';
@@ -377,6 +408,7 @@ function RetentionSizeSelect(p: {
           <Select<RetentionSizeUnit>
             // style={{ minWidth: '90px', background: 'transparent' }}
             // bordered={false}
+            // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
             onChange={(arg) => {
               if (isSingleValue(arg) && arg && arg.value) {
                 const u = arg.value;
@@ -449,14 +481,18 @@ const KeyValuePair = observer((p: { entries: TopicConfigEntry[]; entry: TopicCon
   return (
     <Box className="inputGroup" display="flex" width="100%">
       <Input
-        onChange={(e) => (entry.name = e.target.value)}
+        onChange={(e) => {
+          entry.name = e.target.value;
+        }}
         placeholder="Property Name..."
         spellCheck={false}
         style={{ flexBasis: '30%' }}
         value={entry.name}
       />
       <Input
-        onChange={(e) => (p.entry.value = e.target.value)}
+        onChange={(e) => {
+          p.entry.value = e.target.value;
+        }}
         placeholder="Property Value..."
         spellCheck={false}
         style={{ flexBasis: '60%' }}
@@ -470,7 +506,7 @@ const KeyValuePair = observer((p: { entries: TopicConfigEntry[]; entry: TopicCon
         }}
         variant="outline"
       >
-        <XIcon />
+        <CloseIcon />
       </Button>
     </Box>
   );
@@ -709,7 +745,7 @@ export function RatioInput(p: { value: number; onChange: (ratio: number) => void
             type="number"
             value={percentageValue}
           />
-          <span className="-translate-y-1/2 pointer-events-none absolute top-1/2 right-2 text-muted-foreground text-sm">
+          <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground text-sm">
             %
           </span>
         </div>

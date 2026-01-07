@@ -347,6 +347,7 @@ export const handleArtifactUpdateEvent = (
   state: StreamingState,
   assistantMessage: ChatMessage,
   onMessageUpdate: (message: ChatMessage) => void
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 ): void => {
   if (!event.artifact) {
     return;

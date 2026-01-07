@@ -59,7 +59,7 @@ export const AddConnectorsCard = memo(
             {allowedConnectorTypes.map((connectorType) => (
               <AddConnectorButton key={connectorType} onClick={onAddConnector} type={connectorType} />
             ))}
-            {inputSupportsScanner && <AddConnectorButton onClick={onAddConnector} type="scanner" />}
+            {Boolean(inputSupportsScanner) && <AddConnectorButton onClick={onAddConnector} type="scanner" />}
           </div>
           {!(hasInput && hasOutput) && (
             <div className="flex flex-col gap-2">

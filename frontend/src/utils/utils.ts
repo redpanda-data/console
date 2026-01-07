@@ -152,10 +152,10 @@ export class DebugTimerStore {
   }
 
   private increaseSec() {
-    this.secondCounter++;
+    this.secondCounter += 1;
   }
   private increaseFrame() {
-    this.frame++;
+    this.frame += 1;
   }
 
   useSeconds() {
@@ -170,8 +170,12 @@ export class DebugTimerStore {
 
 let refreshCounter = 0; // used to always create a different value, forcing some components to always re-render
 const REFRESH_COUNTER_MAX = 1000;
-export const alwaysChanging = () => (refreshCounter = (refreshCounter + 1) % REFRESH_COUNTER_MAX);
+export const alwaysChanging = () => {
+  refreshCounter = (refreshCounter + 1) % REFRESH_COUNTER_MAX;
+  return refreshCounter;
+};
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 export function assignDeep(target: Record<string, unknown>, source: Record<string, unknown>) {
   for (const key in source) {
     if (!Object.hasOwn(source, key)) {
@@ -251,6 +255,7 @@ export function collectElements(
   return ctx.results;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 function collectElementsRecursive(ctx: PropertySearchExContext, obj: Record<string, unknown>): PropertySearchResult {
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
@@ -336,7 +341,7 @@ export function collectElements2(
           for (const key in currentObj as Record<string, unknown>) {
             if (Object.hasOwn(currentObj as Record<string, unknown>, key)) {
               const value = (currentObj as Record<string, unknown>)[key];
-              if (value == null || typeof value === 'function') {
+              if (value === null || typeof value === 'function') {
                 continue;
               }
 
@@ -353,7 +358,7 @@ export function collectElements2(
           for (const key in currentObj as Record<string, unknown>) {
             if (Object.hasOwn(currentObj as Record<string, unknown>, key)) {
               const value = (currentObj as Record<string, unknown>)[key];
-              if (value == null || typeof value === 'function') {
+              if (value === null || typeof value === 'function') {
                 continue;
               }
 
@@ -415,6 +420,7 @@ type GetAllKeysContext = {
   results: Property[];
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown>): PropertySearchResult {
   const isArray = Array.isArray(obj);
   let result = 'continue' as PropertySearchResult;
@@ -446,7 +452,7 @@ function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown
       }
 
       // descend into object
-      if (typeof value === 'object' && value != null) {
+      if (typeof value === 'object' && value !== null) {
         const childResult = getAllKeysRecursive(ctx, value as Record<string, unknown>);
 
         if (childResult === 'abort') {
@@ -834,7 +840,7 @@ export function delay(timeoutMs: number): Promise<void> {
 }
 
 export function setHeader(init: RequestInit, name: string, value: string) {
-  if (init.headers == null) {
+  if (init.headers === null || init.headers === undefined) {
     init.headers = [[name, value]];
   } else if (Array.isArray(init.headers)) {
     init.headers.push([name, value]);

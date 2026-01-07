@@ -15,8 +15,8 @@ import { api } from '../../../state/backend-api';
 import type { ConfigEntry, Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
 import { Box, Divider, Flex, Text, Tooltip } from '@redpanda-data/ui';
+import { InfoIcon } from 'components/icons';
 import type { ReactNode } from 'react';
-import { MdInfoOutline } from 'react-icons/md';
 
 import type { CleanupPolicyType } from './types';
 import { formatConfigValue } from '../../../utils/formatters/config-value-formatter';
@@ -24,6 +24,7 @@ import { numberToThousandsString } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../../utils/utils';
 
 // todo: rename QuickInfo
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
   const topic = p.topic;
 
@@ -74,7 +75,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
           placement="bottom"
         >
           <Flex alignItems="flex-end">
-            <MdInfoOutline size={16} />
+            <InfoIcon size={16} />
           </Flex>
         </Tooltip>
         <Text as="dt" fontWeight="bold">
@@ -85,7 +86,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
       <Box>
         <Divider orientation="vertical" />
       </Box>
-      {cleanupPolicy && (
+      {Boolean(cleanupPolicy) && (
         <Flex gap={2}>
           <Text as="dt" fontWeight="bold">
             Cleanup Policy:
@@ -110,13 +111,13 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
             <Text as="dt" fontWeight="bold">
               Segment:
             </Text>
-            {segmentMs && segmentBytes && (
+            {segmentMs && segmentBytes ? (
               <Text as="dd">
                 ~{formatConfigValue(segmentMs.name, segmentMs.value, 'friendly')} or{' '}
                 {formatConfigValue(segmentBytes.name, segmentBytes.value, 'friendly')}
                 {Number.isFinite(Number(segmentBytes.value)) && Number(segmentBytes.value) !== -1 && ' / partition'}
               </Text>
-            )}
+            ) : null}
           </>
         )}
 
@@ -125,7 +126,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
             <Text as="dt" fontWeight="bold">
               Retention:
             </Text>
-            {retentionMs && retentionBytes && (
+            {retentionMs && retentionBytes ? (
               <Text as="dd">
                 ~
                 {retentionMs.value === '-1' && retentionBytes.value === '-1' ? (
@@ -140,7 +141,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
                   </>
                 )}
               </Text>
-            )}
+            ) : null}
           </>
         )}
       </Flex>

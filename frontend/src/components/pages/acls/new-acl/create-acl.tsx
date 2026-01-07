@@ -216,6 +216,7 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
 
         {/* Rules Summary */}
         <div className="space-y-3">
+          {/** biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic */}
           {rules.map((rule) => {
             const ops = Object.entries(rule.operations);
             // Filter out operations that are not set
@@ -637,7 +638,7 @@ const SharedConfiguration = ({
                   testId="shared-principal-input"
                   value={sharedConfig.principal.replace(PRINCIPAL_PREFIX_REGEX, '')}
                 />
-                {principalError && (
+                {Boolean(principalError) && (
                   <p className="text-red-600 text-sm" data-testid="principal-error">
                     {principalError}
                   </p>
@@ -1028,8 +1029,8 @@ export default function CreateACL({
     }
     return (
       <>
-        {desc.split('\n').map((line, i) => (
-          <span key={i}>
+        {desc.split('\n').map((line) => (
+          <span key={line}>
             {line}
             <br />
           </span>

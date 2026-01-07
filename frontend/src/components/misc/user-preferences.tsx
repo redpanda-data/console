@@ -26,10 +26,10 @@ import {
   Text,
   useToast,
 } from '@redpanda-data/ui';
+import { WrenchIcon } from 'components/icons';
 import { transaction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FC, useState } from 'react';
-import { FaWrench } from 'react-icons/fa';
 
 import { clearSettings, uiSettings } from '../../state/ui';
 import { Label, navigatorClipboardErrorHandler } from '../../utils/tsx-utils';
@@ -52,7 +52,7 @@ export const UserPreferencesButton: FC = () => {
       <UserPreferencesDialog isOpen={isOpen} onClose={() => setOpen(false)} />
       <IconButton
         aria-label="user preferences"
-        icon={<FaWrench size={17} />}
+        icon={<WrenchIcon size={17} />}
         onClick={() => setOpen(true)}
         variant="ghost"
       />
@@ -102,7 +102,9 @@ class StatsBarTab extends Component {
           <Label text="Topic Details">
             <Checkbox
               isChecked={uiSettings.topicDetailsShowStatisticsBar}
-              onChange={(e) => (uiSettings.topicDetailsShowStatisticsBar = e.target.checked)}
+              onChange={(e) => {
+                uiSettings.topicDetailsShowStatisticsBar = e.target.checked;
+              }}
             >
               Enabled
             </Checkbox>
@@ -110,7 +112,9 @@ class StatsBarTab extends Component {
           <Label text="Consumer Group Details">
             <Checkbox
               isChecked={uiSettings.consumerGroupDetails.showStatisticsBar}
-              onChange={(e) => (uiSettings.consumerGroupDetails.showStatisticsBar = e.target.checked)}
+              onChange={(e) => {
+                uiSettings.consumerGroupDetails.showStatisticsBar = e.target.checked;
+              }}
             >
               Enabled
             </Checkbox>
@@ -140,12 +144,20 @@ class JsonViewerTab extends Component {
           }}
         >
           <Label text="Font Size">
-            <Input maxWidth={150} onChange={(e) => (settings.fontSize = e.target.value)} value={settings.fontSize} />
+            <Input
+              maxWidth={150}
+              onChange={(e) => {
+                settings.fontSize = e.target.value;
+              }}
+              value={settings.fontSize}
+            />
           </Label>
           <Label text="Line Height">
             <Input
               maxWidth={150}
-              onChange={(e) => (settings.lineHeight = e.target.value)}
+              onChange={(e) => {
+                settings.lineHeight = e.target.value;
+              }}
               value={settings.lineHeight}
             />
           </Label>
@@ -154,7 +166,9 @@ class JsonViewerTab extends Component {
               max={10_000}
               maxWidth={150}
               min={0}
-              onChange={(e) => (settings.maxStringLength = Number(e ?? 200))}
+              onChange={(e) => {
+                settings.maxStringLength = Number(e ?? 200);
+              }}
               value={settings.maxStringLength}
             />
           </Label>
@@ -163,7 +177,9 @@ class JsonViewerTab extends Component {
               max={50}
               maxWidth={150}
               min={1}
-              onChange={(e) => (settings.collapsed = Number(e ?? 2))}
+              onChange={(e) => {
+                settings.collapsed = Number(e ?? 2);
+              }}
               value={settings.collapsed}
             />
           </Label>
@@ -188,7 +204,9 @@ const ImportExportTab: FC = observer(() => {
         <Flex gap={2}>
           <Input
             maxWidth={360}
-            onChange={(e) => ($state.importCode = e.target.value)}
+            onChange={(e) => {
+              $state.importCode = e.target.value;
+            }}
             placeholder="Paste a previously exported settings string..."
             spellCheck={false}
             value={$state.importCode}
@@ -256,7 +274,9 @@ const ImportExportTab: FC = observer(() => {
         <Flex alignItems="center" gap={2}>
           <Input
             maxWidth={360}
-            onChange={(str) => ($state.resetConfirm = str.target.value)}
+            onChange={(str) => {
+              $state.resetConfirm = str.target.value;
+            }}
             placeholder='type "reset" here to confirm and enable the button'
             spellCheck={false}
             value={$state.resetConfirm}

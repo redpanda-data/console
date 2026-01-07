@@ -40,7 +40,7 @@ vi.mock('config', () => ({
     controlplaneUrl: 'http://localhost:9090',
   },
   isFeatureFlagEnabled: vi.fn(() => false),
-  addBearerTokenInterceptor: vi.fn((next) => async (request) => await next(request)),
+  addBearerTokenInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
 }));
 
 vi.mock('state/ui-state', () => ({
@@ -80,17 +80,18 @@ describe('AIAgentsListPage', () => {
       description: 'Description 1',
       state: AIAgent_State.RUNNING,
       provider: {
-        case: 'openai',
-        value: {
-          model: 'gpt-4',
-          secretId: 'secret-1',
+        provider: {
+          case: 'openai',
+          value: {
+            apiKey: 'secret-1',
+          },
         },
       },
+      model: 'gpt-4',
       systemPrompt: 'You are helpful',
       mcpServers: {
         server1: { id: 'server-1' },
       },
-      model: 'gpt-4',
       tags: {},
     });
 
@@ -100,17 +101,18 @@ describe('AIAgentsListPage', () => {
       description: 'Description 2',
       state: AIAgent_State.STOPPED,
       provider: {
-        case: 'openai',
-        value: {
-          model: 'gpt-3.5-turbo',
-          secretId: 'secret-2',
+        provider: {
+          case: 'openai',
+          value: {
+            apiKey: 'secret-2',
+          },
         },
       },
+      model: 'gpt-3.5-turbo',
       systemPrompt: 'You are helpful too',
       mcpServers: {
         server2: { id: 'server-2' },
       },
-      model: 'gpt-3.5-turbo',
       tags: {},
     });
 
@@ -188,15 +190,16 @@ describe('AIAgentsListPage', () => {
       description: 'Description 1',
       state: AIAgent_State.RUNNING,
       provider: {
-        case: 'openai',
-        value: {
-          model: 'gpt-4',
-          secretId: 'secret-1',
+        provider: {
+          case: 'openai',
+          value: {
+            apiKey: 'secret-1',
+          },
         },
       },
+      model: 'gpt-4',
       systemPrompt: 'You are helpful',
       mcpServers: {},
-      model: 'gpt-4',
       tags: {},
     });
 
@@ -275,15 +278,16 @@ describe('AIAgentsListPage', () => {
       description: 'Description 1',
       state: AIAgent_State.RUNNING,
       provider: {
-        case: 'openai',
-        value: {
-          model: 'gpt-4',
-          secretId: 'secret-1',
+        provider: {
+          case: 'openai',
+          value: {
+            apiKey: 'secret-1',
+          },
         },
       },
+      model: 'gpt-4',
       systemPrompt: 'You are helpful',
       mcpServers: {},
-      model: 'gpt-4',
       tags: {},
     });
 
@@ -360,15 +364,16 @@ describe('AIAgentsListPage', () => {
       description: 'Description 1',
       state: AIAgent_State.STOPPED,
       provider: {
-        case: 'openai',
-        value: {
-          model: 'gpt-4',
-          secretId: 'secret-1',
+        provider: {
+          case: 'openai',
+          value: {
+            apiKey: 'secret-1',
+          },
         },
       },
+      model: 'gpt-4',
       systemPrompt: 'You are helpful',
       mcpServers: {},
-      model: 'gpt-4',
       tags: {},
     });
 
@@ -517,15 +522,16 @@ describe('AIAgentsListPage', () => {
       description: 'Description 1',
       state: AIAgent_State.RUNNING,
       provider: {
-        case: 'openai',
-        value: {
-          model: 'gpt-4',
-          secretId: 'secret-1',
+        provider: {
+          case: 'openai',
+          value: {
+            apiKey: 'secret-1',
+          },
         },
       },
+      model: 'gpt-4',
       systemPrompt: 'You are helpful',
       mcpServers: {},
-      model: 'gpt-4',
       tags: {},
     });
 
@@ -535,15 +541,16 @@ describe('AIAgentsListPage', () => {
       description: 'Description 2',
       state: AIAgent_State.STOPPED,
       provider: {
-        case: 'openai',
-        value: {
-          model: 'gpt-3.5-turbo',
-          secretId: 'secret-2',
+        provider: {
+          case: 'openai',
+          value: {
+            apiKey: 'secret-2',
+          },
         },
       },
+      model: 'gpt-3.5-turbo',
       systemPrompt: 'You are helpful too',
       mcpServers: {},
-      model: 'gpt-3.5-turbo',
       tags: {},
     });
 

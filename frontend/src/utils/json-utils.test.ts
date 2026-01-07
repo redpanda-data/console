@@ -9,30 +9,30 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect } from 'vitest';
 
 import { deepParseJson, tryParseJson } from './json-utils';
 
 describe('tryParseJson', () => {
-  it('should parse valid JSON object strings', () => {
+  test('should parse valid JSON object strings', () => {
     const result = tryParseJson('{"city":"Singapore","temp":28}');
     expect(result.success).toBe(true);
     expect(result.data).toEqual({ city: 'Singapore', temp: 28 });
   });
 
-  it('should parse valid JSON array strings', () => {
+  test('should parse valid JSON array strings', () => {
     const result = tryParseJson('[1,2,3]');
     expect(result.success).toBe(true);
     expect(result.data).toEqual([1, 2, 3]);
   });
 
-  it('should not parse plain strings', () => {
+  test('should not parse plain strings', () => {
     const result = tryParseJson('hello world');
     expect(result.success).toBe(false);
     expect(result.data).toBe('hello world');
   });
 
-  it('should not parse malformed JSON', () => {
+  test('should not parse malformed JSON', () => {
     const result = tryParseJson('{invalid json}');
     expect(result.success).toBe(false);
     expect(result.data).toBe('{invalid json}');
@@ -41,47 +41,47 @@ describe('tryParseJson', () => {
 
 describe('deepParseJson', () => {
   describe('basic types', () => {
-    it('should return null as-is', () => {
+    test('should return null as-is', () => {
       expect(deepParseJson(null)).toBe(null);
     });
 
-    it('should return undefined as-is', () => {
+    test('should return undefined as-is', () => {
       expect(deepParseJson(undefined)).toBe(undefined);
     });
 
-    it('should return numbers as-is', () => {
+    test('should return numbers as-is', () => {
       expect(deepParseJson(42)).toBe(42);
     });
 
-    it('should return booleans as-is', () => {
+    test('should return booleans as-is', () => {
       expect(deepParseJson(true)).toBe(true);
       expect(deepParseJson(false)).toBe(false);
     });
 
-    it('should return plain strings as-is', () => {
+    test('should return plain strings as-is', () => {
       expect(deepParseJson('hello world')).toBe('hello world');
     });
   });
 
   describe('JSON string parsing', () => {
-    it('should parse JSON object strings', () => {
+    test('should parse JSON object strings', () => {
       const result = deepParseJson('{"city":"Singapore","temp":28}');
       expect(result).toEqual({ city: 'Singapore', temp: 28 });
     });
 
-    it('should parse JSON array strings', () => {
+    test('should parse JSON array strings', () => {
       const result = deepParseJson('[1,2,3]');
       expect(result).toEqual([1, 2, 3]);
     });
 
-    it('should not parse malformed JSON strings', () => {
+    test('should not parse malformed JSON strings', () => {
       const result = deepParseJson('{invalid}');
       expect(result).toBe('{invalid}');
     });
   });
 
   describe('nested objects', () => {
-    it('should parse nested JSON strings in objects', () => {
+    test('should parse nested JSON strings in objects', () => {
       const input = {
         text: '{"city":"Singapore","temp":28}',
         description: 'Weather data',
@@ -93,7 +93,7 @@ describe('deepParseJson', () => {
       });
     });
 
-    it('should parse deeply nested JSON strings', () => {
+    test('should parse deeply nested JSON strings', () => {
       const input = {
         level1: '{"level2":"{\\"level3\\":\\"value\\"}"}',
       };
@@ -103,7 +103,7 @@ describe('deepParseJson', () => {
       });
     });
 
-    it('should handle objects with mixed types', () => {
+    test('should handle objects with mixed types', () => {
       const input = {
         jsonString: '{"data":"value"}',
         plainString: 'hello',
@@ -123,7 +123,7 @@ describe('deepParseJson', () => {
   });
 
   describe('arrays', () => {
-    it('should parse JSON strings in arrays', () => {
+    test('should parse JSON strings in arrays', () => {
       const input = [
         { type: 'text', text: '{"city":"Singapore"}' },
         { type: 'text', text: '{"temp":28}' },
@@ -135,13 +135,13 @@ describe('deepParseJson', () => {
       ]);
     });
 
-    it('should handle arrays with mixed types', () => {
+    test('should handle arrays with mixed types', () => {
       const input = ['{"data":"value"}', 'plain string', 42, true, null];
       const result = deepParseJson(input);
       expect(result).toEqual([{ data: 'value' }, 'plain string', 42, true, null]);
     });
 
-    it('should handle nested arrays', () => {
+    test('should handle nested arrays', () => {
       const input = [['{"a":1}', '{"b":2}'], ['{"c":3}']];
       const result = deepParseJson(input);
       expect(result).toEqual([[{ a: 1 }, { b: 2 }], [{ c: 3 }]]);
@@ -149,7 +149,7 @@ describe('deepParseJson', () => {
   });
 
   describe('real-world examples from tool calls', () => {
-    it('should parse weather tool response', () => {
+    test('should parse weather tool response', () => {
       const input = [
         {
           type: 'text',
@@ -177,7 +177,7 @@ describe('deepParseJson', () => {
       ]);
     });
 
-    it('should parse tool request parameters', () => {
+    test('should parse tool request parameters', () => {
       const input = {
         description: 'Current weather summary for Singapore',
         name: 'Singapore Weather Report',
@@ -190,26 +190,26 @@ describe('deepParseJson', () => {
   });
 
   describe('edge cases', () => {
-    it('should prevent infinite recursion with depth limit', () => {
+    test('should prevent infinite recursion with depth limit', () => {
       const deeplyNested =
         '{"a":"{\\"b\\":\\"{\\\\\\"c\\\\\\":\\\\\\"{\\\\\\\\\\\\\\"d\\\\\\\\\\\\\\":\\\\\\\\\\\\\\"{\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"e\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"{\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"f\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"value\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"}\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"}\\\\\\\\\\\\\\"}\\\\\\"}\\"}"}';
       // Should not throw, should stop at max depth
       expect(() => deepParseJson(deeplyNested)).not.toThrow();
     });
 
-    it('should handle empty objects', () => {
+    test('should handle empty objects', () => {
       expect(deepParseJson({})).toEqual({});
     });
 
-    it('should handle empty arrays', () => {
+    test('should handle empty arrays', () => {
       expect(deepParseJson([])).toEqual([]);
     });
 
-    it('should handle empty string', () => {
+    test('should handle empty string', () => {
       expect(deepParseJson('')).toBe('');
     });
 
-    it('should handle objects with special characters in keys', () => {
+    test('should handle objects with special characters in keys', () => {
       const input = {
         'key-with-dashes': '{"data":"value"}',
         key_with_underscores: '{"data":"value"}',
@@ -225,12 +225,12 @@ describe('deepParseJson', () => {
   });
 
   describe('non-object types as root', () => {
-    it('should handle JSON string as root', () => {
+    test('should handle JSON string as root', () => {
       const result = deepParseJson('{"key":"value"}');
       expect(result).toEqual({ key: 'value' });
     });
 
-    it('should handle array JSON string as root', () => {
+    test('should handle array JSON string as root', () => {
       const result = deepParseJson('[1,2,3]');
       expect(result).toEqual([1, 2, 3]);
     });

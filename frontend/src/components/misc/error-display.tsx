@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { WarningIcon } from '@chakra-ui/icons';
 import { Box, Button, List, ListIcon, ListItem, Result, Section } from '@redpanda-data/ui';
+import { WarningIcon } from 'components/icons';
 import { observer } from 'mobx-react';
 import type { FC, ReactElement } from 'react';
 
@@ -51,7 +51,7 @@ export const ErrorDisplay: FC<{ children: ReactElement }> = observer(({ children
       <Section>
         <List spacing={3}>
           {api.errors.map((e, i) => (
-            <ListItem display="flex" key={i}>
+            <ListItem display="flex" key={`${formatError(e)}-${i}`}>
               <ListIcon alignSelf="center" as={WarningIcon} color="red.500" />
               {formatError(e)}
             </ListItem>

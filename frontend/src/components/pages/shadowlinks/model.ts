@@ -25,69 +25,69 @@ import {
  * Plain TypeScript name filter interface
  * Used for topic filters and consumer group filters
  */
-export interface UnifiedNameFilter {
+export type UnifiedNameFilter = {
   name: string;
   patternType: number; // PatternType enum: 0=UNSPECIFIED, 1=LITERAL, 2=PREFIXED
   filterType: number; // FilterType enum: 0=UNSPECIFIED, 1=INCLUDE, 2=EXCLUDE
-}
+};
 
 /**
  * Plain TypeScript ACL resource filter interface
  */
-export interface UnifiedACLResourceFilter {
+export type UnifiedACLResourceFilter = {
   resourceType: number; // ACLResource enum
   patternType: number; // ACLPattern enum
   name: string;
-}
+};
 
 /**
  * Plain TypeScript ACL access filter interface
  */
-export interface UnifiedACLAccessFilter {
+export type UnifiedACLAccessFilter = {
   principal: string;
   operation: number; // ACLOperation enum
   permissionType: number; // ACLPermissionType enum
   host: string;
-}
+};
 
 /**
  * Plain TypeScript ACL filter interface
  */
-export interface UnifiedACLFilter {
+export type UnifiedACLFilter = {
   resourceFilter?: UnifiedACLResourceFilter;
   accessFilter?: UnifiedACLAccessFilter;
-}
+};
 
 /**
  * Plain TypeScript TLS settings interface
  */
-export interface UnifiedTLSSettings {
+export type UnifiedTLSSettings = {
   enabled: boolean;
   tlsSettings?:
     | { case: 'tlsFileSettings'; value: { caPath?: string; keyPath?: string; certPath?: string } }
     | { case: 'tlsPemSettings'; value: { ca?: string; key?: string; cert?: string; keyFingerprint?: string } };
-}
+};
 
 /**
  * Plain TypeScript SCRAM configuration interface
  */
-export interface UnifiedScramConfig {
+export type UnifiedScramConfig = {
   username: string;
   password: string;
   scramMechanism: number;
-}
+};
 
 /**
  * Plain TypeScript authentication configuration interface
  */
-export interface UnifiedAuthenticationConfiguration {
+export type UnifiedAuthenticationConfiguration = {
   authentication?: { case: 'scramConfiguration'; value: UnifiedScramConfig };
-}
+};
 
 /**
  * Plain TypeScript client options interface
  */
-export interface UnifiedClientOptions {
+export type UnifiedClientOptions = {
   bootstrapServers: string[];
   clientId?: string;
   sourceClusterId?: string;
@@ -109,49 +109,49 @@ export interface UnifiedClientOptions {
   effectiveFetchMinBytes?: number;
   effectiveFetchMaxBytes?: number;
   effectiveFetchPartitionMaxBytes?: number;
-}
+};
 
 /**
  * Plain TypeScript topic metadata sync options interface
  */
-export interface UnifiedTopicMetadataSyncOptions {
+export type UnifiedTopicMetadataSyncOptions = {
   autoCreateShadowTopicFilters: UnifiedNameFilter[];
   syncedShadowTopicProperties: string[];
   excludeDefault: boolean;
-}
+};
 
 /**
  * Plain TypeScript consumer offset sync options interface
  */
-export interface UnifiedConsumerOffsetSyncOptions {
+export type UnifiedConsumerOffsetSyncOptions = {
   groupFilters: UnifiedNameFilter[];
-}
+};
 
 /**
  * Plain TypeScript security sync options interface
  */
-export interface UnifiedSecuritySyncOptions {
+export type UnifiedSecuritySyncOptions = {
   aclFilters: UnifiedACLFilter[];
-}
+};
 
 /**
  * Plain TypeScript schema registry sync options interface
  */
-export interface UnifiedSchemaRegistrySyncOptions {
+export type UnifiedSchemaRegistrySyncOptions = {
   schemaRegistryShadowingMode?: { case: 'shadowSchemaRegistryTopic'; value: object } | { case: undefined };
-}
+};
 
 /**
  * Unified configurations interface that works with both console and controlplane APIs.
  * Uses plain TypeScript types to decouple from proto version mismatches.
  */
-export interface UnifiedShadowLinkConfigurations {
+export type UnifiedShadowLinkConfigurations = {
   clientOptions?: UnifiedClientOptions;
   topicMetadataSyncOptions?: UnifiedTopicMetadataSyncOptions;
   consumerOffsetSyncOptions?: UnifiedConsumerOffsetSyncOptions;
   securitySyncOptions?: UnifiedSecuritySyncOptions;
   schemaRegistrySyncOptions?: UnifiedSchemaRegistrySyncOptions;
-}
+};
 
 /**
  * Unified state values combining console (3 states) and controlplane (8 states) APIs
@@ -184,7 +184,7 @@ export const UnifiedShadowLinkStateLabel: Record<UnifiedShadowLinkState, string>
 /**
  * Unified ShadowLink model that works with both console and controlplane APIs
  */
-export interface UnifiedShadowLink {
+export type UnifiedShadowLink = {
   name: string;
   id: string; // uid from console, id from controlplane
   state: UnifiedShadowLinkState;
@@ -196,7 +196,7 @@ export interface UnifiedShadowLink {
   shadowRedpandaId?: string;
   createdAt?: Date;
   updatedAt?: Date;
-}
+};
 
 // ============================================================================
 // State Mapping Functions

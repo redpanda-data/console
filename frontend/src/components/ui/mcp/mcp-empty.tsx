@@ -5,12 +5,13 @@ import { useNavigate } from 'react-router-dom';
 
 type MCPEmptyProps = {
   children?: React.ReactNode;
+  'data-testid'?: string;
 };
 
-export const MCPEmpty = ({ children }: MCPEmptyProps) => {
+export const MCPEmpty = ({ children, 'data-testid': dataTestId }: MCPEmptyProps) => {
   const navigate = useNavigate();
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border-2 border-muted border-dashed bg-muted/10 py-12">
+    <div className="flex flex-col items-center justify-center rounded-lg border-2 border-muted border-dashed bg-muted/10 py-12" data-testid={dataTestId}>
       <MCPIcon className="mb-4 h-12 w-12 text-muted-foreground opacity-50" />
       <Text className="mb-2 font-medium" variant="default">
         No MCP Servers Available

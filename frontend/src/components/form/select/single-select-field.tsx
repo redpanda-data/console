@@ -1,13 +1,13 @@
 import { FormControl, FormHelperText, FormLabel, HStack, Icon, Stack, Text } from '@redpanda-data/ui';
 import type { SelectOption } from '@redpanda-data/ui/dist/components/Inputs/Select/Select';
+import { PlusIcon } from 'components/icons';
 import type { ReactNode } from 'react';
-import { AiOutlinePlus } from 'react-icons/ai';
 
 import { SingleSelect } from '../../misc/select';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
-export interface SingleSelectFieldProps {
+export type SingleSelectFieldProps = {
   label?: ReactNode;
   helperText?: ReactNode;
   placeholder?: string;
@@ -15,7 +15,7 @@ export interface SingleSelectFieldProps {
   options: SelectOption[];
   showCreateNewOption?: boolean;
   onCreateNewOptionClick?: () => void;
-}
+};
 
 export const CREATE_NEW_OPTION_VALUE = 'CREATE_NEW_OPTION_VALUE';
 
@@ -23,7 +23,7 @@ const CREATE_NEW_OPTION = {
   value: CREATE_NEW_OPTION_VALUE,
   label: (
     <HStack spacing={1}>
-      <Icon as={AiOutlinePlus} />
+      <Icon as={PlusIcon} />
       <Text fontWeight="semibold">Create New</Text>
     </HStack>
   ),
@@ -55,12 +55,12 @@ export const SingleSelectField = ({
   return (
     <FormControl isInvalid={!!field.state.meta.errors?.length}>
       <Stack spacing={0.5}>
-        {label && (
+        {Boolean(label) && (
           <FormLabel fontWeight="medium" mb={0}>
             {label}
           </FormLabel>
         )}
-        {helperText && (
+        {Boolean(helperText) && (
           <FormHelperText mb={1} mt={0}>
             {helperText}
           </FormHelperText>

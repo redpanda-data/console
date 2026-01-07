@@ -58,7 +58,7 @@ export class TopicConfiguration extends Component<{
 
   @computed get configEntries(): ConfigEntryExtended[] {
     const config = api.topicConfig.get(this.props.topic.topicName);
-    if (config == null) {
+    if (config === null || config === undefined) {
       return [];
     }
 

@@ -37,11 +37,11 @@ export function HiddenRadioList<ValueType>({
 
   return (
     <ul className={styles.radioCardGroup}>
-      {options.map((option, i) => {
+      {options.map((option) => {
         const checked = (option.value === value || option.checked) ?? false;
         const disabled = (allDisabled || option.disabled) ?? false;
         return (
-          <li key={i}>
+          <li key={String(option.value)}>
             <label>
               <input
                 checked={checked}

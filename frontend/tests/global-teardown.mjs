@@ -25,35 +25,75 @@ export default async function globalTeardown(config = {}) {
 
     const state = JSON.parse(fs.readFileSync(CONTAINER_STATE_FILE, 'utf8'));
 
-    // Stop backend container
+    // Stop backend containers
+    if (state.sourceBackendId) {
+      console.log('Stopping source backend container...');
+      await execAsync(`docker stop ${state.sourceBackendId}`).catch(() => {
+        // Ignore errors - container might already be stopped
+      });
+      await execAsync(`docker rm ${state.sourceBackendId}`).catch(() => {
+        // Ignore errors - container might already be removed
+      });
+    }
+
     if (state.backendId) {
-      console.log(`Stopping backend container...`);
-      await execAsync(`docker stop ${state.backendId}`).catch(() => {});
-      await execAsync(`docker rm ${state.backendId}`).catch(() => {});
+      console.log('Stopping backend container...');
+      await execAsync(`docker stop ${state.backendId}`).catch(() => {
+        // Ignore errors - container might already be stopped
+      });
+      await execAsync(`docker rm ${state.backendId}`).catch(() => {
+        // Ignore errors - container might already be removed
+      });
     }
 
     // Stop Docker containers (testcontainers)
     if (state.connectId) {
-      console.log(`Stopping Kafka Connect container...`);
-      await execAsync(`docker stop ${state.connectId}`).catch(() => {});
-      await execAsync(`docker rm ${state.connectId}`).catch(() => {});
+      console.log('Stopping Kafka Connect container...');
+      await execAsync(`docker stop ${state.connectId}`).catch(() => {
+        // Ignore errors - container might already be stopped
+      });
+      await execAsync(`docker rm ${state.connectId}`).catch(() => {
+        // Ignore errors - container might already be removed
+      });
     }
 
     if (state.owlshopId) {
-      console.log(`Stopping OwlShop container...`);
-      await execAsync(`docker stop ${state.owlshopId}`).catch(() => {});
-      await execAsync(`docker rm ${state.owlshopId}`).catch(() => {});
+      console.log('Stopping OwlShop container...');
+      await execAsync(`docker stop ${state.owlshopId}`).catch(() => {
+        // Ignore errors - container might already be stopped
+      });
+      await execAsync(`docker rm ${state.owlshopId}`).catch(() => {
+        // Ignore errors - container might already be removed
+      });
     }
 
+    // Stop destination cluster if it exists (shadowlink tests)
+    if (state.destRedpandaId) {
+      console.log('Stopping destination Redpanda container...');
+      await execAsync(`docker stop ${state.destRedpandaId}`).catch(() => {
+        // Ignore errors - container might already be stopped
+      });
+      await execAsync(`docker rm ${state.destRedpandaId}`).catch(() => {
+        // Ignore errors - container might already be removed
+      });
+    }
+
+    // Stop source cluster (existing/main redpanda)
     if (state.redpandaId) {
-      console.log(`Stopping Redpanda container...`);
-      await execAsync(`docker stop ${state.redpandaId}`).catch(() => {});
-      await execAsync(`docker rm ${state.redpandaId}`).catch(() => {});
+      console.log('Stopping source Redpanda container...');
+      await execAsync(`docker stop ${state.redpandaId}`).catch(() => {
+        // Ignore errors - container might already be stopped
+      });
+      await execAsync(`docker rm ${state.redpandaId}`).catch(() => {
+        // Ignore errors - container might already be removed
+      });
     }
 
     if (state.networkId) {
-      console.log(`Removing Docker network...`);
-      await execAsync(`docker network rm ${state.networkId}`).catch(() => {});
+      console.log('Removing Docker network...');
+      await execAsync(`docker network rm ${state.networkId}`).catch(() => {
+        // Ignore errors - network might already be removed
+      });
     }
 
     fs.unlinkSync(CONTAINER_STATE_FILE);

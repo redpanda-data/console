@@ -35,10 +35,10 @@ import {
   Text,
   Tooltip,
 } from '@redpanda-data/ui';
+import { RotateCwIcon } from 'components/icons';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { useEffect, useMemo, useState } from 'react';
-import { MdRefresh } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
 import { useListRolesQuery } from '../../../react-query/api/security';
@@ -109,7 +109,7 @@ class UserCreatePage extends PageComponent {
   }
 
   async refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListAcls) {
+    if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
       return;
     }
 
@@ -153,7 +153,7 @@ class UserCreatePage extends PageComponent {
       });
 
       // Refresh user list
-      if (api.userData != null && !api.userData.canListAcls) {
+      if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
         return false;
       }
       await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), api.refreshServiceAccounts()]);
@@ -216,7 +216,9 @@ const CreateUserModal = observer(
               autoComplete="off"
               autoFocus
               data-testid="create-user-name"
-              onChange={(v) => (state.username = v.target.value)}
+              onChange={(v) => {
+                state.username = v.target.value;
+              }}
               placeholder="Username"
               spellCheck={false}
               value={state.username}
@@ -235,7 +237,9 @@ const CreateUserModal = observer(
                 <PasswordInput
                   isInvalid={!isValidPassword}
                   name="test"
-                  onChange={(e) => (state.password = e.target.value)}
+                  onChange={(e) => {
+                    state.password = e.target.value;
+                  }}
                   value={state.password}
                 />
 
@@ -243,8 +247,10 @@ const CreateUserModal = observer(
                   <IconButton
                     aria-label="Refresh"
                     display="inline-flex"
-                    icon={<MdRefresh size={16} />}
-                    onClick={() => (state.password = generatePassword(30, state.generateWithSpecialChars))}
+                    icon={<RotateCwIcon size={16} />}
+                    onClick={() => {
+                      state.password = generatePassword(30, state.generateWithSpecialChars);
+                    }}
                     variant="ghost"
                   />
                 </Tooltip>
@@ -277,7 +283,7 @@ const CreateUserModal = observer(
             />
           </FormField>
 
-          {Features.rolesApi && (
+          {Boolean(Features.rolesApi) && (
             <FormField
               description="Assign roles to this user. This is optional and can be changed later."
               isDisabled={!Features.rolesApi}
@@ -433,7 +439,9 @@ export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRol
   const {
     data: { roles: allRoles },
   } = useListRolesQuery();
-  const availableRoles = (allRoles ?? []).filter((r) => !roles.includes(r.name)).map((r) => ({ value: r.name }));
+  const availableRoles = (allRoles ?? [])
+    .filter((r: { name: string }) => !roles.includes(r.name))
+    .map((r: { name: string }) => ({ value: r.name }));
 
   return (
     <Flex direction="column" gap={4}>

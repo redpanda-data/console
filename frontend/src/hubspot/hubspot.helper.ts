@@ -43,6 +43,7 @@ type HubspotUserData = {
 };
 
 declare global {
+  // biome-ignore lint/style/useConsistentTypeDefinitions: leave as interface due to type checker
   interface Window {
     _hsq: unknown[];
   }

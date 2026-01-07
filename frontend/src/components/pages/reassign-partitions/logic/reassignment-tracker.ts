@@ -81,7 +81,7 @@ export class ReassignmentTracker {
   }
 
   start() {
-    const alreadyStarted = this.reassignTimer != null;
+    const alreadyStarted = this.reassignTimer !== null;
     if (alreadyStarted) {
       return;
     }
@@ -97,8 +97,8 @@ export class ReassignmentTracker {
     this.clusterTimer = window.setInterval(() => api.refreshCluster(true), refreshIntervals.cluster);
 
     // Immediately refresh as well
-    setTimeout(() => {
-      void this.refreshReassignments();
+    setTimeout(async () => {
+      await this.refreshReassignments();
       api.refreshCluster(true);
     });
   }
@@ -123,7 +123,7 @@ export class ReassignmentTracker {
       // Add new reassignments
       for (const r of liveReassignments) {
         const existingState = this.trackingReassignments.first((x) => x.id === r.id);
-        if (existingState == null) {
+        if (existingState === null) {
           // console.log('adding new state', { id: r.id, reassignment: r });
           const state = this.createReassignmentState(r);
           this.trackingReassignments.push(state);
@@ -132,7 +132,7 @@ export class ReassignmentTracker {
 
       // Mark removed reassignments as completed
       for (const r of this.trackingReassignments) {
-        if (r.actualTimeCompleted != null) {
+        if (r.actualTimeCompleted !== null) {
           continue; // no need to the ones already marked as completed
         }
 
@@ -152,7 +152,7 @@ export class ReassignmentTracker {
 
       // Remove reassignments that are in completed state for some time
       const expiredTrackers = this.trackingReassignments.filter((x) => {
-        if (x.actualTimeCompleted == null) {
+        if (x.actualTimeCompleted === null) {
           return false; // not yet complete
         }
         const age = (Date.now() - x.actualTimeCompleted.getTime()) / 1000;
@@ -191,6 +191,7 @@ export class ReassignmentTracker {
     });
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   updateReassignmentState(state: ReassignmentState) {
     // partition stats
     const topicPartitions = api.topicPartitions.get(state.topicName);
@@ -222,7 +223,7 @@ export class ReassignmentTracker {
     const newTransferred = state.partitions.sum((p) => p.currentSize.sum((x) => x.replicaSize));
     const newRemaining = state.totalTransferSize - newTransferred;
 
-    if (state.remainingPrev == null || state.remainingPrev.value !== newRemaining) {
+    if (state.remainingPrev === null || state.remainingPrev.value !== newRemaining) {
       // only set a new transferred statistic when the new value is different from the previous one
       // otherwise we'd end up with the same value for prev and cur with different timestamps
       state.remainingPrev = state.remaining;

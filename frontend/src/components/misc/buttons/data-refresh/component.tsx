@@ -1,6 +1,8 @@
 import { Box, Flex, IconButton, Popover, Spinner, Text } from '@redpanda-data/ui';
+import { PauseIcon, PlayIcon, RefreshIcon } from 'components/icons';
 import { autorun, observable } from 'mobx';
 import { observer } from 'mobx-react';
+
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -11,7 +13,6 @@ import { observer } from 'mobx-react';
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-import { MdOutlineCached, MdPause, MdPlayCircleOutline } from 'react-icons/md';
 
 import { appGlobal } from '../../../../state/app-global';
 import { api, REST_CACHE_DURATION_SEC } from '../../../../state/backend-api';
@@ -107,7 +108,7 @@ export const DataRefreshButton = observer(() => {
         >
           <IconButton
             aria-label="Auth Refresh"
-            icon={autoRefresh.active ? <MdPause size={18} /> : <MdPlayCircleOutline size={18} />}
+            icon={autoRefresh.active ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
             onClick={autoRefresh.toggleAutorefresh}
             p={0}
             variant="ghost"
@@ -133,7 +134,7 @@ export const DataRefreshButton = observer(() => {
           >
             <IconButton
               aria-label="Force Refresh"
-              icon={<MdOutlineCached size={18} />}
+              icon={<RefreshIcon size={18} />}
               onClick={() => appGlobal.onRefresh()}
               p={0}
               variant="ghost"

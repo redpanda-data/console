@@ -35,8 +35,8 @@ import {
   Select,
   Text,
 } from '@redpanda-data/ui';
+import { TrashIcon } from 'components/icons';
 import { makeObservable, observable } from 'mobx';
-import { MdDeleteOutline } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
 import {
@@ -146,10 +146,9 @@ export class AdminDebugBundle extends PageComponent {
           >
             Bundle generation in progress...
           </Button>
-          <Text>
-            Started{' '}
-            {api.debugBundleStatus?.createdAt && timestampDate(api.debugBundleStatus?.createdAt).toLocaleString()}
-          </Text>
+          {api.debugBundleStatus?.createdAt ? (
+            <Text>Started {timestampDate(api.debugBundleStatus.createdAt).toLocaleString()}</Text>
+          ) : null}
         </Box>
       );
     }
@@ -157,18 +156,22 @@ export class AdminDebugBundle extends PageComponent {
     return (
       <Box>
         <Box mt={4}>
-          {(api.canDownloadDebugBundle || api.isDebugBundleExpired) && (
+          {Boolean(api.canDownloadDebugBundle || api.isDebugBundleExpired) && (
             <Text fontWeight="bold">Latest debug bundle:</Text>
           )}
-          {api.isDebugBundleExpired && <Text>Your previous bundle has expired and cannot be downloaded.</Text>}
-          {api.isDebugBundleError && <Text fontWeight="bold">Your debug bundle was not generated. Try again.</Text>}
-          {api.canDownloadDebugBundle && <DebugBundleLink showDeleteButton statuses={api.debugBundleStatuses} />}
+          {Boolean(api.isDebugBundleExpired) && <Text>Your previous bundle has expired and cannot be downloaded.</Text>}
+          {Boolean(api.isDebugBundleError) && (
+            <Text fontWeight="bold">Your debug bundle was not generated. Try again.</Text>
+          )}
+          {Boolean(api.canDownloadDebugBundle) && (
+            <DebugBundleLink showDeleteButton statuses={api.debugBundleStatuses} />
+          )}
 
           {api.debugBundleStatuses.length === 0 && <Text>No debug bundle available for download.</Text>}
         </Box>
 
         <Box>
-          {this.submitInProgress && <Box>Generating bundle ...</Box>}
+          {Boolean(this.submitInProgress) && <Box>Generating bundle ...</Box>}
 
           <NewDebugBundleForm
             debugBundleExists={api.hasDebugProcess}
@@ -344,7 +347,7 @@ const NewDebugBundleForm: FC<{
   return (
     <Box mt={4}>
       <Header mode={advancedForm ? 'advanced' : 'default'} />
-      {advancedForm && (
+      {Boolean(advancedForm) && (
         <Flex
           flexDirection="column"
           gap={2}
@@ -387,12 +390,19 @@ const NewDebugBundleForm: FC<{
               value={formState.scramMechanism}
             />
           </FormField>
-          <Checkbox isChecked={formState.tlsEnabled} onChange={(x) => (formState.tlsEnabled = x.target.checked)}>
+          <Checkbox
+            isChecked={formState.tlsEnabled}
+            onChange={(x) => {
+              formState.tlsEnabled = x.target.checked;
+            }}
+          >
             TLS enabled
           </Checkbox>
           <Checkbox
             isChecked={formState.skipTlsVerification}
-            onChange={(x) => (formState.skipTlsVerification = x.target.checked)}
+            onChange={(x) => {
+              formState.skipTlsVerification = x.target.checked;
+            }}
           >
             Skip TLS verification
           </Checkbox>
@@ -621,7 +631,7 @@ const NewDebugBundleForm: FC<{
             label="Label selectors"
           >
             {formState.labelSelectors.map((labelSelector, idx) => (
-              <Grid gap={2} key={idx} templateColumns="1fr 1fr auto">
+              <Grid gap={2} key={`${labelSelector.key}-${labelSelector.value}-${idx}`} templateColumns="1fr 1fr auto">
                 <GridItem>
                   <Text fontSize="sm">Key</Text>
                   <Input
@@ -647,7 +657,7 @@ const NewDebugBundleForm: FC<{
                     }}
                     variant="ghost"
                   >
-                    <MdDeleteOutline />
+                    <TrashIcon />
                   </Button>
                 </GridItem>
               </Grid>
@@ -667,12 +677,12 @@ const NewDebugBundleForm: FC<{
         </Flex>
       )}
 
-      {error && (
+      {error ? (
         <Alert my={4} status="error">
           <AlertIcon />
           {error.message}
         </Alert>
-      )}
+      ) : null}
 
       <Flex gap={2} mt={4}>
         {debugBundleExists && !api.isDebugBundleExpired && !api.isDebugBundleError ? (

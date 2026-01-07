@@ -18,6 +18,7 @@ import { type LintHint, LintHintSchema } from '../../../protogen/redpanda/api/co
  * - err.rawMessage: Raw error from server
  * - err.details: Array of error details (LintHint, BadRequest, etc.)
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export function extractLintHintsFromError(err: unknown): Record<string, LintHint> {
   const lintHints: Record<string, LintHint> = {};
   let hintIndex = 0;
@@ -28,17 +29,19 @@ export function extractLintHintsFromError(err: unknown): Record<string, LintHint
 
     for (const detail of err.details) {
       if (isLintHint(detail)) {
-        lintHints[`hint_${hintIndex++}`] = detail.debug;
+        lintHints[`hint_${hintIndex}`] = detail.debug;
+        hintIndex += 1;
         hasSpecificHints = true;
       } else if (isBadRequest(detail)) {
         // Handle field violations as lint hints
         for (const violation of detail.debug.fieldViolations) {
-          lintHints[`hint_${hintIndex++}`] = create(LintHintSchema, {
+          lintHints[`hint_${hintIndex}`] = create(LintHintSchema, {
             line: 0,
             column: 0,
             hint: `${violation.field}: ${violation.description}`,
             lintType: 'error',
           });
+          hintIndex += 1;
           hasSpecificHints = true;
         }
       }
@@ -57,26 +60,29 @@ export function extractLintHintsFromError(err: unknown): Record<string, LintHint
         }
       }
 
-      lintHints[`hint_${hintIndex++}`] = create(LintHintSchema, {
+      lintHints[`hint_${hintIndex}`] = create(LintHintSchema, {
         line: 0,
         column: 0,
         hint: errorMessage || err.rawMessage || String(err),
         lintType: 'error',
       });
+      hintIndex += 1;
     }
   } else {
     // For non-ConnectError errors, create a generic hint
-    lintHints[`hint_${hintIndex++}`] = create(LintHintSchema, {
+    lintHints[`hint_${hintIndex}`] = create(LintHintSchema, {
       line: 0,
       column: 0,
       hint: err instanceof Error ? err.message : String(err),
       lintType: 'error',
     });
+    hintIndex += 1;
   }
 
   return lintHints;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export function formatPipelineError(err: unknown): React.ReactNode {
   const details: React.ReactNode[] = [];
   let genDesc = String(err);
@@ -103,8 +109,8 @@ export function formatPipelineError(err: unknown): React.ReactNode {
       <>
         <Text as="span">{genDesc}</Text>
         <ul>
-          {details.map((d, idx) => (
-            <li key={idx} style={{ listStylePosition: 'inside' }}>
+          {details.map((d) => (
+            <li key={String(d)} style={{ listStylePosition: 'inside' }}>
               {d}
             </li>
           ))}

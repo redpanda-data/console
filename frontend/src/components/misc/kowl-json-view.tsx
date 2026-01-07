@@ -39,6 +39,16 @@ export const KowlJsonView = observer((props: { srcObj: object | string | null | 
           language="json"
           options={{
             readOnly: true,
+            // PERFORMANCE CONFIG: Fixes blank content bug when scrolling large JSON (40-50KB+)
+            // Issue: wordWrap: 'on' + 40KB single-line strings = blank content appears during scroll
+            // Solution: Wrap at fixed column to break long lines into manageable chunks
+            wordWrap: 'wordWrapColumn',
+            wordWrapColumn: 120, // Lines >120 chars wrap. Prevents blank screen with large payloads
+            wrappingStrategy: 'simple', // 'advanced' causes 2s+ delays on large content
+            stopRenderingLineAfter: 10_000, // DO NOT set to -1: causes severe performance issues
+            maxTokenizationLineLength: 20_000, // Syntax highlighting limit
+            folding: false, // Unnecessary for read-only
+            scrollBeyondLastLine: false,
             // automaticLayout: false // too much lag on chrome
           }}
           value={str}

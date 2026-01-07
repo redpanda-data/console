@@ -1,7 +1,7 @@
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { Box, Flex, List, ListItem, Spinner, Stack, Text } from '@redpanda-data/ui';
+import { CheckCircleIcon, ErrorIcon } from 'components/icons';
 import React, { type FC, useEffect } from 'react';
-import { MdCheckCircle, MdError } from 'react-icons/md';
 
 import colors from '../../../colors';
 import {
@@ -11,11 +11,11 @@ import {
 import { api } from '../../../state/backend-api';
 
 const StatusIcons: Record<DebugBundleStatus_Status, React.ReactElement> = {
-  [DebugBundleStatus_Status.UNSPECIFIED]: <MdError color={colors.green} size={16} />,
-  [DebugBundleStatus_Status.SUCCESS]: <MdCheckCircle color={colors.green} size={16} />,
+  [DebugBundleStatus_Status.UNSPECIFIED]: <ErrorIcon color={colors.green} size={16} />,
+  [DebugBundleStatus_Status.SUCCESS]: <CheckCircleIcon color={colors.green} size={16} />,
   [DebugBundleStatus_Status.RUNNING]: <Spinner size="sm" />,
-  [DebugBundleStatus_Status.ERROR]: <MdError color={colors.debugRed} size={16} />,
-  [DebugBundleStatus_Status.EXPIRED]: <MdError color={colors.debugRed} size={16} />,
+  [DebugBundleStatus_Status.ERROR]: <ErrorIcon color={colors.debugRed} size={16} />,
+  [DebugBundleStatus_Status.EXPIRED]: <ErrorIcon color={colors.debugRed} size={16} />,
 };
 
 const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBundleBrokerStatus[] }> = ({
@@ -37,8 +37,8 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
   return (
     <Box data-testid="debug-bundle-overview" my={4}>
       <List>
-        {statuses.map((status, idx) => (
-          <ListItem data-testid={`debug-bundle-broker-status-${status.brokerId}`} key={idx}>
+        {statuses.map((status) => (
+          <ListItem data-testid={`debug-bundle-broker-status-${status.brokerId}`} key={status.brokerId}>
             <Flex alignItems="center" gap={3} mb={3}>
               {status.value.case === 'bundleStatus' && (
                 <>
@@ -48,11 +48,12 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
                       <Text data-testid={`broker-${status.brokerId}-label`} display="inline" fontWeight="bold">
                         Broker {status.brokerId}
                       </Text>
-                      <Text display="inline">
-                        {' '}
-                        started at{' '}
-                        {status.value.value.createdAt && timestampDate(status.value.value.createdAt).toLocaleString()}
-                      </Text>
+                      {status.value.value.createdAt ? (
+                        <Text display="inline">
+                          {' '}
+                          started at {timestampDate(status.value.value.createdAt).toLocaleString()}
+                        </Text>
+                      ) : null}
                     </Box>
                     <Text color="gray.500" data-testid={`broker-${status.brokerId}-job-id`} fontSize="sm">
                       {status.value.value.jobId}

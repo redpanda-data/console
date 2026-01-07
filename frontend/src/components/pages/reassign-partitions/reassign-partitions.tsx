@@ -10,7 +10,6 @@
  */
 /** biome-ignore-all lint/correctness/useUniqueElementIds: legacy, needs refactor */
 
-import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
 import {
   Box,
   Button,
@@ -32,10 +31,10 @@ import {
   StepSeparator,
   StepStatus,
 } from '@redpanda-data/ui';
+import { AlertIcon, ChevronLeftIcon, ChevronRightIcon } from 'components/icons';
 import { motion } from 'framer-motion';
 import { autorun, computed, type IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { observer } from 'mobx-react';
-import { MdOutlineErrorOutline } from 'react-icons/md';
 
 import { ActiveReassignments } from './components/active-reassignments';
 import { type ApiData, computeReassignments, type TopicPartitions } from './logic/reassign-logic';
@@ -171,7 +170,7 @@ class ReassignPartitions extends PageComponent {
       }
 
       // has user selected a topic partition that is not available anymore?
-      if (reset === false && this.selectedTopicPartitions == null) {
+      if (reset === false && this.selectedTopicPartitions === null) {
         reset = true;
       }
 
@@ -252,7 +251,7 @@ class ReassignPartitions extends PageComponent {
                 <Statistic
                   title="Total Partitions"
                   value={
-                    partitionCountLeaders != null && partitionCountOnlyReplicated != null
+                    partitionCountLeaders !== null && partitionCountOnlyReplicated !== null
                       ? partitionCountLeaders + partitionCountOnlyReplicated
                       : '...'
                   }
@@ -273,8 +272,8 @@ class ReassignPartitions extends PageComponent {
               {/* Steps */}
               <div style={{ margin: '.75em 1em 1em 1em' }}>
                 <Stepper colorScheme="brand" index={this.currentStep}>
-                  {steps.map((item, index) => (
-                    <Step key={index} title={item.title}>
+                  {steps.map((item) => (
+                    <Step key={item.title} title={item.title}>
                       <StepIndicator>
                         <StepStatus active={<StepNumber />} complete={<StepIcon />} incomplete={<StepNumber />} />
                       </StepIndicator>
@@ -330,7 +329,7 @@ class ReassignPartitions extends PageComponent {
                 }}
               >
                 {/* Back */}
-                {step.backButton && (
+                {Boolean(step.backButton) && (
                   <Button
                     isDisabled={this.currentStep <= 0 || this.requestInProgress}
                     onClick={this.onPreviousPage}
@@ -372,7 +371,7 @@ class ReassignPartitions extends PageComponent {
             <ModalContent minW="5xl">
               <ModalHeader>
                 <Flex alignItems="center" gap={2}>
-                  <MdOutlineErrorOutline size={18} />
+                  <AlertIcon size={18} />
                   Remove throttle config from topics
                 </Flex>
               </ModalHeader>
@@ -489,6 +488,7 @@ class ReassignPartitions extends PageComponent {
   }
 
   // will be wrapped in a 'transaction' since we're modifying multiple observables
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   onNextPage() {
     if (this.currentStep === 0) {
       // Select -> Assign
@@ -497,7 +497,7 @@ class ReassignPartitions extends PageComponent {
     if (this.currentStep === 1) {
       // Assign -> Review
       const topicPartitions = this.selectedTopicPartitions;
-      if (topicPartitions == null) {
+      if (topicPartitions === null || topicPartitions === undefined) {
         this.resetSelectionAndPage(true, true);
         return;
       }
@@ -505,7 +505,7 @@ class ReassignPartitions extends PageComponent {
       const targetBrokers = this.selectedBrokerIds
         .map((id) => api.clusterInfo?.brokers.first((b) => b.brokerId === id))
         .filterFalsy();
-      if (targetBrokers.any((b) => b == null)) {
+      if (targetBrokers.any((b) => b === null)) {
         throw new Error('one or more broker ids could not be mapped to broker entries');
       }
 
@@ -539,7 +539,7 @@ class ReassignPartitions extends PageComponent {
     if (this.currentStep === 2) {
       // Review -> Start
       const request = this.reassignmentRequest;
-      if (request == null) {
+      if (request === null) {
         toast({
           status: 'error',
           description: 'reassignment request was null',
@@ -571,14 +571,14 @@ class ReassignPartitions extends PageComponent {
       return;
     }
 
-    this.currentStep++;
+    this.currentStep += 1;
   }
   onPreviousPage() {
-    this.currentStep--;
+    this.currentStep -= 1;
   }
 
   async startReassignment(request: PartitionReassignmentRequest): Promise<boolean> {
-    if (uiSettings.reassignment.maxReplicationTraffic != null && uiSettings.reassignment.maxReplicationTraffic > 0) {
+    if (uiSettings.reassignment.maxReplicationTraffic !== null && uiSettings.reassignment.maxReplicationTraffic > 0) {
       const success = await this.setTrafficLimit(request);
       if (!success) {
         return false;
@@ -595,7 +595,7 @@ class ReassignPartitions extends PageComponent {
 
       const errors = response.reassignPartitionsResponses
         .map((e) => {
-          const partErrors = e.partitions.filter((p) => p.errorMessage != null);
+          const partErrors = e.partitions.filter((p) => p.errorMessage !== null);
           if (partErrors.length === 0) {
             return null;
           }
@@ -637,6 +637,7 @@ class ReassignPartitions extends PageComponent {
     }
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   async setTrafficLimit(request: PartitionReassignmentRequest): Promise<boolean> {
     const maxBytesPerSecond = Math.round(uiSettings.reassignment.maxReplicationTraffic ?? 0);
 
@@ -656,7 +657,7 @@ class ReassignPartitions extends PageComponent {
           ?.first((partition) => partition.id === partitionId)?.replicas;
         const brokersNew = p.replicas;
 
-        if (brokersOld == null || brokersNew == null) {
+        if (brokersOld === null || brokersOld === undefined || brokersNew === null) {
           continue;
         }
 
@@ -726,8 +727,8 @@ class ReassignPartitions extends PageComponent {
       'Reassign Partitions',
       `Reassignment request returned errors for ${errors.sum((e) => e.partitions.length)} / ${startedCount} partitions.`,
       <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-        {errors.map((r, i) => (
-          <div key={i}>
+        {errors.map((r) => (
+          <div key={r.topicName}>
             <div>
               <h4>Topic: "{r.topicName}"</h4>
               <ul>
@@ -745,7 +746,7 @@ class ReassignPartitions extends PageComponent {
   }
 
   startRefreshingTopicConfigs() {
-    if (IsDev && this.refreshTopicConfigsTimer == null) {
+    if (IsDev && this.refreshTopicConfigsTimer === null) {
       this.refreshTopicConfigsTimer = window.setInterval(this.refreshTopicConfigs, 6000);
     }
   }
@@ -761,7 +762,7 @@ class ReassignPartitions extends PageComponent {
       if (this.refreshTopicConfigsRequestsInProgress > 0) {
         return;
       }
-      this.refreshTopicConfigsRequestsInProgress++;
+      this.refreshTopicConfigsRequestsInProgress += 1;
       const topicConfigs = await partialTopicConfigs([
         'follower.replication.throttled.replicas',
         'leader.replication.throttled.replicas',
@@ -785,7 +786,7 @@ class ReassignPartitions extends PageComponent {
     } catch (_err) {
       this.stopRefreshingTopicConfigs();
     } finally {
-      this.refreshTopicConfigsRequestsInProgress--;
+      this.refreshTopicConfigsRequestsInProgress -= 1;
     }
   }
 
@@ -795,12 +796,11 @@ class ReassignPartitions extends PageComponent {
 
   @computed get selectedTopicPartitions(): TopicPartitions[] | undefined {
     const apiTopics = api.topics;
-    if (!apiTopics) {
-      return undefined;
-    }
     const apiPartitions = api.topicPartitions;
-    if (!apiPartitions) {
-      return undefined;
+
+    if (!(apiTopics && apiPartitions)) {
+      // biome-ignore lint/suspicious/useGetterReturn: early return for undefined case
+      return;
     }
 
     return partitionSelectionToTopicPartitions(this.partitionSelection, apiPartitions, apiTopics);
@@ -820,10 +820,10 @@ class ReassignPartitions extends PageComponent {
   }
 
   @computed get topicsWithMoves(): TopicWithMoves[] {
-    if (this.reassignmentRequest == null) {
+    if (this.reassignmentRequest === null) {
       return [];
     }
-    if (api.topics == null) {
+    if (api.topics === null) {
       return [];
     }
     return computeMovedReplicas(this.partitionSelection, this.reassignmentRequest, api.topics, api.topicPartitions);
@@ -872,7 +872,7 @@ const steps: WizardStep[] = [
 
         return true;
       },
-      computeWarning: (rp) => {
+      computeWarning: (rp): string | undefined => {
         const allBrokers = api.clusterInfo?.brokers;
         if (!allBrokers) {
           return;
@@ -905,7 +905,7 @@ const steps: WizardStep[] = [
               ? `Your selected Brokers, Your cluster contains ${allBrokers.length} brokers across `
               : '';
         }
-        return undefined;
+        return;
       },
     },
   },

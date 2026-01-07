@@ -61,7 +61,7 @@ function ConnectorRadioCardContent({ connectorPlugin }: { connectorPlugin: Conne
       <Text color="gray.500" fontSize=".85em" noOfLines={3}>
         {description}
       </Text>
-      {learnMoreLink && (
+      {Boolean(learnMoreLink) && (
         <Box mt="2">
           <Tag mt="auto">
             <Link href={learnMoreLink} isExternal opacity=".8">

@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { ChevronLeftIcon, ChevronRightIcon, SkipIcon, TrashIcon } from '@primer/octicons-react';
 import {
   Accordion,
   Box,
@@ -35,10 +34,10 @@ import {
   Tooltip,
   UnorderedList,
 } from '@redpanda-data/ui';
+import { ChevronLeftIcon, ChevronRightIcon, SkipIcon, TrashIcon, WarningIcon } from 'components/icons';
 import { action, autorun, type IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
-import { MdOutlineWarningAmber } from 'react-icons/md';
 
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
@@ -236,7 +235,9 @@ export class EditOffsetsModal extends Component<{
             <FormLabel>Strategy</FormLabel>
             <SingleSelect
               isDisabled={this.isLoadingTimestamps}
-              onChange={(v) => (this.selectedOption = v as EditOptions)}
+              onChange={(v) => {
+                this.selectedOption = v as EditOptions;
+              }}
               options={[
                 {
                   value: 'startOffset',
@@ -283,7 +284,9 @@ export class EditOffsetsModal extends Component<{
             <FormLabel>Timestamp</FormLabel>
             <KowlTimePicker
               disabled={this.isLoadingTimestamps}
-              onChange={(t) => (this.timestampUtcMs = t)}
+              onChange={(t) => {
+                this.timestampUtcMs = t;
+              }}
               valueUtcMs={this.timestampUtcMs}
             />
           </Box>
@@ -325,7 +328,9 @@ export class EditOffsetsModal extends Component<{
             >
               <SingleSelect
                 isDisabled={this.isLoadingTimestamps}
-                onChange={(x) => (this.selectedGroup = x)}
+                onChange={(x) => {
+                  this.selectedGroup = x;
+                }}
                 options={this.otherConsumerGroups.map((g) => ({ value: g.groupId, label: g.groupId }))}
                 value={this.selectedGroup}
               />
@@ -402,7 +407,7 @@ export class EditOffsetsModal extends Component<{
                           original: { offset },
                         },
                       }) =>
-                        offset == null ? (
+                        offset === null || offset === undefined ? (
                           <Tooltip
                             hasArrow
                             label="The group does not have an offset for this partition yet"
@@ -444,7 +449,7 @@ export class EditOffsetsModal extends Component<{
   setPage(page: 0 | 1) {
     if (page === 1) {
       // compute and set newOffset
-      if (this.props.offsets == null) {
+      if (this.props.offsets === null) {
         return;
       }
       const op = this.selectedOption;
@@ -734,12 +739,13 @@ class ColAfter extends Component<{
   selectedTime?: number;
   record: GroupOffset;
 }> {
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   render() {
     const record = this.props.record;
     const val = record.newOffset;
 
     // No change
-    if (val == null) {
+    if (val === null) {
       return (
         <Tooltip hasArrow label="Offset will not be changed" openDelay={1} placement="top">
           <span style={{ opacity: 0.66, marginLeft: '2px' }}>
@@ -788,7 +794,7 @@ class ColAfter extends Component<{
         return (
           <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
             <InfoText
-              icon={<MdOutlineWarningAmber size={14} />}
+              icon={<WarningIcon size={14} />}
               iconColor="orangered"
               iconSize="18px"
               maxWidth="350px"
@@ -904,7 +910,7 @@ export class DeleteOffsetsModal extends Component<{
                 <TrashIcon color="white" />
               </div>
               <Box>
-                {visible && (
+                {Boolean(visible) && (
                   <Box>
                     {mode === 'group' && (
                       <Box>
@@ -1041,7 +1047,7 @@ export class DeleteOffsetsModal extends Component<{
 function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopic[] {
   const getOffset = (x: GroupOffset['newOffset']): number | undefined => {
     // no offset set
-    if (x == null) {
+    if (x === null) {
       return;
     }
 
@@ -1051,7 +1057,7 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
     }
 
     // from timestamp
-    if ('offset' in x) {
+    if (x && typeof x === 'object' && 'offset' in x) {
       return x.offset;
     }
 
@@ -1071,7 +1077,7 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
 
   // filter undefined partitions
   for (const t of topicOffsets) {
-    t.partitions.removeAll((p) => p.offset == null);
+    t.partitions.removeAll((p) => p.offset === null);
   }
 
   // assert type:

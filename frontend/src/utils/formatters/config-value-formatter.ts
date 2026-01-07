@@ -21,6 +21,7 @@ export const entryHasInfiniteValue = (entry: ConfigEntry) =>
 
 export const getInfiniteValueForEntry = (entry: ConfigEntryExtended) => CONFIG_INFINITE_VALUES[entry.name] ?? -1;
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 export function formatConfigValue(
   name: string,
   value: string | null | undefined,
@@ -28,7 +29,7 @@ export function formatConfigValue(
 ): string {
   let suffix: string;
 
-  if (value == null) {
+  if (value === null || value === undefined) {
     return '';
   }
 
@@ -55,7 +56,7 @@ export function formatConfigValue(
   // Numeric
   //
   const num = Number(value);
-  if (value == null || value === '' || value === '0' || Number.isNaN(num)) {
+  if (value === null || value === '' || value === '0' || Number.isNaN(num)) {
     return value;
   }
 

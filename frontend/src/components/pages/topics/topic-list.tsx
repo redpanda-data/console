@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-react';
 import {
   Alert,
   AlertDialog,
@@ -33,13 +32,12 @@ import {
   Tooltip,
   useToast,
 } from '@redpanda-data/ui';
+import { BanIcon, CheckIcon, ErrorIcon, EyeOffIcon, TrashIcon, WarningIcon } from 'components/icons';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useQueryStateWithCallback } from 'hooks/use-query-state-with-callback';
 import { observable } from 'mobx';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { HiOutlineTrash } from 'react-icons/hi';
-import { MdError, MdOutlineWarning } from 'react-icons/md';
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { Link } from 'react-router-dom';
 
@@ -162,7 +160,7 @@ const TopicList: FC = () => {
             width="350px"
           />
           <AnimatePresence>
-            {localSearchValue && (
+            {Boolean(localSearchValue) && (
               <motion.div
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -260,7 +258,7 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
                       placement="top"
                     >
                       <Box>
-                        <MdError color={colors.brandError} size={18} />
+                        <ErrorIcon color={colors.brandError} size={18} />
                       </Box>
                     </Tooltip>
                   )}
@@ -271,7 +269,7 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
                       placement="top"
                     >
                       <Box>
-                        <MdOutlineWarning color={colors.brandWarning} size={18} />
+                        <WarningIcon color={colors.brandWarning} size={18} />
                       </Box>
                     </Tooltip>
                   )}
@@ -313,7 +311,7 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
                     }}
                     type="button"
                   >
-                    <Icon as={HiOutlineTrash} />
+                    <Icon as={TrashIcon} />
                   </button>
                 </DeleteDisabledTooltip>
               </Flex>
@@ -342,12 +340,12 @@ const iconAllowed = (
 );
 const iconForbidden = (
   <span style={{ color: '#ca000a' }}>
-    <CircleSlashIcon size={15} />
+    <BanIcon size={15} />
   </span>
 );
 const iconClosedEye = (
   <span style={{ color: '#0008', paddingLeft: '4px', transform: 'translateY(-1px)', display: 'inline-block' }}>
-    <EyeClosedIcon size={14} verticalAlign="middle" />
+    <EyeOffIcon size={14} />
   </span>
 );
 
@@ -361,7 +359,7 @@ const renderName = (topic: Topic) => {
   let missing = 0;
   for (const a of TopicActions) {
     if (!actions.includes(a)) {
-      missing++;
+      missing += 1;
     }
   }
 
@@ -452,13 +450,13 @@ function ConfirmDeletionModal({
           <AlertDialogHeader>Delete Topic</AlertDialogHeader>
 
           <AlertDialogBody>
-            {error && (
+            {Boolean(error) && (
               <Alert mb={2} status="error">
                 <AlertIcon />
-                {`An error occurred: ${typeof error === 'string' ? error : error.message}`}
+                {`An error occurred: ${typeof error === 'string' ? error : (error?.message ?? 'Unknown error')}`}
               </Alert>
             )}
-            {topicToDelete?.isInternal && (
+            {Boolean(topicToDelete?.isInternal) && (
               <Alert mb={2} status="error">
                 <AlertIcon />
                 This is an internal topic, deleting it might have unintended side-effects!
@@ -542,6 +540,7 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
   const tryGetBrokerConfig = (configName: string): string | undefined =>
     api.clusterInfo?.brokers?.find((_) => true)?.config.configs?.find((x) => x.name === configName)?.value ?? undefined;
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const getRetentionTimeFinalValue = (value: number | undefined, unit: RetentionTimeUnit) => {
     if (unit === 'default') {
       return;
@@ -577,6 +576,7 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
       return -1;
     }
   };
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const getRetentionSizeFinalValue = (value: number | undefined, unit: RetentionSizeUnit) => {
     if (unit === 'default') {
       return;
@@ -668,6 +668,7 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
         hasErrors: false,
       }),
     isOkEnabled: (state) => TOPIC_NAME_REGEX.test(state.topicName) && !state.hasErrors,
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
     onOk: async (state) => {
       if (!state.topicName) {
         throw new Error('"Topic Name" must be set');

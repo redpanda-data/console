@@ -69,7 +69,7 @@ export const TaskStatusUpdateBlock = ({
   const metadata = (
     <div className="border-t bg-muted/30 px-4 py-2 text-muted-foreground text-xs">
       <div className="flex flex-col gap-0.5">
-        {messageId && (
+        {Boolean(messageId) && (
           <div className="flex gap-1.5">
             <Text as="span" className="font-bold" variant="small">
               message_id:
@@ -79,7 +79,7 @@ export const TaskStatusUpdateBlock = ({
             </Text>
           </div>
         )}
-        {hasTokens && (
+        {Boolean(hasTokens) && (
           <div className="flex items-center gap-1.5">
             <Text as="span" className="font-bold" variant="small">
               tokens:
@@ -115,7 +115,7 @@ export const TaskStatusUpdateBlock = ({
   // State transition display
   const stateTransition = showBadge && (
     <div className="flex items-center gap-2">
-      {hasPreviousState && (
+      {Boolean(hasPreviousState) && (
         <>
           <TaskState state={previousState as typeof validState} />
           <MoveRightIcon className="size-4 text-muted-foreground" />

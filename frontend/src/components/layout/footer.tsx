@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { FaGithub, FaLinkedin, FaSlack, FaTwitter } from 'react-icons/fa';
+import { GitHubIcon, LinkedInIcon, SlackIcon, TwitterIcon } from 'components/icons';
 import { useLocation, useMatch } from 'react-router-dom';
 
 import { isEmbedded } from '../../config';
@@ -69,7 +69,7 @@ export const AppFooter = () => {
   const gitHub = (link: string, title: string) => (
     <>
       <a href={link} rel="noopener noreferrer" target="_blank" title={title}>
-        <FaGithub />
+        <GitHubIcon size={16} />
       </a>
     </>
   );
@@ -82,10 +82,10 @@ export const AppFooter = () => {
           ? gitHub('https://github.com/redpanda-data/redpanda', "Visit Redpanda's GitHub repository")
           : gitHub('https://github.com/redpanda-data/console', "Visit Redpanda Console's GitHub repository")}
         <a href="https://redpanda.com/slack" rel="noopener noreferrer" target="_blank" title="Slack">
-          <FaSlack />
+          <SlackIcon size={16} />
         </a>
         <a href="https://twitter.com/redpandadata" rel="noopener noreferrer" target="_blank" title="Twitter">
-          <FaTwitter />
+          <TwitterIcon size={16} />
         </a>
         <a
           href="https://www.linkedin.com/company/redpanda-data"
@@ -93,7 +93,7 @@ export const AppFooter = () => {
           target="_blank"
           title="LinkedIn"
         >
-          <FaLinkedin />
+          <LinkedInIcon size={16} />
         </a>
       </div>
 

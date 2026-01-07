@@ -16,9 +16,9 @@ import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-d
 import { MCPIcon } from 'components/redpanda-ui/components/icons';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from 'components/redpanda-ui/components/sheet';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { isFeatureFlagEnabled, isServerless } from 'config';
-import { AlertCircle, Code, Link } from 'lucide-react';
+import { AlertCircle, Code, Link as LinkIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useGetMCPCodeSnippetQuery, useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
@@ -82,7 +82,7 @@ export const RemoteMCPConnectionTab = () => {
         <Card className="px-0 py-0" size="full">
           <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
             <CardTitle className="flex items-center gap-2">
-              <Link className="h-4 w-4" />
+              <LinkIcon className="h-4 w-4" />
               <Text className="font-semibold">Connection Information</Text>
             </CardTitle>
           </CardHeader>
@@ -100,9 +100,9 @@ export const RemoteMCPConnectionTab = () => {
                       <Text className="font-medium text-blue-800 dark:text-blue-200">Authentication Required</Text>
                       <Text className="text-blue-700 dark:text-blue-300">
                         This server requires a Redpanda Cloud M2M token for authentication.
-                        <a className="ml-1 underline hover:no-underline" href="/organization-iam?tab=service-accounts">
+                        <Link className="ml-1" href="/organization-iam?tab=service-accounts">
                           Create an M2M token here.
-                        </a>
+                        </Link>
                         &nbsp;You can test the server directly using the MCP Inspector tab without setting up a client.
                       </Text>
                     </div>

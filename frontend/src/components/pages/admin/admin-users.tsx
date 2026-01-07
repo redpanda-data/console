@@ -17,8 +17,8 @@ import type { UserDetails } from '../../../state/rest-interfaces';
 import { MotionDiv } from '../../../utils/animation-props';
 import '../../../utils/array-extensions';
 import { Accordion, Box, DataTable, Flex, SearchField, Text, Tooltip } from '@redpanda-data/ui';
+import { UserCircleIcon } from 'components/icons';
 import { makeObservable, observable } from 'mobx';
-import { MdOutlinePermIdentity } from 'react-icons/md';
 
 import { RoleComponent } from './admin-roles';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
@@ -62,7 +62,7 @@ export class AdminUsers extends Component<Record<string, never>> {
                   <Flex gap={2}>
                     <Tooltip hasArrow label="You are currently logged in as this user" placement="top">
                       <Box>
-                        <MdOutlinePermIdentity color="#ff9e3a" size={16} />
+                        <UserCircleIcon color="#ff9e3a" size={16} />
                       </Box>
                     </Tooltip>{' '}
                     <Text>{row.original.internalIdentifier}</Text>
@@ -105,7 +105,9 @@ export class AdminUsers extends Component<Record<string, never>> {
           <SearchField
             placeholderText="Enter search term/regex"
             searchText={this.quickSearch}
-            setSearchText={(x) => (this.quickSearch = x)}
+            setSearchText={(x) => {
+              this.quickSearch = x;
+            }}
             width="300px"
           />
         </div>

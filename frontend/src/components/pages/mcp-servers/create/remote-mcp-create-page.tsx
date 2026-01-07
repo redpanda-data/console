@@ -15,7 +15,6 @@ import type { ConnectError } from '@connectrpc/connect';
 import { Code as ConnectCode } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { useLintHints } from 'components/ui/lint-hint/use-lint-hints';
@@ -26,7 +25,7 @@ import {
 } from 'components/ui/service-account/service-account-selector';
 import { ExpandedYamlDialog } from 'components/ui/yaml/expanded-yaml-dialog';
 import { useYamlLabelSync } from 'components/ui/yaml/use-yaml-label-sync';
-import { config, isFeatureFlagEnabled } from 'config';
+import { isFeatureFlagEnabled } from 'config';
 import { ArrowLeft, FileText, Hammer, Loader2 } from 'lucide-react';
 import { MCPServer_ServiceAccountSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -35,6 +34,11 @@ import { useCreateMCPServerMutation, useLintMCPConfigMutation } from 'react-quer
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import {
+  addServiceAccountTags,
+  generateServiceAccountName,
+  getServiceAccountNamePrefix,
+} from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { getTierById } from './form-helpers';
@@ -42,7 +46,6 @@ import { MetadataStep } from './metadata-step';
 import { FormSchema, type FormValues, initialValues } from './schemas';
 import { ToolsStep } from './tools-step';
 import { useMetadataValidation } from './use-metadata-validation';
-import { RemoteMCPBackButton } from '../remote-mcp-back-button';
 
 const TOOL_FIELD_REGEX = /mcp_server\.tools\.([^.]+)\.(.+)/;
 
@@ -100,13 +103,12 @@ export const RemoteMCPCreatePage: React.FC = () => {
   // Auto-generate service account name when MCP server name changes
   useEffect(() => {
     if (displayName) {
-      const clusterType = config.isServerless ? 'serverless' : 'cluster';
-      const sanitizedServerName = displayName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-      const generatedName = `${clusterType}-${config.clusterId}-mcp-${sanitizedServerName}-sa`;
+      const generatedName = generateServiceAccountName(displayName, 'mcp');
+      const currentValue = form.getValues('serviceAccountName');
+      const prefix = getServiceAccountNamePrefix('mcp');
 
       // Only update if the field is empty or matches the previous auto-generated pattern
-      const currentValue = form.getValues('serviceAccountName');
-      if (!currentValue || currentValue.startsWith(`${clusterType}-${config.clusterId}-mcp-`)) {
+      if (!currentValue || currentValue.startsWith(prefix)) {
         form.setValue('serviceAccountName', generatedName, { shouldValidate: false });
       }
     }
@@ -219,7 +221,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
     return result;
   };
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 56, refactor later
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const handleValidationError = (error: ConnectError) => {
     if (error.code === ConnectCode.InvalidArgument && error.details) {
       // Find BadRequest details
@@ -281,6 +283,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
     toast.error(formatToastErrorMessageGRPC({ error, action: 'create', entity: 'MCP server' }));
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const onSubmit = async (values: FormValues) => {
     const tier = getTierById(values.resourcesTier);
     const tagsMap: Record<string, string> = {};
@@ -317,9 +320,8 @@ export const RemoteMCPCreatePage: React.FC = () => {
 
       const { secretName, serviceAccountId } = serviceAccountResult;
 
-      // Add service_account_id and secret_id to tags for easy deletion
-      tagsMap.service_account_id = serviceAccountId;
-      tagsMap.secret_id = secretName;
+      // Add system-generated service account tags
+      addServiceAccountTags(tagsMap, serviceAccountId, secretName);
 
       serviceAccountConfig = create(MCPServer_ServiceAccountSchema, {
         clientId: `\${secrets.${secretName}.client_id}`,
@@ -358,15 +360,13 @@ export const RemoteMCPCreatePage: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
-      <div className="space-y-4">
-        <RemoteMCPBackButton />
-        <div className="space-y-2">
-          <Heading level={1}>Create MCP Server</Heading>
-          <Text variant="muted">Set up a new managed MCP server with custom tools and configurations.</Text>
-        </div>
-      </div>
+      <header className="flex flex-col gap-2">
+        <Heading level={1}>Create MCP Server</Heading>
+        <Text variant="muted">Set up a new managed MCP server with custom tools and configurations.</Text>
+      </header>
 
       <Stepper.Provider className="space-y-4" variant="horizontal">
+        {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic */}
         {({ methods }) => (
           <>
             <Stepper.Navigation>
@@ -388,82 +388,81 @@ export const RemoteMCPCreatePage: React.FC = () => {
               </Stepper.Step>
             </Stepper.Navigation>
 
-            <Form {...form}>
-              {/* METADATA STEP */}
-              {methods.current.id === 'metadata' && (
-                <Stepper.Panel>
-                  <MetadataStep
-                    appendTag={appendTag}
-                    form={form}
-                    onSubmit={onSubmit}
-                    removeTag={removeTag}
-                    tagFields={tagFields}
-                  />
-                </Stepper.Panel>
-              )}
+            {/* METADATA STEP */}
+            {methods.current.id === 'metadata' && (
+              <Stepper.Panel>
+                <MetadataStep
+                  appendTag={appendTag}
+                  form={form}
+                  onSubmit={onSubmit}
+                  removeTag={removeTag}
+                  tagFields={tagFields}
+                />
+              </Stepper.Panel>
+            )}
 
-              {/* TOOLS STEP */}
-              {methods.current.id === 'tools' && (
-                <Stepper.Panel>
-                  <ToolsStep
-                    appendTool={appendTool}
-                    detectedSecrets={detectedSecrets}
-                    existingSecrets={existingSecrets}
-                    form={form}
-                    hasSecretWarnings={hasSecretWarnings}
-                    isLintConfigPending={isLintConfigPending}
-                    lintHints={lintHints}
-                    onExpandTool={(index) => setExpandedTool({ index, isOpen: true })}
-                    onLintTool={handleLintTool}
-                    onSubmit={onSubmit}
-                    removeTool={removeTool}
-                    toolFields={toolFields}
-                  />
-                </Stepper.Panel>
-              )}
+            {/* TOOLS STEP */}
+            {methods.current.id === 'tools' && (
+              <Stepper.Panel>
+                <ToolsStep
+                  appendTool={appendTool}
+                  detectedSecrets={detectedSecrets}
+                  existingSecrets={existingSecrets}
+                  form={form}
+                  hasSecretWarnings={hasSecretWarnings}
+                  isLintConfigPending={isLintConfigPending}
+                  lintHints={lintHints}
+                  onExpandTool={(index) => setExpandedTool({ index, isOpen: true })}
+                  onLintTool={handleLintTool}
+                  onSubmit={onSubmit}
+                  removeTool={removeTool}
+                  toolFields={toolFields}
+                />
+              </Stepper.Panel>
+            )}
 
-              <Stepper.Controls className={methods.isFirst ? 'flex justify-end' : 'flex justify-between'}>
-                {!methods.isFirst && (
-                  <Button
-                    disabled={isCreateMCPServerPending || isCreateServiceAccountPending}
-                    onClick={methods.prev}
-                    variant="outline"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                )}
-                {methods.isLast ? (
-                  <Button
-                    disabled={
-                      isCreateMCPServerPending ||
-                      isCreateServiceAccountPending ||
-                      isCreateSecretPending ||
-                      hasFormErrors ||
-                      hasLintingIssues ||
-                      hasSecretWarnings
-                    }
-                    onClick={form.handleSubmit(onSubmit)}
-                  >
-                    {isCreateMCPServerPending || isCreateServiceAccountPending || isCreateSecretPending ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <Text as="span">Creating...</Text>
-                      </div>
-                    ) : (
-                      'Create MCP Server'
-                    )}
-                  </Button>
-                ) : (
-                  <Button
-                    disabled={methods.current.id === 'metadata' ? !!isMetadataInvalid : false}
-                    onClick={() => handleNext(methods.current.id === 'metadata', methods.next)}
-                  >
-                    Next
-                  </Button>
-                )}
-              </Stepper.Controls>
-            </Form>
+            <Stepper.Controls className={methods.isFirst ? 'flex justify-end' : 'flex justify-between'}>
+              {!methods.isFirst && (
+                <Button
+                  disabled={isCreateMCPServerPending || isCreateServiceAccountPending}
+                  onClick={methods.prev}
+                  variant="outline"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+              )}
+              {methods.isLast ? (
+                <Button
+                  disabled={
+                    isCreateMCPServerPending ||
+                    isCreateServiceAccountPending ||
+                    isCreateSecretPending ||
+                    hasFormErrors ||
+                    hasLintingIssues ||
+                    hasSecretWarnings
+                  }
+                  onClick={form.handleSubmit(onSubmit)}
+                >
+                  {isCreateMCPServerPending || isCreateServiceAccountPending || isCreateSecretPending ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Text as="span">Creating...</Text>
+                    </div>
+                  ) : (
+                    'Create MCP Server'
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  disabled={methods.current.id === 'metadata' ? !!isMetadataInvalid : false}
+                  onClick={() => handleNext(methods.current.id === 'metadata', methods.next)}
+                >
+                  Next
+                </Button>
+              )}
+            </Stepper.Controls>
+
             {isFeatureFlagEnabled('enableMcpServiceAccount') && (
               <ServiceAccountSelector
                 createSecret={createSecret}
@@ -475,7 +474,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
             )}
 
             {/* Expanded YAML Editor Dialog */}
-            {expandedTool && (
+            {expandedTool ? (
               <ExpandedYamlDialog
                 form={form}
                 isLintConfigPending={isLintConfigPending}
@@ -486,7 +485,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
                 onLint={() => handleLintTool(expandedTool.index)}
                 toolIndex={expandedTool.index}
               />
-            )}
+            ) : null}
           </>
         )}
       </Stepper.Provider>

@@ -24,6 +24,14 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/console"
 )
 
+// createSchemaRequest defines the expected JSON body to create a schema.
+type createSchemaRequest struct {
+	sr.Schema
+	Params struct {
+		Normalize bool `json:"normalize"`
+	} `json:"params"`
+}
+
 func (api *API) handleSchemaRegistryNotConfigured() http.HandlerFunc {
 	type response struct {
 		IsConfigured bool `json:"isConfigured"`
@@ -509,13 +517,13 @@ func (api *API) handleCreateSchema() http.HandlerFunc {
 		// 1. Parse request parameters
 		subjectName := getSubjectFromRequestPath(r)
 
-		var payload sr.Schema
+		var payload createSchemaRequest
 		restErr := rest.Decode(w, r, &payload)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
-		if payload.Schema == "" {
+		if payload.Schema.Schema == "" {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:          errors.New("payload validation failed for creating schema"),
 				Status:       http.StatusBadRequest,
@@ -527,7 +535,7 @@ func (api *API) handleCreateSchema() http.HandlerFunc {
 		}
 
 		// 2. Send create request
-		res, err := api.ConsoleSvc.CreateSchemaRegistrySchema(r.Context(), subjectName, payload)
+		res, err := api.ConsoleSvc.CreateSchemaRegistrySchema(r.Context(), subjectName, payload.Schema, payload.Params)
 		if err != nil {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:          err,

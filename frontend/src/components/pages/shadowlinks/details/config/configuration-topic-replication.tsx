@@ -24,9 +24,9 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 
 import type { UnifiedShadowLink } from '../../model';
 
-export interface ConfigurationTopicReplicationProps {
+export type ConfigurationTopicReplicationProps = {
   shadowLink: UnifiedShadowLink;
-}
+};
 
 // Default properties that are synced when excludeDefault is false
 const DEFAULT_PROPERTIES = [
@@ -54,6 +54,7 @@ const CATEGORY_PROPERTIES_MAP: Record<string, string[]> = {
   Compression: ['compression.type'],
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopicReplicationProps) => {
   const topicSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
   const excludeDefault = topicSyncOptions?.excludeDefault ?? false;
@@ -124,7 +125,7 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
                   <AccordionContent className="px-6 pb-4" data-testid={`category-${categoryKey}-content`}>
                     <div className="flex flex-col">
                       {properties.map((property, index) => (
-                        <div key={`${property}-${index}`}>
+                        <div key={`${categoryKey}-${property}`}>
                           <div className="flex items-center justify-between py-3">
                             <Text data-testid={`property-${categoryKey}-${index}`}>{property}</Text>
                             <Badge data-testid={`property-${categoryKey}-${index}-badge`} variant="gray">

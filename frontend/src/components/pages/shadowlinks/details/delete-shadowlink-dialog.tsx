@@ -23,13 +23,13 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { useState } from 'react';
 
-interface DeleteShadowLinkDialogProps {
+type DeleteShadowLinkDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   shadowLinkName: string;
   onConfirm: () => void;
   isLoading?: boolean;
-}
+};
 
 export const DeleteShadowLinkDialog = ({
   open,

@@ -13,27 +13,26 @@ import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import type { ColumnDef, VisibilityState } from '@tanstack/react-table';
 import { flexRender, getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
-import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Link as ExternalLink, Text } from 'components/redpanda-ui/components/typography';
+import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { AlertCircle, Check, Loader2, Pause, Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, Plus, Trash2 } from 'lucide-react';
 import { DeletePipelineRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import type { Pipeline as APIPipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { Pipeline_State as PipelineState } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
 import { useDeletePipelineMutation, useListPipelinesQuery } from 'react-query/api/pipeline';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link as ReactRouterLink, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useResetOnboardingWizardStore } from 'state/onboarding-wizard-store';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
+import { PipelineStatusBadge } from './status-badge';
 import { TabKafkaConnect } from '../../connect/overview';
 
 type Pipeline = {
@@ -66,8 +65,8 @@ const PipelineTableSkeleton = () => (
         </TableRow>
       </TableHeader>
       <TableBody>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <TableRow key={i}>
+        {Array.from({ length: 5 }).map(() => (
+          <TableRow key={crypto.randomUUID()}>
             <TableCell>
               <Skeleton className="h-4 w-24" />
             </TableCell>
@@ -89,67 +88,6 @@ const PipelineTableSkeleton = () => (
     </Table>
   </div>
 );
-
-const PipelineStatusBadge = ({ state }: { state: Pipeline_State }) => {
-  const statusConfig = useMemo(() => {
-    switch (state) {
-      case PipelineState.RUNNING:
-        return {
-          variant: 'green' as const,
-          icon: <Check className="h-3 w-3" />,
-          text: 'Running',
-        };
-      case PipelineState.STARTING:
-        return {
-          variant: 'blue' as const,
-          icon: <Loader2 className="h-3 w-3 animate-spin" />,
-          text: 'Starting',
-        };
-      case PipelineState.STOPPING:
-        return {
-          variant: 'orange' as const,
-          icon: <Loader2 className="h-3 w-3 animate-spin" />,
-          text: 'Stopping',
-        };
-      case PipelineState.STOPPED:
-        return {
-          variant: 'gray' as const,
-          icon: <Pause className="h-3 w-3" />,
-          text: 'Stopped',
-        };
-      case PipelineState.COMPLETED:
-        return {
-          variant: 'green' as const,
-          icon: <Check className="h-3 w-3" />,
-          text: 'Completed',
-        };
-      case PipelineState.ERROR:
-        return {
-          variant: 'red' as const,
-          icon: <AlertCircle className="h-3 w-3" />,
-          text: 'Error',
-        };
-      case PipelineState.UNSPECIFIED:
-        return {
-          variant: 'gray' as const,
-          icon: <AlertCircle className="h-3 w-3" />,
-          text: 'Unknown',
-        };
-      default:
-        return {
-          variant: 'gray' as const,
-          icon: <AlertCircle className="h-3 w-3" />,
-          text: 'Unknown',
-        };
-    }
-  }, [state]);
-
-  return (
-    <Badge icon={statusConfig.icon} variant={statusConfig.variant}>
-      {statusConfig.text}
-    </Badge>
-  );
-};
 
 const PipelineListPageContent = () => {
   const navigate = useNavigate();
@@ -175,25 +113,18 @@ const PipelineListPageContent = () => {
     navigate('/rp-connect/wizard');
   }, [resetOnboardingWizardStore, navigate]);
 
-  const handleRowClick = useCallback(
-    (pipelineId: string, event: React.MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (target.closest('[data-actions-column]') || target.closest('button') || target.closest('a')) {
-        return;
-      }
-      navigate(`/rp-connect/${pipelineId}`);
-    },
-    [navigate]
-  );
-
   const columns = useMemo<ColumnDef<Pipeline>[]>(
     () => [
       {
         accessorKey: 'id',
         header: 'ID',
         cell: ({ row }) => (
-          <Link className="hover:underline" to={`/rp-connect/${encodeURIComponent(row.original.id)}`}>
-            <Text variant="default">{row.getValue('id')}</Text>
+          <Link
+            as={ReactRouterLink}
+            className="text-[1rem] text-foreground underline decoration-dotted underline-offset-[3px]"
+            to={`/rp-connect/${encodeURIComponent(row.original.id)}`}
+          >
+            {row.getValue('id')}
           </Link>
         ),
         enableSorting: false,
@@ -203,10 +134,12 @@ const PipelineListPageContent = () => {
         accessorKey: 'name',
         header: 'Pipeline Name',
         cell: ({ row }) => (
-          <Link className="hover:underline" to={`/rp-connect/${encodeURIComponent(row.original.id)}`}>
-            <Text className="font-medium" variant="default">
-              {row.getValue('name')}
-            </Text>
+          <Link
+            as={ReactRouterLink}
+            className="text-[1rem] text-foreground underline decoration-dotted underline-offset-[3px]"
+            to={`/rp-connect/${encodeURIComponent(row.original.id)}`}
+          >
+            {row.getValue('name')}
           </Link>
         ),
         size: 250,
@@ -214,7 +147,7 @@ const PipelineListPageContent = () => {
       {
         accessorKey: 'description',
         header: 'Description',
-        cell: ({ row }) => <Text className="max-w-md truncate">{row.getValue('description') || '-'}</Text>,
+        cell: ({ row }) => <Text className="max-w-md truncate">{row.getValue('description')}</Text>,
         enableSorting: false,
         size: 400,
       },
@@ -280,7 +213,7 @@ const PipelineListPageContent = () => {
     onRowSelectionChange: setRowSelection,
     initialState: {
       pagination: {
-        pageSize: 10,
+        pageSize: 20,
       },
     },
     state: {
@@ -331,12 +264,7 @@ const PipelineListPageContent = () => {
             }
             if (table.getRowModel().rows?.length) {
               return table.getRowModel().rows.map((row) => (
-                <TableRow
-                  className="cursor-pointer hover:bg-muted/50"
-                  data-state={row.getIsSelected() && 'selected'}
-                  key={row.id}
-                  onClick={(event) => handleRowClick(row.original.id, event)}
-                >
+                <TableRow data-state={row.getIsSelected() && 'selected'} key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
@@ -358,6 +286,21 @@ const PipelineListPageContent = () => {
   );
 };
 
+// Separate component to prevent unnecessary remounting
+const RedpandaConnectContent = () => (
+  <div className="flex flex-col gap-6">
+    <Text>
+      Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that drive
+      real-time analytics and actionable business insights. Integrate data across systems with hundreds of prebuilt
+      connectors, change data capture (CDC) capabilities, and YAML-configurable pipelines.{' '}
+      <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
+        Learn more
+      </Link>
+    </Text>
+    <PipelineListPageContent />
+  </div>
+);
+
 export const PipelineListPage = () => {
   // Don't block on Kafka Connect query - it's optional and additive
   // If query fails or is loading, we just don't show the Kafka Connect tab (fail gracefully)
@@ -371,21 +314,6 @@ export const PipelineListPage = () => {
   // This is subtle and doesn't block the user experience
   const showKafkaConnectLoadingHint = isLoadingKafkaConnect && !kafkaConnectors;
 
-  // Always show Redpanda Connect content - don't block on Kafka Connect availability
-  const redpandaConnectContent = (
-    <div className="flex flex-col gap-6">
-      <Text>
-        Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that drive
-        real-time analytics and actionable business insights. Integrate data across systems with hundreds of prebuilt
-        connectors, change data capture (CDC) capabilities, and YAML-configurable pipelines.{' '}
-        <ExternalLink href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
-          Learn more
-        </ExternalLink>
-      </Text>
-      <PipelineListPageContent />
-    </div>
-  );
-
   // If Kafka Connect is not enabled, just show Redpanda Connect content
   if (!isKafkaConnectEnabled) {
     return (
@@ -398,7 +326,7 @@ export const PipelineListPage = () => {
         ) : (
           <div className="h-10" />
         )}
-        {redpandaConnectContent}
+        <RedpandaConnectContent />
       </div>
     );
   }
@@ -420,18 +348,17 @@ export const PipelineListPage = () => {
           </TabsTrigger>
         </TabsList>
         <TabsContents className="p-6">
-          <TabsContent value="redpanda-connect">{redpandaConnectContent}</TabsContent>
+          <TabsContent value="redpanda-connect">
+            <RedpandaConnectContent />
+          </TabsContent>
           <TabsContent value="kafka-connect">
             <div className="flex flex-col gap-6">
               <Text>
                 Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data with
                 different data systems.{' '}
-                <ExternalLink
-                  href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/"
-                  target="_blank"
-                >
+                <Link href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/" target="_blank">
                   Learn more
-                </ExternalLink>
+                </Link>
               </Text>
               <TabKafkaConnect />
             </div>

@@ -85,21 +85,50 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     icon: OpenAILogo,
     models: [
       {
+        value: 'gpt-5.2-pro',
+        name: 'gpt-5.2-pro',
+        description: 'Maximum accuracy model for difficult problems requiring deep reasoning',
+      },
+      {
+        value: 'gpt-5.2',
+        name: 'gpt-5.2',
+        description: 'The best model for coding and agentic tasks across industries',
+      },
+      {
+        value: 'gpt-5.1',
+        name: 'gpt-5.1',
+        description: 'The best model for coding and agentic tasks with configurable reasoning effort',
+      },
+      {
         value: 'gpt-5',
         name: 'gpt-5',
-        description: 'The best model for coding and agentic tasks across domains',
+        description:
+          'Previous intelligent reasoning model for coding and agentic tasks with configurable reasoning effort',
       },
       {
         value: 'gpt-5-mini',
         name: 'gpt-5-mini',
-        description: 'A faster, cost-efficient version of gpt-5 for well-defined tasks',
+        description: 'A faster, cost-efficient version of GPT-5 for well-defined tasks',
+      },
+      {
+        value: 'gpt-5-nano',
+        name: 'gpt-5-nano',
+        description: 'Fastest, most cost-efficient version of GPT-5',
       },
     ],
   },
   anthropic: {
+    /**
+     * @see https://platform.claude.com/docs/en/about-claude/models/overview
+     */
     label: 'Anthropic',
     icon: AnthropicLogo,
     models: [
+      {
+        value: 'claude-opus-4-5',
+        name: 'Claude Opus 4.5',
+        description: 'Most capable model for complex reasoning and analysis',
+      },
       {
         value: 'claude-sonnet-4-5',
         name: 'Claude Sonnet 4.5',
@@ -108,7 +137,7 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
       {
         value: 'claude-opus-4-1',
         name: 'Claude Opus 4.1',
-        description: 'Most capable for complex reasoning and analysis',
+        description: 'Previous most capable model',
       },
       {
         value: 'claude-haiku-4-5',
@@ -118,9 +147,17 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     ],
   },
   google: {
+    /**
+     * @see https://ai.google.dev/gemini-api/docs/models
+     */
     label: 'Google',
     icon: GeminiLogo,
     models: [
+      {
+        value: 'gemini-3-flash-preview',
+        name: 'Gemini 3 Flash Preview',
+        description: 'Latest fast model with reasoning support',
+      },
       {
         value: 'gemini-3-pro-preview',
         name: 'Gemini 3 Pro Preview',
@@ -198,7 +235,7 @@ export const AIAgentModel = ({ model, providerType, className, showLogo = true, 
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      {showLogo && providerInfo && <img alt={providerInfo.label} className={logoSize} src={providerInfo.icon} />}
+      {showLogo && providerInfo ? <img alt={providerInfo.label} className={logoSize} src={providerInfo.icon} /> : null}
       <Text className="font-mono" variant={size === 'sm' ? 'small' : 'default'}>
         {model}
       </Text>

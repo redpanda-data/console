@@ -19,15 +19,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { type AclDetail, getRuleDataTestId, handleUrlWithHost, parsePrincipal } from '../acls/new-acl/acl.model';
 import { OperationsBadge } from '../acls/new-acl/operations-badge';
 
-interface UserAclsCardProps {
+type UserAclsCardProps = {
   acls?: AclDetail[];
-}
+};
 
-interface AclTableRowProps {
+type AclTableRowProps = {
   acl: AclDetail;
   isExpanded: boolean;
   onToggle: () => void;
-}
+};
 
 const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
   const rowKey = `${acl.sharedConfig.principal}-${acl.sharedConfig.host}`;

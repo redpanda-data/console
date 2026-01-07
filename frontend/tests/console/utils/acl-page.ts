@@ -313,7 +313,32 @@ export class AclPage {
     await submitButton.waitFor({ state: 'visible' });
     await submitButton.scrollIntoViewIfNeeded();
     await this.page.waitForTimeout(500); // Brief pause before click
+
+    // Wait for the ACL creation/update API call to complete
+    // The API uses Connect RPC: /redpanda.api.dataplane.v1.ACLService/CreateACL or DeleteACLs
+    const responsePromise = this.page.waitForResponse(
+      (response) => {
+        const url = response.url();
+        const method = response.request().method();
+        const status = response.status();
+
+        // Match POST requests to ACLService endpoints (CreateACL or DeleteACLs)
+        const matches =
+          (url.includes('ACLService/CreateACL') || url.includes('ACLService/DeleteACLs')) &&
+          method === 'POST' &&
+          status >= 200 &&
+          status < 400;
+
+        return matches;
+      },
+      { timeout: 60_000 } // 60 second timeout for API call (increased for CI stability)
+    );
+
     await submitButton.click();
+    await responsePromise; // Wait for API response
+
+    // Additional wait for ACL propagation to Kafka
+    await this.page.waitForTimeout(2000); // Increased for CI stability
   }
 
   /**
@@ -493,9 +518,5 @@ export class AclPage {
    */
   getRuleContextCard(ruleIndex: number): Locator {
     return this.page.locator(`.card-content-rule-${ruleIndex}`);
-  }
-
-  async waitForStability(timeout = 1000) {
-    await this.page.waitForTimeout(timeout);
   }
 }

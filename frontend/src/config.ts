@@ -50,6 +50,7 @@ import { AppFeatures, getBasePath } from './utils/env';
 declare const __webpack_public_path__: string;
 
 declare global {
+  // biome-ignore lint/style/useConsistentTypeDefinitions: leave as interface due to type checker
   interface Window {
     MonacoEnvironment?: monaco.Environment;
   }
@@ -91,6 +92,7 @@ export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async 
  * If such an error is detected, it redirects the user to the `/trial-expired` page.
  *
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
   try {
     return await next(request);
@@ -320,7 +322,7 @@ setTimeout(() => {
 }, 50);
 
 export function isEmbedded() {
-  return config.jwt != null;
+  return config.jwt !== null && config.jwt !== undefined;
 }
 
 /**
@@ -343,7 +345,7 @@ const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions
 export const embeddedAvailableRoutesObservable = observable({
   get routes() {
     return APP_ROUTES.map((route) => {
-      if (route.path === '/knowledgebases' || route.path === '/mcp-servers' || route.path === '/agents') {
+      if (route.path === '/knowledgebases' || route.path === '/agents') {
         return {
           ...route,
           // Needed because we cannot use JSX in this file
@@ -352,7 +354,7 @@ export const embeddedAvailableRoutesObservable = observable({
       }
       return route;
     })
-      .filter((x) => x.icon != null) // routes without icon are "nested", so they shouldn't be visible directly
+      .filter((x) => x.icon !== null && x.icon !== undefined) // routes without icon are "nested", so they shouldn't be visible directly
       .filter((x) => !routesIgnoredInEmbedded.includes(x.path)) // things that should not be visible in embedded/cloud mode
       .filter((x) => {
         if (x.visibilityCheck) {

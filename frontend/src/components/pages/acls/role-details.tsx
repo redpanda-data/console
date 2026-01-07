@@ -50,7 +50,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
   }
 
   async refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListAcls) {
+    if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
       return;
     }
 
@@ -135,7 +135,9 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
             <SearchField
               placeholderText="Filter by name"
               searchText={this.principalSearch}
-              setSearchText={(x) => (this.principalSearch = x)}
+              setSearchText={(x) => {
+                this.principalSearch = x;
+              }}
               width="300px"
             />
           </Box>

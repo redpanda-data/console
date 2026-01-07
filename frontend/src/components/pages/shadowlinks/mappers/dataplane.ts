@@ -54,7 +54,7 @@ import {
  */
 function mapDataplaneTLSSettings(tlsSettings: TLSSettings | undefined): UnifiedTLSSettings | undefined {
   if (!tlsSettings) {
-    return undefined;
+    return;
   }
 
   let tlsSettingsValue: UnifiedTLSSettings['tlsSettings'];
@@ -95,7 +95,7 @@ function mapDataplaneAuthConfig(
   authConfig: AuthenticationConfiguration | undefined
 ): UnifiedAuthenticationConfiguration | undefined {
   if (!authConfig?.authentication) {
-    return undefined;
+    return;
   }
 
   if (authConfig.authentication.case === 'scramConfiguration') {
@@ -112,7 +112,7 @@ function mapDataplaneAuthConfig(
     };
   }
 
-  return undefined;
+  return;
 }
 
 /**
@@ -122,7 +122,7 @@ function mapDataplaneClientOptions(
   clientOptions: ShadowLinkClientOptions | undefined
 ): UnifiedClientOptions | undefined {
   if (!clientOptions) {
-    return undefined;
+    return;
   }
 
   return {
@@ -155,7 +155,7 @@ function mapDataplaneTopicMetadataSyncOptions(
   options: TopicMetadataSyncOptions | undefined
 ): UnifiedTopicMetadataSyncOptions | undefined {
   if (!options) {
-    return undefined;
+    return;
   }
 
   return {
@@ -176,7 +176,7 @@ function mapDataplaneConsumerOffsetSyncOptions(
   options: ConsumerOffsetSyncOptions | undefined
 ): UnifiedConsumerOffsetSyncOptions | undefined {
   if (!options) {
-    return undefined;
+    return;
   }
 
   return {
@@ -195,7 +195,7 @@ function mapDataplaneSecuritySyncOptions(
   options: SecuritySettingsSyncOptions | undefined
 ): UnifiedSecuritySyncOptions | undefined {
   if (!options) {
-    return undefined;
+    return;
   }
 
   return {
@@ -226,7 +226,7 @@ function mapDataplaneSchemaRegistrySyncOptions(
   options: SchemaRegistrySyncOptions | undefined
 ): UnifiedSchemaRegistrySyncOptions | undefined {
   if (!options) {
-    return undefined;
+    return;
   }
 
   return {
@@ -244,7 +244,7 @@ function mapDataplaneConfigurations(
   config: ShadowLinkConfigurations | undefined
 ): UnifiedShadowLinkConfigurations | undefined {
   if (!config) {
-    return undefined;
+    return;
   }
 
   return {

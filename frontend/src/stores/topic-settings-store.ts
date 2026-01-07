@@ -29,7 +29,7 @@ import { uiSettings } from '../state/ui';
  * Search parameters for topic messages
  * Matches the structure from uiSettings-v3 perTopicSettings[].searchParams
  */
-export interface TopicSearchParams {
+export type TopicSearchParams = {
   offsetOrigin: PartitionOffsetOriginType;
   startOffset: number;
   startTimestamp: number;
@@ -44,13 +44,13 @@ export interface TopicSearchParams {
   filters: FilterEntry[];
   keyDeserializer: PayloadEncoding;
   valueDeserializer: PayloadEncoding;
-}
+};
 
 /**
  * Complete topic settings structure
  * Matches the structure from uiSettings-v3 perTopicSettings[]
  */
-export interface TopicSettings {
+export type TopicSettings = {
   topicName: string;
   searchParams: TopicSearchParams;
   dynamicFilters: 'partition'[];
@@ -72,9 +72,9 @@ export interface TopicSettings {
   produceRecordEncoding: PayloadEncoding | 'base64';
   produceRecordCompression: CompressionType;
   quickSearch: string;
-}
+};
 
-export interface TopicSettingsStore {
+export type TopicSettingsStore = {
   // Map of topic name to settings
   perTopicSettings: TopicSettings[];
 
@@ -109,7 +109,7 @@ export interface TopicSettingsStore {
   // Utility actions
   clearTopicSettings: (topicName: string) => void;
   clearAllSettings: () => void;
-}
+};
 
 const DEFAULT_SORTING: SortingState = [];
 

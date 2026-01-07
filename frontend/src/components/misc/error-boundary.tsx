@@ -10,10 +10,10 @@
  */
 
 import { Box, Button, Flex, Icon, useToast } from '@redpanda-data/ui';
+import { CloseIcon, CopyAllIcon } from 'components/icons';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { type CSSProperties, type FC } from 'react';
-import { MdClose, MdOutlineCopyAll } from 'react-icons/md';
 import StackTrace from 'stacktrace-js';
 
 import { NoClipboardPopover } from './no-clipboard-popover';
@@ -58,7 +58,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
     super(p);
     makeObservable(this);
   }
-
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 19 - extensive error parsing for multiple info types (stack, components, environment)
   componentDidCatch(error: Error | null, errorInfo: object) {
     this.error = error;
     this.errorInfo = errorInfo;
@@ -87,7 +87,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
       this.infoItems.push({
         name: 'Stack (Decoded)',
         value: () => {
-          if (dataHolder.value == null) {
+          if (dataHolder.value === null) {
             return <div style={{ fontSize: '2rem' }}>Decoding stack trace, please wait...</div>;
           }
           return dataHolder.value;
@@ -204,7 +204,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
           </p>
           <Box mb={2} mt={0}>
             <Button onClick={() => this.dismiss()} size="large" style={{ width: '16rem' }} variant="primary">
-              <Icon as={MdClose} />
+              <Icon as={CloseIcon} />
               Dismiss
             </Button>
             <NoClipboardPopover>
@@ -267,7 +267,7 @@ const CopyToClipboardButton: FC<{ message: string; disabled: boolean; isLoading:
       size="large"
       variant="ghost"
     >
-      <Icon as={MdOutlineCopyAll} />
+      <Icon as={CopyAllIcon} />
       Copy Info
     </Button>
   );

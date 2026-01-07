@@ -38,6 +38,7 @@ const buildMessageFromStoredBlocks = (dbMsg: ChatDbMessage): ChatMessage => ({
 /**
  * Reconstruct contentBlocks from flat fields (backward compatibility)
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 const reconstructContentBlocks = (dbMsg: ChatDbMessage): ContentBlock[] => {
   const contentBlocks: ContentBlock[] = [];
   const now = new Date();

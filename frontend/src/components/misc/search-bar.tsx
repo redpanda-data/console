@@ -28,7 +28,7 @@ class SearchBar<TItem> extends Component<{
   onFilteredDataChanged: (data: TItem[]) => void;
   placeholderText?: string;
 }> {
-  private filteredSource = {} as FilterableDataSource<TItem>;
+  private readonly filteredSource = {} as FilterableDataSource<TItem>;
   reactionDisposer: IReactionDisposer | undefined;
 
   /*
@@ -113,7 +113,7 @@ class SearchBar<TItem> extends Component<{
 
       return (
         <AnimatePresence>
-          {searchSummary && (
+          {Boolean(searchSummary) && (
             <MotionSpan
               identityKey={searchSummary?.identity ?? 'null'} // identityKey={searchSummary?.identity ?? 'null'}
               overrideAnimProps={animProps_span_searchResult}

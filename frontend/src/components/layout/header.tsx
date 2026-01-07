@@ -14,7 +14,7 @@ import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link as ReactRouterLink, useMatch } from 'react-router-dom';
 
-import { isEmbedded } from '../../config';
+import { isEmbedded, isFeatureFlagEnabled } from '../../config';
 import { api } from '../../state/backend-api';
 import { type BreadcrumbEntry, uiState } from '../../state/ui-state';
 import { IsDev } from '../../utils/env';
@@ -42,7 +42,7 @@ const AppPageHeader = observer(() => {
 
   const lastBreadcrumb = breadcrumbItems.pop();
 
-  if (shouldHideHeader) {
+  if (shouldHideHeader || uiState.shouldHidePageHeader) {
     return null;
   }
 
@@ -64,7 +64,7 @@ const AppPageHeader = observer(() => {
 
       <Flex alignItems="center" justifyContent="space-between" pb={2}>
         <Flex alignItems="center">
-          {lastBreadcrumb && (
+          {lastBreadcrumb ? (
             <Text
               as="span"
               fontSize="xl"
@@ -82,13 +82,15 @@ const AppPageHeader = observer(() => {
             >
               {lastBreadcrumb.title}
             </Text>
-          )}
-          {lastBreadcrumb && (
+          ) : null}
+          {lastBreadcrumb ? (
             <Box>
-              {lastBreadcrumb.options?.canBeCopied && <CopyButton content={lastBreadcrumb.title} variant="ghost" />}
+              {lastBreadcrumb.options?.canBeCopied ? (
+                <CopyButton content={lastBreadcrumb.title} variant="ghost" />
+              ) : null}
             </Box>
-          )}
-          {showRefresh && <DataRefreshButton />}
+          ) : null}
+          {Boolean(showRefresh) && <DataRefreshButton />}
         </Flex>
         <Flex alignItems="center" gap={2}>
           {!isEmbedded() && api.isRedpanda && (
@@ -142,6 +144,16 @@ function useShouldShowRefresh() {
     end: true,
   });
 
+  const connectWizardPagesMatch = useMatch({
+    path: '/rp-connect/wizard',
+    end: false,
+  });
+
+  const getStartedApiMatch = useMatch({
+    path: '/get-started/api',
+    end: false,
+  });
+
   // matches acls
   const aclCreateMatch = useMatch('/security/acls/create');
   const aclUpdateMatch = useMatch('/security/acls/:id/update');
@@ -172,20 +184,54 @@ function useShouldShowRefresh() {
   if (isRoleRelated) {
     return false;
   }
+  if (connectWizardPagesMatch) {
+    return false;
+  }
+  if (getStartedApiMatch) {
+    return false;
+  }
 
   return true;
 }
 
 function useShouldHideHeader() {
-  const remoteMcpDetailsMatch = useMatch({
-    path: '/mcp-servers/:id',
+  const remoteMcpPagesMatch = useMatch({
+    path: '/mcp-servers',
     end: false,
   });
 
-  const aiAgentDetailsMatch = useMatch({
-    path: '/agents/:id',
+  const aiAgentPagesMatch = useMatch({
+    path: '/agents',
     end: false,
   });
 
-  return remoteMcpDetailsMatch !== null || aiAgentDetailsMatch !== null;
+  const knowledgeBasePagesMatch = useMatch({
+    path: '/knowledgebases',
+    end: false,
+  });
+
+  const secretPagesMatch = useMatch({
+    path: '/secrets',
+    end: false,
+  });
+
+  const pipelineDetailsMatch = useMatch({
+    path: '/rp-connect/:pipelineId',
+    end: true,
+  });
+
+  const pipelineEditMatch = useMatch({
+    path: '/rp-connect/:pipelineId/edit',
+    end: false,
+  });
+  const isNewRpcnUX = isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded();
+
+  return (
+    remoteMcpPagesMatch !== null ||
+    aiAgentPagesMatch !== null ||
+    knowledgeBasePagesMatch !== null ||
+    secretPagesMatch !== null ||
+    (pipelineDetailsMatch !== null && isNewRpcnUX) ||
+    (pipelineEditMatch !== null && isNewRpcnUX)
+  );
 }

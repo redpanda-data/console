@@ -1,4 +1,3 @@
-import { EyeIcon, EyeOffIcon } from '@heroicons/react/outline';
 import {
   Button,
   type ButtonProps,
@@ -10,6 +9,7 @@ import {
   Tooltip,
   useBoolean,
 } from '@redpanda-data/ui';
+import { EyeIcon, EyeOffIcon } from 'components/icons';
 import { observer, useLocalObservable } from 'mobx-react';
 
 export type SecretInputProps = {
@@ -80,7 +80,7 @@ export const SecretInput = observer(({ value, onChange, updating = false }: Secr
           type={visible ? 'text' : 'password'}
           value={localState.value}
         />
-        {localState.canEdit && (
+        {Boolean(localState.canEdit) && (
           <InputRightElement>
             <Button onClick={() => setVisible.toggle()} variant="ghost">
               <Icon as={visible ? EyeIcon : EyeOffIcon} color="gray.500" />
@@ -88,7 +88,7 @@ export const SecretInput = observer(({ value, onChange, updating = false }: Secr
           </InputRightElement>
         )}
       </InputGroup>
-      {updating && (localState.canEdit ? clearButton : editButton)}
+      {Boolean(updating) && (localState.canEdit ? clearButton : editButton)}
     </Flex>
   );
 });

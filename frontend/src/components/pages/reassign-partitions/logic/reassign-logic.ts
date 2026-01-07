@@ -212,7 +212,7 @@ function computeReplicaAssignments(
   const resultBrokers: ExBroker[] = []; // result
   // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
   const sourceBrokers = partition.replicas.map((id) => allBrokers.first((b) => b.brokerId === id)!);
-  if (sourceBrokers.any((x) => x == null)) {
+  if (sourceBrokers.any((x) => x === null)) {
     throw new Error(
       `replicas of partition ${partition.id} (${toJson(partition.replicas)}) define a brokerId which can't be found in 'allBrokers': ${toJson(allBrokers.map((b) => ({ id: b.brokerId, address: b.address, rack: b.rack })))}`
     );
@@ -316,18 +316,18 @@ function computeReplicaAssignments(
     // Take the best broker
     const bestTrackedBroker = brokerReplicaCount[0];
     const bestBroker = bestTrackedBroker.broker;
-    bestTrackedBroker.assignedReplicas++; // increase temporary counter (which only tracks assignments within the topic)
+    bestTrackedBroker.assignedReplicas += 1; // increase temporary counter (which only tracks assignments within the topic)
     resultBrokers.push(bestBroker);
     consumedBrokers.push(bestBroker);
 
     // Increase total number of assigned replicas
-    bestBroker.assignedReplicas++;
+    bestBroker.assignedReplicas += 1;
     // The new assignment will take up disk space, which must be tracked as well.
     bestBroker.assignedSize += partition.replicaSize;
   }
 
   // Count the first broker in the list as the leader
-  resultBrokers[0].assignedLeader++;
+  resultBrokers[0].assignedLeader += 1;
 
   return resultBrokers;
 }
@@ -369,9 +369,9 @@ function balanceLeaders(
         newBrokers[betterLeaderIndex] = plannedLeader;
 
         // Adjust tracking info for leaders and consumed disk size
-        plannedLeader.assignedLeader--;
+        plannedLeader.assignedLeader -= 1;
         plannedLeader.assignedSize -= p.replicaSize;
-        betterLeader.assignedLeader++;
+        betterLeader.assignedLeader += 1;
         betterLeader.assignedSize += p.replicaSize;
 
         // Update final assignments
@@ -381,7 +381,7 @@ function balanceLeaders(
           (exBroker) => apiData.brokers.first((b) => b.brokerId === exBroker.brokerId)!
         );
 
-        leaderSwitchCount++;
+        leaderSwitchCount += 1;
       }
     }
   }
@@ -396,6 +396,7 @@ type RiskyPartition = {
   criticalBrokers: ExBroker[]; // if this broker is offline...
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 function findRiskyPartitions(
   targetBrokers: ExBroker[],
   selectedTopicPartitions: TopicPartitions[],
@@ -522,19 +523,20 @@ class ExBroker implements Broker {
     this.recomputeInitial(selectedTopicPartitions);
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   private recomputeActual(apiData: ApiData) {
     this.actualReplicas = 0;
     this.actualSize = 0;
     this.actualLeader = 0;
 
-    if (apiData.topicPartitions == null) {
+    if (apiData.topicPartitions === null) {
       throw new Error(
         `cannot recompute actual usage of broker '${this.brokerId}' because 'api.topicPartitions == null' (no permissions?)`
       );
     }
 
     for (const [topic, partitions] of apiData.topicPartitions) {
-      if (partitions == null) {
+      if (partitions === null) {
         throw new Error(
           `cannot recompute actual usage of broker '${this.brokerId}' for topic '${topic}', because 'partitions == null' (no permissions?)`
         );
@@ -601,7 +603,7 @@ function checkArguments(apiData: ApiData, selectedTopicPartitions: TopicPartitio
   throwIfNullOrEmpty('apiData.brokers', apiData.brokers);
   throwIfNullOrEmpty('apiData.topics', apiData.topics);
   throwIfNullOrEmpty('apiData.topicPartitions', apiData.topicPartitions);
-  const topicsMissingPartitionData = apiData.topics.filter((t) => apiData.topicPartitions.get(t.topicName) == null);
+  const topicsMissingPartitionData = apiData.topics.filter((t) => apiData.topicPartitions.get(t.topicName) === null);
   if (topicsMissingPartitionData.length > 0) {
     throw new Error(
       `apiData is missing topicPartitions for these topics: ${topicsMissingPartitionData.map((t) => t.topicName).join(', ')}`
@@ -625,7 +627,7 @@ function checkArguments(apiData: ApiData, selectedTopicPartitions: TopicPartitio
 }
 
 function throwIfNullOrEmpty(name: string, obj: unknown[] | Map<unknown, unknown>) {
-  if (obj == null) {
+  if (obj === null) {
     throw new Error(`${name} is null`);
   }
 

@@ -1,9 +1,9 @@
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 
-export interface ConnectNodeCategory {
+export type ConnectNodeCategory = {
   id: string;
   name: string;
-}
+};
 
 const displayNames: Record<string, string> = {
   // Component types

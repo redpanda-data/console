@@ -14,10 +14,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../redpanda-ui/comp
 import { Separator } from '../../redpanda-ui/components/separator';
 import { Text } from '../../redpanda-ui/components/typography';
 
-interface UserInformationCardProps {
+type UserInformationCardProps = {
   username: string;
   onEditPassword?: () => void;
-}
+};
 
 export const UserInformationCard = ({ username, onEditPassword }: UserInformationCardProps) => {
   return (
@@ -39,7 +39,7 @@ export const UserInformationCard = ({ username, onEditPassword }: UserInformatio
           <Text variant="label">Password</Text>
           <Text variant="muted">Passwords cannot be viewed</Text>
           <div className="flex justify-end">
-            {onEditPassword && (
+            {Boolean(onEditPassword) && (
               <Button onClick={onEditPassword} size="sm" variant="outline">
                 Edit
               </Button>

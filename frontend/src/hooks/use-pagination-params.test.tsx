@@ -16,7 +16,7 @@ const mockUseLocation = vi.mocked(useLocation);
 
 describe('usePaginationParams', () => {
   test('returns default values when URL parameters are absent', () => {
-    mockUseLocation.mockReturnValue({ search: '' });
+    mockUseLocation.mockReturnValue({ search: '', pathname: '/', hash: '', key: 'default', state: null });
     // Assuming a total data length of 100 for testing
     const totalDataLength = 100;
     const { result } = renderHook(() => usePaginationParams(totalDataLength, 10));
@@ -25,7 +25,13 @@ describe('usePaginationParams', () => {
   });
 
   test('parses pageSize and pageIndex from URL parameters', () => {
-    mockUseLocation.mockReturnValue({ search: '?pageSize=20&page=2' });
+    mockUseLocation.mockReturnValue({
+      search: '?pageSize=20&page=2',
+      pathname: '/',
+      hash: '',
+      key: 'default',
+      state: null,
+    });
     const totalDataLength = 100;
     const { result } = renderHook(() => usePaginationParams(totalDataLength, 10));
     expect(result.current.pageSize).toBe(20);
@@ -33,7 +39,7 @@ describe('usePaginationParams', () => {
   });
 
   test('uses defaultPageSize when pageSize is not in URL', () => {
-    mockUseLocation.mockReturnValue({ search: '?page=3' });
+    mockUseLocation.mockReturnValue({ search: '?page=3', pathname: '/', hash: '', key: 'default', state: null });
     const totalDataLength = 150;
     const { result } = renderHook(() => usePaginationParams(totalDataLength, 15));
     expect(result.current.pageSize).toBe(15);
@@ -41,7 +47,13 @@ describe('usePaginationParams', () => {
   });
 
   test('adjusts pageIndex if it exceeds calculated totalPages', () => {
-    mockUseLocation.mockReturnValue({ search: '?pageSize=10&page=20' }); // pageIndex is out of range
+    mockUseLocation.mockReturnValue({
+      search: '?pageSize=10&page=20',
+      pathname: '/',
+      hash: '',
+      key: 'default',
+      state: null,
+    }); // pageIndex is out of range
     const totalDataLength = 50; // Only 5 pages available
     const { result } = renderHook(() => usePaginationParams(totalDataLength, 10));
     expect(result.current.pageSize).toBe(10);

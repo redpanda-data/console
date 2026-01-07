@@ -171,13 +171,13 @@ export const AVAILABLE_CLIENTS = [
   ClientType.MANUS,
 ] as const;
 
-interface ClientCommandParams {
+type ClientCommandParams = {
   mcpServerName: string;
   clusterId?: string;
   mcpServerId?: string;
   isServerless?: boolean;
   selectedScope?: string; // For claude-code and gemini
-}
+};
 
 /**
  * Returns the CLI command to add an MCP server for a given client

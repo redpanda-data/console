@@ -9,7 +9,7 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
-import { FormContainer, FormField, FormItem, FormMessage } from 'components/redpanda-ui/components/form';
+import { Field, FieldError } from 'components/redpanda-ui/components/field';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { Plus } from 'lucide-react';
@@ -50,6 +50,8 @@ export const ToolsStep: React.FC<ToolsStepProps> = ({
   onLintTool,
   onExpandTool,
 }) => {
+  const toolsError = form.formState.errors.tools;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
@@ -63,7 +65,7 @@ export const ToolsStep: React.FC<ToolsStepProps> = ({
       <div className={`grid grid-cols-1 gap-6 ${hasSecretWarnings ? 'xl:grid-cols-3' : ''}`}>
         {/* Main tools configuration - takes 2 columns on xl screens when secrets panel is shown, full width otherwise */}
         <div className={hasSecretWarnings ? 'xl:col-span-2' : ''}>
-          <FormContainer layout="default" onSubmit={form.handleSubmit(onSubmit)} width="full">
+          <form className="w-full space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
             <div className="space-y-4">
               {toolFields.map((t, idx) => (
                 <ToolCard
@@ -96,21 +98,17 @@ export const ToolsStep: React.FC<ToolsStepProps> = ({
               </Button>
 
               {/* Array-level message for tools errors (e.g., unique names) */}
-              <FormField
-                control={form.control}
-                name="tools"
-                render={() => (
-                  <FormItem>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {!!toolsError && typeof toolsError.message === 'string' && (
+                <Field>
+                  <FieldError>{toolsError.message}</FieldError>
+                </Field>
+              )}
             </div>
-          </FormContainer>
+          </form>
         </div>
 
         {/* Secrets panel - takes 1 column on xl screens, only shown when there are missing secrets */}
-        {hasSecretWarnings && (
+        {Boolean(hasSecretWarnings) && (
           <div className="xl:col-span-1">
             <div className="sticky top-4">
               <QuickAddSecrets

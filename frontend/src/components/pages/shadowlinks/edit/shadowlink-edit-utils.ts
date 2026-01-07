@@ -91,7 +91,7 @@ export const buildTLSSettings = (
       : Boolean(values.mtls.ca?.pemContent || values.mtls.clientCert?.pemContent || values.mtls.clientKey?.pemContent);
 
   if (!hasCertificates) {
-    return undefined;
+    return;
   }
 
   if (values.mtlsMode === TLS_MODE.FILE_PATH) {
@@ -122,6 +122,7 @@ export const buildTLSSettings = (
 export const getUpdateValuesForConnection = (
   values: FormValues,
   originalValues: FormValues
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 ): UpdateResult<ReturnType<typeof create<typeof ShadowLinkClientOptionsSchema>>> => {
   const fieldMaskPaths: string[] = [];
 

@@ -34,9 +34,9 @@ const MetricCardRefreshButton = ({ isFetching, onRefresh }: { isFetching: boolea
     </Button>
   );
 
-interface ShadowLinkMetricsProps {
+type ShadowLinkMetricsProps = {
   shadowLink: UnifiedShadowLink;
-}
+};
 
 export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
   const {

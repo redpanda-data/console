@@ -6,7 +6,7 @@ import type { Property } from '../../../../../state/connect/state';
 import { ExpandableText } from '../../../../misc/expandable-text';
 
 const isRequiredError = (name: string) => `Required configuration "${name}" must be provided`;
-const isEmpty = (property: Property) => property.value === '' || property.value == null;
+const isEmpty = (property: Property) => property.value === '' || property.value === null;
 
 export const ErrorWrapper = observer((props: PropsWithoutRef<{ property: Property; input: JSX.Element }>) => {
   const { property, input } = props;
@@ -17,7 +17,11 @@ export const ErrorWrapper = observer((props: PropsWithoutRef<{ property: Propert
 
   const errorToShow = showErrors ? errors[property.currentErrorIndex % errors.length] : undefined;
 
-  const cycleError = showErrors ? () => property.currentErrorIndex++ : undefined;
+  const cycleError = showErrors
+    ? () => {
+        property.currentErrorIndex += 1;
+      }
+    : undefined;
 
   return (
     <div>

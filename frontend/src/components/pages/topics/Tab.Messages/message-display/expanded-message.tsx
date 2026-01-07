@@ -25,7 +25,7 @@ const ExpandedMessageFooter: FC<{ children?: ReactNode; onDownloadRecord?: () =>
 }) => (
   <Flex gap={2} justifyContent="flex-end" my={4}>
     {children}
-    {onDownloadRecord && (
+    {Boolean(onDownloadRecord) && (
       <Button onClick={onDownloadRecord} variant="outline">
         Download Record
       </Button>
@@ -56,17 +56,17 @@ export const ExpandedMessage: FC<{
                 {msg.key === null || msg.key.size === 0 ? 'Key' : `Key (${prettyBytes(msg.key.size)})`}
               </Box>
             ),
-            isDisabled: msg.key == null || msg.key.size === 0,
+            isDisabled: msg.key === null || msg.key.size === 0,
             component: (
               <Box>
                 <TroubleshootReportViewer payload={msg.key} />
                 <PayloadComponent loadLargeMessage={loadLargeMessage} payload={msg.key} />
                 <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
-                  {onCopyKey && (
+                  {onCopyKey ? (
                     <Button isDisabled={msg.key.isPayloadNull} onClick={() => onCopyKey(msg)} variant="outline">
                       Copy Key
                     </Button>
-                  )}
+                  ) : null}
                 </ExpandedMessageFooter>
               </Box>
             ),
@@ -83,11 +83,11 @@ export const ExpandedMessage: FC<{
                 <TroubleshootReportViewer payload={msg.value} />
                 <PayloadComponent loadLargeMessage={loadLargeMessage} payload={msg.value} />
                 <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
-                  {onCopyValue && (
+                  {onCopyValue ? (
                     <Button isDisabled={msg.value.isPayloadNull} onClick={() => onCopyValue(msg)} variant="outline">
                       Copy Value
                     </Button>
-                  )}
+                  ) : null}
                 </ExpandedMessageFooter>
               </Box>
             ),
@@ -99,7 +99,7 @@ export const ExpandedMessage: FC<{
             component: (
               <Box>
                 <MessageHeaders msg={msg} />
-                {onDownloadRecord && <ExpandedMessageFooter onDownloadRecord={onDownloadRecord} />}
+                {Boolean(onDownloadRecord) && <ExpandedMessageFooter onDownloadRecord={onDownloadRecord} />}
               </Box>
             ),
           },

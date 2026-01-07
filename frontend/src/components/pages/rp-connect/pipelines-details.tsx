@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { ConnectError } from '@connectrpc/connect';
 import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import type { ColumnDef } from '@tanstack/react-table';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
@@ -16,6 +17,8 @@ import { makeObservable, observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast as sonnerToast } from 'sonner';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
 import PipelinePage from './pipeline';
@@ -80,6 +83,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
     if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
       return <PipelinePage />;
     }
+
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }
@@ -129,7 +133,8 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                 let waitIteration = 0;
 
                 while (true) {
-                  const waitTime = waitDelays[Math.min(waitDelays.length - 1, waitIteration++)];
+                  const waitTime = waitDelays[Math.min(waitDelays.length - 1, waitIteration)];
+                  waitIteration += 1;
                   await delay(waitTime);
 
                   await pipelinesApi.refreshPipelines(true);
@@ -171,7 +176,9 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                     description: String(err),
                   });
                 })
-                .finally(() => (this.isChangingPauseState = false));
+                .finally(() => {
+                  this.isChangingPauseState = false;
+                });
             }}
             variant="outline"
           >
@@ -209,7 +216,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
           </Button>
         </Flex>
 
-        {error && (
+        {Boolean(error) && (
           <Alert status="error" variant="left-accent">
             <AlertIcon />
             {error}
@@ -272,7 +279,13 @@ export const LogsTab = observer((p: { pipeline: Pipeline }) => {
 
     // Resume search immediately
     const searchPromise = executeMessageSearch(search, topicName, p.pipeline.id);
-    searchPromise.catch((x) => (tabState.error = String(x))).finally(() => (tabState.isComplete = true));
+    searchPromise
+      .catch((x) => {
+        tabState.error = String(x);
+      })
+      .finally(() => {
+        tabState.isComplete = true;
+      });
     return tabState;
   };
 
@@ -352,7 +365,9 @@ export const LogsTab = observer((p: { pipeline: Pipeline }) => {
         <Flex mb="6">
           <SearchField
             searchText={uiSettings.pipelinesDetails.logsQuickSearch}
-            setSearchText={(x) => (uiSettings.pipelinesDetails.logsQuickSearch = x)}
+            setSearchText={(x) => {
+              uiSettings.pipelinesDetails.logsQuickSearch = x;
+            }}
             width="230px"
           />
           <Button ml="auto" onClick={() => setState(createLogsTabState())} variant="outline">
@@ -426,7 +441,11 @@ function executeMessageSearch(search: MessageSearch, topicName: string, pipeline
   return runInAction(() => {
     try {
       return search.startSearch(request);
-    } catch (_error: unknown) {
+    } catch (error) {
+      const connectError = ConnectError.from(error);
+      sonnerToast.error(
+        formatToastErrorMessageGRPC({ error: connectError, action: 'search', entity: 'pipeline logs' })
+      );
       return Promise.resolve([]);
     }
   });

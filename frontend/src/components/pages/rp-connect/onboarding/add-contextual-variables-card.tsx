@@ -167,7 +167,7 @@ export const AddContextualVariablesCard = ({
                       </Badge>
                     ))}
                   </CollapsibleContent>
-                  {hasMoreVariables && (
+                  {Boolean(hasMoreVariables) && (
                     <CollapsibleTrigger asChild>
                       <Badge
                         className="cursor-pointer hover:bg-accent hover:text-accent-foreground"

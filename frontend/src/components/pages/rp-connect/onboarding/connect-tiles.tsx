@@ -125,8 +125,8 @@ const ConnectTilesSkeleton = memo(
     gridCols?: number;
     tileCount?: number;
   }) => {
-    const skeletonTiles = Array.from({ length: tileCount }, (_, i) => (
-      <div className="h-[78px] rounded-lg border bg-card p-4" key={`skeleton-tile-${i}`}>
+    const skeletonTiles = Array.from({ length: tileCount }, () => (
+      <div className="h-[78px] rounded-lg border bg-card p-4" key={crypto.randomUUID()}>
         <SkeletonGroup direction="horizontal" spacing="default">
           <SkeletonGroup className="flex-1" direction="vertical" spacing="sm">
             <Skeleton variant="heading" width="md" />
@@ -426,7 +426,7 @@ export const ConnectTiles = memo(
                   />
                 </div>
                 {/* Gradient overlay to indicate scrollability - only show when not at bottom */}
-                {showScrollGradient && (
+                {Boolean(showScrollGradient) && (
                   <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-gradient-to-t from-background via-background/60 to-transparent" />
                 )}
               </div>
