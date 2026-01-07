@@ -405,7 +405,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
   return (
     <div className="space-y-4 p-3">
       {/* Model Info & Token Counts */}
-      {llmData.model && (
+      {!!llmData.model && (
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground text-xs">Model:</span>
           <Badge className="text-xs" variant="secondary">
@@ -432,7 +432,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
       )}
 
       {/* INPUT */}
-      {(llmData.input || llmData.lastInputMessage) && (
+      {!!(llmData.input || llmData.lastInputMessage) && (
         <div className="space-y-1.5">
           <div className="flex items-center gap-1">
             <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">INPUT</h5>
@@ -451,33 +451,33 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
             </TooltipProvider>
           </div>
           <ContentPanel spacing>
-            {llmData.input && (
+            {!!llmData.input && (
               <p className="whitespace-pre-wrap break-words text-[10px] leading-relaxed">{llmData.input}</p>
             )}
 
             {/* Tool responses in input */}
-            {llmData.lastInputMessage?.toolResponses && llmData.lastInputMessage.toolResponses.length > 0 && (
+            {llmData.lastInputMessage?.toolResponses && llmData.lastInputMessage.toolResponses.length > 0 ? (
               <div className="space-y-4">
                 {llmData.lastInputMessage.toolResponses.map((toolResp, idx) => (
                   <ToolResponseDisplay key={idx} response={toolResp} />
                 ))}
               </div>
-            )}
+            ) : null}
 
             {/* Tool calls in input (rare but possible) */}
-            {llmData.lastInputMessage?.toolCalls && llmData.lastInputMessage.toolCalls.length > 0 && (
+            {llmData.lastInputMessage?.toolCalls && llmData.lastInputMessage.toolCalls.length > 0 ? (
               <div className="space-y-4">
                 {llmData.lastInputMessage.toolCalls.map((toolCall, idx) => (
                   <ToolCallDisplay key={idx} toolCall={toolCall} />
                 ))}
               </div>
-            )}
+            ) : null}
           </ContentPanel>
         </div>
       )}
 
       {/* OUTPUT */}
-      {(llmData.output || llmData.lastOutputMessage) && (
+      {!!(llmData.output || llmData.lastOutputMessage) && (
         <div className="space-y-1.5">
           <div className="flex items-center gap-1">
             <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">OUTPUT</h5>
@@ -493,27 +493,27 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
             </TooltipProvider>
           </div>
           <ContentPanel spacing>
-            {llmData.output && (
+            {!!llmData.output && (
               <p className="whitespace-pre-wrap break-words text-[10px] leading-relaxed">{llmData.output}</p>
             )}
 
             {/* Tool calls in output (LLM making tool calls) */}
-            {llmData.lastOutputMessage?.toolCalls && llmData.lastOutputMessage.toolCalls.length > 0 && (
+            {llmData.lastOutputMessage?.toolCalls && llmData.lastOutputMessage.toolCalls.length > 0 ? (
               <div className="space-y-4">
                 {llmData.lastOutputMessage.toolCalls.map((toolCall, idx) => (
                   <ToolCallDisplay key={idx} toolCall={toolCall} />
                 ))}
               </div>
-            )}
+            ) : null}
 
             {/* Tool responses in output (rare but possible) */}
-            {llmData.lastOutputMessage?.toolResponses && llmData.lastOutputMessage.toolResponses.length > 0 && (
+            {llmData.lastOutputMessage?.toolResponses && llmData.lastOutputMessage.toolResponses.length > 0 ? (
               <div className="space-y-4">
                 {llmData.lastOutputMessage.toolResponses.map((toolResp, idx) => (
                   <ToolResponseDisplay key={idx} response={toolResp} />
                 ))}
               </div>
-            )}
+            ) : null}
           </ContentPanel>
         </div>
       )}
@@ -534,7 +534,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
             {isHistoryOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
           </Button>
         </CollapsibleTrigger>
-        {hasConversationHistory && (
+        {hasConversationHistory ? (
           <CollapsibleContent className="space-y-2 pt-2">
             {visibleHistoryMessages.map((message, idx) => {
               const Icon = getMessageIcon(message.role);
@@ -553,7 +553,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
                   </div>
 
                   {/* Text content */}
-                  {hasContent && (
+                  {hasContent ? (
                     <div className="text-[10px] leading-relaxed">
                       {isJson ? (
                         <div className="[&_*]:text-[10px]">
@@ -563,30 +563,30 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
                         <p className="whitespace-pre-wrap break-words text-muted-foreground">{message.content}</p>
                       )}
                     </div>
-                  )}
+                  ) : null}
 
                   {/* Tool calls */}
-                  {hasToolCalls && (
+                  {hasToolCalls ? (
                     <div className="mt-2 space-y-4">
                       {message.toolCalls?.map((toolCall, tcIdx) => (
                         <ToolCallDisplay key={tcIdx} toolCall={toolCall} />
                       ))}
                     </div>
-                  )}
+                  ) : null}
 
                   {/* Tool responses */}
-                  {hasToolResponses && (
+                  {hasToolResponses ? (
                     <div className="mt-2 space-y-4">
                       {message.toolResponses?.map((toolResp, trIdx) => (
                         <ToolResponseDisplay key={trIdx} response={toolResp} />
                       ))}
                     </div>
-                  )}
+                  ) : null}
                 </ContentPanel>
               );
             })}
           </CollapsibleContent>
-        )}
+        ) : null}
       </Collapsible>
     </div>
   );

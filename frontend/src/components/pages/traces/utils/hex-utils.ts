@@ -10,9 +10,10 @@
  */
 
 export const bytesToHex = (bytes: Uint8Array): string => {
-  const hexArray: string[] = [];
+  // Pre-allocate array for better performance with large datasets
+  const hexArray = new Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) {
-    hexArray.push(bytes[i].toString(16).padStart(2, '0'));
+    hexArray[i] = bytes[i].toString(16).padStart(2, '0');
   }
   return hexArray.join('');
 };

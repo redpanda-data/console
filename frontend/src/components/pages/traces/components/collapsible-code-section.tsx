@@ -76,10 +76,10 @@ export const CollapsibleCodeSection: FC<Props> = ({ title, content, defaultExpan
           type="button"
         >
           <ContentPanel>
-            <p className="font-mono text-[9px] text-muted-foreground leading-relaxed break-all line-clamp-3">
+            <p className="line-clamp-3 break-all font-mono text-[9px] text-muted-foreground leading-relaxed">
               {preview}
             </p>
-            <div className="mt-2 flex items-center justify-center text-[9px] text-muted-foreground/60 font-medium">
+            <div className="mt-2 flex items-center justify-center font-medium text-[9px] text-muted-foreground/60">
               Click to expand
             </div>
           </ContentPanel>

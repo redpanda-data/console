@@ -104,7 +104,7 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
       )}
 
       {/* Service Information */}
-      {summary.serviceName && (
+      {!!summary.serviceName && (
         <div className="space-y-2">
           <SectionHeader>Service</SectionHeader>
           <ContentPanel>
@@ -114,7 +114,7 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
       )}
 
       {/* Conversation ID */}
-      {conversationId && (
+      {!!conversationId && (
         <div className="space-y-2">
           <SectionHeader>Conversation ID</SectionHeader>
           <ContentPanel>

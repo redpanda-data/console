@@ -75,12 +75,12 @@ export const TraceListPage: FC = () => {
   }, [timeRange]);
 
   const timestamps = useMemo(() => {
-    const startTime = nowMs - selectedRange.ms;
+    const startMs = nowMs - selectedRange.ms;
 
     return {
       startTimestamp: create(TimestampSchema, {
-        seconds: BigInt(Math.floor(startTime / 1000)),
-        nanos: (startTime % 1000) * 1_000_000,
+        seconds: BigInt(Math.floor(startMs / 1000)),
+        nanos: (startMs % 1000) * 1_000_000,
       }),
       endTimestamp: create(TimestampSchema, {
         seconds: BigInt(Math.floor(nowMs / 1000)),
