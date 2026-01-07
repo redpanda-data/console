@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Redpanda Data, Inc.
+ * Copyright 2026 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -92,7 +92,7 @@ export const TraceListPage: FC = () => {
   const { data, isLoading, error, refetch } = useListTracesQuery({
     startTime: timestamps.startTimestamp,
     endTime: timestamps.endTimestamp,
-    pageSize: 100,
+    pageSize: 500,
   });
 
   // Connect the global refresh button to this page's refetch function

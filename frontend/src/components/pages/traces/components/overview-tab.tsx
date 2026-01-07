@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Redpanda Data, Inc.
+ * Copyright 2026 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -9,8 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { cn } from 'components/redpanda-ui/lib/utils';
 import type { Trace } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
-import type { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 import { useMemo } from 'react';
 
 import { formatDuration } from '../utils/trace-formatters';
@@ -19,6 +20,30 @@ import { calculateTraceStatistics, getConversationId } from '../utils/trace-stat
 interface Props {
   trace: Trace | undefined;
 }
+
+interface MetricCardProps {
+  label: string;
+  value: ReactNode;
+  variant?: 'default' | 'error';
+}
+
+const MetricCard: FC<MetricCardProps> = ({ label, value, variant = 'default' }) => {
+  const isError = variant === 'error';
+  return (
+    <div className={cn('rounded border p-2', isError ? 'border-destructive/20 bg-destructive/10' : 'bg-muted/30')}>
+      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className={cn('font-mono font-semibold text-sm', isError && 'text-destructive')}>{value}</div>
+    </div>
+  );
+};
+
+interface SectionHeaderProps {
+  children: ReactNode;
+}
+
+const SectionHeader: FC<SectionHeaderProps> = ({ children }) => (
+  <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">{children}</h4>
+);
 
 export const OverviewTab: FC<Props> = ({ trace }) => {
   const statistics = useMemo(() => calculateTraceStatistics(trace), [trace]);
@@ -37,29 +62,18 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
     <div className="space-y-4 p-3">
       {/* Trace Summary Section */}
       <div className="space-y-2">
-        <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Trace Summary</h4>
+        <SectionHeader>Trace Summary</SectionHeader>
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded border bg-muted/30 p-2">
-            <div className="text-[10px] text-muted-foreground">Total Spans</div>
-            <div className="font-mono font-semibold text-sm">{summary.spanCount}</div>
-          </div>
-          <div className="rounded border bg-muted/30 p-2">
-            <div className="text-[10px] text-muted-foreground">Duration</div>
-            <div className="font-mono font-semibold text-sm">{formatDuration(Number(summary.durationMs))}</div>
-          </div>
+          <MetricCard label="Total Spans" value={summary.spanCount} />
+          <MetricCard label="Duration" value={formatDuration(Number(summary.durationMs))} />
         </div>
-        {summary.errorCount > 0 && (
-          <div className="rounded border bg-red-500/10 p-2">
-            <div className="text-[10px] text-muted-foreground">Error Count</div>
-            <div className="font-mono font-semibold text-red-600 text-sm">{summary.errorCount}</div>
-          </div>
-        )}
+        {summary.errorCount > 0 && <MetricCard label="Error Count" value={summary.errorCount} variant="error" />}
       </div>
 
       {/* Token Usage Section */}
       {statistics.totalTokens > 0 && (
         <div className="space-y-2">
-          <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Token Usage</h4>
+          <SectionHeader>Token Usage</SectionHeader>
           <div className="space-y-2 rounded border bg-muted/30 p-3">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground text-xs">Input tokens</span>
@@ -80,20 +94,10 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
       {/* Operations Section */}
       {(statistics.llmCallCount > 0 || statistics.toolCallCount > 0) && (
         <div className="space-y-2">
-          <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Operations</h4>
+          <SectionHeader>Operations</SectionHeader>
           <div className="grid grid-cols-2 gap-2">
-            {statistics.llmCallCount > 0 && (
-              <div className="rounded border bg-muted/30 p-2">
-                <div className="text-[10px] text-muted-foreground">LLM Calls</div>
-                <div className="font-mono font-semibold text-sm">{statistics.llmCallCount}</div>
-              </div>
-            )}
-            {statistics.toolCallCount > 0 && (
-              <div className="rounded border bg-muted/30 p-2">
-                <div className="text-[10px] text-muted-foreground">Tool Calls</div>
-                <div className="font-mono font-semibold text-sm">{statistics.toolCallCount}</div>
-              </div>
-            )}
+            {statistics.llmCallCount > 0 && <MetricCard label="LLM Calls" value={statistics.llmCallCount} />}
+            {statistics.toolCallCount > 0 && <MetricCard label="Tool Calls" value={statistics.toolCallCount} />}
           </div>
         </div>
       )}
@@ -101,7 +105,7 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
       {/* Service Information */}
       {summary.serviceName && (
         <div className="space-y-2">
-          <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Service</h4>
+          <SectionHeader>Service</SectionHeader>
           <div className="rounded border bg-muted/30 p-2">
             <div className="font-mono text-sm">{summary.serviceName}</div>
           </div>
@@ -111,7 +115,7 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
       {/* Conversation ID */}
       {conversationId && (
         <div className="space-y-2">
-          <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Conversation ID</h4>
+          <SectionHeader>Conversation ID</SectionHeader>
           <div className="rounded border bg-muted/30 p-2">
             <div className="break-all font-mono text-xs">{conversationId}</div>
           </div>

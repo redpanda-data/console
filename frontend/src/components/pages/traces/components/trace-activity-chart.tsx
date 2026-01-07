@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Redpanda Data, Inc.
+ * Copyright 2026 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -13,6 +13,7 @@ import { timestampDate } from '@bufbuild/protobuf/wkt';
 import type { TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { FC } from 'react';
 import { useMemo } from 'react';
+import { pluralizeWithNumber } from 'utils/string';
 
 interface Props {
   traces: TraceSummary[];
@@ -103,7 +104,7 @@ export const TraceActivityChart: FC<Props> = ({ traces, timeRangeMs }) => {
               className="min-w-[2px] flex-1 rounded-t-sm bg-emerald-500/70 transition-all hover:bg-emerald-500"
               key={i}
               style={{ height: `${height}%` }}
-              title={`${bucket.count} traces`}
+              title={pluralizeWithNumber(bucket.count, 'trace')}
             />
           );
         })}

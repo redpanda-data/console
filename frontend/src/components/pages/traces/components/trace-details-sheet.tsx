@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Redpanda Data, Inc.
+ * Copyright 2026 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -23,7 +23,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/
 import { AlertCircle, Check, Link2, Maximize2, X } from 'lucide-react';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useGetTraceQuery } from 'react-query/api/tracing';
 
 import { getDefaultTab, isLLMSpan, isToolSpan, TraceDetailsTabs } from './trace-details-tabs';
@@ -43,19 +43,17 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState<string>('overview');
   const { data: traceData, isLoading } = useGetTraceQuery(traceId);
-  const copyTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
 
   const trace = traceData?.trace;
 
-  // Cleanup timeout on unmount
-  useEffect(
-    () => () => {
-      if (copyTimeoutRef.current) {
-        clearTimeout(copyTimeoutRef.current);
-      }
-    },
-    []
-  );
+  // Reset "Copied!" message after 2 seconds. Without the cleanup (return statement),
+  // if the sheet closes within 2s, setTimeout would still fire and call setState on
+  // an unmounted component, causing React warnings and wasted work.
+  useEffect(() => {
+    if (!isLinkCopied) return;
+    const timeoutId = window.setTimeout(() => setIsLinkCopied(false), 2000);
+    return () => window.clearTimeout(timeoutId);
+  }, [isLinkCopied]);
 
   const handleCopyLink = async () => {
     if (!(traceId && spanId)) {
@@ -75,7 +73,6 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
     try {
       await navigator.clipboard.writeText(url.toString());
       setIsLinkCopied(true);
-      copyTimeoutRef.current = setTimeout(() => setIsLinkCopied(false), 2000);
     } catch {
       setIsLinkCopied(false);
     }

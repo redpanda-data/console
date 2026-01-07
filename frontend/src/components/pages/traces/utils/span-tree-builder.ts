@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Redpanda Data, Inc.
+ * Copyright 2026 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
+import { type Span, Status_StatusCode } from 'protogen/redpanda/otel/v1/trace_pb';
 
 import { extractSpanAttributes } from './attribute-helpers';
 import { bytesToHex } from './hex-utils';
@@ -42,7 +42,7 @@ export const buildSpanTree = (spans: Span[]): SpanNode[] => {
       startTime: span.startTimeUnixNano,
       endTime: span.endTimeUnixNano,
       duration,
-      hasError: span.status?.code === 2,
+      hasError: span.status?.code === Status_StatusCode.ERROR,
       attributes: extractSpanAttributes(span.attributes),
       children: [],
       span,

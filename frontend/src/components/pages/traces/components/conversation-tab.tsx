@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Redpanda Data, Inc.
+ * Copyright 2026 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -10,6 +10,7 @@
  */
 
 import { Badge } from 'components/redpanda-ui/components/badge';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { ScrollArea } from 'components/redpanda-ui/components/scroll-area';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { Trace } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
@@ -18,18 +19,21 @@ import { useMemo } from 'react';
 
 import { extractConversationHistory } from '../utils/llm-extractors';
 
-interface Props {
+type Props = {
   trace: Trace;
-}
+};
 
 export const ConversationTab: FC<Props> = ({ trace }) => {
   const messages = useMemo(() => extractConversationHistory(trace), [trace]);
 
   if (messages.length === 0) {
     return (
-      <div className="rounded bg-muted/10 p-8 text-center text-muted-foreground">
-        No conversation history found in this trace
-      </div>
+      <Empty>
+        <EmptyHeader>
+          <EmptyTitle>No conversation history</EmptyTitle>
+          <EmptyDescription>No conversation history found in this trace</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 

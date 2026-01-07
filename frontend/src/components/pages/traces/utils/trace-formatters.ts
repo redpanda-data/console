@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Redpanda Data, Inc.
+ * Copyright 2026 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -9,6 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
+
+/**
+ * Formats a duration in milliseconds to a human-readable string.
+ * Uses concise format suitable for tracing UIs (e.g., "1.5h", "250ms", "10μs")
+ */
 export const formatDuration = (ms: number): string => {
   if (ms < 1) {
     return `${(ms * 1000).toFixed(0)}μs`;
@@ -25,22 +31,11 @@ export const formatDuration = (ms: number): string => {
   return `${(ms / 3_600_000).toFixed(1)}h`;
 };
 
-export const formatTimestamp = (ms: number): string => {
-  const now = Date.now();
-  const diff = now - ms;
-
-  if (diff < 60_000) {
-    return 'just now';
-  }
-  if (diff < 3_600_000) {
-    return `${Math.floor(diff / 60_000)}m ago`;
-  }
-  if (diff < 86_400_000) {
-    return `${Math.floor(diff / 3_600_000)}h ago`;
-  }
-
-  return new Date(ms).toLocaleString();
-};
+/**
+ * Formats a timestamp as a relative time string using date-fns.
+ * Examples: "about 5 minutes ago", "2 hours ago", "3 days ago"
+ */
+export const formatTimestamp = (ms: number): string => formatDistanceToNow(new Date(ms), { addSuffix: true });
 
 export const formatTraceId = (id: string, maxLength = 12): string => {
   if (id.length <= maxLength) {

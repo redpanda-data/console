@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Redpanda Data, Inc.
+ * Copyright 2026 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -11,6 +11,7 @@
 
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { CheckCircle, ChevronDown, ChevronRight, HelpCircle, History, MessageSquare, User, Wrench } from 'lucide-react';
@@ -59,27 +60,23 @@ interface Message {
 
 // Component: Display tool call
 const ToolCallDisplay: FC<{ toolCall: ToolCall }> = ({ toolCall }) => (
-  <div className="rounded border border-amber-200 bg-amber-50/30 p-2">
-    <div className="mb-1 flex items-center gap-1.5">
-      <Wrench className="h-3 w-3 text-amber-600" />
-      <span className="font-medium text-[10px] text-amber-700">Tool Call: {toolCall.name}</span>
+  <div className="space-y-1.5">
+    <div className="flex items-center gap-1.5">
+      <Wrench className="h-3 w-3 text-muted-foreground" />
+      <span className="font-medium text-[10px] text-muted-foreground">Tool Call: {toolCall.name}</span>
     </div>
-    <pre className="overflow-x-auto rounded bg-muted/30 p-1.5">
-      <code className="font-mono text-[10px]">{JSON.stringify(toolCall.arguments, null, 2)}</code>
-    </pre>
+    <DynamicCodeBlock code={JSON.stringify(toolCall.arguments, null, 2)} lang="json" />
   </div>
 );
 
 // Component: Display tool response
 const ToolResponseDisplay: FC<{ response: ToolResponse }> = ({ response }) => (
-  <div className="rounded border border-blue-200 bg-blue-50/30 p-2">
-    <div className="mb-1 flex items-center gap-1.5">
-      <CheckCircle className="h-3 w-3 text-blue-600" />
-      <span className="font-medium text-[10px] text-blue-700">Tool Response</span>
+  <div className="space-y-1.5">
+    <div className="flex items-center gap-1.5">
+      <CheckCircle className="h-3 w-3 text-muted-foreground" />
+      <span className="font-medium text-[10px] text-muted-foreground">Tool Response</span>
     </div>
-    <pre className="overflow-x-auto rounded bg-muted/30 p-1.5">
-      <code className="font-mono text-[10px]">{JSON.stringify(response.response, null, 2)}</code>
-    </pre>
+    <DynamicCodeBlock code={JSON.stringify(response.response, null, 2)} lang="json" />
   </div>
 );
 
@@ -552,9 +549,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
                   {hasContent && (
                     <div className="text-xs leading-relaxed">
                       {isJson ? (
-                        <pre className="overflow-x-auto rounded bg-muted/30 p-1.5">
-                          <code className="font-mono text-[10px]">{formatJsonContent(message.content)}</code>
-                        </pre>
+                        <DynamicCodeBlock code={formatJsonContent(message.content)} lang="json" />
                       ) : (
                         <p className="whitespace-pre-wrap text-muted-foreground">{message.content}</p>
                       )}

@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Redpanda Data, Inc.
+ * Copyright 2026 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -10,6 +10,8 @@
  */
 
 import { Badge } from 'components/redpanda-ui/components/badge';
+import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Wrench } from 'lucide-react';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
@@ -26,21 +28,32 @@ const getAttributeValue = (span: Span, key: string): string => {
     return '';
   }
 
-  switch (attr.value.value.case) {
+  const valueWrapper = attr.value.value;
+  if (!valueWrapper.case || valueWrapper.value === undefined) {
+    return '';
+  }
+
+  switch (valueWrapper.case) {
     case 'stringValue':
-      return attr.value.value.value;
-    case 'intValue':
-      return String(Number(attr.value.value.value));
-    case 'doubleValue':
-      return String(attr.value.value.value);
+      return typeof valueWrapper.value === 'string' ? valueWrapper.value : '';
+    case 'intValue': {
+      const numValue = Number(valueWrapper.value);
+      return Number.isNaN(numValue) ? '' : String(numValue);
+    }
+    case 'doubleValue': {
+      const numValue = Number(valueWrapper.value);
+      return Number.isNaN(numValue) ? '' : String(numValue);
+    }
     case 'boolValue':
-      return attr.value.value.value ? 'true' : 'false';
+      return valueWrapper.value ? 'true' : 'false';
     default:
       return '';
   }
 };
 
-const MAX_PAYLOAD_SIZE = 20 * 1024; // 20KB
+// Maximum payload size before truncation (20KB) to prevent UI performance issues
+// with very large payloads. This matches the typical maximum size for trace attributes.
+const MAX_PAYLOAD_SIZE = 20 * 1024;
 
 const truncateContent = (content: string): string => {
   if (content.length <= MAX_PAYLOAD_SIZE) {
@@ -128,9 +141,12 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
 
   if (!hasToolData) {
     return (
-      <div className="rounded bg-muted/10 p-8 text-center text-muted-foreground">
-        No tool call data found in this span
-      </div>
+      <Empty>
+        <EmptyHeader>
+          <EmptyTitle>No tool call data</EmptyTitle>
+          <EmptyDescription>No tool call data found in this span</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
@@ -181,15 +197,15 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
       {toolData.hasArguments && (
         <div className="space-y-1.5">
           <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">ARGUMENTS</h5>
-          <div className="rounded border bg-muted/30 p-2">
-            {toolData.isArgumentsJson ? (
-              <pre className="overflow-x-auto">
-                <code className="font-mono text-[10px] leading-relaxed">{formatJsonContent(toolData.arguments)}</code>
+          {toolData.isArgumentsJson ? (
+            <DynamicCodeBlock code={formatJsonContent(toolData.arguments)} lang="json" />
+          ) : (
+            <div className="rounded border bg-muted/30 p-3">
+              <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed">
+                {truncateContent(toolData.arguments)}
               </pre>
-            ) : (
-              <p className="whitespace-pre-wrap text-[11px] leading-relaxed">{truncateContent(toolData.arguments)}</p>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -197,15 +213,15 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
       {toolData.hasResult && (
         <div className="space-y-1.5">
           <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">RESULT</h5>
-          <div className="rounded border bg-muted/30 p-2">
-            {toolData.isResultJson ? (
-              <pre className="overflow-x-auto">
-                <code className="font-mono text-[10px] leading-relaxed">{formatJsonContent(toolData.result)}</code>
+          {toolData.isResultJson ? (
+            <DynamicCodeBlock code={formatJsonContent(toolData.result)} lang="json" />
+          ) : (
+            <div className="rounded border bg-muted/30 p-3">
+              <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed">
+                {truncateContent(toolData.result)}
               </pre>
-            ) : (
-              <p className="whitespace-pre-wrap text-[11px] leading-relaxed">{truncateContent(toolData.result)}</p>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>

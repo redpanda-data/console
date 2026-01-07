@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Redpanda Data, Inc.
+ * Copyright 2026 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -10,19 +10,22 @@
  */
 
 import { Input } from 'components/redpanda-ui/components/input';
+import JSONBigIntFactory from 'json-bigint';
 import { Search } from 'lucide-react';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
 
-interface Props {
-  span: Span;
-}
+const JSONBigInt = JSONBigIntFactory({ storeAsString: true });
 
-interface AttributeEntry {
+type Props = {
+  span: Span;
+};
+
+type AttributeEntry = {
   key: string;
   value: string;
-}
+};
 
 // Recursively extract the actual value from protobuf-es structure
 const extractProtoValue = (value: unknown): unknown => {
@@ -110,9 +113,9 @@ const getAttributeValue = (value: unknown): string => {
     return String(extractedValue);
   }
 
-  // For arrays and objects, pretty-print as JSON
+  // For arrays and objects, pretty-print as JSON using JSONBigInt to preserve large integers
   try {
-    return JSON.stringify(extractedValue, (_, v) => (typeof v === 'bigint' ? String(v) : v), 2);
+    return JSONBigInt.stringify(extractedValue, null, 2);
   } catch {
     return String(extractedValue);
   }

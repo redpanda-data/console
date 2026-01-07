@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Redpanda Data, Inc.
+ * Copyright 2026 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -9,7 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-export const bytesToHex = (bytes: Uint8Array): string =>
-  Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+export const bytesToHex = (bytes: Uint8Array): string => {
+  const hexArray: string[] = [];
+  for (let i = 0; i < bytes.length; i++) {
+    hexArray.push(bytes[i].toString(16).padStart(2, '0'));
+  }
+  return hexArray.join('');
+};
