@@ -16,6 +16,8 @@ import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
 
+import { ContentPanel } from './content-panel';
+
 const JSONBigInt = JSONBigIntFactory({ storeAsString: true });
 
 type Props = {
@@ -56,6 +58,7 @@ const extractProtoValue = (value: unknown): unknown => {
           }
           return protoValue.value.value;
         } catch (error) {
+          // biome-ignore lint/suspicious/noConsole: useful for debugging edge cases
           console.warn('Failed to decode bytes value:', error);
           return '[binary data]';
         }
@@ -118,6 +121,7 @@ const getAttributeValue = (value: unknown): string => {
   try {
     return JSONBigInt.stringify(extractedValue, null, 2);
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: useful for debugging edge cases
     console.warn('Failed to stringify attribute value:', error);
     return String(extractedValue);
   }
@@ -161,7 +165,7 @@ export const AttributesTab: FC<Props> = ({ span }) => {
   }
 
   return (
-    <div className="space-y-3 p-3">
+    <div className="space-y-4 p-3">
       <div className="relative">
         <Search className="pointer-events-none absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -174,12 +178,12 @@ export const AttributesTab: FC<Props> = ({ span }) => {
 
       <div className="space-y-1.5">
         {filteredAttributes.map((attr) => (
-          <div className="rounded border bg-muted/30 p-2" key={attr.key}>
+          <ContentPanel key={attr.key}>
             <div className="space-y-0.5">
               <div className="break-all font-mono text-[10px] text-muted-foreground">{attr.key}</div>
-              <div className="break-all font-mono text-[11px]">{attr.value}</div>
+              <div className="break-all font-mono text-[10px]">{attr.value}</div>
             </div>
-          </div>
+          </ContentPanel>
         ))}
 
         {filteredAttributes.length === 0 && (

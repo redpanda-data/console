@@ -14,6 +14,7 @@ import type { Trace } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb'
 import type { FC, ReactNode } from 'react';
 import { useMemo } from 'react';
 
+import { ContentPanel } from './content-panel';
 import { formatDuration } from '../utils/trace-formatters';
 import { calculateTraceStatistics, getConversationId } from '../utils/trace-statistics';
 
@@ -30,10 +31,10 @@ interface MetricCardProps {
 const MetricCard: FC<MetricCardProps> = ({ label, value, variant = 'default' }) => {
   const isError = variant === 'error';
   return (
-    <div className={cn('rounded border p-2', isError ? 'border-destructive/20 bg-destructive/10' : 'bg-muted/30')}>
+    <ContentPanel className={cn(isError ? 'border-destructive/20 bg-destructive/10' : undefined)}>
       <div className="text-[10px] text-muted-foreground">{label}</div>
       <div className={cn('font-mono font-semibold text-sm', isError && 'text-destructive')}>{value}</div>
-    </div>
+    </ContentPanel>
   );
 };
 
@@ -74,7 +75,7 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
       {statistics.totalTokens > 0 && (
         <div className="space-y-2">
           <SectionHeader>Token Usage</SectionHeader>
-          <div className="space-y-2 rounded border bg-muted/30 p-3">
+          <ContentPanel padding="md" spacing>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground text-xs">Input tokens</span>
               <span className="font-medium font-mono text-xs">{statistics.totalInputTokens.toLocaleString()}</span>
@@ -87,7 +88,7 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
               <span className="font-medium text-xs">Total tokens</span>
               <span className="font-mono font-semibold text-xs">{statistics.totalTokens.toLocaleString()}</span>
             </div>
-          </div>
+          </ContentPanel>
         </div>
       )}
 
@@ -106,9 +107,9 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
       {summary.serviceName && (
         <div className="space-y-2">
           <SectionHeader>Service</SectionHeader>
-          <div className="rounded border bg-muted/30 p-2">
-            <div className="font-mono text-sm">{summary.serviceName}</div>
-          </div>
+          <ContentPanel>
+            <div className="break-all font-mono text-sm">{summary.serviceName}</div>
+          </ContentPanel>
         </div>
       )}
 
@@ -116,9 +117,9 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
       {conversationId && (
         <div className="space-y-2">
           <SectionHeader>Conversation ID</SectionHeader>
-          <div className="rounded border bg-muted/30 p-2">
+          <ContentPanel>
             <div className="break-all font-mono text-xs">{conversationId}</div>
-          </div>
+          </ContentPanel>
         </div>
       )}
     </div>

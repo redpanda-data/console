@@ -19,6 +19,9 @@ import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
 
+import { CollapsibleCodeSection } from './collapsible-code-section';
+import { ContentPanel } from './content-panel';
+
 interface Props {
   span: Span;
 }
@@ -65,7 +68,7 @@ const ToolCallDisplay: FC<{ toolCall: ToolCall }> = ({ toolCall }) => (
       <Wrench className="h-3 w-3 text-muted-foreground" />
       <span className="font-medium text-[10px] text-muted-foreground">Tool Call: {toolCall.name}</span>
     </div>
-    <DynamicCodeBlock code={JSON.stringify(toolCall.arguments, null, 2)} lang="json" />
+    <CollapsibleCodeSection content={JSON.stringify(toolCall.arguments, null, 2)} title="ARGUMENTS" />
   </div>
 );
 
@@ -76,7 +79,7 @@ const ToolResponseDisplay: FC<{ response: ToolResponse }> = ({ response }) => (
       <CheckCircle className="h-3 w-3 text-muted-foreground" />
       <span className="font-medium text-[10px] text-muted-foreground">Tool Response</span>
     </div>
-    <DynamicCodeBlock code={JSON.stringify(response.response, null, 2)} lang="json" />
+    <CollapsibleCodeSection content={JSON.stringify(response.response, null, 2)} title="RESPONSE" />
   </div>
 );
 
@@ -400,7 +403,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
   const hasConversationHistory = isHistoryOpen && historyMessages.length > 0;
 
   return (
-    <div className="space-y-3 p-3">
+    <div className="space-y-4 p-3">
       {/* Model Info & Token Counts */}
       {llmData.model && (
         <div className="flex items-center gap-2">
@@ -413,7 +416,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
 
       {/* Token Counts - Compact */}
       {llmData.inputTokens > 0 && (
-        <div className="flex items-center justify-between rounded border bg-muted/20 p-2 text-xs">
+        <ContentPanel className="flex items-center justify-between bg-muted/20 text-xs">
           <div className="space-x-3">
             <span className="text-muted-foreground">
               Input:{' '}
@@ -425,7 +428,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
             </span>
           </div>
           <span className="font-medium text-muted-foreground">{totalTokens.toLocaleString()} total</span>
-        </div>
+        </ContentPanel>
       )}
 
       {/* INPUT */}
@@ -447,8 +450,10 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <div className="space-y-2 rounded border bg-muted/30 p-2">
-            {llmData.input && <p className="whitespace-pre-wrap text-[11px] leading-relaxed">{llmData.input}</p>}
+          <ContentPanel spacing>
+            {llmData.input && (
+              <p className="whitespace-pre-wrap break-words text-[10px] leading-relaxed">{llmData.input}</p>
+            )}
 
             {/* Tool responses in input */}
             {llmData.lastInputMessage?.toolResponses && llmData.lastInputMessage.toolResponses.length > 0 && (
@@ -467,7 +472,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
                 ))}
               </div>
             )}
-          </div>
+          </ContentPanel>
         </div>
       )}
 
@@ -487,8 +492,10 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <div className="space-y-2 rounded border bg-muted/30 p-2">
-            {llmData.output && <p className="whitespace-pre-wrap text-[11px] leading-relaxed">{llmData.output}</p>}
+          <ContentPanel spacing>
+            {llmData.output && (
+              <p className="whitespace-pre-wrap break-words text-[10px] leading-relaxed">{llmData.output}</p>
+            )}
 
             {/* Tool calls in output (LLM making tool calls) */}
             {llmData.lastOutputMessage?.toolCalls && llmData.lastOutputMessage.toolCalls.length > 0 && (
@@ -507,7 +514,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
                 ))}
               </div>
             )}
-          </div>
+          </ContentPanel>
         </div>
       )}
 
@@ -538,7 +545,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
               const hasContent = message.content.length > 0;
 
               return (
-                <div className="space-y-1 rounded border p-2" key={idx}>
+                <ContentPanel className="space-y-1" key={idx}>
                   {/* Role header */}
                   <div className="flex items-center gap-1.5">
                     <Icon className="h-3 w-3 text-muted-foreground" />
@@ -547,11 +554,13 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
 
                   {/* Text content */}
                   {hasContent && (
-                    <div className="text-xs leading-relaxed">
+                    <div className="text-[10px] leading-relaxed">
                       {isJson ? (
-                        <DynamicCodeBlock code={formatJsonContent(message.content)} lang="json" />
+                        <div className="[&_*]:text-[10px]">
+                          <DynamicCodeBlock code={formatJsonContent(message.content)} lang="json" />
+                        </div>
                       ) : (
-                        <p className="whitespace-pre-wrap text-muted-foreground">{message.content}</p>
+                        <p className="whitespace-pre-wrap break-words text-muted-foreground">{message.content}</p>
                       )}
                     </div>
                   )}
@@ -573,7 +582,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
                       ))}
                     </div>
                   )}
-                </div>
+                </ContentPanel>
               );
             })}
           </CollapsibleContent>

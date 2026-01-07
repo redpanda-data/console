@@ -10,13 +10,15 @@
  */
 
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Wrench } from 'lucide-react';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo } from 'react';
+
+import { CollapsibleCodeSection } from './collapsible-code-section';
+import { ContentPanel } from './content-panel';
 
 interface Props {
   span: Span;
@@ -151,7 +153,7 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
   }
 
   return (
-    <div className="space-y-3 p-3">
+    <div className="space-y-4 p-3">
       {/* Tool Header */}
       {toolData.name && (
         <div className="flex items-center gap-2">
@@ -178,51 +180,37 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
 
       {/* Tool Description */}
       {toolData.description && (
-        <div className="rounded border bg-muted/20 p-2">
-          <p className="text-[11px] text-muted-foreground leading-relaxed">{toolData.description}</p>
-        </div>
+        <ContentPanel className="bg-muted/20">
+          <p className="text-[10px] text-muted-foreground leading-relaxed">{toolData.description}</p>
+        </ContentPanel>
       )}
 
       {/* Tool ID */}
       {toolData.callId && (
         <div className="space-y-1">
           <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">CALL ID</h5>
-          <div className="rounded border bg-muted/30 p-2">
+          <ContentPanel>
             <p className="break-all font-mono text-[10px]">{toolData.callId}</p>
-          </div>
+          </ContentPanel>
         </div>
       )}
 
       {/* Arguments */}
       {toolData.hasArguments && (
-        <div className="space-y-1.5">
-          <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">ARGUMENTS</h5>
-          {toolData.isArgumentsJson ? (
-            <DynamicCodeBlock code={formatJsonContent(toolData.arguments)} lang="json" />
-          ) : (
-            <div className="rounded border bg-muted/30 p-3">
-              <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed">
-                {truncateContent(toolData.arguments)}
-              </pre>
-            </div>
-          )}
-        </div>
+        <CollapsibleCodeSection
+          content={
+            toolData.isArgumentsJson ? formatJsonContent(toolData.arguments) : truncateContent(toolData.arguments)
+          }
+          title="ARGUMENTS"
+        />
       )}
 
       {/* Result */}
       {toolData.hasResult && (
-        <div className="space-y-1.5">
-          <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">RESULT</h5>
-          {toolData.isResultJson ? (
-            <DynamicCodeBlock code={formatJsonContent(toolData.result)} lang="json" />
-          ) : (
-            <div className="rounded border bg-muted/30 p-3">
-              <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed">
-                {truncateContent(toolData.result)}
-              </pre>
-            </div>
-          )}
-        </div>
+        <CollapsibleCodeSection
+          content={toolData.isResultJson ? formatJsonContent(toolData.result) : truncateContent(toolData.result)}
+          title="RESULT"
+        />
       )}
     </div>
   );

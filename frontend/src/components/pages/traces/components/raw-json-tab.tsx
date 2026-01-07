@@ -16,6 +16,8 @@ import { SpanSchema } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo } from 'react';
 
+import { ContentPanel } from './content-panel';
+
 interface Props {
   span: Span;
 }
@@ -35,18 +37,18 @@ export const RawJSONTab: FC<Props> = ({ span }) => {
   }, [span]);
 
   return (
-    <div className="space-y-3 p-3">
+    <div className="space-y-4 p-3">
       <div className="flex justify-end">
         <CopyButton content={jsonString} size="sm" variant="outline">
           Copy JSON
         </CopyButton>
       </div>
 
-      <div className="w-full rounded border bg-muted/20">
-        <pre className="whitespace-pre-wrap break-words p-4 font-mono text-xs">
+      <ContentPanel className="w-full bg-muted/20" padding="md">
+        <pre className="whitespace-pre-wrap break-words font-mono text-[10px]">
           <code>{jsonString}</code>
         </pre>
-      </div>
+      </ContentPanel>
     </div>
   );
 };
