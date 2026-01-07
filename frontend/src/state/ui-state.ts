@@ -48,6 +48,7 @@ class UIState {
   }
 
   @observable pageBreadcrumbs: BreadcrumbEntry[] = [];
+  @observable shouldHidePageHeader = false;
 
   @computed get selectedClusterName(): string | null {
     if (uiSettings.selectedClusterIndex in api.clusters) {
