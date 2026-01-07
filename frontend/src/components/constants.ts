@@ -16,5 +16,6 @@ export const FEATURE_FLAGS = {
   enableAiAgentsInspectorInConsole: false,
   enableAiAgentsInConsoleServerless: false,
   enableMcpServiceAccount: false,
+  enableTracingInConsole: true,
   shadowlinkCloudUi: false,
 };
