@@ -69,6 +69,7 @@ export const TraceListPage: FC = () => {
   const selectedRange = TIME_RANGES.find((r) => r.value === timeRange) || TIME_RANGES[3];
 
   // Update nowMs when time range changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Intentionally update timestamp when time range changes for relative time calculations
   useEffect(() => {
     setNowMs(Date.now());
   }, [timeRange]);
@@ -232,12 +233,12 @@ export const TraceListPage: FC = () => {
           {table.getColumn('status') && (
             <DataTableFacetedFilter column={table.getColumn('status')} options={statusOptions} title="Status" />
           )}
-          {isFiltered && (
+          {isFiltered ? (
             <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
               Reset
               <X className="ml-2 h-4 w-4" />
             </Button>
-          )}
+          ) : null}
         </div>
         <div className="flex items-center gap-2">
           <Select onValueChange={setTimeRange} value={timeRange}>

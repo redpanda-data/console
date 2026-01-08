@@ -60,6 +60,14 @@ Element.prototype.scrollIntoView = vi.fn();
 
 import { TraceListPage } from './trace-list-page';
 
+// Regex constants for test assertions (performance optimization)
+const REGEX_COMPLETED_TRACE = /completed trace/i;
+const REGEX_SERVICE = /service/i;
+const REGEX_STATUS = /status/i;
+const REGEX_NO_TRACES_FOUND = /no traces found/i;
+const REGEX_NO_TRACES_RECORDED = /no traces have been recorded/i;
+const REGEX_ERROR = /error/i;
+
 // Helper function to create transport with mocks
 function setupTransport(options?: {
   listTracesResponse?: ReturnType<typeof create<typeof ListTracesResponseSchema>>;
@@ -201,7 +209,7 @@ describe('TraceListPage', () => {
       expect(screen.getByText('data-service')).toBeVisible();
 
       // Verify stats summary (more flexible regex)
-      expect(screen.getByText(/completed trace/i)).toBeVisible();
+      expect(screen.getByText(REGEX_COMPLETED_TRACE)).toBeVisible();
 
       // Verify API was called
       expect(listTracesMock).toHaveBeenCalled();
@@ -285,7 +293,7 @@ describe('TraceListPage', () => {
       });
 
       // Verify service filter appears (look for the Filter button specifically)
-      const filterButtons = screen.getAllByRole('button', { name: /service/i });
+      const filterButtons = screen.getAllByRole('button', { name: REGEX_SERVICE });
       expect(filterButtons.length).toBeGreaterThan(0);
     });
 
@@ -325,7 +333,7 @@ describe('TraceListPage', () => {
       });
 
       // Verify status filter appears
-      const statusButtons = screen.getAllByRole('button', { name: /status/i });
+      const statusButtons = screen.getAllByRole('button', { name: REGEX_STATUS });
       expect(statusButtons.length).toBeGreaterThan(0);
     });
   });
@@ -408,7 +416,10 @@ describe('TraceListPage', () => {
       // Click the trace row to expand
       const traceButton = screen.getByText('chat.completions.create').closest('button');
       expect(traceButton).toBeInTheDocument();
-      await user.click(traceButton!);
+      if (!traceButton) {
+        throw new Error('Expected trace button to be in document');
+      }
+      await user.click(traceButton);
 
       // Wait for getTrace API to be called
       await waitFor(() => {
@@ -447,11 +458,11 @@ describe('TraceListPage', () => {
       renderTraceListPage(transport);
 
       await waitFor(() => {
-        expect(screen.getByText(/no traces found/i)).toBeVisible();
+        expect(screen.getByText(REGEX_NO_TRACES_FOUND)).toBeVisible();
       });
 
       // Verify the message about no traces recorded
-      expect(screen.getByText(/no traces have been recorded/i)).toBeVisible();
+      expect(screen.getByText(REGEX_NO_TRACES_RECORDED)).toBeVisible();
     });
 
     test('should display error state when RPC fails', async () => {
@@ -470,7 +481,7 @@ describe('TraceListPage', () => {
       });
 
       // The component should display an error message
-      expect(await screen.findByText(/error/i)).toBeVisible();
+      expect(await screen.findByText(REGEX_ERROR)).toBeVisible();
     });
   });
 
