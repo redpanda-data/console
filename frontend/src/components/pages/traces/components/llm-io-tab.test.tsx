@@ -19,6 +19,17 @@ import { describe, expect, test } from 'vitest';
 
 import { LLMIOTab } from './llm-io-tab';
 
+// Test regex patterns - extracted to top level for performance (Biome lint requirement)
+const CONVERSATION_HISTORY_PATTERN = /conversation history/i;
+const TEMPERATURE_PATTERN = /"temperature":\s*65/;
+const CONDITION_PATTERN = /"condition":\s*"cloudy"/;
+const FIRST_PART_PATTERN = /First part/;
+const FIRST_PART_SECOND_PART_PATTERN = /First part\s+Second part/;
+const INPUT_PATTERN = /Input:/;
+const OUTPUT_PATTERN = /Output:/;
+const TOTAL_150_PATTERN = /150 total/;
+const THREE_MESSAGES_PATTERN = /3 messages/;
+
 // Helper: Create span with given attributes
 function createSpan(attributes: Array<{ key: string; value: string }>): Span {
   return create(SpanSchema, {
@@ -164,10 +175,10 @@ describe('LLMIOTab - OpenTelemetry Message Support', () => {
     expect(screen.getByText('I will check the weather.')).toBeInTheDocument();
 
     // Previous messages are in history
-    expect(screen.getByRole('button', { name: /conversation history/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: CONVERSATION_HISTORY_PATTERN })).toBeInTheDocument();
 
     // Expand conversation history
-    await user.click(screen.getByRole('button', { name: /conversation history/i }));
+    await user.click(screen.getByRole('button', { name: CONVERSATION_HISTORY_PATTERN }));
 
     // Check history messages
     expect(screen.getByText('Previous question')).toBeInTheDocument();
@@ -214,14 +225,14 @@ describe('LLMIOTab - OpenTelemetry Message Support', () => {
     expect(screen.getByText('Tomorrow will be warmer.')).toBeInTheDocument();
 
     // Previous messages are in history (first user message and tool message)
-    expect(screen.getByRole('button', { name: /conversation history/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: CONVERSATION_HISTORY_PATTERN })).toBeInTheDocument();
 
     // Expand conversation history to see tool response
-    await user.click(screen.getByRole('button', { name: /conversation history/i }));
+    await user.click(screen.getByRole('button', { name: CONVERSATION_HISTORY_PATTERN }));
 
     expect(screen.getByText('Tool Response')).toBeInTheDocument();
-    expect(screen.getByText(/"temperature":\s*65/)).toBeInTheDocument();
-    expect(screen.getByText(/"condition":\s*"cloudy"/)).toBeInTheDocument();
+    expect(screen.getByText(TEMPERATURE_PATTERN)).toBeInTheDocument();
+    expect(screen.getByText(CONDITION_PATTERN)).toBeInTheDocument();
   });
 
   test('should support simple {role, content} format for backward compatibility', () => {
@@ -239,10 +250,10 @@ describe('LLMIOTab - OpenTelemetry Message Support', () => {
     render(<LLMIOTab span={span} />);
 
     // Single message goes to conversation history
-    expect(screen.getByRole('button', { name: /conversation history/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: CONVERSATION_HISTORY_PATTERN })).toBeInTheDocument();
 
     // Expand to see the message
-    await user.click(screen.getByRole('button', { name: /conversation history/i }));
+    await user.click(screen.getByRole('button', { name: CONVERSATION_HISTORY_PATTERN }));
 
     expect(screen.getByText('Indexed message')).toBeInTheDocument();
   });
@@ -263,8 +274,8 @@ describe('LLMIOTab - OpenTelemetry Message Support', () => {
 
     render(<LLMIOTab span={span} />);
 
-    const textElement = screen.getByText(/First part/);
-    expect(textElement.textContent).toMatch(/First part\s+Second part/);
+    const textElement = screen.getByText(FIRST_PART_PATTERN);
+    expect(textElement.textContent).toMatch(FIRST_PART_SECOND_PART_PATTERN);
   });
 
   test('should handle malformed JSON gracefully', () => {
@@ -331,7 +342,7 @@ describe('LLMIOTab - OpenTelemetry Message Support', () => {
     expect(screen.getByText('Output assistant message')).toBeInTheDocument();
 
     // User message should be in history
-    expect(screen.getByRole('button', { name: /conversation history/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: CONVERSATION_HISTORY_PATTERN })).toBeInTheDocument();
   });
 
   test('should handle messages with empty parts array', () => {
@@ -378,17 +389,17 @@ describe('LLMIOTab - OpenTelemetry Message Support', () => {
     render(<LLMIOTab span={span} />);
 
     // Check for input token display
-    expect(screen.getByText(/Input:/)).toBeInTheDocument();
+    expect(screen.getByText(INPUT_PATTERN)).toBeInTheDocument();
     const inputTokenDisplay = screen.getByText('100');
     expect(inputTokenDisplay).toBeInTheDocument();
 
     // Check for output token display
-    expect(screen.getByText(/Output:/)).toBeInTheDocument();
+    expect(screen.getByText(OUTPUT_PATTERN)).toBeInTheDocument();
     const outputTokenDisplay = screen.getByText('50');
     expect(outputTokenDisplay).toBeInTheDocument();
 
     // Check for total
-    expect(screen.getByText(/150 total/)).toBeInTheDocument();
+    expect(screen.getByText(TOTAL_150_PATTERN)).toBeInTheDocument();
   });
 
   test('should show conversation history with correct message count', async () => {
@@ -417,10 +428,10 @@ describe('LLMIOTab - OpenTelemetry Message Support', () => {
 
     // History should exclude last input and output messages
     // System + User 1 + Assistant 1 = 3 messages
-    expect(screen.getByText(/3 messages/)).toBeInTheDocument();
+    expect(screen.getByText(THREE_MESSAGES_PATTERN)).toBeInTheDocument();
 
     // Expand to see history
-    await user.click(screen.getByRole('button', { name: /conversation history/i }));
+    await user.click(screen.getByRole('button', { name: CONVERSATION_HISTORY_PATTERN }));
 
     expect(screen.getByText('System')).toBeInTheDocument();
     expect(screen.getByText('User 1')).toBeInTheDocument();

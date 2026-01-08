@@ -118,7 +118,7 @@ export function TracesDataTableToolbar({
         {table.getColumn('status') && (
           <DataTableFacetedFilter column={table.getColumn('status')} options={statusOptions} title="Status" />
         )}
-        {isFiltered && (
+        {!!isFiltered && (
           <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
             Reset
             <X className="ml-2 h-4 w-4" />
@@ -129,7 +129,7 @@ export function TracesDataTableToolbar({
   );
 }
 
-interface Props {
+type Props = {
   traces: TraceSummary[];
   isLoading: boolean;
   error?: Error | null;
@@ -144,14 +144,14 @@ interface Props {
   columnFilters: ColumnFiltersState;
   setColumnFilters: (filters: ColumnFiltersState) => void;
   hideToolbar?: boolean;
-}
+};
 
 // Format timestamp
 const formatTime = (timestamp: Date): string =>
   timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 
 // Span Row Component with tree lines
-interface SpanRowProps {
+type SpanRowProps = {
   span: SpanNode;
   depth: number;
   timeline: ReturnType<typeof calculateTimeline>;
@@ -165,7 +165,7 @@ interface SpanRowProps {
   parentDepths: number[];
   expandedSpans?: Set<string>;
   toggleSpan?: (spanId: string) => void;
-}
+};
 
 const SpanRow: FC<SpanRowProps> = ({
   span,
@@ -240,7 +240,7 @@ const SpanRow: FC<SpanRowProps> = ({
                 style={{ '--tree-x': '9px' } as React.CSSProperties}
               >
                 {/* Continuation vertical (only when needed) */}
-                {drawCol0Vertical && (
+                {!!drawCol0Vertical && (
                   <div
                     className="absolute top-0 w-px bg-border"
                     style={{ left: 'var(--tree-x)', height: col0VerticalHeight }}
@@ -267,12 +267,12 @@ const SpanRow: FC<SpanRowProps> = ({
                     style={{ '--tree-x': '11px' } as React.CSSProperties}
                   >
                     {/* Full-height continuation for ancestor columns */}
-                    {drawAncestorContinuation && (
+                    {!!drawAncestorContinuation && (
                       <div className="absolute top-0 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
                     )}
 
                     {/* Current node column: vertical (full or half) + horizontal connector */}
-                    {isCurrentColumn && (
+                    {!!isCurrentColumn && (
                       <>
                         <div
                           className="absolute top-0 w-px bg-border"
@@ -291,7 +291,7 @@ const SpanRow: FC<SpanRowProps> = ({
                 style={{ '--tree-x': '11px' } as React.CSSProperties}
               >
                 {/* Vertical line connecting to chevron when expanded and has children */}
-                {isExpanded && hasChildren && (
+                {!!(isExpanded && hasChildren) && (
                   <div className="absolute top-1/2 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
                 )}
                 <Button
@@ -322,7 +322,7 @@ const SpanRow: FC<SpanRowProps> = ({
           </Badge>
 
           {/* Children count */}
-          {hasChildren && (
+          {!!hasChildren && (
             <Badge
               className="h-4 shrink-0 border-border bg-muted/50 px-1 py-0 font-mono text-[10px] text-muted-foreground"
               variant="outline"
@@ -339,7 +339,7 @@ const SpanRow: FC<SpanRowProps> = ({
           </div>
 
           {/* Error badge */}
-          {span.hasError && (
+          {!!span.hasError && (
             <Badge className="shrink-0 text-xs" variant="destructive">
               Error
             </Badge>
@@ -364,9 +364,9 @@ const SpanRow: FC<SpanRowProps> = ({
       </button>
 
       {/* Render children */}
-      {isExpanded &&
+      {!!(isExpanded &&
         expandedSpans &&
-        toggleSpan &&
+        toggleSpan) &&
         (() => {
           // The gutter column index for THIS node is (depth - 1).
           // If THIS node has more siblings after it (i.e. !isLastChild), we want a continuation vertical
@@ -656,10 +656,10 @@ const TraceGroup: FC<{
       </button>
 
       {/* Expanded spans */}
-      {isExpanded && (
+      {!!isExpanded && (
         <>
-          {isLoading && <div className="p-4 text-center text-muted-foreground text-sm">Loading spans...</div>}
-          {error && (
+          {!!isLoading && <div className="p-4 text-center text-muted-foreground text-sm">Loading spans...</div>}
+          {!!error && (
             <div className="flex items-center justify-center gap-2 p-4 text-center text-red-600 text-sm">
               <AlertCircle className="h-4 w-4" />
               <span>Failed to load trace: {error.message}</span>
@@ -891,7 +891,7 @@ export const TracesTable: FC<Props> = ({
                           ? 'No traces match your search criteria. Try adjusting your filter or clearing it.'
                           : `No traces have been recorded in the ${timeRange.toLowerCase()}. Traces will appear here once your agents start processing requests.`}
                       </p>
-                      {isFiltered && hasUnfilteredData && (
+                      {!!(isFiltered && hasUnfilteredData) && (
                         <p className="mt-1 text-[11px] text-muted-foreground/70">
                           <span className="font-medium">Tip:</span> Clear the search filter to see all traces
                         </p>
@@ -937,7 +937,7 @@ export const TracesTable: FC<Props> = ({
         </div>
 
         {/* Details Panel - Right Side */}
-        {selectedTraceId && selectedSpanId && (
+        {!!(selectedTraceId && selectedSpanId) && (
           <div className="h-full w-[380px] flex-shrink-0 border-l">
             <TraceDetailsSheet
               isOpen={!!selectedTraceId && !!selectedSpanId}

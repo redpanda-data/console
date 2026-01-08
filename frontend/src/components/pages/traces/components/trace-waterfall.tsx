@@ -24,9 +24,9 @@ import {
 } from '../utils/span-tree-builder';
 import { formatDuration } from '../utils/trace-formatters';
 
-interface Props {
+type Props = {
   spans: Span[];
-}
+};
 
 const SpanRow: FC<{ span: SpanNode; timeline: ReturnType<typeof calculateTimeline>; depth: number }> = ({
   span,
@@ -44,7 +44,7 @@ const SpanRow: FC<{ span: SpanNode; timeline: ReturnType<typeof calculateTimelin
       >
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <div className="truncate text-sm">{span.name}</div>
-          {span.hasError && (
+          {!!span.hasError && (
             <Badge className="text-xs" variant="destructive">
               Error
             </Badge>

@@ -22,12 +22,12 @@ import { RawJSONTab } from './raw-json-tab';
 import { ToolCallTab } from './tool-call-tab';
 import { isRootSpan } from '../utils/trace-statistics';
 
-interface Props {
+type Props = {
   span: Span;
   trace?: Trace;
   value?: string; // Controlled mode: externally managed tab state
   onValueChange?: (value: string) => void; // Controlled mode: callback when tab changes
-}
+};
 
 const hasAttribute = (span: Span, key: string): boolean =>
   span.attributes?.some((attr) => attr.key === key && attr.value?.value) ?? false;

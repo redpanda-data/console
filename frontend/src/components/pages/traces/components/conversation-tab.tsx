@@ -41,7 +41,7 @@ export const ConversationTab: FC<Props> = ({ trace }) => {
   return (
     <ScrollArea className="h-[500px]">
       <div className="space-y-4 pr-4">
-        {messages.map((message, idx) => {
+        {messages.map((message) => {
           const isUser = message.role === 'user';
           const isAssistant = message.role === 'assistant';
           const isSystem = message.role === 'system';
@@ -61,7 +61,7 @@ export const ConversationTab: FC<Props> = ({ trace }) => {
                 isAssistant && 'bg-secondary/20',
                 isSystem && 'bg-muted/30'
               )}
-              key={idx}
+              key={`${message.timestamp}-${message.role}`}
             >
               <div className="flex-shrink-0">
                 <Badge className="text-xs" variant={badgeVariant}>

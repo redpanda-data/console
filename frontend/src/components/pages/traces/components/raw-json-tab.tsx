@@ -18,9 +18,9 @@ import { useMemo } from 'react';
 
 import { ContentPanel } from './content-panel';
 
-interface Props {
+type Props = {
   span: Span;
-}
+};
 
 export const RawJSONTab: FC<Props> = ({ span }) => {
   const jsonString = useMemo(() => {

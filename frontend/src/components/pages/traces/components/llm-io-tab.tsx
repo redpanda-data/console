@@ -22,44 +22,44 @@ import { useMemo, useState } from 'react';
 import { CollapsibleCodeSection } from './collapsible-code-section';
 import { ContentPanel } from './content-panel';
 
-interface Props {
+type Props = {
   span: Span;
-}
+};
 
 // OpenTelemetry message part types
-interface MessagePart {
+type MessagePart = {
   type: 'text' | 'tool_call' | 'tool_call_response';
   content?: string; // text parts
   name?: string; // tool_call parts
   arguments?: Record<string, unknown>; // tool_call parts
   response?: Record<string, unknown>; // tool_call_response parts
-}
+};
 
 // OpenTelemetry message structure
-interface OTelMessage {
+type OTelMessage = {
   role: 'user' | 'assistant' | 'tool' | 'system';
   parts?: MessagePart[];
   content?: string; // Backward compatibility: simple format
-}
+};
 
 // Tool call extracted from parts
-interface ToolCall {
+type ToolCall = {
   name: string;
   arguments: Record<string, unknown>;
-}
+};
 
 // Tool response extracted from parts
-interface ToolResponse {
+type ToolResponse = {
   response: Record<string, unknown>;
-}
+};
 
 // Normalized message for display
-interface Message {
+type Message = {
   role: string;
   content: string;
   toolCalls?: ToolCall[]; // Extracted from tool_call parts
   toolResponses?: ToolResponse[]; // Extracted from tool_call_response parts
-}
+};
 
 // Component: Display tool call
 const ToolCallDisplay: FC<{ toolCall: ToolCall }> = ({ toolCall }) => (
@@ -459,7 +459,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
             {llmData.lastInputMessage?.toolResponses && llmData.lastInputMessage.toolResponses.length > 0 ? (
               <div className="space-y-4">
                 {llmData.lastInputMessage.toolResponses.map((toolResp, idx) => (
-                  <ToolResponseDisplay key={idx} response={toolResp} />
+                  <ToolResponseDisplay key={`input-toolresp-${idx}`} response={toolResp} />
                 ))}
               </div>
             ) : null}
@@ -468,7 +468,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
             {llmData.lastInputMessage?.toolCalls && llmData.lastInputMessage.toolCalls.length > 0 ? (
               <div className="space-y-4">
                 {llmData.lastInputMessage.toolCalls.map((toolCall, idx) => (
-                  <ToolCallDisplay key={idx} toolCall={toolCall} />
+                  <ToolCallDisplay key={`input-${toolCall.name}-${idx}`} toolCall={toolCall} />
                 ))}
               </div>
             ) : null}
@@ -501,7 +501,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
             {llmData.lastOutputMessage?.toolCalls && llmData.lastOutputMessage.toolCalls.length > 0 ? (
               <div className="space-y-4">
                 {llmData.lastOutputMessage.toolCalls.map((toolCall, idx) => (
-                  <ToolCallDisplay key={idx} toolCall={toolCall} />
+                  <ToolCallDisplay key={`output-${toolCall.name}-${idx}`} toolCall={toolCall} />
                 ))}
               </div>
             ) : null}
@@ -510,7 +510,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
             {llmData.lastOutputMessage?.toolResponses && llmData.lastOutputMessage.toolResponses.length > 0 ? (
               <div className="space-y-4">
                 {llmData.lastOutputMessage.toolResponses.map((toolResp, idx) => (
-                  <ToolResponseDisplay key={idx} response={toolResp} />
+                  <ToolResponseDisplay key={`output-toolresp-${idx}`} response={toolResp} />
                 ))}
               </div>
             ) : null}
@@ -545,7 +545,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
               const hasContent = message.content.length > 0;
 
               return (
-                <ContentPanel className="space-y-1" key={idx}>
+                <ContentPanel className="space-y-1" key={`history-${message.role}-${idx}`}>
                   {/* Role header */}
                   <div className="flex items-center gap-1.5">
                     <Icon className="h-3 w-3 text-muted-foreground" />
@@ -569,7 +569,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
                   {hasToolCalls ? (
                     <div className="mt-2 space-y-4">
                       {message.toolCalls?.map((toolCall, tcIdx) => (
-                        <ToolCallDisplay key={tcIdx} toolCall={toolCall} />
+                        <ToolCallDisplay key={`history-${toolCall.name}-${tcIdx}`} toolCall={toolCall} />
                       ))}
                     </div>
                   ) : null}
@@ -578,7 +578,7 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
                   {hasToolResponses ? (
                     <div className="mt-2 space-y-4">
                       {message.toolResponses?.map((toolResp, trIdx) => (
-                        <ToolResponseDisplay key={trIdx} response={toolResp} />
+                        <ToolResponseDisplay key={`history-toolresp-${trIdx}`} response={toolResp} />
                       ))}
                     </div>
                   ) : null}

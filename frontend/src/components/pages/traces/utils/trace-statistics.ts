@@ -14,13 +14,13 @@ import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 
 import { getAttributeFromSpan, hasAttribute } from './attribute-helpers';
 
-export interface TraceStatistics {
+export type TraceStatistics = {
   totalInputTokens: number;
   totalOutputTokens: number;
   totalTokens: number;
   llmCallCount: number;
   toolCallCount: number;
-}
+};
 
 export const calculateTraceStatistics = (trace: Trace | undefined): TraceStatistics => {
   if (!trace?.spans) {
@@ -51,7 +51,7 @@ export const calculateTraceStatistics = (trace: Trace | undefined): TraceStatist
       hasAttribute(span, 'gen_ai.tool.call.arguments');
 
     if (isLLMSpan) {
-      llmCallCount++;
+      llmCallCount += 1;
       const inputTokens = getAttributeFromSpan(span, 'gen_ai.usage.input_tokens');
       const outputTokens = getAttributeFromSpan(span, 'gen_ai.usage.output_tokens');
 
@@ -64,7 +64,7 @@ export const calculateTraceStatistics = (trace: Trace | undefined): TraceStatist
     }
 
     if (isToolSpan) {
-      toolCallCount++;
+      toolCallCount += 1;
     }
   }
 

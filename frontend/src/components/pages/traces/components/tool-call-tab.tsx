@@ -20,9 +20,9 @@ import { useMemo } from 'react';
 import { CollapsibleCodeSection } from './collapsible-code-section';
 import { ContentPanel } from './content-panel';
 
-interface Props {
+type Props = {
   span: Span;
-}
+};
 
 const getAttributeValue = (span: Span, key: string): string => {
   const attr = span.attributes?.find((a) => a.key === key);
@@ -155,11 +155,11 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
   return (
     <div className="space-y-4 p-3">
       {/* Tool Header */}
-      {toolData.name && (
+      {!!toolData.name && (
         <div className="flex items-center gap-2">
           <Wrench className="h-4 w-4 text-muted-foreground" />
           <span className="font-medium text-sm">{toolData.name}</span>
-          {toolData.type && (
+          {!!toolData.type && (
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -179,14 +179,14 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
       )}
 
       {/* Tool Description */}
-      {toolData.description && (
+      {!!toolData.description && (
         <ContentPanel className="bg-muted/20">
           <p className="text-[10px] text-muted-foreground leading-relaxed">{toolData.description}</p>
         </ContentPanel>
       )}
 
       {/* Tool ID */}
-      {toolData.callId && (
+      {!!toolData.callId && (
         <div className="space-y-1">
           <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">CALL ID</h5>
           <ContentPanel>
@@ -196,7 +196,7 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
       )}
 
       {/* Arguments */}
-      {toolData.hasArguments && (
+      {!!toolData.hasArguments && (
         <CollapsibleCodeSection
           content={
             toolData.isArgumentsJson ? formatJsonContent(toolData.arguments) : truncateContent(toolData.arguments)
@@ -206,7 +206,7 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
       )}
 
       {/* Result */}
-      {toolData.hasResult && (
+      {!!toolData.hasResult && (
         <CollapsibleCodeSection
           content={toolData.isResultJson ? formatJsonContent(toolData.result) : truncateContent(toolData.result)}
           title="RESULT"

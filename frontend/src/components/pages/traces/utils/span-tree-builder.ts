@@ -14,7 +14,7 @@ import { type Span, Status_StatusCode } from 'protogen/redpanda/otel/v1/trace_pb
 import { extractSpanAttributes } from './attribute-helpers';
 import { bytesToHex } from './hex-utils';
 
-export interface SpanNode {
+export type SpanNode = {
   spanId: string;
   parentSpanId: string;
   name: string;
@@ -25,7 +25,7 @@ export interface SpanNode {
   attributes: Map<string, string | number | boolean>;
   children: SpanNode[];
   span: Span;
-}
+};
 
 export const buildSpanTree = (spans: Span[]): SpanNode[] => {
   const nodeMap = new Map<string, SpanNode>();

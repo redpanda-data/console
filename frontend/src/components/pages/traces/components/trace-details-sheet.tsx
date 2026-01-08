@@ -31,12 +31,12 @@ import { bytesToHex } from '../utils/hex-utils';
 import { getSpanKind } from '../utils/span-classifier';
 import { isIncompleteTrace, isRootSpan } from '../utils/trace-statistics';
 
-interface Props {
+type Props = {
   traceId: string | null;
   spanId: string | null;
   isOpen: boolean;
   onClose: () => void;
-}
+};
 
 export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose }) => {
   const [isLinkCopied, setIsLinkCopied] = useState(false);
@@ -50,7 +50,9 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
   // if the sheet closes within 2s, setTimeout would still fire and call setState on
   // an unmounted component, causing React warnings and wasted work.
   useEffect(() => {
-    if (!isLinkCopied) return;
+    if (!isLinkCopied) {
+      return;
+    }
     const timeoutId = window.setTimeout(() => setIsLinkCopied(false), 2000);
     return () => window.clearTimeout(timeoutId);
   }, [isLinkCopied]);
@@ -120,7 +122,7 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
       {/* Header - Compact v0 style */}
       <div className="flex shrink-0 items-center justify-between border-b px-3 py-3">
         <div className="flex items-center gap-2">
-          {isIncomplete && (
+          {!!isIncomplete && (
             <>
               <AlertCircle className="h-4 w-4 text-amber-500" />
               <span className="text-muted-foreground text-sm">Incomplete Trace</span>
@@ -160,7 +162,7 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
 
       {/* Content */}
       <div className="min-h-0 flex-1 overflow-auto">
-        {isLoading && (
+        {!!isLoading && (
           <div className="space-y-4 p-4">
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-64 w-full" />
@@ -216,7 +218,7 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
             <DialogDescription>Span ID: {spanId}</DialogDescription>
           </DialogHeader>
           <div className="h-[70vh] overflow-auto">
-            {selectedSpan && (
+            {!!selectedSpan && (
               <TraceDetailsTabs onValueChange={setSelectedTab} span={selectedSpan} trace={trace} value={selectedTab} />
             )}
           </div>

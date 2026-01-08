@@ -13,7 +13,7 @@ import type { Trace } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb'
 
 import { extractSpanAttributes } from './attribute-helpers';
 
-export interface LLMInteraction {
+export type LLMInteraction = {
   model: string;
   provider: string;
   input: string;
@@ -21,7 +21,7 @@ export interface LLMInteraction {
   inputTokens: number;
   outputTokens: number;
   spanName: string;
-}
+};
 
 export const extractLLMData = (trace: Trace | undefined): LLMInteraction[] => {
   if (!trace?.spans) {
@@ -51,11 +51,11 @@ export const extractLLMData = (trace: Trace | undefined): LLMInteraction[] => {
   return llmInteractions;
 };
 
-export interface Message {
+export type Message = {
   role: string;
   content: string;
   timestamp: bigint;
-}
+};
 
 export const extractConversationHistory = (trace: Trace | undefined): Message[] => {
   if (!trace?.spans) {

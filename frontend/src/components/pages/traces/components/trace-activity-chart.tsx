@@ -15,10 +15,10 @@ import type { FC } from 'react';
 import { useMemo } from 'react';
 import { pluralizeWithNumber } from 'utils/string';
 
-interface Props {
+type Props = {
   traces: TraceSummary[];
   timeRangeMs: number;
-}
+};
 
 export const TraceActivityChart: FC<Props> = ({ traces, timeRangeMs }) => {
   const chartData = useMemo(() => {
@@ -51,7 +51,7 @@ export const TraceActivityChart: FC<Props> = ({ traces, timeRangeMs }) => {
       const bucketIndex = Math.floor((traceTime - startTime) / bucketSize);
 
       if (bucketIndex >= 0 && bucketIndex < buckets.length) {
-        buckets[bucketIndex].count++;
+        buckets[bucketIndex].count += 1;
       }
     }
 
@@ -97,12 +97,12 @@ export const TraceActivityChart: FC<Props> = ({ traces, timeRangeMs }) => {
     <div className="mb-3 rounded-lg border bg-muted/20 p-2">
       {/* Histogram Bars */}
       <div className="flex h-10 items-end gap-px">
-        {chartData.map((bucket, i) => {
+        {chartData.map((bucket) => {
           const height = maxCount > 0 ? (bucket.count / maxCount) * 100 : 0;
           return (
             <div
               className="min-w-[2px] flex-1 rounded-t-sm bg-emerald-500/70 transition-all hover:bg-emerald-500"
-              key={i}
+              key={bucket.timestamp}
               style={{ height: `${height}%` }}
               title={pluralizeWithNumber(bucket.count, 'trace')}
             />
@@ -112,8 +112,8 @@ export const TraceActivityChart: FC<Props> = ({ traces, timeRangeMs }) => {
 
       {/* Time Labels */}
       <div className="mt-1.5 flex justify-between text-[10px] text-muted-foreground">
-        {timeLabels.map((label, i) => (
-          <span key={i}>{label}</span>
+        {timeLabels.map((label) => (
+          <span key={label}>{label}</span>
         ))}
       </div>
     </div>

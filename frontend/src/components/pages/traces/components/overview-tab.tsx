@@ -18,15 +18,15 @@ import { ContentPanel } from './content-panel';
 import { formatDuration } from '../utils/trace-formatters';
 import { calculateTraceStatistics, getConversationId } from '../utils/trace-statistics';
 
-interface Props {
+type Props = {
   trace: Trace | undefined;
-}
+};
 
-interface MetricCardProps {
+type MetricCardProps = {
   label: string;
   value: ReactNode;
   variant?: 'default' | 'error';
-}
+};
 
 const MetricCard: FC<MetricCardProps> = ({ label, value, variant = 'default' }) => {
   const isError = variant === 'error';
@@ -38,9 +38,9 @@ const MetricCard: FC<MetricCardProps> = ({ label, value, variant = 'default' }) 
   );
 };
 
-interface SectionHeaderProps {
+type SectionHeaderProps = {
   children: ReactNode;
-}
+};
 
 const SectionHeader: FC<SectionHeaderProps> = ({ children }) => (
   <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">{children}</h4>
