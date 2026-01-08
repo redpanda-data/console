@@ -9,8 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
-import { TimestampSchema } from '@bufbuild/protobuf/wkt';
+import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import type { ColumnDef, ColumnFiltersState } from '@tanstack/react-table';
 import {
   getCoreRowModel,
@@ -78,14 +77,8 @@ export const TraceListPage: FC = () => {
     const startMs = nowMs - selectedRange.ms;
 
     return {
-      startTimestamp: create(TimestampSchema, {
-        seconds: BigInt(Math.floor(startMs / 1000)),
-        nanos: (startMs % 1000) * 1_000_000,
-      }),
-      endTimestamp: create(TimestampSchema, {
-        seconds: BigInt(Math.floor(nowMs / 1000)),
-        nanos: (nowMs % 1000) * 1_000_000,
-      }),
+      startTimestamp: timestampFromMs(startMs),
+      endTimestamp: timestampFromMs(nowMs),
     };
   }, [nowMs, selectedRange.ms]);
 

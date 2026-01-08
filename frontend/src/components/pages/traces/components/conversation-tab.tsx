@@ -12,6 +12,7 @@
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { ScrollArea } from 'components/redpanda-ui/components/scroll-area';
+import { Pre } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { Trace } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { FC } from 'react';
@@ -68,7 +69,9 @@ export const ConversationTab: FC<Props> = ({ trace }) => {
                 </Badge>
               </div>
               <div className="min-w-0 flex-1">
-                <pre className="whitespace-pre-wrap break-words font-sans text-sm">{message.content}</pre>
+                <Pre className="my-0 whitespace-pre-wrap break-words font-sans" variant="dense">
+                  {message.content}
+                </Pre>
               </div>
             </div>
           );

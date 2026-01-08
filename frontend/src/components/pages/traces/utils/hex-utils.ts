@@ -10,10 +10,8 @@
  */
 
 export const bytesToHex = (bytes: Uint8Array): string => {
-  // Pre-allocate array for better performance with large datasets
-  const hexArray = new Array(bytes.length);
-  for (let i = 0; i < bytes.length; i++) {
-    hexArray[i] = bytes[i].toString(16).padStart(2, '0');
-  }
-  return hexArray.join('');
+  // Optimized conversion using Array.from with map for better performance with large datasets.
+  // This approach avoids the overhead of individual array assignments and string concatenation.
+  // See: https://stackoverflow.com/a/40031979
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
 };
