@@ -211,7 +211,8 @@ const SpanRow: FC<SpanRowProps> = ({
     <>
       <button
         className={cn(
-          'flex h-8 w-full cursor-pointer items-center border-border/30 border-b text-left transition-colors hover:bg-muted/50'
+          'grid h-8 w-full cursor-pointer items-center border-border/30 border-b text-left transition-colors hover:bg-muted/50',
+          '[grid-template-columns:72px_minmax(0,1fr)_260px]'
         )}
         onClick={() => onClick(traceId, span.spanId)}
         onKeyDown={(e) => {
@@ -224,12 +225,12 @@ const SpanRow: FC<SpanRowProps> = ({
         type="button"
       >
         {/* Timestamp */}
-        <div className="w-[72px] shrink-0 px-2 py-1">
+        <div className="shrink-0 px-2 py-1">
           <span className="font-mono text-[10px] text-muted-foreground">{formatTime(spanTimestamp)}</span>
         </div>
 
         {/* Span Info with Tree Lines */}
-        <div className="flex min-w-[280px] flex-1 items-center gap-1 px-1 py-1">
+        <div className="flex min-w-0 items-center gap-1 overflow-hidden px-1 py-1">
           {/* Tree structure lines */}
           {depth > 0 && (
             <div className="flex h-8 shrink-0 items-stretch">
@@ -286,7 +287,7 @@ const SpanRow: FC<SpanRowProps> = ({
 
               {/* Chevron button as final tree column with vertical line connector */}
               <div
-                className="relative flex h-8 w-6 shrink-0 items-center"
+                className="relative flex h-8 w-5 shrink-0 items-center"
                 style={{ '--tree-x': '11px' } as React.CSSProperties}
               >
                 {/* Vertical line connecting to chevron when expanded and has children */}
@@ -309,16 +310,15 @@ const SpanRow: FC<SpanRowProps> = ({
             </div>
           )}
 
-          {/* Spacer for content indentation */}
-          <div className="w-1 shrink-0" />
-
           {/* Service badge */}
           <Badge
-            className="flex h-4 shrink-0 items-center border-border bg-muted/50 px-1.5 py-0 font-normal text-[10px] text-muted-foreground"
+            className="flex h-4 max-w-[150px] shrink-0 items-center border-border bg-muted/50 px-1.5 py-0 font-normal text-[10px] text-muted-foreground"
             variant="outline"
           >
-            <Icon className="mr-1 h-3 w-3" />
-            {serviceName}
+            <Icon className="mr-1 h-3 w-3 shrink-0" />
+            <span className="truncate" title={serviceName}>
+              {serviceName}
+            </span>
           </Badge>
 
           {/* Children count */}
@@ -331,10 +331,12 @@ const SpanRow: FC<SpanRowProps> = ({
             </Badge>
           )}
 
-          {/* Span name */}
-          <span className="ml-1 truncate text-[11px]" title={span.name}>
-            {span.name}
-          </span>
+          {/* Span name - wrapped in container for proper truncation */}
+          <div className="min-w-0 flex-1">
+            <span className="block truncate text-[11px]" title={span.name}>
+              {span.name}
+            </span>
+          </div>
 
           {/* Error badge */}
           {span.hasError && (
@@ -345,7 +347,7 @@ const SpanRow: FC<SpanRowProps> = ({
         </div>
 
         {/* Duration Bar */}
-        <div className="flex w-[260px] shrink-0 items-center gap-2 py-1 pr-6 pl-2">
+        <div className="flex shrink-0 items-center gap-2 py-1 pr-6 pl-2">
           <div className="relative h-2.5 flex-1 rounded-sm bg-muted/30">
             <div
               className={cn('absolute h-full rounded-sm', span.hasError ? 'bg-red-500/70' : 'bg-sky-500/70')}
@@ -535,7 +537,8 @@ const TraceGroup: FC<{
       {/* Root trace row */}
       <button
         className={cn(
-          'flex h-9 w-full cursor-pointer items-center border-border/40 border-b bg-muted/10 text-left transition-colors hover:bg-muted/30',
+          'grid h-9 w-full cursor-pointer items-center border-border/40 border-b bg-muted/10 text-left transition-colors hover:bg-muted/30',
+          '[grid-template-columns:72px_minmax(0,1fr)_260px]',
           isIncomplete && 'bg-amber-500/5 hover:bg-amber-500/10'
         )}
         onClick={onToggle}
@@ -549,12 +552,12 @@ const TraceGroup: FC<{
         type="button"
       >
         {/* Timestamp */}
-        <div className="w-[72px] shrink-0 px-2 py-1.5">
+        <div className="shrink-0 px-2 py-1.5">
           <span className="font-mono text-[10px] text-muted-foreground">{formatTime(baseTimestamp)}</span>
         </div>
 
         {/* Message column */}
-        <div className="flex min-w-[280px] flex-1 items-center gap-1 px-1 py-1.5">
+        <div className="flex min-w-0 items-center gap-1 overflow-hidden px-1 py-1.5">
           {/* Expand button with vertical line container */}
           <div
             className="relative flex h-8 w-5 shrink-0 items-center"
@@ -584,16 +587,18 @@ const TraceGroup: FC<{
               className="flex h-4 shrink-0 items-center border-amber-500/30 bg-amber-500/10 px-1.5 py-0 font-normal text-[10px] text-amber-600"
               variant="outline"
             >
-              <AlertCircle className="mr-1 h-3 w-3" />
-              awaiting root
+              <AlertCircle className="mr-1 h-3 w-3 shrink-0" />
+              <span className="truncate">awaiting root</span>
             </Badge>
           ) : (
             <Badge
-              className="flex h-4 shrink-0 items-center border-border bg-muted/50 px-1.5 py-0 font-normal text-[10px] text-muted-foreground"
+              className="flex h-4 max-w-[150px] shrink-0 items-center border-border bg-muted/50 px-1.5 py-0 font-normal text-[10px] text-muted-foreground"
               variant="outline"
             >
-              <Cpu className="mr-1 h-3 w-3" />
-              {traceSummary.serviceName || 'service'}
+              <Cpu className="mr-1 h-3 w-3 shrink-0" />
+              <span className="truncate" title={traceSummary.serviceName || 'service'}>
+                {traceSummary.serviceName || 'service'}
+              </span>
             </Badge>
           )}
 
@@ -605,15 +610,17 @@ const TraceGroup: FC<{
             {traceSummary.spanCount}
           </Badge>
 
-          {/* Trace name */}
-          <span
-            className={cn('ml-1 truncate text-[11px]', isIncomplete && 'text-muted-foreground italic')}
-            title={traceSummary.rootSpanName}
-          >
-            {isIncomplete
-              ? `${traceSummary.serviceName || 'unknown'} — waiting for parent span`
-              : traceSummary.rootSpanName}
-          </span>
+          {/* Trace name - wrapped in container for proper truncation */}
+          <div className="min-w-0 flex-1">
+            <span
+              className={cn('block truncate text-[11px]', isIncomplete && 'text-muted-foreground italic')}
+              title={traceSummary.rootSpanName}
+            >
+              {isIncomplete
+                ? `${traceSummary.serviceName || 'unknown'} — waiting for parent span`
+                : traceSummary.rootSpanName}
+            </span>
+          </div>
 
           {/* Error badge */}
           {traceSummary.errorCount > 0 && (
@@ -624,7 +631,7 @@ const TraceGroup: FC<{
         </div>
 
         {/* Duration column */}
-        <div className="flex w-[260px] shrink-0 items-center gap-2 py-1.5 pr-6 pl-2">
+        <div className="flex shrink-0 items-center gap-2 py-1.5 pr-6 pl-2">
           {isIncomplete ? (
             <>
               <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
@@ -836,9 +843,9 @@ export const TracesTable: FC<Props> = ({
         <div className={selectedTraceId ? 'flex h-full min-w-0 flex-1 flex-col' : 'flex h-full w-full flex-col'}>
           <div className="flex flex-1 flex-col overflow-hidden bg-background">
             {/* Column Headers */}
-            <div className="sticky top-0 flex items-center border-b bg-muted/50 font-medium text-[10px] text-muted-foreground">
+            <div className="sticky top-0 grid items-center border-b bg-muted/50 font-medium text-[10px] text-muted-foreground [grid-template-columns:72px_minmax(0,1fr)_260px]">
               <button
-                className="flex w-[72px] shrink-0 cursor-pointer items-center gap-1 px-2 py-1.5 transition-colors hover:text-foreground"
+                className="flex shrink-0 cursor-pointer items-center gap-1 px-2 py-1.5 transition-colors hover:text-foreground"
                 onClick={toggleSortOrder}
                 title={
                   sortOrder === 'newest-first'
@@ -850,8 +857,8 @@ export const TracesTable: FC<Props> = ({
                 <span>Time</span>
                 {sortOrder === 'newest-first' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />}
               </button>
-              <div className="min-w-[280px] flex-1 px-1 py-1.5">Span</div>
-              <div className="w-[260px] shrink-0 py-1.5 pr-6 pl-2">Duration</div>
+              <div className="min-w-0 px-1 py-1.5">Span</div>
+              <div className="shrink-0 py-1.5 pr-6 pl-2">Duration</div>
             </div>
 
             {/* Table Body */}
