@@ -12,6 +12,7 @@
 import { Input } from 'components/redpanda-ui/components/input';
 import JSONBigIntFactory from 'json-bigint';
 import { Search } from 'lucide-react';
+import type { AnyValue } from 'protogen/redpanda/otel/v1/common_pb';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
@@ -29,71 +30,50 @@ type AttributeEntry = {
   value: string;
 };
 
-// Recursively extract the actual value from protobuf-es structure
-const extractProtoValue = (value: unknown): unknown => {
-  if (value === null || value === undefined) {
-    return value;
+/**
+ * Recursively extracts JavaScript values from OpenTelemetry AnyValue protobuf structures.
+ * OpenTelemetry uses a discriminated union (oneof) pattern where values are wrapped
+ * in { case: 'typeValue', value: actualValue } objects. This function unwraps them
+ * into plain JavaScript values for easier handling in the UI.
+ */
+const extractProtoValue = (value: AnyValue | undefined): unknown => {
+  if (!value?.value) {
+    return;
   }
 
-  // Handle protobuf-es structure with oneof value field
-  const protoValue = value as {
-    value?: {
-      case?: string;
-      value?: unknown;
-    };
-  };
-
-  if (protoValue.value?.case && protoValue.value?.value !== undefined) {
-    switch (protoValue.value.case) {
-      case 'stringValue':
-      case 'intValue':
-      case 'doubleValue':
-      case 'boolValue':
-        return protoValue.value.value;
-      case 'bytesValue':
-        // For bytes, try to decode as string
-        try {
-          if (protoValue.value.value instanceof Uint8Array) {
-            return new TextDecoder().decode(protoValue.value.value);
-          }
-          return protoValue.value.value;
-        } catch (error) {
-          // biome-ignore lint/suspicious/noConsole: useful for debugging edge cases
-          console.warn('Failed to decode bytes value:', error);
-          return '[binary data]';
-        }
-      case 'arrayValue': {
-        // Recursively extract array values
-        const arrayData = protoValue.value.value as { values?: unknown[] };
-        if (arrayData?.values && Array.isArray(arrayData.values)) {
-          return arrayData.values.map((item) => extractProtoValue(item));
-        }
-        return protoValue.value.value;
+  switch (value.value.case) {
+    case 'stringValue':
+    case 'boolValue':
+    case 'doubleValue':
+      return value.value.value;
+    case 'intValue':
+      // int64 values are represented as bigint in protobuf-es
+      return value.value.value;
+    case 'bytesValue':
+      // Attempt to decode bytes as UTF-8 string, fallback to placeholder
+      try {
+        return new TextDecoder().decode(value.value.value);
+      } catch (error) {
+        // biome-ignore lint/suspicious/noConsole: useful for debugging edge cases
+        console.warn('Failed to decode bytes value:', error);
+        return '[binary data]';
       }
-      case 'kvlistValue': {
-        // Recursively extract key-value list
-        const kvData = protoValue.value.value as { values?: Array<{ key?: string; value?: unknown }> };
-        if (kvData?.values && Array.isArray(kvData.values)) {
-          const obj: Record<string, unknown> = {};
-          for (const kv of kvData.values) {
-            if (kv.key) {
-              obj[kv.key] = extractProtoValue(kv.value);
-            }
-          }
-          return obj;
-        }
-        return protoValue.value.value;
-      }
-      default:
-        return protoValue.value.value;
-    }
+    case 'arrayValue':
+      // Recursively extract array elements
+      return value.value.value.values.map((item) => extractProtoValue(item));
+    case 'kvlistValue':
+      // Convert key-value list to plain JavaScript object
+      return Object.fromEntries(value.value.value.values.map((kv) => [kv.key, extractProtoValue(kv.value)]));
+    case undefined:
+      return;
+    default:
+      // This case should never be reached due to exhaustive type checking
+      return;
   }
-
-  return value;
 };
 
-const getAttributeValue = (value: unknown): string => {
-  if (value === null || value === undefined) {
+const getAttributeValue = (value: AnyValue | undefined): string => {
+  if (!value) {
     return '';
   }
 
@@ -135,11 +115,10 @@ export const AttributesTab: FC<Props> = ({ span }) => {
 
     const spanAttrs = span.attributes || [];
     for (const attr of spanAttrs) {
-      const keyValue = attr as { key: string; value?: unknown };
-      if (keyValue.key) {
+      if (attr.key) {
         entries.push({
-          key: keyValue.key,
-          value: getAttributeValue(keyValue.value),
+          key: attr.key,
+          value: getAttributeValue(attr.value),
         });
       }
     }
