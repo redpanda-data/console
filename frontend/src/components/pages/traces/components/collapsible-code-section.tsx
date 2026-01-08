@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
@@ -53,10 +54,11 @@ export const CollapsibleCodeSection: FC<Props> = ({ title, content, defaultExpan
 
   return (
     <div className="space-y-1.5">
-      <button
-        className="flex w-full items-center justify-between text-left hover:opacity-70"
+      <Button
+        className="flex h-auto w-full items-center justify-between px-0 py-0 text-left"
         onClick={() => setIsExpanded(!isExpanded)}
         type="button"
+        variant="ghost"
       >
         <div className="flex items-center gap-1.5">
           {isExpanded ? (
@@ -67,7 +69,7 @@ export const CollapsibleCodeSection: FC<Props> = ({ title, content, defaultExpan
           <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">{title}</h5>
         </div>
         <span className="font-mono text-[9px] text-muted-foreground">{formatBytes(payloadSize)}</span>
-      </button>
+      </Button>
 
       {!isExpanded && hasPreview ? (
         <button
