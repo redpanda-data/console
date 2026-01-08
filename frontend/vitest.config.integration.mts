@@ -17,12 +17,13 @@ export default defineConfig(({ mode }) => {
 
   return {
     test: {
+      vmMemoryLimit: '3072Mb', // 3GB per worker (safe for 8GB CI runner with 2 shards)
       fileParallelism: false,
       isolate: true,
       pool: 'forks',
       poolOptions: {
         forks: {
-          singleFork: true,
+          singleFork: false, // Enable process isolation - each test file gets its own worker
         },
       },
       testTimeout: 30_000,

@@ -24,7 +24,7 @@
     "test:ci": "bun run test:unit && bun run test:integration",
     "test": "bun run test:ci",
     "test:unit": "TZ=GMT vitest run --config=vitest.config.unit.mts",
-    "test:integration": "NODE_OPTIONS='--loader=./tests/css-loader.mjs' TZ=GMT vitest run --config=vitest.config.integration.mts",
+    "test:integration": "NODE_OPTIONS='--max_old_space_size=4096 --loader=./tests/css-loader.mjs' TZ=GMT vitest run --config=vitest.config.integration.mts",
     "test:coverage": "TZ=GMT vitest run --coverage",
     "test:ui": "TZ=GMT vitest --ui",
     "test:watch": "TZ=GMT vitest --watch --ui",
