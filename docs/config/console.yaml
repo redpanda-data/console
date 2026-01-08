@@ -19,6 +19,7 @@
 #
 # Some examples:
 # kafka.rackId => KAFKA_RACKID
+# kafka.kafkaNextGenBalancer => KAFKA_KAFKANEXTGENBALANCER
 # kafka.tls.caFilepath => KAFKA_TLS_CAFILEPATH
 #
 # --- Note
@@ -38,6 +39,10 @@ kafka:
   # clientId: "console"
   # Optional: Rack identifier to optimize message consumption in multi-zone clusters.
   # rackId: "zone-a"
+  # Optional: Enable Kafka's next-generation balancer (beta feature from franz-go v1.19.0+).
+  # This enables improved partition assignment and rebalancing behavior.
+  # Defaults to false. Set to true to opt-in to the beta balancer.
+  # kafkaNextGenBalancer: false
   # sasl:
     # enabled: true
     # Supported mechanisms include:

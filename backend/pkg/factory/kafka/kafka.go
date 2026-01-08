@@ -44,6 +44,10 @@ import (
 	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 )
 
+type contextKey string
+
+const optInKafkaNextGenBalancerBeta contextKey = "opt_in_kafka_next_gen_balancer_beta"
+
 // ClientFactory defines the interface for creating and retrieving Kafka clients.
 type ClientFactory interface {
 	// GetKafkaClient retrieves a Kafka client based on the context.
@@ -142,6 +146,12 @@ func NewKgoConfig(cfg config.Kafka, logger *slog.Logger, metricsNamespace string
 		kgo.MetadataMinAge(time.Second),
 		kgo.WithLogger(kslog.New(loggerpkg.Named(logger, "kafka_client"))),
 		kgo.WithHooks(metricHooks),
+	}
+
+	// Add context with opt_in_kafka_next_gen_balancer_beta option if enabled
+	if cfg.KafkaNextGenBalancer {
+		ctx := context.WithValue(context.Background(), optInKafkaNextGenBalancerBeta, true)
+		opts = append(opts, kgo.WithContext(ctx))
 	}
 
 	// Add Rack Awareness if configured
