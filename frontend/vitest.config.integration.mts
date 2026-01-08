@@ -21,11 +21,7 @@ export default defineConfig(({ mode }) => {
       fileParallelism: false,
       isolate: true,
       pool: 'forks',
-      poolOptions: {
-        forks: {
-          singleFork: false, // Enable process isolation - each test file gets its own worker
-        },
-      },
+      singleFork: false, // Enable process isolation per test file
       testTimeout: 30_000,
       globals: true,
       environment: 'jsdom', // Integration tests use jsdom environment
