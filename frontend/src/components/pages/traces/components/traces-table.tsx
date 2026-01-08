@@ -364,9 +364,7 @@ const SpanRow: FC<SpanRowProps> = ({
       </button>
 
       {/* Render children */}
-      {!!(isExpanded &&
-        expandedSpans &&
-        toggleSpan) &&
+      {!!(isExpanded && expandedSpans && toggleSpan) &&
         (() => {
           // The gutter column index for THIS node is (depth - 1).
           // If THIS node has more siblings after it (i.e. !isLastChild), we want a continuation vertical
@@ -902,34 +900,37 @@ export const TracesTable: FC<Props> = ({
               }
 
               return (
-                <ScrollArea className="flex-1">
-                  {groupedTraces.map(([dateKey, { label, traces: dateTraces }], index) => (
-                    <div key={dateKey}>
-                      {/* Date Separator */}
-                      <div className="border-border/30 border-b py-1.5 text-center">
-                        <span className="text-[10px] text-muted-foreground">
-                          {label}
-                          {index === 0 && (
-                            <span className="ml-1.5 text-muted-foreground/60">
-                              • {sortOrder === 'newest-first' ? 'Newest' : 'Oldest'}
-                            </span>
-                          )}
-                        </span>
-                      </div>
+                <ScrollArea className="min-h-0 flex-1">
+                  {/* Add padding-bottom to prevent last rows from being cut off when scrolled to bottom */}
+                  <div className="pb-4">
+                    {groupedTraces.map(([dateKey, { label, traces: dateTraces }], index) => (
+                      <div key={dateKey}>
+                        {/* Date Separator */}
+                        <div className="border-border/30 border-b py-1.5 text-center">
+                          <span className="text-[10px] text-muted-foreground">
+                            {label}
+                            {index === 0 && (
+                              <span className="ml-1.5 text-muted-foreground/60">
+                                • {sortOrder === 'newest-first' ? 'Newest' : 'Oldest'}
+                              </span>
+                            )}
+                          </span>
+                        </div>
 
-                      {/* Traces for this date */}
-                      {dateTraces.map((traceSummary) => (
-                        <TraceGroup
-                          collapseAllTrigger={collapseAllTrigger}
-                          isExpanded={expandedTraces.has(traceSummary.traceId)}
-                          key={traceSummary.traceId}
-                          onSpanClick={onSpanClick}
-                          onToggle={() => toggleTrace(traceSummary.traceId)}
-                          traceSummary={traceSummary}
-                        />
-                      ))}
-                    </div>
-                  ))}
+                        {/* Traces for this date */}
+                        {dateTraces.map((traceSummary) => (
+                          <TraceGroup
+                            collapseAllTrigger={collapseAllTrigger}
+                            isExpanded={expandedTraces.has(traceSummary.traceId)}
+                            key={traceSummary.traceId}
+                            onSpanClick={onSpanClick}
+                            onToggle={() => toggleTrace(traceSummary.traceId)}
+                            traceSummary={traceSummary}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
                 </ScrollArea>
               );
             })()}
