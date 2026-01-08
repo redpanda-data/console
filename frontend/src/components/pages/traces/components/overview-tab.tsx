@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { Trace } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { FC, ReactNode } from 'react';
@@ -32,8 +33,12 @@ const MetricCard: FC<MetricCardProps> = ({ label, value, variant = 'default' }) 
   const isError = variant === 'error';
   return (
     <ContentPanel className={cn(isError ? 'border-destructive/20 bg-destructive/10' : undefined)}>
-      <div className="text-[10px] text-muted-foreground">{label}</div>
-      <div className={cn('font-mono font-semibold text-sm', isError && 'text-destructive')}>{value}</div>
+      <Text className="text-[10px]" variant="muted">
+        {label}
+      </Text>
+      <Text className={cn('font-mono font-semibold', isError && 'text-destructive')} variant="small">
+        {value}
+      </Text>
     </ContentPanel>
   );
 };
@@ -43,7 +48,9 @@ type SectionHeaderProps = {
 };
 
 const SectionHeader: FC<SectionHeaderProps> = ({ children }) => (
-  <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">{children}</h4>
+  <Text as="div" className="uppercase tracking-wide" variant="label">
+    {children}
+  </Text>
 );
 
 export const OverviewTab: FC<Props> = ({ trace }) => {
@@ -54,7 +61,9 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
   if (!summary) {
     return (
       <div className="space-y-4 p-4">
-        <div className="text-muted-foreground text-sm">No trace summary available</div>
+        <Text className="text-muted-foreground" variant="small">
+          No trace summary available
+        </Text>
       </div>
     );
   }
@@ -77,16 +86,28 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
           <SectionHeader>Token Usage</SectionHeader>
           <ContentPanel padding="md" spacing>
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-xs">Input tokens</span>
-              <span className="font-medium font-mono text-xs">{statistics.totalInputTokens.toLocaleString()}</span>
+              <Text className="text-xs" variant="muted">
+                Input tokens
+              </Text>
+              <Text className="font-medium font-mono" variant="small">
+                {statistics.totalInputTokens.toLocaleString()}
+              </Text>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-xs">Output tokens</span>
-              <span className="font-medium font-mono text-xs">{statistics.totalOutputTokens.toLocaleString()}</span>
+              <Text className="text-xs" variant="muted">
+                Output tokens
+              </Text>
+              <Text className="font-medium font-mono" variant="small">
+                {statistics.totalOutputTokens.toLocaleString()}
+              </Text>
             </div>
             <div className="flex items-center justify-between border-t pt-2">
-              <span className="font-medium text-xs">Total tokens</span>
-              <span className="font-mono font-semibold text-xs">{statistics.totalTokens.toLocaleString()}</span>
+              <Text className="font-medium" variant="small">
+                Total tokens
+              </Text>
+              <Text className="font-mono font-semibold" variant="small">
+                {statistics.totalTokens.toLocaleString()}
+              </Text>
             </div>
           </ContentPanel>
         </div>
@@ -108,7 +129,9 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
         <div className="space-y-2">
           <SectionHeader>Service</SectionHeader>
           <ContentPanel>
-            <div className="break-all font-mono text-sm">{summary.serviceName}</div>
+            <Text className="break-all font-mono" variant="small">
+              {summary.serviceName}
+            </Text>
           </ContentPanel>
         </div>
       )}
@@ -118,7 +141,9 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
         <div className="space-y-2">
           <SectionHeader>Conversation ID</SectionHeader>
           <ContentPanel>
-            <div className="break-all font-mono text-xs">{conversationId}</div>
+            <Text className="break-all font-mono" variant="muted">
+              {conversationId}
+            </Text>
           </ContentPanel>
         </div>
       )}

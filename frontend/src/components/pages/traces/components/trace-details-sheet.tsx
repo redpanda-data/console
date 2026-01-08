@@ -20,6 +20,7 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Check, Link2, Maximize2, X } from 'lucide-react';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
@@ -175,26 +176,30 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
             <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
               <div className="flex items-start gap-2">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                <div className="text-sm">
-                  <p className="font-medium text-amber-600">Waiting for root span</p>
-                  <p className="mt-1 text-muted-foreground text-xs">
+                <div>
+                  <Text as="p" className="font-medium text-amber-600" variant="small">
+                    Waiting for root span
+                  </Text>
+                  <Text as="p" className="mt-1" variant="muted">
                     The parent span for this trace hasn't been received yet. Child spans are displayed in the trace
                     list. The root span will appear once the operation completes.
-                  </p>
+                  </Text>
                 </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Trace Info</h4>
-              <div className="space-y-1 text-sm">
+              <Text as="div" className="uppercase tracking-wide" variant="label">
+                Trace Info
+              </Text>
+              <div className="space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Trace ID</span>
-                  <code className="rounded bg-muted px-1 py-0.5 text-xs">{trace?.traceId?.slice(0, 8)}...</code>
+                  <Text variant="muted">Trace ID</Text>
+                  <InlineCode>{trace?.traceId?.slice(0, 8)}...</InlineCode>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Received Spans</span>
-                  <span>{trace?.summary?.spanCount || 0}</span>
+                  <Text variant="muted">Received Spans</Text>
+                  <Text variant="small">{trace?.summary?.spanCount || 0}</Text>
                 </div>
               </div>
             </div>
