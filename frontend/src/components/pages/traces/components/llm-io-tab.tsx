@@ -46,11 +46,13 @@ type OTelMessage = {
 type ToolCall = {
   name: string;
   arguments: Record<string, unknown>;
+  uiKey?: string; // Unique key for React rendering
 };
 
 // Tool response extracted from parts
 type ToolResponse = {
   response: Record<string, unknown>;
+  uiKey?: string; // Unique key for React rendering
 };
 
 // Normalized message for display
@@ -82,6 +84,152 @@ const ToolResponseDisplay: FC<{ response: ToolResponse }> = ({ response }) => (
     <CollapsibleCodeSection content={JSON.stringify(response.response, null, 2)} title="RESPONSE" />
   </div>
 );
+
+// Component: Display a single history message
+const HistoryMessageItem: FC<{ message: Message; index: number }> = ({ message, index }) => {
+  const Icon = getMessageIcon(message.role);
+  const messageType = getMessageType(message.role);
+  const isJson = messageType === 'tool' && isJsonContent(message.content);
+  const hasToolCalls = message.toolCalls && message.toolCalls.length > 0;
+  const hasToolResponses = message.toolResponses && message.toolResponses.length > 0;
+  const hasContent = message.content.length > 0;
+
+  return (
+    <ContentPanel className="space-y-1" key={`history-${message.role}-${index}`}>
+      {/* Role header */}
+      <div className="flex items-center gap-1.5">
+        <Icon className="h-3 w-3 text-muted-foreground" />
+        <span className="font-medium text-[10px] capitalize">{message.role}</span>
+      </div>
+
+      {/* Text content */}
+      {hasContent ? (
+        <div className="text-[10px] leading-relaxed">
+          {isJson ? (
+            <div className="[&_*]:text-[10px]">
+              <DynamicCodeBlock code={formatJsonContent(message.content)} lang="json" />
+            </div>
+          ) : (
+            <p className="whitespace-pre-wrap break-words text-muted-foreground">{message.content}</p>
+          )}
+        </div>
+      ) : null}
+
+      {/* Tool calls */}
+      {hasToolCalls ? (
+        <div className="mt-2 space-y-4">
+          {message.toolCalls?.map((toolCall) => (
+            <ToolCallDisplay key={toolCall.uiKey} toolCall={toolCall} />
+          ))}
+        </div>
+      ) : null}
+
+      {/* Tool responses */}
+      {hasToolResponses ? (
+        <div className="mt-2 space-y-4">
+          {message.toolResponses?.map((toolResp) => (
+            <ToolResponseDisplay key={toolResp.uiKey} response={toolResp} />
+          ))}
+        </div>
+      ) : null}
+    </ContentPanel>
+  );
+};
+
+// Component: Display input section
+const InputSection: FC<{ input: string; lastInputMessage?: Message }> = ({ input, lastInputMessage }) => {
+  if (!(input || lastInputMessage)) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1">
+        <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">INPUT</h5>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <HelpCircle className="h-3 w-3 text-muted-foreground/50" />
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p className="text-xs">
+                The last message added to the conversation before this LLM request. This could be a user message, tool
+                response, or any other input that triggered this specific LLM call.
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+      <ContentPanel spacing>
+        {!!input && <p className="whitespace-pre-wrap break-words text-[10px] leading-relaxed">{input}</p>}
+
+        {/* Tool responses in input */}
+        {lastInputMessage?.toolResponses && lastInputMessage.toolResponses.length > 0 ? (
+          <div className="space-y-4">
+            {lastInputMessage.toolResponses.map((toolResp) => (
+              <ToolResponseDisplay key={toolResp.uiKey} response={toolResp} />
+            ))}
+          </div>
+        ) : null}
+
+        {/* Tool calls in input (rare but possible) */}
+        {lastInputMessage?.toolCalls && lastInputMessage.toolCalls.length > 0 ? (
+          <div className="space-y-4">
+            {lastInputMessage.toolCalls.map((toolCall) => (
+              <ToolCallDisplay key={toolCall.uiKey} toolCall={toolCall} />
+            ))}
+          </div>
+        ) : null}
+      </ContentPanel>
+    </div>
+  );
+};
+
+// Component: Display output section
+const OutputSection: FC<{ output: string; lastOutputMessage?: Message }> = ({ output, lastOutputMessage }) => {
+  if (!(output || lastOutputMessage)) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1">
+        <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">OUTPUT</h5>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <HelpCircle className="h-3 w-3 text-muted-foreground/50" />
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p className="text-xs">The response generated by the LLM for this specific request.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+      <ContentPanel spacing>
+        {!!output && <p className="whitespace-pre-wrap break-words text-[10px] leading-relaxed">{output}</p>}
+
+        {/* Tool calls in output (LLM making tool calls) */}
+        {lastOutputMessage?.toolCalls && lastOutputMessage.toolCalls.length > 0 ? (
+          <div className="space-y-4">
+            {lastOutputMessage.toolCalls.map((toolCall) => (
+              <ToolCallDisplay key={toolCall.uiKey} toolCall={toolCall} />
+            ))}
+          </div>
+        ) : null}
+
+        {/* Tool responses in output (rare but possible) */}
+        {lastOutputMessage?.toolResponses && lastOutputMessage.toolResponses.length > 0 ? (
+          <div className="space-y-4">
+            {lastOutputMessage.toolResponses.map((toolResp) => (
+              <ToolResponseDisplay key={toolResp.uiKey} response={toolResp} />
+            ))}
+          </div>
+        ) : null}
+      </ContentPanel>
+    </div>
+  );
+};
 
 const getAttributeValue = (span: Span, key: string): string | number => {
   const attr = span.attributes?.find((a) => a.key === key);
@@ -176,6 +324,7 @@ const flattenMessageParts = (otelMsg: OTelMessage): Message => {
           message.toolCalls?.push({
             name: part.name,
             arguments: part.arguments,
+            uiKey: crypto.randomUUID(),
           });
         }
         break;
@@ -184,6 +333,7 @@ const flattenMessageParts = (otelMsg: OTelMessage): Message => {
         if (part.response) {
           message.toolResponses?.push({
             response: part.response,
+            uiKey: crypto.randomUUID(),
           });
         }
         break;
@@ -431,92 +581,8 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
         </ContentPanel>
       )}
 
-      {/* INPUT */}
-      {!!(llmData.input || llmData.lastInputMessage) && (
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-1">
-            <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">INPUT</h5>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <HelpCircle className="h-3 w-3 text-muted-foreground/50" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p className="text-xs">
-                    The last message added to the conversation before this LLM request. This could be a user message,
-                    tool response, or any other input that triggered this specific LLM call.
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <ContentPanel spacing>
-            {!!llmData.input && (
-              <p className="whitespace-pre-wrap break-words text-[10px] leading-relaxed">{llmData.input}</p>
-            )}
-
-            {/* Tool responses in input */}
-            {llmData.lastInputMessage?.toolResponses && llmData.lastInputMessage.toolResponses.length > 0 ? (
-              <div className="space-y-4">
-                {llmData.lastInputMessage.toolResponses.map((toolResp, idx) => (
-                  <ToolResponseDisplay key={`input-toolresp-${idx}`} response={toolResp} />
-                ))}
-              </div>
-            ) : null}
-
-            {/* Tool calls in input (rare but possible) */}
-            {llmData.lastInputMessage?.toolCalls && llmData.lastInputMessage.toolCalls.length > 0 ? (
-              <div className="space-y-4">
-                {llmData.lastInputMessage.toolCalls.map((toolCall, idx) => (
-                  <ToolCallDisplay key={`input-${toolCall.name}-${idx}`} toolCall={toolCall} />
-                ))}
-              </div>
-            ) : null}
-          </ContentPanel>
-        </div>
-      )}
-
-      {/* OUTPUT */}
-      {!!(llmData.output || llmData.lastOutputMessage) && (
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-1">
-            <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">OUTPUT</h5>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <HelpCircle className="h-3 w-3 text-muted-foreground/50" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p className="text-xs">The response generated by the LLM for this specific request.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <ContentPanel spacing>
-            {!!llmData.output && (
-              <p className="whitespace-pre-wrap break-words text-[10px] leading-relaxed">{llmData.output}</p>
-            )}
-
-            {/* Tool calls in output (LLM making tool calls) */}
-            {llmData.lastOutputMessage?.toolCalls && llmData.lastOutputMessage.toolCalls.length > 0 ? (
-              <div className="space-y-4">
-                {llmData.lastOutputMessage.toolCalls.map((toolCall, idx) => (
-                  <ToolCallDisplay key={`output-${toolCall.name}-${idx}`} toolCall={toolCall} />
-                ))}
-              </div>
-            ) : null}
-
-            {/* Tool responses in output (rare but possible) */}
-            {llmData.lastOutputMessage?.toolResponses && llmData.lastOutputMessage.toolResponses.length > 0 ? (
-              <div className="space-y-4">
-                {llmData.lastOutputMessage.toolResponses.map((toolResp, idx) => (
-                  <ToolResponseDisplay key={`output-toolresp-${idx}`} response={toolResp} />
-                ))}
-              </div>
-            ) : null}
-          </ContentPanel>
-        </div>
-      )}
+      <InputSection input={llmData.input} lastInputMessage={llmData.lastInputMessage} />
+      <OutputSection lastOutputMessage={llmData.lastOutputMessage} output={llmData.output} />
 
       {/* Conversation History */}
       <Collapsible onOpenChange={setIsHistoryOpen} open={isHistoryOpen}>
@@ -536,55 +602,9 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
         </CollapsibleTrigger>
         {hasConversationHistory ? (
           <CollapsibleContent className="space-y-2 pt-2">
-            {visibleHistoryMessages.map((message, idx) => {
-              const Icon = getMessageIcon(message.role);
-              const messageType = getMessageType(message.role);
-              const isJson = messageType === 'tool' && isJsonContent(message.content);
-              const hasToolCalls = message.toolCalls && message.toolCalls.length > 0;
-              const hasToolResponses = message.toolResponses && message.toolResponses.length > 0;
-              const hasContent = message.content.length > 0;
-
-              return (
-                <ContentPanel className="space-y-1" key={`history-${message.role}-${idx}`}>
-                  {/* Role header */}
-                  <div className="flex items-center gap-1.5">
-                    <Icon className="h-3 w-3 text-muted-foreground" />
-                    <span className="font-medium text-[10px] capitalize">{message.role}</span>
-                  </div>
-
-                  {/* Text content */}
-                  {hasContent ? (
-                    <div className="text-[10px] leading-relaxed">
-                      {isJson ? (
-                        <div className="[&_*]:text-[10px]">
-                          <DynamicCodeBlock code={formatJsonContent(message.content)} lang="json" />
-                        </div>
-                      ) : (
-                        <p className="whitespace-pre-wrap break-words text-muted-foreground">{message.content}</p>
-                      )}
-                    </div>
-                  ) : null}
-
-                  {/* Tool calls */}
-                  {hasToolCalls ? (
-                    <div className="mt-2 space-y-4">
-                      {message.toolCalls?.map((toolCall, tcIdx) => (
-                        <ToolCallDisplay key={`history-${toolCall.name}-${tcIdx}`} toolCall={toolCall} />
-                      ))}
-                    </div>
-                  ) : null}
-
-                  {/* Tool responses */}
-                  {hasToolResponses ? (
-                    <div className="mt-2 space-y-4">
-                      {message.toolResponses?.map((toolResp, trIdx) => (
-                        <ToolResponseDisplay key={`history-toolresp-${trIdx}`} response={toolResp} />
-                      ))}
-                    </div>
-                  ) : null}
-                </ContentPanel>
-              );
-            })}
+            {visibleHistoryMessages.map((message, idx) => (
+              <HistoryMessageItem index={idx} key={`history-${message.role}-${idx}`} message={message} />
+            ))}
           </CollapsibleContent>
         ) : null}
       </Collapsible>

@@ -150,6 +150,30 @@ type Props = {
 const formatTime = (timestamp: Date): string =>
   timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 
+// Helper: Calculate next parent depths for child spans
+const getNextParentDepths = (parentDepths: number[], depth: number, isLastChild: boolean): number[] => {
+  const parentColumnIndex = depth - 1;
+
+  if (isLastChild) {
+    return parentDepths.filter((d) => d !== parentColumnIndex);
+  }
+  if (parentDepths.includes(parentColumnIndex)) {
+    return parentDepths;
+  }
+  return [...parentDepths, parentColumnIndex];
+};
+
+// Helper: Calculate tree line connector flags for a span row
+const getSpanRowLineFlags = (depth: number, isLastChild: boolean, parentDepths: number[]) => {
+  const drawCol0Vertical = parentDepths.includes(0) || depth === 1;
+  const col0VerticalHeight = isLastChild && depth === 1 ? '50%' : 'calc(100% + 1px)';
+
+  return {
+    drawCol0Vertical,
+    col0VerticalHeight,
+  };
+};
+
 // Span Row Component with tree lines
 type SpanRowProps = {
   span: SpanNode;
@@ -193,19 +217,8 @@ const SpanRow: FC<SpanRowProps> = ({
   const Icon = getIconForServiceName(span.span);
   const serviceName = getServiceName(span.span);
 
-  // parentDepths is a set of "gutter column indices" (0-based) that should show a full-height
-  // continuation vertical line for THIS row.
-  //
-  // column 0: the w-5 gutter (left-[9px])
-  // columns 1..N: the w-6 gutters (left-[11px]) for deeper nesting
-
-  // True when this row should draw the column-0 continuation line (to connect from the root trace row),
-  // or when this row is depth-1 (so we draw the root-level connector "into" the row).
-  const drawCol0Vertical = parentDepths.includes(0) || depth === 1;
-
-  // For depth-1 rows, the vertical in column 0 should stop at midline if this node is last among siblings.
-  // Otherwise, extend slightly past the row border to hide seams.
-  const col0VerticalHeight = isLastChild && depth === 1 ? '50%' : 'calc(100% + 1px)';
+  // Calculate tree line connector flags
+  const lineFlags = getSpanRowLineFlags(depth, isLastChild, parentDepths);
 
   return (
     <>
@@ -240,10 +253,10 @@ const SpanRow: FC<SpanRowProps> = ({
                 style={{ '--tree-x': '9px' } as React.CSSProperties}
               >
                 {/* Continuation vertical (only when needed) */}
-                {!!drawCol0Vertical && (
+                {!!lineFlags.drawCol0Vertical && (
                   <div
                     className="absolute top-0 w-px bg-border"
-                    style={{ left: 'var(--tree-x)', height: col0VerticalHeight }}
+                    style={{ left: 'var(--tree-x)', height: lineFlags.col0VerticalHeight }}
                   />
                 )}
 
@@ -365,22 +378,9 @@ const SpanRow: FC<SpanRowProps> = ({
 
       {/* Render children */}
       {!!(isExpanded && expandedSpans && toggleSpan) &&
-        (() => {
-          // The gutter column index for THIS node is (depth - 1).
-          // If THIS node has more siblings after it (i.e. !isLastChild), we want a continuation vertical
-          // in that column for all rows in the subtree.
-          const parentColumnIndex = depth - 1;
-
-          let nextParentDepths: number[];
-          if (isLastChild) {
-            nextParentDepths = parentDepths.filter((d) => d !== parentColumnIndex);
-          } else if (parentDepths.includes(parentColumnIndex)) {
-            nextParentDepths = parentDepths;
-          } else {
-            nextParentDepths = [...parentDepths, parentColumnIndex];
-          }
-
-          return span.children?.map((child, index) => (
+        span.children?.map((child, index) => {
+          const nextParentDepths = getNextParentDepths(parentDepths, depth, isLastChild);
+          return (
             <SpanRowWrapper
               baseTimestamp={baseTimestamp}
               depth={depth + 1}
@@ -396,10 +396,55 @@ const SpanRow: FC<SpanRowProps> = ({
               toggleSpan={toggleSpan}
               traceId={traceId}
             />
-          ));
-        })()}
+          );
+        })}
     </>
   );
+};
+
+// Helper: Initialize expanded spans (spans at depth <= 2)
+const computeInitialExpandedSpans = (spanTree: SpanNode[]): Set<string> => {
+  const set = new Set<string>();
+  const initSpan = (span: SpanNode, depth: number) => {
+    if (depth <= 2) {
+      set.add(span.spanId);
+    }
+    if (span.children) {
+      for (const child of span.children) {
+        initSpan(child, depth + 1);
+      }
+    }
+  };
+  for (const root of spanTree) {
+    initSpan(root, 1);
+  }
+  return set;
+};
+
+// Custom hook: Manage span expansion state
+const useSpanExpansion = (spanTree: SpanNode[], collapseAllTrigger: number) => {
+  const [expandedSpans, setExpandedSpans] = useState<Set<string>>(() => computeInitialExpandedSpans(spanTree));
+
+  // Reset to initial state when collapse all is triggered
+  useEffect(() => {
+    if (collapseAllTrigger > 0 && spanTree.length > 0) {
+      setExpandedSpans(computeInitialExpandedSpans(spanTree));
+    }
+  }, [collapseAllTrigger, spanTree]);
+
+  const toggleSpan = (spanId: string) => {
+    setExpandedSpans((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(spanId)) {
+        newSet.delete(spanId);
+      } else {
+        newSet.add(spanId);
+      }
+      return newSet;
+    });
+  };
+
+  return { expandedSpans, toggleSpan };
 };
 
 // Span Row Wrapper - now uses controlled state from parent
@@ -451,6 +496,191 @@ const SpanRowWrapper: FC<{
   );
 };
 
+// Component: Root trace row
+const RootTraceRow: FC<{
+  traceSummary: TraceSummary;
+  isExpanded: boolean;
+  onToggle: () => void;
+  spanTreeLength: number;
+  isIncomplete: boolean;
+}> = ({ traceSummary, isExpanded, onToggle, spanTreeLength, isIncomplete }) => {
+  const baseTimestamp = traceSummary.startTime ? new Date(Number(traceSummary.startTime.seconds) * 1000) : new Date();
+
+  return (
+    <button
+      className={cn(
+        'grid h-9 w-full cursor-pointer items-center border-border/40 border-b bg-muted/10 text-left transition-colors hover:bg-muted/30',
+        '[grid-template-columns:72px_minmax(0,1fr)_260px]',
+        isIncomplete && 'bg-amber-500/5 hover:bg-amber-500/10'
+      )}
+      onClick={onToggle}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
+      tabIndex={0}
+      type="button"
+    >
+      {/* Timestamp */}
+      <div className="shrink-0 px-2 py-1.5">
+        <span className="font-mono text-[10px] text-muted-foreground">{formatTime(baseTimestamp)}</span>
+      </div>
+
+      {/* Message column */}
+      <div className="flex min-w-0 items-center gap-1 overflow-hidden px-1 py-1.5">
+        {/* Expand button with vertical line container */}
+        <div
+          className="relative flex h-8 w-5 shrink-0 items-center"
+          style={{ '--tree-x': '9px' } as React.CSSProperties}
+        >
+          {/* Vertical line when expanded */}
+          {isExpanded && spanTreeLength > 0 && (
+            <div className="absolute top-1/2 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
+          )}
+          <Button
+            className="absolute z-10 h-4 w-4 shrink-0 -translate-x-1/2"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle();
+            }}
+            size="icon"
+            style={{ left: 'var(--tree-x)' }}
+            variant="ghost"
+          >
+            {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          </Button>
+        </div>
+
+        {/* Service badge or incomplete badge */}
+        {isIncomplete ? (
+          <Badge
+            className="flex h-4 shrink-0 items-center border-amber-500/30 bg-amber-500/10 px-1.5 py-0 font-normal text-[10px] text-amber-600"
+            variant="outline"
+          >
+            <AlertCircle className="mr-1 h-3 w-3 shrink-0" />
+            <span className="truncate">awaiting root</span>
+          </Badge>
+        ) : (
+          <Badge
+            className="flex h-4 max-w-[150px] shrink-0 items-center border-border bg-muted/50 px-1.5 py-0 font-normal text-[10px] text-muted-foreground"
+            variant="outline"
+          >
+            <Cpu className="mr-1 h-3 w-3 shrink-0" />
+            <span className="truncate" title={traceSummary.serviceName || 'service'}>
+              {traceSummary.serviceName || 'service'}
+            </span>
+          </Badge>
+        )}
+
+        {/* Span count */}
+        <Badge
+          className="h-4 shrink-0 border-border bg-muted/50 px-1 py-0 font-mono text-[10px] text-muted-foreground"
+          variant="outline"
+        >
+          {traceSummary.spanCount}
+        </Badge>
+
+        {/* Trace name - wrapped in container for proper truncation */}
+        <div className="min-w-0 flex-1">
+          <span
+            className={cn('block truncate text-[11px]', isIncomplete && 'text-muted-foreground italic')}
+            title={traceSummary.rootSpanName}
+          >
+            {isIncomplete
+              ? `${traceSummary.serviceName || 'unknown'} — waiting for parent span`
+              : traceSummary.rootSpanName}
+          </span>
+        </div>
+
+        {/* Error badge */}
+        {traceSummary.errorCount > 0 && (
+          <Badge className="shrink-0 text-xs" variant="destructive">
+            Error
+          </Badge>
+        )}
+      </div>
+
+      {/* Duration column */}
+      <div className="flex shrink-0 items-center gap-2 py-1.5 pr-6 pl-2">
+        {isIncomplete ? (
+          <>
+            <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+              <div className="h-full w-full rounded-full bg-amber-500/30" />
+            </div>
+            <span className="w-14 shrink-0 text-left font-mono text-[10px] text-muted-foreground">—</span>
+          </>
+        ) : (
+          <>
+            <div className="relative h-2.5 flex-1 overflow-hidden rounded-sm bg-muted/30">
+              <div
+                className={cn('h-full rounded-sm', traceSummary.errorCount > 0 ? 'bg-red-500/70' : 'bg-sky-500/70')}
+                style={{ width: '100%' }}
+              />
+            </div>
+            <span className="w-14 shrink-0 text-left font-mono text-[10px] text-muted-foreground">
+              {formatDuration(Number(traceSummary.durationMs))}
+            </span>
+          </>
+        )}
+      </div>
+    </button>
+  );
+};
+
+// Component: Expanded spans content
+const ExpandedSpansContent: FC<{
+  isLoading: boolean;
+  error: Error | null | undefined;
+  spanTree: SpanNode[];
+  baseTimestamp: Date;
+  expandedSpans: Set<string>;
+  toggleSpan: (spanId: string) => void;
+  timeline: ReturnType<typeof calculateTimeline>;
+  onSpanClick: (traceId: string, spanId: string) => void;
+  traceId: string;
+}> = ({ isLoading, error, spanTree, baseTimestamp, expandedSpans, toggleSpan, timeline, onSpanClick, traceId }) => {
+  if (isLoading) {
+    return <div className="p-4 text-center text-muted-foreground text-sm">Loading spans...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center gap-2 p-4 text-center text-red-600 text-sm">
+        <AlertCircle className="h-4 w-4" />
+        <span>Failed to load trace: {error.message}</span>
+      </div>
+    );
+  }
+
+  if (spanTree.length === 0) {
+    return <div className="p-4 text-center text-muted-foreground text-sm">No spans found</div>;
+  }
+
+  return (
+    <>
+      {spanTree.map((span, index) => (
+        <SpanRowWrapper
+          baseTimestamp={baseTimestamp}
+          depth={1}
+          expandedSpans={expandedSpans}
+          isExpanded={expandedSpans.has(span.spanId)}
+          isLastChild={index === spanTree.length - 1}
+          key={span.spanId}
+          onClick={onSpanClick}
+          onToggle={() => toggleSpan(span.spanId)}
+          parentDepths={[0]}
+          span={span}
+          timeline={timeline}
+          toggleSpan={toggleSpan}
+          traceId={traceId}
+        />
+      ))}
+    </>
+  );
+};
+
 // Trace Group Component
 const TraceGroup: FC<{
   traceSummary: TraceSummary;
@@ -477,215 +707,33 @@ const TraceGroup: FC<{
     return calculateTimeline(spanTree);
   }, [spanTree]);
 
-  // Span expansion state (using Set for simpler expanded/collapsed tracking)
-  const [expandedSpans, setExpandedSpans] = useState<Set<string>>(new Set());
-
-  // Initialize span expansion state (depth <= 2 are expanded by default)
-  const initializeExpandedSpans = useMemo(() => {
-    const set = new Set<string>();
-    const initSpan = (span: SpanNode, depth: number) => {
-      if (depth <= 2) {
-        set.add(span.spanId);
-      }
-      if (span.children) {
-        for (const child of span.children) {
-          initSpan(child, depth + 1);
-        }
-      }
-    };
-    for (const root of spanTree) {
-      initSpan(root, 1);
-    }
-    return set;
-  }, [spanTree]);
-
-  // Initialize expanded state when span tree changes
-  useEffect(() => {
-    if (spanTree.length > 0) {
-      setExpandedSpans(initializeExpandedSpans);
-    }
-  }, [spanTree, initializeExpandedSpans]);
-
-  // Reset span expansion when collapse all is triggered
-  useEffect(() => {
-    if (collapseAllTrigger > 0 && spanTree.length > 0) {
-      setExpandedSpans(initializeExpandedSpans);
-    }
-  }, [collapseAllTrigger, spanTree.length, initializeExpandedSpans]);
-
-  const toggleSpan = (spanId: string) => {
-    setExpandedSpans((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(spanId)) {
-        newSet.delete(spanId);
-      } else {
-        newSet.add(spanId);
-      }
-      return newSet;
-    });
-  };
+  // Manage span expansion state
+  const { expandedSpans, toggleSpan } = useSpanExpansion(spanTree, collapseAllTrigger);
 
   const baseTimestamp = traceSummary.startTime ? new Date(Number(traceSummary.startTime.seconds) * 1000) : new Date();
-
-  // Check if trace is incomplete (root span not yet received)
   const isIncomplete = isIncompleteTrace(traceSummary.rootSpanName);
 
   return (
     <>
-      {/* Root trace row */}
-      <button
-        className={cn(
-          'grid h-9 w-full cursor-pointer items-center border-border/40 border-b bg-muted/10 text-left transition-colors hover:bg-muted/30',
-          '[grid-template-columns:72px_minmax(0,1fr)_260px]',
-          isIncomplete && 'bg-amber-500/5 hover:bg-amber-500/10'
-        )}
-        onClick={onToggle}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onToggle();
-          }
-        }}
-        tabIndex={0}
-        type="button"
-      >
-        {/* Timestamp */}
-        <div className="shrink-0 px-2 py-1.5">
-          <span className="font-mono text-[10px] text-muted-foreground">{formatTime(baseTimestamp)}</span>
-        </div>
-
-        {/* Message column */}
-        <div className="flex min-w-0 items-center gap-1 overflow-hidden px-1 py-1.5">
-          {/* Expand button with vertical line container */}
-          <div
-            className="relative flex h-8 w-5 shrink-0 items-center"
-            style={{ '--tree-x': '9px' } as React.CSSProperties}
-          >
-            {/* Vertical line when expanded */}
-            {isExpanded && spanTree.length > 0 && (
-              <div className="absolute top-1/2 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
-            )}
-            <Button
-              className="absolute z-10 h-4 w-4 shrink-0 -translate-x-1/2"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggle();
-              }}
-              size="icon"
-              style={{ left: 'var(--tree-x)' }}
-              variant="ghost"
-            >
-              {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </Button>
-          </div>
-
-          {/* Service badge or incomplete badge */}
-          {isIncomplete ? (
-            <Badge
-              className="flex h-4 shrink-0 items-center border-amber-500/30 bg-amber-500/10 px-1.5 py-0 font-normal text-[10px] text-amber-600"
-              variant="outline"
-            >
-              <AlertCircle className="mr-1 h-3 w-3 shrink-0" />
-              <span className="truncate">awaiting root</span>
-            </Badge>
-          ) : (
-            <Badge
-              className="flex h-4 max-w-[150px] shrink-0 items-center border-border bg-muted/50 px-1.5 py-0 font-normal text-[10px] text-muted-foreground"
-              variant="outline"
-            >
-              <Cpu className="mr-1 h-3 w-3 shrink-0" />
-              <span className="truncate" title={traceSummary.serviceName || 'service'}>
-                {traceSummary.serviceName || 'service'}
-              </span>
-            </Badge>
-          )}
-
-          {/* Span count */}
-          <Badge
-            className="h-4 shrink-0 border-border bg-muted/50 px-1 py-0 font-mono text-[10px] text-muted-foreground"
-            variant="outline"
-          >
-            {traceSummary.spanCount}
-          </Badge>
-
-          {/* Trace name - wrapped in container for proper truncation */}
-          <div className="min-w-0 flex-1">
-            <span
-              className={cn('block truncate text-[11px]', isIncomplete && 'text-muted-foreground italic')}
-              title={traceSummary.rootSpanName}
-            >
-              {isIncomplete
-                ? `${traceSummary.serviceName || 'unknown'} — waiting for parent span`
-                : traceSummary.rootSpanName}
-            </span>
-          </div>
-
-          {/* Error badge */}
-          {traceSummary.errorCount > 0 && (
-            <Badge className="shrink-0 text-xs" variant="destructive">
-              Error
-            </Badge>
-          )}
-        </div>
-
-        {/* Duration column */}
-        <div className="flex shrink-0 items-center gap-2 py-1.5 pr-6 pl-2">
-          {isIncomplete ? (
-            <>
-              <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                <div className="h-full w-full rounded-full bg-amber-500/30" />
-              </div>
-              <span className="w-14 shrink-0 text-left font-mono text-[10px] text-muted-foreground">—</span>
-            </>
-          ) : (
-            <>
-              <div className="relative h-2.5 flex-1 overflow-hidden rounded-sm bg-muted/30">
-                <div
-                  className={cn('h-full rounded-sm', traceSummary.errorCount > 0 ? 'bg-red-500/70' : 'bg-sky-500/70')}
-                  style={{ width: '100%' }}
-                />
-              </div>
-              <span className="w-14 shrink-0 text-left font-mono text-[10px] text-muted-foreground">
-                {formatDuration(Number(traceSummary.durationMs))}
-              </span>
-            </>
-          )}
-        </div>
-      </button>
-
-      {/* Expanded spans */}
+      <RootTraceRow
+        isExpanded={isExpanded}
+        isIncomplete={isIncomplete}
+        onToggle={onToggle}
+        spanTreeLength={spanTree.length}
+        traceSummary={traceSummary}
+      />
       {!!isExpanded && (
-        <>
-          {!!isLoading && <div className="p-4 text-center text-muted-foreground text-sm">Loading spans...</div>}
-          {!!error && (
-            <div className="flex items-center justify-center gap-2 p-4 text-center text-red-600 text-sm">
-              <AlertCircle className="h-4 w-4" />
-              <span>Failed to load trace: {error.message}</span>
-            </div>
-          )}
-          {!(isLoading || error) && spanTree.length === 0 && (
-            <div className="p-4 text-center text-muted-foreground text-sm">No spans found</div>
-          )}
-          {!(isLoading || error) &&
-            spanTree.length > 0 &&
-            spanTree.map((span, index) => (
-              <SpanRowWrapper
-                baseTimestamp={baseTimestamp}
-                depth={1}
-                expandedSpans={expandedSpans}
-                isExpanded={expandedSpans.has(span.spanId)}
-                isLastChild={index === spanTree.length - 1}
-                key={span.spanId}
-                onClick={onSpanClick}
-                onToggle={() => toggleSpan(span.spanId)}
-                parentDepths={[0]}
-                span={span}
-                timeline={timeline}
-                toggleSpan={toggleSpan}
-                traceId={traceSummary.traceId}
-              />
-            ))}
-        </>
+        <ExpandedSpansContent
+          baseTimestamp={baseTimestamp}
+          error={error}
+          expandedSpans={expandedSpans}
+          isLoading={isLoading}
+          onSpanClick={onSpanClick}
+          spanTree={spanTree}
+          timeline={timeline}
+          toggleSpan={toggleSpan}
+          traceId={traceSummary.traceId}
+        />
       )}
     </>
   );
