@@ -56,18 +56,26 @@ const (
 	// AIGatewayServiceStartAIGatewayProcedure is the fully-qualified name of the AIGatewayService's
 	// StartAIGateway RPC.
 	AIGatewayServiceStartAIGatewayProcedure = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/StartAIGateway"
+	// AIGatewayServiceListVirtualGatewaysProcedure is the fully-qualified name of the
+	// AIGatewayService's ListVirtualGateways RPC.
+	AIGatewayServiceListVirtualGatewaysProcedure = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/ListVirtualGateways"
+	// AIGatewayServiceListModelsProcedure is the fully-qualified name of the AIGatewayService's
+	// ListModels RPC.
+	AIGatewayServiceListModelsProcedure = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/ListModels"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	aIGatewayServiceServiceDescriptor               = v1alpha3.File_redpanda_api_dataplane_v1alpha3_ai_gateway_proto.Services().ByName("AIGatewayService")
-	aIGatewayServiceCreateAIGatewayMethodDescriptor = aIGatewayServiceServiceDescriptor.Methods().ByName("CreateAIGateway")
-	aIGatewayServiceGetAIGatewayMethodDescriptor    = aIGatewayServiceServiceDescriptor.Methods().ByName("GetAIGateway")
-	aIGatewayServiceListAIGatewaysMethodDescriptor  = aIGatewayServiceServiceDescriptor.Methods().ByName("ListAIGateways")
-	aIGatewayServiceUpdateAIGatewayMethodDescriptor = aIGatewayServiceServiceDescriptor.Methods().ByName("UpdateAIGateway")
-	aIGatewayServiceDeleteAIGatewayMethodDescriptor = aIGatewayServiceServiceDescriptor.Methods().ByName("DeleteAIGateway")
-	aIGatewayServiceStopAIGatewayMethodDescriptor   = aIGatewayServiceServiceDescriptor.Methods().ByName("StopAIGateway")
-	aIGatewayServiceStartAIGatewayMethodDescriptor  = aIGatewayServiceServiceDescriptor.Methods().ByName("StartAIGateway")
+	aIGatewayServiceServiceDescriptor                   = v1alpha3.File_redpanda_api_dataplane_v1alpha3_ai_gateway_proto.Services().ByName("AIGatewayService")
+	aIGatewayServiceCreateAIGatewayMethodDescriptor     = aIGatewayServiceServiceDescriptor.Methods().ByName("CreateAIGateway")
+	aIGatewayServiceGetAIGatewayMethodDescriptor        = aIGatewayServiceServiceDescriptor.Methods().ByName("GetAIGateway")
+	aIGatewayServiceListAIGatewaysMethodDescriptor      = aIGatewayServiceServiceDescriptor.Methods().ByName("ListAIGateways")
+	aIGatewayServiceUpdateAIGatewayMethodDescriptor     = aIGatewayServiceServiceDescriptor.Methods().ByName("UpdateAIGateway")
+	aIGatewayServiceDeleteAIGatewayMethodDescriptor     = aIGatewayServiceServiceDescriptor.Methods().ByName("DeleteAIGateway")
+	aIGatewayServiceStopAIGatewayMethodDescriptor       = aIGatewayServiceServiceDescriptor.Methods().ByName("StopAIGateway")
+	aIGatewayServiceStartAIGatewayMethodDescriptor      = aIGatewayServiceServiceDescriptor.Methods().ByName("StartAIGateway")
+	aIGatewayServiceListVirtualGatewaysMethodDescriptor = aIGatewayServiceServiceDescriptor.Methods().ByName("ListVirtualGateways")
+	aIGatewayServiceListModelsMethodDescriptor          = aIGatewayServiceServiceDescriptor.Methods().ByName("ListModels")
 )
 
 // AIGatewayServiceClient is a client for the redpanda.api.dataplane.v1alpha3.AIGatewayService
@@ -88,6 +96,10 @@ type AIGatewayServiceClient interface {
 	StopAIGateway(context.Context, *connect.Request[v1alpha3.StopAIGatewayRequest]) (*connect.Response[v1alpha3.StopAIGatewayResponse], error)
 	// StartAIGateway starts a specific AI gateway that has been previously stopped.
 	StartAIGateway(context.Context, *connect.Request[v1alpha3.StartAIGatewayRequest]) (*connect.Response[v1alpha3.StartAIGatewayResponse], error)
+	// ListVirtualGateways lists virtual gateways configured in a specific AI gateway.
+	ListVirtualGateways(context.Context, *connect.Request[v1alpha3.ListVirtualGatewaysRequest]) (*connect.Response[v1alpha3.ListVirtualGatewaysResponse], error)
+	// ListModels lists models available in a specific AI gateway.
+	ListModels(context.Context, *connect.Request[v1alpha3.ListModelsRequest]) (*connect.Response[v1alpha3.ListModelsResponse], error)
 }
 
 // NewAIGatewayServiceClient constructs a client for the
@@ -143,18 +155,32 @@ func NewAIGatewayServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(aIGatewayServiceStartAIGatewayMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		listVirtualGateways: connect.NewClient[v1alpha3.ListVirtualGatewaysRequest, v1alpha3.ListVirtualGatewaysResponse](
+			httpClient,
+			baseURL+AIGatewayServiceListVirtualGatewaysProcedure,
+			connect.WithSchema(aIGatewayServiceListVirtualGatewaysMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		listModels: connect.NewClient[v1alpha3.ListModelsRequest, v1alpha3.ListModelsResponse](
+			httpClient,
+			baseURL+AIGatewayServiceListModelsProcedure,
+			connect.WithSchema(aIGatewayServiceListModelsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // aIGatewayServiceClient implements AIGatewayServiceClient.
 type aIGatewayServiceClient struct {
-	createAIGateway *connect.Client[v1alpha3.CreateAIGatewayRequest, v1alpha3.CreateAIGatewayResponse]
-	getAIGateway    *connect.Client[v1alpha3.GetAIGatewayRequest, v1alpha3.GetAIGatewayResponse]
-	listAIGateways  *connect.Client[v1alpha3.ListAIGatewaysRequest, v1alpha3.ListAIGatewaysResponse]
-	updateAIGateway *connect.Client[v1alpha3.UpdateAIGatewayRequest, v1alpha3.UpdateAIGatewayResponse]
-	deleteAIGateway *connect.Client[v1alpha3.DeleteAIGatewayRequest, v1alpha3.DeleteAIGatewayResponse]
-	stopAIGateway   *connect.Client[v1alpha3.StopAIGatewayRequest, v1alpha3.StopAIGatewayResponse]
-	startAIGateway  *connect.Client[v1alpha3.StartAIGatewayRequest, v1alpha3.StartAIGatewayResponse]
+	createAIGateway     *connect.Client[v1alpha3.CreateAIGatewayRequest, v1alpha3.CreateAIGatewayResponse]
+	getAIGateway        *connect.Client[v1alpha3.GetAIGatewayRequest, v1alpha3.GetAIGatewayResponse]
+	listAIGateways      *connect.Client[v1alpha3.ListAIGatewaysRequest, v1alpha3.ListAIGatewaysResponse]
+	updateAIGateway     *connect.Client[v1alpha3.UpdateAIGatewayRequest, v1alpha3.UpdateAIGatewayResponse]
+	deleteAIGateway     *connect.Client[v1alpha3.DeleteAIGatewayRequest, v1alpha3.DeleteAIGatewayResponse]
+	stopAIGateway       *connect.Client[v1alpha3.StopAIGatewayRequest, v1alpha3.StopAIGatewayResponse]
+	startAIGateway      *connect.Client[v1alpha3.StartAIGatewayRequest, v1alpha3.StartAIGatewayResponse]
+	listVirtualGateways *connect.Client[v1alpha3.ListVirtualGatewaysRequest, v1alpha3.ListVirtualGatewaysResponse]
+	listModels          *connect.Client[v1alpha3.ListModelsRequest, v1alpha3.ListModelsResponse]
 }
 
 // CreateAIGateway calls redpanda.api.dataplane.v1alpha3.AIGatewayService.CreateAIGateway.
@@ -192,6 +218,16 @@ func (c *aIGatewayServiceClient) StartAIGateway(ctx context.Context, req *connec
 	return c.startAIGateway.CallUnary(ctx, req)
 }
 
+// ListVirtualGateways calls redpanda.api.dataplane.v1alpha3.AIGatewayService.ListVirtualGateways.
+func (c *aIGatewayServiceClient) ListVirtualGateways(ctx context.Context, req *connect.Request[v1alpha3.ListVirtualGatewaysRequest]) (*connect.Response[v1alpha3.ListVirtualGatewaysResponse], error) {
+	return c.listVirtualGateways.CallUnary(ctx, req)
+}
+
+// ListModels calls redpanda.api.dataplane.v1alpha3.AIGatewayService.ListModels.
+func (c *aIGatewayServiceClient) ListModels(ctx context.Context, req *connect.Request[v1alpha3.ListModelsRequest]) (*connect.Response[v1alpha3.ListModelsResponse], error) {
+	return c.listModels.CallUnary(ctx, req)
+}
+
 // AIGatewayServiceHandler is an implementation of the
 // redpanda.api.dataplane.v1alpha3.AIGatewayService service.
 type AIGatewayServiceHandler interface {
@@ -210,6 +246,10 @@ type AIGatewayServiceHandler interface {
 	StopAIGateway(context.Context, *connect.Request[v1alpha3.StopAIGatewayRequest]) (*connect.Response[v1alpha3.StopAIGatewayResponse], error)
 	// StartAIGateway starts a specific AI gateway that has been previously stopped.
 	StartAIGateway(context.Context, *connect.Request[v1alpha3.StartAIGatewayRequest]) (*connect.Response[v1alpha3.StartAIGatewayResponse], error)
+	// ListVirtualGateways lists virtual gateways configured in a specific AI gateway.
+	ListVirtualGateways(context.Context, *connect.Request[v1alpha3.ListVirtualGatewaysRequest]) (*connect.Response[v1alpha3.ListVirtualGatewaysResponse], error)
+	// ListModels lists models available in a specific AI gateway.
+	ListModels(context.Context, *connect.Request[v1alpha3.ListModelsRequest]) (*connect.Response[v1alpha3.ListModelsResponse], error)
 }
 
 // NewAIGatewayServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -260,6 +300,18 @@ func NewAIGatewayServiceHandler(svc AIGatewayServiceHandler, opts ...connect.Han
 		connect.WithSchema(aIGatewayServiceStartAIGatewayMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	aIGatewayServiceListVirtualGatewaysHandler := connect.NewUnaryHandler(
+		AIGatewayServiceListVirtualGatewaysProcedure,
+		svc.ListVirtualGateways,
+		connect.WithSchema(aIGatewayServiceListVirtualGatewaysMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	aIGatewayServiceListModelsHandler := connect.NewUnaryHandler(
+		AIGatewayServiceListModelsProcedure,
+		svc.ListModels,
+		connect.WithSchema(aIGatewayServiceListModelsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.dataplane.v1alpha3.AIGatewayService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AIGatewayServiceCreateAIGatewayProcedure:
@@ -276,6 +328,10 @@ func NewAIGatewayServiceHandler(svc AIGatewayServiceHandler, opts ...connect.Han
 			aIGatewayServiceStopAIGatewayHandler.ServeHTTP(w, r)
 		case AIGatewayServiceStartAIGatewayProcedure:
 			aIGatewayServiceStartAIGatewayHandler.ServeHTTP(w, r)
+		case AIGatewayServiceListVirtualGatewaysProcedure:
+			aIGatewayServiceListVirtualGatewaysHandler.ServeHTTP(w, r)
+		case AIGatewayServiceListModelsProcedure:
+			aIGatewayServiceListModelsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -311,4 +367,12 @@ func (UnimplementedAIGatewayServiceHandler) StopAIGateway(context.Context, *conn
 
 func (UnimplementedAIGatewayServiceHandler) StartAIGateway(context.Context, *connect.Request[v1alpha3.StartAIGatewayRequest]) (*connect.Response[v1alpha3.StartAIGatewayResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.AIGatewayService.StartAIGateway is not implemented"))
+}
+
+func (UnimplementedAIGatewayServiceHandler) ListVirtualGateways(context.Context, *connect.Request[v1alpha3.ListVirtualGatewaysRequest]) (*connect.Response[v1alpha3.ListVirtualGatewaysResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.AIGatewayService.ListVirtualGateways is not implemented"))
+}
+
+func (UnimplementedAIGatewayServiceHandler) ListModels(context.Context, *connect.Request[v1alpha3.ListModelsRequest]) (*connect.Response[v1alpha3.ListModelsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.AIGatewayService.ListModels is not implemented"))
 }

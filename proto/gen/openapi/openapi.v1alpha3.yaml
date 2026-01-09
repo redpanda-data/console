@@ -958,6 +958,27 @@ components:
           description: Token to retrieve the next page of results. Empty if there are no more results.
           type: string
       type: object
+    ListModelsResponse:
+      properties:
+        models:
+          items:
+            $ref: '#/components/schemas/Model'
+          type: array
+      type: object
+    ListVirtualGatewaysRequest.Filter:
+      properties:
+        enabled:
+          description: Filter by enabled status. If not set, returns all virtual gateways.
+          nullable: true
+          type: boolean
+      type: object
+    ListVirtualGatewaysResponse:
+      properties:
+        virtual_gateways:
+          items:
+            $ref: '#/components/schemas/VirtualGateway'
+          type: array
+      type: object
     MCPServer.State:
       description: |-
         State of the MCP server.
@@ -1028,6 +1049,16 @@ components:
             $ref: '#/components/schemas/Tool'
           description: Map of tool names to their configurations. Each tool defines a capability that the MCP server exposes.
           type: object
+      type: object
+    Model:
+      description: Model represents an LLM model available in the AI gateway.
+      properties:
+        name:
+          description: Model name.
+          type: string
+        provider:
+          description: The provider hosting this model (e.g., "openai", "anthropic", "aws-bedrock").
+          type: string
       type: object
     OpenAICompatible:
       properties:
@@ -1154,6 +1185,19 @@ components:
       properties:
         mcp_server:
           $ref: '#/components/schemas/v1alpha3.MCPServer'
+      type: object
+    VirtualGateway:
+      description: VirtualGateway represents a virtual gateway within an AI gateway.
+      properties:
+        display_name:
+          description: Human-readable display name.
+          type: string
+        enabled:
+          description: Whether this virtual gateway is enabled.
+          type: boolean
+        id:
+          description: Virtual gateway ID.
+          type: string
       type: object
     rpc.Status:
       properties:
@@ -1542,6 +1586,39 @@ paths:
       summary: Create AI Gateway
       tags:
         - AI Gateways
+  /v1alpha3/ai-gateways/{gateway_id}/models:
+    get:
+      description: List models available in a specific AI gateway.
+      operationId: AIGatewayService_ListModels
+      parameters:
+        - description: AI Gateway ID.
+          in: path
+          name: gateway_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListModelsResponse'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Models
+      tags:
+        - AI Gateways
   /v1alpha3/ai-gateways/{id}:
     delete:
       description: Delete an AI gateway.
@@ -1644,6 +1721,44 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Update AI Gateway
+      tags:
+        - AI Gateways
+  /v1alpha3/ai-gateways/{id}/virtual-gateways:
+    get:
+      description: List virtual gateways configured in a specific AI gateway.
+      operationId: AIGatewayService_ListVirtualGateways
+      parameters:
+        - description: AI Gateway ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - description: Filter by enabled status. If not set, returns all virtual gateways.
+          in: query
+          name: filter.enabled
+          schema:
+            type: boolean
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListVirtualGatewaysResponse'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Virtual Gateways
       tags:
         - AI Gateways
   /v1alpha3/ai-gateways/{id}:start:

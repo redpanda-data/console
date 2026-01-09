@@ -53,3 +53,17 @@ export const stopAIGateway = AIGatewayService.method.stopAIGateway;
  * @generated from rpc redpanda.api.dataplane.v1alpha3.AIGatewayService.StartAIGateway
  */
 export const startAIGateway = AIGatewayService.method.startAIGateway;
+
+/**
+ * ListVirtualGateways lists virtual gateways configured in a specific AI gateway.
+ *
+ * @generated from rpc redpanda.api.dataplane.v1alpha3.AIGatewayService.ListVirtualGateways
+ */
+export const listVirtualGateways = AIGatewayService.method.listVirtualGateways;
+
+/**
+ * ListModels lists models available in a specific AI gateway.
+ *
+ * @generated from rpc redpanda.api.dataplane.v1alpha3.AIGatewayService.ListModels
+ */
+export const listModels = AIGatewayService.method.listModels;
