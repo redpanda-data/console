@@ -277,6 +277,68 @@ service AIGatewayService {
       api: API_AI_GATEWAY
     };
   }
+
+  // ListVirtualGateways lists virtual gateways configured in a specific AI gateway.
+  rpc ListVirtualGateways(ListVirtualGatewaysRequest) returns (ListVirtualGatewaysResponse) {
+    option (google.api.http) = {get: "/v1alpha3/ai-gateways/{id}/virtual-gateways"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Virtual Gateways"
+      description: "List virtual gateways configured in a specific AI gateway."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListVirtualGatewaysResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_AI_GATEWAY
+    };
+  }
+
+  // ListModels lists models available in a specific AI gateway.
+  rpc ListModels(ListModelsRequest) returns (ListModelsResponse) {
+    option (google.api.http) = {get: "/v1alpha3/ai-gateways/{gateway_id}/models"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Models"
+      description: "List models available in a specific AI gateway."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListModelsResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_AI_GATEWAY
+    };
+  }
 }
 
 // AIGatewayCreate contains the details for the AI gateway creation request.
@@ -480,4 +542,56 @@ message StartAIGatewayRequest {
 
 message StartAIGatewayResponse {
   AIGateway ai_gateway = 1;
+}
+
+message ListVirtualGatewaysRequest {
+  // AI Gateway ID.
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+
+  // Filter virtual gateways.
+  Filter filter = 2;
+
+  message Filter {
+    // Filter by enabled status. If not set, returns all virtual gateways.
+    optional bool enabled = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter by enabled status. If not set, returns all virtual gateways."}];
+  }
+}
+
+message ListVirtualGatewaysResponse {
+  repeated VirtualGateway virtual_gateways = 1;
+}
+
+// VirtualGateway represents a virtual gateway within an AI gateway.
+message VirtualGateway {
+  // Virtual gateway ID.
+  string id = 1;
+  // Human-readable display name.
+  string display_name = 2;
+  // Whether this virtual gateway is enabled.
+  bool enabled = 3;
+}
+
+message ListModelsRequest {
+  // AI Gateway ID.
+  string gateway_id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+}
+
+message ListModelsResponse {
+  repeated Model models = 1;
+}
+
+// Model represents an LLM model available in the AI gateway.
+message Model {
+  // Model name.
+  string name = 1;
+  // The provider hosting this model (e.g., "openai", "anthropic", "aws-bedrock").
+  string provider = 2;
 }

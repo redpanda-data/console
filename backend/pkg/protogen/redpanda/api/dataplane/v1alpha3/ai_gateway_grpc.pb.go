@@ -20,13 +20,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AIGatewayService_CreateAIGateway_FullMethodName = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/CreateAIGateway"
-	AIGatewayService_GetAIGateway_FullMethodName    = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/GetAIGateway"
-	AIGatewayService_ListAIGateways_FullMethodName  = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/ListAIGateways"
-	AIGatewayService_UpdateAIGateway_FullMethodName = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/UpdateAIGateway"
-	AIGatewayService_DeleteAIGateway_FullMethodName = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/DeleteAIGateway"
-	AIGatewayService_StopAIGateway_FullMethodName   = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/StopAIGateway"
-	AIGatewayService_StartAIGateway_FullMethodName  = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/StartAIGateway"
+	AIGatewayService_CreateAIGateway_FullMethodName     = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/CreateAIGateway"
+	AIGatewayService_GetAIGateway_FullMethodName        = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/GetAIGateway"
+	AIGatewayService_ListAIGateways_FullMethodName      = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/ListAIGateways"
+	AIGatewayService_UpdateAIGateway_FullMethodName     = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/UpdateAIGateway"
+	AIGatewayService_DeleteAIGateway_FullMethodName     = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/DeleteAIGateway"
+	AIGatewayService_StopAIGateway_FullMethodName       = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/StopAIGateway"
+	AIGatewayService_StartAIGateway_FullMethodName      = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/StartAIGateway"
+	AIGatewayService_ListVirtualGateways_FullMethodName = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/ListVirtualGateways"
+	AIGatewayService_ListModels_FullMethodName          = "/redpanda.api.dataplane.v1alpha3.AIGatewayService/ListModels"
 )
 
 // AIGatewayServiceClient is the client API for AIGatewayService service.
@@ -51,6 +53,10 @@ type AIGatewayServiceClient interface {
 	StopAIGateway(ctx context.Context, in *StopAIGatewayRequest, opts ...grpc.CallOption) (*StopAIGatewayResponse, error)
 	// StartAIGateway starts a specific AI gateway that has been previously stopped.
 	StartAIGateway(ctx context.Context, in *StartAIGatewayRequest, opts ...grpc.CallOption) (*StartAIGatewayResponse, error)
+	// ListVirtualGateways lists virtual gateways configured in a specific AI gateway.
+	ListVirtualGateways(ctx context.Context, in *ListVirtualGatewaysRequest, opts ...grpc.CallOption) (*ListVirtualGatewaysResponse, error)
+	// ListModels lists models available in a specific AI gateway.
+	ListModels(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelsResponse, error)
 }
 
 type aIGatewayServiceClient struct {
@@ -131,6 +137,26 @@ func (c *aIGatewayServiceClient) StartAIGateway(ctx context.Context, in *StartAI
 	return out, nil
 }
 
+func (c *aIGatewayServiceClient) ListVirtualGateways(ctx context.Context, in *ListVirtualGatewaysRequest, opts ...grpc.CallOption) (*ListVirtualGatewaysResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListVirtualGatewaysResponse)
+	err := c.cc.Invoke(ctx, AIGatewayService_ListVirtualGateways_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aIGatewayServiceClient) ListModels(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListModelsResponse)
+	err := c.cc.Invoke(ctx, AIGatewayService_ListModels_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AIGatewayServiceServer is the server API for AIGatewayService service.
 // All implementations must embed UnimplementedAIGatewayServiceServer
 // for forward compatibility.
@@ -153,6 +179,10 @@ type AIGatewayServiceServer interface {
 	StopAIGateway(context.Context, *StopAIGatewayRequest) (*StopAIGatewayResponse, error)
 	// StartAIGateway starts a specific AI gateway that has been previously stopped.
 	StartAIGateway(context.Context, *StartAIGatewayRequest) (*StartAIGatewayResponse, error)
+	// ListVirtualGateways lists virtual gateways configured in a specific AI gateway.
+	ListVirtualGateways(context.Context, *ListVirtualGatewaysRequest) (*ListVirtualGatewaysResponse, error)
+	// ListModels lists models available in a specific AI gateway.
+	ListModels(context.Context, *ListModelsRequest) (*ListModelsResponse, error)
 	mustEmbedUnimplementedAIGatewayServiceServer()
 }
 
@@ -183,6 +213,12 @@ func (UnimplementedAIGatewayServiceServer) StopAIGateway(context.Context, *StopA
 }
 func (UnimplementedAIGatewayServiceServer) StartAIGateway(context.Context, *StartAIGatewayRequest) (*StartAIGatewayResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartAIGateway not implemented")
+}
+func (UnimplementedAIGatewayServiceServer) ListVirtualGateways(context.Context, *ListVirtualGatewaysRequest) (*ListVirtualGatewaysResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListVirtualGateways not implemented")
+}
+func (UnimplementedAIGatewayServiceServer) ListModels(context.Context, *ListModelsRequest) (*ListModelsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListModels not implemented")
 }
 func (UnimplementedAIGatewayServiceServer) mustEmbedUnimplementedAIGatewayServiceServer() {}
 func (UnimplementedAIGatewayServiceServer) testEmbeddedByValue()                          {}
@@ -331,6 +367,42 @@ func _AIGatewayService_StartAIGateway_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AIGatewayService_ListVirtualGateways_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListVirtualGatewaysRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AIGatewayServiceServer).ListVirtualGateways(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AIGatewayService_ListVirtualGateways_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AIGatewayServiceServer).ListVirtualGateways(ctx, req.(*ListVirtualGatewaysRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AIGatewayService_ListModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListModelsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AIGatewayServiceServer).ListModels(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AIGatewayService_ListModels_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AIGatewayServiceServer).ListModels(ctx, req.(*ListModelsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AIGatewayService_ServiceDesc is the grpc.ServiceDesc for AIGatewayService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -365,6 +437,14 @@ var AIGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StartAIGateway",
 			Handler:    _AIGatewayService_StartAIGateway_Handler,
+		},
+		{
+			MethodName: "ListVirtualGateways",
+			Handler:    _AIGatewayService_ListVirtualGateways_Handler,
+		},
+		{
+			MethodName: "ListModels",
+			Handler:    _AIGatewayService_ListModels_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
