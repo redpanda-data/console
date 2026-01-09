@@ -41,7 +41,7 @@ import {
 import type { TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { ChangeEvent, FC } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGetTraceQuery } from 'react-query/api/tracing';
 
 import { TraceDetailsSheet } from './trace-details-sheet';
@@ -144,6 +144,13 @@ type Props = {
   columnFilters: ColumnFiltersState;
   setColumnFilters: (filters: ColumnFiltersState) => void;
   hideToolbar?: boolean;
+  /**
+   * Disable expensive table features (faceting) for testing or performance.
+   * When true, getFacetedRowModel and getFacetedUniqueValues are not used.
+   * This significantly reduces memory consumption in tests.
+   * @default false
+   */
+  disableFaceting?: boolean;
 };
 
 // Format timestamp
@@ -431,6 +438,19 @@ const useSpanExpansion = (spanTree: SpanNode[], collapseAllTrigger: number) => {
       setExpandedSpans(computeInitialExpandedSpans(spanTree));
     }
   }, [collapseAllTrigger, spanTree]);
+
+  // Sync expansion state when spanTree loads (handles async data loading)
+  useEffect(() => {
+    // If we have a tree but no expanded spans, it likely means data just loaded.
+    // We should compute the default expansion state.
+    if (spanTree.length > 0 && expandedSpans.size === 0) {
+      const initialSpans = computeInitialExpandedSpans(spanTree);
+      if (initialSpans.size > 0) {
+        setExpandedSpans(initialSpans);
+      }
+    }
+    // biome-ignore lint/correctness/useExhaustiveDependencies: Only run when tree length changes (e.g. 0 -> N)
+  }, [spanTree.length]);
 
   const toggleSpan = (spanId: string) => {
     setExpandedSpans((prev) => {
@@ -781,6 +801,7 @@ export const TracesTable: FC<Props> = ({
   columnFilters,
   setColumnFilters,
   hideToolbar = false,
+  disableFaceting = false,
 }) => {
   const [expandedTraces, setExpandedTraces] = useState<Set<string>>(new Set());
   const [sortOrder, setSortOrder] = useState<'newest-first' | 'oldest-first'>('newest-first');
@@ -809,36 +830,61 @@ export const TracesTable: FC<Props> = ({
     [traces]
   );
 
-  // TanStack Table setup
-  const table = useReactTable<EnhancedTraceSummary>({
-    data: enhancedTraces,
-    columns: [
+  // Stable filter functions to prevent table model rebuilds
+  const serviceNameFilterFn = useCallback(
+    (row: { getValue: (id: string) => string }, id: string, value: string[]) => value.includes(row.getValue(id)),
+    []
+  );
+
+  const statusFilterFn = useCallback(
+    (row: { getValue: (id: string) => string }, id: string, value: string[]) => value.includes(row.getValue(id)),
+    []
+  );
+
+  // Memoize columns array to prevent recreation on every render
+  const columns = useMemo<ColumnDef<EnhancedTraceSummary>[]>(
+    () => [
       {
         accessorKey: 'searchable',
         filterFn: 'includesString',
       },
       {
         accessorKey: 'serviceName',
-        filterFn: (row, id, value) => value.includes(row.getValue(id)),
+        filterFn: serviceNameFilterFn,
       },
       {
         accessorKey: 'status',
-        filterFn: (row, id, value) => value.includes(row.getValue(id)),
+        filterFn: statusFilterFn,
       },
-    ] as ColumnDef<EnhancedTraceSummary>[],
+    ],
+    [serviceNameFilterFn, statusFilterFn]
+  );
+
+  // Memoize table state to prevent recreation on every render
+  const tableState = useMemo(
+    () => ({
+      columnFilters,
+    }),
+    [columnFilters]
+  );
+
+  // TanStack Table setup with conditional faceting
+  const table = useReactTable<EnhancedTraceSummary>({
+    data: enhancedTraces,
+    columns,
     onColumnFiltersChange: (updaterOrValue) => {
       const newFilters = typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
       setColumnFilters(newFilters);
     },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    state: {
-      columnFilters,
-    },
+    // Only enable expensive faceting features when needed (disabled in tests by default)
+    getFacetedRowModel: disableFaceting ? undefined : getFacetedRowModel(),
+    getFacetedUniqueValues: disableFaceting ? undefined : getFacetedUniqueValues(),
+    state: tableState,
   });
 
+  // Get filtered traces from table (recreated when data or filters change)
   const filteredTraces = table.getRowModel().rows.map((row) => row.original);
 
   // Sort filtered traces by timestamp based on sortOrder

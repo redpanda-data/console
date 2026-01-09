@@ -32,7 +32,7 @@ import { Database, RefreshCw, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { parseAsString, useQueryState } from 'nuqs';
 import type { ChangeEvent, FC } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useListTracesQuery } from 'react-query/api/tracing';
 import { appGlobal } from 'state/app-global';
 import { uiState } from 'state/ui-state';
@@ -51,7 +51,17 @@ const TIME_RANGES = [
   { value: '24h', label: 'Last 24 hours', ms: 24 * 60 * 60 * 1000 },
 ];
 
-export const TraceListPage: FC = () => {
+type TraceListPageProps = {
+  /**
+   * Disable expensive table features (faceting) for testing or performance.
+   * When true, getFacetedRowModel and getFacetedUniqueValues are not used.
+   * This significantly reduces memory consumption in tests.
+   * @default import.meta.env.MODE === 'test'
+   */
+  disableFaceting?: boolean;
+};
+
+export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = import.meta.env.MODE === 'test' }) => {
   useEffect(() => {
     runInAction(() => {
       uiState.pageTitle = 'Traces';
@@ -86,7 +96,9 @@ export const TraceListPage: FC = () => {
   const { data, isLoading, error, refetch } = useListTracesQuery({
     startTime: timestamps.startTimestamp,
     endTime: timestamps.endTimestamp,
-    pageSize: 500,
+    // Reduced from 500 to 100 for better memory performance with faceting enabled.
+    // Users can adjust time range if they need to see more traces.
+    pageSize: 100,
   });
 
   // Connect the global refresh button to this page's refetch function
@@ -138,31 +150,54 @@ export const TraceListPage: FC = () => {
     [data?.traces]
   );
 
-  // Create table instance for toolbar filters
-  const table = useReactTable<EnhancedTraceSummary>({
-    data: enhancedTraces,
-    columns: [
+  // Stable filter functions to prevent table model rebuilds
+  const serviceNameFilterFn = useCallback(
+    (row: { getValue: (id: string) => string }, id: string, value: string[]) => value.includes(row.getValue(id)),
+    []
+  );
+
+  const statusFilterFn = useCallback(
+    (row: { getValue: (id: string) => string }, id: string, value: string[]) => value.includes(row.getValue(id)),
+    []
+  );
+
+  // Memoize columns array to prevent recreation on every render
+  const columns = useMemo<ColumnDef<EnhancedTraceSummary>[]>(
+    () => [
       {
         accessorKey: 'searchable',
         filterFn: 'includesString',
       },
       {
         accessorKey: 'serviceName',
-        filterFn: (row, id, value) => value.includes(row.getValue(id)),
+        filterFn: serviceNameFilterFn,
       },
       {
         accessorKey: 'status',
-        filterFn: (row, id, value) => value.includes(row.getValue(id)),
+        filterFn: statusFilterFn,
       },
-    ] as ColumnDef<EnhancedTraceSummary>[],
+    ],
+    [serviceNameFilterFn, statusFilterFn]
+  );
+
+  // Memoize table state to prevent recreation on every render
+  const tableState = useMemo(
+    () => ({
+      columnFilters,
+    }),
+    [columnFilters]
+  );
+
+  // Create table instance for toolbar filters
+  const table = useReactTable<EnhancedTraceSummary>({
+    data: enhancedTraces,
+    columns,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
-    state: {
-      columnFilters,
-    },
+    state: tableState,
   });
 
   // Generate service name options from ALL traces (not filtered)
@@ -292,6 +327,7 @@ export const TraceListPage: FC = () => {
         <TracesTable
           collapseAllTrigger={collapseAllTrigger}
           columnFilters={columnFilters}
+          disableFaceting={disableFaceting}
           error={error}
           hasUnfilteredData={Boolean(data?.traces && data.traces.length > 0)}
           hideToolbar
