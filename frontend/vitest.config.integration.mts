@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => {
       fileParallelism: false, // Sequential execution (prevents parallel OOM, auto sets maxWorkers: 1)
       isolate: true, // Fresh environment per test file (default, explicit for clarity)
       pool: 'forks', // Each test file runs in separate child process (default)
+      vmMemoryLimit: '3072Mb', // Force GC when memory limit is reached (3GB safe for 8GB runner with overhead)
       testTimeout: 30_000,
       globals: true,
       environment: 'jsdom', // Integration tests use jsdom environment

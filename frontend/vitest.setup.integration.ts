@@ -12,6 +12,9 @@ afterEach(() => {
   cleanup(); // Unmount all React trees
   vi.clearAllMocks(); // Clear mock call history
   vi.clearAllTimers(); // Clear pending timers
+
+  // Re-stub ResizeObserver to clear any instances from previous test
+  vi.stubGlobal('ResizeObserver', ResizeObserverMock);
 });
 
 // Mock ResizeObserver - not available in jsdom but required by RadixUI components
