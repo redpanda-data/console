@@ -193,6 +193,11 @@ export class ConnectClusterStore {
     const secrets = connector?.secrets;
     if (secrets) {
       try {
+        // Validate cluster name
+        if (!this.clusterName || this.clusterName.trim() === '') {
+          throw new Error('Cluster name is missing or empty. Cannot create secrets without a valid cluster.');
+        }
+
         const connectorName = connector?.propsByName.get('name');
         if (!connectorName) {
           throw new Error("Connector configuration is missing the 'name' property");
@@ -218,14 +223,26 @@ export class ConnectClusterStore {
         }
 
         for (const [key, secret] of secrets.secrets) {
+          // Validate secret key
+          if (!key || key.trim() === '') {
+            throw new Error('Secret key is empty. Each secret must have a valid key identifier.');
+          }
+
+          // Validate secret value
           if (!secret.value || secret.value.trim() === '') {
             throw new Error(`Secret value for key "${key}" is empty. Please provide a value for this secret.`);
+          }
+
+          // Validate serialized secret data
+          const serializedSecret = secret.serialized;
+          if (!serializedSecret || serializedSecret.trim() === '') {
+            throw new Error(`Failed to serialize secret for key "${key}". The encoded secret data is empty.`);
           }
 
           const createSecretResponse = (yield api.createSecret(
             this.clusterName,
             connectorNameValue,
-            secret.serialized
+            serializedSecret
           )) as CreateSecretResponse;
 
           if (!createSecretResponse?.secretId) {
