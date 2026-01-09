@@ -56,12 +56,12 @@ type TraceListPageProps = {
    * Disable expensive table features (faceting) for testing or performance.
    * When true, getFacetedRowModel and getFacetedUniqueValues are not used.
    * This significantly reduces memory consumption in tests.
-   * @default import.meta.env.MODE === 'test'
+   * @default false
    */
   disableFaceting?: boolean;
 };
 
-export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = import.meta.env.MODE === 'test' }) => {
+export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false }) => {
   useEffect(() => {
     runInAction(() => {
       uiState.pageTitle = 'Traces';
