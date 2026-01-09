@@ -11,6 +11,7 @@ on:
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-verify.yml"
+  workflow_call:
 env:
   CI: true
 jobs:
