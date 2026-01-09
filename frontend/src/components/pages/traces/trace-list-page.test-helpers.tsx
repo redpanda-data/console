@@ -64,10 +64,14 @@ export function setupTransport(options?: {
 
 // Helper function to render with required providers
 export function renderTraceListPage(transport: ReturnType<typeof createRouterTransport>, initialUrl = '/traces?timeRange=1h') {
+  // Note: TraceListPage renders TracesTable internally.
+  // For performance optimization in tests, TracesTable supports disableFaceting prop
+  // to skip expensive getFacetedRowModel and getFacetedUniqueValues operations.
+  // This is particularly useful when testing basic rendering/filtering without faceted filters.
   return render(
     <NuqsTestingAdapter>
       <MemoryRouter initialEntries={[initialUrl]}>
-        <TraceListPage />
+        <TraceListPage disableFaceting={true} />
       </MemoryRouter>
     </NuqsTestingAdapter>,
     { transport }

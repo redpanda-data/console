@@ -10,20 +10,24 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { TimestampSchema } from '@bufbuild/protobuf/wkt';
 import { createRouterTransport } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
-import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
-import {
-  GetTraceResponseSchema,
-  ListTracesResponseSchema,
-  TraceSchema,
-  TraceSummarySchema,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
+import { GetTraceResponseSchema, ListTracesResponseSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import { getTrace, listTraces } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing-TracingService_connectquery';
-import { SpanSchema } from 'protogen/redpanda/otel/v1/trace_pb';
-import { MemoryRouter } from 'react-router-dom';
-import { render, screen, waitFor } from 'test-utils';
+import { screen, waitFor } from 'test-utils';
+
+import {
+  REGEX_COMPLETED_TRACE,
+  REGEX_ERROR,
+  REGEX_NO_TRACES_FOUND,
+  REGEX_NO_TRACES_RECORDED,
+  REGEX_SERVICE,
+  REGEX_STATUS,
+  createMockTrace,
+  createMockTraceSummary,
+  renderTraceListPage,
+  setupTransport,
+} from './trace-list-page.test-helpers';
 
 vi.mock('config', () => ({
   config: {
@@ -57,120 +61,6 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 Element.prototype.scrollIntoView = vi.fn();
-
-import { TraceListPage } from './trace-list-page';
-
-// Regex constants for test assertions (performance optimization)
-const REGEX_COMPLETED_TRACE = /completed trace/i;
-const REGEX_SERVICE = /service/i;
-const REGEX_STATUS = /status/i;
-const REGEX_NO_TRACES_FOUND = /no traces found/i;
-const REGEX_NO_TRACES_RECORDED = /no traces have been recorded/i;
-const REGEX_ERROR = /error/i;
-
-// Helper function to create transport with mocks
-function setupTransport(options?: {
-  listTracesResponse?: ReturnType<typeof create<typeof ListTracesResponseSchema>>;
-  getTraceResponse?: ReturnType<typeof create<typeof GetTraceResponseSchema>>;
-}) {
-  const listTracesMock = vi.fn().mockReturnValue(
-    options?.listTracesResponse ||
-      create(ListTracesResponseSchema, {
-        traces: [],
-        nextPageToken: '',
-      })
-  );
-
-  const getTraceMock = vi.fn().mockReturnValue(
-    options?.getTraceResponse ||
-      create(GetTraceResponseSchema, {
-        trace: undefined,
-      })
-  );
-
-  const transport = createRouterTransport(({ rpc }) => {
-    rpc(listTraces, listTracesMock);
-    rpc(getTrace, getTraceMock);
-  });
-
-  return { transport, listTracesMock, getTraceMock };
-}
-
-// Helper function to render with required providers
-function renderTraceListPage(transport: ReturnType<typeof createRouterTransport>, initialUrl = '/traces?timeRange=1h') {
-  return render(
-    <NuqsTestingAdapter>
-      <MemoryRouter initialEntries={[initialUrl]}>
-        <TraceListPage />
-      </MemoryRouter>
-    </NuqsTestingAdapter>,
-    { transport }
-  );
-}
-
-// Helper function to create mock TraceSummary
-function createMockTraceSummary(overrides?: {
-  traceId?: string;
-  rootSpanName?: string;
-  serviceName?: string;
-  durationMs?: bigint;
-  spanCount?: number;
-  errorCount?: number;
-}) {
-  return create(TraceSummarySchema, {
-    traceId: overrides?.traceId || 'a1b2c3d4e5f6g7h8',
-    rootSpanName: overrides?.rootSpanName || 'chat.completions.create',
-    serviceName: overrides?.serviceName || 'ai-agent',
-    startTime: create(TimestampSchema, {
-      seconds: BigInt(Math.floor(Date.now() / 1000)),
-      nanos: 0,
-    }),
-    durationMs: overrides?.durationMs || BigInt(1250),
-    spanCount: overrides?.spanCount ?? 5,
-    errorCount: overrides?.errorCount ?? 0,
-  });
-}
-
-// Helper function to create mock Trace with spans
-function createMockTrace(traceId: string, rootSpanName: string) {
-  const rootSpanId = '0123456789abcdef';
-  const child1SpanId = '1111111111111111';
-  const child2SpanId = '2222222222222222';
-
-  return create(TraceSchema, {
-    traceId,
-    spans: [
-      // Root span
-      create(SpanSchema, {
-        traceId: Uint8Array.from(Buffer.from(traceId, 'hex')),
-        spanId: Uint8Array.from(Buffer.from(rootSpanId, 'hex')),
-        name: rootSpanName,
-        startTimeUnixNano: BigInt(Date.now() * 1_000_000),
-        endTimeUnixNano: BigInt((Date.now() + 1250) * 1_000_000),
-        parentSpanId: new Uint8Array(0), // Empty = root span
-      }),
-      // Child span 1
-      create(SpanSchema, {
-        traceId: Uint8Array.from(Buffer.from(traceId, 'hex')),
-        spanId: Uint8Array.from(Buffer.from(child1SpanId, 'hex')),
-        parentSpanId: Uint8Array.from(Buffer.from(rootSpanId, 'hex')),
-        name: 'llm.chat',
-        startTimeUnixNano: BigInt(Date.now() * 1_000_000),
-        endTimeUnixNano: BigInt((Date.now() + 1000) * 1_000_000),
-      }),
-      // Child span 2
-      create(SpanSchema, {
-        traceId: Uint8Array.from(Buffer.from(traceId, 'hex')),
-        spanId: Uint8Array.from(Buffer.from(child2SpanId, 'hex')),
-        parentSpanId: Uint8Array.from(Buffer.from(rootSpanId, 'hex')),
-        name: 'tool.execute',
-        startTimeUnixNano: BigInt((Date.now() + 1000) * 1_000_000),
-        endTimeUnixNano: BigInt((Date.now() + 1250) * 1_000_000),
-      }),
-    ],
-    summary: createMockTraceSummary({ traceId, rootSpanName }),
-  });
-}
 
 describe('TraceListPage', () => {
   describe('Basic Rendering', () => {
@@ -375,6 +265,38 @@ describe('TraceListPage', () => {
       // Verify time range selector is present
       expect(screen.getByRole('combobox')).toBeVisible();
     });
+
+    test('should call API with correct timestamp range', async () => {
+      const trace1 = createMockTraceSummary({
+        traceId: 'a1b2c3d4e5f6g7h8',
+        rootSpanName: 'operation-1',
+      });
+
+      const { transport, listTracesMock } = setupTransport({
+        listTracesResponse: create(ListTracesResponseSchema, {
+          traces: [trace1],
+          nextPageToken: '',
+        }),
+      });
+
+      renderTraceListPage(transport, '/traces?timeRange=1h');
+
+      expect(await screen.findByText('operation-1')).toBeVisible();
+
+      // Verify API was called with 1 hour range
+      expect(listTracesMock).toHaveBeenCalled();
+      const call = listTracesMock.mock.calls[0][0];
+      const startSecs = Number(call.startTime.seconds);
+      const endSecs = Number(call.endTime.seconds);
+      const diffMinutes = (endSecs - startSecs) / 60;
+
+      // Should be approximately 60 minutes (allow small variance for test execution time)
+      expect(diffMinutes).toBeGreaterThanOrEqual(59);
+      expect(diffMinutes).toBeLessThanOrEqual(61);
+
+      // Verify time range selector is present
+      expect(screen.getByRole('combobox')).toBeVisible();
+    });
   });
 
   describe('Trace Expansion', () => {
@@ -482,40 +404,6 @@ describe('TraceListPage', () => {
 
       // The component should display an error message
       expect(await screen.findByText(REGEX_ERROR)).toBeVisible();
-    });
-  });
-
-  describe('Time Range Selection', () => {
-    test('should call API with correct timestamp range', async () => {
-      const trace1 = createMockTraceSummary({
-        traceId: 'a1b2c3d4e5f6g7h8',
-        rootSpanName: 'operation-1',
-      });
-
-      const { transport, listTracesMock } = setupTransport({
-        listTracesResponse: create(ListTracesResponseSchema, {
-          traces: [trace1],
-          nextPageToken: '',
-        }),
-      });
-
-      renderTraceListPage(transport, '/traces?timeRange=1h');
-
-      expect(await screen.findByText('operation-1')).toBeVisible();
-
-      // Verify API was called with 1 hour range
-      expect(listTracesMock).toHaveBeenCalled();
-      const call = listTracesMock.mock.calls[0][0];
-      const startSecs = Number(call.startTime.seconds);
-      const endSecs = Number(call.endTime.seconds);
-      const diffMinutes = (endSecs - startSecs) / 60;
-
-      // Should be approximately 60 minutes (allow small variance for test execution time)
-      expect(diffMinutes).toBeGreaterThanOrEqual(59);
-      expect(diffMinutes).toBeLessThanOrEqual(61);
-
-      // Verify time range selector is present
-      expect(screen.getByRole('combobox')).toBeVisible();
     });
   });
 });
