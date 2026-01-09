@@ -2,17 +2,23 @@
 version: v2
 deps:
   - name: buf.build/bufbuild/protovalidate
-    commit: 52f32327d4b045a79293a6ad4e7e1236
-    digest: b5:cbabc98d4b7b7b0447c9b15f68eeb8a7a44ef8516cb386ac5f66e7fd4062cd6723ed3f452ad8c384b851f79e33d26e7f8a94e2b807282b3def1cd966c7eace97
+    commit: 2a1774d888024a9b93ce7eb4b59f6a83
+    digest: b5:6b7f9bc919b65e5b79d7b726ffc03d6f815a412d6b792970fa6f065cae162107bd0a9d47272c8ab1a2c9514e87b13d3fbf71df614374d62d2183afb64be2d30a
   - name: buf.build/googleapis/googleapis
     commit: 004180b77378443887d3b55cabc00384
     digest: b5:e8f475fe3330f31f5fd86ac689093bcd274e19611a09db91f41d637cb9197881ce89882b94d13a58738e53c91c6e4bae7dc1feba85f590164c975a89e25115dc
   - name: buf.build/grpc-ecosystem/grpc-gateway
     commit: a48fcebcf8f140dd9d09359b9bb185a4
     digest: b5:330af8a71b579ab96c4f3ee26929d1a68a5a9e986c7cfe0a898591fc514216bb6e723dc04c74d90fdee3f3f14f9100a54b4f079eb273e6e7213f0d5baca36ff8
+  - name: buf.build/opentelemetry/opentelemetry
+    commit: 648a3e2f02e14fe187656ea4ac3befa1
+    digest: b5:a0514be587ab2e8598f7102dfdaba5e985138b8c041c707e470a9c8b877410ada6e60cf2359352302f08c0504de685379f7f7a085d4699d69a2e6ed7035e78d9
   - name: buf.build/redpandadata/common
-    commit: bb850a94466341c69a738988c0be5a4b
+    commit: 601698cfe71d43b1b36fd434a7f765f1
     digest: b5:d566ba6746a874a5709970e7f8569584008447d655c556676aabd3430111bbbc0a303dde11d99a1955ee27ac4748bcf7c972503a66db4ef850eb55f239f851ac
   - name: buf.build/redpandadata/core
     commit: 05aa34b3829a4d5a801d9487623a7c76
     digest: b5:ca0d5205224273e79678fb4b46bea0bedd25574e148325947b2a0af7893d595dbcf0756ac35be7f445e313de67469ed61f5fe3a2cf5eeca167fe5192b40dcb7a
+  - name: buf.build/redpandadata/otel
+    commit: 58c749b888d8436b9a0580cf42fa3aa9
+    digest: b5:44d78fd254282b975591fd7d95df43b60e090940ba6e40d3efdcc95502d731edf03dcf9be91d2b81b8cf6a2ba78887fb8beae015105288bdb98485da11e7e267

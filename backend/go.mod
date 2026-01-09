@@ -4,9 +4,12 @@ go 1.25.1
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.10-20250912141014-52f32327d4b0.1
+	buf.build/gen/go/bufbuild/registry/connectrpc/go v1.19.1-20251027152159-f1066ce064ca.2
+	buf.build/gen/go/bufbuild/registry/protocolbuffers/go v1.36.10-20251027152159-f1066ce064ca.1
 	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.10-20251106193941-bb850a944663.1
 	buf.build/gen/go/redpandadata/core/connectrpc/go v1.19.1-20251111205446-9c61b5cb371f.2
-	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.10-20251111205446-9c61b5cb371f.1
+	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.10-20251205193923-e6b48a87609f.1
+	buf.build/gen/go/redpandadata/otel/protocolbuffers/go v1.36.11-20251216164002-58c749b888d8.1
 	buf.build/go/protovalidate v1.0.1
 	connectrpc.com/connect v1.19.1
 	connectrpc.com/grpcreflect v1.3.0
@@ -49,12 +52,12 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.38.0
 	github.com/testcontainers/testcontainers-go/modules/redpanda v0.38.0
-	github.com/twmb/franz-go v1.20.4
+	github.com/twmb/franz-go v1.20.6
 	github.com/twmb/franz-go/pkg/kadm v1.17.1
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20251115002817-3affad808a82
 	github.com/twmb/franz-go/pkg/kmsg v1.12.0
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
-	github.com/twmb/franz-go/pkg/sr v1.5.0
+	github.com/twmb/franz-go/pkg/sr v1.6.0
 	github.com/twmb/franz-go/plugin/kslog v1.0.0
 	github.com/twmb/go-cache v1.2.1
 	github.com/twmb/tlscfg v1.2.1
@@ -70,12 +73,10 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20251111163417-95abcf5c77ba
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251111163417-95abcf5c77ba
 	google.golang.org/grpc v1.75.1
-	google.golang.org/protobuf v1.36.10
+	google.golang.org/protobuf v1.36.11
 )
 
 require (
-	buf.build/gen/go/bufbuild/registry/connectrpc/go v1.19.1-20251027152159-f1066ce064ca.2 // indirect
-	buf.build/gen/go/bufbuild/registry/protocolbuffers/go v1.36.10-20251027152159-f1066ce064ca.1 // indirect
 	cel.dev/expr v0.24.0 // indirect
 	cuelang.org/go v0.14.2 // indirect
 	dario.cat/mergo v1.0.2 // indirect
@@ -151,7 +152,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kevinburke/ssh_config v1.4.0 // indirect
-	github.com/klauspost/compress v1.18.1 // indirect
+	github.com/klauspost/compress v1.18.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
@@ -161,6 +162,7 @@ require (
 	github.com/matoous/go-nanoid/v2 v2.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/miekg/dns v1.1.68 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
@@ -225,8 +227,9 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/mod v0.30.0 // indirect
+	golang.org/x/oauth2 v0.31.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
-	golang.org/x/time v0.12.0 // indirect
+	golang.org/x/time v0.13.0 // indirect
 	gopkg.in/linkedin/goavro.v1 v1.0.5 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

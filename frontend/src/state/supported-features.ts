@@ -76,6 +76,10 @@ export class Feature {
     endpoint: 'redpanda.api.console.v1alpha1.ShadowLinkService',
     method: 'POST',
   };
+  static readonly TracingService: FeatureEntry = {
+    endpoint: 'redpanda.api.dataplane.v1alpha3.TracingService',
+    method: 'POST',
+  };
 }
 
 export function isSupported(f: FeatureEntry): boolean {
@@ -86,6 +90,7 @@ export function isSupported(f: FeatureEntry): boolean {
     switch (f.endpoint) {
       case Feature.SchemaRegistryACLApi.endpoint:
       case Feature.ShadowLinkService.endpoint:
+      case Feature.TracingService.endpoint:
         return false;
       default:
         return true;
@@ -112,7 +117,7 @@ export function isSupported(f: FeatureEntry): boolean {
 /**
  * A list of features we should hide instead of showing a disabled message.
  */
-const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas, Feature.ShadowLinkService];
+const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas, Feature.ShadowLinkService, Feature.TracingService];
 export function shouldHideIfNotSupported(f: FeatureEntry): boolean {
   return HIDE_IF_NOT_SUPPORTED_FEATURES.includes(f);
 }
@@ -171,6 +176,9 @@ class SupportedFeatures {
   }
   @computed get shadowLinkService(): boolean {
     return isSupported(Feature.ShadowLinkService);
+  }
+  @computed get tracingService(): boolean {
+    return isSupported(Feature.TracingService);
   }
 }
 
