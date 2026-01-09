@@ -195,19 +195,47 @@ export class ConnectClusterStore {
       try {
         const connectorName = connector?.propsByName.get('name');
         if (!connectorName) {
-          throw new Error("For some reason your connector doesn't have a name");
+          throw new Error("Connector configuration is missing the 'name' property");
+        }
+
+        const connectorNameValue = connectorName.value;
+        if (typeof connectorNameValue !== 'string') {
+          let receivedType: string;
+          if (connectorNameValue === null) {
+            receivedType = 'null';
+          } else if (Array.isArray(connectorNameValue)) {
+            receivedType = 'array';
+          } else {
+            receivedType = typeof connectorNameValue;
+          }
+          throw new Error(`Connector name must be a string, but received ${receivedType}`);
+        }
+
+        if (connectorNameValue.trim() === '') {
+          throw new Error(
+            'Connector name cannot be empty. Please provide a valid connector name before creating secrets.'
+          );
         }
 
         for (const [key, secret] of secrets.secrets) {
+          if (!secret.value || secret.value.trim() === '') {
+            throw new Error(`Secret value for key "${key}" is empty. Please provide a value for this secret.`);
+          }
+
           const createSecretResponse = (yield api.createSecret(
             this.clusterName,
-            connectorName.value as string,
+            connectorNameValue,
             secret.serialized
           )) as CreateSecretResponse;
+
+          if (!createSecretResponse?.secretId) {
+            throw new Error(`Failed to create secret for key "${key}": API response did not include a secretId`);
+          }
+
           const property = connector?.propsByName.get(key);
 
           if (property) {
-            property.value = secret.getSecretString(key, createSecretResponse?.secretId);
+            property.value = secret.getSecretString(key, createSecretResponse.secretId);
             updatedConfig[property.name] = property.value;
           }
         }
