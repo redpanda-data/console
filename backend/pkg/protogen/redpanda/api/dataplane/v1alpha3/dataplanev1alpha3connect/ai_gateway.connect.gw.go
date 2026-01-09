@@ -17,26 +17,30 @@ import (
 // AIGatewayServiceGatewayServer implements the gRPC server API for the AIGatewayService service.
 type AIGatewayServiceGatewayServer struct {
 	v1alpha3.UnimplementedAIGatewayServiceServer
-	createAIGateway connect_gateway.UnaryHandler[v1alpha3.CreateAIGatewayRequest, v1alpha3.CreateAIGatewayResponse]
-	getAIGateway    connect_gateway.UnaryHandler[v1alpha3.GetAIGatewayRequest, v1alpha3.GetAIGatewayResponse]
-	listAIGateways  connect_gateway.UnaryHandler[v1alpha3.ListAIGatewaysRequest, v1alpha3.ListAIGatewaysResponse]
-	updateAIGateway connect_gateway.UnaryHandler[v1alpha3.UpdateAIGatewayRequest, v1alpha3.UpdateAIGatewayResponse]
-	deleteAIGateway connect_gateway.UnaryHandler[v1alpha3.DeleteAIGatewayRequest, v1alpha3.DeleteAIGatewayResponse]
-	stopAIGateway   connect_gateway.UnaryHandler[v1alpha3.StopAIGatewayRequest, v1alpha3.StopAIGatewayResponse]
-	startAIGateway  connect_gateway.UnaryHandler[v1alpha3.StartAIGatewayRequest, v1alpha3.StartAIGatewayResponse]
+	createAIGateway     connect_gateway.UnaryHandler[v1alpha3.CreateAIGatewayRequest, v1alpha3.CreateAIGatewayResponse]
+	getAIGateway        connect_gateway.UnaryHandler[v1alpha3.GetAIGatewayRequest, v1alpha3.GetAIGatewayResponse]
+	listAIGateways      connect_gateway.UnaryHandler[v1alpha3.ListAIGatewaysRequest, v1alpha3.ListAIGatewaysResponse]
+	updateAIGateway     connect_gateway.UnaryHandler[v1alpha3.UpdateAIGatewayRequest, v1alpha3.UpdateAIGatewayResponse]
+	deleteAIGateway     connect_gateway.UnaryHandler[v1alpha3.DeleteAIGatewayRequest, v1alpha3.DeleteAIGatewayResponse]
+	stopAIGateway       connect_gateway.UnaryHandler[v1alpha3.StopAIGatewayRequest, v1alpha3.StopAIGatewayResponse]
+	startAIGateway      connect_gateway.UnaryHandler[v1alpha3.StartAIGatewayRequest, v1alpha3.StartAIGatewayResponse]
+	listVirtualGateways connect_gateway.UnaryHandler[v1alpha3.ListVirtualGatewaysRequest, v1alpha3.ListVirtualGatewaysResponse]
+	listModels          connect_gateway.UnaryHandler[v1alpha3.ListModelsRequest, v1alpha3.ListModelsResponse]
 }
 
 // NewAIGatewayServiceGatewayServer constructs a Connect-Gateway gRPC server for the
 // AIGatewayService service.
 func NewAIGatewayServiceGatewayServer(svc AIGatewayServiceHandler, opts ...connect_gateway.HandlerOption) *AIGatewayServiceGatewayServer {
 	return &AIGatewayServiceGatewayServer{
-		createAIGateway: connect_gateway.NewUnaryHandler(AIGatewayServiceCreateAIGatewayProcedure, svc.CreateAIGateway, opts...),
-		getAIGateway:    connect_gateway.NewUnaryHandler(AIGatewayServiceGetAIGatewayProcedure, svc.GetAIGateway, opts...),
-		listAIGateways:  connect_gateway.NewUnaryHandler(AIGatewayServiceListAIGatewaysProcedure, svc.ListAIGateways, opts...),
-		updateAIGateway: connect_gateway.NewUnaryHandler(AIGatewayServiceUpdateAIGatewayProcedure, svc.UpdateAIGateway, opts...),
-		deleteAIGateway: connect_gateway.NewUnaryHandler(AIGatewayServiceDeleteAIGatewayProcedure, svc.DeleteAIGateway, opts...),
-		stopAIGateway:   connect_gateway.NewUnaryHandler(AIGatewayServiceStopAIGatewayProcedure, svc.StopAIGateway, opts...),
-		startAIGateway:  connect_gateway.NewUnaryHandler(AIGatewayServiceStartAIGatewayProcedure, svc.StartAIGateway, opts...),
+		createAIGateway:     connect_gateway.NewUnaryHandler(AIGatewayServiceCreateAIGatewayProcedure, svc.CreateAIGateway, opts...),
+		getAIGateway:        connect_gateway.NewUnaryHandler(AIGatewayServiceGetAIGatewayProcedure, svc.GetAIGateway, opts...),
+		listAIGateways:      connect_gateway.NewUnaryHandler(AIGatewayServiceListAIGatewaysProcedure, svc.ListAIGateways, opts...),
+		updateAIGateway:     connect_gateway.NewUnaryHandler(AIGatewayServiceUpdateAIGatewayProcedure, svc.UpdateAIGateway, opts...),
+		deleteAIGateway:     connect_gateway.NewUnaryHandler(AIGatewayServiceDeleteAIGatewayProcedure, svc.DeleteAIGateway, opts...),
+		stopAIGateway:       connect_gateway.NewUnaryHandler(AIGatewayServiceStopAIGatewayProcedure, svc.StopAIGateway, opts...),
+		startAIGateway:      connect_gateway.NewUnaryHandler(AIGatewayServiceStartAIGatewayProcedure, svc.StartAIGateway, opts...),
+		listVirtualGateways: connect_gateway.NewUnaryHandler(AIGatewayServiceListVirtualGatewaysProcedure, svc.ListVirtualGateways, opts...),
+		listModels:          connect_gateway.NewUnaryHandler(AIGatewayServiceListModelsProcedure, svc.ListModels, opts...),
 	}
 }
 
@@ -66,6 +70,14 @@ func (s *AIGatewayServiceGatewayServer) StopAIGateway(ctx context.Context, req *
 
 func (s *AIGatewayServiceGatewayServer) StartAIGateway(ctx context.Context, req *v1alpha3.StartAIGatewayRequest) (*v1alpha3.StartAIGatewayResponse, error) {
 	return s.startAIGateway(ctx, req)
+}
+
+func (s *AIGatewayServiceGatewayServer) ListVirtualGateways(ctx context.Context, req *v1alpha3.ListVirtualGatewaysRequest) (*v1alpha3.ListVirtualGatewaysResponse, error) {
+	return s.listVirtualGateways(ctx, req)
+}
+
+func (s *AIGatewayServiceGatewayServer) ListModels(ctx context.Context, req *v1alpha3.ListModelsRequest) (*v1alpha3.ListModelsResponse, error) {
+	return s.listModels(ctx, req)
 }
 
 // RegisterAIGatewayServiceHandlerGatewayServer registers the Connect handlers for the
