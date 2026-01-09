@@ -41,7 +41,7 @@ import {
 import type { TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { ChangeEvent, FC } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetTraceQuery } from 'react-query/api/tracing';
 
 import { TraceDetailsSheet } from './trace-details-sheet';
@@ -431,6 +431,7 @@ const computeInitialExpandedSpans = (spanTree: SpanNode[]): Set<string> => {
 // Custom hook: Manage span expansion state
 const useSpanExpansion = (spanTree: SpanNode[], collapseAllTrigger: number) => {
   const [expandedSpans, setExpandedSpans] = useState<Set<string>>(() => computeInitialExpandedSpans(spanTree));
+  const prevSpanTreeLength = useRef(0);
 
   // Reset to initial state when collapse all is triggered
   useEffect(() => {
@@ -441,16 +442,20 @@ const useSpanExpansion = (spanTree: SpanNode[], collapseAllTrigger: number) => {
 
   // Sync expansion state when spanTree loads (handles async data loading)
   useEffect(() => {
-    // If we have a tree but no expanded spans, it likely means data just loaded.
-    // We should compute the default expansion state.
-    if (spanTree.length > 0 && expandedSpans.size === 0) {
+    const currentLength = spanTree.length;
+
+    // Only run if transitioning from empty (0) to populated (N)
+    // AND we currently have no expanded spans
+    if (prevSpanTreeLength.current === 0 && currentLength > 0 && expandedSpans.size === 0) {
       const initialSpans = computeInitialExpandedSpans(spanTree);
       if (initialSpans.size > 0) {
         setExpandedSpans(initialSpans);
       }
     }
-    // biome-ignore lint/correctness/useExhaustiveDependencies: Only run when tree length changes (e.g. 0 -> N)
-  }, [spanTree.length]);
+
+    // Update ref for next render
+    prevSpanTreeLength.current = currentLength;
+  }, [spanTree, expandedSpans.size]);
 
   const toggleSpan = (spanId: string) => {
     setExpandedSpans((prev) => {

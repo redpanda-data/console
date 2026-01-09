@@ -23,6 +23,7 @@ import { getTrace, listTraces } from 'protogen/redpanda/api/dataplane/v1alpha3/t
 import { SpanSchema } from 'protogen/redpanda/otel/v1/trace_pb';
 import { MemoryRouter } from 'react-router-dom';
 import { render } from 'test-utils';
+import { vi } from 'vitest';
 
 import { TraceListPage } from './trace-list-page';
 
@@ -63,7 +64,10 @@ export function setupTransport(options?: {
 }
 
 // Helper function to render with required providers
-export function renderTraceListPage(transport: ReturnType<typeof createRouterTransport>, initialUrl = '/traces?timeRange=1h') {
+export function renderTraceListPage(
+  transport: ReturnType<typeof createRouterTransport>,
+  initialUrl = '/traces?timeRange=1h'
+) {
   // Note: TraceListPage renders TracesTable internally.
   // For performance optimization in tests, TracesTable supports disableFaceting prop
   // to skip expensive getFacetedRowModel and getFacetedUniqueValues operations.
