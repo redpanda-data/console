@@ -6,7 +6,9 @@ import { expect, test } from '@playwright/test';
 test.describe('ACL User Management', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to Security/Users page
-    await page.goto('/security/');
+    await page.goto('/security/', {
+      waitUntil: 'domcontentloaded',
+    });
     await expect(page).toHaveURL('/security/users');
   });
 
