@@ -17,14 +17,14 @@ import { getTrace, listTraces } from 'protogen/redpanda/api/dataplane/v1alpha3/t
 import { screen, waitFor } from 'test-utils';
 
 import {
+  createMockTrace,
+  createMockTraceSummary,
   REGEX_COMPLETED_TRACE,
   REGEX_ERROR,
   REGEX_NO_TRACES_FOUND,
   REGEX_NO_TRACES_RECORDED,
   REGEX_SERVICE,
   REGEX_STATUS,
-  createMockTrace,
-  createMockTraceSummary,
   renderTraceListPage,
   setupTransport,
 } from './trace-list-page.test-helpers';

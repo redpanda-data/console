@@ -23,18 +23,21 @@ const customRender = (ui: React.ReactElement, { ...renderOptions }: ExtendedRend
 
     // Use useState to lazily initialize the QueryClient once and keep it stable across re-renders
     // This prevents the client from being recreated when the Wrapper re-renders
-    const [queryClient] = useState(() => new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-          gcTime: 0, // Immediately garbage collect query caches (prevents memory accumulation across tests)
-          staleTime: 0, // Mark data stale immediately (ensures fresh data per test)
-        },
-        mutations: {
-          retry: false,
-        },
-      },
-    }));
+    const [queryClient] = useState(
+      () =>
+        new QueryClient({
+          defaultOptions: {
+            queries: {
+              retry: false,
+              gcTime: 0, // Immediately garbage collect query caches (prevents memory accumulation across tests)
+              staleTime: 0, // Mark data stale immediately (ensures fresh data per test)
+            },
+            mutations: {
+              retry: false,
+            },
+          },
+        })
+    );
 
     return (
       <TransportProvider transport={finalTransport}>
