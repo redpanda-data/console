@@ -17,11 +17,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     test: {
-      vmMemoryLimit: '3072Mb', // 3GB per worker (safe for 8GB CI runner with 2 shards)
-      fileParallelism: false,
-      isolate: true,
-      pool: 'forks',
-      singleFork: false, // Enable process isolation per test file
+      fileParallelism: false, // Sequential execution (prevents parallel OOM, auto sets maxWorkers: 1)
+      isolate: true, // Fresh environment per test file (default, explicit for clarity)
+      pool: 'forks', // Each test file runs in separate child process (default)
       testTimeout: 30_000,
       globals: true,
       environment: 'jsdom', // Integration tests use jsdom environment
