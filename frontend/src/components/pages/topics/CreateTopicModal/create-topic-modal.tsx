@@ -98,6 +98,7 @@ export class CreateTopicModalContent extends Component<Props> {
           <div style={{ display: 'flex', gap: '2em' }}>
             <Label style={{ flexBasis: '160px' }} text="Partitions">
               <NumInput
+                data-testid="topic-partitions"
                 min={1}
                 onChange={(e) => {
                   state.partitions = e;
@@ -109,6 +110,7 @@ export class CreateTopicModalContent extends Component<Props> {
             <Label style={{ flexBasis: '160px' }} text="Replication Factor">
               <Box>
                 <NumInput
+                  data-testid="topic-replication-factor"
                   disabled={isServerless()}
                   min={1}
                   onChange={(e) => {
@@ -131,6 +133,7 @@ export class CreateTopicModalContent extends Component<Props> {
             {!api.isRedpanda && (
               <Label style={{ flexBasis: '160px' }} text="Min In-Sync Replicas">
                 <NumInput
+                  data-testid="topic-min-insync-replicas"
                   min={1}
                   onChange={(e) => {
                     state.minInSyncReplicas = e;
@@ -161,6 +164,7 @@ export class CreateTopicModalContent extends Component<Props> {
             )}
             <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Time">
               <RetentionTimeSelect
+                data-testid="topic-retention-time"
                 defaultConfigValue={state.defaults.retentionTime}
                 onChangeUnit={(x) => {
                   state.retentionTimeUnit = x;
@@ -174,6 +178,7 @@ export class CreateTopicModalContent extends Component<Props> {
             </Label>
             <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Size">
               <RetentionSizeSelect
+                data-testid="topic-retention-size"
                 defaultConfigValue={state.defaults.retentionBytes}
                 onChangeUnit={(x) => {
                   state.retentionSizeUnit = x;
@@ -209,6 +214,7 @@ export function NumInput(p: {
   addonBefore?: React.ReactNode;
   addonAfter?: React.ReactNode;
   className?: string;
+  'data-testid'?: string;
 }) {
   // We need to keep track of intermediate values.
   // Otherwise, typing '2e' for example, would be rejected.
@@ -258,6 +264,7 @@ export function NumInput(p: {
 
       <Input
         className={`numericInput ${p.className ?? ''}`}
+        data-testid={p['data-testid']}
         disabled={p.disabled}
         onBlur={() => {
           const s = editValue;
@@ -304,6 +311,7 @@ function RetentionTimeSelect(p: {
   onChangeValue: (v: number) => void;
   onChangeUnit: (u: RetentionTimeUnit) => void;
   defaultConfigValue?: string | undefined;
+  'data-testid'?: string;
 }) {
   const { value, unit } = p;
   const numDisabled = unit === 'default' || unit === 'infinite';
@@ -370,6 +378,7 @@ function RetentionTimeSelect(p: {
           />
         </Box>
       }
+      data-testid={p['data-testid']}
       disabled={numDisabled}
       min={0}
       onChange={(x) => p.onChangeValue(x ?? 0)}
@@ -385,6 +394,7 @@ function RetentionSizeSelect(p: {
   onChangeValue: (v: number) => void;
   onChangeUnit: (u: RetentionSizeUnit) => void;
   defaultConfigValue?: string | undefined;
+  'data-testid'?: string;
 }) {
   const { value, unit } = p;
   const numDisabled = unit === 'default' || unit === 'infinite';
@@ -450,6 +460,7 @@ function RetentionSizeSelect(p: {
           />
         </Box>
       }
+      data-testid={p['data-testid']}
       disabled={numDisabled}
       min={0}
       onChange={(x) => p.onChangeValue(x ?? -1)}
