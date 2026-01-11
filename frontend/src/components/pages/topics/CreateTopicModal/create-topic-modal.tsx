@@ -213,8 +213,8 @@ export function NumInput(p: {
   // We need to keep track of intermediate values.
   // Otherwise, typing '2e' for example, would be rejected.
   // But the user might still add '5', and '2e5' is a valid number.
-  const [editValue, setEditValue] = useState(p.value === null ? undefined : String(p.value));
-  useEffect(() => setEditValue(p.value === null ? undefined : String(p.value)), [p.value]);
+  const [editValue, setEditValue] = useState(p.value === undefined ? undefined : String(p.value));
+  useEffect(() => setEditValue(p.value === undefined ? undefined : String(p.value)), [p.value]);
 
   const commit = (x: number | undefined) => {
     if (p.disabled) {
@@ -290,7 +290,7 @@ export function NumInput(p: {
         placeholder={p.placeholder}
         spellCheck={false}
         style={{ minWidth: '120px', width: '100%' }}
-        value={p.disabled && p.placeholder && p.value === null ? undefined : editValue}
+        value={p.disabled && p.placeholder && p.value === undefined ? undefined : editValue}
       />
 
       {Boolean(p.addonAfter) && <InputRightAddon p="0">{p.addonAfter}</InputRightAddon>}
@@ -391,7 +391,11 @@ function RetentionSizeSelect(p: {
 
   let placeholder: string | undefined;
   if (unit === 'default') {
-    if (p.defaultConfigValue !== null && p.defaultConfigValue !== '' && Number.isFinite(Number(p.defaultConfigValue))) {
+    if (
+      p.defaultConfigValue !== undefined &&
+      p.defaultConfigValue !== '' &&
+      Number.isFinite(Number(p.defaultConfigValue))
+    ) {
       placeholder = prettyBytes(p.defaultConfigValue, { showLargeAsInfinite: true, showNullAs: 'default' });
     } else {
       placeholder = 'default';
