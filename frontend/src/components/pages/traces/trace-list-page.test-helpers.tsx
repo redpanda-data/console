@@ -10,7 +10,8 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { TimestampSchema } from '@bufbuild/protobuf/wkt';
+import type { Duration } from '@bufbuild/protobuf/wkt';
+import { DurationSchema, TimestampSchema } from '@bufbuild/protobuf/wkt';
 import { createRouterTransport } from '@connectrpc/connect';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import {
@@ -28,7 +29,7 @@ import { vi } from 'vitest';
 import { TraceListPage } from './trace-list-page';
 
 // Regex constants for test assertions (performance optimization)
-export const REGEX_COMPLETED_TRACE = /completed trace/i;
+export const REGEX_COMPLETED_TRACE = /\d+ completed|completed trace/i;
 export const REGEX_SERVICE = /service/i;
 export const REGEX_STATUS = /status/i;
 export const REGEX_NO_TRACES_FOUND = /no traces found/i;
@@ -86,20 +87,20 @@ export function renderTraceListPage(
 export function createMockTraceSummary(overrides?: {
   traceId?: string;
   rootSpanName?: string;
-  serviceName?: string;
-  durationMs?: bigint;
+  rootServiceName?: string;
+  duration?: Duration;
   spanCount?: number;
   errorCount?: number;
 }) {
   return create(TraceSummarySchema, {
     traceId: overrides?.traceId || 'a1b2c3d4e5f6g7h8',
     rootSpanName: overrides?.rootSpanName || 'chat.completions.create',
-    serviceName: overrides?.serviceName || 'ai-agent',
+    rootServiceName: overrides?.rootServiceName || 'ai-agent',
     startTime: create(TimestampSchema, {
       seconds: BigInt(Math.floor(Date.now() / 1000)),
       nanos: 0,
     }),
-    durationMs: overrides?.durationMs || BigInt(1250),
+    duration: overrides?.duration || create(DurationSchema, { seconds: BigInt(1), nanos: 250_000_000 }),
     spanCount: overrides?.spanCount ?? 5,
     errorCount: overrides?.errorCount ?? 0,
   });

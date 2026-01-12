@@ -68,7 +68,7 @@ describe('TraceListPage', () => {
       const trace1 = createMockTraceSummary({
         traceId: 'a1b2c3d4e5f6g7h8',
         rootSpanName: 'chat.completions.create',
-        serviceName: 'ai-agent',
+        rootServiceName: 'ai-agent',
         spanCount: 5,
         errorCount: 0,
       });
@@ -76,7 +76,7 @@ describe('TraceListPage', () => {
       const trace2 = createMockTraceSummary({
         traceId: 'b2c3d4e5f6g7h8i9',
         rootSpanName: 'data.process',
-        serviceName: 'data-service',
+        rootServiceName: 'data-service',
         spanCount: 3,
         errorCount: 2,
       });
@@ -119,13 +119,13 @@ describe('TraceListPage', () => {
       const trace1 = createMockTraceSummary({
         traceId: 'a1b2c3d4e5f6g7h8',
         rootSpanName: 'ai-agent-operation',
-        serviceName: 'ai-agent',
+        rootServiceName: 'ai-agent',
       });
 
       const trace2 = createMockTraceSummary({
         traceId: 'b2c3d4e5f6g7h8i9',
         rootSpanName: 'data-operation',
-        serviceName: 'data-service',
+        rootServiceName: 'data-service',
       });
 
       const { transport } = setupTransport({
@@ -153,13 +153,13 @@ describe('TraceListPage', () => {
       const trace1 = createMockTraceSummary({
         traceId: 'trace1',
         rootSpanName: 'operation-1',
-        serviceName: 'ai-agent',
+        rootServiceName: 'ai-agent',
       });
 
       const trace2 = createMockTraceSummary({
         traceId: 'trace2',
         rootSpanName: 'operation-2',
-        serviceName: 'data-service',
+        rootServiceName: 'data-service',
       });
 
       const listTracesResponse = create(ListTracesResponseSchema, {
@@ -306,7 +306,7 @@ describe('TraceListPage', () => {
       const trace1 = createMockTraceSummary({
         traceId: 'a1b2c3d4e5f6g7h8',
         rootSpanName: 'chat.completions.create',
-        serviceName: 'ai-agent',
+        rootServiceName: 'ai-agent',
         spanCount: 3,
       });
 

@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { durationMs } from '@bufbuild/protobuf/wkt';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { Trace } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
@@ -75,7 +76,7 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
         <SectionHeader>Trace Summary</SectionHeader>
         <div className="grid grid-cols-2 gap-2">
           <MetricCard label="Total Spans" value={summary.spanCount} />
-          <MetricCard label="Duration" value={formatDuration(Number(summary.durationMs))} />
+          <MetricCard label="Duration" value={formatDuration(summary.duration ? durationMs(summary.duration) : 0)} />
         </div>
         {summary.errorCount > 0 && <MetricCard label="Error Count" value={summary.errorCount} variant="error" />}
       </div>
@@ -125,12 +126,12 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
       )}
 
       {/* Service Information */}
-      {!!summary.serviceName && (
+      {!!summary.rootServiceName && (
         <div className="space-y-2">
           <SectionHeader>Service</SectionHeader>
           <ContentPanel>
             <Text className="break-all font-mono" variant="small">
-              {summary.serviceName}
+              {summary.rootServiceName}
             </Text>
           </ContentPanel>
         </div>

@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { durationMs } from '@bufbuild/protobuf/wkt';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -24,6 +25,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { DataTableFacetedFilter } from 'components/redpanda-ui/components/data-table';
 import { Input } from 'components/redpanda-ui/components/input';
 import { ScrollArea } from 'components/redpanda-ui/components/scroll-area';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
   AlertCircle,
@@ -86,8 +88,8 @@ export function TracesDataTableToolbar({
   const serviceOptions = useMemo(() => {
     const uniqueServices = new Set<string>();
     for (const trace of traces) {
-      if (trace.serviceName) {
-        uniqueServices.add(trace.serviceName);
+      if (trace.rootServiceName) {
+        uniqueServices.add(trace.rootServiceName);
       }
     }
     return Array.from(uniqueServices)
@@ -99,7 +101,7 @@ export function TracesDataTableToolbar({
       }));
   }, [traces]);
 
-  const serviceColumn = table.getColumn('serviceName');
+  const serviceColumn = table.getColumn('rootServiceName');
 
   return (
     <div className="flex items-center justify-between">
@@ -593,8 +595,8 @@ const RootTraceRow: FC<{
             variant="outline"
           >
             <Cpu className="mr-1 h-3 w-3 shrink-0" />
-            <span className="truncate" title={traceSummary.serviceName || 'service'}>
-              {traceSummary.serviceName || 'service'}
+            <span className="truncate" title={traceSummary.rootServiceName || 'service'}>
+              {traceSummary.rootServiceName || 'service'}
             </span>
           </Badge>
         )}
@@ -614,7 +616,7 @@ const RootTraceRow: FC<{
             title={traceSummary.rootSpanName}
           >
             {isIncomplete
-              ? `${traceSummary.serviceName || 'unknown'} — waiting for parent span`
+              ? `${traceSummary.rootServiceName || 'unknown'} — waiting for parent span`
               : traceSummary.rootSpanName}
           </span>
         </div>
@@ -645,7 +647,7 @@ const RootTraceRow: FC<{
               />
             </div>
             <span className="w-14 shrink-0 text-left font-mono text-[10px] text-muted-foreground">
-              {formatDuration(Number(traceSummary.durationMs))}
+              {formatDuration(traceSummary.duration ? durationMs(traceSummary.duration) : 0)}
             </span>
           </>
         )}
@@ -667,7 +669,12 @@ const ExpandedSpansContent: FC<{
   traceId: string;
 }> = ({ isLoading, error, spanTree, baseTimestamp, expandedSpans, toggleSpan, timeline, onSpanClick, traceId }) => {
   if (isLoading) {
-    return <div className="p-4 text-center text-muted-foreground text-sm">Loading spans...</div>;
+    return (
+      <div className="flex items-center justify-center gap-2 p-4 text-center text-muted-foreground text-sm">
+        <Spinner size="sm" />
+        Loading spans...
+      </div>
+    );
   }
 
   if (error) {
@@ -826,8 +833,8 @@ export const TracesTable: FC<Props> = ({
 
         return {
           ...trace,
-          // Searchable field combining traceId, rootSpanName, and serviceName
-          searchable: `${trace.traceId} ${trace.rootSpanName} ${trace.serviceName}`,
+          // Searchable field combining traceId, rootSpanName, and rootServiceName
+          searchable: `${trace.traceId} ${trace.rootSpanName} ${trace.rootServiceName}`,
           // Status field for filtering
           status,
         };
@@ -854,7 +861,7 @@ export const TracesTable: FC<Props> = ({
         filterFn: 'includesString',
       },
       {
-        accessorKey: 'serviceName',
+        accessorKey: 'rootServiceName',
         filterFn: serviceNameFilterFn,
       },
       {
@@ -962,7 +969,8 @@ export const TracesTable: FC<Props> = ({
             {(() => {
               if (isLoading) {
                 return (
-                  <div className="flex h-24 items-center justify-center text-muted-foreground text-sm">
+                  <div className="flex h-24 items-center justify-center gap-2 text-muted-foreground text-sm">
+                    <Spinner size="sm" />
                     Loading traces...
                   </div>
                 );
