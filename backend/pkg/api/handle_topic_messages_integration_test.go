@@ -28,6 +28,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -1049,4 +1050,226 @@ func randomString(n int) string {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return string(b)
+}
+
+func (s *APIIntegrationTestSuite) TestListMessages_Pagination() {
+	t := s.T()
+
+	require := require.New(t)
+	assert := assert.New(t)
+
+	ctx := t.Context()
+
+	client := v1ac.NewConsoleServiceClient(
+		http.DefaultClient,
+		s.httpAddress(),
+		connect.WithGRPCWeb(),
+	)
+
+	// Create test topic with multiple messages
+	testTopicName := testutil.TopicNameForTest("pagination_test")
+	const messageCount = 150
+
+	// Create topic
+	_, err := s.kafkaAdminClient.CreateTopic(ctx, 3, 1, nil, testTopicName)
+	require.NoError(err)
+
+	defer func() {
+		s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+	}()
+
+	// Wait for topic to be ready
+	require.Eventually(func() bool {
+		metadata, err := s.kafkaAdminClient.Metadata(ctx, testTopicName)
+		if err != nil {
+			return false
+		}
+		topic, exists := metadata.Topics[testTopicName]
+		return exists && topic.Err == nil && len(topic.Partitions) == 3
+	}, 30*time.Second, 100*time.Millisecond, "Topic should be created and ready")
+
+	// Produce messages
+	records := make([]*kgo.Record, messageCount)
+	for i := 0; i < messageCount; i++ {
+		records[i] = &kgo.Record{
+			Key:   []byte(fmt.Sprintf("key-%d", i)),
+			Value: []byte(fmt.Sprintf(`{"id": %d, "message": "test message %d"}`, i, i)),
+			Topic: testTopicName,
+		}
+	}
+
+	produceResults := s.kafkaClient.ProduceSync(ctx, records...)
+	require.NoError(produceResults.FirstErr())
+
+	// Give Kafka a moment to commit
+	time.Sleep(500 * time.Millisecond)
+
+	// Debug: Check actual message distribution across partitions
+	offsets, err := s.kafkaAdminClient.ListEndOffsets(ctx, testTopicName)
+	require.NoError(err)
+	totalMessages := int64(0)
+	offsets.Each(func(offset kadm.ListedOffset) {
+		count := offset.Offset
+		totalMessages += count
+		t.Logf("Partition %d: %d messages (offset: 0 to %d)", offset.Partition, count, offset.Offset-1)
+	})
+	t.Logf("Total messages across all partitions: %d (expected %d)", totalMessages, messageCount)
+
+	t.Run("first page with pagination mode", func(t *testing.T) {
+		stream, err := client.ListMessages(ctx, connect.NewRequest(&v1pb.ListMessagesRequest{
+			Topic:       testTopicName,
+			PartitionId: -1, // All partitions
+			StartOffset: -1, // Recent
+			MaxResults:  -1, // Pagination mode
+			PageToken:   "", // First page
+		}))
+		require.NoError(err)
+		require.NotNil(stream)
+
+		var messages []*v1pb.ListMessagesResponse_DataMessage
+		var done *v1pb.ListMessagesResponse_StreamCompletedMessage
+
+		for stream.Receive() {
+			msg := stream.Msg()
+			switch v := msg.ControlMessage.(type) {
+			case *v1pb.ListMessagesResponse_Data:
+				messages = append(messages, v.Data)
+			case *v1pb.ListMessagesResponse_Done:
+				done = v.Done
+			}
+		}
+
+		require.NoError(stream.Err())
+		require.NotNil(done, "Should have completion message")
+
+		// Verify first page results
+		assert.Equal(int64(50), done.MessagesConsumed, "Should consume 50 messages (default page size)")
+		assert.NotEmpty(done.NextPageToken, "Should have next page token")
+		assert.True(done.HasMore, "Should have more messages")
+		assert.Len(messages, 50, "Should return 50 messages")
+
+		// Verify descending order within partitions
+		// Group messages by partition
+		messagesByPartition := make(map[int32][]*v1pb.ListMessagesResponse_DataMessage)
+		for _, msg := range messages {
+			messagesByPartition[msg.PartitionId] = append(messagesByPartition[msg.PartitionId], msg)
+		}
+
+		// Check each partition is in descending order
+		for partitionID, partitionMessages := range messagesByPartition {
+			if len(partitionMessages) > 1 {
+				for i := 0; i < len(partitionMessages)-1; i++ {
+					assert.Greater(partitionMessages[i].Offset, partitionMessages[i+1].Offset,
+						"Messages in partition %d should be in descending offset order", partitionID)
+				}
+			}
+		}
+	})
+
+	t.Run("paginate through all messages", func(t *testing.T) {
+		var allMessages []*v1pb.ListMessagesResponse_DataMessage
+		pageToken := ""
+		pageCount := 0
+		maxPages := 5 // Safety limit
+
+		for pageCount < maxPages {
+			stream, err := client.ListMessages(ctx, connect.NewRequest(&v1pb.ListMessagesRequest{
+				Topic:       testTopicName,
+				PartitionId: -1,
+				StartOffset: -1,
+				MaxResults:  -1,
+				PageToken:   pageToken,
+			}))
+			require.NoError(err)
+			require.NotNil(stream)
+
+			var pageMessages []*v1pb.ListMessagesResponse_DataMessage
+			var done *v1pb.ListMessagesResponse_StreamCompletedMessage
+
+			for stream.Receive() {
+				msg := stream.Msg()
+				switch v := msg.ControlMessage.(type) {
+				case *v1pb.ListMessagesResponse_Data:
+					pageMessages = append(pageMessages, v.Data)
+				case *v1pb.ListMessagesResponse_Done:
+					done = v.Done
+				}
+			}
+
+			require.NoError(stream.Err())
+			require.NotNil(done)
+
+			allMessages = append(allMessages, pageMessages...)
+			pageCount++
+
+			t.Logf("Page %d: fetched %d messages, hasMore=%v", pageCount, len(pageMessages), done.HasMore)
+
+			if !done.HasMore || done.NextPageToken == "" {
+				break
+			}
+
+			pageToken = done.NextPageToken
+		}
+
+		// Verify we got all messages
+		assert.Equal(messageCount, len(allMessages), "Should fetch all %d messages across pages", messageCount)
+		assert.LessOrEqual(pageCount, 4, "Should complete in 3-4 pages (150 messages / 50 per page)")
+	})
+
+	t.Run("error when filter with pagination", func(t *testing.T) {
+		filterCode := base64.StdEncoding.EncodeToString([]byte("return true"))
+
+		stream, err := client.ListMessages(ctx, connect.NewRequest(&v1pb.ListMessagesRequest{
+			Topic:                 testTopicName,
+			PartitionId:           -1,
+			StartOffset:           -1,
+			MaxResults:            -1,
+			PageToken:             "",
+			FilterInterpreterCode: filterCode,
+		}))
+		require.NoError(err)
+		require.NotNil(stream)
+
+		// Stream should error
+		for stream.Receive() {
+			// Should not receive any messages
+		}
+
+		err = stream.Err()
+		require.Error(err, "Should error when using filter with pagination")
+		assert.Contains(err.Error(), "cannot use filters with pagination")
+	})
+
+	t.Run("legacy mode still works", func(t *testing.T) {
+		stream, err := client.ListMessages(ctx, connect.NewRequest(&v1pb.ListMessagesRequest{
+			Topic:       testTopicName,
+			PartitionId: -1,
+			StartOffset: -2, // Oldest
+			MaxResults:  50, // Legacy mode
+			PageToken:   "",
+		}))
+		require.NoError(err)
+		require.NotNil(stream)
+
+		var messages []*v1pb.ListMessagesResponse_DataMessage
+		var done *v1pb.ListMessagesResponse_StreamCompletedMessage
+
+		for stream.Receive() {
+			msg := stream.Msg()
+			switch v := msg.ControlMessage.(type) {
+			case *v1pb.ListMessagesResponse_Data:
+				messages = append(messages, v.Data)
+			case *v1pb.ListMessagesResponse_Done:
+				done = v.Done
+			}
+		}
+
+		require.NoError(stream.Err())
+		require.NotNil(done)
+
+		// In legacy mode, should not have pagination tokens
+		assert.Empty(done.NextPageToken, "Legacy mode should not return page token")
+		assert.False(done.HasMore, "Legacy mode should not set hasMore")
+		assert.LessOrEqual(len(messages), 50, "Should respect maxResults limit")
+	})
 }
