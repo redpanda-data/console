@@ -81,7 +81,6 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
   const [selectedTraceId, setSelectedTraceId] = useQueryState('traceId', parseAsString);
   const [selectedSpanId, setSelectedSpanId] = useQueryState('spanId', parseAsString);
   const [timeRange, setTimeRange] = useQueryState('timeRange', parseAsString.withDefault('1h'));
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
@@ -100,18 +99,28 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
 
   const selectedRange = TIME_RANGES.find((r) => r.value === timeRange) || TIME_RANGES[3];
 
-  // Update nowMs when time range changes
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Intentionally update timestamp when time range changes for relative time calculations
-  useEffect(() => {
-    setNowMs(Date.now());
-    // Reset accumulated traces and jump state when time range changes
+  // Consolidated reset function for query state
+  // Used by refresh, time range change, and back-to-newest actions
+  const resetQueryState = useCallback(() => {
     setAccumulatedTraces([]);
     setCurrentPageToken('');
     setJumpedTo(null);
     setInitialHistogram(undefined);
     setInitialTotalCount(0);
     hasInitializedRef.current = false;
-  }, [timeRange]);
+  }, []);
+
+  // Handle time range changes from the Select component
+  // This replaces the useEffect approach to prevent double-queries from nuqs hydration
+  const handleTimeRangeChange = useCallback(
+    (value: string) => {
+      setTimeRange(value);
+      setNowMs(Date.now());
+      resetQueryState();
+      // No refetch() needed - changing nowMs updates the query key, triggering automatic refetch
+    },
+    [setTimeRange, resetQueryState]
+  );
 
   // Calculate query timestamps based on whether we're in jumped mode
   const timestamps = useMemo(() => {
@@ -133,7 +142,7 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
   }, [nowMs, selectedRange.ms, jumpedTo]);
 
   // Query for the main time range (or jumped range)
-  const { data, isLoading, error, refetch } = useListTracesQuery({
+  const { data, isLoading, error } = useListTracesQuery({
     startTime: timestamps.startTimestamp,
     endTime: timestamps.endTimestamp,
     pageSize: 100,
@@ -150,40 +159,32 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
   }, [data, jumpedTo]);
 
   // Accumulate traces when data changes
+  // Note: Don't include currentPageToken in deps - it changes before data arrives,
+  // which would cause the effect to re-run with stale data and duplicate traces
+  // biome-ignore lint/correctness/useExhaustiveDependencies: currentPageToken is intentionally excluded - see comment above
   useEffect(() => {
-    if (data?.traces) {
-      if (currentPageToken === '') {
-        // First page - replace accumulated traces
-        setAccumulatedTraces(data.traces);
-      } else {
-        // Subsequent pages - append to accumulated traces
-        setAccumulatedTraces((prev) => [...prev, ...data.traces]);
-      }
-      // Reset loading state when data arrives
-      setIsLoadingMore(false);
+    if (!data?.traces) {
+      return;
     }
-  }, [data?.traces, currentPageToken]);
 
-  // Connect the global refresh button to this page's refetch function
+    setAccumulatedTraces((prev) => (currentPageToken === '' ? data.traces : [...prev, ...data.traces]));
+    setIsLoadingMore(false);
+  }, [data]);
+
+  // Connect the global refresh button to this page's refresh logic
   useEffect(() => {
     const previousHandler = appGlobal.onRefresh;
     appGlobal.onRefresh = () => {
-      // Update the time window to "now" before refetching
+      // Update the time window to "now" and reset state
+      // No refetch() needed - changing nowMs updates the query key, triggering automatic refetch
       setNowMs(Date.now());
-      // Reset state
-      setAccumulatedTraces([]);
-      setCurrentPageToken('');
-      setJumpedTo(null);
-      setInitialHistogram(undefined);
-      setInitialTotalCount(0);
-      hasInitializedRef.current = false;
-      refetch();
+      resetQueryState();
     };
     return () => {
       // Restore previous handler on unmount
       appGlobal.onRefresh = previousHandler;
     };
-  }, [refetch]);
+  }, [resetQueryState]);
 
   useEffect(() => {
     setSelectedTraceId(null);
@@ -292,22 +293,11 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
 
   const isFiltered = columnFilters.length > 0;
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      // Update the time window to "now" before refetching
-      setNowMs(Date.now());
-      // Reset state
-      setAccumulatedTraces([]);
-      setCurrentPageToken('');
-      setJumpedTo(null);
-      setInitialHistogram(undefined);
-      setInitialTotalCount(0);
-      hasInitializedRef.current = false;
-      await refetch();
-    } finally {
-      setIsRefreshing(false);
-    }
+  const handleRefresh = () => {
+    // Update the time window to "now" and reset state
+    // No refetch() needed - changing nowMs updates the query key, triggering automatic refetch
+    setNowMs(Date.now());
+    resetQueryState();
   };
 
   const handleLoadMore = () => {
@@ -338,13 +328,8 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
   };
 
   const handleBackToNewest = () => {
-    setJumpedTo(null);
-    setAccumulatedTraces([]);
-    setCurrentPageToken('');
     setNowMs(Date.now());
-    hasInitializedRef.current = false;
-    setInitialHistogram(undefined);
-    setInitialTotalCount(0);
+    resetQueryState();
   };
 
   const handleSpanClick = (traceId: string, spanId: string) => {
@@ -441,7 +426,7 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
           {jumpedTo !== null && (
             <span className="rounded bg-muted px-2 py-1 text-muted-foreground text-xs">Viewing: {jumpedTo.label}</span>
           )}
-          <Select disabled={!!jumpedTo} onValueChange={setTimeRange} value={timeRange}>
+          <Select disabled={!!jumpedTo} onValueChange={handleTimeRangeChange} value={timeRange}>
             <SelectTrigger className="h-8 w-[140px] text-xs">
               <SelectValue placeholder="Time range" />
             </SelectTrigger>
@@ -454,8 +439,8 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
             </SelectContent>
           </Select>
 
-          <Button className="h-8 w-8" disabled={isRefreshing} onClick={handleRefresh} size="icon" variant="outline">
-            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <Button className="h-8 w-8" disabled={isLoading} onClick={handleRefresh} size="icon" variant="outline">
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </div>
