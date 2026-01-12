@@ -420,7 +420,11 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
             value={(table.getColumn('searchable')?.getFilterValue() as string) ?? ''}
           />
           {table.getColumn('rootServiceName') && serviceOptions.length > 0 && (
-            <DataTableFacetedFilter column={table.getColumn('rootServiceName')} options={serviceOptions} title="Service" />
+            <DataTableFacetedFilter
+              column={table.getColumn('rootServiceName')}
+              options={serviceOptions}
+              title="Service"
+            />
           )}
           {table.getColumn('status') && (
             <DataTableFacetedFilter column={table.getColumn('status')} options={statusOptions} title="Status" />
@@ -523,7 +527,7 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
         />
 
         {/* Load More Button */}
-        {data?.nextPageToken && !isLoading && (
+        {((data?.nextPageToken && !isLoading) || isLoadingMore) && (
           <div className="flex justify-center py-2">
             <Button className="gap-2" disabled={isLoadingMore} onClick={handleLoadMore} size="sm" variant="outline">
               {isLoadingMore ? (
