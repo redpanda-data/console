@@ -9,84 +9,311 @@
  * by the Apache License, Version 2.0
  */
 
-import { timestampDate } from '@bufbuild/protobuf/wkt';
-import type { TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
+import type { Timestamp } from '@bufbuild/protobuf/wkt';
+import { durationMs, timestampDate } from '@bufbuild/protobuf/wkt';
+import { cn } from 'components/redpanda-ui/lib/utils';
+import type { TraceHistogram, TraceHistogramBucket } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { FC } from 'react';
-import { useMemo } from 'react';
-import { pluralizeWithNumber } from 'utils/string';
+import { useMemo, useState } from 'react';
 
 type Props = {
-  traces: TraceSummary[];
-  timeRangeMs: number;
+  /** Histogram data from backend covering the full query time range */
+  histogram: TraceHistogram | undefined;
+  /** Start time of the oldest trace in the current loaded set */
+  returnedStartTime: Timestamp | undefined;
+  /** End time of the newest trace in the current loaded set */
+  returnedEndTime: Timestamp | undefined;
+  /** Total traces matching the query (for "Showing X of Y" display) */
+  totalCount: number;
+  /** Number of traces currently loaded */
+  loadedCount: number;
+  /** Query start time in milliseconds */
+  queryStartMs: number;
+  /** Query end time in milliseconds */
+  queryEndMs: number;
+  /** Callback when a bucket is clicked for navigation */
+  onBucketClick?: (bucketStartMs: number, bucketEndMs: number) => void;
 };
 
-export const TraceActivityChart: FC<Props> = ({ traces, timeRangeMs }) => {
-  const chartData = useMemo(() => {
-    if (traces.length === 0) {
-      return [];
-    }
+type VisibleWindow = {
+  startMs: number;
+  endMs: number;
+} | null;
 
-    const now = Date.now();
-    const startTime = now - timeRangeMs;
+type BucketBarProps = {
+  bucket: TraceHistogramBucket;
+  bucketDurationMs: number;
+  maxCount: number;
+  isInWindow: boolean;
+  isHovered: boolean;
+  onBucketClick?: (bucketStartMs: number, bucketEndMs: number) => void;
+  formatBucketTime: (startMs: number) => string;
+  onHover: (isHovered: boolean) => void;
+};
 
-    // Use 60 buckets for better granularity (similar to v0 mock)
-    const bucketCount = 60;
-    const bucketSize = timeRangeMs / bucketCount;
+/** Hover tooltip for bucket bar */
+type BucketTooltipProps = {
+  time: string;
+  successCount: number;
+  errorCount: number;
+  isInWindow: boolean;
+};
 
-    const buckets = Array.from({ length: bucketCount }, (_, i) => {
-      const bucketStart = startTime + i * bucketSize;
+const BucketTooltip: FC<BucketTooltipProps> = ({ time, successCount, errorCount, isInWindow }) => (
+  <div
+    className="pointer-events-none absolute z-50"
+    style={{ bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)' }}
+  >
+    <div className="whitespace-nowrap rounded-lg border bg-popover px-3 py-2 text-xs shadow-xl">
+      <div className="mb-1 font-semibold text-foreground">{time}</div>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1.5">
+          <div className="h-2 w-2 rounded-full bg-emerald-500" />
+          <span className="text-muted-foreground">{successCount}</span>
+        </div>
+        {errorCount > 0 ? (
+          <div className="flex items-center gap-1.5">
+            <div className="h-2 w-2 rounded-full bg-red-500" />
+            <span className="text-muted-foreground">{errorCount}</span>
+          </div>
+        ) : null}
+      </div>
+      {isInWindow ? (
+        <div className="mt-1.5 border-border/50 border-t pt-1.5 text-[10px] text-primary">In view</div>
+      ) : null}
+    </div>
+  </div>
+);
 
-      return {
-        timestamp: bucketStart,
-        count: 0,
-      };
-    });
+/** Helper to get bar color class based on state - uses static class names for Tailwind JIT */
+const getBarColorClass = (isHovered: boolean, isInWindow: boolean, isSuccess: boolean): string => {
+  if (isSuccess) {
+    if (isHovered) return 'bg-emerald-500';
+    if (isInWindow) return 'bg-emerald-500/80';
+    return 'bg-emerald-500/40';
+  }
+  // Error bars
+  if (isHovered) return 'bg-red-500';
+  if (isInWindow) return 'bg-red-500/80';
+  return 'bg-red-500/40';
+};
 
-    for (const trace of traces) {
-      if (!trace.startTime) {
-        continue;
+/** Find the index range of buckets that overlap with a time window */
+const findHighlightedBucketRange = (
+  buckets: TraceHistogramBucket[],
+  bucketDurationMs: number,
+  windowStartMs: number,
+  windowEndMs: number
+): { first: number; last: number } | null => {
+  let firstIndex = -1;
+  let lastIndex = -1;
+
+  for (let i = 0; i < buckets.length; i++) {
+    const bucketStartMs = buckets[i].startTime ? timestampDate(buckets[i].startTime).getTime() : 0;
+    const bucketEndMs = bucketStartMs + bucketDurationMs;
+    const overlaps = bucketEndMs > windowStartMs && bucketStartMs < windowEndMs;
+
+    if (overlaps) {
+      if (firstIndex === -1) {
+        firstIndex = i;
       }
-
-      const traceTime = timestampDate(trace.startTime).getTime();
-      const bucketIndex = Math.floor((traceTime - startTime) / bucketSize);
-
-      if (bucketIndex >= 0 && bucketIndex < buckets.length) {
-        buckets[bucketIndex].count += 1;
-      }
+      lastIndex = i;
     }
+  }
 
-    return buckets;
-  }, [traces, timeRangeMs]);
+  if (firstIndex === -1) {
+    return null;
+  }
+  return { first: firstIndex, last: lastIndex };
+};
 
-  const maxCount = useMemo(() => Math.max(...chartData.map((d) => d.count), 1), [chartData]);
+/** Individual histogram bucket bar with tooltip - uses stacked bars for success/errors */
+const BucketBar: FC<BucketBarProps> = ({
+  bucket,
+  bucketDurationMs,
+  maxCount,
+  isInWindow,
+  isHovered,
+  onBucketClick,
+  formatBucketTime,
+  onHover,
+}) => {
+  const bucketStartMs = bucket.startTime ? timestampDate(bucket.startTime).getTime() : 0;
+  const bucketEndMs = bucketStartMs + bucketDurationMs;
+  const successCount = bucket.count - bucket.errorCount;
+  const isClickable = Boolean(onBucketClick) && bucket.count > 0;
 
-  // Format time labels for display
+  // Calculate heights as percentages of the container (64px = h-16)
+  const successHeight = maxCount > 0 ? (successCount / maxCount) * 100 : 0;
+  const errorHeight = maxCount > 0 ? (bucket.errorCount / maxCount) * 100 : 0;
+
+  const handleClick = () => {
+    if (isClickable) {
+      onBucketClick?.(bucketStartMs, bucketEndMs);
+    }
+  };
+
+  const successBarClass = getBarColorClass(isHovered, isInWindow, true);
+  const errorBarClass = getBarColorClass(isHovered, isInWindow, false);
+
+  const containerClassName = cn('group relative h-full min-w-[4px] flex-1', isClickable && 'cursor-pointer');
+
+  const barContent = (
+    <>
+      {isHovered ? (
+        <BucketTooltip
+          errorCount={bucket.errorCount}
+          isInWindow={isInWindow}
+          successCount={successCount}
+          time={formatBucketTime(bucketStartMs)}
+        />
+      ) : null}
+      <div className="absolute right-0 bottom-0 left-0 flex flex-col-reverse">
+        <div
+          className={cn('w-full transition-all', successBarClass, bucket.errorCount === 0 && 'rounded-t-sm')}
+          style={{ height: `${(successHeight / 100) * 64}px` }}
+        />
+        {bucket.errorCount > 0 ? (
+          <div
+            className={cn('w-full rounded-t-sm transition-all', errorBarClass)}
+            style={{ height: `${(errorHeight / 100) * 64}px` }}
+          />
+        ) : null}
+      </div>
+    </>
+  );
+
+  return isClickable ? (
+    <button
+      className={cn(containerClassName, 'border-0 bg-transparent p-0')}
+      onClick={handleClick}
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
+      type="button"
+    >
+      {barContent}
+    </button>
+  ) : (
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Hover effect for visual tooltip feedback only
+    <div
+      aria-label={`Bucket with ${bucket.count} traces`}
+      className={containerClassName}
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
+      role="img"
+    >
+      {barContent}
+    </div>
+  );
+};
+
+export const TraceActivityChart: FC<Props> = ({
+  histogram,
+  returnedStartTime,
+  returnedEndTime,
+  totalCount,
+  loadedCount,
+  queryStartMs,
+  queryEndMs,
+  onBucketClick,
+}) => {
+  const [hoveredBucket, setHoveredBucket] = useState<number | null>(null);
+  const buckets = histogram?.buckets ?? [];
+  const bucketDurationMs = histogram?.bucketDuration ? durationMs(histogram.bucketDuration) : 0;
+
+  // Calculate the visible window boundaries in milliseconds
+  const visibleWindow: VisibleWindow = useMemo(() => {
+    if (returnedStartTime === undefined || returnedEndTime === undefined) {
+      return null;
+    }
+    return {
+      startMs: timestampDate(returnedStartTime).getTime(),
+      endMs: timestampDate(returnedEndTime).getTime(),
+    };
+  }, [returnedStartTime, returnedEndTime]);
+
+  // Calculate max count for scaling bar heights
+  const maxCount = useMemo(() => Math.max(...buckets.map((b) => b.count), 1), [buckets]);
+
+  // Format time labels for display - returns objects with key and label for stable rendering
+  // Now shows 5 labels instead of 8 for cleaner appearance
   const timeLabels = useMemo(() => {
-    if (chartData.length === 0) {
+    if (buckets.length === 0) {
       return [];
     }
 
-    const now = Date.now();
-    const startTime = now - timeRangeMs;
-    const intervals = 7; // Show 8 time labels (start + 7 intervals)
+    const intervals = 4; // Show 5 time labels (start + 4 intervals)
+    const totalDuration = queryEndMs - queryStartMs;
 
     return Array.from({ length: intervals + 1 }, (_, i) => {
-      const time = startTime + (timeRangeMs / intervals) * i;
+      const time = queryStartMs + (totalDuration / intervals) * i;
       const date = new Date(time);
 
-      if (i === 0 || i === intervals) {
-        // First and last label: show date and full time
-        return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}`;
-      }
-      // Middle labels: just time
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-    });
-  }, [chartData.length, timeRangeMs]);
+      // All labels show just time HH:MM format for cleaner look
+      const label = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-  if (chartData.length === 0) {
+      return { key: time, label };
+    });
+  }, [buckets.length, queryStartMs, queryEndMs]);
+
+  // Check if a bucket is within the visible window
+  const isBucketInVisibleWindow = (bucketStartMs: number): boolean => {
+    if (visibleWindow === null) {
+      return false;
+    }
+    const bucketEndMs = bucketStartMs + bucketDurationMs;
+    // Bucket overlaps with visible window
+    return bucketEndMs > visibleWindow.startMs && bucketStartMs < visibleWindow.endMs;
+  };
+
+  // Format bucket time for tooltip (just HH:MM format)
+  const formatBucketTime = (startMs: number): string => {
+    const date = new Date(startMs);
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  };
+
+  // Format visible window time for header
+  const formatVisibleWindowTime = (ms: number): string =>
+    new Date(ms).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+
+  // Calculate visible window overlay position based on which buckets are actually highlighted
+  // This ensures the indicator matches the bucket opacity exactly
+  const overlayStyle = useMemo(() => {
+    if (visibleWindow === null || buckets.length === 0) {
+      return null;
+    }
+
+    const range = findHighlightedBucketRange(buckets, bucketDurationMs, visibleWindow.startMs, visibleWindow.endMs);
+    if (range === null) {
+      return null;
+    }
+
+    const leftPercent = (range.first / buckets.length) * 100;
+    const widthPercent = ((range.last - range.first + 1) / buckets.length) * 100;
+
+    // Only show if not covering almost all buckets
+    if (widthPercent >= 99) {
+      return null;
+    }
+
+    return {
+      left: `${leftPercent}%`,
+      width: `${widthPercent}%`,
+    };
+  }, [visibleWindow, buckets, bucketDurationMs]);
+
+  if (buckets.length === 0) {
     return (
-      <div className="mb-3 rounded-lg border bg-muted/20 p-2">
-        <div className="flex h-10 items-center justify-center">
+      <div className="relative z-0 mb-3 rounded-lg border bg-muted/20">
+        <div className="flex h-16 items-center justify-center">
           <span className="text-[10px] text-muted-foreground">No trace data available</span>
         </div>
       </div>
@@ -94,27 +321,90 @@ export const TraceActivityChart: FC<Props> = ({ traces, timeRangeMs }) => {
   }
 
   return (
-    <div className="mb-3 rounded-lg border bg-muted/20 p-2">
+    <div className="relative z-0 mb-3 rounded-lg border bg-muted/20">
+      {/* Header bar */}
+      {totalCount > 0 && (
+        <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-1.5 text-[10px]">
+          <span className="text-muted-foreground">
+            Showing <span className="font-medium text-foreground">{loadedCount.toLocaleString()}</span> of{' '}
+            <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span> traces
+            {visibleWindow !== null && (
+              <>
+                {' '}
+                from{' '}
+                <span className="font-medium text-foreground">{formatVisibleWindowTime(visibleWindow.startMs)}</span> to{' '}
+                <span className="font-medium text-foreground">{formatVisibleWindowTime(visibleWindow.endMs)}</span>
+              </>
+            )}
+          </span>
+        </div>
+      )}
+
       {/* Histogram Bars */}
-      <div className="flex h-10 items-end gap-px">
-        {chartData.map((bucket) => {
-          const height = maxCount > 0 ? (bucket.count / maxCount) * 100 : 0;
-          return (
+      <div className="relative p-2 pb-1">
+        <div className="relative flex h-16 items-end gap-px">
+          {buckets.map((bucket, index) => {
+            const bucketStartMs = bucket.startTime ? timestampDate(bucket.startTime).getTime() : 0;
+            return (
+              <BucketBar
+                bucket={bucket}
+                bucketDurationMs={bucketDurationMs}
+                formatBucketTime={formatBucketTime}
+                isHovered={hoveredBucket === index}
+                isInWindow={isBucketInVisibleWindow(bucketStartMs)}
+                key={bucketStartMs}
+                maxCount={maxCount}
+                onBucketClick={onBucketClick}
+                onHover={(isHovered) => setHoveredBucket(isHovered ? index : null)}
+              />
+            );
+          })}
+        </div>
+
+        {/* Visible window range indicator - shows which portion of the timeline is loaded */}
+        {overlayStyle !== null && (
+          <div className="relative mt-1.5 h-1 bg-muted/50">
+            {/* Visible range highlight */}
+            <div className="absolute h-full bg-foreground/20" style={overlayStyle} />
+            {/* Left edge marker */}
             <div
-              className="min-w-[2px] flex-1 rounded-t-sm bg-emerald-500/70 transition-all hover:bg-emerald-500"
-              key={bucket.timestamp}
-              style={{ height: `${height}%` }}
-              title={pluralizeWithNumber(bucket.count, 'trace')}
+              className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 rounded-full bg-foreground/40"
+              style={{ left: overlayStyle.left }}
             />
-          );
-        })}
+            {/* Right edge marker */}
+            <div
+              className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 rounded-full bg-foreground/40"
+              style={{ left: `calc(${overlayStyle.left} + ${overlayStyle.width})` }}
+            />
+          </div>
+        )}
+
+        {/* Time Labels */}
+        <div className="mt-1.5 flex justify-between px-0.5 text-[9px] text-muted-foreground">
+          {timeLabels.map((item) => (
+            <span key={item.key}>{item.label}</span>
+          ))}
+        </div>
       </div>
 
-      {/* Time Labels */}
-      <div className="mt-1.5 flex justify-between text-[10px] text-muted-foreground">
-        {timeLabels.map((label) => (
-          <span key={label}>{label}</span>
-        ))}
+      {/* Legend */}
+      <div className="flex items-center gap-4 border-t px-3 py-1.5 text-[9px] text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <div className="h-2 w-2 rounded-sm bg-emerald-500/70" />
+          <span>Successful</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="h-2 w-2 rounded-sm bg-red-500/70" />
+          <span>Errors</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="relative h-2 w-6 bg-muted/50">
+            <div className="absolute right-0 h-full w-1/2 bg-foreground/20" />
+            <div className="absolute top-1/2 right-0 h-3 w-0.5 -translate-y-1/2 bg-foreground/40" />
+            <div className="absolute top-1/2 right-1/2 h-3 w-0.5 -translate-y-1/2 bg-foreground/40" />
+          </div>
+          <span>Loaded data</span>
+        </div>
       </div>
     </div>
   );
