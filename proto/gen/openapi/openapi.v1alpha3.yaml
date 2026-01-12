@@ -1643,11 +1643,11 @@ components:
           format: int32
           readOnly: true
           type: integer
+        root_service_name:
+          description: Service name extracted from the root span's 'service.name' resource attribute. May be empty if the root span is unavailable or lacks the attribute.
+          type: string
         root_span_name:
           description: Name of the root span (the span with no parent). May be empty if the root span is not yet available.
-          type: string
-        service_name:
-          description: Name of the service that created the root span, extracted from 'service.name' resource attribute.
           type: string
         span_count:
           description: Total number of spans that belong to this trace.

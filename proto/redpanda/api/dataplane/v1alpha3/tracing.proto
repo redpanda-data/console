@@ -155,8 +155,9 @@ message TraceSummary {
   // Root span name (if available). Empty if root span hasn't been received yet.
   string root_span_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Name of the root span (the span with no parent). May be empty if the root span is not yet available."}];
 
-  // Service name that initiated the trace. Extracted from resource attributes.
-  string service_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Name of the service that created the root span, extracted from 'service.name' resource attribute."}];
+  // Service name from the root span's resource attributes. May be empty if root span hasn't
+  // been received or lacks the attribute.
+  string root_service_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Service name extracted from the root span's 'service.name' resource attribute. May be empty if the root span is unavailable or lacks the attribute."}];
 
   // Trace start time (earliest span start timestamp).
   google.protobuf.Timestamp start_time = 4 [
