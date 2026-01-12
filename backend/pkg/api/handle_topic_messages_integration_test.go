@@ -1145,7 +1145,6 @@ func (s *APIIntegrationTestSuite) TestListMessages_Pagination() {
 		// Verify first page results
 		assert.Equal(int64(50), done.MessagesConsumed, "Should consume 50 messages (default page size)")
 		assert.NotEmpty(done.NextPageToken, "Should have next page token")
-		assert.True(done.HasMore, "Should have more messages")
 		assert.Len(messages, 50, "Should return 50 messages")
 
 		// Verify descending order within partitions
@@ -1202,9 +1201,9 @@ func (s *APIIntegrationTestSuite) TestListMessages_Pagination() {
 			allMessages = append(allMessages, pageMessages...)
 			pageCount++
 
-			t.Logf("Page %d: fetched %d messages, hasMore=%v", pageCount, len(pageMessages), done.HasMore)
+			t.Logf("Page %d: fetched %d messages, nextPageToken=%s", pageCount, len(pageMessages), done.NextPageToken)
 
-			if !done.HasMore || done.NextPageToken == "" {
+			if done.NextPageToken == "" {
 				break
 			}
 
@@ -1269,7 +1268,6 @@ func (s *APIIntegrationTestSuite) TestListMessages_Pagination() {
 
 		// In legacy mode, should not have pagination tokens
 		assert.Empty(done.NextPageToken, "Legacy mode should not return page token")
-		assert.False(done.HasMore, "Legacy mode should not set hasMore")
 		assert.LessOrEqual(len(messages), 50, "Should respect maxResults limit")
 	})
 }

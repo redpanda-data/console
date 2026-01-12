@@ -81,7 +81,7 @@ type IListMessagesProgress interface {
 	OnPhase(name string) // todo(?): eventually we might want to convert this into an enum
 	OnMessage(message *TopicMessage)
 	OnMessageConsumed(size int64)
-	OnComplete(elapsedMs int64, isCancelled bool, nextPageToken string, hasMore bool)
+	OnComplete(elapsedMs int64, isCancelled bool, nextPageToken string)
 	OnError(msg string)
 }
 
@@ -224,7 +224,6 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	// Use pagination mode if MessageCount == -1
 	var consumeRequests map[int32]*PartitionConsumeRequest
 	var nextPageToken string
-	var hasMore bool
 	var token *PageToken // Declare token outside if block so it's accessible later
 
 	if listReq.MessageCount == -1 {
@@ -260,7 +259,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 			}
 		}
 
-		consumeRequests, nextPageToken, hasMore, err = s.calculateConsumeRequestsWithPageToken(ctx, token, partitionIDs, startOffsets, endOffsets)
+		consumeRequests, nextPageToken, _, err = s.calculateConsumeRequestsWithPageToken(ctx, token, partitionIDs, startOffsets, endOffsets)
 		if err != nil {
 			return fmt.Errorf("failed to calculate consume request with page token: %w", err)
 		}
@@ -274,7 +273,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 
 	if len(consumeRequests) == 0 {
 		// No partitions/messages to consume, we can quit early.
-		progress.OnComplete(time.Since(start).Milliseconds(), false, "", false)
+		progress.OnComplete(time.Since(start).Milliseconds(), false, "")
 		return nil
 	}
 	// Determine direction based on mode
@@ -305,7 +304,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	}
 
 	isCancelled := ctx.Err() != nil
-	progress.OnComplete(time.Since(start).Milliseconds(), isCancelled, nextPageToken, hasMore)
+	progress.OnComplete(time.Since(start).Milliseconds(), isCancelled, nextPageToken)
 	if isCancelled {
 		return errors.New("request was cancelled while waiting for messages")
 	}

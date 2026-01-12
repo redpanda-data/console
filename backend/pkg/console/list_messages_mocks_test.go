@@ -40,15 +40,15 @@ func (m *MockIListMessagesProgress) EXPECT() *MockIListMessagesProgressMockRecor
 }
 
 // OnComplete mocks base method.
-func (m *MockIListMessagesProgress) OnComplete(elapsedMs int64, isCancelled bool, nextPageToken string, hasMore bool) {
+func (m *MockIListMessagesProgress) OnComplete(elapsedMs int64, isCancelled bool, nextPageToken string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "OnComplete", elapsedMs, isCancelled, nextPageToken, hasMore)
+	m.ctrl.Call(m, "OnComplete", elapsedMs, isCancelled, nextPageToken)
 }
 
 // OnComplete indicates an expected call of OnComplete.
-func (mr *MockIListMessagesProgressMockRecorder) OnComplete(elapsedMs, isCancelled, nextPageToken, hasMore any) *gomock.Call {
+func (mr *MockIListMessagesProgressMockRecorder) OnComplete(elapsedMs, isCancelled, nextPageToken any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnComplete", reflect.TypeOf((*MockIListMessagesProgress)(nil).OnComplete), elapsedMs, isCancelled, nextPageToken, hasMore)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnComplete", reflect.TypeOf((*MockIListMessagesProgress)(nil).OnComplete), elapsedMs, isCancelled, nextPageToken)
 }
 
 // OnError mocks base method.
