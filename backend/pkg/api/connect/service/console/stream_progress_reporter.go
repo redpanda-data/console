@@ -216,7 +216,7 @@ func (p *streamProgressReporter) OnMessage(message *console.TopicMessage) {
 	}
 }
 
-func (p *streamProgressReporter) OnComplete(elapsedMs int64, isCancelled bool) {
+func (p *streamProgressReporter) OnComplete(elapsedMs int64, isCancelled bool, nextPageToken string, hasMore bool) {
 	p.writeMutex.Lock()
 	defer p.writeMutex.Unlock()
 
@@ -225,6 +225,8 @@ func (p *streamProgressReporter) OnComplete(elapsedMs int64, isCancelled bool) {
 		IsCancelled:      isCancelled,
 		MessagesConsumed: p.messagesConsumed.Load(),
 		BytesConsumed:    p.bytesConsumed.Load(),
+		NextPageToken:    nextPageToken,
+		HasMore:          hasMore,
 	}
 
 	if err := p.stream.Send(
