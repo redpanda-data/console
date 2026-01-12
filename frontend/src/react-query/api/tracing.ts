@@ -17,14 +17,17 @@ import {
   ListTracesRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import { getTrace, listTraces } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing-TracingService_connectquery';
-import type { MessageInit } from 'react-query/react-query.utils';
+import { fastFailRetry, type MessageInit } from 'react-query/react-query.utils';
 
 export const useListTracesQuery = (
   request: MessageInit<ListTracesRequest>,
   opts?: { enabled?: boolean; refetchInterval?: number | false }
 ) => {
   const listTracesRequest = create(ListTracesRequestSchema, request);
-  return useQuery(listTraces, listTracesRequest, opts);
+  return useQuery(listTraces, listTracesRequest, {
+    ...opts,
+    retry: fastFailRetry,
+  });
 };
 
 export const useGetTraceQuery = (traceId: string | null | undefined, opts?: { enabled?: boolean }) => {
@@ -35,5 +38,6 @@ export const useGetTraceQuery = (traceId: string | null | undefined, opts?: { en
   return useQuery(getTrace, getTraceRequest, {
     ...opts,
     enabled: !!traceId && (opts?.enabled ?? true),
+    retry: fastFailRetry,
   });
 };
