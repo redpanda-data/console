@@ -5,6 +5,7 @@ package redpanda.api.dataplane.v1alpha3;
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
@@ -87,11 +88,57 @@ message ListTracesRequest {
 
 // ListTracesResponse is the response message for listing traces.
 message ListTracesResponse {
-  // List of trace summaries matching the query.
+  // List of trace summaries matching the query (sorted by start_time, newest first).
   repeated TraceSummary traces = 1;
 
   // Token for fetching next page. Empty if no more results.
   string next_page_token = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Opaque token to retrieve the next page of results. Empty if this is the last page."}];
+
+  // Total number of traces matching the query (before pagination).
+  // This allows the UI to show "Showing 100 of 17,572 traces".
+  int32 total_count = 3 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Total number of traces matching the time range filter, regardless of pagination. Use this to display 'Showing X of Y traces'."}
+  ];
+
+  // Time range of the returned traces (for UI highlighting).
+  // This shows the actual time span covered by the traces in this page.
+  google.protobuf.Timestamp returned_start_time = 4 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Start time of the oldest trace in this page. Use with returned_end_time to highlight the current view window in a timeline."}
+  ];
+  google.protobuf.Timestamp returned_end_time = 5 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "End time of the newest trace in this page. Use with returned_start_time to highlight the current view window in a timeline."}
+  ];
+
+  // Histogram of trace counts over the query time range.
+  // Use this to render a timeline visualization showing trace distribution.
+  TraceHistogram histogram = 6 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Histogram showing trace distribution over the query time range. Each bucket represents a time interval with its trace count."}
+  ];
+}
+
+// TraceHistogram contains bucketed trace counts for timeline visualization.
+message TraceHistogram {
+  // Time-ordered buckets covering the query range.
+  repeated TraceHistogramBucket buckets = 1;
+
+  // Duration of each bucket.
+  google.protobuf.Duration bucket_duration = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Duration of each histogram bucket."}];
+}
+
+// TraceHistogramBucket represents a single time bucket in the histogram.
+message TraceHistogramBucket {
+  // Start time of this bucket (inclusive).
+  google.protobuf.Timestamp start_time = 1;
+
+  // Number of traces that started within this bucket.
+  int32 count = 2;
+
+  // Number of traces with errors in this bucket.
+  int32 error_count = 3;
 }
 
 // TraceSummary contains high-level metadata about a trace.
@@ -117,10 +164,10 @@ message TraceSummary {
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Start time of the trace (earliest span start time)."}
   ];
 
-  // Trace duration in milliseconds (from earliest start to latest end).
-  int64 duration_ms = 5 [
+  // Trace duration (from earliest start to latest end).
+  google.protobuf.Duration duration = 5 [
     (google.api.field_behavior) = OUTPUT_ONLY,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Total duration of the trace in milliseconds, calculated as (latest span end time) - (earliest span start time)."}
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Total duration of the trace, calculated as (latest span end time) - (earliest span start time)."}
   ];
 
   // Total number of spans in this trace.
