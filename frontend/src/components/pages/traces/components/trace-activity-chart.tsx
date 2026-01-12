@@ -40,6 +40,48 @@ type VisibleWindow = {
   endMs: number;
 } | null;
 
+/**
+ * Generates "nice" tick values for a chart Y-axis using the Nice Numbers algorithm.
+ * Returns round numbers like 0, 20, 40, 60 instead of awkward values like 0, 33, 66.
+ */
+const calculateNiceTicks = (maxValue: number, targetTickCount = 3): number[] => {
+  if (maxValue <= 0) {
+    return [0, 10];
+  }
+
+  const rawStep = maxValue / targetTickCount;
+  const magnitude = 10 ** Math.floor(Math.log10(rawStep));
+  const normalizedStep = rawStep / magnitude;
+
+  let niceFactor: number;
+  if (normalizedStep <= 1.0) {
+    niceFactor = 1;
+  } else if (normalizedStep <= 2.0) {
+    niceFactor = 2;
+  } else if (normalizedStep <= 5.0) {
+    niceFactor = 5;
+  } else {
+    niceFactor = 10;
+  }
+
+  const niceStep = niceFactor * magnitude;
+  const ticks: number[] = [];
+  let currentTick = 0;
+
+  while (currentTick <= maxValue) {
+    ticks.push(currentTick);
+    currentTick += niceStep;
+  }
+
+  // Ensure we have a tick above maxValue
+  const lastTick = ticks.at(-1) ?? 0;
+  if (lastTick < maxValue) {
+    ticks.push(lastTick + niceStep);
+  }
+
+  return ticks;
+};
+
 type BucketBarProps = {
   bucket: TraceHistogramBucket;
   bucketDurationMs: number;
@@ -235,6 +277,11 @@ export const TraceActivityChart: FC<Props> = ({
   // Calculate max count for scaling bar heights
   const maxCount = useMemo(() => Math.max(...buckets.map((b) => b.count), 1), [buckets]);
 
+  // Calculate nice Y-axis ticks for clean round numbers
+  const yAxisTicks = useMemo(() => calculateNiceTicks(maxCount, 3), [maxCount]);
+  // Use the highest tick value as the scale max for bar heights
+  const scaleMax = yAxisTicks.at(-1) ?? 1;
+
   // Format time labels for display - returns objects with key and label for stable rendering
   // Now shows 5 labels instead of 8 for cleaner appearance
   const timeLabels = useMemo(() => {
@@ -341,29 +388,54 @@ export const TraceActivityChart: FC<Props> = ({
       )}
 
       {/* Histogram Bars */}
-      <div className="relative p-2 pb-1">
-        <div className="relative flex h-16 items-end gap-px">
-          {buckets.map((bucket, index) => {
-            const bucketStartMs = bucket.startTime ? timestampDate(bucket.startTime).getTime() : 0;
-            return (
-              <BucketBar
-                bucket={bucket}
-                bucketDurationMs={bucketDurationMs}
-                formatBucketTime={formatBucketTime}
-                isHovered={hoveredBucket === index}
-                isInWindow={isBucketInVisibleWindow(bucketStartMs)}
-                key={bucketStartMs}
-                maxCount={maxCount}
-                onBucketClick={onBucketClick}
-                onHover={(isHovered) => setHoveredBucket(isHovered ? index : null)}
-              />
-            );
-          })}
+      <div className="relative px-2 pt-4 pb-1">
+        <div className="relative flex">
+          {/* Y-axis labels */}
+          <div className="relative mr-2 flex w-8 shrink-0 flex-col justify-between text-right text-[9px] text-muted-foreground">
+            {[...yAxisTicks].reverse().map((tick) => (
+              <span key={tick}>{tick}</span>
+            ))}
+          </div>
+
+          {/* Bars container */}
+          <div className="relative flex-1">
+            {/* Subtle horizontal grid lines */}
+            <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
+              {yAxisTicks.map((tick, i) => (
+                <div
+                  className={cn(
+                    'h-px w-full',
+                    i === 0 || i === yAxisTicks.length - 1 ? 'bg-border/40' : 'bg-border/30'
+                  )}
+                  key={tick}
+                />
+              ))}
+            </div>
+
+            <div className="relative flex h-16 items-end gap-px">
+              {buckets.map((bucket, index) => {
+                const bucketStartMs = bucket.startTime ? timestampDate(bucket.startTime).getTime() : 0;
+                return (
+                  <BucketBar
+                    bucket={bucket}
+                    bucketDurationMs={bucketDurationMs}
+                    formatBucketTime={formatBucketTime}
+                    isHovered={hoveredBucket === index}
+                    isInWindow={isBucketInVisibleWindow(bucketStartMs)}
+                    key={bucketStartMs}
+                    maxCount={scaleMax}
+                    onBucketClick={onBucketClick}
+                    onHover={(isHovered) => setHoveredBucket(isHovered ? index : null)}
+                  />
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Visible window range indicator - shows which portion of the timeline is loaded */}
         {overlayStyle !== null && (
-          <div className="relative mt-1.5 h-1 bg-muted/50">
+          <div className="relative mt-1.5 ml-10 h-1 bg-muted/50">
             {/* Visible range highlight */}
             <div className="absolute h-full bg-foreground/20" style={overlayStyle} />
             {/* Left edge marker */}
@@ -379,8 +451,8 @@ export const TraceActivityChart: FC<Props> = ({
           </div>
         )}
 
-        {/* Time Labels */}
-        <div className="mt-1.5 flex justify-between px-0.5 text-[9px] text-muted-foreground">
+        {/* Time Labels - offset to align with bars (w-8 + mr-2 = 40px = ml-10) */}
+        <div className="mt-1.5 ml-10 flex justify-between px-0.5 text-[9px] text-muted-foreground">
           {timeLabels.map((item) => (
             <span key={item.key}>{item.label}</span>
           ))}
