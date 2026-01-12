@@ -199,9 +199,14 @@ func TestCreateInitialPageToken(t *testing.T) {
 	assert.Len(t, token.Partitions, 3)
 
 	// Check that NextOffset is set to HWM - 1 for descending
-	assert.Equal(t, int64(999), token.Partitions[0].NextOffset)
-	assert.Equal(t, int64(1999), token.Partitions[1].NextOffset)
-	assert.Equal(t, int64(1499), token.Partitions[2].NextOffset)
+	// Build map by partition ID since order is not guaranteed
+	partByID := make(map[int32]PartitionCursor)
+	for _, p := range token.Partitions {
+		partByID[p.ID] = p
+	}
+	assert.Equal(t, int64(999), partByID[0].NextOffset)
+	assert.Equal(t, int64(1999), partByID[1].NextOffset)
+	assert.Equal(t, int64(1499), partByID[2].NextOffset)
 }
 
 func TestCreateInitialPageToken_EmptyTopic(t *testing.T) {
