@@ -226,7 +226,6 @@ func (p *streamProgressReporter) OnComplete(elapsedMs int64, isCancelled bool, n
 		MessagesConsumed: p.messagesConsumed.Load(),
 		BytesConsumed:    p.bytesConsumed.Load(),
 		NextPageToken:    nextPageToken,
-		HasMore:          nextPageToken != "",
 	}
 
 	if err := p.stream.Send(
