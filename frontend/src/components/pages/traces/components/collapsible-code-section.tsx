@@ -10,6 +10,7 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
@@ -55,7 +56,9 @@ export const CollapsibleCodeSection: FC<Props> = ({ title, content, defaultExpan
           ) : (
             <ChevronRight aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
           )}
-          <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">{title}</h5>
+          <Text as="div" className="uppercase tracking-wide" variant="label">
+            {title}
+          </Text>
         </div>
         <span className="font-mono text-[9px] text-muted-foreground">{formatBytes(payloadSize)}</span>
       </Button>

@@ -38,6 +38,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useListTracesQuery } from 'react-query/api/tracing';
 import { appGlobal } from 'state/app-global';
 import { uiState } from 'state/ui-state';
+import { pluralize } from 'utils/string';
 
 import { TraceActivityChart } from './components/trace-activity-chart';
 import { type EnhancedTraceSummary, statusOptions, TracesTable } from './components/traces-table';
@@ -85,7 +86,7 @@ const TracesStatsRow: FC<TracesStatsRowProps> = ({ isLoading, isInitialLoad, sta
   return (
     <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
       <span>
-        Showing {stats.total} {stats.total === 1 ? 'trace' : 'traces'}
+        Showing {stats.total} {pluralize(stats.total, 'trace')}
         {hasAnomalies ? (
           <span className="text-muted-foreground/70">
             {' '}
