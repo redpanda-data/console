@@ -144,7 +144,7 @@ type TopicConsumeRequest struct {
 // 5. Start consume request via the Kafka Service
 // 6. Send a completion message to the frontend, that will show stats about the completed (or aborted) message search
 //
-//nolint:cyclop // complex logic
+//nolint:cyclop,gocognit // complex logic with multiple code paths for pagination vs legacy mode
 func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, progress IListMessagesProgress) error {
 	cl, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
 	if err != nil {
@@ -529,6 +529,8 @@ func (s *Service) calculateConsumeRequests(
 
 // calculateConsumeRequestsWithPageToken calculates consume requests for pagination mode (descending order).
 // It returns the consume requests map, the next page token, and whether more pages are available.
+//
+//nolint:gocognit,cyclop // complex logic for round-robin distribution across partitions with watermark tracking
 func (s *Service) calculateConsumeRequestsWithPageToken(
 	ctx context.Context,
 	token *PageToken,
@@ -756,14 +758,14 @@ func (s *Service) calculateConsumeRequestsWithPageToken(
 
 	// Log detailed partition information for debugging
 	for partID, req := range requests {
-		s.logger.InfoContext(ctx, "partition consume request",
+		s.logger.DebugContext(ctx, "partition consume request",
 			slog.Int("partition_id", int(partID)),
 			slog.Int64("start_offset", req.StartOffset),
 			slog.Int64("end_offset", req.EndOffset),
 			slog.Int64("max_message_count", req.MaxMessageCount))
 	}
 
-	s.logger.InfoContext(ctx, "pagination distribution complete",
+	s.logger.DebugContext(ctx, "pagination distribution complete",
 		slog.Int("page_size", token.PageSize),
 		slog.Int64("total_assigned", totalAssigned),
 		slog.Int("num_partitions", len(requests)))

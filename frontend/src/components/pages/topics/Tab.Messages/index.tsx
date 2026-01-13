@@ -479,6 +479,13 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const prevPageIndexRef = useRef<number>(pageIndex);
   const [forceRefresh, setForceRefresh] = useState(0);
 
+  // Refs for tracking loadMore state to prevent stale closures and memory leaks
+  const currentMessageSearchRef = useRef<ReturnType<typeof createMessageSearch> | null>(null);
+  const loadMoreAbortRef = useRef<AbortController | null>(null);
+  const [loadMoreFailures, setLoadMoreFailures] = useState(0);
+  const isMountedRef = useRef(true);
+  const MAX_LOAD_MORE_RETRIES = 3;
+
   // Filter messages based on quick search
   const filteredMessages = quickSearch
     ? messages.filter((m) => {
@@ -497,16 +504,25 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     [topicSettings?.previewTags]
   );
 
+  // Keep currentMessageSearchRef in sync with messageSearch state
+  useEffect(() => {
+    currentMessageSearchRef.current = messageSearch;
+  }, [messageSearch]);
+
   // Cleanup effect (replaces componentWillUnmount)
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
+      if (loadMoreAbortRef.current) {
+        loadMoreAbortRef.current.abort();
+      }
       appGlobal.searchMessagesFunc = undefined;
-    },
-    []
-  );
+    };
+  }, []);
 
   // Clear sorting when entering unlimited pagination mode
   useEffect(() => {
@@ -720,7 +736,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       !messageSearch ||
       !messageSearch.nextPageToken ||
       isLoadingMore ||
-      searchPhase
+      searchPhase ||
+      loadMoreFailures >= MAX_LOAD_MORE_RETRIES
     ) {
       return;
     }
@@ -729,23 +746,44 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     const isOnLastPage = pageIndex >= totalLoadedPages - 1;
 
     if (isOnLastPage && messageSearch.nextPageToken) {
+      // Create abort controller for this loadMore operation
+      const abortController = new AbortController();
+      loadMoreAbortRef.current = abortController;
+
+      // Capture the current messageSearch reference to detect stale responses
+      const capturedMessageSearch = messageSearch;
+
       setIsLoadingMore(true);
-      messageSearch
+      capturedMessageSearch
         .loadMore()
         .then(() => {
-          setMessages([...messageSearch.messages]);
+          // Only update state if component is still mounted and this is still the current search
+          if (isMountedRef.current && currentMessageSearchRef.current === capturedMessageSearch) {
+            setMessages([...capturedMessageSearch.messages]);
+            // Reset failure count on success
+            setLoadMoreFailures(0);
+          }
         })
         .catch((err) => {
-          toast({
-            title: 'Failed to load more messages',
-            description: (err as Error).message,
-            status: 'error',
-            duration: 5000,
-            isClosable: true,
-          });
+          // Only show error if component is still mounted and not aborted
+          if (isMountedRef.current && !abortController.signal.aborted) {
+            setLoadMoreFailures((prev) => prev + 1);
+            toast({
+              title: 'Failed to load more messages',
+              description: (err as Error).message,
+              status: 'error',
+              duration: 5000,
+              isClosable: true,
+            });
+          }
         })
         .finally(() => {
-          setIsLoadingMore(false);
+          if (isMountedRef.current) {
+            setIsLoadingMore(false);
+          }
+          if (loadMoreAbortRef.current === abortController) {
+            loadMoreAbortRef.current = null;
+          }
         });
     }
   }, [
@@ -758,22 +796,28 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     messages.length,
     pageSize,
     toast,
+    loadMoreFailures,
   ]);
 
   // Reset pagination when navigating back to page 1 in unlimited mode
   // This prevents keeping many pages in memory and triggering excessive requests
   useEffect(() => {
     // Check if we're in unlimited mode and user navigated back to page 1 from a higher page
-    if (maxResults === -1 && pageIndex === 0 && prevPageIndexRef.current > 1 && messageSearch) {
+    // Use ref to check messageSearch existence to avoid circular dependency
+    if (maxResults === -1 && pageIndex === 0 && prevPageIndexRef.current > 1 && currentMessageSearchRef.current) {
       // Clear the message search and state
       setMessages([]);
       setMessageSearch(null);
+      // Reset failure count when resetting pagination
+      setLoadMoreFailures(0);
       // Clear the search run ref and trigger a forced refresh
       currentSearchRunRef.current = null;
       setForceRefresh((prev) => prev + 1);
     }
     prevPageIndexRef.current = pageIndex;
-  }, [pageIndex, maxResults, messageSearch]);
+    // Note: messageSearch intentionally excluded to avoid circular dependency
+    // We use currentMessageSearchRef.current instead which is always in sync
+  }, [pageIndex, maxResults]);
 
   // Message Table rendering variables and functions
   const paginationParams = {
