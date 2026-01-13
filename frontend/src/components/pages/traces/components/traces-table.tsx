@@ -55,8 +55,8 @@ import {
   calculateWidth,
   type SpanNode,
 } from '../utils/span-tree-builder';
-import { formatDuration } from '../utils/trace-formatters';
-import { isIncompleteTrace } from '../utils/trace-statistics';
+import { formatDuration, formatTime } from '../utils/trace-formatters';
+import { groupTracesByDate, isIncompleteTrace } from '../utils/trace-statistics';
 
 // Trace status type for type safety
 export type TraceStatus = 'completed' | 'in-progress' | 'with-errors';
@@ -155,10 +155,6 @@ type Props = {
   disableFaceting?: boolean;
 };
 
-// Format timestamp
-const formatTime = (timestamp: Date): string =>
-  timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-
 // Helper: Calculate next parent depths for child spans
 const getNextParentDepths = (parentDepths: number[], depth: number, isLastChild: boolean): number[] => {
   const parentColumnIndex = depth - 1;
@@ -232,10 +228,12 @@ const SpanRow: FC<SpanRowProps> = ({
   return (
     <>
       <button
+        aria-label={`View span ${span.name}${span.hasError ? ', has error' : ''}`}
         className={cn(
           'grid h-8 w-full cursor-pointer items-center border-border/30 border-b text-left transition-colors hover:bg-muted/50',
           '[grid-template-columns:72px_minmax(0,1fr)_260px]'
         )}
+        data-testid={`span-row-${span.spanId}`}
         onClick={() => onClick(traceId, span.spanId)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -317,6 +315,8 @@ const SpanRow: FC<SpanRowProps> = ({
                   <div className="absolute top-1/2 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
                 )}
                 <Button
+                  aria-expanded={hasChildren ? isExpanded : undefined}
+                  aria-label={hasChildren ? `${isExpanded ? 'Collapse' : 'Expand'} child spans` : undefined}
                   className={cn('absolute z-10 h-4 w-4 shrink-0 -translate-x-1/2', !hasChildren && 'invisible')}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -324,9 +324,14 @@ const SpanRow: FC<SpanRowProps> = ({
                   }}
                   size="icon"
                   style={{ left: 'var(--tree-x)' }}
+                  tabIndex={hasChildren ? 0 : -1}
                   variant="ghost"
                 >
-                  {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                  {isExpanded ? (
+                    <ChevronDown aria-hidden="true" className="h-3 w-3" />
+                  ) : (
+                    <ChevronRight aria-hidden="true" className="h-3 w-3" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -595,11 +600,14 @@ const RootTraceRow: FC<{
 
   return (
     <button
+      aria-expanded={isExpanded}
+      aria-label={`${isExpanded ? 'Collapse' : 'Expand'} trace ${traceSummary.rootSpanName || 'unnamed'}, ${traceSummary.spanCount} spans`}
       className={cn(
         'grid h-9 w-full cursor-pointer items-center border-border/40 border-b bg-muted/10 text-left transition-colors hover:bg-muted/30',
         '[grid-template-columns:72px_minmax(0,1fr)_260px]',
         isIncomplete && 'bg-amber-500/5 hover:bg-amber-500/10'
       )}
+      data-testid={`trace-row-${traceSummary.traceId}`}
       onClick={onToggle}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -627,6 +635,7 @@ const RootTraceRow: FC<{
             <div className="absolute top-1/2 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
           )}
           <Button
+            aria-hidden="true"
             className="absolute z-10 h-4 w-4 shrink-0 -translate-x-1/2"
             onClick={(e) => {
               e.stopPropagation();
@@ -634,9 +643,14 @@ const RootTraceRow: FC<{
             }}
             size="icon"
             style={{ left: 'var(--tree-x)' }}
+            tabIndex={-1}
             variant="ghost"
           >
-            {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            {isExpanded ? (
+              <ChevronDown aria-hidden="true" className="h-3 w-3" />
+            ) : (
+              <ChevronRight aria-hidden="true" className="h-3 w-3" />
+            )}
           </Button>
         </div>
 
@@ -798,33 +812,6 @@ const TraceGroup: FC<{
   );
 };
 
-// Group traces by date
-const groupTracesByDate = (traces: TraceSummary[]) => {
-  const grouped = new Map<string, { label: string; traces: TraceSummary[] }>();
-
-  for (const trace of traces) {
-    if (!trace.startTime) {
-      continue;
-    }
-
-    const date = new Date(Number(trace.startTime.seconds) * 1000);
-    const dateKey = date.toISOString().split('T')[0];
-    const dateLabel = date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-
-    if (!grouped.has(dateKey)) {
-      grouped.set(dateKey, { label: dateLabel, traces: [] });
-    }
-    grouped.get(dateKey)?.traces.push(trace);
-  }
-
-  return Array.from(grouped.entries());
-};
-
 export const TracesTable: FC<Props> = ({
   traces,
   isLoading,
@@ -976,7 +963,13 @@ export const TracesTable: FC<Props> = ({
             {/* Column Headers */}
             <div className="sticky top-0 grid items-center border-b bg-muted/50 font-medium text-[10px] text-muted-foreground [grid-template-columns:72px_minmax(0,1fr)_260px]">
               <button
+                aria-label={
+                  sortOrder === 'newest-first'
+                    ? 'Sort by time, currently newest first'
+                    : 'Sort by time, currently oldest first'
+                }
                 className="flex shrink-0 cursor-pointer items-center gap-1 px-2 py-1.5 transition-colors hover:text-foreground"
+                data-testid="traces-sort-toggle"
                 onClick={toggleSortOrder}
                 title={
                   sortOrder === 'newest-first'
@@ -986,7 +979,11 @@ export const TracesTable: FC<Props> = ({
                 type="button"
               >
                 <span>Time</span>
-                {sortOrder === 'newest-first' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />}
+                {sortOrder === 'newest-first' ? (
+                  <ArrowDown aria-hidden="true" className="h-3 w-3" />
+                ) : (
+                  <ArrowUp aria-hidden="true" className="h-3 w-3" />
+                )}
               </button>
               <div className="min-w-0 px-1 py-1.5">Span</div>
               <div className="shrink-0 py-1.5 pr-6 pl-2">Duration</div>

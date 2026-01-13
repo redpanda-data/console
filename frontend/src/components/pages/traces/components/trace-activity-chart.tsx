@@ -159,7 +159,8 @@ const findHighlightedBucketRange = (
   let lastIndex = -1;
 
   for (let i = 0; i < buckets.length; i++) {
-    const bucketStartMs = buckets[i].startTime ? timestampDate(buckets[i].startTime).getTime() : 0;
+    const startTime = buckets[i].startTime;
+    const bucketStartMs = startTime ? timestampDate(startTime).getTime() : 0;
     const bucketEndMs = bucketStartMs + bucketDurationMs;
     const overlaps = bucketEndMs > windowStartMs && bucketStartMs < windowEndMs;
 

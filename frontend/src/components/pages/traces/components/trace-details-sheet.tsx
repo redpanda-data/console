@@ -141,7 +141,14 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
         <div className="flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button className="h-6 w-6" onClick={handleCopyLink} size="icon" variant="ghost">
+              <Button
+                aria-label={isLinkCopied ? 'Link copied' : 'Copy link to span'}
+                className="h-6 w-6"
+                data-testid="trace-details-copy-link"
+                onClick={handleCopyLink}
+                size="icon"
+                variant="ghost"
+              >
                 {isLinkCopied ? <Check className="h-3 w-3" /> : <Link2 className="h-3 w-3" />}
               </Button>
             </TooltipTrigger>
@@ -149,13 +156,27 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button className="h-6 w-6" onClick={() => setIsDialogOpen(true)} size="icon" variant="ghost">
+              <Button
+                aria-label="Expand to full view"
+                className="h-6 w-6"
+                data-testid="trace-details-expand"
+                onClick={() => setIsDialogOpen(true)}
+                size="icon"
+                variant="ghost"
+              >
                 <Maximize2 className="h-3 w-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Expand to full view</TooltipContent>
           </Tooltip>
-          <Button className="h-6 w-6" onClick={onClose} size="icon" variant="ghost">
+          <Button
+            aria-label="Close details panel"
+            className="h-6 w-6"
+            data-testid="trace-details-close"
+            onClick={onClose}
+            size="icon"
+            variant="ghost"
+          >
             <X className="h-3 w-3" />
           </Button>
         </div>

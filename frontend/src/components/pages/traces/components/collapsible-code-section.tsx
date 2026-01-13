@@ -15,6 +15,7 @@ import type { FC } from 'react';
 import { useMemo, useState } from 'react';
 
 import { ContentPanel } from './content-panel';
+import { formatBytes, getPreview } from '../utils/trace-formatters';
 
 type Props = {
   title: string;
@@ -25,24 +26,6 @@ type Props = {
 const SMALL_PAYLOAD_THRESHOLD = 2 * 1024; // 2KB
 const PREVIEW_LINES = 3;
 
-const formatBytes = (bytes: number): string => {
-  if (bytes < 1024) {
-    return `${bytes}B`;
-  }
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)}KB`;
-  }
-  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-};
-
-const getPreview = (content: string, lines: number): string => {
-  const contentLines = content.split('\n');
-  if (contentLines.length <= lines) {
-    return content;
-  }
-  return contentLines.slice(0, lines).join('\n');
-};
-
 export const CollapsibleCodeSection: FC<Props> = ({ title, content, defaultExpanded }) => {
   const payloadSize = useMemo(() => new Blob([content]).size, [content]);
   const shouldDefaultExpand = defaultExpanded ?? payloadSize < SMALL_PAYLOAD_THRESHOLD;
@@ -52,19 +35,25 @@ export const CollapsibleCodeSection: FC<Props> = ({ title, content, defaultExpan
 
   const hasPreview = content.split('\n').length > PREVIEW_LINES || payloadSize > SMALL_PAYLOAD_THRESHOLD;
 
+  // Generate a stable ID for ARIA relationships
+  const sectionId = useMemo(() => `code-section-${title.toLowerCase().replace(/\s+/g, '-')}`, [title]);
+
   return (
     <div className="space-y-1.5">
       <Button
+        aria-controls={sectionId}
+        aria-expanded={isExpanded}
         className="flex h-auto w-full items-center justify-between px-0 py-0 text-left"
+        data-testid={`collapsible-section-toggle-${title.toLowerCase().replace(/\s+/g, '-')}`}
         onClick={() => setIsExpanded(!isExpanded)}
         type="button"
         variant="ghost"
       >
         <div className="flex items-center gap-1.5">
           {isExpanded ? (
-            <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            <ChevronDown aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
           ) : (
-            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+            <ChevronRight aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
           )}
           <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">{title}</h5>
         </div>
@@ -73,6 +62,7 @@ export const CollapsibleCodeSection: FC<Props> = ({ title, content, defaultExpan
 
       {!isExpanded && hasPreview ? (
         <button
+          aria-label={`Expand ${title} section`}
           className="w-full text-left transition-opacity hover:opacity-80"
           onClick={() => setIsExpanded(true)}
           type="button"
@@ -90,7 +80,9 @@ export const CollapsibleCodeSection: FC<Props> = ({ title, content, defaultExpan
 
       {isExpanded ? (
         <ContentPanel padding="md">
-          <pre className="whitespace-pre-wrap break-words font-mono text-[10px] leading-relaxed">{content}</pre>
+          <pre className="whitespace-pre-wrap break-words font-mono text-[10px] leading-relaxed" id={sectionId}>
+            {content}
+          </pre>
         </ContentPanel>
       ) : null}
     </div>
