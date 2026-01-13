@@ -180,6 +180,114 @@ const getSpanRowLineFlags = (depth: number, isLastChild: boolean, parentDepths: 
   };
 };
 
+// Tree gutter column component - renders a single column in the tree structure
+type GutterColumnProps = {
+  colIndex: number;
+  depth: number;
+  isLastChild: boolean;
+  parentDepths: number[];
+};
+
+const GutterColumn: FC<GutterColumnProps> = ({ colIndex, depth, isLastChild, parentDepths }) => {
+  const isCurrentColumn = colIndex === depth - 1;
+  const drawAncestorContinuation = parentDepths.includes(colIndex);
+
+  return (
+    <div
+      className="relative flex w-6 items-center justify-center"
+      style={{ '--tree-x': '11px' } as React.CSSProperties}
+    >
+      {!!drawAncestorContinuation && (
+        <div className="absolute top-0 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
+      )}
+      {!!isCurrentColumn && (
+        <>
+          <div
+            className="absolute top-0 w-px bg-border"
+            style={{ left: 'var(--tree-x)', height: isLastChild ? '50%' : 'calc(100% + 1px)' }}
+          />
+          <div className="absolute top-1/2 h-px w-[13px] bg-border" style={{ left: 'var(--tree-x)' }} />
+        </>
+      )}
+    </div>
+  );
+};
+
+// Tree lines component - renders the full tree structure for a span row
+type TreeLinesProps = {
+  depth: number;
+  isLastChild: boolean;
+  parentDepths: number[];
+  isExpanded: boolean;
+  hasChildren: boolean;
+  onToggle: () => void;
+};
+
+const TreeLines: FC<TreeLinesProps> = ({ depth, isLastChild, parentDepths, isExpanded, hasChildren, onToggle }) => {
+  const lineFlags = getSpanRowLineFlags(depth, isLastChild, parentDepths);
+
+  return (
+    <div className="flex h-8 shrink-0 items-stretch">
+      {/* First column (gutter column 0) */}
+      <div
+        className="relative flex w-5 items-center justify-center"
+        style={{ '--tree-x': '9px' } as React.CSSProperties}
+      >
+        {!!lineFlags.drawCol0Vertical && (
+          <div
+            className="absolute top-0 w-px bg-border"
+            style={{ left: 'var(--tree-x)', height: lineFlags.col0VerticalHeight }}
+          />
+        )}
+        {depth === 1 && <div className="absolute top-1/2 h-px w-[11px] bg-border" style={{ left: 'var(--tree-x)' }} />}
+      </div>
+
+      {/* Additional gutter columns (1..depth-1) */}
+      {Array.from({ length: Math.max(0, depth - 1) }).map((_, i) => {
+        const colIndex = i + 1;
+        return (
+          <GutterColumn
+            colIndex={colIndex}
+            depth={depth}
+            isLastChild={isLastChild}
+            key={`gutter-col-${colIndex}`}
+            parentDepths={parentDepths}
+          />
+        );
+      })}
+
+      {/* Chevron button as final tree column */}
+      <div
+        className="relative flex h-8 w-5 shrink-0 items-center"
+        style={{ '--tree-x': '11px' } as React.CSSProperties}
+      >
+        {!!(isExpanded && hasChildren) && (
+          <div className="absolute top-1/2 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
+        )}
+        <Button
+          aria-expanded={hasChildren ? isExpanded : undefined}
+          aria-label={hasChildren ? `${isExpanded ? 'Collapse' : 'Expand'} child spans` : undefined}
+          className={cn('absolute z-10 h-4 w-4 shrink-0 -translate-x-1/2', !hasChildren && 'invisible')}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle();
+          }}
+          size="icon"
+          style={{ left: 'var(--tree-x)' }}
+          tabIndex={hasChildren ? 0 : -1}
+          variant="ghost"
+        >
+          {isExpanded ? (
+            <ChevronDown aria-hidden="true" className="h-3 w-3" />
+          ) : (
+            <ChevronRight aria-hidden="true" className="h-3 w-3" />
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 // Span Row Component with tree lines
 type SpanRowProps = {
   span: SpanNode;
@@ -223,9 +331,6 @@ const SpanRow: FC<SpanRowProps> = ({
   const Icon = getIconForServiceName(span.span);
   const serviceName = getServiceName(span.span);
 
-  // Calculate tree line connector flags
-  const lineFlags = getSpanRowLineFlags(depth, isLastChild, parentDepths);
-
   return (
     <>
       <button
@@ -254,88 +359,14 @@ const SpanRow: FC<SpanRowProps> = ({
         <div className="flex min-w-0 items-center gap-1 overflow-hidden px-1 py-1">
           {/* Tree structure lines */}
           {depth > 0 && (
-            <div className="flex h-8 shrink-0 items-stretch">
-              {/* First column (gutter column 0) - matches root row's w-5 container where the chevron lives */}
-              <div
-                className="relative flex w-5 items-center justify-center"
-                style={{ '--tree-x': '9px' } as React.CSSProperties}
-              >
-                {/* Continuation vertical (only when needed) */}
-                {!!lineFlags.drawCol0Vertical && (
-                  <div
-                    className="absolute top-0 w-px bg-border"
-                    style={{ left: 'var(--tree-x)', height: lineFlags.col0VerticalHeight }}
-                  />
-                )}
-
-                {/* Horizontal connector at depth 1 */}
-                {depth === 1 && (
-                  <div className="absolute top-1/2 h-px w-[11px] bg-border" style={{ left: 'var(--tree-x)' }} />
-                )}
-              </div>
-
-              {/* Additional gutter columns (1..depth-1) */}
-              {Array.from({ length: Math.max(0, depth - 1) }).map((_, i) => {
-                // i=0 -> gutter column 1, i=1 -> gutter column 2, ...
-                const colIndex = i + 1;
-                const isCurrentColumn = colIndex === depth - 1;
-                const drawAncestorContinuation = parentDepths.includes(colIndex);
-
-                return (
-                  <div
-                    className="relative flex w-6 items-center justify-center"
-                    key={colIndex}
-                    style={{ '--tree-x': '11px' } as React.CSSProperties}
-                  >
-                    {/* Full-height continuation for ancestor columns */}
-                    {!!drawAncestorContinuation && (
-                      <div className="absolute top-0 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
-                    )}
-
-                    {/* Current node column: vertical (full or half) + horizontal connector */}
-                    {!!isCurrentColumn && (
-                      <>
-                        <div
-                          className="absolute top-0 w-px bg-border"
-                          style={{ left: 'var(--tree-x)', height: isLastChild ? '50%' : 'calc(100% + 1px)' }}
-                        />
-                        <div className="absolute top-1/2 h-px w-[13px] bg-border" style={{ left: 'var(--tree-x)' }} />
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-
-              {/* Chevron button as final tree column with vertical line connector */}
-              <div
-                className="relative flex h-8 w-5 shrink-0 items-center"
-                style={{ '--tree-x': '11px' } as React.CSSProperties}
-              >
-                {/* Vertical line connecting to chevron when expanded and has children */}
-                {!!(isExpanded && hasChildren) && (
-                  <div className="absolute top-1/2 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
-                )}
-                <Button
-                  aria-expanded={hasChildren ? isExpanded : undefined}
-                  aria-label={hasChildren ? `${isExpanded ? 'Collapse' : 'Expand'} child spans` : undefined}
-                  className={cn('absolute z-10 h-4 w-4 shrink-0 -translate-x-1/2', !hasChildren && 'invisible')}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggle();
-                  }}
-                  size="icon"
-                  style={{ left: 'var(--tree-x)' }}
-                  tabIndex={hasChildren ? 0 : -1}
-                  variant="ghost"
-                >
-                  {isExpanded ? (
-                    <ChevronDown aria-hidden="true" className="h-3 w-3" />
-                  ) : (
-                    <ChevronRight aria-hidden="true" className="h-3 w-3" />
-                  )}
-                </Button>
-              </div>
-            </div>
+            <TreeLines
+              depth={depth}
+              hasChildren={hasChildren}
+              isExpanded={isExpanded}
+              isLastChild={isLastChild}
+              onToggle={onToggle}
+              parentDepths={parentDepths}
+            />
           )}
 
           {/* Service badge */}
