@@ -523,6 +523,66 @@ const SpanRowWrapper: FC<{
   );
 };
 
+// Helper: Root trace service badge
+const RootTraceServiceBadge: FC<{ isIncomplete: boolean; serviceName: string | undefined }> = ({
+  isIncomplete,
+  serviceName,
+}) => {
+  if (isIncomplete) {
+    return (
+      <Badge
+        className="flex h-4 shrink-0 items-center border-amber-500/30 bg-amber-500/10 px-1.5 py-0 font-normal text-[10px] text-amber-600"
+        variant="outline"
+      >
+        <AlertCircle className="mr-1 h-3 w-3 shrink-0" />
+        <span className="truncate">awaiting root</span>
+      </Badge>
+    );
+  }
+  return (
+    <Badge
+      className="flex h-4 max-w-[150px] shrink-0 items-center border-border bg-muted/50 px-1.5 py-0 font-normal text-[10px] text-muted-foreground"
+      variant="outline"
+    >
+      <Cpu className="mr-1 h-3 w-3 shrink-0" />
+      <span className="truncate" title={serviceName || 'service'}>
+        {serviceName || 'service'}
+      </span>
+    </Badge>
+  );
+};
+
+// Helper: Root trace duration cell
+const RootTraceDurationCell: FC<{
+  isIncomplete: boolean;
+  hasErrors: boolean;
+  durationMs: number;
+}> = ({ isIncomplete, hasErrors, durationMs: duration }) => {
+  if (isIncomplete) {
+    return (
+      <>
+        <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+          <div className="h-full w-full rounded-full bg-amber-500/30" />
+        </div>
+        <span className="w-14 shrink-0 text-left font-mono text-[10px] text-muted-foreground">—</span>
+      </>
+    );
+  }
+  return (
+    <>
+      <div className="relative h-2.5 flex-1 overflow-hidden rounded-sm bg-muted/30">
+        <div
+          className={cn('h-full rounded-sm', hasErrors ? 'bg-red-500/70' : 'bg-sky-500/70')}
+          style={{ width: '100%' }}
+        />
+      </div>
+      <span className="w-14 shrink-0 text-left font-mono text-[10px] text-muted-foreground">
+        {formatDuration(duration)}
+      </span>
+    </>
+  );
+};
+
 // Component: Root trace row
 const RootTraceRow: FC<{
   traceSummary: TraceSummary;
@@ -581,25 +641,7 @@ const RootTraceRow: FC<{
         </div>
 
         {/* Service badge or incomplete badge */}
-        {isIncomplete ? (
-          <Badge
-            className="flex h-4 shrink-0 items-center border-amber-500/30 bg-amber-500/10 px-1.5 py-0 font-normal text-[10px] text-amber-600"
-            variant="outline"
-          >
-            <AlertCircle className="mr-1 h-3 w-3 shrink-0" />
-            <span className="truncate">awaiting root</span>
-          </Badge>
-        ) : (
-          <Badge
-            className="flex h-4 max-w-[150px] shrink-0 items-center border-border bg-muted/50 px-1.5 py-0 font-normal text-[10px] text-muted-foreground"
-            variant="outline"
-          >
-            <Cpu className="mr-1 h-3 w-3 shrink-0" />
-            <span className="truncate" title={traceSummary.rootServiceName || 'service'}>
-              {traceSummary.rootServiceName || 'service'}
-            </span>
-          </Badge>
-        )}
+        <RootTraceServiceBadge isIncomplete={isIncomplete} serviceName={traceSummary.rootServiceName} />
 
         {/* Span count */}
         <Badge
@@ -631,26 +673,11 @@ const RootTraceRow: FC<{
 
       {/* Duration column */}
       <div className="flex shrink-0 items-center gap-2 py-1.5 pr-6 pl-2">
-        {isIncomplete ? (
-          <>
-            <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-              <div className="h-full w-full rounded-full bg-amber-500/30" />
-            </div>
-            <span className="w-14 shrink-0 text-left font-mono text-[10px] text-muted-foreground">—</span>
-          </>
-        ) : (
-          <>
-            <div className="relative h-2.5 flex-1 overflow-hidden rounded-sm bg-muted/30">
-              <div
-                className={cn('h-full rounded-sm', traceSummary.errorCount > 0 ? 'bg-red-500/70' : 'bg-sky-500/70')}
-                style={{ width: '100%' }}
-              />
-            </div>
-            <span className="w-14 shrink-0 text-left font-mono text-[10px] text-muted-foreground">
-              {formatDuration(traceSummary.duration ? durationMs(traceSummary.duration) : 0)}
-            </span>
-          </>
-        )}
+        <RootTraceDurationCell
+          durationMs={traceSummary.duration ? durationMs(traceSummary.duration) : 0}
+          hasErrors={traceSummary.errorCount > 0}
+          isIncomplete={isIncomplete}
+        />
       </div>
     </button>
   );

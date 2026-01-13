@@ -53,6 +53,201 @@ const TIME_RANGES = [
   { value: '24h', label: 'Last 24 hours', ms: 24 * 60 * 60 * 1000 },
 ];
 
+/** Calculate the oldest and newest timestamp from a list of traces */
+const calculateVisibleWindow = (traces: TraceSummary[]): { startMs: number; endMs: number } => {
+  if (traces.length === 0) {
+    return { startMs: 0, endMs: 0 };
+  }
+
+  let oldestMs = Number.POSITIVE_INFINITY;
+  let newestMs = Number.NEGATIVE_INFINITY;
+
+  for (const trace of traces) {
+    if (trace.startTime) {
+      const traceMs = timestampDate(trace.startTime).getTime();
+      oldestMs = Math.min(oldestMs, traceMs);
+      newestMs = Math.max(newestMs, traceMs);
+    }
+  }
+
+  return {
+    startMs: oldestMs === Number.POSITIVE_INFINITY ? 0 : oldestMs,
+    endMs: newestMs === Number.NEGATIVE_INFINITY ? 0 : newestMs,
+  };
+};
+
+/** Props for the stats row component */
+type TracesStatsRowProps = {
+  isLoading: boolean;
+  isInitialLoad: boolean;
+  stats: { completed: number; inProgress: number; withErrors: number; total: number };
+  onCollapseAll: () => void;
+};
+
+/** Stats row showing trace counts and collapse button */
+const TracesStatsRow: FC<TracesStatsRowProps> = ({ isLoading, isInitialLoad, stats, onCollapseAll }) => {
+  if (isLoading && isInitialLoad) {
+    return (
+      <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
+        <span className="flex items-center gap-2">
+          <Spinner size="xs" />
+          Loading traces...
+        </span>
+        <div className="flex items-center gap-3">
+          <Button className="h-6 px-2 text-[10px]" onClick={onCollapseAll} size="sm" variant="ghost">
+            Collapse all
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const hasAnomalies = stats.withErrors > 0 || stats.inProgress > 0;
+
+  return (
+    <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
+      <span>
+        Showing {stats.total} {stats.total === 1 ? 'trace' : 'traces'}
+        {hasAnomalies ? (
+          <span className="text-muted-foreground/70">
+            {' '}
+            ({stats.completed} completed
+            {stats.withErrors > 0 ? `, ${stats.withErrors} with errors` : null}
+            {stats.inProgress > 0 ? `, ${stats.inProgress} in-progress` : null})
+          </span>
+        ) : null}
+      </span>
+      <div className="flex items-center gap-3">
+        <Button className="h-6 px-2 text-[10px]" onClick={onCollapseAll} size="sm" variant="ghost">
+          Collapse all
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+/** Props for load more button */
+type LoadMoreButtonProps = {
+  hasMore: boolean;
+  isLoading: boolean;
+  isLoadingMore: boolean;
+  onLoadMore: () => void;
+};
+
+/** Load more button for pagination */
+const LoadMoreButton: FC<LoadMoreButtonProps> = ({ hasMore, isLoading, isLoadingMore, onLoadMore }) => {
+  if (!((hasMore && !isLoading) || isLoadingMore)) {
+    return null;
+  }
+
+  return (
+    <div className="flex justify-center py-2">
+      <Button className="gap-2" disabled={isLoadingMore} onClick={onLoadMore} size="sm" variant="outline">
+        {isLoadingMore ? (
+          <>
+            <Spinner size="xs" />
+            Loading...
+          </>
+        ) : (
+          'Load 100 older traces'
+        )}
+      </Button>
+    </div>
+  );
+};
+
+/** Props for trace list toolbar */
+type TraceListToolbarProps = {
+  jumpedTo: JumpedState;
+  onBackToNewest: () => void;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  serviceColumn: ReturnType<typeof useReactTable<EnhancedTraceSummary>>['getColumn'] extends (id: string) => infer R
+    ? R
+    : never;
+  statusColumn: ReturnType<typeof useReactTable<EnhancedTraceSummary>>['getColumn'] extends (id: string) => infer R
+    ? R
+    : never;
+  serviceOptions: { value: string; label: string; icon: typeof Database }[];
+  isFiltered: boolean;
+  onResetFilters: () => void;
+  timeRange: string;
+  onTimeRangeChange: (value: string) => void;
+  isLoading: boolean;
+  onRefresh: () => void;
+};
+
+/** State for tracking jumped-to time range */
+type JumpedState = {
+  startMs: number;
+  endMs: number;
+  label: string;
+} | null;
+
+/** Toolbar component for trace list page */
+const TraceListToolbar: FC<TraceListToolbarProps> = ({
+  jumpedTo,
+  onBackToNewest,
+  searchValue,
+  onSearchChange,
+  serviceColumn,
+  statusColumn,
+  serviceOptions,
+  isFiltered,
+  onResetFilters,
+  timeRange,
+  onTimeRangeChange,
+  isLoading,
+  onRefresh,
+}) => (
+  <div className="flex items-center justify-between gap-2">
+    <div className="flex flex-1 items-center gap-2">
+      {jumpedTo !== null ? (
+        <Button className="h-8 gap-1.5" onClick={onBackToNewest} size="sm" variant="outline">
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to newest
+        </Button>
+      ) : null}
+      <Input
+        className="h-8 w-[300px]"
+        onChange={(e: ChangeEvent<HTMLInputElement>) => onSearchChange(e.target.value)}
+        placeholder="Search traces..."
+        value={searchValue}
+      />
+      {serviceColumn && serviceOptions.length > 0 ? (
+        <DataTableFacetedFilter column={serviceColumn} options={serviceOptions} title="Service" />
+      ) : null}
+      {statusColumn ? <DataTableFacetedFilter column={statusColumn} options={statusOptions} title="Status" /> : null}
+      {isFiltered ? (
+        <Button onClick={onResetFilters} size="sm" variant="ghost">
+          Reset
+          <X className="ml-2 h-4 w-4" />
+        </Button>
+      ) : null}
+    </div>
+    <div className="flex items-center gap-2">
+      {jumpedTo !== null ? (
+        <span className="rounded bg-muted px-2 py-1 text-muted-foreground text-xs">Viewing: {jumpedTo.label}</span>
+      ) : null}
+      <Select disabled={jumpedTo !== null} onValueChange={onTimeRangeChange} value={timeRange}>
+        <SelectTrigger className="h-8 w-[140px] text-xs">
+          <SelectValue placeholder="Time range" />
+        </SelectTrigger>
+        <SelectContent>
+          {TIME_RANGES.map((range) => (
+            <SelectItem key={range.value} value={range.value}>
+              {range.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Button className="h-8 w-8" disabled={isLoading} onClick={onRefresh} size="icon" variant="outline">
+        <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+      </Button>
+    </div>
+  </div>
+);
+
 type TraceListPageProps = {
   /**
    * Disable expensive table features (faceting) for testing or performance.
@@ -62,13 +257,6 @@ type TraceListPageProps = {
    */
   disableFaceting?: boolean;
 };
-
-/** State for tracking jumped-to time range */
-type JumpedState = {
-  startMs: number;
-  endMs: number;
-  label: string;
-} | null;
 
 export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false }) => {
   useEffect(() => {
@@ -345,32 +533,7 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
   };
 
   // Calculate the actual visible window from accumulated traces
-  const visibleWindow = useMemo(() => {
-    if (accumulatedTraces.length === 0) {
-      return { startMs: 0, endMs: 0 };
-    }
-
-    // Find oldest and newest trace in accumulated traces
-    let oldestMs = Number.POSITIVE_INFINITY;
-    let newestMs = Number.NEGATIVE_INFINITY;
-
-    for (const trace of accumulatedTraces) {
-      if (trace.startTime) {
-        const traceMs = timestampDate(trace.startTime).getTime();
-        if (traceMs < oldestMs) {
-          oldestMs = traceMs;
-        }
-        if (traceMs > newestMs) {
-          newestMs = traceMs;
-        }
-      }
-    }
-
-    return {
-      startMs: oldestMs === Number.POSITIVE_INFINITY ? 0 : oldestMs,
-      endMs: newestMs === Number.NEGATIVE_INFINITY ? 0 : newestMs,
-    };
-  }, [accumulatedTraces]);
+  const visibleWindow = useMemo(() => calculateVisibleWindow(accumulatedTraces), [accumulatedTraces]);
 
   // Use initial histogram for display (shows full query range distribution)
   // When in jumped mode, use current data's histogram
@@ -387,63 +550,21 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
       </div>
 
       {/* Toolbar with Search Controls and Time Range */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex flex-1 items-center gap-2">
-          {/* Show "Back to newest" when jumped */}
-          {jumpedTo !== null && (
-            <Button className="h-8 gap-1.5" onClick={handleBackToNewest} size="sm" variant="outline">
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Back to newest
-            </Button>
-          )}
-          <Input
-            className="h-8 w-[300px]"
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              table.getColumn('searchable')?.setFilterValue(event.target.value)
-            }
-            placeholder="Search traces..."
-            value={(table.getColumn('searchable')?.getFilterValue() as string) ?? ''}
-          />
-          {table.getColumn('rootServiceName') && serviceOptions.length > 0 && (
-            <DataTableFacetedFilter
-              column={table.getColumn('rootServiceName')}
-              options={serviceOptions}
-              title="Service"
-            />
-          )}
-          {table.getColumn('status') && (
-            <DataTableFacetedFilter column={table.getColumn('status')} options={statusOptions} title="Status" />
-          )}
-          {isFiltered ? (
-            <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
-              Reset
-              <X className="ml-2 h-4 w-4" />
-            </Button>
-          ) : null}
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Show jumped-to indicator */}
-          {jumpedTo !== null && (
-            <span className="rounded bg-muted px-2 py-1 text-muted-foreground text-xs">Viewing: {jumpedTo.label}</span>
-          )}
-          <Select disabled={!!jumpedTo} onValueChange={handleTimeRangeChange} value={timeRange}>
-            <SelectTrigger className="h-8 w-[140px] text-xs">
-              <SelectValue placeholder="Time range" />
-            </SelectTrigger>
-            <SelectContent>
-              {TIME_RANGES.map((range) => (
-                <SelectItem key={range.value} value={range.value}>
-                  {range.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Button className="h-8 w-8" disabled={isLoading} onClick={handleRefresh} size="icon" variant="outline">
-            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-      </div>
+      <TraceListToolbar
+        isFiltered={isFiltered}
+        isLoading={isLoading}
+        jumpedTo={jumpedTo}
+        onBackToNewest={handleBackToNewest}
+        onRefresh={handleRefresh}
+        onResetFilters={() => table.resetColumnFilters()}
+        onSearchChange={(value) => table.getColumn('searchable')?.setFilterValue(value)}
+        onTimeRangeChange={handleTimeRangeChange}
+        searchValue={(table.getColumn('searchable')?.getFilterValue() as string) ?? ''}
+        serviceColumn={table.getColumn('rootServiceName')}
+        serviceOptions={serviceOptions}
+        statusColumn={table.getColumn('status')}
+        timeRange={timeRange}
+      />
 
       {/* Activity Chart - Always show when we have histogram data */}
       {displayHistogram && displayHistogram.buckets.length > 0 && (
@@ -463,33 +584,12 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
       <div className="flex flex-col gap-2">
         {/* Traces Summary (only show when we have data) */}
         {displayTraces.length > 0 && (
-          <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
-            <span>
-              {isLoading && currentPageToken === '' ? (
-                <span className="flex items-center gap-2">
-                  <Spinner size="xs" />
-                  Loading traces...
-                </span>
-              ) : (
-                <>
-                  Showing {tracesStats.total} {tracesStats.total === 1 ? 'trace' : 'traces'}
-                  {(tracesStats.withErrors > 0 || tracesStats.inProgress > 0) && (
-                    <span className="text-muted-foreground/70">
-                      {' '}
-                      ({tracesStats.completed} completed
-                      {tracesStats.withErrors > 0 && `, ${tracesStats.withErrors} with errors`}
-                      {tracesStats.inProgress > 0 && `, ${tracesStats.inProgress} in-progress`})
-                    </span>
-                  )}
-                </>
-              )}
-            </span>
-            <div className="flex items-center gap-3">
-              <Button className="h-6 px-2 text-[10px]" onClick={handleCollapseAll} size="sm" variant="ghost">
-                Collapse all
-              </Button>
-            </div>
-          </div>
+          <TracesStatsRow
+            isInitialLoad={currentPageToken === ''}
+            isLoading={isLoading}
+            onCollapseAll={handleCollapseAll}
+            stats={tracesStats}
+          />
         )}
 
         {/* Traces Table with external toolbar */}
@@ -512,20 +612,12 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
         />
 
         {/* Load More Button */}
-        {((data?.nextPageToken && !isLoading) || isLoadingMore) && (
-          <div className="flex justify-center py-2">
-            <Button className="gap-2" disabled={isLoadingMore} onClick={handleLoadMore} size="sm" variant="outline">
-              {isLoadingMore ? (
-                <>
-                  <Spinner size="xs" />
-                  Loading...
-                </>
-              ) : (
-                'Load 100 older traces'
-              )}
-            </Button>
-          </div>
-        )}
+        <LoadMoreButton
+          hasMore={Boolean(data?.nextPageToken)}
+          isLoading={isLoading}
+          isLoadingMore={isLoadingMore}
+          onLoadMore={handleLoadMore}
+        />
       </div>
     </div>
   );

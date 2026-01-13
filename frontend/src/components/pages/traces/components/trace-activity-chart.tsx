@@ -130,13 +130,21 @@ const BucketTooltip: FC<BucketTooltipProps> = ({ time, successCount, errorCount,
 /** Helper to get bar color class based on state - uses static class names for Tailwind JIT */
 const getBarColorClass = (isHovered: boolean, isInWindow: boolean, isSuccess: boolean): string => {
   if (isSuccess) {
-    if (isHovered) return 'bg-emerald-500';
-    if (isInWindow) return 'bg-emerald-500/80';
+    if (isHovered) {
+      return 'bg-emerald-500';
+    }
+    if (isInWindow) {
+      return 'bg-emerald-500/80';
+    }
     return 'bg-emerald-500/40';
   }
   // Error bars
-  if (isHovered) return 'bg-red-500';
-  if (isInWindow) return 'bg-red-500/80';
+  if (isHovered) {
+    return 'bg-red-500';
+  }
+  if (isInWindow) {
+    return 'bg-red-500/80';
+  }
   return 'bg-red-500/40';
 };
 
