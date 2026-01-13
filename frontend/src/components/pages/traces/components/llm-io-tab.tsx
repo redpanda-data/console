@@ -18,9 +18,11 @@ import { CheckCircle, ChevronDown, ChevronRight, HelpCircle, History, MessageSqu
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
+import { tryParseJson } from 'utils/json-utils';
 
 import { CollapsibleCodeSection } from './collapsible-code-section';
 import { ContentPanel } from './content-panel';
+import { formatJsonContent } from '../utils/trace-formatters';
 
 type Props = {
   span: Span;
@@ -89,7 +91,7 @@ const ToolResponseDisplay: FC<{ response: ToolResponse }> = ({ response }) => (
 const HistoryMessageItem: FC<{ message: Message; index: number }> = ({ message, index }) => {
   const Icon = getMessageIcon(message.role);
   const messageType = getMessageType(message.role);
-  const isJson = messageType === 'tool' && isJsonContent(message.content);
+  const isJson = messageType === 'tool' && tryParseJson(message.content).success;
   const hasToolCalls = message.toolCalls && message.toolCalls.length > 0;
   const hasToolResponses = message.toolResponses && message.toolResponses.length > 0;
   const hasContent = message.content.length > 0;
@@ -276,24 +278,6 @@ const getMessageIcon = (role: string) => {
       return Wrench;
     default:
       return MessageSquare;
-  }
-};
-
-const isJsonContent = (content: string): boolean => {
-  try {
-    JSON.parse(content);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-const formatJsonContent = (content: string): string => {
-  try {
-    const parsed = JSON.parse(content);
-    return JSON.stringify(parsed, null, 2);
-  } catch {
-    return content;
   }
 };
 

@@ -72,3 +72,38 @@ export const formatTime = (timestamp: Date): string =>
  * @see getTextPreview in utils/string.ts
  */
 export const getPreview = getTextPreview;
+
+/**
+ * Maximum payload size before truncation (20KB).
+ * Used to prevent UI performance issues with very large payloads.
+ */
+export const MAX_PAYLOAD_SIZE = 20 * 1024;
+
+/**
+ * Truncates content to a maximum size, appending a truncation message if needed.
+ * @param content - The content to truncate
+ * @param maxSize - Maximum size in characters (defaults to MAX_PAYLOAD_SIZE)
+ */
+export const truncateContent = (content: string, maxSize = MAX_PAYLOAD_SIZE): string => {
+  if (content.length <= maxSize) {
+    return content;
+  }
+  return `${content.slice(0, maxSize)}\n\n[... truncated ${content.length - maxSize} characters]`;
+};
+
+/**
+ * Formats a JSON string with indentation for display.
+ * Parses first, then optionally truncates the formatted output.
+ * If parsing fails, returns the (optionally truncated) original content.
+ * @param content - The JSON content to format
+ * @param truncate - Whether to truncate the output (default: false)
+ */
+export const formatJsonContent = (content: string, truncate = false): string => {
+  try {
+    const parsed = JSON.parse(content);
+    const formatted = JSON.stringify(parsed, null, 2);
+    return truncate ? truncateContent(formatted) : formatted;
+  } catch {
+    return truncate ? truncateContent(content) : content;
+  }
+};

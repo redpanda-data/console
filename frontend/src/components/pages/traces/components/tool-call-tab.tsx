@@ -16,9 +16,11 @@ import { Wrench } from 'lucide-react';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo } from 'react';
+import { tryParseJson } from 'utils/json-utils';
 
 import { CollapsibleCodeSection } from './collapsible-code-section';
 import { ContentPanel } from './content-panel';
+import { formatJsonContent, truncateContent } from '../utils/trace-formatters';
 
 type Props = {
   span: Span;
@@ -50,39 +52,6 @@ const getAttributeValue = (span: Span, key: string): string => {
       return valueWrapper.value ? 'true' : 'false';
     default:
       return '';
-  }
-};
-
-// Maximum payload size before truncation (20KB) to prevent UI performance issues
-// with very large payloads. This matches the typical maximum size for trace attributes.
-const MAX_PAYLOAD_SIZE = 20 * 1024;
-
-const truncateContent = (content: string): string => {
-  if (content.length <= MAX_PAYLOAD_SIZE) {
-    return content;
-  }
-  return `${content.slice(0, MAX_PAYLOAD_SIZE)}\n\n[... truncated ${content.length - MAX_PAYLOAD_SIZE} characters]`;
-};
-
-const isJsonContent = (content: string): boolean => {
-  if (!content) {
-    return false;
-  }
-  try {
-    JSON.parse(content);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-const formatJsonContent = (content: string): string => {
-  const truncated = truncateContent(content);
-  try {
-    const parsed = JSON.parse(truncated);
-    return JSON.stringify(parsed, null, 2);
-  } catch {
-    return truncated;
   }
 };
 
@@ -134,8 +103,8 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
       result: resultStr,
       hasArguments: !!argumentsStr,
       hasResult: !!resultStr,
-      isArgumentsJson: isJsonContent(argumentsStr),
-      isResultJson: isJsonContent(resultStr),
+      isArgumentsJson: tryParseJson(argumentsStr).success,
+      isResultJson: tryParseJson(resultStr).success,
     };
   }, [span]);
 
@@ -199,7 +168,7 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
       {!!toolData.hasArguments && (
         <CollapsibleCodeSection
           content={
-            toolData.isArgumentsJson ? formatJsonContent(toolData.arguments) : truncateContent(toolData.arguments)
+            toolData.isArgumentsJson ? formatJsonContent(toolData.arguments, true) : truncateContent(toolData.arguments)
           }
           title="ARGUMENTS"
         />
@@ -208,7 +177,7 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
       {/* Result */}
       {!!toolData.hasResult && (
         <CollapsibleCodeSection
-          content={toolData.isResultJson ? formatJsonContent(toolData.result) : truncateContent(toolData.result)}
+          content={toolData.isResultJson ? formatJsonContent(toolData.result, true) : truncateContent(toolData.result)}
           title="RESULT"
         />
       )}
