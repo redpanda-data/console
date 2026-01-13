@@ -33,6 +33,7 @@ bun run test                   # All tests (unit + integration)
 bun run test:unit              # Unit tests (*.test.ts)
 bun run lint                   # Run lint checks
 bun run lint fix               # Auto fix lint checks
+bun run type:check             # Run type checks
 bun run test:integration       # Integration tests (*.test.tsx)
 bun run e2e-test               # E2E tests (Playwright)
 bun run e2e-test:ui            # E2E with UI mode
