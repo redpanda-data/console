@@ -20,11 +20,44 @@ import { type BreadcrumbEntry, uiState } from '../../state/ui-state';
 import { IsDev } from '../../utils/env';
 import DataRefreshButton from '../misc/buttons/data-refresh/component';
 import { UserPreferencesButton } from '../misc/user-preferences';
+import { Separator } from '../redpanda-ui/components/separator';
+import { SidebarTrigger } from '../redpanda-ui/components/sidebar';
+
+type BreadcrumbHeaderRowProps = {
+  useNewSidebar: boolean;
+  breadcrumbItems: BreadcrumbEntry[];
+};
+
+function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeaderRowProps) {
+  return (
+    <Flex alignItems="center" justifyContent="space-between" mb={5}>
+      <Flex alignItems="center" gap={2}>
+        {useNewSidebar ? (
+          <>
+            <SidebarTrigger />
+            <Separator className="mr-2 h-4" orientation="vertical" />
+          </>
+        ) : null}
+        {isEmbedded() ? null : (
+          <Breadcrumbs
+            items={breadcrumbItems.map((x) => ({
+              name: x.title,
+              heading: x.heading,
+              to: x.linkTo,
+            }))}
+            showHomeIcon={false}
+          />
+        )}
+      </Flex>
+    </Flex>
+  );
+}
 
 const AppPageHeader = observer(() => {
   const showRefresh = useShouldShowRefresh();
 
   const shouldHideHeader = useShouldHideHeader();
+  const useNewSidebar = !isEmbedded();
 
   const breadcrumbItems = computed(() => {
     const items: BreadcrumbEntry[] = [...uiState.pageBreadcrumbs];
@@ -49,18 +82,7 @@ const AppPageHeader = observer(() => {
   return (
     <Box>
       {/* we need to refactor out #mainLayout > div rule, for now I've added this box as a workaround */}
-      <Flex alignItems="center" justifyContent="space-between" mb={5}>
-        {!isEmbedded() && (
-          <Breadcrumbs
-            items={breadcrumbItems.map((x) => ({
-              name: x.title,
-              heading: x.heading,
-              to: x.linkTo,
-            }))}
-            showHomeIcon={false}
-          />
-        )}
-      </Flex>
+      <BreadcrumbHeaderRow breadcrumbItems={breadcrumbItems} useNewSidebar={useNewSidebar} />
 
       <Flex alignItems="center" justifyContent="space-between" pb={2}>
         <Flex alignItems="center">
