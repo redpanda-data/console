@@ -227,7 +227,8 @@ export class ShadowlinkPage {
     await this.fillConfigurationStep({ topicFilters: params.topicFilters });
 
     // Wait for navigation to details page
-    await expect(this.page).toHaveURL(/\/shadowlinks\/.+/, { timeout: 15_000 });
+    // CI is slower, so wait for the URL to change from /create to the details page
+    await this.page.waitForURL(/\/shadowlinks\/(?!create)[^/]+$/, { timeout: 60_000 });
   }
 
   /**
