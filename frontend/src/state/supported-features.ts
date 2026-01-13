@@ -103,8 +103,10 @@ export function isSupported(f: FeatureEntry): boolean {
     }
   }
 
-  // Special handling, this will be completely absent in the community version
-  if (f.endpoint.includes('.SecurityService')) {
+  // Special handling for services that may be completely absent from the backend response.
+  // SecurityService: absent in community version
+  // TracingService: may not be implemented in older backends
+  if (f.endpoint.includes('.SecurityService') || f.endpoint.includes('.TracingService')) {
     return false;
   }
 
