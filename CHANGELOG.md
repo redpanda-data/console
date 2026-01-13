@@ -2,6 +2,21 @@
 
 ## Master / Unreleased
 
+## v3.5.0 / 2026-01-12
+- [IMPROVEMENT] Add defensive checks for Kafka Connect secrets and connector creation.
+- [BUGFIX] Fix JWT token handling for schema registry.
+- [BUGFIX] Fix default values in topic creation modal.
+- [BUGFIX] Fix ACL breadcrumbs and cache invalidation.
+- [BUGFIX] Fix consumer group offsets handling for deleted topics.
+
+## v3.4.0 / 2026-01-05
+- [IMPROVEMENT] Add schema normalization support for Schema Registry.
+- [IMPROVEMENT] Add support for BSR encoded protobuf payloads.
+- [IMPROVEMENT] Add HSTS header for in-process TLS.
+- [IMPROVEMENT] Optimize Monaco editor for large JSON payloads.
+- [IMPROVEMENT] Improved Redpanda Connect UX with new component fetching.
+- [BUGFIX] Fix schema version update editor issues.
+
 ## v3.3.1 / 2025-11-19
 - [IMPROVEMENT] Add detailed schema compatibility error messages.
 
