@@ -59,21 +59,29 @@ function SidebarLogo() {
   const iconLogo = isDark ? RedpandaIconWhite : RedpandaIconColor;
 
   return (
-    <Link className="flex items-center" to="/overview">
-      <img alt="Redpanda" className={isExpanded ? 'h-6' : 'h-6 w-6'} src={isExpanded ? fullLogo : iconLogo} />
+    <Link aria-label="Go to Overview" className="flex items-center" to="/overview">
+      <img alt="" className={isExpanded ? 'h-6' : 'h-6 w-6'} src={isExpanded ? fullLogo : iconLogo} />
     </Link>
   );
 }
 
 function SidebarCollapseToggle() {
   const { toggleSidebar, state } = useSidebar();
+  const isExpanded = state === 'expanded';
 
   return (
-    <SidebarMenuButton onClick={toggleSidebar} tooltip={state === 'collapsed' ? 'Expand sidebar' : 'Collapse sidebar'}>
-      {state === 'collapsed' ? <ChevronsRight className="size-4" /> : <ChevronsLeft className="size-4" />}
-      <span className="group-data-[collapsible=icon]:hidden">
-        {state === 'collapsed' ? 'Expand sidebar' : 'Collapse sidebar'}
-      </span>
+    <SidebarMenuButton
+      aria-expanded={isExpanded}
+      aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+      onClick={toggleSidebar}
+      tooltip={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+    >
+      {isExpanded ? (
+        <ChevronsLeft aria-hidden="true" className="size-4" />
+      ) : (
+        <ChevronsRight aria-hidden="true" className="size-4" />
+      )}
+      <span className="group-data-[collapsible=icon]:hidden">{isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}</span>
     </SidebarMenuButton>
   );
 }
@@ -115,19 +123,20 @@ const UserProfileNew = observer(() => {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <SidebarMenuButton
+            aria-label={`User menu for ${user.displayName}`}
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             size="lg"
             tooltip={state === 'collapsed' ? user.displayName : undefined}
           >
             <Avatar className="h-8 w-8">
-              <AvatarImage alt={user.displayName} src={user.avatarUrl} />
-              <AvatarFallback>{initials}</AvatarFallback>
+              <AvatarImage alt="" src={user.avatarUrl} />
+              <AvatarFallback aria-hidden="true">{initials}</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
               <span className="truncate font-semibold">{user.displayName}</span>
               <span className="truncate text-sidebar-foreground/60 text-xs">Preferences</span>
             </div>
-            <ChevronUp className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+            <ChevronUp aria-hidden="true" className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
           </SidebarMenuButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 rounded-lg" side={isMobile ? 'bottom' : 'top'}>
@@ -144,7 +153,7 @@ const UserProfileNew = observer(() => {
               setPreferencesOpen(true);
             }}
           >
-            <Settings className="mr-2 h-4 w-4" />
+            <Settings aria-hidden="true" className="mr-2 h-4 w-4" />
             Preferences
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -154,7 +163,7 @@ const UserProfileNew = observer(() => {
               window.location.reload();
             }}
           >
-            <LogOut className="mr-2 h-4 w-4" />
+            <LogOut aria-hidden="true" className="mr-2 h-4 w-4" />
             Logout
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -177,7 +186,7 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
 
   const itemContent = (
     <>
-      {Icon ? <Icon className="size-4 shrink-0" /> : null}
+      {Icon ? <Icon aria-hidden="true" className="size-4 shrink-0" /> : null}
       <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
     </>
   );
@@ -185,6 +194,8 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
+        aria-current={isActive ? 'page' : undefined}
+        aria-disabled={item.isDisabled}
         asChild={!item.isDisabled}
         className={item.isDisabled ? 'cursor-not-allowed opacity-50' : ''}
         disabled={item.isDisabled}
@@ -192,9 +203,11 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
         tooltip={item.isDisabled ? { children: item.disabledText } : titleString}
       >
         {item.isDisabled ? (
-          <div className="flex items-center gap-2">{itemContent}</div>
+          <span className="flex items-center gap-2" role="link">
+            {itemContent}
+          </span>
         ) : (
-          <Link onClick={onNavClick} to={item.to}>
+          <Link aria-current={isActive ? 'page' : undefined} onClick={onNavClick} to={item.to}>
             {itemContent}
           </Link>
         )}
@@ -215,13 +228,15 @@ const SidebarNavigation = observer(() => {
   };
 
   return (
-    <SidebarMenu>
-      {sidebarItems.map((item) => {
-        const isActive =
-          location.pathname === item.to || (item.to !== '/overview' && location.pathname.startsWith(`${item.to}/`));
-        return <SidebarNavItem isActive={isActive} item={item} key={item.to} onNavClick={handleNavClick} />;
-      })}
-    </SidebarMenu>
+    <nav aria-label="Main navigation">
+      <SidebarMenu>
+        {sidebarItems.map((item) => {
+          const isActive =
+            location.pathname === item.to || (item.to !== '/overview' && location.pathname.startsWith(`${item.to}/`));
+          return <SidebarNavItem isActive={isActive} item={item} key={item.to} onNavClick={handleNavClick} />;
+        })}
+      </SidebarMenu>
+    </nav>
   );
 });
 
