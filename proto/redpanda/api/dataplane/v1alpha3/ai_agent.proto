@@ -97,6 +97,9 @@ message AIAgent {
     }
   }];
 
+  // Optional gateway configuration for routing requests through an AI Gateway.
+  GatewayConfig gateway = 16;
+
   message Provider {
     message OpenAI {
       string api_key = 1 [
@@ -201,6 +204,19 @@ message AIAgent {
 
     // Optional subagent description.
     string description = 3 [(buf.validate.field).string.max_len = 256];
+  }
+
+  // Gateway configuration for routing requests through an AI Gateway.
+  message GatewayConfig {
+    // Virtual gateway ID (XID format - 20-character alphanumeric string).
+    // This ID is used in the x-gateway-id header for multi-tenant routing.
+    string virtual_gateway_id = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.pattern = "^[a-z0-9]+$",
+      (buf.validate.field).string.len = 20,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Virtual gateway ID (20-character XID format)."}
+    ];
   }
 }
 
@@ -479,6 +495,9 @@ message AIAgentCreate {
       max_len: 64
     }
   }];
+
+  // Optional gateway configuration for routing requests through an AI Gateway.
+  AIAgent.GatewayConfig gateway = 13;
 }
 
 // CreateAIAgentRequest is the request of CreateAIAgent.
@@ -614,6 +633,9 @@ message AIAgentUpdate {
       max_len: 64
     }
   }];
+
+  // Optional gateway configuration. Set to empty message to remove the gateway association.
+  AIAgent.GatewayConfig gateway = 13;
 }
 
 message UpdateAIAgentRequest {

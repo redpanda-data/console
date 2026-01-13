@@ -9,6 +9,8 @@ components:
         display_name:
           description: User-friendly AI agent name.
           type: string
+        gateway:
+          $ref: '#/components/schemas/GatewayConfig'
         id:
           description: AI Agent ID.
           readOnly: true
@@ -127,6 +129,8 @@ components:
         display_name:
           description: User-friendly AI agent name.
           type: string
+        gateway:
+          $ref: '#/components/schemas/GatewayConfig'
         max_iterations:
           format: int32
           type: integer
@@ -171,6 +175,8 @@ components:
         display_name:
           description: User-friendly AI agent name.
           type: string
+        gateway:
+          $ref: '#/components/schemas/GatewayConfig'
         max_iterations:
           format: int32
           type: integer
@@ -420,6 +426,15 @@ components:
           description: The time the event occurred.
           format: uint64
           type: string
+      type: object
+    GatewayConfig:
+      description: Gateway configuration for routing requests through an AI Gateway.
+      properties:
+        virtual_gateway_id:
+          description: Virtual gateway ID (20-character XID format).
+          type: string
+      required:
+        - virtual_gateway_id
       type: object
     GetAIAgentResponse:
       properties:

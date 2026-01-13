@@ -34,7 +34,8 @@ message ListRolesRequest {
       (buf.validate.field).string.pattern = "^([^,=]*)$"
     ];
 
-    // Return only roles assigned to this principal.
+    // Return only roles assigned to this principal. The principal must contain
+    // the principal type. For example: "User:jane" is a valid principal format.
     string principal = 3 [(buf.validate.field).string.max_len = 128];
   }
 
