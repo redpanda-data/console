@@ -14,9 +14,10 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
+import { prettyBytes } from 'utils/utils';
 
 import { ContentPanel } from './content-panel';
-import { formatBytes, getPreview } from '../utils/trace-formatters';
+import { getPreview } from '../utils/trace-formatters';
 
 type Props = {
   title: string;
@@ -60,7 +61,7 @@ export const CollapsibleCodeSection: FC<Props> = ({ title, content, defaultExpan
             {title}
           </Text>
         </div>
-        <span className="font-mono text-[9px] text-muted-foreground">{formatBytes(payloadSize)}</span>
+        <span className="font-mono text-[9px] text-muted-foreground">{prettyBytes(payloadSize)}</span>
       </Button>
 
       {!isExpanded && hasPreview ? (

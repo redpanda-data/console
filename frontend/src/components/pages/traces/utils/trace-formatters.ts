@@ -46,20 +46,6 @@ export const formatTimestamp = (ms: number): string => formatDistanceToNow(new D
 export const formatTraceId = truncateWithEllipsis;
 
 /**
- * Formats a byte size to a human-readable string.
- * Examples: "512B", "1.5KB", "2.3MB"
- */
-export const formatBytes = (bytes: number): string => {
-  if (bytes < 1024) {
-    return `${bytes}B`;
-  }
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)}KB`;
-  }
-  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-};
-
-/**
  * Formats a Date to a 24-hour time string (HH:MM:SS).
  * Used for trace timestamps in the UI.
  */

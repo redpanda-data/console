@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { formatBytes, formatDuration, formatTime, formatTraceId, getPreview } from './trace-formatters';
+import { formatDuration, formatTime, formatTraceId, getPreview } from './trace-formatters';
 
 describe('formatDuration', () => {
   it('formats sub-millisecond durations as microseconds', () => {
@@ -58,26 +58,6 @@ describe('formatTraceId', () => {
   it('respects custom maxLength', () => {
     expect(formatTraceId('1234567890', 5)).toBe('12345...');
     expect(formatTraceId('12345', 5)).toBe('12345');
-  });
-});
-
-describe('formatBytes', () => {
-  it('formats bytes below 1KB', () => {
-    expect(formatBytes(0)).toBe('0B');
-    expect(formatBytes(512)).toBe('512B');
-    expect(formatBytes(1023)).toBe('1023B');
-  });
-
-  it('formats kilobytes', () => {
-    expect(formatBytes(1024)).toBe('1.0KB');
-    expect(formatBytes(1536)).toBe('1.5KB');
-    expect(formatBytes(1_048_575)).toBe('1024.0KB');
-  });
-
-  it('formats megabytes', () => {
-    expect(formatBytes(1_048_576)).toBe('1.0MB');
-    expect(formatBytes(1_572_864)).toBe('1.5MB');
-    expect(formatBytes(10_485_760)).toBe('10.0MB');
   });
 });
 
