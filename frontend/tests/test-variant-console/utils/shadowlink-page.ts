@@ -226,9 +226,8 @@ export class ShadowlinkPage {
     await this.fillConnectionStep(params);
     await this.fillConfigurationStep({ topicFilters: params.topicFilters });
 
-    // Wait for navigation to details page
-    // CI is slower, so wait for the URL to change from /create to the details page
-    await this.page.waitForURL(/\/shadowlinks\/(?!create)[^/]+$/, { timeout: 60_000 });
+    // Wait for navigation to list page (frontend redirects to /shadowlinks after create)
+    await this.page.waitForURL(/\/shadowlinks$/, { timeout: 60_000 });
   }
 
   /**
