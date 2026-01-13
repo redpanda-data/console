@@ -3,18 +3,13 @@
  *
  * Note: These tests require trace data to be present in the system.
  * They test the UI interactions and navigation, not trace data creation.
- *
- * IMPORTANT: These tests are currently skipped because the backend tracing
- * service is not yet available in the e2e test environment. Enable once
- * the TracingService is configured in tests/config/console.config.yaml.
  */
 
 import { expect, test } from '@playwright/test';
 
 import { TracePage } from '../utils/trace-page';
 
-// Skip all trace tests until backend tracing service is configured
-test.describe.skip('Traces Page - Navigation and UI', () => {
+test.describe('Traces Page - Navigation and UI', () => {
   test('should navigate to traces page and display UI elements', async ({ page }) => {
     const tracePage = new TracePage(page);
     await tracePage.goto();
@@ -52,7 +47,7 @@ test.describe.skip('Traces Page - Navigation and UI', () => {
   });
 });
 
-test.describe.skip('Traces Page - Filtering', () => {
+test.describe('Traces Page - Filtering', () => {
   test('should filter traces by search query', async ({ page }) => {
     const tracePage = new TracePage(page);
     await tracePage.goto();
@@ -90,7 +85,7 @@ test.describe.skip('Traces Page - Filtering', () => {
   });
 });
 
-test.describe.skip('Traces Page - Trace Expansion', () => {
+test.describe('Traces Page - Trace Expansion', () => {
   test.beforeEach(async ({ page }) => {
     const tracePage = new TracePage(page);
     await tracePage.goto();
@@ -158,7 +153,7 @@ test.describe.skip('Traces Page - Trace Expansion', () => {
   });
 });
 
-test.describe.skip('Traces Page - Span Details', () => {
+test.describe('Traces Page - Span Details', () => {
   test('should show span details panel when clicking a span', async ({ page }) => {
     const tracePage = new TracePage(page);
     await tracePage.goto();
@@ -190,7 +185,7 @@ test.describe.skip('Traces Page - Span Details', () => {
   });
 });
 
-test.describe.skip('Traces Page - Accessibility', () => {
+test.describe('Traces Page - Accessibility', () => {
   test('should have accessible sort button with descriptive aria-label', async ({ page }) => {
     const tracePage = new TracePage(page);
     await tracePage.goto();
