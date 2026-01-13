@@ -15,40 +15,43 @@ export function generateShadowlinkName() {
  * Page Object Model for Shadow Link pages
  * Handles shadowlink list, create, edit, details, and verification
  *
- * Shadowlinks are created on the DESTINATION cluster console (port 3001)
- * to pull data FROM the source cluster
+ * Shadowlinks are created on the DESTINATION cluster console
+ * to pull data FROM the source cluster.
+ * Uses shadowBackendURL from Playwright config if available.
  */
 export class ShadowlinkPage {
   readonly page: Page;
-  readonly baseURL: string;
+  readonly shadowBackendURL: string;
 
-  constructor(page: Page, baseURL = 'http://localhost:3001') {
+  constructor(page: Page, shadowBackendURL?: string) {
     this.page = page;
-    this.baseURL = baseURL;
+    // shadowBackendURL should be passed from the test using the fixture
+    // Falls back to 3001 if not provided
+    this.shadowBackendURL = shadowBackendURL ?? 'http://localhost:3001';
   }
 
   /**
    * Navigation methods
    */
   async goto() {
-    await this.page.goto(`${this.baseURL}/shadowlinks`);
+    await this.page.goto(`${this.shadowBackendURL}/shadowlinks`);
     await expect(this.page.getByRole('heading', { name: /shadow links/i })).toBeVisible({ timeout: 10_000 });
   }
 
   async gotoCreate() {
-    await this.page.goto(`${this.baseURL}/shadowlinks/create`);
+    await this.page.goto(`${this.shadowBackendURL}/shadowlinks/create`);
     await expect(this.page.getByRole('heading', { name: /create shadow link/i })).toBeVisible({ timeout: 10_000 });
   }
 
   async gotoDetails(name: string) {
-    await this.page.goto(`${this.baseURL}/shadowlinks/${encodeURIComponent(name)}`);
+    await this.page.goto(`${this.shadowBackendURL}/shadowlinks/${encodeURIComponent(name)}`);
     await expect(this.page.getByRole('heading', { name })).toBeVisible({
       timeout: 10_000,
     });
   }
 
   async gotoEdit(name: string) {
-    await this.page.goto(`${this.baseURL}/shadowlinks/${encodeURIComponent(name)}/edit`);
+    await this.page.goto(`${this.shadowBackendURL}/shadowlinks/${encodeURIComponent(name)}/edit`);
     await expect(this.page.getByRole('heading', { name: /edit shadow link/i })).toBeVisible({ timeout: 10_000 });
   }
 
@@ -244,7 +247,7 @@ export class ShadowlinkPage {
 
   async verifyOnHomePage(shadowlinkName: string, timeout = 30_000) {
     // Navigate to home page (root after login)
-    await this.page.goto(this.baseURL);
+    await this.page.goto(this.shadowBackendURL);
 
     // Wait for home page to load - look for common elements
     await expect(this.page.getByRole('heading', { name: /overview|dashboard|home/i })).toBeVisible({ timeout: 10_000 });
@@ -533,7 +536,7 @@ export class ShadowlinkPage {
     await confirmButton.click();
 
     // Wait for redirect to list
-    await expect(this.page).toHaveURL(`${this.baseURL}/shadowlinks`, { timeout: 15_000 });
+    await expect(this.page).toHaveURL(`${this.shadowBackendURL}/shadowlinks`, { timeout: 15_000 });
 
     // Clean up replicated topics in destination cluster
     await this.cleanupDestinationTopics();
@@ -544,33 +547,52 @@ export class ShadowlinkPage {
     try {
       const { exec } = await import('node:child_process');
       const { promisify } = await import('node:util');
-      const { readFileSync } = await import('node:fs');
+      const { readFileSync, existsSync } = await import('node:fs');
       const { resolve } = await import('node:path');
       const execAsync = promisify(exec);
 
       // Read state file to get destination container ID
-      const stateFilePath = resolve(__dirname, '../../.testcontainers-state-enterprise.json');
-      let containerId: string;
+      // Try both console-enterprise and enterprise naming conventions
+      const testsDir = resolve(__dirname, '../..');
+      const possibleStateFiles = [
+        resolve(testsDir, '.testcontainers-state-console-enterprise.json'),
+        resolve(testsDir, '.testcontainers-state-enterprise.json'),
+      ];
 
-      try {
-        const stateContent = readFileSync(stateFilePath, 'utf-8');
-        const state = JSON.parse(stateContent);
-        containerId = state.destRedpandaId;
+      let containerId: string | undefined;
 
-        if (!containerId) {
-          console.log('  No destination container ID in state file, skipping cleanup');
-          return;
+      for (const stateFilePath of possibleStateFiles) {
+        if (existsSync(stateFilePath)) {
+          try {
+            const stateContent = readFileSync(stateFilePath, 'utf-8');
+            const state = JSON.parse(stateContent);
+            containerId = state.destRedpandaId;
+            if (containerId) {
+              console.log(`  Found container ID in ${stateFilePath}`);
+              break;
+            }
+          } catch {
+            // Try next file
+          }
         }
-      } catch (readError) {
+      }
+
+      if (!containerId) {
         console.log('  Could not read state file, trying to find container by port...');
-        // Fallback: try to find container by exposed port 19093
-        const { stdout: containerByPort } = await execAsync('docker ps -q --filter "publish=19093"');
-        containerId = containerByPort.trim();
-
-        if (!containerId) {
-          console.log('  No destination cluster container found, skipping cleanup');
-          return;
+        // Fallback: try to find container by exposed port (19193 for console-enterprise, 19093 for console)
+        for (const port of ['19193', '19093']) {
+          const { stdout: containerByPort } = await execAsync(`docker ps -q --filter "publish=${port}"`);
+          containerId = containerByPort.trim();
+          if (containerId) {
+            console.log(`  Found container by port ${port}`);
+            break;
+          }
         }
+      }
+
+      if (!containerId) {
+        console.log('  No destination cluster container found, skipping cleanup');
+        return;
       }
 
       // List all topics in destination cluster with SASL auth

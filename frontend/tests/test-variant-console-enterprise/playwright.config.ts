@@ -61,7 +61,10 @@ export default defineConfig({
     /* Disable screenshots and videos in CI for better performance */
     screenshot: 'off',
     video: 'off',
-  },
+
+    /* Shadowlink destination backend URL (port 3101) */
+    shadowBackendURL: 'http://localhost:3101',
+  } as any,
 
   /* Configure projects */
   projects: [

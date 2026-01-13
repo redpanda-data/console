@@ -1,12 +1,12 @@
 /** biome-ignore-all lint/performance/useTopLevelRegex: e2e test */
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
 
 import { generateShadowlinkName, ShadowlinkPage } from '../../test-variant-console/utils/shadowlink-page';
 
 test.describe('Shadow Link E2E Tests', () => {
   test.describe('Shadow Link Creation', () => {
-    test('should fill connection step successfully', async ({ page }) => {
-      const shadowlinkPage = new ShadowlinkPage(page);
+    test('should fill connection step successfully', async ({ page, shadowBackendURL }) => {
+      const shadowlinkPage = new ShadowlinkPage(page, shadowBackendURL);
       const shadowlinkName = generateShadowlinkName();
 
       await test.step('Navigate to create page', async () => {
@@ -29,8 +29,8 @@ test.describe('Shadow Link E2E Tests', () => {
       });
     });
 
-    test('should create, update, failover, and delete shadowlink', async ({ page }) => {
-      const shadowlinkPage = new ShadowlinkPage(page);
+    test('should create, update, failover, and delete shadowlink', async ({ page, shadowBackendURL }) => {
+      const shadowlinkPage = new ShadowlinkPage(page, shadowBackendURL);
       const shadowlinkName = generateShadowlinkName();
 
       await test.step('Create shadowlink with literal filter', async () => {
@@ -104,8 +104,8 @@ test.describe('Shadow Link E2E Tests', () => {
 
   test.describe('Shadow Link Filter', () => {
     test.skip(!!process.env.CI, 'Flaky in CI - timing issues with metrics loading');
-    test('should create with exclude filter and verify it works', async ({ page }) => {
-      const shadowlinkPage = new ShadowlinkPage(page);
+    test('should create with exclude filter and verify it works', async ({ page, shadowBackendURL }) => {
+      const shadowlinkPage = new ShadowlinkPage(page, shadowBackendURL);
       const shadowlinkName = generateShadowlinkName();
 
       await test.step('Create with include-all and exclude addresses filter', async () => {
