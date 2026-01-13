@@ -112,6 +112,7 @@ export function TracesDataTableToolbar({
             table.getColumn('searchable')?.setFilterValue(event.target.value)
           }
           placeholder="Search traces..."
+          testId="traces-search-input"
           value={(table.getColumn('searchable')?.getFilterValue() as string) ?? ''}
         />
         {serviceColumn && serviceOptions.length > 0 && (

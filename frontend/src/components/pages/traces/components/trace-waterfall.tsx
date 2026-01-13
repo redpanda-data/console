@@ -40,7 +40,7 @@ const SpanRow: FC<{ span: SpanNode; timeline: ReturnType<typeof calculateTimelin
     <>
       <div
         className={cn('flex items-center gap-2 rounded px-2 py-2 transition-colors hover:bg-muted/50')}
-        style={{ paddingLeft: `${depth * 24 + 8}px` }}
+        style={{ paddingLeft: `${depth * 1.5 + 0.5}rem` }}
       >
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <div className="truncate text-sm">{span.name}</div>
