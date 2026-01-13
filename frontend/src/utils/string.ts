@@ -63,3 +63,43 @@ export const pluralize = (count: number, noun: string, suffix = 's'): string => 
  */
 export const pluralizeWithNumber = (count: number, noun: string, suffix = 's'): string =>
   `${count} ${pluralize(count, noun, suffix)}`;
+
+/**
+ * Truncates a string to a specified length and adds an ellipsis if truncation occurs.
+ *
+ * Examples:
+ * - truncateWithEllipsis('hello', 10) → 'hello'
+ * - truncateWithEllipsis('hello world', 8) → 'hello...'
+ * - truncateWithEllipsis('abcdefghijkl', 12) → 'abcdefghijkl'
+ * - truncateWithEllipsis('abcdefghijklm', 12) → 'abcdefghijkl...'
+ *
+ * @param str The string to truncate
+ * @param maxLength Maximum length before truncation (default: 12)
+ * @returns The original string if within maxLength, otherwise truncated with ellipsis
+ */
+export const truncateWithEllipsis = (str: string, maxLength = 12): string => {
+  if (str.length <= maxLength) {
+    return str;
+  }
+  return `${str.slice(0, maxLength)}...`;
+};
+
+/**
+ * Gets a preview of text content, limited to a specified number of lines.
+ *
+ * Examples:
+ * - getTextPreview('line1\nline2', 3) → 'line1\nline2'
+ * - getTextPreview('line1\nline2\nline3\nline4', 2) → 'line1\nline2'
+ * - getTextPreview('single line', 5) → 'single line'
+ *
+ * @param content The text content to preview
+ * @param maxLines Maximum number of lines to include
+ * @returns The original content if within maxLines, otherwise truncated to maxLines
+ */
+export const getTextPreview = (content: string, maxLines: number): string => {
+  const lines = content.split('\n');
+  if (lines.length <= maxLines) {
+    return content;
+  }
+  return lines.slice(0, maxLines).join('\n');
+};
