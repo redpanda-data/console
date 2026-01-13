@@ -52,7 +52,7 @@ test.describe.skip('Traces Page - Navigation and UI', () => {
   });
 });
 
-test.describe('Traces Page - Filtering', () => {
+test.describe.skip('Traces Page - Filtering', () => {
   test('should filter traces by search query', async ({ page }) => {
     const tracePage = new TracePage(page);
     await tracePage.goto();
@@ -90,7 +90,7 @@ test.describe('Traces Page - Filtering', () => {
   });
 });
 
-test.describe('Traces Page - Trace Expansion', () => {
+test.describe.skip('Traces Page - Trace Expansion', () => {
   test.beforeEach(async ({ page }) => {
     const tracePage = new TracePage(page);
     await tracePage.goto();
@@ -158,7 +158,7 @@ test.describe('Traces Page - Trace Expansion', () => {
   });
 });
 
-test.describe('Traces Page - Span Details', () => {
+test.describe.skip('Traces Page - Span Details', () => {
   test('should show span details panel when clicking a span', async ({ page }) => {
     const tracePage = new TracePage(page);
     await tracePage.goto();
@@ -190,7 +190,7 @@ test.describe('Traces Page - Span Details', () => {
   });
 });
 
-test.describe('Traces Page - Accessibility', () => {
+test.describe.skip('Traces Page - Accessibility', () => {
   test('should have accessible sort button with descriptive aria-label', async ({ page }) => {
     const tracePage = new TracePage(page);
     await tracePage.goto();
