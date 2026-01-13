@@ -21,11 +21,13 @@ import {
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, Check, Link2, Maximize2, X } from 'lucide-react';
+import { AlertCircle, Link2, Maximize2, X } from 'lucide-react';
+import { parseAsString, useQueryState } from 'nuqs';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useGetTraceQuery } from 'react-query/api/tracing';
+import { toast } from 'sonner';
 
 import { getDefaultTab, isLLMSpan, isToolSpan, TraceDetailsTabs } from './trace-details-tabs';
 import { bytesToHex } from '../utils/hex-utils';
@@ -40,23 +42,11 @@ type Props = {
 };
 
 export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose }) => {
-  const [isLinkCopied, setIsLinkCopied] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<string>('overview');
+  const [selectedTab, setSelectedTab] = useQueryState('tab', parseAsString.withDefault('overview'));
   const { data: traceData, isLoading } = useGetTraceQuery(traceId);
 
   const trace = traceData?.trace;
-
-  // Reset "Copied!" message after 2 seconds. Without the cleanup (return statement),
-  // if the sheet closes within 2s, setTimeout would still fire and call setState on
-  // an unmounted component, causing React warnings and wasted work.
-  useEffect(() => {
-    if (!isLinkCopied) {
-      return;
-    }
-    const timeoutId = window.setTimeout(() => setIsLinkCopied(false), 2000);
-    return () => window.clearTimeout(timeoutId);
-  }, [isLinkCopied]);
 
   const handleCopyLink = async () => {
     if (!(traceId && spanId)) {
@@ -65,6 +55,7 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
 
     // Check if clipboard API is available
     if (!navigator.clipboard?.writeText) {
+      toast.error('Clipboard API not available');
       return;
     }
 
@@ -75,9 +66,9 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
 
     try {
       await navigator.clipboard.writeText(url.toString());
-      setIsLinkCopied(true);
+      toast.success('Link copied to clipboard');
     } catch {
-      setIsLinkCopied(false);
+      toast.error('Failed to copy link to clipboard');
     }
   };
 
@@ -110,7 +101,7 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
       const defaultTab = getDefaultTab(showOverviewTab, showLLMTab, showToolTab);
       setSelectedTab(defaultTab);
     }
-  }, [showOverviewTab, showLLMTab, showToolTab, selectedSpan]);
+  }, [showOverviewTab, showLLMTab, showToolTab, selectedSpan, setSelectedTab]);
 
   if (!isOpen) {
     return null;
@@ -142,14 +133,14 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-label={isLinkCopied ? 'Link copied' : 'Copy link to span'}
+                aria-label="Copy link to span"
                 className="h-6 w-6"
                 data-testid="trace-details-copy-link"
                 onClick={handleCopyLink}
                 size="icon"
                 variant="ghost"
               >
-                {isLinkCopied ? <Check className="h-3 w-3" /> : <Link2 className="h-3 w-3" />}
+                <Link2 className="h-3 w-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Copy link to span</TooltipContent>
