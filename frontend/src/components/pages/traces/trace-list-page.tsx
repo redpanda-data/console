@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { timestampDate, timestampFromMs } from '@bufbuild/protobuf/wkt';
+import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import type { ColumnDef, ColumnFiltersState } from '@tanstack/react-table';
 import {
   getCoreRowModel,
@@ -41,6 +41,7 @@ import { uiState } from 'state/ui-state';
 
 import { TraceActivityChart } from './components/trace-activity-chart';
 import { type EnhancedTraceSummary, statusOptions, TracesTable } from './components/traces-table';
+import { calculateVisibleWindow } from './utils/trace-statistics';
 
 const TIME_RANGES = [
   { value: '5m', label: 'Last 5 minutes', ms: 5 * 60 * 1000 },
@@ -52,29 +53,6 @@ const TIME_RANGES = [
   { value: '12h', label: 'Last 12 hours', ms: 12 * 60 * 60 * 1000 },
   { value: '24h', label: 'Last 24 hours', ms: 24 * 60 * 60 * 1000 },
 ];
-
-/** Calculate the oldest and newest timestamp from a list of traces */
-const calculateVisibleWindow = (traces: TraceSummary[]): { startMs: number; endMs: number } => {
-  if (traces.length === 0) {
-    return { startMs: 0, endMs: 0 };
-  }
-
-  let oldestMs = Number.POSITIVE_INFINITY;
-  let newestMs = Number.NEGATIVE_INFINITY;
-
-  for (const trace of traces) {
-    if (trace.startTime) {
-      const traceMs = timestampDate(trace.startTime).getTime();
-      oldestMs = Math.min(oldestMs, traceMs);
-      newestMs = Math.max(newestMs, traceMs);
-    }
-  }
-
-  return {
-    startMs: oldestMs === Number.POSITIVE_INFINITY ? 0 : oldestMs,
-    endMs: newestMs === Number.NEGATIVE_INFINITY ? 0 : newestMs,
-  };
-};
 
 /** Props for the stats row component */
 type TracesStatsRowProps = {

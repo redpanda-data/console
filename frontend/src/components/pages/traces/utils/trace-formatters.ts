@@ -10,6 +10,7 @@
  */
 
 import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
+import { getTextPreview, truncateWithEllipsis } from 'utils/string';
 
 /**
  * Formats a duration in milliseconds to a human-readable string.
@@ -37,9 +38,37 @@ export const formatDuration = (ms: number): string => {
  */
 export const formatTimestamp = (ms: number): string => formatDistanceToNow(new Date(ms), { addSuffix: true });
 
-export const formatTraceId = (id: string, maxLength = 12): string => {
-  if (id.length <= maxLength) {
-    return id;
+/**
+ * Truncates a trace ID to a maximum length with ellipsis.
+ * Re-exported from shared utils for backward compatibility.
+ * @see truncateWithEllipsis in utils/string.ts
+ */
+export const formatTraceId = truncateWithEllipsis;
+
+/**
+ * Formats a byte size to a human-readable string.
+ * Examples: "512B", "1.5KB", "2.3MB"
+ */
+export const formatBytes = (bytes: number): string => {
+  if (bytes < 1024) {
+    return `${bytes}B`;
   }
-  return `${id.slice(0, maxLength)}...`;
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)}KB`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 };
+
+/**
+ * Formats a Date to a 24-hour time string (HH:MM:SS).
+ * Used for trace timestamps in the UI.
+ */
+export const formatTime = (timestamp: Date): string =>
+  timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+
+/**
+ * Gets a preview of content, limited to a specified number of lines.
+ * Re-exported from shared utils for backward compatibility.
+ * @see getTextPreview in utils/string.ts
+ */
+export const getPreview = getTextPreview;
