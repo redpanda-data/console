@@ -29,7 +29,7 @@ export const ConversationTab: FC<Props> = ({ trace }) => {
 
   if (messages.length === 0) {
     return (
-      <Empty>
+      <Empty data-testid="conversation-empty-state">
         <EmptyHeader>
           <EmptyTitle>No conversation history</EmptyTitle>
           <EmptyDescription>No conversation history found in this trace</EmptyDescription>

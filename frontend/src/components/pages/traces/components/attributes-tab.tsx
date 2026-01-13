@@ -12,10 +12,11 @@
 import { Input } from 'components/redpanda-ui/components/input';
 import JSONBigIntFactory from 'json-bigint';
 import { Search } from 'lucide-react';
+import { parseAsString, useQueryState } from 'nuqs';
 import type { AnyValue } from 'protogen/redpanda/otel/v1/common_pb';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import { ContentPanel } from './content-panel';
 
@@ -36,7 +37,7 @@ type AttributeEntry = {
  * in { case: 'typeValue', value: actualValue } objects. This function unwraps them
  * into plain JavaScript values for easier handling in the UI.
  */
-const extractProtoValue = (value: AnyValue | undefined): unknown => {
+export const extractProtoValue = (value: AnyValue | undefined): unknown => {
   if (!value?.value) {
     return;
   }
@@ -72,7 +73,7 @@ const extractProtoValue = (value: AnyValue | undefined): unknown => {
   }
 };
 
-const getAttributeValue = (value: AnyValue | undefined): string => {
+export const getAttributeValue = (value: AnyValue | undefined): string => {
   if (!value) {
     return '';
   }
@@ -108,7 +109,7 @@ const getAttributeValue = (value: AnyValue | undefined): string => {
 };
 
 export const AttributesTab: FC<Props> = ({ span }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useQueryState('attributeSearch', parseAsString.withDefault(''));
 
   const attributes = useMemo(() => {
     const entries: AttributeEntry[] = [];
@@ -149,7 +150,8 @@ export const AttributesTab: FC<Props> = ({ span }) => {
         <Search className="pointer-events-none absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
         <Input
           className="h-7 pl-7 text-xs"
-          onChange={(e) => setSearchQuery(e.target.value)}
+          data-testid="attributes-search-input"
+          onChange={(e) => setSearchQuery(e.target.value || null)}
           placeholder="Search attributes..."
           value={searchQuery}
         />
