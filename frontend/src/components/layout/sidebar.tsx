@@ -86,7 +86,7 @@ function SidebarCollapseToggle() {
   );
 }
 
-const UserProfileNew = observer(() => {
+const UserProfile = observer(() => {
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const { state, isMobile, setOpenMobile } = useSidebar();
 
@@ -238,7 +238,7 @@ const SidebarNavigation = observer(() => {
   );
 });
 
-export function AppSidebarNew() {
+export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -256,7 +256,7 @@ export function AppSidebarNew() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <UserProfileNew />
+            <UserProfile />
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarCollapseToggle />
@@ -276,7 +276,7 @@ type SidebarLayoutProps = {
 export function SidebarLayout({ children }: SidebarLayoutProps) {
   return (
     <SidebarProvider>
-      <AppSidebarNew />
+      <AppSidebar />
       {children}
     </SidebarProvider>
   );

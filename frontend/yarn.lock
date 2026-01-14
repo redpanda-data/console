@@ -11502,7 +11502,7 @@ react-router@6.30.2, "react-router@^6 || ^7":
   dependencies:
     "@remix-run/router" "1.23.1"
 
-react-router-dom@>=5, "react-router-dom@^6 || ^7", react-router-dom@^6.3.0:
+react-router-dom@>=5, "react-router-dom@^6 || ^7":
   version "6.30.2"
   resolved "https://registry.npmjs.org/react-router-dom/-/react-router-dom-6.30.2.tgz"
   integrity sha512-l2OwHn3UUnEVUqc6/1VMmR1cvZryZ3j3NzapC2eUXO1dB0sYp5mvwdjiXhpUbRb21eFow3qSxpP8Yv6oAU824Q==

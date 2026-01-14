@@ -136,6 +136,8 @@ export type SidebarItem = {
   to: string; // '/topics'
   icon?: JSX.Element;
   order: number;
+  group?: string; // "Agentic AI" - for grouping related items
+  isBeta?: boolean; // true - for displaying beta badge
 };
 
 export type Breadcrumb = {
@@ -313,6 +315,8 @@ setTimeout(() => {
           to: r.path,
           icon: r.icon,
           order: i,
+          group: r.group,
+          isBeta: r.isBeta,
         }) as SidebarItem
     );
 

@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Container, Grid } from '@redpanda-data/ui';
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
@@ -18,13 +17,10 @@ import { Toaster } from 'components/redpanda-ui/components/sonner';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { isEmbedded } from 'config';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
-import { BrowserRouter } from 'react-router-dom';
-import { getBasePath } from 'utils/env';
 
 import AppFooter from '../components/layout/footer';
 import AppPageHeader from '../components/layout/header';
-import { AppSidebarLegacy } from '../components/layout/sidebar-legacy';
-import { SidebarLayout } from '../components/layout/sidebar-new';
+import { SidebarLayout } from '../components/layout/sidebar';
 import { LicenseNotification } from '../components/license/license-notification';
 import { ErrorBoundary } from '../components/misc/error-boundary';
 import { ErrorDisplay } from '../components/misc/error-display';
@@ -44,67 +40,31 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootLayout,
 });
 
-/**
- * RootLayout wraps the app with TanStack Router (primary) and conditionally BrowserRouter.
- * BrowserRouter provides context for legacy React Router hooks during migration.
- *
- * IMPORTANT: In embedded mode, we skip BrowserRouter to avoid conflicts with Cloud UI's
- * React Router DOM. Having multiple routers manipulating window.history causes navigation
- * loops and flickering UI.
- *
- * TODO: Remove BrowserRouter once all components are migrated to TanStack Router.
- */
 function RootLayout() {
-  const content = (
-    <NuqsAdapter>
-      <ErrorBoundary>
-        <RequireAuth>{isEmbedded() ? <EmbeddedLayout /> : <SelfHostedLayout />}</RequireAuth>
-      </ErrorBoundary>
-    </NuqsAdapter>
-  );
-
   return (
     <>
       <RouterSync />
-      {/*
-       * Only wrap with BrowserRouter in self-hosted mode.
-       * In embedded mode, the shell provides router context and we must not
-       * have competing history manipulators.
-       */}
-      {isEmbedded() ? content : <BrowserRouter basename={getBasePath()}>{content}</BrowserRouter>}
+      <NuqsAdapter>
+        <ErrorBoundary>
+          <RequireAuth>{isEmbedded() ? <EmbeddedLayout /> : <SelfHostedLayout />}</RequireAuth>
+        </ErrorBoundary>
+      </NuqsAdapter>
       {process.env.NODE_ENV === 'development' && <TanStackRouterDevtools position="bottom-right" />}
     </>
   );
 }
 
 function SelfHostedLayout() {
-  // It's self-hosted so it won't have access to the outside world to check the feature flag.
-  const useNewSidebar = true;
-
-  if (useNewSidebar) {
-    return (
-      <>
-        <AnnouncementBar />
-        <SidebarLayout>
-          <SidebarInset>
-            <div className="container mx-auto max-w-[1500px] px-12 pt-8">
-              <AppContent />
-            </div>
-          </SidebarInset>
-        </SidebarLayout>
-      </>
-    );
-  }
-
   return (
     <>
       <AnnouncementBar />
-      <Grid minH="100vh" templateColumns="auto 1fr">
-        <AppSidebarLegacy />
-        <Container as="main" maxWidth="1500px" pt="8" px="12" width="full">
-          <AppContent />
-        </Container>
-      </Grid>
+      <SidebarLayout>
+        <SidebarInset>
+          <div className="container mx-auto max-w-[1500px] px-12 pt-8">
+            <AppContent />
+          </div>
+        </SidebarInset>
+      </SidebarLayout>
     </>
   );
 }

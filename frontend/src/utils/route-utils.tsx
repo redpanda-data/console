@@ -34,7 +34,6 @@ import {
   UserCircleIcon,
 } from '../components/icons';
 import { MCPIcon } from '../components/redpanda-ui/components/icons';
-import { getSidebarItemTitleWithBetaBadge } from '../components/sidebar-utils';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
 import { api } from '../state/backend-api';
 import { Feature, isSupported, shouldHideIfNotSupported } from '../state/supported-features';
@@ -55,6 +54,8 @@ export type SidebarItem = {
   title: string | ReactNode;
   icon?: LucideIcon | ((props: React.SVGProps<SVGSVGElement>) => JSX.Element);
   visibilityCheck?: () => MenuItemState;
+  group?: string; // For grouping related items (e.g., "Agentic AI")
+  isBeta?: boolean; // For displaying beta badge
 };
 
 // Visibility state for menu items
@@ -368,11 +369,12 @@ export function createVisibleSidebarItems(): NavLinkProps[] {
  */
 export function getEmbeddedAvailableRoutes(): SidebarItem[] {
   return SIDEBAR_ITEMS.map((item) => {
-    // Handle Knowledge Base and AI Agent routes with beta badge
+    // Mark AI-related routes with group and beta flag
     if (item.path === '/knowledgebases' || item.path === '/agents') {
       return {
         ...item,
-        title: getSidebarItemTitleWithBetaBadge({ route: { path: item.path, title: String(item.title) } }),
+        group: 'Agentic AI',
+        isBeta: true,
       };
     }
 

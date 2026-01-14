@@ -9,10 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Breadcrumbs, Button, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
+import { Box, Button, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
 import { Link, useLocation, useMatchRoute } from '@tanstack/react-router';
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
+import { Fragment } from 'react';
 
 import { isEmbedded } from '../../config';
 import { api } from '../../state/backend-api';
@@ -20,6 +21,13 @@ import { type BreadcrumbEntry, uiState } from '../../state/ui-state';
 import { IsDev } from '../../utils/env';
 import DataRefreshButton from '../misc/buttons/data-refresh/component';
 import { UserPreferencesButton } from '../misc/user-preferences';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from '../redpanda-ui/components/breadcrumb';
 import { Separator } from '../redpanda-ui/components/separator';
 import { SidebarTrigger } from '../redpanda-ui/components/sidebar';
 
@@ -39,14 +47,20 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
           </>
         ) : null}
         {isEmbedded() ? null : (
-          <Breadcrumbs
-            items={breadcrumbItems.map((x) => ({
-              name: x.title,
-              heading: x.heading,
-              to: x.linkTo,
-            }))}
-            showHomeIcon={false}
-          />
+          <Breadcrumb>
+            <BreadcrumbList>
+              {breadcrumbItems.map((item, index) => (
+                <Fragment key={item.linkTo}>
+                  {index > 0 && <BreadcrumbSeparator />}
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                      <Link to={item.linkTo}>{item.title}</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                </Fragment>
+              ))}
+            </BreadcrumbList>
+          </Breadcrumb>
         )}
       </Flex>
     </Flex>
