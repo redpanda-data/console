@@ -3,10 +3,21 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Configure reporters based on environment
+const reporters = process.env.CI
+  ? [
+      ['github' as const],
+      ['html' as const, { outputFolder: 'playwright-report' }],
+    ]
+  : [
+      ['list' as const],
+      ['html' as const, { outputFolder: 'playwright-report' }],
+    ];
+
 /**
  * Playwright Test configuration for Enterprise (console-enterprise) variant
  */
-export default defineConfig({
+const config = defineConfig({
   // Extended timeout for shadowlink tests
   timeout: 120 * 1000,
 
@@ -30,9 +41,7 @@ export default defineConfig({
   workers: process.env.CI ? 4 : undefined,
 
   /* Reporter to use */
-  reporter: process.env.CI
-    ? [['github'], ['html', { outputFolder: 'playwright-report' }]]
-    : [['list'], ['html', { outputFolder: 'playwright-report' }]],
+  reporter: reporters,
 
   /* Global setup and teardown */
   globalSetup: '../shared/global-setup.mjs',
@@ -87,3 +96,5 @@ export default defineConfig({
     },
   ],
 });
+
+export default config;

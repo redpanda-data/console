@@ -44,14 +44,14 @@ async function runVariant(variantName, playwrightArgs = []) {
   console.log(`Config: ${configPath}`);
   console.log('');
 
-  // Add explicit reporters in CI to ensure correct output format
-  const reporterArgs = process.env.CI ? ['--reporter=github', '--reporter=html'] : [];
-
-  const args = ['playwright', 'test', '--config', configPath, ...reporterArgs, ...playwrightArgs];
+  const args = ['playwright', 'test', '--config', configPath, ...playwrightArgs];
 
   const child = spawn('npx', args, {
     stdio: 'inherit',
     cwd: testsDir,
+    env: {
+      ...process.env,
+    },
   });
 
   return new Promise((resolve, reject) => {
