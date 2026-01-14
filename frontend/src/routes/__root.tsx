@@ -45,21 +45,33 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 /**
- * RootLayout wraps the app with both TanStack Router (primary) and BrowserRouter (compatibility).
+ * RootLayout wraps the app with TanStack Router (primary) and conditionally BrowserRouter.
  * BrowserRouter provides context for legacy React Router hooks during migration.
+ *
+ * IMPORTANT: In embedded mode, we skip BrowserRouter to avoid conflicts with Cloud UI's
+ * React Router DOM. Having multiple routers manipulating window.history causes navigation
+ * loops and flickering UI.
+ *
  * TODO: Remove BrowserRouter once all components are migrated to TanStack Router.
  */
 function RootLayout() {
+  const content = (
+    <NuqsAdapter>
+      <ErrorBoundary>
+        <RequireAuth>{isEmbedded() ? <EmbeddedLayout /> : <SelfHostedLayout />}</RequireAuth>
+      </ErrorBoundary>
+    </NuqsAdapter>
+  );
+
   return (
     <>
       <RouterSync />
-      <BrowserRouter basename={getBasePath()}>
-        <NuqsAdapter>
-          <ErrorBoundary>
-            <RequireAuth>{isEmbedded() ? <EmbeddedLayout /> : <SelfHostedLayout />}</RequireAuth>
-          </ErrorBoundary>
-        </NuqsAdapter>
-      </BrowserRouter>
+      {/*
+       * Only wrap with BrowserRouter in self-hosted mode.
+       * In embedded mode, the shell provides router context and we must not
+       * have competing history manipulators.
+       */}
+      {isEmbedded() ? content : <BrowserRouter basename={getBasePath()}>{content}</BrowserRouter>}
       {process.env.NODE_ENV === 'development' && <TanStackRouterDevtools position="bottom-right" />}
     </>
   );

@@ -51,6 +51,12 @@ import {
 import { routeTree } from './routeTree.gen';
 import { appGlobal } from './state/app-global';
 
+// Regex for normalizing paths by removing trailing slashes
+const TRAILING_SLASH_REGEX = /\/+$/;
+
+// Normalize a path by removing trailing slashes for consistent comparison
+const normalizePath = (path: string) => path.replace(TRAILING_SLASH_REGEX, '') || '/';
+
 export interface EmbeddedProps extends SetConfigArguments {
   /**
    * This is the base url that is used:
@@ -81,6 +87,14 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
   useEffect(() => {
     const shellNavigationHandler = (event: Event) => {
       const pathname = (event as CustomEvent<string>).detail;
+      const currentPath = appGlobal.historyLocation()?.pathname;
+
+      // Skip if already at this path to prevent navigation loops
+      // This works in tandem with AppGlobal.historyPush deduplication
+      if (normalizePath(pathname) === normalizePath(currentPath ?? '')) {
+        return;
+      }
+
       appGlobal.historyPush(pathname);
     };
 

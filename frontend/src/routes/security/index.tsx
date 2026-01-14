@@ -9,15 +9,22 @@
  * by the Apache License, Version 2.0
  */
 
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { ShieldCheckIcon } from 'components/icons';
-
-import AclList from '../../components/pages/acls/acl-list';
 
 export const Route = createFileRoute('/security/')({
   staticData: {
     title: 'Security',
     icon: ShieldCheckIcon,
   },
-  component: AclList,
+  beforeLoad: () => {
+    // Redirect /security/ to /security/users at router level.
+    // This prevents the component-level useEffect redirect which can cause
+    // navigation loops in embedded mode where shell and console routers conflict.
+    throw redirect({
+      to: '/security/$tab',
+      params: { tab: 'users' },
+      replace: true,
+    });
+  },
 });

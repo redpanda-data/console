@@ -101,7 +101,6 @@ const getCreateUserButtonProps = () => ({
 });
 
 const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
-  const navigate = useNavigate();
   const { data: usersData, isLoading: isUsersLoading } = useLegacyListUsersQuery();
 
   // Set up page title and breadcrumbs
@@ -126,12 +125,9 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
     });
   }, []);
 
-  // Redirect to users tab if no tab is specified
-  useEffect(() => {
-    if (!tab) {
-      navigate({ to: '/security/$tab', params: { tab: 'users' }, replace: true });
-    }
-  }, [tab, navigate]);
+  // Note: Redirect from /security/ to /security/users is now handled at route level
+  // in src/routes/security/index.tsx using beforeLoad to prevent navigation loops
+  // in embedded mode where shell and console routers can conflict.
 
   if (isUsersLoading && !usersData?.users?.length) {
     return DefaultSkeleton;

@@ -16,19 +16,42 @@ import { uiState } from './ui-state';
 
 type NavigateFn = (to: string, options?: { replace?: boolean }) => void;
 
+// Regex for normalizing paths by removing trailing slashes
+const TRAILING_SLASH_REGEX = /\/+$/;
+
 class AppGlobal {
   private _navigate: NavigateFn | null = null;
   private _location: ParsedLocation | null = null;
   // biome-ignore lint/suspicious/noExplicitAny: Router type is complex and varies based on route tree
   private _router: Router<any, any, any> | null = null;
 
+  /**
+   * Normalizes a path by removing trailing slashes for consistent comparison.
+   * This prevents duplicate navigations when paths differ only by trailing slash.
+   */
+  private normalizePath(path: string | undefined): string {
+    if (!path) {
+      return '/';
+    }
+    return path.replace(TRAILING_SLASH_REGEX, '') || '/';
+  }
+
   historyPush(path: string) {
+    // Skip navigation if already at this path to prevent navigation loops
+    // This is critical for embedded mode where shell and console routers can conflict
+    if (this.normalizePath(this._location?.pathname) === this.normalizePath(path)) {
+      return;
+    }
     uiState.pathName = path;
     api.errors = [];
     this._navigate?.(path);
   }
 
   historyReplace(path: string) {
+    // Skip navigation if already at this path to prevent navigation loops
+    if (this.normalizePath(this._location?.pathname) === this.normalizePath(path)) {
+      return;
+    }
     uiState.pathName = path;
     api.errors = [];
     this._navigate?.(path, { replace: true });
