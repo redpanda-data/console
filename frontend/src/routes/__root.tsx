@@ -10,7 +10,7 @@
  */
 
 import type { QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet, useLocation } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import AnnouncementBar from 'components/builder-io/announcement-bar';
 import { Toaster } from 'components/redpanda-ui/components/sonner';
@@ -55,6 +55,13 @@ function RootLayout() {
 }
 
 function SelfHostedLayout() {
+  const location = useLocation();
+  const isLoginPage = location.pathname.startsWith('/login');
+
+  if (isLoginPage) {
+    return <Outlet />;
+  }
+
   return (
     <>
       <AnnouncementBar />
