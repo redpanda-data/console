@@ -178,7 +178,7 @@ test.describe('Schema Registry E2E Tests', () => {
 
       await page.getByRole('link', { name: 'Schema Registry' }).first().click();
 
-      await expect(page).toHaveURL('/schema-registry?showSoftDeleted=false');
+      await expect(page).toHaveURL('/schema-registry/?showSoftDeleted=false');
     });
   });
 
@@ -267,7 +267,7 @@ test.describe('Schema Registry E2E Tests', () => {
       await schemaPage.gotoCreate();
 
       await schemaPage.cancelCreation();
-      await expect(page).toHaveURL('/schema-registry?showSoftDeleted=false');
+      await expect(page).toHaveURL('/schema-registry/?showSoftDeleted=false');
     });
 
     test('should navigate to create page from list', async ({ page }) => {

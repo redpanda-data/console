@@ -124,7 +124,7 @@ test.describe('ACL User Management', () => {
     });
 
     await test.step('5. Verify URL contains query parameter q=test', async () => {
-      await expect(page).toHaveURL('/security/users?q=test');
+      await expect(page).toHaveURL('/security/users/?q=test');
     });
 
     await test.step('6. Verify filtered results show only users with test in name', async () => {
@@ -165,7 +165,7 @@ test.describe('ACL User Management', () => {
     });
 
     await test.step('3. Verify URL contains query parameter q=e2e', async () => {
-      await expect(page).toHaveURL('/security/users?q=e2e');
+      await expect(page).toHaveURL('/security/users/?q=e2e');
     });
 
     await test.step('4. Verify only e2euser is visible', async () => {
@@ -177,7 +177,7 @@ test.describe('ACL User Management', () => {
     });
 
     await test.step('6. Verify URL contains query parameter q=test', async () => {
-      await expect(page).toHaveURL('/security/users?q=test');
+      await expect(page).toHaveURL('/security/users/?q=test');
     });
 
     await test.step('7. Verify test-user is visible', async () => {
@@ -363,7 +363,7 @@ test.describe('ACL User Management', () => {
     });
 
     await test.step('6. Verify redirect to users list', async () => {
-      await page.waitForURL('/security/users/', { timeout: 10000 });
+      await page.waitForURL('/security/users', { timeout: 10000 });
     });
   });
 });
