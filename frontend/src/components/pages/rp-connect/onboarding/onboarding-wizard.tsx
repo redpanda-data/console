@@ -1,4 +1,8 @@
 import { create } from '@bufbuild/protobuf';
+import { getRouteApi, useNavigate } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/rp-connect/wizard');
+
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -10,7 +14,6 @@ import { AnimatePresence } from 'motion/react';
 import { ComponentSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useListComponentsQuery } from 'react-query/api/connect';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useOnboardingTopicDataStore,
   useOnboardingUserDataStore,
@@ -107,10 +110,10 @@ export const ConnectOnboardingWizard = ({
     };
   }, [resetOnboardingWizardStore]);
 
-  const [searchParams] = useSearchParams();
+  const search = routeApi.useSearch();
 
   const initialStep = useMemo(() => {
-    const stepSearchParam = searchParams.get('step');
+    const stepSearchParam = search.step;
     switch (stepSearchParam) {
       case 'add-input':
         return WizardStep.ADD_INPUT;
@@ -125,7 +128,7 @@ export const ConnectOnboardingWizard = ({
       default:
         return WizardStep.ADD_INPUT;
     }
-  }, [searchParams]);
+  }, [search.step]);
 
   const addInputStepRef = useRef<BaseStepRef<ConnectTilesListFormData>>(null);
   const addOutputStepRef = useRef<BaseStepRef<ConnectTilesListFormData>>(null);
@@ -324,13 +327,13 @@ export const ConnectOnboardingWizard = ({
     resetOnboardingWizardStore();
     if (onCancelProp) {
       onCancelProp();
-    } else if (searchParams.get('serverless') === 'true') {
-      navigate('/overview');
+    } else if (search.serverless === 'true') {
+      navigate({ to: '/overview' });
       window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
     } else {
-      navigate('/connect-clusters');
+      navigate({ to: '/connect-clusters' });
     }
-  }, [onCancelProp, navigate, resetOnboardingWizardStore, searchParams]);
+  }, [onCancelProp, navigate, resetOnboardingWizardStore, search.serverless]);
 
   // Callbacks to update validity for each step
   const handleInputValidityChange = useCallback((isValid: boolean) => {

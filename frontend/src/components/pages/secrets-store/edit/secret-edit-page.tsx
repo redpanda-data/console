@@ -11,6 +11,10 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { getRouteApi, useNavigate } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/secrets/$id/edit');
+
 import { Button } from 'components/redpanda-ui/components/button';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
@@ -31,7 +35,6 @@ import { UpdateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/se
 import { useEffect } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { useGetSecretQuery, useUpdateSecretMutation } from 'react-query/api/secret';
-import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -41,7 +44,7 @@ import { SecretUpdateFormSchema, type SecretUpdateFormValues } from './secret-ed
 import { SCOPE_OPTIONS } from '../secret-form-shared';
 
 export const SecretEditPage = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = routeApi.useParams();
   const navigate = useNavigate();
 
   const { data: secretData, isLoading, error } = useGetSecretQuery({ id: id || '' }, { enabled: Boolean(id) });
@@ -115,7 +118,7 @@ export const SecretEditPage = () => {
     try {
       await updateSecret({ request });
       toast.success('Secret updated successfully');
-      navigate('/secrets');
+      navigate({ to: '/secrets' });
     } catch (updateError) {
       const connectError = ConnectError.from(updateError);
       toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'update', entity: 'secret' }));
@@ -139,7 +142,7 @@ export const SecretEditPage = () => {
         <div className="flex flex-col items-center gap-4">
           <AlertCircle className="h-12 w-12 text-red-600" />
           <Text className="text-center">Secret not found or could not be loaded.</Text>
-          <Button onClick={() => navigate('/secrets')} variant="outline">
+          <Button onClick={() => navigate({ to: '/secrets' })} variant="outline">
             Go Back to Secrets
           </Button>
         </div>
@@ -227,7 +230,7 @@ export const SecretEditPage = () => {
         <div className="flex justify-end gap-3 pt-4">
           <Button
             data-testid="secret-edit-cancel-button"
-            onClick={() => navigate('/secrets')}
+            onClick={() => navigate({ to: '/secrets' })}
             type="button"
             variant="outline"
           >

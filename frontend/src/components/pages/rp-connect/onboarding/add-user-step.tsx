@@ -2,6 +2,7 @@ import { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey } from '@connectrpc/connect-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
+import { Link as TanStackRouterLink } from '@tanstack/react-router';
 import { FEATURE_FLAGS } from 'components/constants';
 import { generatePassword } from 'components/pages/acls/user-create';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
@@ -30,7 +31,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
-import { Heading, Link, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { Heading, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import {
   ServiceAccountSelector,
   type ServiceAccountSelectorRef,
@@ -47,7 +48,6 @@ import { useForm } from 'react-hook-form';
 import { useCreateSecretMutation } from 'react-query/api/secret';
 import { useListUsersQuery } from 'react-query/api/user';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
-import { Link as ReactRouterLink } from 'react-router-dom';
 import { toast } from 'sonner';
 import { generateServiceAccountName } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -495,13 +495,13 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                               </Text>
                               <Text variant="small">
                                 Edit the user's{' '}
-                                <Link
-                                  as={ReactRouterLink}
+                                <TanStackRouterLink
                                   className="text-blue-800"
-                                  to={`/security/users/${existingUserSelected.name}/details`}
+                                  params={{ userName: existingUserSelected.name }}
+                                  to="/security/users/$userName/details"
                                 >
                                   ACLs
-                                </Link>{' '}
+                                </TanStackRouterLink>{' '}
                                 to add permissions.
                               </Text>
                             </AlertDescription>
@@ -641,9 +641,9 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                                       <AlertDescription>
                                         <Text variant="small">
                                           You will need to configure{' '}
-                                          <Link as={ReactRouterLink} rel="noopener noreferrer" to="/security/acls">
+                                          <TanStackRouterLink params={{ tab: 'acls' }} to="/security/$tab">
                                             ACLs
-                                          </Link>{' '}
+                                          </TanStackRouterLink>{' '}
                                           for custom user permissions if you want the user to be able to read from the
                                           topic.
                                         </Text>

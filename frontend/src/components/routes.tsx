@@ -12,6 +12,7 @@
 // biome-ignore-all lint/complexity/noBannedTypes: empty object represents pages with no route params
 
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
+import { useLocation, useParams } from '@tanstack/react-router';
 import {
   ActivityIcon,
   AIIcon,
@@ -30,7 +31,7 @@ import {
 } from 'components/icons';
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v6';
 import React, { Fragment, type FunctionComponent, useEffect } from 'react';
-import { Navigate, Route, Routes, useLocation, useMatch, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { appGlobal } from 'state/app-global';
 
 import { Section } from './misc/common';
@@ -231,8 +232,9 @@ export type MenuItemState = {
 
 // Separate component to handle the route rendering logic
 function RouteRenderer<TRouteParams>({ route }: { route: PageDefinition<TRouteParams> }): JSX.Element {
-  const matchedPath = useMatch(route.path) ?? '';
-  const params = useParams();
+  const location = useLocation();
+  const matchedPath = location.pathname;
+  const params = useParams({ strict: false });
 
   const pageProps = {
     matchedPath,

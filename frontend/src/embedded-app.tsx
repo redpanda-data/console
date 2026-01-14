@@ -9,8 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { useEffect } from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
 
 import '@xyflow/react/dist/base.css';
 import '@xyflow/react/dist/style.css';
@@ -35,14 +34,13 @@ import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
 import queryClient from 'query-client';
 
-import AppContent from './components/layout/content';
-import { ErrorBoundary } from './components/misc/error-boundary';
-import HistorySetter from './components/misc/history-setter';
+import { NotFoundPage } from './components/misc/not-found-page';
 import {
   addBearerTokenInterceptor,
   checkExpiredLicenseInterceptor,
@@ -50,6 +48,7 @@ import {
   type SetConfigArguments,
   setup,
 } from './config';
+import { routeTree } from './routeTree.gen';
 import { appGlobal } from './state/app-global';
 
 export interface EmbeddedProps extends SetConfigArguments {
@@ -78,7 +77,7 @@ export interface EmbeddedProps extends SetConfigArguments {
   featureFlags?: Record<string, boolean>;
 }
 
-function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
+function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
   useEffect(() => {
     const shellNavigationHandler = (event: Event) => {
       const pathname = (event as CustomEvent<string>).detail;
@@ -94,14 +93,33 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
 
   setup(p);
 
+  // Create router with dynamic basePath
+  const router = useMemo(
+    () =>
+      createRouter({
+        routeTree,
+        context: {
+          basePath,
+          queryClient,
+        },
+        basepath: basePath,
+        defaultNotFoundComponent: NotFoundPage,
+      }),
+    [basePath]
+  );
+
   // This transport handles the grpc requests for the embedded app.
-  const dataplaneTransport = createConnectTransport({
-    baseUrl: getGrpcBasePath(p.urlOverride?.grpc),
-    interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
-    jsonOptions: {
-      registry: protobufRegistry,
-    },
-  });
+  const dataplaneTransport = useMemo(
+    () =>
+      createConnectTransport({
+        baseUrl: getGrpcBasePath(p.urlOverride?.grpc),
+        interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
+        jsonOptions: {
+          registry: protobufRegistry,
+        },
+      }),
+    [p.urlOverride?.grpc]
+  );
 
   if (!p.isConsoleReadyToMount) {
     return null;
@@ -109,18 +127,13 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
 
   return (
     <CustomFeatureFlagProvider initialFlags={p.featureFlags}>
-      <BrowserRouter basename={basePath}>
-        <HistorySetter />
-        <ChakraProvider resetCSS={false} theme={redpandaTheme} toastOptions={redpandaToastOptions}>
-          <TransportProvider transport={dataplaneTransport}>
-            <QueryClientProvider client={queryClient}>
-              <ErrorBoundary>
-                <AppContent />
-              </ErrorBoundary>
-            </QueryClientProvider>
-          </TransportProvider>
-        </ChakraProvider>
-      </BrowserRouter>
+      <ChakraProvider resetCSS={false} theme={redpandaTheme} toastOptions={redpandaToastOptions}>
+        <TransportProvider transport={dataplaneTransport}>
+          <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+          </QueryClientProvider>
+        </TransportProvider>
+      </ChakraProvider>
     </CustomFeatureFlagProvider>
   );
 }

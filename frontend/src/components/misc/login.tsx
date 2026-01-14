@@ -36,10 +36,10 @@ import {
   Text,
   TextDivider,
 } from '@redpanda-data/ui';
+import { useLocation } from '@tanstack/react-router';
 import { observable } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 
 import { SingleSelect } from './select';
 import SvgLogo from '../../assets/logos/redpanda-text-color.svg';

@@ -20,10 +20,10 @@ import {
   Stack,
   Text,
 } from '@redpanda-data/ui';
+import { Link } from '@tanstack/react-router';
 import { CheckIcon, CloseIcon, TrashIcon } from 'components/icons';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { Link, Link as ReactRouterLink } from 'react-router-dom';
 
 import { openDeleteModal } from './modals';
 import {
@@ -130,9 +130,9 @@ class TransformsList extends PageComponent {
         </Text>
 
         <Stack direction="row" mb="6">
-          <ReactRouterLink to="/transforms-setup">
+          <Link to="/transforms-setup">
             <Button variant="outline">Create transform</Button>
-          </ReactRouterLink>
+          </Link>
 
           <Button isDisabled variant="outline">
             Export metrics
@@ -159,7 +159,12 @@ class TransformsList extends PageComponent {
                 size: 300,
                 cell: ({ row: { original: r } }) => (
                   <Box whiteSpace="break-spaces" wordBreak="break-word">
-                    <Link to={`/transforms/${encodeURIComponentPercents(r.name)}`}>{r.name}</Link>
+                    <Link
+                      params={{ transformName: encodeURIComponentPercents(r.name) }}
+                      to="/transforms/$transformName"
+                    >
+                      {r.name}
+                    </Link>
                   </Box>
                 ),
               },

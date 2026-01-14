@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { useNavigate } from '@tanstack/react-router';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -21,7 +22,6 @@ import { Info, Loader2, RefreshCw, X } from 'lucide-react';
 import type { ShadowTopic } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import React, { useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { ShadowTopicStatusBadge } from './shadow-topic-status-badge';
 
@@ -153,7 +153,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
           return (
             <div className="flex items-center justify-end gap-2">
               <Button
-                onClick={() => navigate(`/topics/${topic.topicName}?pageSize=10`)}
+                onClick={() => navigate({ to: `/topics/${topic.topicName}?pageSize=10` })}
                 size="sm"
                 type="button"
                 variant="outline"

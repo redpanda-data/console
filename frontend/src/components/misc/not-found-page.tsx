@@ -1,10 +1,10 @@
 import { Center, Heading, Image, Stack, Text } from '@redpanda-data/ui';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from '@tanstack/react-router';
 
 import errorBananaSlip from '../../assets/redpanda/ErrorBananaSlip.svg';
 
 export const NotFoundPage = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   return (
     <Center data-testid="not-found-page" h="80vh">
@@ -17,7 +17,7 @@ export const NotFoundPage = () => {
           data-testid="return-to-home"
           fontSize={16}
           onClick={() => {
-            navigate(-1);
+            router.history.back();
           }}
           textDecoration="underline"
         >

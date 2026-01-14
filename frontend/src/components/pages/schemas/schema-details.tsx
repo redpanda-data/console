@@ -21,7 +21,6 @@ import {
   Flex,
   Grid,
   GridItem,
-  Link,
   ListItem,
   Tabs,
   Text,
@@ -29,9 +28,12 @@ import {
   useToast,
 } from '@redpanda-data/ui';
 import { useQueryClient } from '@tanstack/react-query';
+import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
+
 import { runInAction } from 'mobx';
 import React, { useEffect, useState } from 'react';
-import { Link as ReactRouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
 import { SchemaRegistryCapability } from '../../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
@@ -59,16 +61,16 @@ import { SmallStat } from '../../misc/small-stat';
 const { ToastContainer } = createStandaloneToast();
 
 const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: subjectNameProp }) => {
-  const { subjectName: subjectNameParam } = useParams<{ subjectName: string }>();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { subjectName: subjectNameParam } = routeApi.useParams();
+  const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName' });
+  const search = routeApi.useSearch();
   const toast = useToast();
 
   // Use prop if provided (for routing), otherwise use URL param
   const subjectNameRaw = decodeURIComponentPercents(subjectNameProp || subjectNameParam || '');
   const subjectNameEncoded = encodeURIComponent(subjectNameRaw);
 
-  const versionParam = searchParams.get('version');
+  const versionParam = search.version;
   const version =
     versionParam && versionParam !== 'latest' && !Number.isNaN(Number(versionParam)) ? Number(versionParam) : 'latest';
 
@@ -104,10 +106,10 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
 
   // Set version in query params if not present
   useEffect(() => {
-    if (!searchParams.has('version')) {
-      setSearchParams({ version: 'latest' });
+    if (!search.version) {
+      navigate({ search: { version: 'latest' }, replace: true });
     }
-  }, [searchParams, setSearchParams]);
+  }, [search.version, navigate]);
 
   if (isLoadingSubject || !subject) {
     return DefaultSkeleton;
@@ -138,7 +140,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
               title: permanent ? 'Subject permanently deleted' : 'Subject soft-deleted',
             });
             if (permanent) {
-              navigate('/schema-registry/');
+              navigate({ to: '/schema-registry' });
             }
           },
           onError: (err) => {
@@ -185,7 +187,12 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           disabledReason={
             canManageSchemaRegistry === false ? "You don't have the 'canManageSchemaRegistry' permission" : undefined
           }
-          onClick={() => navigate(`/schema-registry/subjects/${subjectNameEncoded}/edit-compatibility`)}
+          onClick={() =>
+            navigate({
+              to: '/schema-registry/subjects/$subjectName/edit-compatibility',
+              params: { subjectName: subjectNameEncoded },
+            })
+          }
           variant="outline"
         >
           Edit compatibility
@@ -193,7 +200,12 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
         <Button
           data-testid="schema-details-add-version-btn"
           disabledReason={canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined}
-          onClick={() => navigate(`/schema-registry/subjects/${subjectNameEncoded}/add-version`)}
+          onClick={() =>
+            navigate({
+              to: '/schema-registry/subjects/$subjectName/add-version',
+              params: { subjectName: subjectNameEncoded },
+            })
+          }
           variant="outline"
         >
           Add new version
@@ -251,8 +263,8 @@ export function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
   const toast = useToast();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName' });
+  const search = routeApi.useSearch();
   const queryClient = useQueryClient();
 
   const subjectData = p.subject;
@@ -263,7 +275,7 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
 
   type UserDataType = NonNullable<typeof userData>;
 
-  const queryVersion = searchParams.get('version');
+  const queryVersion = search.version;
   const versionNumber =
     queryVersion && queryVersion !== 'latest' && !Number.isNaN(Number(queryVersion)) ? Number(queryVersion) : null;
 
@@ -291,9 +303,9 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
         duration: 5000,
         isClosable: true,
       });
-      setSearchParams({ version: String(fallbackVersion) });
+      navigate({ search: { version: String(fallbackVersion) }, replace: true });
     }
-  }, [versionNumber, requestedVersionExists, fallbackVersion, toast, setSearchParams]);
+  }, [versionNumber, requestedVersionExists, fallbackVersion, toast, navigate]);
 
   const schema = subjectData.schemas.first((x) => x.version === selectedVersion);
 
@@ -315,7 +327,7 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
   );
 
   const handleVersionChange = (value: number) => {
-    setSearchParams({ version: String(value) });
+    navigate({ search: { version: String(value) } });
     setSelectedVersion(value);
   };
 
@@ -346,7 +358,7 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
             if (newDetails?.latestActiveVersion) {
               setSelectedVersion(newDetails.latestActiveVersion);
             } else {
-              navigate('/schema-registry/');
+              navigate({ to: '/schema-registry' });
             }
           },
           onError: (err) => {
@@ -382,7 +394,11 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
           });
 
           // Navigate to the latest active version after recovery
-          navigate(`/schema-registry/subjects/${encodeURIComponent(subjectData.name)}?version=latest`);
+          navigate({
+            to: '/schema-registry/subjects/$subjectName',
+            params: { subjectName: encodeURIComponent(subjectData.name) },
+            search: { version: 'latest' },
+          });
         },
         onError: (err) => {
           toast({
@@ -643,7 +659,7 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
       </Text>
       <Text mb="6">
         Schemas that are required by this version.
-        {/* <Link as={ReactRouterLink} to="/home">Learn More</Link> */}
+        {/* <Link as={Link} to="/home">Learn More</Link> */}
       </Text>
 
       {schema.references.length > 0 ? (
@@ -663,9 +679,10 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
             return (
               <ListItem key={ref.name + ref.subject + ref.version}>
                 <Link
-                  as={ReactRouterLink}
                   data-testid={`schema-reference-link-${ref.subject}`}
-                  to={`/schema-registry/subjects/${encodeURIComponentPercents(ref.subject)}?version=${ref.version}`}
+                  params={{ subjectName: encodeURIComponentPercents(ref.subject) }}
+                  search={{ version: String(ref.version) }}
+                  to="/schema-registry/subjects/$subjectName"
                 >
                   {ref.subject}
                 </Link>
@@ -682,7 +699,7 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
       </Text>
       <Text mb="6">
         Schemas that reference this version.
-        {/* <Link as={ReactRouterLink} to="/home">Learn More</Link> */}
+        {/* <Link as={Link} to="/home">Learn More</Link> */}
       </Text>
 
       {referencedByData && referencedByData.length > 0 ? (
@@ -697,9 +714,10 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
               return (
                 <ListItem key={ref.subject + ref.version}>
                   <Link
-                    as={ReactRouterLink}
                     data-testid={`schema-referenced-by-link-${ref.subject}`}
-                    to={`/schema-registry/subjects/${encodeURIComponentPercents(ref.subject)}?version=${ref.version}`}
+                    params={{ subjectName: encodeURIComponentPercents(ref.subject) }}
+                    search={{ version: String(ref.version) }}
+                    to="/schema-registry/subjects/$subjectName"
                   >
                     {ref.subject}
                   </Link>

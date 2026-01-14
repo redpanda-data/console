@@ -11,13 +11,13 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Badge, Box, DataTable, Stack, Tooltip } from '@redpanda-data/ui';
+import { useLocation } from '@tanstack/react-router';
 import ErrorResult from 'components/misc/error-result';
 import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FunctionComponent } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
-import { useLocation } from 'react-router-dom';
 
 import {
   ConnectorClass,
@@ -107,7 +107,6 @@ class KafkaConnectOverview extends PageComponent<{
     p.title = 'Overview';
     p.addBreadcrumb('Connect', '/connect-clusters');
 
-    // biome-ignore lint/nursery/noFloatingPromises: Fire-and-forget with internal error handling
     this.initializeData();
     appGlobal.onRefresh = async () => await this.refreshData();
   }

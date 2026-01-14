@@ -14,6 +14,7 @@
 import { create } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Loader2 } from 'lucide-react';
@@ -40,7 +41,6 @@ import { useEffect, useMemo } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useCreateKnowledgeBaseMutation } from 'react-query/api/knowledge-base';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -285,7 +285,7 @@ export const KnowledgeBaseCreatePage = () => {
       await createKnowledgeBase(create(CreateKnowledgeBaseRequestSchema, { knowledgeBase }));
 
       toast.success('Knowledge base created successfully');
-      navigate('/knowledgebases');
+      navigate({ to: '/knowledgebases' });
     } catch (err) {
       const connectError = err as ConnectError;
       toast.error(
@@ -326,7 +326,7 @@ export const KnowledgeBaseCreatePage = () => {
 
           {/* Actions */}
           <div className="flex justify-end gap-2">
-            <Button onClick={() => navigate('/knowledgebases')} type="button" variant="outline">
+            <Button onClick={() => navigate({ to: '/knowledgebases' })} type="button" variant="outline">
               Cancel
             </Button>
             <Button disabled={!form.formState.isValid || isCreating} type="submit">

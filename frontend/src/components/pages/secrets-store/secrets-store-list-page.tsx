@@ -10,6 +10,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
+import { useNavigate } from '@tanstack/react-router';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -48,7 +49,6 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import React, { useEffect } from 'react';
 import { useDeleteSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -269,7 +269,7 @@ export const SecretsStoreListPage = () => {
 
   const handleEdit = React.useCallback(
     (secretId: string) => {
-      navigate(`/secrets/${secretId}/edit`);
+      navigate({ to: `/secrets/${secretId}/edit` });
     },
     [navigate]
   );
@@ -342,7 +342,7 @@ export const SecretsStoreListPage = () => {
 
         <div className="flex items-center justify-between">
           <DataTableViewOptions table={table} />
-          <Button onClick={() => navigate('/secrets/create')} size="sm" variant="secondary">
+          <Button onClick={() => navigate({ to: '/secrets/create' })} size="sm" variant="secondary">
             <Plus className="h-4 w-4" />
             Create Secret
           </Button>

@@ -9,11 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
+import { getRouteApi } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/agents/$id');
+
 import { Badge, type BadgeVariant } from 'components/redpanda-ui/components/badge';
 import { AlertCircle, Check, Clock, Loader2, StopCircle } from 'lucide-react';
 import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
-import { useParams } from 'react-router-dom';
 
 const getAIAgentStatus = (state: AIAgent_State): { icon: React.ReactNode; text: string; variant: BadgeVariant } => {
   switch (state) {
@@ -57,7 +60,7 @@ const getAIAgentStatus = (state: AIAgent_State): { icon: React.ReactNode; text: 
 };
 
 export const AIAgentStateBadge = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = routeApi.useParams();
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
 
   if (!aiAgentData?.aiAgent) {

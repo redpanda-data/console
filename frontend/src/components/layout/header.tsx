@@ -10,11 +10,11 @@
  */
 
 import { Box, Breadcrumbs, Button, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
+import { Link, useMatchRoute } from '@tanstack/react-router';
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
-import { Link as ReactRouterLink, useMatch } from 'react-router-dom';
 
-import { isEmbedded, isFeatureFlagEnabled } from '../../config';
+import { isEmbedded } from '../../config';
 import { api } from '../../state/backend-api';
 import { type BreadcrumbEntry, uiState } from '../../state/ui-state';
 import { IsDev } from '../../utils/env';
@@ -56,7 +56,7 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
 const AppPageHeader = observer(() => {
   const showRefresh = useShouldShowRefresh();
 
-  const shouldHideHeader = useShouldHideHeader();
+  // const shouldHideHeader = useShouldHideHeader();
   const useNewSidebar = !isEmbedded();
 
   const breadcrumbItems = computed(() => {
@@ -75,9 +75,11 @@ const AppPageHeader = observer(() => {
 
   const lastBreadcrumb = breadcrumbItems.pop();
 
-  if (shouldHideHeader || uiState.shouldHidePageHeader) {
-    return null;
-  }
+  // TODO: Fix shouldHideHeader logic for TanStack Router
+  // Temporarily disabled to restore breadcrumbs
+  // if (shouldHideHeader || uiState.shouldHidePageHeader) {
+  //   return null;
+  // }
 
   return (
     <Box>
@@ -116,17 +118,17 @@ const AppPageHeader = observer(() => {
         </Flex>
         <Flex alignItems="center" gap={2}>
           {!isEmbedded() && api.isRedpanda && (
-            <Button
-              as={ReactRouterLink}
-              isDisabled={!api.userData?.canViewDebugBundle}
-              to={api.userData?.canViewDebugBundle ? '/debug-bundle' : undefined}
-              tooltip={
-                api.userData?.canViewDebugBundle ? null : 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission'
-              }
-              variant="ghost"
-            >
-              Debug bundle
-            </Button>
+            <Link to="/debug-bundle">
+              <Button
+                isDisabled={!api.userData?.canViewDebugBundle}
+                tooltip={
+                  api.userData?.canViewDebugBundle ? null : 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission'
+                }
+                variant="ghost"
+              >
+                Debug bundle
+              </Button>
+            </Link>
           )}
           <UserPreferencesButton />
           {IsDev && !isEmbedded() && <ColorModeSwitch m={0} p={0} variant="ghost" />}
@@ -146,49 +148,28 @@ export default AppPageHeader;
  * @returns {boolean} Indicates whether the refresh button should be shown (true/false).
  */
 function useShouldShowRefresh() {
-  const connectClusterMatch = useMatch({
-    path: '/connect-clusters/:clusterName/:connectorName',
-    end: false,
-  });
+  const matchRoute = useMatchRoute();
 
-  const schemaCreateMatch = useMatch({
-    path: '/schema-registry/create',
-    end: false,
-  });
-
-  const topicProduceRecordMatch = useMatch({
-    path: '/topics/:topicName/produce-record',
-    end: false,
-  });
-
-  const secretsMatch = useMatch({
-    path: '/secrets',
-    end: true,
-  });
-
-  const connectWizardPagesMatch = useMatch({
-    path: '/rp-connect/wizard',
-    end: false,
-  });
-
-  const getStartedApiMatch = useMatch({
-    path: '/get-started/api',
-    end: false,
-  });
+  const connectClusterMatch = matchRoute({ to: '/connect-clusters/$clusterName/$connector' });
+  const schemaCreateMatch = matchRoute({ to: '/schema-registry/create' });
+  const topicProduceRecordMatch = matchRoute({ to: '/topics/$topicName/produce-record' });
+  const secretsMatch = matchRoute({ to: '/secrets', fuzzy: false });
+  const connectWizardPagesMatch = matchRoute({ to: '/rp-connect/wizard' });
+  const getStartedApiMatch = matchRoute({ to: '/get-started/api' });
 
   // matches acls
-  const aclCreateMatch = useMatch('/security/acls/create');
-  const aclUpdateMatch = useMatch('/security/acls/:id/update');
-  const aclDetailMatch = useMatch('/security/acls/:id/details');
+  const aclCreateMatch = matchRoute({ to: '/security/acls/create' });
+  const aclUpdateMatch = matchRoute({ to: '/security/acls/$aclName/update' });
+  const aclDetailMatch = matchRoute({ to: '/security/acls/$aclName/details' });
   const isACLRelated = aclCreateMatch || aclUpdateMatch || aclDetailMatch;
 
   // matches roles
-  const roleCreateMatch = useMatch('/security/roles/create');
-  const roleUpdateMatch = useMatch('/security/roles/:id/update');
-  const roleDetailMatch = useMatch('/security/roles/:id/details');
+  const roleCreateMatch = matchRoute({ to: '/security/roles/create' });
+  const roleUpdateMatch = matchRoute({ to: '/security/roles/$roleName/update' });
+  const roleDetailMatch = matchRoute({ to: '/security/roles/$roleName/details' });
   const isRoleRelated = roleCreateMatch || roleUpdateMatch || roleDetailMatch;
 
-  if (connectClusterMatch && connectClusterMatch.params.connectorName === 'create-connector') {
+  if (connectClusterMatch && connectClusterMatch.connector === 'create-connector') {
     return false;
   }
   if (schemaCreateMatch) {
@@ -215,45 +196,25 @@ function useShouldShowRefresh() {
 
   return true;
 }
-
-function useShouldHideHeader() {
-  const remoteMcpPagesMatch = useMatch({
-    path: '/mcp-servers',
-    end: false,
-  });
-
-  const aiAgentPagesMatch = useMatch({
-    path: '/agents',
-    end: false,
-  });
-
-  const knowledgeBasePagesMatch = useMatch({
-    path: '/knowledgebases',
-    end: false,
-  });
-
-  const secretPagesMatch = useMatch({
-    path: '/secrets',
-    end: false,
-  });
-
-  const pipelineDetailsMatch = useMatch({
-    path: '/rp-connect/:pipelineId',
-    end: true,
-  });
-
-  const pipelineEditMatch = useMatch({
-    path: '/rp-connect/:pipelineId/edit',
-    end: false,
-  });
-  const isNewRpcnUX = isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded();
-
-  return (
-    remoteMcpPagesMatch !== null ||
-    aiAgentPagesMatch !== null ||
-    knowledgeBasePagesMatch !== null ||
-    secretPagesMatch !== null ||
-    (pipelineDetailsMatch !== null && isNewRpcnUX) ||
-    (pipelineEditMatch !== null && isNewRpcnUX)
-  );
-}
+//
+// // function useShouldHideHeader() {
+//   const matchRoute = useMatchRoute();
+//
+//   const remoteMcpPagesMatch = matchRoute({ to: '/mcp-servers', fuzzy: true });
+//   const aiAgentPagesMatch = matchRoute({ to: '/agents', fuzzy: true });
+//   const knowledgeBasePagesMatch = matchRoute({ to: '/knowledgebases', fuzzy: true });
+//   const secretPagesMatch = matchRoute({ to: '/secrets', fuzzy: true });
+//   const pipelineDetailsMatch = matchRoute({ to: '/rp-connect/$pipelineId', fuzzy: false });
+//   const pipelineEditMatch = matchRoute({ to: '/rp-connect/$pipelineId/edit' });
+//
+//   const isNewRpcnUX = isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded();
+//
+//   return (
+//     remoteMcpPagesMatch !== null ||
+//     aiAgentPagesMatch !== null ||
+//     knowledgeBasePagesMatch !== null ||
+//     secretPagesMatch !== null ||
+//     (pipelineDetailsMatch !== null && isNewRpcnUX) ||
+//     (pipelineEditMatch !== null && isNewRpcnUX)
+//   );
+// }

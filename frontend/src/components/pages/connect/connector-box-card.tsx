@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Flex, Link, Tag, TagLabel, Text } from '@redpanda-data/ui';
+import { Box, Flex, Tag, TagLabel, Text } from '@redpanda-data/ui';
+import { Link } from 'components/redpanda-ui/components/typography';
 
 import { findConnectorMetadata, removeNamespace } from './helper';
 import BoxCard, { type BoxCardProps } from '../../misc/box-card';
@@ -61,15 +62,15 @@ function ConnectorRadioCardContent({ connectorPlugin }: { connectorPlugin: Conne
       <Text color="gray.500" fontSize=".85em" noOfLines={3}>
         {description}
       </Text>
-      {Boolean(learnMoreLink) && (
+      {learnMoreLink ? (
         <Box mt="2">
           <Tag mt="auto">
-            <Link href={learnMoreLink} isExternal opacity=".8">
+            <Link className="opacity-80" href={learnMoreLink} rel="noopener noreferrer" target="_blank">
               <TagLabel>Documentation</TagLabel>
             </Link>
           </Tag>
         </Box>
-      )}
+      ) : null}
     </Flex>
   );
 }

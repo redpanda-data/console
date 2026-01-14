@@ -36,6 +36,7 @@ import {
   Tooltip,
 } from '@redpanda-data/ui';
 import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { EditIcon, MoreHorizontalIcon, TrashIcon } from 'components/icons';
 import { isServerless } from 'config';
 import { parseAsString } from 'nuqs';
@@ -48,7 +49,6 @@ import {
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { type FC, useEffect, useRef, useState } from 'react';
-import { Link as ReactRouterLink, useNavigate } from 'react-router-dom';
 
 import { DeleteRoleConfirmModal } from './delete-role-confirm-modal';
 import { DeleteUserConfirmModal } from './delete-user-confirm-modal';
@@ -129,7 +129,7 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
   // Redirect to users tab if no tab is specified
   useEffect(() => {
     if (!tab) {
-      navigate('/security/users', { replace: true });
+      navigate({ to: '/security/$tab', params: { tab: 'users' }, replace: true });
     }
   }, [tab, navigate]);
 
@@ -281,7 +281,7 @@ const PermissionsListTab = () => {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <ChakraLink as={ReactRouterLink} textDecoration="none" to={`/security/users/${entry.name}/details`}>
+                    <ChakraLink as={Link} textDecoration="none" to={`/security/users/${entry.name}/details`}>
                       {entry.name}
                     </ChakraLink>
                   );
@@ -399,7 +399,7 @@ const UsersTab = () => {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <ChakraLink as={ReactRouterLink} textDecoration="none" to={`/security/users/${entry.name}/details`}>
+                    <ChakraLink as={Link} textDecoration="none" to={`/security/users/${entry.name}/details`}>
                       {entry.name}
                     </ChakraLink>
                   );
@@ -584,7 +584,7 @@ const RolesTab = () => {
                   const entry = ctx.row.original;
                   return (
                     <ChakraLink
-                      as={ReactRouterLink}
+                      as={Link}
                       data-testid={`role-list-item-${entry.name}`}
                       textDecoration="none"
                       to={`/security/roles/${encodeURIComponent(entry.name)}/details`}
@@ -731,7 +731,10 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
         <Button
           data-testid="create-acls"
           onClick={() => {
-            navigate('create');
+            navigate({
+              to: '/security/acls/create',
+              search: { principalType: undefined, principalName: undefined },
+            });
             setEditorType('create');
             setEdittingPrincipalGroup({
               host: '',
@@ -769,9 +772,10 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
                     <button
                       className="hoverLink"
                       onClick={() => {
-                        navigate(
-                          `/security/acls/${record.principalName}/details?host=${encodeURIComponent(record.host)}`
-                        );
+                        navigate({
+                          to: `/security/acls/${record.principalName}/details`,
+                          search: (prev) => ({ ...prev, host: record.host }),
+                        });
                       }}
                       type="button"
                     >

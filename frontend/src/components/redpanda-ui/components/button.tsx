@@ -38,15 +38,18 @@ const buttonVariants = cva(
   },
 );
 
-export type ButtonProps = 
-React.ComponentProps<'button'> &
+export type ButtonProps = React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
     testId?: string;
     as?: ElementType;
     to?: string;
     icon?: React.ReactNode;
-  }
+    // Support anchor element props when as="a"
+    href?: string;
+    target?: string;
+    rel?: string;
+  };
 
 const Button = React.forwardRef<
   HTMLButtonElement,

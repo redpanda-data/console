@@ -9,13 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
+import { Link } from '@tanstack/react-router';
 import { observer } from 'mobx-react';
 
 import { api } from '../../../state/backend-api';
 import '../../../utils/array-extensions';
 import { Box, Button, Flex, Text } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
-import { Link as ReactRouterLink } from 'react-router-dom';
 
 import DebugBundleOverview from './debug-bundle-overview';
 import { appGlobal } from '../../../state/app-global';
@@ -101,7 +101,7 @@ export default class AdminPageDebugBundleProgress extends PageComponent {
                 </Button>
               ) : (
                 <Button
-                  as={ReactRouterLink}
+                  as={Link}
                   data-testid={api.isDebugBundleError ? 'debug-bundle-try-again-button' : 'debug-bundle-done-button'}
                   to="/debug-bundle"
                   variant="outline"

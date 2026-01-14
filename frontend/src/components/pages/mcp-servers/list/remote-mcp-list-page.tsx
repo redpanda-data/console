@@ -12,6 +12,7 @@
 'use client';
 
 import { ConnectError } from '@connectrpc/connect';
+import { useNavigate } from '@tanstack/react-router';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -48,7 +49,6 @@ import {
   useListMCPServersQuery,
 } from 'react-query/api/remote-mcp';
 import { useDeleteSecretMutation } from 'react-query/api/secret';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -331,7 +331,7 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
     ) {
       return;
     }
-    navigate(`/mcp-servers/${serverId}`);
+    navigate({ to: `/mcp-servers/${serverId}` });
   };
 
   const columns = React.useMemo(
@@ -375,7 +375,7 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
         <MCPDataTableToolbar table={table} />
         <div className="flex items-center justify-between">
           <DataTableViewOptions table={table} />
-          <Button onClick={() => navigate('/mcp-servers/create')} size="sm" variant="secondary">
+          <Button onClick={() => navigate({ to: '/mcp-servers/create' })} size="sm" variant="secondary">
             <Plus className="h-4 w-4" />
             Create MCP Server
           </Button>

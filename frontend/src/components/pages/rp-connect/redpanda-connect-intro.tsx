@@ -15,8 +15,8 @@ import {
   Stack,
   Text,
 } from '@redpanda-data/ui';
+import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Link as ReactRouterLink } from 'react-router-dom';
 
 import RedpandaConnectLogo from '../../../assets/redpanda/rp-connect.svg';
 import PipelinesYamlEditor from '../../misc/pipelines-yaml-editor';
@@ -178,7 +178,7 @@ redpanda:
           <ListItem>
             <Text mt={3}>
               Go to the{' '}
-              <ChakraLink as={ReactRouterLink} style={{ textDecoration: 'underline solid 1px' }} to="/topics">
+              <ChakraLink as={Link} style={{ textDecoration: 'underline solid 1px' }} to="/topics">
                 Topics
               </ChakraLink>{' '}
               page to read the logs and your output topic.{' '}

@@ -9,13 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
+import { getRouteApi, useNavigate } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/agents/$id');
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, Loader2, Search, Settings } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
-import { useParams, useSearchParams } from 'react-router-dom';
 import { uiState } from 'state/ui-state';
 
 import { AIAgentConfigurationTab } from './ai-agent-configuration-tab';
@@ -35,11 +38,12 @@ export const updatePageTitle = (agentName?: string) => {
 export const AIAgentDetailsPage = () => {
   const isAiAgentsInspectorFeatureEnabled = isFeatureFlagEnabled('enableAiAgentsInspectorInConsole');
 
-  const { id } = useParams<{ id: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { id } = routeApi.useParams();
+  const navigate = useNavigate({ from: '/agents/$id' });
+  // Use fine-grained selector to only re-render when tab changes
+  const tab = routeApi.useSearch({ select: (s) => s.tab });
 
-  const tabFromUrl = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(tabFromUrl || 'configuration');
+  const [activeTab, setActiveTab] = useState(tab || 'configuration');
 
   const { data: aiAgentData, isLoading, error } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
 
@@ -50,17 +54,16 @@ export const AIAgentDetailsPage = () => {
   }, [aiAgentData]);
 
   useEffect(() => {
-    const tabParam = searchParams.get('tab');
-    if (tabParam) {
-      setActiveTab(tabParam);
+    if (tab) {
+      setActiveTab(tab);
     } else {
       setActiveTab('configuration');
     }
-  }, [searchParams]);
+  }, [tab]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    setSearchParams({ tab: value });
+    navigate({ search: { tab: value } });
   };
 
   if (isLoading) {

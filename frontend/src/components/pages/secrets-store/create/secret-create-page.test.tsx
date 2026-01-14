@@ -4,8 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { createSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import { ListSecretsResponseSchema as ListSecretsResponseSchemaDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { fireEvent, render, screen, waitFor } from 'test-utils';
+import { fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 vi.mock('config', () => ({
   config: {
@@ -60,15 +59,7 @@ describe('SecretCreatePage', () => {
       rpc(createSecret, createSecretMock);
     });
 
-    render(
-      <MemoryRouter initialEntries={['/secrets/create']}>
-        <Routes>
-          <Route element={<SecretCreatePage />} path="/secrets/create" />
-          <Route element={<div>Secrets List</div>} path="/secrets" />
-        </Routes>
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<SecretCreatePage />, { transport });
 
     // Verify the page loaded
     expect(screen.getByRole('heading', { name: 'Create Secret' })).toBeInTheDocument();

@@ -12,6 +12,7 @@
 'use client';
 
 import { ConnectError } from '@connectrpc/connect';
+import { useNavigate } from '@tanstack/react-router';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -45,7 +46,6 @@ import type { KnowledgeBase } from 'protogen/redpanda/api/dataplane/v1alpha3/kno
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useDeleteKnowledgeBaseMutation, useListKnowledgeBasesQuery } from 'react-query/api/knowledge-base';
 import { useListTopicsQuery } from 'react-query/api/topic';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Features } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
@@ -238,7 +238,7 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<Knowledg
                 key={topic}
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/topics/${encodeURIComponent(topic)}`);
+                  navigate({ to: `/topics/${encodeURIComponent(topic)}` });
                 }}
                 type="button"
               >
@@ -424,7 +424,7 @@ export const KnowledgeBaseListPage = () => {
     ) {
       return;
     }
-    navigate(`/knowledgebases/${encodeURIComponent(knowledgeBaseId)}`);
+    navigate({ to: `/knowledgebases/${encodeURIComponent(knowledgeBaseId)}` });
   };
 
   const columns = React.useMemo(
@@ -478,7 +478,7 @@ export const KnowledgeBaseListPage = () => {
       <KnowledgeBaseDataTableToolbar table={table} />
       <div className="flex items-center justify-between">
         <DataTableViewOptions table={table} />
-        <Button onClick={() => navigate('/knowledgebases/create')} size="sm" variant="secondary">
+        <Button onClick={() => navigate({ to: '/knowledgebases/create' })} size="sm" variant="secondary">
           <Plus className="h-4 w-4" />
           Create Knowledge Base
         </Button>

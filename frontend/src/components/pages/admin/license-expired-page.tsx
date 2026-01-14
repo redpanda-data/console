@@ -1,4 +1,5 @@
-import { Avatars, Box, Flex, Image, Link, Text, VStack } from '@redpanda-data/ui';
+import { Avatars, Box, Flex, Image, Text, VStack } from '@redpanda-data/ui';
+import { Link } from 'components/redpanda-ui/components/typography';
 import { observer } from 'mobx-react';
 
 import { appGlobal } from '../../../state/app-global';

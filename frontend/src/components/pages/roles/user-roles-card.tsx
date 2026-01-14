@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { useNavigate } from '@tanstack/react-router';
 import { Eye, EyeOff, Pencil } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
 import { Button } from '../../redpanda-ui/components/button';
@@ -19,7 +19,7 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../redp
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import type { AclDetail } from '../acls/new-acl/acl.model';
-import { getRuleDataTestId, handleUrlWithHost } from '../acls/new-acl/acl.model';
+import { getRuleDataTestId } from '../acls/new-acl/acl.model';
 import { OperationsBadge } from '../acls/new-acl/operations-badge';
 
 type Role = {
@@ -61,7 +61,7 @@ const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
           <Button
             onClick={(e) => {
               e.stopPropagation();
-              navigate(handleUrlWithHost(`/security/roles/${role.principalName}/details`, ''));
+              navigate({ to: `/security/roles/${role.principalName}/details` });
             }}
             size="sm"
             testId={`view-role-${rowKey}`}

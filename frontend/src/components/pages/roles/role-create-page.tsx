@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useToast } from '@redpanda-data/ui';
+import { useNavigate } from '@tanstack/react-router';
 import {
   convertRulesToCreateACLRequests,
   handleResponses,
@@ -21,7 +22,6 @@ import {
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { useCreateAcls } from '../../../react-query/api/acl';
 import { useCreateRoleMutation } from '../../../react-query/api/security';
@@ -75,7 +75,7 @@ const RoleCreatePage = () => {
       const applyResult = await createAcls(result);
       handleResponses(toast, applyResult.errors, applyResult.created);
 
-      navigate(`/security/roles/${roleName}/details`);
+      navigate({ to: `/security/roles/${roleName}/details` });
     } catch (error) {
       toast({
         status: 'error',
@@ -88,7 +88,7 @@ const RoleCreatePage = () => {
     <PageContent>
       <CreateACL
         edit={false}
-        onCancel={() => navigate('/security/roles')}
+        onCancel={() => navigate({ to: '/security/$tab', params: { tab: 'roles' } })}
         onSubmit={createRoleAclMutation}
         principalType={PrincipalTypeRedpandaRole}
       />

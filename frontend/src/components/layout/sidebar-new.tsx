@@ -10,6 +10,7 @@
  */
 
 import { useColorMode } from '@redpanda-data/ui';
+import { Link, useLocation } from '@tanstack/react-router';
 import { Avatar, AvatarFallback, AvatarImage } from 'components/redpanda-ui/components/avatar';
 import {
   DropdownMenu,
@@ -37,7 +38,6 @@ import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut, Settings } from 'lucide
 import { observer } from 'mobx-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
 
 import RedpandaIconColor from '../../assets/logos/redpanda-icon-color.svg';
 import RedpandaIconWhite from '../../assets/logos/redpanda-icon-white.svg';
@@ -203,9 +203,7 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
         tooltip={item.isDisabled ? { children: item.disabledText } : titleString}
       >
         {item.isDisabled ? (
-          <span className="flex items-center gap-2" role="link">
-            {itemContent}
-          </span>
+          <span className="flex items-center gap-2">{itemContent}</span>
         ) : (
           <Link aria-current={isActive ? 'page' : undefined} onClick={onNavClick} to={item.to}>
             {itemContent}
