@@ -11,13 +11,13 @@
 
 import { Sidebar } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
+import { createVisibleSidebarItems } from 'utils/route-utils';
 
 import { uiSettings } from '../../state/ui';
 import { UserProfile } from '../misc/user-button';
-import { APP_ROUTES, createVisibleSidebarItems } from '../routes';
 
 export const AppSidebarLegacy = observer(() => {
-  const sidebarItems = createVisibleSidebarItems(APP_ROUTES);
+  const sidebarItems = createVisibleSidebarItems();
 
   return (
     <Sidebar isCollapsed={!uiSettings.sideBarOpen} items={sidebarItems}>

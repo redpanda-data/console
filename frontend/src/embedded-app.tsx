@@ -9,6 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+// Array prototype extensions (must be imported early)
+import './utils/array-extensions';
+
 import { useEffect, useMemo } from 'react';
 
 import '@xyflow/react/dist/base.css';

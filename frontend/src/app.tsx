@@ -9,6 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+// Array prototype extensions (must be imported early)
+import './utils/array-extensions';
+
 import '@xyflow/react/dist/base.css';
 import '@xyflow/react/dist/style.css';
 

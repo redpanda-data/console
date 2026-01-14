@@ -33,11 +33,11 @@ import {
   SidebarRail,
   useSidebar,
 } from 'components/redpanda-ui/components/sidebar';
-import { APP_ROUTES, createVisibleSidebarItems } from 'components/routes';
 import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut, Settings } from 'lucide-react';
 import { observer } from 'mobx-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
+import { createVisibleSidebarItems } from 'utils/route-utils';
 
 import RedpandaIconColor from '../../assets/logos/redpanda-icon-color.svg';
 import RedpandaIconWhite from '../../assets/logos/redpanda-icon-white.svg';
@@ -217,7 +217,7 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
 const SidebarNavigation = observer(() => {
   const location = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
-  const sidebarItems = createVisibleSidebarItems(APP_ROUTES);
+  const sidebarItems = createVisibleSidebarItems();
 
   const handleNavClick = () => {
     if (isMobile) {

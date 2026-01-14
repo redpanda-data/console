@@ -12,10 +12,9 @@
 import { HStack, Text } from '@redpanda-data/ui';
 
 import { SidebarItemBadge } from './misc/sidebar-item-badge';
-import type { PageDefinition } from './routes';
 
 type SidebarItemTitleProps = {
-  route: PageDefinition;
+  route: { path: string; title: string };
 };
 
 export const getSidebarItemTitleWithBetaBadge = ({ route }: SidebarItemTitleProps) => (
