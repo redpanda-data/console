@@ -5,14 +5,8 @@ dotenv.config();
 
 // Configure reporters based on environment
 const reporters = process.env.CI
-  ? [
-      ['github' as const],
-      ['html' as const, { outputFolder: 'playwright-report' }],
-    ]
-  : [
-      ['list' as const],
-      ['html' as const, { outputFolder: 'playwright-report' }],
-    ];
+  ? [['github' as const], ['html' as const, { outputFolder: 'playwright-report' }]]
+  : [['list' as const], ['html' as const, { outputFolder: 'playwright-report' }]];
 
 /**
  * Playwright Test configuration for Enterprise (console-enterprise) variant
