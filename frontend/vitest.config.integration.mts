@@ -1,4 +1,5 @@
 import yaml from '@rollup/plugin-yaml';
+import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import react from '@vitejs/plugin-react';
 import { loadEnv } from 'vite';
 import envCompatible from 'vite-plugin-env-compatible';
@@ -17,10 +18,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     test: {
-      fileParallelism: false, // Sequential execution (prevents parallel OOM, auto sets maxWorkers: 1)
-      isolate: true, // Fresh environment per test file (default, explicit for clarity)
-      pool: 'forks', // Each test file runs in separate child process (default)
+      fileParallelism: false,
+      isolate: true,
+      pool: 'forks',
       vmMemoryLimit: '3072Mb', // Force GC when memory limit is reached (3GB safe for 8GB runner with overhead)
+      maxWorkers: 1,
       testTimeout: 30_000,
       globals: true,
       environment: 'jsdom', // Integration tests use jsdom environment
@@ -74,6 +76,14 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: [
+      tanstackRouter({
+        target: 'react',
+        autoCodeSplitting: true,
+        routesDirectory: './src/routes',
+        generatedRouteTree: './src/routeTree.gen.ts',
+        quoteStyle: 'single',
+        semicolons: true,
+      }),
       react(),
       envCompatible({ prefix: ENV_PREFIX }),
       tsconfigPaths({
