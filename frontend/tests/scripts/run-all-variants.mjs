@@ -16,8 +16,6 @@ async function runVariant(variant, playwrightArgs = []) {
     cwd: variant.path,
     env: {
       ...process.env,
-      // Prevent Playwright from starting interactive HTML report server
-      CI: 'true',
     },
   });
 
