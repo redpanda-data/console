@@ -118,6 +118,8 @@ const UserProfile = observer(() => {
     }
   };
 
+  const isCollapsed = state === 'collapsed';
+
   return (
     <>
       <DropdownMenu>
@@ -125,18 +127,22 @@ const UserProfile = observer(() => {
           <SidebarMenuButton
             aria-label={`User menu for ${user.displayName}`}
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            size="lg"
-            tooltip={state === 'collapsed' ? user.displayName : undefined}
+            size={isCollapsed ? 'default' : 'lg'}
+            tooltip={isCollapsed ? user.displayName : undefined}
           >
-            <Avatar className="h-8 w-8">
+            <Avatar className={isCollapsed ? 'h-7 w-7 shrink-0' : 'h-8 w-8 shrink-0'}>
               <AvatarImage alt="" src={user.avatarUrl} />
               <AvatarFallback aria-hidden="true">{initials}</AvatarFallback>
             </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-              <span className="truncate font-semibold">{user.displayName}</span>
-              <span className="truncate text-sidebar-foreground/60 text-xs">Preferences</span>
-            </div>
-            <ChevronUp aria-hidden="true" className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+            {!isCollapsed && (
+              <>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">{user.displayName}</span>
+                  <span className="truncate text-sidebar-foreground/60 text-xs">Preferences</span>
+                </div>
+                <ChevronUp aria-hidden="true" className="ml-auto size-4" />
+              </>
+            )}
           </SidebarMenuButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 rounded-lg" side={isMobile ? 'bottom' : 'top'}>
