@@ -9,7 +9,10 @@ async function runVariant(variant, playwrightArgs = []) {
   console.log(`Running variant: ${variant.name} (${variant.config.displayName})`);
   console.log(`${'='.repeat(60)}\n`);
 
-  const args = ['playwright', 'test', '--config', configPath, ...playwrightArgs];
+  // Add explicit reporters in CI to ensure correct output format
+  const reporterArgs = process.env.CI ? ['--reporter=github', '--reporter=html'] : [];
+
+  const args = ['playwright', 'test', '--config', configPath, ...reporterArgs, ...playwrightArgs];
 
   const child = spawn('npx', args, {
     stdio: 'inherit',
