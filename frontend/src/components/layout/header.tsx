@@ -10,7 +10,7 @@
  */
 
 import { Box, Breadcrumbs, Button, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
-import { Link, useMatchRoute } from '@tanstack/react-router';
+import { Link, useLocation, useMatchRoute } from '@tanstack/react-router';
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 
@@ -56,7 +56,7 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
 const AppPageHeader = observer(() => {
   const showRefresh = useShouldShowRefresh();
 
-  // const shouldHideHeader = useShouldHideHeader();
+  const shouldHideHeader = useShouldHideHeader();
   const useNewSidebar = !isEmbedded();
 
   const breadcrumbItems = computed(() => {
@@ -75,11 +75,9 @@ const AppPageHeader = observer(() => {
 
   const lastBreadcrumb = breadcrumbItems.pop();
 
-  // TODO: Fix shouldHideHeader logic for TanStack Router
-  // Temporarily disabled to restore breadcrumbs
-  // if (shouldHideHeader || uiState.shouldHidePageHeader) {
-  //   return null;
-  // }
+  if (shouldHideHeader || uiState.shouldHidePageHeader) {
+    return null;
+  }
 
   return (
     <Box>
@@ -196,25 +194,17 @@ function useShouldShowRefresh() {
 
   return true;
 }
-//
-// // function useShouldHideHeader() {
-//   const matchRoute = useMatchRoute();
-//
-//   const remoteMcpPagesMatch = matchRoute({ to: '/mcp-servers', fuzzy: true });
-//   const aiAgentPagesMatch = matchRoute({ to: '/agents', fuzzy: true });
-//   const knowledgeBasePagesMatch = matchRoute({ to: '/knowledgebases', fuzzy: true });
-//   const secretPagesMatch = matchRoute({ to: '/secrets', fuzzy: true });
-//   const pipelineDetailsMatch = matchRoute({ to: '/rp-connect/$pipelineId', fuzzy: false });
-//   const pipelineEditMatch = matchRoute({ to: '/rp-connect/$pipelineId/edit' });
-//
-//   const isNewRpcnUX = isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded();
-//
-//   return (
-//     remoteMcpPagesMatch !== null ||
-//     aiAgentPagesMatch !== null ||
-//     knowledgeBasePagesMatch !== null ||
-//     secretPagesMatch !== null ||
-//     (pipelineDetailsMatch !== null && isNewRpcnUX) ||
-//     (pipelineEditMatch !== null && isNewRpcnUX)
-//   );
-// }
+function useShouldHideHeader() {
+  const { pathname } = useLocation();
+
+  // Only hide header in embedded mode for pages that have their own headers
+  if (!isEmbedded()) {
+    return false;
+  }
+
+  // Pages that have their own header components - hide AppPageHeader for these
+  const pagesWithOwnHeaders = ['/mcp-servers', '/agents', '/knowledgebases', '/secrets'];
+
+  // Check if current path starts with any of the pages that have their own headers
+  return pagesWithOwnHeaders.some((page) => pathname.startsWith(page));
+}
