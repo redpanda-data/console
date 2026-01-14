@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/performance/useTopLevelRegex: e2e test */
-import { test } from '../fixtures';
+
 import { generateShadowlinkName, ShadowlinkPage } from '../../test-variant-console/utils/shadowlink-page';
+import { expect, test } from '../fixtures';
 
 test.describe('Shadow Link E2E Tests', () => {
   test.describe('Shadow Link Creation', () => {
