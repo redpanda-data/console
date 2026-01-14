@@ -1,0 +1,224 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha3;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/otel/v1/trace.proto";
+
+// TracingService provides access to distributed traces stored in Redpanda.
+// This service allows querying and retrieving OpenTelemetry traces that have
+// been ingested into a Redpanda Kafka topic.
+service TracingService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Tracing"
+    description: "Query and retrieve OpenTelemetry traces from Redpanda."
+  };
+
+  // ListTraces returns a paginated list of trace summaries within a time range.
+  rpc ListTraces(ListTracesRequest) returns (ListTracesResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+    option (google.api.http) = {get: "/v1alpha3/traces"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List traces"
+      description: "Returns a paginated list of trace summaries for the specified time range."
+    };
+  }
+
+  // GetTrace retrieves the complete trace by trace ID, including all its spans.
+  rpc GetTrace(GetTraceRequest) returns (GetTraceResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+    option (google.api.http) = {get: "/v1alpha3/traces/{trace_id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get trace"
+      description: "Retrieves a complete trace with all its spans by trace ID."
+    };
+  }
+}
+
+// ListTracesRequest is the request message for listing traces.
+message ListTracesRequest {
+  option (buf.validate.message).cel = {
+    id: "time_range_valid"
+    message: "end_time must be >= start_time when both are provided"
+    expression: "!has(this.start_time) || !has(this.end_time) || this.end_time >= this.start_time"
+  };
+
+  // Start time for trace query (inclusive). Traces that finished after this time will be included.
+  // Optional: defaults to Unix epoch if not provided.
+  google.protobuf.Timestamp start_time = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Start time for the query (inclusive). Defaults to Unix epoch (1970-01-01) if not provided. Must be before end_time."}
+  ];
+
+  // End time for trace query (exclusive). Traces that started before this time will be included.
+  // Optional: defaults to current time + 5 minutes if not provided.
+  google.protobuf.Timestamp end_time = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "End time for the query (exclusive). Defaults to current time + 5 minutes if not provided. Must be after start_time."}
+  ];
+
+  // Maximum number of traces to return (pagination). Defaults to 100 if not specified or set to 0.
+  int32 page_size = 3 [
+    (buf.validate.field).int32 = {
+      gte: -1 /* -1 = disable pagination (return all), 0 = default (100) */
+      lte: 1000
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Maximum number of traces to return per page. Defaults to 100 if not specified or set to 0. Use -1 to disable pagination."
+      minimum: -1
+      maximum: 1000
+    }
+  ];
+
+  // Page token for pagination (opaque, from previous response). Leave empty for first page.
+  string page_token = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Opaque token from a previous ListTracesResponse to fetch the next page. Leave empty for the first page."}];
+}
+
+// ListTracesResponse is the response message for listing traces.
+message ListTracesResponse {
+  // List of trace summaries matching the query (sorted by start_time, newest first).
+  repeated TraceSummary traces = 1;
+
+  // Token for fetching next page. Empty if no more results.
+  string next_page_token = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Opaque token to retrieve the next page of results. Empty if this is the last page."}];
+
+  // Total number of traces matching the query (before pagination).
+  // This allows the UI to show "Showing 100 of 17,572 traces".
+  int32 total_count = 3 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Total number of traces matching the time range filter, regardless of pagination. Use this to display 'Showing X of Y traces'."}
+  ];
+
+  // Time range of the returned traces (for UI highlighting).
+  // This shows the actual time span covered by the traces in this page.
+  google.protobuf.Timestamp returned_start_time = 4 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Start time of the oldest trace in this page. Use with returned_end_time to highlight the current view window in a timeline."}
+  ];
+  google.protobuf.Timestamp returned_end_time = 5 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "End time of the newest trace in this page. Use with returned_start_time to highlight the current view window in a timeline."}
+  ];
+
+  // Histogram of trace counts over the query time range.
+  // Use this to render a timeline visualization showing trace distribution.
+  TraceHistogram histogram = 6 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Histogram showing trace distribution over the query time range. Each bucket represents a time interval with its trace count."}
+  ];
+}
+
+// TraceHistogram contains bucketed trace counts for timeline visualization.
+message TraceHistogram {
+  // Time-ordered buckets covering the query range.
+  repeated TraceHistogramBucket buckets = 1;
+
+  // Duration of each bucket.
+  google.protobuf.Duration bucket_duration = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Duration of each histogram bucket."}];
+}
+
+// TraceHistogramBucket represents a single time bucket in the histogram.
+message TraceHistogramBucket {
+  // Start time of this bucket (inclusive).
+  google.protobuf.Timestamp start_time = 1;
+
+  // Number of traces that started within this bucket.
+  int32 count = 2;
+
+  // Number of traces with errors in this bucket.
+  int32 error_count = 3;
+}
+
+// TraceSummary contains high-level metadata about a trace.
+message TraceSummary {
+  // Trace ID (hex string, 32 characters representing 16 bytes).
+  string trace_id = 1 [
+    (buf.validate.field).string.pattern = "^[0-9a-f]{32}$",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Unique trace identifier as a 32-character hexadecimal string."
+      pattern: "^[0-9a-f]{32}$"
+    }
+  ];
+
+  // Root span name (if available). Empty if root span hasn't been received yet.
+  string root_span_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Name of the root span (the span with no parent). May be empty if the root span is not yet available."}];
+
+  // Service name from the root span's resource attributes. May be empty if root span hasn't
+  // been received or lacks the attribute.
+  string root_service_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Service name extracted from the root span's 'service.name' resource attribute. May be empty if the root span is unavailable or lacks the attribute."}];
+
+  // Trace start time (earliest span start timestamp).
+  google.protobuf.Timestamp start_time = 4 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Start time of the trace (earliest span start time)."}
+  ];
+
+  // Trace duration (from earliest start to latest end).
+  google.protobuf.Duration duration = 5 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Total duration of the trace, calculated as (latest span end time) - (earliest span start time)."}
+  ];
+
+  // Total number of spans in this trace.
+  int32 span_count = 6 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Total number of spans that belong to this trace."}
+  ];
+
+  // Number of spans with error status.
+  int32 error_count = 7 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Number of spans in this trace that have an error status."}
+  ];
+}
+
+// GetTraceRequest is the request message for retrieving a single trace.
+message GetTraceRequest {
+  // Trace ID (hex string, 32 characters representing 16 bytes).
+  string trace_id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[0-9a-f]{32}$",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Unique trace identifier as a 32-character hexadecimal string."
+      pattern: "^[0-9a-f]{32}$"
+    }
+  ];
+}
+
+// GetTraceResponse is the response message for retrieving a single trace.
+message GetTraceResponse {
+  // The complete trace with all spans and metadata.
+  Trace trace = 1;
+}
+
+// Trace represents a complete distributed trace with all its spans.
+message Trace {
+  // Trace ID (hex string, 32 characters representing 16 bytes).
+  string trace_id = 1 [
+    (buf.validate.field).string.pattern = "^[0-9a-f]{32}$",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Unique trace identifier as a 32-character hexadecimal string."
+      pattern: "^[0-9a-f]{32}$"
+    }
+  ];
+
+  // All spans belonging to this trace. The parent-child relationship is
+  // defined by the parent_span_id field in each span.
+  repeated redpanda.otel.v1.Span spans = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "List of all spans belonging to this trace. Use the parent_span_id field to reconstruct the span hierarchy."}];
+
+  // Trace-level metadata and computed statistics.
+  TraceSummary summary = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Computed summary information for this trace, including duration, span count, and error count."}];
+}

@@ -4,7 +4,7 @@ import { createConnectTransport } from '@connectrpc/connect-web';
 import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
 import { QueryClient, type QueryClientConfig, QueryClientProvider } from '@tanstack/react-query';
 import { type RenderOptions, render } from '@testing-library/react';
-import React, { type JSXElementConstructor, type PropsWithChildren, type ReactElement } from 'react';
+import React, { type JSXElementConstructor, type PropsWithChildren, type ReactElement, useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 
 // This type interface extends the default options for render from RTL, as well
@@ -20,13 +20,24 @@ const customRender = (ui: React.ReactElement, { ...renderOptions }: ExtendedRend
       createConnectTransport({
         baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
       });
-    const queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-      },
-    });
+
+    // Use useState to lazily initialize the QueryClient once and keep it stable across re-renders
+    // This prevents the client from being recreated when the Wrapper re-renders
+    const [queryClient] = useState(
+      () =>
+        new QueryClient({
+          defaultOptions: {
+            queries: {
+              retry: false,
+              gcTime: 0, // Immediately garbage collect query caches (prevents memory accumulation across tests)
+              staleTime: 0, // Mark data stale immediately (ensures fresh data per test)
+            },
+            mutations: {
+              retry: false,
+            },
+          },
+        })
+    );
 
     return (
       <TransportProvider transport={finalTransport}>

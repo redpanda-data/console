@@ -1,10 +1,21 @@
-import { vi } from 'vitest';
+import { cleanup } from '@testing-library/react';
+import { afterEach, beforeEach, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import './tests/mock-document';
 import './tests/mock-react-select';
 
 // Full setup for integration tests that render React components
 // These tests run in jsdom environment and need browser API mocks
+
+// Explicit cleanup after each test to prevent memory leaks
+afterEach(() => {
+  cleanup(); // Unmount all React trees
+  vi.clearAllMocks(); // Clear mock call history
+  vi.clearAllTimers(); // Clear pending timers
+
+  // Re-stub ResizeObserver to clear any instances from previous test
+  vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+});
 
 // Mock ResizeObserver - not available in jsdom but required by RadixUI components
 class ResizeObserverMock {

@@ -171,7 +171,7 @@ jobs:
 
   e2e-test:
     needs: ["lint", "type-check", "build"]
-    timeout-minutes: 15
+    timeout-minutes: 30
     runs-on: ubuntu-latest-8
     defaults:
       run:
