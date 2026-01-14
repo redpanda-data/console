@@ -27,10 +27,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
 
   /* Reduced workers for enterprise/shadowlink setup */
-  workers: process.env.CI ? 2 : undefined,
+  workers: process.env.CI ? 4 : undefined,
 
   /* Reporter to use */
-  reporter: process.env.CI ? 'list' : 'html',
+  reporter: process.env.CI ? [['github'], ['html']] : [['list'], ['html']],
 
   /* Global setup and teardown */
   globalSetup: '../shared/global-setup.mjs',

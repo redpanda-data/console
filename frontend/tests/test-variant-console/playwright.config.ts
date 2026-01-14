@@ -27,7 +27,7 @@ export default defineConfig({
   workers: process.env.CI ? 4 : undefined,
 
   /* Reporter to use */
-  reporter: process.env.CI ? 'html' : 'html',
+  reporter: process.env.CI ? [['github'], ['html']] : [['list'], ['html']],
 
   /* Global setup and teardown */
   globalSetup: '../shared/global-setup.mjs',
