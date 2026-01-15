@@ -1,6 +1,6 @@
-import { Box, Button, Flex, Grid, Link, List, ListItem, Text } from '@redpanda-data/ui';
+import { Box, Button, Flex, Grid, List, ListItem, Text } from '@redpanda-data/ui';
+import { Link } from '@tanstack/react-router';
 import { ErrorIcon, WarningIcon } from 'components/icons';
-import { Link as ReactRouterLink } from 'react-router-dom';
 
 import colors from '../../../colors';
 import { UnhealthyReason } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
@@ -57,9 +57,7 @@ const ClusterHealthOverview = () => {
                   <ErrorIcon color={colors.brandError} size={18} />{' '}
                   <Text>{api.clusterHealth?.leaderlessPartitionsCount}</Text>
                 </Flex>{' '}
-                <Link as={ReactRouterLink} to="/topics">
-                  View topics
-                </Link>
+                <Link to="/topics">View topics</Link>
               </Flex>
             </Grid>
           </ListItem>
@@ -75,9 +73,7 @@ const ClusterHealthOverview = () => {
                   <WarningIcon color={colors.brandWarning} size={18} />{' '}
                   <Text>{api.clusterHealth?.underReplicatedPartitionsCount}</Text>
                 </Flex>{' '}
-                <Link as={ReactRouterLink} to="/topics">
-                  View topics
-                </Link>
+                <Link to="/topics">View topics</Link>
               </Flex>
             </Grid>
           </ListItem>
@@ -88,12 +84,7 @@ const ClusterHealthOverview = () => {
               <Box fontWeight="bold">Debug bundle</Box>
               <Flex gap={2}>
                 {Boolean(api.isDebugBundleInProgress) && (
-                  <Button
-                    as={ReactRouterLink}
-                    px={0}
-                    to={`/debug-bundle/progress/${api.debugBundleStatus?.jobId}`}
-                    variant="link"
-                  >
+                  <Button as={Link} px={0} to={`/debug-bundle/progress/${api.debugBundleStatus?.jobId}`} variant="link">
                     Bundle generation in progress...
                   </Button>
                 )}
@@ -101,7 +92,7 @@ const ClusterHealthOverview = () => {
                   <DebugBundleLink showDatetime={false} statuses={api.debugBundleStatuses} />
                 )}
                 {!api.isDebugBundleInProgress && (
-                  <Button as={ReactRouterLink} px={0} to="/debug-bundle/" variant="link">
+                  <Button as={Link} px={0} to="/debug-bundle/" variant="link">
                     Generate new
                   </Button>
                 )}

@@ -10,6 +10,10 @@
  */
 
 import { useToast } from '@redpanda-data/ui';
+import { getRouteApi, useNavigate } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/security/acls/create');
+
 import {
   convertRulesToCreateACLRequests,
   handleResponses,
@@ -21,7 +25,6 @@ import {
 } from 'components/pages/acls/new-acl/acl.model';
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { uiState } from 'state/ui-state';
 
 import { useCreateAcls } from '../../../../react-query/api/acl';
@@ -29,11 +32,11 @@ import PageContent from '../../../misc/page-content';
 
 const AclCreatePage = () => {
   const toast = useToast();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const navigate = useNavigate({ from: '/security/acls/create' });
+  const search = routeApi.useSearch();
 
-  const principalTypeParam = searchParams.get('principalType')?.toLowerCase();
-  const principalName = searchParams.get('principalName');
+  const principalTypeParam = search.principalType?.toLowerCase();
+  const principalName = search.principalName;
 
   const principalTypeMap: Record<string, PrincipalType> = {
     redpandarole: PrincipalTypeRedpandaRole,
@@ -60,14 +63,18 @@ const AclCreatePage = () => {
     const applyResult = await createAcls(result);
     handleResponses(toast, applyResult.errors, applyResult.created);
 
-    navigate(`/security/acls/${parsePrincipal(principal).name}/details`);
+    navigate({
+      to: '/security/acls/$aclName/details',
+      params: { aclName: parsePrincipal(principal).name },
+      search: { host: undefined },
+    });
   };
 
   return (
     <PageContent>
       <CreateACL
         edit={false}
-        onCancel={() => navigate('/security/acls')}
+        onCancel={() => navigate({ to: '/security/$tab', params: { tab: 'acls' } })}
         onSubmit={createAclMutation}
         principalType={principalType}
         sharedConfig={sharedConfig}

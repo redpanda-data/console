@@ -9,8 +9,7 @@ import {
   Scope,
   SecretSchema,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { fireEvent, render, screen, waitFor } from 'test-utils';
+import { fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 vi.mock('config', () => ({
   config: {
@@ -27,6 +26,18 @@ vi.mock('state/ui-state', () => ({
     pageBreadcrumbs: [],
   },
 }));
+
+const SECRET_ID = 'TEST_SECRET';
+
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+  return {
+    ...actual,
+    getRouteApi: () => ({
+      useParams: () => ({ id: SECRET_ID }),
+    }),
+  };
+});
 
 global.ResizeObserver = class ResizeObserver {
   observe() {
@@ -71,15 +82,7 @@ describe('SecretEditPage', () => {
       rpc(updateSecret, updateSecretMock);
     });
 
-    render(
-      <MemoryRouter initialEntries={['/secrets/TEST_SECRET/edit']}>
-        <Routes>
-          <Route element={<SecretEditPage />} path="/secrets/:id/edit" />
-          <Route element={<div>Secrets List</div>} path="/secrets" />
-        </Routes>
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<SecretEditPage />, { transport });
 
     // Wait for secret to load
     await waitFor(() => {

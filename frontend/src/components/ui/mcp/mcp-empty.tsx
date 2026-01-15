@@ -1,7 +1,7 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { MCPIcon } from 'components/redpanda-ui/components/icons';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 
 type MCPEmptyProps = {
   children?: React.ReactNode;
@@ -17,7 +17,7 @@ export const MCPEmpty = ({ children, 'data-testid': dataTestId }: MCPEmptyProps)
         No MCP Servers Available
       </Text>
       {children}
-      <Button onClick={() => navigate('/mcp-servers/create')} size="sm" variant="outline">
+      <Button onClick={() => navigate({ to: '/mcp-servers/create' })} size="sm" variant="outline">
         Create MCP Server
       </Button>
     </div>

@@ -14,6 +14,7 @@ import { create } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { Code as ConnectCode } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
@@ -32,7 +33,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useCreateMCPServerMutation, useLintMCPConfigMutation } from 'react-query/api/remote-mcp';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   addServiceAccountTags,
@@ -350,7 +350,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
         onSuccess: (data) => {
           if (data?.mcpServer?.id) {
             toast.success('MCP server created');
-            navigate(`/mcp-servers/${data.mcpServer.id}`);
+            navigate({ to: `/mcp-servers/${data.mcpServer.id}` });
           }
         },
       }

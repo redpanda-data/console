@@ -7,7 +7,7 @@
 
 import { expect, test } from '@playwright/test';
 
-import { TracePage } from '../utils/trace-page';
+import { TracePage } from '../../console/utils/trace-page';
 
 test.describe('Traces Page - Navigation and UI', () => {
   test('should navigate to traces page and display UI elements', async ({ page }) => {
@@ -22,7 +22,7 @@ test.describe('Traces Page - Navigation and UI', () => {
 
       // Verify column headers exist
       await expect(page.getByTestId('traces-sort-toggle')).toBeVisible();
-      await expect(page.getByText('Span')).toBeVisible();
+      await expect(page.getByText('Span', { exact: true })).toBeVisible();
       await expect(page.getByText('Duration')).toBeVisible();
     });
   });

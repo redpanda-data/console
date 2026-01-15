@@ -9,20 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { BrowserRouter } from 'react-router-dom';
-import { render, screen } from 'test-utils';
+import { renderWithFileRoutes, screen } from 'test-utils';
 
 import { UserAclsCard } from './user-acls-card';
 import type { AclDetail } from '../acls/new-acl/acl.model';
-
-// Mock useNavigate
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => vi.fn(),
-  };
-});
 
 const mockAcls: AclDetail[] = [
   {
@@ -66,11 +56,7 @@ const mockAcls: AclDetail[] = [
 
 describe('UserAclsCard', () => {
   test('should render empty state when no ACLs provided', () => {
-    render(
-      <BrowserRouter>
-        <UserAclsCard acls={[]} />
-      </BrowserRouter>
-    );
+    renderWithFileRoutes(<UserAclsCard acls={[]} />);
 
     expect(screen.getByText('ACLs (0)')).toBeInTheDocument();
     expect(screen.getByText('No ACLs assigned to this user.')).toBeInTheDocument();
@@ -78,11 +64,7 @@ describe('UserAclsCard', () => {
   });
 
   test('should render empty state when acls is undefined', () => {
-    render(
-      <BrowserRouter>
-        <UserAclsCard acls={undefined} />
-      </BrowserRouter>
-    );
+    renderWithFileRoutes(<UserAclsCard acls={undefined} />);
 
     expect(screen.getByText('ACLs (0)')).toBeInTheDocument();
     expect(screen.getByText('No ACLs assigned to this user.')).toBeInTheDocument();
@@ -90,21 +72,13 @@ describe('UserAclsCard', () => {
   });
 
   test('should render ACL table with correct count', () => {
-    render(
-      <BrowserRouter>
-        <UserAclsCard acls={mockAcls} />
-      </BrowserRouter>
-    );
+    renderWithFileRoutes(<UserAclsCard acls={mockAcls} />);
 
     expect(screen.getByText('ACLs (2)')).toBeInTheDocument();
   });
 
   test('should render ACL rows with principal and host', () => {
-    render(
-      <BrowserRouter>
-        <UserAclsCard acls={mockAcls} />
-      </BrowserRouter>
-    );
+    renderWithFileRoutes(<UserAclsCard acls={mockAcls} />);
 
     expect(screen.getByTestId('acl-principal-User:test-user-*')).toHaveTextContent('User:test-user');
     expect(screen.getByTestId('acl-principal-User:test-user-192.168.1.1')).toHaveTextContent('User:test-user');
@@ -113,11 +87,7 @@ describe('UserAclsCard', () => {
   });
 
   test('should render action buttons for each ACL', () => {
-    render(
-      <BrowserRouter>
-        <UserAclsCard acls={mockAcls} />
-      </BrowserRouter>
-    );
+    renderWithFileRoutes(<UserAclsCard acls={mockAcls} />);
 
     // Check toggle buttons
     expect(screen.getByTestId('toggle-acl-User:test-user-*')).toBeInTheDocument();
@@ -129,11 +99,7 @@ describe('UserAclsCard', () => {
   });
 
   test('should render table headers', () => {
-    render(
-      <BrowserRouter>
-        <UserAclsCard acls={mockAcls} />
-      </BrowserRouter>
-    );
+    renderWithFileRoutes(<UserAclsCard acls={mockAcls} />);
 
     expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.getByText('Hosts')).toBeInTheDocument();

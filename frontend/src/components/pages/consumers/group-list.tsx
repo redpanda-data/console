@@ -10,9 +10,9 @@
  */
 
 import { DataTable, Flex, Grid, SearchField, Tag, Text } from '@redpanda-data/ui';
+import { Link } from '@tanstack/react-router';
 import { autorun, type IReactionDisposer } from 'mobx';
 import { observer } from 'mobx-react';
-import { Link } from 'react-router-dom';
 
 import { GroupState } from './group-details';
 import { appGlobal } from '../../../state/app-global';
@@ -142,7 +142,7 @@ class GroupList extends PageComponent {
                 header: 'ID',
                 accessorKey: 'groupId',
                 cell: ({ row: { original } }) => (
-                  <Link to={`/groups/${encodeURIComponent(original.groupId)}`}>
+                  <Link params={{ groupId: encodeURIComponent(original.groupId) }} to="/groups/$groupId">
                     <this.GroupId group={original} />
                   </Link>
                 ),

@@ -31,17 +31,20 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
 import { ListMCPServersResponseSchema, MCPServerSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { listMCPServers } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp-MCPServerService_connectquery';
-import { MemoryRouter } from 'react-router-dom';
-import { render, screen, waitFor, within } from 'test-utils';
+import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
-vi.mock('config', () => ({
-  config: {
-    jwt: 'test-jwt-token',
-    controlplaneUrl: 'http://localhost:9090',
-  },
-  isFeatureFlagEnabled: vi.fn(() => false),
-  addBearerTokenInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
-}));
+vi.mock('config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('config')>();
+  return {
+    ...actual,
+    config: {
+      jwt: 'test-jwt-token',
+      controlplaneUrl: 'http://localhost:9090',
+    },
+    isFeatureFlagEnabled: vi.fn(() => false),
+    addBearerTokenInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
+  };
+});
 
 vi.mock('state/ui-state', () => ({
   uiState: {
@@ -156,12 +159,7 @@ describe('AIAgentsListPage', () => {
       rpc(listMCPServers, listMCPServersMock);
     });
 
-    render(
-      <MemoryRouter>
-        <AIAgentsListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<AIAgentsListPage />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('Test Agent 1')).toBeVisible();
@@ -223,12 +221,7 @@ describe('AIAgentsListPage', () => {
       rpc(deleteAIAgent, deleteAIAgentMock);
     });
 
-    render(
-      <MemoryRouter>
-        <AIAgentsListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<AIAgentsListPage />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('Test Agent 1')).toBeVisible();
@@ -318,12 +311,7 @@ describe('AIAgentsListPage', () => {
       rpc(stopAIAgent, stopAIAgentMock);
     });
 
-    render(
-      <MemoryRouter>
-        <AIAgentsListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<AIAgentsListPage />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('Test Agent 1')).toBeVisible();
@@ -404,12 +392,7 @@ describe('AIAgentsListPage', () => {
       rpc(startAIAgent, startAIAgentMock);
     });
 
-    render(
-      <MemoryRouter>
-        <AIAgentsListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<AIAgentsListPage />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('Test Agent 1')).toBeVisible();
@@ -468,12 +451,7 @@ describe('AIAgentsListPage', () => {
       rpc(listMCPServers, listMCPServersMock);
     });
 
-    render(
-      <MemoryRouter>
-        <AIAgentsListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<AIAgentsListPage />, { transport });
 
     expect(screen.getByText(LOADING_AGENTS_REGEX)).toBeVisible();
 
@@ -501,12 +479,7 @@ describe('AIAgentsListPage', () => {
       rpc(listMCPServers, listMCPServersMock);
     });
 
-    render(
-      <MemoryRouter>
-        <AIAgentsListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<AIAgentsListPage />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('No AI agents found.')).toBeVisible();
@@ -572,12 +545,7 @@ describe('AIAgentsListPage', () => {
       rpc(listMCPServers, listMCPServersMock);
     });
 
-    render(
-      <MemoryRouter>
-        <AIAgentsListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<AIAgentsListPage />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('Alpha Agent')).toBeVisible();

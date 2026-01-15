@@ -11,6 +11,7 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
@@ -31,7 +32,6 @@ import { CreateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/se
 import { useEffect } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -87,7 +87,7 @@ export const SecretCreatePage = () => {
     try {
       await createSecret({ request });
       toast.success('Secret created successfully');
-      navigate('/secrets');
+      navigate({ to: '/secrets' });
     } catch (error) {
       const connectError = ConnectError.from(error);
       toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'create', entity: 'secret' }));
@@ -181,7 +181,7 @@ export const SecretCreatePage = () => {
         <div className="flex justify-end gap-3 pt-4">
           <Button
             data-testid="secret-create-cancel-button"
-            onClick={() => navigate('/secrets')}
+            onClick={() => navigate({ to: '/secrets' })}
             type="button"
             variant="outline"
           >

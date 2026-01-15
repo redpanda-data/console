@@ -24,10 +24,11 @@ export class TracePage {
    * Wait for traces to load (either content or empty state)
    */
   async waitForLoad() {
-    // Wait for either traces to appear or the empty state
-    await this.page.waitForSelector('[data-testid^="trace-row-"], [data-testid="traces-empty-state"]', {
-      timeout: 10_000,
-    });
+    // Wait for either traces, empty state, or error state (but not loading)
+    await this.page.waitForSelector(
+      '[data-testid^="trace-row-"], [data-testid="traces-empty-state"], [data-testid="traces-error-state"]',
+      { timeout: 10_000 }
+    );
   }
 
   /**

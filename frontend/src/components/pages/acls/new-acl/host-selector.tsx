@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 
 import type { AclDetail } from './acl.model';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
@@ -24,7 +24,6 @@ type HostSelectorProps = {
 
 export const HostSelector = ({ principalName, hosts, baseUrl }: HostSelectorProps) => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
   return (
     <div className="flex w-2/3 items-center">
@@ -53,9 +52,7 @@ export const HostSelector = ({ principalName, hosts, baseUrl }: HostSelectorProp
                   className="cursor-pointer hover:bg-gray-50"
                   key={hostValue}
                   onClick={() => {
-                    const newSearchParams = new URLSearchParams(searchParams);
-                    newSearchParams.set('host', hostValue);
-                    navigate(`${baseUrl}?${newSearchParams.toString()}`);
+                    navigate({ to: baseUrl, search: { host: hostValue } });
                   }}
                   testId={`host-selector-row-${hostValue}`}
                 >

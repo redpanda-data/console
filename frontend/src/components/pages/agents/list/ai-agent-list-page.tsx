@@ -12,6 +12,7 @@
 'use client';
 
 import { ConnectError } from '@connectrpc/connect';
+import { useNavigate } from '@tanstack/react-router';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -46,7 +47,6 @@ import React, { useCallback, useEffect } from 'react';
 import { useDeleteAIAgentMutation, useListAIAgentsQuery } from 'react-query/api/ai-agent';
 import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useDeleteSecretMutation } from 'react-query/api/secret';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -360,7 +360,7 @@ const AIAgentsListPageContent = ({
     ) {
       return;
     }
-    navigate(`/agents/${agentId}`);
+    navigate({ to: `/agents/${agentId}` });
   };
 
   const columns = React.useMemo(
@@ -409,7 +409,7 @@ const AIAgentsListPageContent = ({
         <AIAgentDataTableToolbar table={table} />
         <div className="flex items-center justify-between">
           <DataTableViewOptions table={table} />
-          <Button onClick={() => navigate('/agents/create')} size="sm" variant="secondary">
+          <Button onClick={() => navigate({ to: '/agents/create' })} size="sm" variant="secondary">
             <Plus className="h-4 w-4" />
             Create AI Agent
           </Button>

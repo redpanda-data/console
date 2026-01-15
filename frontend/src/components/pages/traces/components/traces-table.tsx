@@ -1025,7 +1025,10 @@ export const TracesTable: FC<Props> = ({
             {(() => {
               if (isLoading) {
                 return (
-                  <div className="flex h-24 items-center justify-center gap-2 text-muted-foreground text-sm">
+                  <div
+                    className="flex h-24 items-center justify-center gap-2 text-muted-foreground text-sm"
+                    data-testid="traces-loading-state"
+                  >
                     <Spinner size="sm" />
                     Loading traces...
                   </div>
@@ -1034,7 +1037,10 @@ export const TracesTable: FC<Props> = ({
 
               if (error) {
                 return (
-                  <div className="flex h-24 items-center justify-center gap-2 text-red-600 text-sm">
+                  <div
+                    className="flex h-24 items-center justify-center gap-2 text-red-600 text-sm"
+                    data-testid="traces-error-state"
+                  >
                     <AlertCircle className="h-4 w-4" />
                     <span>Error loading traces: {error.message}</span>
                   </div>
@@ -1043,7 +1049,10 @@ export const TracesTable: FC<Props> = ({
 
               if (filteredTraces.length === 0) {
                 return (
-                  <div className="flex flex-col items-center justify-center gap-3 py-12">
+                  <div
+                    className="flex flex-col items-center justify-center gap-3 py-12"
+                    data-testid="traces-empty-state"
+                  >
                     <Inbox className="h-12 w-12 text-muted-foreground/40" strokeWidth={1.5} />
                     <div className="flex flex-col items-center gap-1.5 text-center">
                       <h3 className="font-medium text-sm">No traces found</h3>

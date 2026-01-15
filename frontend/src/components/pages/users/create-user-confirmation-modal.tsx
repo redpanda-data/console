@@ -7,7 +7,6 @@ import {
   CopyButton,
   Flex,
   Grid,
-  Link,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -20,7 +19,7 @@ import {
   Text,
   Tooltip,
 } from '@redpanda-data/ui';
-import { Link as ReactRouterLink } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
 
 type CreateUserConfirmationModalProps = {
   isOpen: boolean;
@@ -91,7 +90,7 @@ export const CreateUserConfirmationModal = ({
       <ModalFooter>
         <ButtonGroup>
           <Button variant="link">
-            <Link as={ReactRouterLink} rel="noopener noreferrer" target="_blank" to="/security/acls">
+            <Link params={{ tab: 'acls' }} rel="noopener noreferrer" target="_blank" to="/security/$tab">
               Create ACLs
             </Link>
           </Button>

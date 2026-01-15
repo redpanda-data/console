@@ -9,9 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { getRouteApi, useNavigate } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/security/roles/$roleName/details');
+
 import { Eye, Pencil } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { uiState } from 'state/ui-state';
 
 import { MatchingUsersCard } from './matching-users-card';
@@ -21,7 +24,7 @@ import { Button } from '../../redpanda-ui/components/button';
 import { Card, CardContent, CardHeader } from '../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { Text } from '../../redpanda-ui/components/typography';
-import { type AclDetail, handleUrlWithHost } from '../acls/new-acl/acl.model';
+import type { AclDetail } from '../acls/new-acl/acl.model';
 import { ACLDetails } from '../acls/new-acl/acl-details';
 
 type SecurityAclRulesTableProps = {
@@ -63,7 +66,10 @@ const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) =
                   <div className="flex justify-end gap-2">
                     <Button
                       onClick={() => {
-                        navigate(handleUrlWithHost(`/security/roles/${roleName}/details`, aclData.sharedConfig.host));
+                        navigate({
+                          to: `/security/roles/${roleName}/details`,
+                          search: { host: aclData.sharedConfig.host },
+                        });
                       }}
                       size="sm"
                       testId={`view-role-acl-${aclData.sharedConfig.host}`}
@@ -73,7 +79,10 @@ const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) =
                     </Button>
                     <Button
                       onClick={() => {
-                        navigate(handleUrlWithHost(`/security/roles/${roleName}/update`, aclData.sharedConfig.host));
+                        navigate({
+                          to: `/security/roles/${roleName}/update`,
+                          search: { host: aclData.sharedConfig.host },
+                        });
                       }}
                       size="sm"
                       testId={`edit-role-acl-${aclData.sharedConfig.host}`}
@@ -93,10 +102,10 @@ const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) =
 };
 
 const RoleDetailPage = () => {
-  const { roleName = '' } = useParams<{ roleName: string }>();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const host = searchParams.get('host') ?? undefined;
+  const { roleName } = routeApi.useParams();
+  const navigate = useNavigate({ from: '/security/roles/$roleName/details' });
+  const search = routeApi.useSearch();
+  const host = search.host ?? undefined;
 
   useEffect(() => {
     uiState.pageBreadcrumbs = [
@@ -146,7 +155,12 @@ const RoleDetailPage = () => {
           <div>
             <Button
               data-testid="update-acl-button"
-              onClick={() => navigate(handleUrlWithHost(`/security/roles/${roleName}/update`, host))}
+              onClick={() =>
+                navigate({
+                  to: `/security/roles/${roleName}/update`,
+                  search: { host },
+                })
+              }
               variant="secondary"
             >
               <Pencil className="mr-2 h-4 w-4" />

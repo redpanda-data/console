@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { useLocation, useMatchRoute } from '@tanstack/react-router';
 import { GitHubIcon, LinkedInIcon, SlackIcon, TwitterIcon } from 'components/icons';
-import { useLocation, useMatch } from 'react-router-dom';
 
 import { isEmbedded } from '../../config';
 import env, { getBuildDate, IsCI, IsDev } from '../../utils/env';
@@ -56,11 +56,12 @@ export const VersionInfo = () => {
 
 export const AppFooter = () => {
   const location = useLocation();
-  const isAgentPage = useMatch('/agents/:agentId');
+  const matchRoute = useMatchRoute();
+  const isAgentPage = matchRoute({ to: '/agents/$id' });
 
   // Hide footer on AI agent inspector tab
   if (isAgentPage) {
-    const searchParams = new URLSearchParams(location.search);
+    const searchParams = new URLSearchParams(location.searchStr ?? '');
     if (searchParams.get('tab') === 'inspector') {
       return null;
     }

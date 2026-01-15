@@ -11,12 +11,12 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Button, type CreateToastFnReturn, Flex, FormField, Input, NumberInput, useToast } from '@redpanda-data/ui';
+import { Link } from '@tanstack/react-router';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { type Pipeline_ServiceAccount, PipelineUpdateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { Link } from 'react-router-dom';
 
 import { formatPipelineError } from './errors';
 import PipelinePage from './pipeline';
@@ -181,7 +181,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
 
         <Flex alignItems="center" gap="4">
           <UpdateButton />
-          <Link to={`/rp-connect/${pipelineId}`}>
+          <Link params={{ pipelineId }} to="/rp-connect/$pipelineId">
             <Button variant="link">Cancel</Button>
           </Link>
         </Flex>

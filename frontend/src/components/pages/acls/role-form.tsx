@@ -24,9 +24,9 @@ import {
   TagLabel,
   useToast,
 } from '@redpanda-data/ui';
+import { useNavigate } from '@tanstack/react-router';
 import { observer, useLocalObservable } from 'mobx-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import {
   type AclPrincipalGroup,
@@ -155,7 +155,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                 title: `Role ${newRole.response.roleName} successfully ${editMode ? 'updated' : 'created'}`,
               });
 
-              navigate(`/security/roles/${encodeURIComponent(newRole.response.roleName)}/details`);
+              navigate({ to: `/security/roles/${encodeURIComponent(newRole.response.roleName)}/details` });
             }
           } catch (err) {
             toast({

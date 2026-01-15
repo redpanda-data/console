@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card } from 'components/redpanda-ui/components/card';
@@ -46,7 +47,6 @@ import {
   useListComponentsQuery,
 } from 'react-query/api/connect';
 import { useCreatePipelineMutation, useGetPipelineQuery, useUpdatePipelineMutation } from 'react-query/api/pipeline';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   useOnboardingUserDataStore,
@@ -186,10 +186,11 @@ type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
 export default function PipelinePage() {
   const { mode, pipelineId } = usePipelineMode();
   const navigate = useNavigate();
+  const router = useRouter();
+  const search = useSearch({ strict: false }) as { serverless?: string };
 
   // Zustand store for wizard persistence (CREATE mode only)
-  const [searchParams] = useSearchParams();
-  const isServerlessMode = searchParams.get('serverless') === 'true';
+  const isServerlessMode = search.serverless === 'true';
   const hasInitializedServerless = useRef(false);
   const persistedYamlContent = useOnboardingYamlContentStore((state) => state.yamlContent);
   const setPersistedYamlContent = useOnboardingYamlContentStore((state) => state.setYamlContent);
@@ -342,11 +343,11 @@ export default function PipelinePage() {
       clearWizardStore();
     }
     if (mode === 'view') {
-      navigate('/connect-clusters');
+      navigate({ to: '/connect-clusters' });
     } else {
-      navigate(-1);
+      router.history.back();
     }
-  }, [mode, clearWizardStore, navigate]);
+  }, [mode, clearWizardStore, navigate, router]);
 
   const handleSave = useCallback(async () => {
     // Validate form
@@ -405,9 +406,9 @@ export default function PipelinePage() {
           }
           const newPipelineId = response.response?.pipeline?.id;
           if (newPipelineId) {
-            navigate(`/rp-connect/${newPipelineId}`);
+            navigate({ to: `/rp-connect/${newPipelineId}` });
           } else {
-            navigate('/connect-clusters');
+            navigate({ to: '/connect-clusters' });
           }
         },
         onError: (err) => {
@@ -451,7 +452,7 @@ export default function PipelinePage() {
           if (retUnits && currentUnits !== retUnits) {
             toast.warning(`Pipeline has been resized to use ${retUnits} compute units`);
           }
-          navigate(`/rp-connect/${pipelineId}`);
+          navigate({ to: `/rp-connect/${pipelineId}` });
         },
         onError: (err) => {
           setLintHints(extractLintHintsFromError(err));

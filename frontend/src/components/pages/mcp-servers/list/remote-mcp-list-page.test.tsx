@@ -29,8 +29,7 @@ import {
   startMCPServer,
   stopMCPServer,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp-MCPServerService_connectquery';
-import { MemoryRouter } from 'react-router-dom';
-import { render, screen, waitFor, within } from 'test-utils';
+import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
 vi.mock('config', () => ({
   config: {
@@ -95,12 +94,7 @@ describe('RemoteMCPListPage', () => {
       rpc(listMCPServers, listMCPServersMock);
     });
 
-    render(
-      <MemoryRouter>
-        <RemoteMCPListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<RemoteMCPListPage />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('Test Server 1')).toBeVisible();
@@ -145,12 +139,7 @@ describe('RemoteMCPListPage', () => {
       rpc(deleteMCPServer, deleteMCPServerMock);
     });
 
-    render(
-      <MemoryRouter>
-        <RemoteMCPListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<RemoteMCPListPage />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('Test Server 1')).toBeVisible();
@@ -227,12 +216,7 @@ describe('RemoteMCPListPage', () => {
       rpc(stopMCPServer, stopMCPServerMock);
     });
 
-    render(
-      <MemoryRouter>
-        <RemoteMCPListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<RemoteMCPListPage />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('Test Server 1')).toBeVisible();
@@ -300,12 +284,7 @@ describe('RemoteMCPListPage', () => {
       rpc(startMCPServer, startMCPServerMock);
     });
 
-    render(
-      <MemoryRouter>
-        <RemoteMCPListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<RemoteMCPListPage />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('Test Server 1')).toBeVisible();
@@ -356,12 +335,7 @@ describe('RemoteMCPListPage', () => {
       rpc(listMCPServers, listMCPServersMock);
     });
 
-    render(
-      <MemoryRouter>
-        <RemoteMCPListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<RemoteMCPListPage />, { transport });
 
     expect(screen.getByText(LOADING_SERVERS_REGEX)).toBeVisible();
 
@@ -382,12 +356,7 @@ describe('RemoteMCPListPage', () => {
       rpc(listMCPServers, listMCPServersMock);
     });
 
-    render(
-      <MemoryRouter>
-        <RemoteMCPListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<RemoteMCPListPage />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('No MCP servers found.')).toBeVisible();

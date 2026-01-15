@@ -22,7 +22,6 @@ import {
 } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { loader, type Monaco } from '@monaco-editor/react';
-import { getSidebarItemTitleWithBetaBadge } from 'components/sidebar-utils';
 import memoizeOne from 'memoize-one';
 import { autorun, configure, observable, when } from 'mobx';
 // biome-ignore lint/performance/noNamespaceImport: part of monaco editor
@@ -41,11 +40,11 @@ import { UserService } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { KnowledgeBaseService } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
-import { APP_ROUTES } from './components/routes';
 import { appGlobal } from './state/app-global';
 import { api } from './state/backend-api';
 import { uiState } from './state/ui-state';
 import { AppFeatures, getBasePath } from './utils/env';
+import { getEmbeddedAvailableRoutes } from './utils/route-utils';
 
 declare const __webpack_public_path__: string;
 
@@ -137,6 +136,8 @@ export type SidebarItem = {
   to: string; // '/topics'
   icon?: JSX.Element;
   order: number;
+  group?: string; // "Agentic AI" - for grouping related items
+  isBeta?: boolean; // true - for displaying beta badge
 };
 
 export type Breadcrumb = {
@@ -314,6 +315,8 @@ setTimeout(() => {
           to: r.path,
           icon: r.icon,
           order: i,
+          group: r.group,
+          isBeta: r.isBeta,
         }) as SidebarItem
     );
 
@@ -338,37 +341,9 @@ export function isServerless() {
   return config.isServerless;
 }
 
-const routesIgnoredInEmbedded = ['/overview', '/reassign-partitions', '/admin'];
-
-const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions', '/admin', '/transforms'];
-
 export const embeddedAvailableRoutesObservable = observable({
   get routes() {
-    return APP_ROUTES.map((route) => {
-      if (route.path === '/knowledgebases' || route.path === '/agents') {
-        return {
-          ...route,
-          // Needed because we cannot use JSX in this file
-          title: getSidebarItemTitleWithBetaBadge({ route }), // This will automatically add the beta badge
-        };
-      }
-      return route;
-    })
-      .filter((x) => x.icon !== null && x.icon !== undefined) // routes without icon are "nested", so they shouldn't be visible directly
-      .filter((x) => !routesIgnoredInEmbedded.includes(x.path)) // things that should not be visible in embedded/cloud mode
-      .filter((x) => {
-        if (x.visibilityCheck) {
-          const state = x.visibilityCheck();
-          return state.visible;
-        }
-        return true;
-      })
-      .filter((x) => {
-        if (isServerless() && routesIgnoredInServerless.includes(x.path)) {
-          return false;
-        }
-        return true;
-      });
+    return getEmbeddedAvailableRoutes();
   },
 });
 

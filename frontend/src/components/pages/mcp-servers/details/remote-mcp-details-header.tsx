@@ -8,15 +8,19 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+
+import { getRouteApi } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/mcp-servers/$id');
+
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { McpServerStateBadge } from 'components/ui/mcp/mcp-server-state-badge';
 import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
-import { useParams } from 'react-router-dom';
 
 import { RemoteMCPToggleButton } from './remote-mcp-toggle-button';
 
 export const RemoteMCPDetailsHeader = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = routeApi.useParams();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
 
   if (!mcpServerData?.mcpServer) {

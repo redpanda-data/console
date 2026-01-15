@@ -10,8 +10,8 @@
  */
 
 import { Spinner } from '@redpanda-data/ui';
+import { useParams } from '@tanstack/react-router';
 import { Component } from 'react';
-import { useParams } from 'react-router-dom';
 
 import { appGlobal } from '../../state/app-global';
 import { api } from '../../state/backend-api';
@@ -75,7 +75,7 @@ class LoginCompletePage extends Component<{ provider: string }> {
     // if(targetUrl){
     //     navigate(targetUrl);
     // } else{
-    //     navigate('/');
+    //     navigate({ to: '/' });
     // }
     window.location.assign(getBasePath() || '/');
   }
@@ -94,6 +94,6 @@ class LoginCompletePage extends Component<{ provider: string }> {
 }
 
 export default () => {
-  const params = useParams();
-  return <LoginCompletePage provider={params.provider ?? ''} />;
+  const { provider } = useParams({ from: '/login/callbacks/$provider' });
+  return <LoginCompletePage provider={provider} />;
 };

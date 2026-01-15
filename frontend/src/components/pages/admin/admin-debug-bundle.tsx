@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Link } from '@tanstack/react-router';
 import { observer, useLocalObservable } from 'mobx-react';
 import { type FC, useEffect, useState } from 'react';
 
@@ -37,7 +38,6 @@ import {
 } from '@redpanda-data/ui';
 import { TrashIcon } from 'components/icons';
 import { makeObservable, observable } from 'mobx';
-import { Link as ReactRouterLink } from 'react-router-dom';
 
 import {
   type CreateDebugBundleRequest,
@@ -137,13 +137,7 @@ export class AdminDebugBundle extends PageComponent {
       return (
         <Box>
           <Header />
-          <Button
-            as={ReactRouterLink}
-            mt={4}
-            px={0}
-            to={`/debug-bundle/progress/${api.debugBundleStatus?.jobId}`}
-            variant="link"
-          >
+          <Button as={Link} mt={4} px={0} to={`/debug-bundle/progress/${api.debugBundleStatus?.jobId}`} variant="link">
             Bundle generation in progress...
           </Button>
           {api.debugBundleStatus?.createdAt ? (

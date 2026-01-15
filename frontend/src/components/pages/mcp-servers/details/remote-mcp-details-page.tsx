@@ -9,13 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
+import { getRouteApi, useNavigate } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/mcp-servers/$id');
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, Link, Loader2, Logs, Search, Settings } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
 import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
-import { useParams, useSearchParams } from 'react-router-dom';
 import { uiState } from 'state/ui-state';
 
 import { RemoteMCPConfigurationTab } from './remote-mcp-configuration-tab';
@@ -37,11 +40,12 @@ export const updatePageTitle = (serverName?: string) => {
 export const RemoteMCPDetailsPage = () => {
   const isRemoteMcpInspectorFeatureEnabled = isFeatureFlagEnabled('enableRemoteMcpInspectorInConsole');
 
-  const { id } = useParams<{ id: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { id } = routeApi.useParams();
+  const navigate = useNavigate({ from: '/mcp-servers/$id' });
+  // Use fine-grained selector to only re-render when tab changes
+  const tab = routeApi.useSearch({ select: (s) => s.tab });
 
-  const tabFromUrl = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(tabFromUrl || 'configuration');
+  const [activeTab, setActiveTab] = useState(tab || 'configuration');
 
   const { data: mcpServerData, isLoading, error } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
 
@@ -52,17 +56,16 @@ export const RemoteMCPDetailsPage = () => {
   }, [mcpServerData]);
 
   useEffect(() => {
-    const tabParam = searchParams.get('tab');
-    if (tabParam) {
-      setActiveTab(tabParam);
+    if (tab) {
+      setActiveTab(tab);
     } else {
       setActiveTab('configuration');
     }
-  }, [searchParams]);
+  }, [tab]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    setSearchParams({ tab: value });
+    navigate({ search: { tab: value } });
   };
 
   if (isLoading) {

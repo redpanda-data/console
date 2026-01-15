@@ -9,12 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
+import { getRouteApi, useNavigate } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/security/acls/$aclName/details');
+
 import { Pencil } from 'lucide-react';
 import { useEffect } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { uiState } from 'state/ui-state';
 
-import { handleUrlWithHost } from './acl.model';
 import { ACLDetails } from './acl-details';
 import { HostSelector } from './host-selector';
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
@@ -22,10 +24,10 @@ import { Button } from '../../../redpanda-ui/components/button';
 import { Text } from '../../../redpanda-ui/components/typography';
 
 const AclDetailPage = () => {
-  const { aclName = '' } = useParams<{ aclName: string }>();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const host = searchParams.get('host') || undefined;
+  const { aclName } = routeApi.useParams();
+  const navigate = useNavigate({ from: '/security/acls/$aclName/details' });
+  const search = routeApi.useSearch();
+  const host = search.host || undefined;
 
   const { data, isLoading } = useGetAclsByPrincipal(`User:${aclName}`, host);
 
@@ -60,7 +62,12 @@ const AclDetailPage = () => {
         </Text>
         <Button
           data-testid="update-acl-button"
-          onClick={() => navigate(handleUrlWithHost(`/security/acls/${aclName}/update`, host))}
+          onClick={() =>
+            navigate({
+              to: `/security/acls/${aclName}/update`,
+              search: { host },
+            })
+          }
           variant="secondary"
         >
           <Pencil className="mr-2 h-4 w-4" />

@@ -44,12 +44,14 @@ export function editQuery(editFunction: (queryObject: Record<string, string | nu
       return;
     }
 
-    const currentObj = queryToObj(location.search);
+    // TanStack Router uses searchStr for the raw search string
+    const searchStr = location.searchStr ?? '';
+    const currentObj = queryToObj(searchStr);
     editFunction(currentObj);
 
     const newQuery = objToQuery(currentObj);
 
-    if (location.search !== newQuery) {
+    if (searchStr !== newQuery) {
       const path = location.pathname;
       appGlobal.historyReplace(`${path}${newQuery}`);
     }

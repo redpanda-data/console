@@ -11,18 +11,21 @@
 
 import { create } from '@bufbuild/protobuf';
 import { SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { MemoryRouter } from 'react-router-dom';
-import { render, screen, waitFor } from 'test-utils';
+import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-vi.mock('state/backend-api', () => ({
-  rpcnSecretManagerApi: {
-    secrets: [] as unknown[],
-    secretsByPipeline: [],
-    isEnable: true,
-    refreshSecrets: vi.fn().mockResolvedValue(undefined),
-    delete: vi.fn().mockResolvedValue(undefined),
-  },
-}));
+vi.mock('state/backend-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('state/backend-api')>();
+  return {
+    ...actual,
+    rpcnSecretManagerApi: {
+      secrets: [] as unknown[],
+      secretsByPipeline: [],
+      isEnable: true,
+      refreshSecrets: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(undefined),
+    },
+  };
+});
 
 vi.mock('state/app-global', () => ({
   appGlobal: {
@@ -39,12 +42,6 @@ vi.mock('state/ui', () => ({
   },
 }));
 
-vi.mock('state/supported-features', () => ({
-  Features: {
-    pipelinesApi: true,
-  },
-}));
-
 import { rpcnSecretManagerApi } from 'state/backend-api';
 
 import RpConnectSecretsList from './secrets-list';
@@ -57,11 +54,7 @@ describe('RpConnectSecretsList', () => {
   test('should call refreshSecrets on render', async () => {
     const refreshSecretsMock = vi.mocked(rpcnSecretManagerApi.refreshSecrets);
 
-    render(
-      <MemoryRouter>
-        <RpConnectSecretsList matchedPath="/rp-connect/secrets" />
-      </MemoryRouter>
-    );
+    renderWithFileRoutes(<RpConnectSecretsList matchedPath="/rp-connect/secrets" />);
 
     await waitFor(() => {
       expect(refreshSecretsMock).toHaveBeenCalledWith(true);
@@ -78,11 +71,7 @@ describe('RpConnectSecretsList', () => {
       secretsByPipeline: [],
     });
 
-    render(
-      <MemoryRouter>
-        <RpConnectSecretsList matchedPath="/rp-connect/secrets" />
-      </MemoryRouter>
-    );
+    renderWithFileRoutes(<RpConnectSecretsList matchedPath="/rp-connect/secrets" />);
 
     await waitFor(() => {
       expect(screen.getByTestId('secret-text-test-secret-123')).toBeVisible();
@@ -97,11 +86,7 @@ describe('RpConnectSecretsList', () => {
       secretsByPipeline: [],
     });
 
-    render(
-      <MemoryRouter>
-        <RpConnectSecretsList matchedPath="/rp-connect/secrets" />
-      </MemoryRouter>
-    );
+    renderWithFileRoutes(<RpConnectSecretsList matchedPath="/rp-connect/secrets" />);
 
     await waitFor(() => {
       expect(screen.getByText('You have no Redpanda Connect secrets.')).toBeVisible();

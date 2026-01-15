@@ -1,6 +1,7 @@
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
+import './src/utils/array-extensions';
 import './tests/mock-document';
 import './tests/mock-react-select';
 

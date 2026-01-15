@@ -8,9 +8,10 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+
+import { Link } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 export const AIAgentBackButton = () => (
   <Link to="/agents">

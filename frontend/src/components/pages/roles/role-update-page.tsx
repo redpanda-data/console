@@ -10,10 +10,13 @@
  */
 
 import { useToast } from '@redpanda-data/ui';
+import { getRouteApi, useNavigate } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/security/roles/$roleName/update');
+
 import {
   getOperationsForResourceType,
   handleResponses,
-  handleUrlWithHost,
   ModeAllowAll,
   ModeDenyAll,
   OperationTypeAllow,
@@ -25,7 +28,6 @@ import {
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
 import { HostSelector } from 'components/pages/acls/new-acl/host-selector';
 import { useEffect } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../react-query/api/acl';
 import { uiState } from '../../../state/ui-state';
@@ -33,10 +35,10 @@ import PageContent from '../../misc/page-content';
 
 const RoleUpdatePage = () => {
   const toast = useToast();
-  const navigate = useNavigate();
-  const { roleName = '' } = useParams<{ roleName: string }>();
-  const [searchParams] = useSearchParams();
-  const host = searchParams.get('host') ?? undefined;
+  const navigate = useNavigate({ from: '/security/roles/$roleName/update' });
+  const { roleName } = routeApi.useParams();
+  const search = routeApi.useSearch();
+  const host = search.host ?? undefined;
 
   const { applyUpdates } = useUpdateAclMutation();
 
@@ -57,7 +59,10 @@ const RoleUpdatePage = () => {
       const applyResult = await applyUpdates(actualRules, sharedConfig, rules);
       handleResponses(toast, applyResult.errors, applyResult.created);
 
-      navigate(handleUrlWithHost(`/security/roles/${roleName}/details`, host));
+      navigate({
+        to: `/security/roles/${roleName}/details`,
+        search: { host },
+      });
     };
 
   if (isLoading || !data || data.length === 0) {
@@ -121,7 +126,12 @@ const RoleUpdatePage = () => {
     <PageContent>
       <CreateACL
         edit={true}
-        onCancel={() => navigate(handleUrlWithHost(`/security/roles/${roleName}/details`, host))}
+        onCancel={() =>
+          navigate({
+            to: `/security/roles/${roleName}/details`,
+            search: { host },
+          })
+        }
         onSubmit={updateRoleAclMutation(acl.rules, acl.sharedConfig)}
         principalType={PrincipalTypeRedpandaRole}
         rules={rulesWithAllOperations}

@@ -15,7 +15,13 @@ import React from 'react';
 
 import { api } from './backend-api';
 import { TopicDetailsSettings as TopicSettings, uiSettings } from './ui';
-import type { PageDefinition } from '../components/routes';
+
+// Minimal route definition type for currentRoute tracking (legacy, may be removed)
+type RouteInfo = {
+  title: string;
+  path: string;
+  icon?: (props: React.ComponentProps<'svg'>) => JSX.Element;
+} | null;
 
 export type BreadcrumbOptions = {
   canBeTruncated?: boolean;
@@ -57,7 +63,7 @@ class UIState {
     return null;
   }
 
-  @observable currentRoute = null as PageDefinition<Record<string, never>> | null; // will be null when a page fails to render
+  @observable currentRoute: RouteInfo = null; // will be null when a page fails to render
 
   @observable pathName: string; // automatically updated from router path
   @computed get selectedMenuKeys(): string[] | undefined {

@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, Link as ChakraLink, DataTable, Flex, Heading, SearchField, Text } from '@redpanda-data/ui';
+import { Box, Button, DataTable, Flex, Heading, SearchField, Text } from '@redpanda-data/ui';
+import { Link } from '@tanstack/react-router';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { Link as ReactRouterLink } from 'react-router-dom';
 
 import { DeleteRoleConfirmModal } from './delete-role-confirm-modal';
 import { principalGroupsView } from './models';
@@ -150,9 +150,13 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <ChakraLink as={ReactRouterLink} textDecoration="none" to={`/security/users/${entry.name}/details`}>
+                    <Link
+                      className="no-underline"
+                      params={{ userName: entry.name }}
+                      to="/security/users/$userName/details"
+                    >
                       {entry.name}
-                    </ChakraLink>
+                    </Link>
                   );
                 },
               },

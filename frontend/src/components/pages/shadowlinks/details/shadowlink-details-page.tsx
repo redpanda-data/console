@@ -12,6 +12,7 @@
 'use client';
 
 import { Code } from '@connectrpc/connect';
+import { useNavigate, useParams } from '@tanstack/react-router';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
@@ -23,7 +24,6 @@ import {
   useFailoverShadowLinkMutation,
   useGetShadowLinkUnified,
 } from 'react-query/api/shadowlink';
-import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
@@ -36,7 +36,7 @@ import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
 import { ShadowLinkLoadErrorState, ShadowLinkNotFoundState } from '../list/shadowlink-empty-state';
 
 export const ShadowLinkDetailsPage = () => {
-  const { name } = useParams<{ name: string }>();
+  const { name } = useParams({ from: '/shadowlinks/$name/' });
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showFailoverDialog, setShowFailoverDialog] = useState(false);
@@ -89,7 +89,7 @@ export const ShadowLinkDetailsPage = () => {
       force: false,
       onSuccess: () => {
         toast.success(`Shadowlink ${name} deleted`);
-        navigate('/shadowlinks');
+        navigate({ to: '/shadowlinks' });
       },
       onError: (error) => {
         toast.error(formatToastErrorMessageGRPC({ error, action: 'delete', entity: 'shadowlink' }));
@@ -125,7 +125,7 @@ export const ShadowLinkDetailsPage = () => {
 
   // Not found error state
   if (errorGetShadowLink?.code === Code.NotFound) {
-    return <ShadowLinkNotFoundState name={name ?? ''} onBackClick={() => navigate('/shadowlinks')} />;
+    return <ShadowLinkNotFoundState name={name ?? ''} onBackClick={() => navigate({ to: '/shadowlinks' })} />;
   }
 
   // Other error state
@@ -135,7 +135,7 @@ export const ShadowLinkDetailsPage = () => {
 
   // Not found state
   if (!shadowLink) {
-    return <ShadowLinkNotFoundState name={name ?? ''} onBackClick={() => navigate('/shadowlinks')} />;
+    return <ShadowLinkNotFoundState name={name ?? ''} onBackClick={() => navigate({ to: '/shadowlinks' })} />;
   }
 
   return (
@@ -146,7 +146,7 @@ export const ShadowLinkDetailsPage = () => {
           Failover all topics
         </Button>
 
-        <Button onClick={() => navigate(`/shadowlinks/${name}/edit`)} size="sm" variant="outline">
+        <Button onClick={() => navigate({ to: `/shadowlinks/${name}/edit` })} size="sm" variant="outline">
           <Edit className="mr-2 h-4 w-4" />
           Edit
         </Button>

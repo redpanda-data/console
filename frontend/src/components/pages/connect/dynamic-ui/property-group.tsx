@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Accordion, Box, Divider, Flex, Heading, Link, Text } from '@redpanda-data/ui';
+import { Accordion, Box, Divider, Flex, Heading, Text } from '@redpanda-data/ui';
+import { Link } from 'components/redpanda-ui/components/typography';
 import { observer } from 'mobx-react';
 
 import type { ConfigPageProps } from './components';
@@ -88,12 +89,12 @@ export const PropertyGroupComponent = observer(
         {Boolean(g.group.description) && (
           <Text>
             {g.group.description}
-            {Boolean(g.group.documentation_link) && (
+            {g.group.documentation_link ? (
               <>
                 {' '}
                 <Link href={g.group.documentation_link}>Documentation</Link>
               </>
-            )}
+            ) : null}
           </Text>
         )}
 

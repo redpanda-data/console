@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { useLocation } from '@tanstack/react-router';
 import { config } from 'config';
-import { useLocation } from 'react-router-dom';
 
 import { Response } from '../../../ai-elements/response';
 import { Card, CardContent } from '../../../redpanda-ui/components/card';
@@ -20,17 +20,7 @@ export const KnowledgeBaseDocumentDetailsPage = () => {
   const location = useLocation();
 
   // Get document data from location state (passed from the table)
-  const locationState = location.state as
-    | {
-        chunkId: string;
-        topic: string;
-        documentName: string;
-        content: string;
-        score?: number;
-      }
-    | undefined;
-
-  const { chunkId, topic, documentName, content, score } = locationState || {};
+  const { chunkId, topic, documentName, content, score } = location.state;
 
   return (
     <div className="flex flex-col gap-6">

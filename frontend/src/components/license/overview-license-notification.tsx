@@ -1,4 +1,5 @@
-import { Alert, AlertDescription, AlertIcon, Box, Flex, Link, Text } from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, Box, Flex, Text } from '@redpanda-data/ui';
+import { Link } from 'components/redpanda-ui/components/typography';
 import { observer } from 'mobx-react';
 import { type FC, type ReactElement, useEffect, useState } from 'react';
 

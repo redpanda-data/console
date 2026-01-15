@@ -9,15 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
+import { getRouteApi } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/agents/$id');
+
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
-import { useParams } from 'react-router-dom';
 
 import { AIAgentStateBadge } from './ai-agent-state-badge';
 import { AIAgentToggleButton } from './ai-agent-toggle-button';
 
 export const AIAgentDetailsHeader = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = routeApi.useParams();
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
 
   if (!aiAgentData?.aiAgent) {

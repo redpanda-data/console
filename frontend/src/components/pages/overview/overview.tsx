@@ -30,15 +30,14 @@ import {
   Grid,
   GridItem,
   Heading,
-  Link,
   Skeleton,
   Text,
   Tooltip,
 } from '@redpanda-data/ui';
+import { Link } from '@tanstack/react-router';
 import type { Row } from '@tanstack/react-table';
 import { AlertIcon, CheckIcon, CrownIcon, ErrorIcon } from 'components/icons';
 import React, { type FC, type ReactNode } from 'react';
-import { Link as ReactRouterLink } from 'react-router-dom';
 
 import ClusterHealthOverview from './cluster-health-overview';
 import { ShadowLinkSection } from './shadow-link-overview-card';
@@ -384,7 +383,7 @@ function ClusterDetails() {
         <Details
           content={[
             [
-              <Link as={ReactRouterLink} key={0} to="/security/users/">
+              <Link key={0} params={{ tab: 'users' }} to="/security/$tab">
                 {serviceAccounts}
               </Link>,
             ],
@@ -395,7 +394,7 @@ function ClusterDetails() {
         <Details
           content={[
             [
-              <Link as={ReactRouterLink} key={0} to="/security/acls/" wordBreak="break-word">
+              <Link key={0} params={{ tab: 'acls' }} to="/security/$tab">
                 {aclCount}
               </Link>,
             ],
@@ -433,11 +432,11 @@ function ClusterDetails() {
         <>
           <GridItem />
           <GridItem colSpan={{ base: 1, lg: 2 }}>
-            <Link href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank">
+            <a href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank">
               <Badge variant="info">
                 <Text textDecoration="underline">Redpanda Enterprise trial available</Text>
               </Badge>
-            </Link>
+            </a>
           </GridItem>
         </>
       )}
@@ -446,9 +445,7 @@ function ClusterDetails() {
         <>
           <GridItem />
           <GridItem colSpan={{ base: 1, lg: 2 }}>
-            <Link as={ReactRouterLink} to="/upload-license">
-              Upload new license
-            </Link>
+            <Link to="/upload-license">Upload new license</Link>
           </GridItem>
         </>
       )}
