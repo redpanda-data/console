@@ -85,31 +85,35 @@ function RootLayout() {
 
 ## RouterSync Component
 
-This component bridges TanStack Router with legacy code that uses global navigation:
+This component bridges TanStack Router with legacy code and embedded mode shell:
 
 ```typescript
 // src/components/misc/router-sync.tsx
 import { useLocation, useNavigate, useRouter } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { isEmbedded } from '../../config';
+import { trackHubspotPage } from '../../hubspot/hubspot.helper';
 import { appGlobal } from '../../state/app-global';
+import { api } from '../../state/backend-api';
 
 /**
- * RouterSync bridges TanStack Router with legacy code that uses
- * appGlobal.historyPush() or appGlobal.location for navigation.
+ * RouterSync bridges TanStack Router with:
+ * 1. Legacy MobX stores (appGlobal.historyPush())
+ * 2. Non-React code navigation
+ * 3. Analytics tracking (HubSpot)
+ * 4. Embedded mode shell synchronization
  *
- * This allows:
- * 1. Legacy MobX stores to trigger navigation
- * 2. Non-React code to navigate programmatically
- * 3. Analytics tracking (e.g., HubSpot page views)
- *
- * Remove this component after full migration is complete.
+ * In embedded mode (Cloud UI), Console runs inside a shell that has its own
+ * React Router. When Console navigates internally, we dispatch a custom event
+ * so the shell can sync its router state and keep the URL in sync.
  */
 export const RouterSync = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const router = useRouter();
+  const previousPathRef = useRef<string>('');
 
-  // Provide navigate function to legacy code
+  // Sync navigation functions to appGlobal for legacy code
   useEffect(() => {
     appGlobal.setNavigate((to: string, options?: { replace?: boolean }) => {
       navigate({ to, replace: options?.replace });
@@ -117,24 +121,68 @@ export const RouterSync = () => {
     appGlobal.setRouter(router);
   }, [navigate, router]);
 
-  // Sync location changes to legacy global state
+  // Track page navigation and clear errors
+  useEffect(() => {
+    api.errors = [];
+    if (location.pathname) {
+      trackHubspotPage(location.pathname);
+    }
+  }, [location.pathname]);
+
+  // Sync location to appGlobal
   useEffect(() => {
     appGlobal.setLocation(location);
-
-    // Track page view in analytics
-    if (typeof window !== 'undefined' && window._hsq) {
-      window._hsq.push(['setPath', location.pathname]);
-      window._hsq.push(['trackPageView']);
-    }
   }, [location]);
 
-  // Clear any error state on navigation
+  // Notify shell (Cloud UI) when Console navigates internally
   useEffect(() => {
-    appGlobal.clearError();
+    if (isEmbedded() && location.pathname && previousPathRef.current !== location.pathname) {
+      window.dispatchEvent(
+        new CustomEvent('[console] navigated', { detail: location.pathname })
+      );
+      previousPathRef.current = location.pathname;
+    }
   }, [location.pathname]);
 
   return null;
 };
+```
+
+## Embedded Mode Shell Synchronization
+
+In embedded mode, Console runs inside Cloud UI's shell which has its own router. When Console navigates internally, the shell needs to sync its router state to keep the URL correct.
+
+**How it works:**
+
+```typescript
+// Console (inside iframe or embedded context) dispatches this event:
+window.dispatchEvent(
+  new CustomEvent('[console] navigated', { detail: location.pathname })
+);
+
+// Shell (Cloud UI) listens and syncs its router:
+window.addEventListener('[console] navigated', (event) => {
+  const path = event.detail;
+  // Shell's React Router navigates to keep URL in sync
+  shellNavigate(path, { replace: true });
+});
+```
+
+**Path deduplication:**
+
+Use a ref to prevent duplicate events when the path hasn't actually changed:
+
+```typescript
+const previousPathRef = useRef<string>('');
+
+useEffect(() => {
+  if (location.pathname && previousPathRef.current !== location.pathname) {
+    window.dispatchEvent(
+      new CustomEvent('[console] navigated', { detail: location.pathname })
+    );
+    previousPathRef.current = location.pathname;
+  }
+}, [location.pathname]);
 ```
 
 ## Legacy Global State Interface
@@ -348,9 +396,12 @@ When all routes are migrated:
 
 ```typescript
 // src/routes/__root.tsx (final version)
-import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet, useLocation } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
+import type { QueryClient } from '@tanstack/react-query';
+import { RouterSync } from '../components/misc/router-sync';
+import { isEmbedded } from '../config';
 
 export type RouterContext = {
   basePath: string;
@@ -364,11 +415,11 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootLayout() {
   return (
     <>
+      {/* Keep RouterSync for legacy code and embedded mode shell sync */}
+      <RouterSync />
       <NuqsAdapter>
         <ErrorBoundary>
-          <AppLayout>
-            <Outlet />
-          </AppLayout>
+          {isEmbedded() ? <EmbeddedLayout /> : <SelfHostedLayout />}
         </ErrorBoundary>
       </NuqsAdapter>
       {process.env.NODE_ENV === 'development' && (
@@ -377,7 +428,33 @@ function RootLayout() {
     </>
   );
 }
+
+function SelfHostedLayout() {
+  const location = useLocation();
+
+  // Bypass main layout for login page
+  if (location.pathname.startsWith('/login')) {
+    return <Outlet />;
+  }
+
+  return (
+    <SidebarLayout>
+      <SidebarInset>
+        <AppContent />
+      </SidebarInset>
+    </SidebarLayout>
+  );
+}
+
+function EmbeddedLayout() {
+  return <Outlet />;
+}
 ```
+
+**Important:** Keep `RouterSync` even after migration for:
+1. **Embedded mode shell sync** - Console notifies shell of internal navigation
+2. **Legacy global navigation** - Non-React code may still use `appGlobal.historyPush()`
+3. **Analytics tracking** - HubSpot page view tracking
 
 Then remove:
 ```bash
@@ -385,6 +462,6 @@ bun remove react-router-dom
 ```
 
 And delete:
-- `src/components/routes.tsx`
-- `src/components/misc/router-sync.tsx`
-- Any `appGlobal` navigation methods
+- `src/components/routes.tsx` (legacy routes file)
+- Any `BrowserRouter` wrapper from root layout
+- Legacy `MemoryRouter` test utilities (replace with `renderWithFileRoutes`)

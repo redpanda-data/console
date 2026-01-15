@@ -174,6 +174,14 @@ declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router;
   }
+
+  // Extend HistoryState for typed navigation state
+  interface HistoryState {
+    // Add your custom state properties here
+    returnUrl?: string;
+    documentId?: string;
+    documentName?: string;
+  }
 }
 
 export function App() {
@@ -271,6 +279,32 @@ See [references/route-templates.md](references/route-templates.md) for complete 
 | `<Navigate to="/path" />` | `<Navigate to="/path" />` |
 
 See [references/migration-patterns.md](references/migration-patterns.md) for detailed before/after examples.
+
+**Navigation State:**
+
+Pass typed state between routes using `HistoryState`:
+
+```typescript
+// Navigating with state
+const navigate = useNavigate();
+navigate({
+  to: '/documents/$documentId',
+  params: { documentId },
+  state: {
+    returnUrl: location.pathname,
+    documentName: 'My Document',
+  },
+});
+
+// Reading state in destination component
+import { useLocation } from '@tanstack/react-router';
+
+function DocumentPage() {
+  const location = useLocation();
+  const { returnUrl, documentName } = location.state;
+  // Use state values...
+}
+```
 
 **useParams Migration:**
 
@@ -463,6 +497,18 @@ const searchSchema = z.object({
 });
 ```
 
+### Trailing Slash in `from` Parameter
+
+The `from` parameter must exactly match the route path as defined:
+
+```typescript
+// Index routes (files named index.tsx) include trailing slash:
+useParams({ from: '/topics/$topicName/' })  // Route: topics/$topicName/index.tsx
+
+// Non-index routes do NOT include trailing slash:
+useParams({ from: '/topics/$topicName/edit' })  // Route: topics/$topicName/edit.tsx
+```
+
 ### Type-Safe Navigation
 
 ```typescript
@@ -529,6 +575,19 @@ navigate({
 4. **Editing routeTree.gen.ts** - Never edit; it's auto-generated on file changes
 5. **Missing build plugin** - Routes won't generate without the bundler plugin
 6. **Async navigation warnings** - `navigate()` returns Promise; use `void navigate()` or await it
+7. **Using `<Navigate>` for section redirects** - Use `beforeLoad` with `throw redirect()` instead to prevent navigation loops in embedded mode:
+   ```typescript
+   beforeLoad: () => {
+     throw redirect({ to: '/section/$tab', params: { tab: 'default' }, replace: true });
+   }
+   ```
+8. **Trailing slash in `from` parameter for index routes** - Index routes (files named `index.tsx`) require trailing slash in `from`:
+   ```typescript
+   // Index route: /topics/$topicName/index.tsx
+   useParams({ from: '/topics/$topicName/' })  // ✅ Correct (trailing slash)
+   useParams({ from: '/topics/$topicName' })   // ❌ Wrong
+   ```
+9. **Missing HistoryState extension** - Extend `HistoryState` interface for typed navigation state (see Phase 3)
 
 ## Documentation
 

@@ -6,12 +6,14 @@ Complete templates for all common route file scenarios.
 
 ```typescript
 // src/routes/__root.tsx
-import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet, useLocation } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import type { QueryClient } from '@tanstack/react-query';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 import { ErrorBoundary } from '../components/error-boundary';
-import { AppLayout } from '../components/layout/app-layout';
+import { RouterSync } from '../components/misc/router-sync';
+import { SidebarLayout, SidebarInset } from '../components/layout/sidebar';
+import { isEmbedded } from '../config';
 
 export type RouterContext = {
   basePath: string;
@@ -25,17 +27,49 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootLayout() {
   return (
     <>
+      {/* Sync navigation to legacy code and embedded shell */}
+      <RouterSync />
       <NuqsAdapter>
         <ErrorBoundary>
-          <AppLayout>
-            <Outlet />
-          </AppLayout>
+          {/* Switch between self-hosted and embedded layouts */}
+          {isEmbedded() ? <EmbeddedLayout /> : <SelfHostedLayout />}
         </ErrorBoundary>
       </NuqsAdapter>
       {process.env.NODE_ENV === 'development' && (
         <TanStackRouterDevtools position="bottom-right" />
       )}
     </>
+  );
+}
+
+function SelfHostedLayout() {
+  const location = useLocation();
+
+  // Bypass main layout for login page
+  const isLoginPage = location.pathname.startsWith('/login');
+  if (isLoginPage) {
+    return <Outlet />;
+  }
+
+  return (
+    <SidebarLayout>
+      <SidebarInset>
+        <AppContent />
+      </SidebarInset>
+    </SidebarLayout>
+  );
+}
+
+function EmbeddedLayout() {
+  // Embedded mode uses shell's layout
+  return <Outlet />;
+}
+
+function AppContent() {
+  return (
+    <div id="mainLayout">
+      <Outlet />
+    </div>
   );
 }
 ```
@@ -169,12 +203,36 @@ export const Route = createFileRoute('/topics/')({
 
 ## Section Redirect Route
 
+Use `beforeLoad` with `throw redirect()` for section redirects. This is more reliable than `<Navigate>` component, especially in embedded mode where it prevents navigation loops between shell and console routers.
+
 ```typescript
 // src/routes/security/index.tsx
-import { createFileRoute, Navigate } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
+import { ShieldCheckIcon } from 'components/icons';
 
 export const Route = createFileRoute('/security/')({
-  component: () => <Navigate replace to="/security/users" />,
+  staticData: {
+    title: 'Security',
+    icon: ShieldCheckIcon,
+  },
+  beforeLoad: () => {
+    // Redirect at router level to prevent navigation loops
+    throw redirect({
+      to: '/security/$tab',
+      params: { tab: 'users' },
+      replace: true,
+    });
+  },
+});
+```
+
+**Alternative (simple cases):** Use `<Navigate>` component for simple redirects without embedded mode concerns:
+
+```typescript
+import { createFileRoute, Navigate } from '@tanstack/react-router';
+
+export const Route = createFileRoute('/section/')({
+  component: () => <Navigate replace to="/section/default" />,
 });
 ```
 
@@ -317,3 +375,77 @@ src/routes/
 ```
 
 Both structures generate the same routes. Use directory structure for better organization in larger applications.
+
+## Route with Navigation State
+
+Pass typed state during navigation for use in the destination component. Requires `HistoryState` extension in app.tsx.
+
+**Extending HistoryState (in app.tsx):**
+
+```typescript
+declare module '@tanstack/react-router' {
+  interface HistoryState {
+    chunkId?: string;
+    topic?: string;
+    documentName?: string;
+    content?: string;
+    score?: number;
+    returnUrl?: string;
+  }
+}
+```
+
+**Navigating with state:**
+
+```typescript
+import { useNavigate, useLocation } from '@tanstack/react-router';
+
+function SearchResults() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleResultClick = (result: SearchResult) => {
+    navigate({
+      to: '/knowledgebases/$knowledgebaseId/documents/$documentId',
+      params: {
+        knowledgebaseId: result.knowledgebase_id,
+        documentId: result.document_id,
+      },
+      state: {
+        chunkId: result.chunk_id,
+        topic: result.topic,
+        documentName: result.document_name,
+        content: result.text,
+        score: result.score,
+        returnUrl: location.pathname,
+      },
+    });
+  };
+
+  return (/* ... */);
+}
+```
+
+**Reading state in destination:**
+
+```typescript
+// src/routes/knowledgebases/$knowledgebaseId/documents/$documentId.tsx
+import { createFileRoute, useLocation, useParams } from '@tanstack/react-router';
+
+export const Route = createFileRoute('/knowledgebases/$knowledgebaseId/documents/$documentId')({
+  staticData: { title: 'Document Details' },
+  component: DocumentDetailsPage,
+});
+
+function DocumentDetailsPage() {
+  const { knowledgebaseId, documentId } = useParams({
+    from: '/knowledgebases/$knowledgebaseId/documents/$documentId',
+  });
+  const location = useLocation();
+
+  // Access typed state
+  const { chunkId, topic, documentName, content, score, returnUrl } = location.state;
+
+  // Use state values for initial display, highlighting, or navigation back
+  return (/* ... */);
+}

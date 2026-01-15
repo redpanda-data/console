@@ -125,6 +125,35 @@ export default defineConfig({
 | `addExtensions` | `boolean` | `false` | Add file extensions to imports |
 | `routeFileIgnorePattern` | `string` | - | Regex pattern for files to ignore |
 
+## Router Configuration
+
+Configure the router instance with consistent trailing slash behavior:
+
+```typescript
+// src/app.tsx
+const router = createRouter({
+  routeTree,
+  context: {
+    basePath: getBasePath(),
+    queryClient,
+  },
+  basepath: getBasePath(),
+  trailingSlash: 'never',  // Important: normalize trailing slashes
+  defaultNotFoundComponent: NotFoundPage,
+});
+```
+
+**Important:** The `trailingSlash: 'never'` setting normalizes URLs, but the `from` parameter in hooks must match the route definition:
+
+- Index routes (files named `index.tsx`): use trailing slash in `from`
+  ```typescript
+  useParams({ from: '/topics/$topicName/' })
+  ```
+- Non-index routes: no trailing slash in `from`
+  ```typescript
+  useParams({ from: '/topics/$topicName/edit' })
+  ```
+
 ## Biome Configuration
 
 ```jsonc

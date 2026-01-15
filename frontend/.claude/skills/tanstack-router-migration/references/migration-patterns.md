@@ -425,6 +425,42 @@ function ProtectedRoute({ isAuth, children }) {
 }
 ```
 
+### Section Redirects (Preferred: beforeLoad)
+
+For section/index redirects, prefer `beforeLoad` with `throw redirect()` over `<Navigate>` component. This prevents navigation loops in embedded mode:
+
+**Before (React Router):**
+```typescript
+// Section redirects using Navigate component
+<Route path="/security" element={<Navigate replace to="/security/users" />} />
+```
+
+**After (TanStack Router - PREFERRED):**
+```typescript
+// src/routes/security/index.tsx
+import { createFileRoute, redirect } from '@tanstack/react-router';
+
+export const Route = createFileRoute('/security/')({
+  beforeLoad: () => {
+    throw redirect({
+      to: '/security/$tab',
+      params: { tab: 'users' },
+      replace: true,
+    });
+  },
+});
+```
+
+**After (TanStack Router - Alternative):**
+```typescript
+// Simple redirect without embedded mode concerns
+import { createFileRoute, Navigate } from '@tanstack/react-router';
+
+export const Route = createFileRoute('/security/')({
+  component: () => <Navigate replace to="/security/users" />,
+});
+```
+
 ## Custom Hook Migration
 
 ### usePaginationParams Example
@@ -547,4 +583,97 @@ import { Link } from 'react-router-dom';
 <Button as="a" href="https://docs.redpanda.com" target="_blank" rel="noopener">
   Documentation
 </Button>
+```
+
+## HistoryState Extension
+
+Extend `HistoryState` for typed navigation state between routes:
+
+```typescript
+// In app.tsx or a dedicated types file
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+
+  // Extend HistoryState for typed navigation state
+  interface HistoryState {
+    // Document viewer state
+    chunkId?: string;
+    topic?: string;
+    documentName?: string;
+    content?: string;
+    score?: number;
+
+    // Navigation state
+    returnUrl?: string;
+    fromTab?: string;
+  }
+}
+```
+
+This enables type-safe state passing during navigation.
+
+## Navigate with State
+
+**Before (React Router):**
+```typescript
+import { useNavigate, useLocation } from 'react-router-dom';
+
+const navigate = useNavigate();
+navigate('/documents/123', {
+  state: { returnUrl: '/list', documentName: 'My Doc' }
+});
+
+// Reading state
+import { useLocation } from 'react-router-dom';
+const location = useLocation();
+const { returnUrl, documentName } = location.state || {};
+```
+
+**After (TanStack Router):**
+```typescript
+import { useNavigate, useLocation } from '@tanstack/react-router';
+
+const navigate = useNavigate();
+navigate({
+  to: '/documents/$documentId',
+  params: { documentId: '123' },
+  state: { returnUrl: '/list', documentName: 'My Doc' },
+});
+
+// Reading state (typed via HistoryState extension)
+const location = useLocation();
+const { returnUrl, documentName } = location.state;
+```
+
+**Complex state example:**
+```typescript
+// Passing search result context to document viewer
+const handleResultClick = (result: SearchResult) => {
+  navigate({
+    to: '/knowledgebases/$knowledgebaseId/documents/$documentId',
+    params: {
+      knowledgebaseId: result.knowledgebase_id,
+      documentId: result.document_id,
+    },
+    state: {
+      chunkId: result.chunk_id,
+      topic: result.topic,
+      documentName: result.document_name,
+      content: result.text,
+      score: result.score,
+      returnUrl: location.pathname,
+    },
+  });
+};
+
+// In destination component
+function DocumentViewer() {
+  const location = useLocation();
+  const { chunkId, documentName, returnUrl } = location.state;
+
+  // Use chunkId to scroll to specific section
+  // Use returnUrl for back navigation
+}
 ```
