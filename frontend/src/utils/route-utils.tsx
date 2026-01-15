@@ -19,6 +19,7 @@ import type { ReactNode } from 'react';
 
 import { type AppFeature, AppFeatures } from './env';
 import {
+  ActivityIcon,
   AIIcon,
   BeakerIcon,
   BookOpenIcon,
@@ -254,6 +255,15 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     title: 'Transforms',
     icon: AIIcon,
     visibilityCheck: routeVisibility(true, [Feature.TransformsService]),
+  },
+  {
+    path: '/traces',
+    title: 'Traces',
+    icon: ActivityIcon,
+    visibilityCheck: routeVisibility(
+      () => isEmbedded() && isFeatureFlagEnabled('enableTracingInConsole'),
+      [Feature.TracingService]
+    ),
   },
   {
     path: '/reassign-partitions',

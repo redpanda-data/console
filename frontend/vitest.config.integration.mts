@@ -22,7 +22,6 @@ export default defineConfig(({ mode }) => {
       isolate: true,
       pool: 'forks',
       vmMemoryLimit: '3072Mb', // Force GC when memory limit is reached (3GB safe for 8GB runner with overhead)
-      maxWorkers: 1,
       testTimeout: 30_000,
       globals: true,
       environment: 'jsdom', // Integration tests use jsdom environment
