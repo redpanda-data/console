@@ -25,14 +25,14 @@ import { SpanSchema } from 'protogen/redpanda/otel/v1/trace_pb';
 import { renderWithFileRoutes } from 'test-utils';
 import { vi } from 'vitest';
 
-import { TraceListPage } from './trace-list-page';
+import { TranscriptListPage } from './transcript-list-page';
 
 // Regex constants for test assertions (performance optimization)
-export const REGEX_COMPLETED_TRACE = /\d+ completed|completed trace/i;
+export const REGEX_COMPLETED_TRANSCRIPT = /\d+ completed|completed transcript/i;
 export const REGEX_SERVICE = /service/i;
 export const REGEX_STATUS = /status/i;
-export const REGEX_NO_TRACES_FOUND = /no traces found/i;
-export const REGEX_NO_TRACES_RECORDED = /no traces have been recorded/i;
+export const REGEX_NO_TRANSCRIPTS_FOUND = /no transcripts found/i;
+export const REGEX_NO_TRANSCRIPTS_RECORDED = /no transcripts have been recorded/i;
 export const REGEX_ERROR = /error/i;
 
 // Helper function to create transport with mocks
@@ -64,24 +64,24 @@ export function setupTransport(options?: {
 }
 
 // Helper function to render with required providers
-export function renderTraceListPage(
+export function renderTranscriptListPage(
   transport: ReturnType<typeof createRouterTransport>,
-  initialLocation = '/traces?timeRange=1h'
+  initialLocation = '/transcripts?timeRange=1h'
 ) {
-  // Note: TraceListPage renders TracesTable internally.
-  // For performance optimization in tests, TracesTable supports disableFaceting prop
+  // Note: TranscriptListPage renders TranscriptsTable internally.
+  // For performance optimization in tests, TranscriptsTable supports disableFaceting prop
   // to skip expensive getFacetedRowModel and getFacetedUniqueValues operations.
   // This is particularly useful when testing basic rendering/filtering without faceted filters.
   return renderWithFileRoutes(
     <NuqsTestingAdapter>
-      <TraceListPage disableFaceting={true} />
+      <TranscriptListPage disableFaceting={true} />
     </NuqsTestingAdapter>,
     { transport, initialLocation }
   );
 }
 
-// Helper function to create mock TraceSummary
-export function createMockTraceSummary(overrides?: {
+// Helper function to create mock TranscriptSummary
+export function createMockTranscriptSummary(overrides?: {
   traceId?: string;
   rootSpanName?: string;
   rootServiceName?: string;
@@ -103,18 +103,18 @@ export function createMockTraceSummary(overrides?: {
   });
 }
 
-// Helper function to create mock Trace with spans
-export function createMockTrace(traceId: string, rootSpanName: string) {
+// Helper function to create mock Transcript with spans
+export function createMockTranscript(transcriptId: string, rootSpanName: string) {
   const rootSpanId = '0123456789abcdef';
   const child1SpanId = '1111111111111111';
   const child2SpanId = '2222222222222222';
 
   return create(TraceSchema, {
-    traceId,
+    traceId: transcriptId,
     spans: [
       // Root span
       create(SpanSchema, {
-        traceId: Uint8Array.from(Buffer.from(traceId, 'hex')),
+        traceId: Uint8Array.from(Buffer.from(transcriptId, 'hex')),
         spanId: Uint8Array.from(Buffer.from(rootSpanId, 'hex')),
         name: rootSpanName,
         startTimeUnixNano: BigInt(Date.now() * 1_000_000),
@@ -123,7 +123,7 @@ export function createMockTrace(traceId: string, rootSpanName: string) {
       }),
       // Child span 1
       create(SpanSchema, {
-        traceId: Uint8Array.from(Buffer.from(traceId, 'hex')),
+        traceId: Uint8Array.from(Buffer.from(transcriptId, 'hex')),
         spanId: Uint8Array.from(Buffer.from(child1SpanId, 'hex')),
         parentSpanId: Uint8Array.from(Buffer.from(rootSpanId, 'hex')),
         name: 'llm.chat',
@@ -132,7 +132,7 @@ export function createMockTrace(traceId: string, rootSpanName: string) {
       }),
       // Child span 2
       create(SpanSchema, {
-        traceId: Uint8Array.from(Buffer.from(traceId, 'hex')),
+        traceId: Uint8Array.from(Buffer.from(transcriptId, 'hex')),
         spanId: Uint8Array.from(Buffer.from(child2SpanId, 'hex')),
         parentSpanId: Uint8Array.from(Buffer.from(rootSpanId, 'hex')),
         name: 'tool.execute',
@@ -140,6 +140,6 @@ export function createMockTrace(traceId: string, rootSpanName: string) {
         endTimeUnixNano: BigInt((Date.now() + 1250) * 1_000_000),
       }),
     ],
-    summary: createMockTraceSummary({ traceId, rootSpanName }),
+    summary: createMockTranscriptSummary({ traceId: transcriptId, rootSpanName }),
   });
 }

@@ -20,7 +20,7 @@ import { LLMIOTab } from './llm-io-tab';
 import { OverviewTab } from './overview-tab';
 import { RawJSONTab } from './raw-json-tab';
 import { ToolCallTab } from './tool-call-tab';
-import { isRootSpan } from '../utils/trace-statistics';
+import { isRootSpan } from '../utils/transcript-statistics';
 
 type Props = {
   span: Span;
@@ -57,7 +57,7 @@ export const getDefaultTab = (showOverviewTab: boolean, showLLMTab: boolean, sho
   return 'attributes';
 };
 
-export const TraceDetailsTabs: FC<Props> = ({ span, trace, value, onValueChange }) => {
+export const TranscriptDetailsTabs: FC<Props> = ({ span, trace, value, onValueChange }) => {
   const { showToolTab, showLLMTab, showOverviewTab } = useMemo(
     () => ({
       showToolTab: isToolSpan(span),
@@ -112,7 +112,7 @@ export const TraceDetailsTabs: FC<Props> = ({ span, trace, value, onValueChange 
                 'relative px-3 py-2 font-medium text-xs transition-colors',
                 activeTab === tab.id ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
               )}
-              data-testid={`trace-details-tab-${tab.id}`}
+              data-testid={`transcript-details-tab-${tab.id}`}
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
               role="tab"

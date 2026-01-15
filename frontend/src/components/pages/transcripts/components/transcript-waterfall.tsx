@@ -22,7 +22,7 @@ import {
   calculateWidth,
   type SpanNode,
 } from '../utils/span-tree-builder';
-import { formatDuration } from '../utils/trace-formatters';
+import { formatDuration } from '../utils/transcript-formatters';
 
 type Props = {
   spans: Span[];
@@ -69,7 +69,7 @@ const SpanRow: FC<{ span: SpanNode; timeline: ReturnType<typeof calculateTimelin
   );
 };
 
-export const TraceWaterfall: FC<Props> = ({ spans }) => {
+export const TranscriptWaterfall: FC<Props> = ({ spans }) => {
   const tree = useMemo(() => buildSpanTree(spans), [spans]);
   const timeline = useMemo(() => calculateTimeline(tree), [tree]);
 

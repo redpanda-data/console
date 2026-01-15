@@ -22,7 +22,7 @@ import { tryParseJson } from 'utils/json-utils';
 
 import { CollapsibleCodeSection } from './collapsible-code-section';
 import { ContentPanel } from './content-panel';
-import { formatJsonContent } from '../utils/trace-formatters';
+import { formatJsonContent } from '../utils/transcript-formatters';
 
 type Props = {
   span: Span;

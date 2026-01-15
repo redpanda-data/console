@@ -40,9 +40,9 @@ import { appGlobal } from 'state/app-global';
 import { uiState } from 'state/ui-state';
 import { pluralize } from 'utils/string';
 
-import { TraceActivityChart } from './components/trace-activity-chart';
-import { type EnhancedTraceSummary, statusOptions, TracesTable } from './components/traces-table';
-import { calculateVisibleWindow } from './utils/trace-statistics';
+import { TranscriptActivityChart } from './components/transcript-activity-chart';
+import { type EnhancedTranscriptSummary, statusOptions, TranscriptsTable } from './components/transcripts-table';
+import { calculateVisibleWindow } from './utils/transcript-statistics';
 
 const TIME_RANGES = [
   { value: '5m', label: 'Last 5 minutes', ms: 5 * 60 * 1000 },
@@ -56,21 +56,21 @@ const TIME_RANGES = [
 ];
 
 /** Props for the stats row component */
-type TracesStatsRowProps = {
+type TranscriptsStatsRowProps = {
   isLoading: boolean;
   isInitialLoad: boolean;
   stats: { completed: number; inProgress: number; withErrors: number; total: number };
   onCollapseAll: () => void;
 };
 
-/** Stats row showing trace counts and collapse button */
-const TracesStatsRow: FC<TracesStatsRowProps> = ({ isLoading, isInitialLoad, stats, onCollapseAll }) => {
+/** Stats row showing transcript counts and collapse button */
+const TranscriptsStatsRow: FC<TranscriptsStatsRowProps> = ({ isLoading, isInitialLoad, stats, onCollapseAll }) => {
   if (isLoading && isInitialLoad) {
     return (
       <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
         <span className="flex items-center gap-2">
           <Spinner size="xs" />
-          Loading traces...
+          Loading transcripts...
         </span>
         <div className="flex items-center gap-3">
           <Button className="h-6 px-2 text-[10px]" onClick={onCollapseAll} size="sm" variant="ghost">
@@ -86,7 +86,7 @@ const TracesStatsRow: FC<TracesStatsRowProps> = ({ isLoading, isInitialLoad, sta
   return (
     <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
       <span>
-        Showing {stats.total} {pluralize(stats.total, 'trace')}
+        Showing {stats.total} {pluralize(stats.total, 'transcript')}
         {hasAnomalies ? (
           <span className="text-muted-foreground/70">
             {' '}
@@ -128,7 +128,7 @@ const LoadMoreButton: FC<LoadMoreButtonProps> = ({ hasMore, isLoading, isLoading
             Loading...
           </>
         ) : (
-          'Load 100 older traces'
+          'Load 100 older transcripts'
         )}
       </Button>
     </div>
@@ -141,10 +141,12 @@ type TraceListToolbarProps = {
   onBackToNewest: () => void;
   searchValue: string;
   onSearchChange: (value: string) => void;
-  serviceColumn: ReturnType<typeof useReactTable<EnhancedTraceSummary>>['getColumn'] extends (id: string) => infer R
+  serviceColumn: ReturnType<typeof useReactTable<EnhancedTranscriptSummary>>['getColumn'] extends (
+    id: string
+  ) => infer R
     ? R
     : never;
-  statusColumn: ReturnType<typeof useReactTable<EnhancedTraceSummary>>['getColumn'] extends (id: string) => infer R
+  statusColumn: ReturnType<typeof useReactTable<EnhancedTranscriptSummary>>['getColumn'] extends (id: string) => infer R
     ? R
     : never;
   serviceOptions: { value: string; label: string; icon: typeof Database }[];
@@ -190,7 +192,7 @@ const TraceListToolbar: FC<TraceListToolbarProps> = ({
       <Input
         className="h-8 w-[300px]"
         onChange={(e: ChangeEvent<HTMLInputElement>) => onSearchChange(e.target.value)}
-        placeholder="Search traces..."
+        placeholder="Search transcripts..."
         value={searchValue}
       />
       {serviceColumn && serviceOptions.length > 0 ? (
@@ -227,7 +229,7 @@ const TraceListToolbar: FC<TraceListToolbarProps> = ({
   </div>
 );
 
-type TraceListPageProps = {
+type TranscriptListPageProps = {
   /**
    * Disable expensive table features (faceting) for testing or performance.
    * When true, getFacetedRowModel and getFacetedUniqueValues are not used.
@@ -237,11 +239,11 @@ type TraceListPageProps = {
   disableFaceting?: boolean;
 };
 
-export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false }) => {
+export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFaceting = false }) => {
   useEffect(() => {
     runInAction(() => {
-      uiState.pageTitle = 'Traces';
-      uiState.pageBreadcrumbs = [{ title: 'Traces', linkTo: '', heading: 'Traces' }];
+      uiState.pageTitle = 'Transcripts';
+      uiState.pageBreadcrumbs = [{ title: 'Transcripts', linkTo: '', heading: 'Transcripts' }];
     });
   }, []);
 
@@ -372,8 +374,8 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
   // Enhance traces with searchable field and status for filtering
   const enhancedTraces = useMemo(
     () =>
-      displayTraces.map((trace): EnhancedTraceSummary => {
-        let status: EnhancedTraceSummary['status'];
+      displayTraces.map((trace): EnhancedTranscriptSummary => {
+        let status: EnhancedTranscriptSummary['status'];
         if (trace.errorCount > 0) {
           status = 'with-errors';
         } else if (trace.spanCount === 0) {
@@ -403,7 +405,7 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
   );
 
   // Memoize columns array to prevent recreation on every render
-  const columns = useMemo<ColumnDef<EnhancedTraceSummary>[]>(
+  const columns = useMemo<ColumnDef<EnhancedTranscriptSummary>[]>(
     () => [
       {
         accessorKey: 'searchable',
@@ -430,7 +432,7 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
   );
 
   // Create table instance for toolbar filters
-  const table = useReactTable<EnhancedTraceSummary>({
+  const table = useReactTable<EnhancedTranscriptSummary>({
     data: enhancedTraces,
     columns,
     onColumnFiltersChange: setColumnFilters,
@@ -547,7 +549,7 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
 
       {/* Activity Chart - Always show when we have histogram data */}
       {displayHistogram && displayHistogram.buckets.length > 0 && (
-        <TraceActivityChart
+        <TranscriptActivityChart
           histogram={displayHistogram}
           loadedCount={accumulatedTraces.length}
           onBucketClick={jumpedTo ? undefined : handleBucketClick}
@@ -563,7 +565,7 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
       <div className="flex flex-col gap-2">
         {/* Traces Summary (only show when we have data) */}
         {displayTraces.length > 0 && (
-          <TracesStatsRow
+          <TranscriptsStatsRow
             isInitialLoad={currentPageToken === ''}
             isLoading={isLoading}
             onCollapseAll={handleCollapseAll}
@@ -572,7 +574,7 @@ export const TraceListPage: FC<TraceListPageProps> = ({ disableFaceting = false 
         )}
 
         {/* Traces Table with external toolbar */}
-        <TracesTable
+        <TranscriptsTable
           collapseAllTrigger={collapseAllTrigger}
           columnFilters={columnFilters}
           disableFaceting={disableFaceting}
