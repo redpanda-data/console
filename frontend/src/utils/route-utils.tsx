@@ -261,7 +261,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     title: 'Transcripts',
     icon: ActivityIcon,
     visibilityCheck: routeVisibility(
-      () => isEmbedded() && isFeatureFlagEnabled('enableTracingInConsole'),
+      () => isEmbedded() && isFeatureFlagEnabled('enableTranscriptsInConsole'),
       [Feature.TracingService]
     ),
   },
@@ -313,7 +313,7 @@ const routesIgnoredInEmbedded = ['/overview', '/reassign-partitions', '/admin'];
 const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions', '/admin', '/transforms'];
 
 // Routes with beta badge suffix
-const BETA_ROUTES = ['/knowledgebases', '/agents'];
+const BETA_ROUTES = ['/knowledgebases', '/agents', '/transcripts'];
 
 /**
  * Process a single sidebar item for legacy sidebar display.
@@ -380,7 +380,7 @@ export function createVisibleSidebarItems(): NavLinkProps[] {
 export function getEmbeddedAvailableRoutes(): SidebarItem[] {
   return SIDEBAR_ITEMS.map((item) => {
     // Mark AI-related routes with group and beta flag
-    if (item.path === '/knowledgebases' || item.path === '/agents') {
+    if (item.path === '/knowledgebases' || item.path === '/agents' || item.path === '/transcripts') {
       return {
         ...item,
         group: 'Agentic AI',
