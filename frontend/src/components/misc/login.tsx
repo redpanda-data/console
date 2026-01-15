@@ -101,10 +101,23 @@ const authenticationApi = observable({
 
 const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
   [AuthenticationMethod.NONE]: observer(() => {
+    const { search } = useLocation();
+    const searchParams = new URLSearchParams(search);
+    // Don't auto-redirect if there was an auth error - user needs to see the login page
+    const hasError = searchParams.has('error_code') || authenticationApi.methodsErrorResponse !== null;
+
     useEffect(() => {
-      appGlobal.historyPush('/overview');
-    }, []);
-    return null;
+      if (!hasError) {
+        appGlobal.historyPush('/overview');
+      }
+    }, [hasError]);
+
+    return hasError ? (
+      <Alert status="info">
+        <AlertIcon />
+        <AlertDescription>No authentication is configured. Refresh the page to try again.</AlertDescription>
+      </Alert>
+    ) : null;
   }),
   [AuthenticationMethod.BASIC]: observer(() => {
     const formState = useLocalObservable(() => ({
