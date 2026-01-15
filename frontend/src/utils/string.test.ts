@@ -11,7 +11,14 @@
 
 import { describe, expect, test } from 'vitest';
 
-import { formatFieldLabel, getTextPreview, pluralize, pluralizeWithNumber, truncateWithEllipsis } from './string';
+import {
+  formatFieldLabel,
+  getTextPreview,
+  getUserInitials,
+  pluralize,
+  pluralizeWithNumber,
+  truncateWithEllipsis,
+} from './string';
 
 describe('formatFieldLabel', () => {
   test('should convert camelCase to Title Case with spaces', () => {
@@ -113,5 +120,39 @@ describe('getTextPreview', () => {
 
   test('should handle content with only newlines', () => {
     expect(getTextPreview('\n\n\n', 2)).toBe('\n');
+  });
+});
+
+describe('getUserInitials', () => {
+  test('should return first and last initials for two-word names', () => {
+    expect(getUserInitials('John Doe')).toBe('JD');
+    expect(getUserInitials('Alice Smith')).toBe('AS');
+  });
+
+  test('should return first and last initials for names with middle parts', () => {
+    expect(getUserInitials('Mary J Parker')).toBe('MP');
+    expect(getUserInitials('Mary Jane Watson Parker')).toBe('MP');
+  });
+
+  test('should return single initial for single-word names', () => {
+    expect(getUserInitials('Alice')).toBe('A');
+    expect(getUserInitials('Bob')).toBe('B');
+  });
+
+  test('should handle empty and null values', () => {
+    expect(getUserInitials('')).toBe('');
+    expect(getUserInitials('   ')).toBe('');
+    expect(getUserInitials(undefined)).toBe('');
+    expect(getUserInitials(null)).toBe('');
+  });
+
+  test('should handle extra whitespace', () => {
+    expect(getUserInitials('  John   Doe  ')).toBe('JD');
+    expect(getUserInitials('Alice\t\tSmith')).toBe('AS');
+  });
+
+  test('should uppercase initials', () => {
+    expect(getUserInitials('john doe')).toBe('JD');
+    expect(getUserInitials('ALICE SMITH')).toBe('AS');
   });
 });

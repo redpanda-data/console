@@ -7,7 +7,7 @@
 
 import { expect, test } from '@playwright/test';
 
-import { TracePage } from '../utils/trace-page';
+import { TracePage } from '../../console/utils/trace-page';
 
 test.describe('Traces Page - Navigation and UI', () => {
   test('should navigate to traces page and display UI elements', async ({ page }) => {

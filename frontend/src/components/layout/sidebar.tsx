@@ -46,7 +46,9 @@ import RedpandaTextWhite from '../../assets/logos/redpanda-text-white.svg';
 import { AuthenticationMethod } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { api } from '../../state/backend-api';
 import { AppFeatures } from '../../utils/env';
+import { getUserInitials } from '../../utils/string';
 import { UserPreferencesDialog } from '../misc/user-preferences';
+import { Text } from '../redpanda-ui/components/typography';
 
 function SidebarLogo() {
   const { state, isMobile } = useSidebar();
@@ -105,12 +107,7 @@ const UserProfile = observer(() => {
   }
 
   const user = api.userData;
-  const initials = user.displayName
-    ?.split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+  const initials = getUserInitials(user.displayName);
 
   const handleMenuItemClick = () => {
     if (isMobile) {
@@ -132,13 +129,19 @@ const UserProfile = observer(() => {
           >
             <Avatar className={isCollapsed ? 'h-7 w-7 shrink-0' : 'h-8 w-8 shrink-0'}>
               <AvatarImage alt="" src={user.avatarUrl} />
-              <AvatarFallback aria-hidden="true">{initials}</AvatarFallback>
+              <AvatarFallback aria-hidden="true" className="bg-primary font-medium text-primary-foreground text-xs">
+                {initials}
+              </AvatarFallback>
             </Avatar>
             {!isCollapsed && (
               <>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.displayName}</span>
-                  <span className="truncate text-sidebar-foreground/60 text-xs">Preferences</span>
+                <div className="grid flex-1 text-left leading-tight">
+                  <Text as="span" className="truncate" variant="label">
+                    {user.displayName}
+                  </Text>
+                  <Text as="span" className="truncate text-sidebar-foreground/60" variant="muted">
+                    Preferences
+                  </Text>
                 </div>
                 <ChevronUp aria-hidden="true" className="ml-auto size-4" />
               </>
@@ -148,8 +151,12 @@ const UserProfile = observer(() => {
         <DropdownMenuContent align="end" className="w-56 rounded-lg" side={isMobile ? 'bottom' : 'top'}>
           <DropdownMenuLabel>
             <div className="flex flex-col">
-              <span>Signed in as</span>
-              <span className="font-normal text-muted-foreground">{user.displayName}</span>
+              <Text as="span" variant="small">
+                Signed in as
+              </Text>
+              <Text as="span" variant="muted">
+                {user.displayName}
+              </Text>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />

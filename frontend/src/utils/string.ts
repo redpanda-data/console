@@ -11,6 +11,7 @@
 
 const CAMEL_CASE_REGEX = /([A-Z])/g;
 const FIRST_CHAR_REGEX = /^\w/;
+const WHITESPACE_REGEX = /\s+/;
 
 /**
  * Formats a field key into a human-readable label
@@ -102,4 +103,30 @@ export const getTextPreview = (content: string, maxLines: number): string => {
     return content;
   }
   return lines.slice(0, maxLines).join('\n');
+};
+
+/**
+ * Gets user initials from a display name (first name + last name).
+ * Uses the first letter of the first word and the first letter of the last word.
+ *
+ * Examples:
+ * - getUserInitials('John Doe') → 'JD'
+ * - getUserInitials('John B Doe') → 'JD'
+ * - getUserInitials('Alice') → 'A'
+ * - getUserInitials('') → ''
+ * - getUserInitials(undefined) → ''
+ *
+ * @param displayName The user's display name
+ * @returns Up to 2 uppercase initials (first and last name)
+ */
+export const getUserInitials = (displayName: string | undefined | null): string => {
+  if (!displayName?.trim()) {
+    return '';
+  }
+
+  const words = displayName.trim().split(WHITESPACE_REGEX);
+  const firstInitial = words[0]?.[0] ?? '';
+  const lastInitial = words.length > 1 ? (words.at(-1)?.[0] ?? '') : '';
+
+  return (firstInitial + lastInitial).toUpperCase();
 };
