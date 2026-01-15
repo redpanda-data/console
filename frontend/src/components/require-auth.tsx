@@ -66,9 +66,12 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
         throw new Error('security client is not initialized');
       }
 
-      api.refreshUserData().catch(() => {
-        // Intentionally ignore errors during initial load
-      });
+      // Only fetch if not already fetching to prevent redirect loops
+      if (!api.isUserDataFetchInProgress) {
+        api.refreshUserData().catch(() => {
+          // Intentionally ignore errors during initial load
+        });
+      }
 
       return preLogin;
     }
