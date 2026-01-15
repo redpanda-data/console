@@ -16,7 +16,7 @@ import { Route as ReassignPartitionsRouteImport } from './routes/reassign-partit
 import { Route as QuotasRouteImport } from './routes/quotas';
 import { Route as IndexRouteImport } from './routes/index';
 import { Route as TransformsIndexRouteImport } from './routes/transforms/index';
-import { Route as TracesIndexRouteImport } from './routes/traces/index';
+import { Route as TranscriptsIndexRouteImport } from './routes/transcripts/index';
 import { Route as TopicsIndexRouteImport } from './routes/topics/index';
 import { Route as ShadowlinksIndexRouteImport } from './routes/shadowlinks/index';
 import { Route as SecurityIndexRouteImport } from './routes/security/index';
@@ -109,9 +109,9 @@ const TransformsIndexRoute = TransformsIndexRouteImport.update({
   path: '/transforms/',
   getParentRoute: () => rootRouteImport,
 } as any);
-const TracesIndexRoute = TracesIndexRouteImport.update({
-  id: '/traces/',
-  path: '/traces/',
+const TranscriptsIndexRoute = TranscriptsIndexRouteImport.update({
+  id: '/transcripts/',
+  path: '/transcripts/',
   getParentRoute: () => rootRouteImport,
 } as any);
 const TopicsIndexRoute = TopicsIndexRouteImport.update({
@@ -449,7 +449,7 @@ export interface FileRoutesByFullPath {
   '/security': typeof SecurityIndexRoute;
   '/shadowlinks': typeof ShadowlinksIndexRoute;
   '/topics': typeof TopicsIndexRoute;
-  '/traces': typeof TracesIndexRoute;
+  '/transcripts': typeof TranscriptsIndexRoute;
   '/transforms': typeof TransformsIndexRoute;
   '/connect-clusters/$clusterName/$connector': typeof ConnectClustersClusterNameConnectorRoute;
   '/connect-clusters/$clusterName/create-connector': typeof ConnectClustersClusterNameCreateConnectorRoute;
@@ -515,7 +515,7 @@ export interface FileRoutesByTo {
   '/security': typeof SecurityIndexRoute;
   '/shadowlinks': typeof ShadowlinksIndexRoute;
   '/topics': typeof TopicsIndexRoute;
-  '/traces': typeof TracesIndexRoute;
+  '/transcripts': typeof TranscriptsIndexRoute;
   '/transforms': typeof TransformsIndexRoute;
   '/connect-clusters/$clusterName/$connector': typeof ConnectClustersClusterNameConnectorRoute;
   '/connect-clusters/$clusterName/create-connector': typeof ConnectClustersClusterNameCreateConnectorRoute;
@@ -582,7 +582,7 @@ export interface FileRoutesById {
   '/security/': typeof SecurityIndexRoute;
   '/shadowlinks/': typeof ShadowlinksIndexRoute;
   '/topics/': typeof TopicsIndexRoute;
-  '/traces/': typeof TracesIndexRoute;
+  '/transcripts/': typeof TranscriptsIndexRoute;
   '/transforms/': typeof TransformsIndexRoute;
   '/connect-clusters/$clusterName/$connector': typeof ConnectClustersClusterNameConnectorRoute;
   '/connect-clusters/$clusterName/create-connector': typeof ConnectClustersClusterNameCreateConnectorRoute;
@@ -650,7 +650,7 @@ export interface FileRouteTypes {
     | '/security'
     | '/shadowlinks'
     | '/topics'
-    | '/traces'
+    | '/transcripts'
     | '/transforms'
     | '/connect-clusters/$clusterName/$connector'
     | '/connect-clusters/$clusterName/create-connector'
@@ -716,7 +716,7 @@ export interface FileRouteTypes {
     | '/security'
     | '/shadowlinks'
     | '/topics'
-    | '/traces'
+    | '/transcripts'
     | '/transforms'
     | '/connect-clusters/$clusterName/$connector'
     | '/connect-clusters/$clusterName/create-connector'
@@ -782,7 +782,7 @@ export interface FileRouteTypes {
     | '/security/'
     | '/shadowlinks/'
     | '/topics/'
-    | '/traces/'
+    | '/transcripts/'
     | '/transforms/'
     | '/connect-clusters/$clusterName/$connector'
     | '/connect-clusters/$clusterName/create-connector'
@@ -849,7 +849,7 @@ export interface RootRouteChildren {
   SecurityIndexRoute: typeof SecurityIndexRoute;
   ShadowlinksIndexRoute: typeof ShadowlinksIndexRoute;
   TopicsIndexRoute: typeof TopicsIndexRoute;
-  TracesIndexRoute: typeof TracesIndexRoute;
+  TranscriptsIndexRoute: typeof TranscriptsIndexRoute;
   TransformsIndexRoute: typeof TransformsIndexRoute;
   ConnectClustersClusterNameConnectorRoute: typeof ConnectClustersClusterNameConnectorRoute;
   ConnectClustersClusterNameCreateConnectorRoute: typeof ConnectClustersClusterNameCreateConnectorRoute;
@@ -931,11 +931,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TransformsIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
-    '/traces/': {
-      id: '/traces/';
-      path: '/traces';
-      fullPath: '/traces';
-      preLoaderRoute: typeof TracesIndexRouteImport;
+    '/transcripts/': {
+      id: '/transcripts/';
+      path: '/transcripts';
+      fullPath: '/transcripts';
+      preLoaderRoute: typeof TranscriptsIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/topics/': {
@@ -1369,7 +1369,7 @@ const rootRouteChildren: RootRouteChildren = {
   SecurityIndexRoute: SecurityIndexRoute,
   ShadowlinksIndexRoute: ShadowlinksIndexRoute,
   TopicsIndexRoute: TopicsIndexRoute,
-  TracesIndexRoute: TracesIndexRoute,
+  TranscriptsIndexRoute: TranscriptsIndexRoute,
   TransformsIndexRoute: TransformsIndexRoute,
   ConnectClustersClusterNameConnectorRoute:
     ConnectClustersClusterNameConnectorRoute,

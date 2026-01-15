@@ -2,10 +2,10 @@ import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 /**
- * Page Object Model for Traces page
- * Handles navigation, trace expansion, span selection, filtering, and sorting
+ * Page Object Model for Transcripts page
+ * Handles navigation, transcript expansion, span selection, filtering, and sorting
  */
-export class TracePage {
+export class TranscriptPage {
   readonly page: Page;
 
   constructor(page: Page) {
@@ -13,32 +13,32 @@ export class TracePage {
   }
 
   /**
-   * Navigate to the traces list page
+   * Navigate to the transcripts list page
    */
   async goto() {
-    await this.page.goto('/traces');
-    await expect(this.page.getByRole('heading', { name: /traces/i })).toBeVisible({ timeout: 10_000 });
+    await this.page.goto('/transcripts');
+    await expect(this.page.getByRole('heading', { name: /transcripts/i })).toBeVisible({ timeout: 10_000 });
   }
 
   /**
-   * Wait for traces to load (either content or empty state)
+   * Wait for transcripts to load (either content or empty state)
    */
   async waitForLoad() {
-    // Wait for either traces, empty state, or error state (but not loading)
+    // Wait for either transcripts, empty state, or error state (but not loading)
     await this.page.waitForSelector(
-      '[data-testid^="trace-row-"], [data-testid="traces-empty-state"], [data-testid="traces-error-state"]',
+      '[data-testid^="transcript-row-"], [data-testid="transcripts-empty-state"], [data-testid="transcripts-error-state"]',
       { timeout: 10_000 }
     );
   }
 
   /**
-   * Expand a trace row to show its spans
-   * @param traceId - The trace ID to expand (partial match supported)
+   * Expand a transcript row to show its spans
+   * @param transcriptId - The transcript ID to expand (partial match supported)
    */
-  async expandTrace(traceId: string) {
-    const traceRow = this.page.getByTestId(`trace-row-${traceId}`);
-    await expect(traceRow).toBeVisible();
-    await traceRow.click();
+  async expandTranscript(transcriptId: string) {
+    const transcriptRow = this.page.getByTestId(`transcript-row-${transcriptId}`);
+    await expect(transcriptRow).toBeVisible();
+    await transcriptRow.click();
   }
 
   /**
@@ -55,17 +55,17 @@ export class TracePage {
    * Toggle the sort order (newest/oldest first)
    */
   async toggleSortOrder() {
-    const sortButton = this.page.getByTestId('traces-sort-toggle');
+    const sortButton = this.page.getByTestId('transcripts-sort-toggle');
     await expect(sortButton).toBeVisible();
     await sortButton.click();
   }
 
   /**
-   * Search for traces using the search input
+   * Search for transcripts using the search input
    * @param query - The search query
    */
-  async searchTraces(query: string) {
-    const searchInput = this.page.getByPlaceholder(/search traces/i);
+  async searchTranscripts(query: string) {
+    const searchInput = this.page.getByPlaceholder(/search transcripts/i);
     await searchInput.fill(query);
   }
 
@@ -73,7 +73,7 @@ export class TracePage {
    * Clear the search filter
    */
   async clearSearch() {
-    const searchInput = this.page.getByPlaceholder(/search traces/i);
+    const searchInput = this.page.getByPlaceholder(/search transcripts/i);
     await searchInput.clear();
   }
 
@@ -102,34 +102,34 @@ export class TracePage {
    */
 
   /**
-   * Verify that the traces page loaded successfully
+   * Verify that the transcripts page loaded successfully
    */
   async verifyPageLoaded() {
-    await expect(this.page.getByRole('heading', { name: /traces/i })).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: /transcripts/i })).toBeVisible();
     // Verify time column header exists
-    await expect(this.page.getByTestId('traces-sort-toggle')).toBeVisible();
+    await expect(this.page.getByTestId('transcripts-sort-toggle')).toBeVisible();
   }
 
   /**
-   * Verify a trace row is visible
-   * @param traceId - The trace ID (partial match)
+   * Verify a transcript row is visible
+   * @param transcriptId - The transcript ID (partial match)
    */
-  async verifyTraceVisible(traceId: string) {
-    const traceRow = this.page.getByTestId(`trace-row-${traceId}`);
-    await expect(traceRow).toBeVisible();
+  async verifyTranscriptVisible(transcriptId: string) {
+    const transcriptRow = this.page.getByTestId(`transcript-row-${transcriptId}`);
+    await expect(transcriptRow).toBeVisible();
   }
 
   /**
-   * Verify a trace row is not visible
-   * @param traceId - The trace ID (partial match)
+   * Verify a transcript row is not visible
+   * @param transcriptId - The transcript ID (partial match)
    */
-  async verifyTraceNotVisible(traceId: string) {
-    const traceRow = this.page.getByTestId(`trace-row-${traceId}`);
-    await expect(traceRow).not.toBeVisible();
+  async verifyTranscriptNotVisible(transcriptId: string) {
+    const transcriptRow = this.page.getByTestId(`transcript-row-${transcriptId}`);
+    await expect(transcriptRow).not.toBeVisible();
   }
 
   /**
-   * Verify span rows are visible (trace is expanded)
+   * Verify span rows are visible (transcript is expanded)
    */
   async verifySpansVisible() {
     const spanRows = this.page.locator('[data-testid^="span-row-"]');
@@ -149,7 +149,7 @@ export class TracePage {
    * Verify the empty state is shown
    */
   async verifyEmptyState() {
-    await expect(this.page.getByText(/no traces found/i)).toBeVisible();
+    await expect(this.page.getByText(/no transcripts found/i)).toBeVisible();
   }
 
   /**
@@ -157,7 +157,7 @@ export class TracePage {
    * @param order - Expected sort order ('newest' or 'oldest')
    */
   async verifySortOrder(order: 'newest' | 'oldest') {
-    const sortButton = this.page.getByTestId('traces-sort-toggle');
+    const sortButton = this.page.getByTestId('transcripts-sort-toggle');
     const ariaLabel = await sortButton.getAttribute('aria-label');
     if (order === 'newest') {
       expect(ariaLabel).toContain('newest first');
@@ -167,11 +167,11 @@ export class TracePage {
   }
 
   /**
-   * Get the count of visible trace rows
+   * Get the count of visible transcript rows
    */
-  async getTraceCount(): Promise<number> {
-    const traceRows = this.page.locator('[data-testid^="trace-row-"]');
-    return traceRows.count();
+  async getTranscriptCount(): Promise<number> {
+    const transcriptRows = this.page.locator('[data-testid^="transcript-row-"]');
+    return transcriptRows.count();
   }
 
   /**

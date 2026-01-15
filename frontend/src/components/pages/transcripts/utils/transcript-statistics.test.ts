@@ -12,12 +12,17 @@
 import type { TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import { describe, expect, it } from 'vitest';
 
-import { calculateVisibleWindow, groupTracesByDate, isIncompleteTrace, isRootSpan } from './trace-statistics';
+import {
+  calculateVisibleWindow,
+  groupTranscriptsByDate,
+  isIncompleteTranscript,
+  isRootSpan,
+} from './transcript-statistics';
 
 // Helper to create mock TraceSummary objects for testing
-const createMockTrace = (data: { traceId: string; startTimeMs?: number }): TraceSummary =>
+const createMockTranscript = (data: { transcriptId: string; startTimeMs?: number }): TraceSummary =>
   ({
-    traceId: data.traceId,
+    traceId: data.transcriptId,
     startTime: data.startTimeMs
       ? { seconds: BigInt(Math.floor(data.startTimeMs / 1000)), nanos: (data.startTimeMs % 1000) * 1_000_000 }
       : undefined,
@@ -27,18 +32,18 @@ const createMockTrace = (data: { traceId: string; startTimeMs?: number }): Trace
     errorCount: 0,
   }) as TraceSummary;
 
-describe('isIncompleteTrace', () => {
+describe('isIncompleteTranscript', () => {
   it('returns true for undefined rootSpanName', () => {
-    expect(isIncompleteTrace(undefined)).toBe(true);
+    expect(isIncompleteTranscript(undefined)).toBe(true);
   });
 
   it('returns true for empty rootSpanName', () => {
-    expect(isIncompleteTrace('')).toBe(true);
+    expect(isIncompleteTranscript('')).toBe(true);
   });
 
   it('returns false for non-empty rootSpanName', () => {
-    expect(isIncompleteTrace('my-span')).toBe(false);
-    expect(isIncompleteTrace('root')).toBe(false);
+    expect(isIncompleteTranscript('my-span')).toBe(false);
+    expect(isIncompleteTranscript('root')).toBe(false);
   });
 });
 
@@ -65,51 +70,51 @@ describe('isRootSpan', () => {
 });
 
 describe('calculateVisibleWindow', () => {
-  it('returns zeros for empty trace list', () => {
+  it('returns zeros for empty transcript list', () => {
     expect(calculateVisibleWindow([])).toEqual({ startMs: 0, endMs: 0 });
   });
 
-  it('calculates correct window for single trace', () => {
-    const traces = [createMockTrace({ traceId: '1', startTimeMs: 1000 })];
-    const result = calculateVisibleWindow(traces);
+  it('calculates correct window for single transcript', () => {
+    const transcripts = [createMockTranscript({ transcriptId: '1', startTimeMs: 1000 })];
+    const result = calculateVisibleWindow(transcripts);
     expect(result.startMs).toBe(1000);
     expect(result.endMs).toBe(1000);
   });
 
-  it('calculates correct window for multiple traces', () => {
-    const traces = [
-      createMockTrace({ traceId: '1', startTimeMs: 1000 }),
-      createMockTrace({ traceId: '2', startTimeMs: 3000 }),
-      createMockTrace({ traceId: '3', startTimeMs: 2000 }),
+  it('calculates correct window for multiple transcripts', () => {
+    const transcripts = [
+      createMockTranscript({ transcriptId: '1', startTimeMs: 1000 }),
+      createMockTranscript({ transcriptId: '2', startTimeMs: 3000 }),
+      createMockTranscript({ transcriptId: '3', startTimeMs: 2000 }),
     ];
-    const result = calculateVisibleWindow(traces);
+    const result = calculateVisibleWindow(transcripts);
     expect(result.startMs).toBe(1000);
     expect(result.endMs).toBe(3000);
   });
 
-  it('ignores traces without startTime', () => {
-    const traces = [
-      createMockTrace({ traceId: '1', startTimeMs: 1000 }),
-      createMockTrace({ traceId: '2' }), // no startTime
-      createMockTrace({ traceId: '3', startTimeMs: 2000 }),
+  it('ignores transcripts without startTime', () => {
+    const transcripts = [
+      createMockTranscript({ transcriptId: '1', startTimeMs: 1000 }),
+      createMockTranscript({ transcriptId: '2' }), // no startTime
+      createMockTranscript({ transcriptId: '3', startTimeMs: 2000 }),
     ];
-    const result = calculateVisibleWindow(traces);
+    const result = calculateVisibleWindow(transcripts);
     expect(result.startMs).toBe(1000);
     expect(result.endMs).toBe(2000);
   });
 
-  it('returns zeros when all traces lack startTime', () => {
-    const traces = [createMockTrace({ traceId: '1' }), createMockTrace({ traceId: '2' })];
-    expect(calculateVisibleWindow(traces)).toEqual({ startMs: 0, endMs: 0 });
+  it('returns zeros when all transcripts lack startTime', () => {
+    const transcripts = [createMockTranscript({ transcriptId: '1' }), createMockTranscript({ transcriptId: '2' })];
+    expect(calculateVisibleWindow(transcripts)).toEqual({ startMs: 0, endMs: 0 });
   });
 });
 
-describe('groupTracesByDate', () => {
-  it('returns empty array for empty trace list', () => {
-    expect(groupTracesByDate([])).toEqual([]);
+describe('groupTranscriptsByDate', () => {
+  it('returns empty array for empty transcript list', () => {
+    expect(groupTranscriptsByDate([])).toEqual([]);
   });
 
-  it('groups traces by date', () => {
+  it('groups transcripts by date', () => {
     // Jan 15, 2025 10:00 UTC
     const date1 = new Date('2025-01-15T10:00:00Z');
     // Jan 15, 2025 14:00 UTC (same day)
@@ -117,13 +122,13 @@ describe('groupTracesByDate', () => {
     // Jan 16, 2025 10:00 UTC (different day)
     const date3 = new Date('2025-01-16T10:00:00Z');
 
-    const traces = [
-      createMockTrace({ traceId: '1', startTimeMs: date1.getTime() }),
-      createMockTrace({ traceId: '2', startTimeMs: date2.getTime() }),
-      createMockTrace({ traceId: '3', startTimeMs: date3.getTime() }),
+    const transcripts = [
+      createMockTranscript({ transcriptId: '1', startTimeMs: date1.getTime() }),
+      createMockTranscript({ transcriptId: '2', startTimeMs: date2.getTime() }),
+      createMockTranscript({ transcriptId: '3', startTimeMs: date3.getTime() }),
     ];
 
-    const result = groupTracesByDate(traces);
+    const result = groupTranscriptsByDate(transcripts);
 
     expect(result).toHaveLength(2);
     expect(result[0][0]).toBe('2025-01-15');
@@ -132,13 +137,13 @@ describe('groupTracesByDate', () => {
     expect(result[1][1].traces).toHaveLength(1);
   });
 
-  it('excludes traces without startTime', () => {
-    const traces = [
-      createMockTrace({ traceId: '1', startTimeMs: new Date('2025-01-15T10:00:00Z').getTime() }),
-      createMockTrace({ traceId: '2' }), // no startTime
+  it('excludes transcripts without startTime', () => {
+    const transcripts = [
+      createMockTranscript({ transcriptId: '1', startTimeMs: new Date('2025-01-15T10:00:00Z').getTime() }),
+      createMockTranscript({ transcriptId: '2' }), // no startTime
     ];
 
-    const result = groupTracesByDate(traces);
+    const result = groupTranscriptsByDate(transcripts);
 
     expect(result).toHaveLength(1);
     expect(result[0][1].traces).toHaveLength(1);
@@ -146,9 +151,11 @@ describe('groupTracesByDate', () => {
   });
 
   it('includes human-readable date labels', () => {
-    const traces = [createMockTrace({ traceId: '1', startTimeMs: new Date('2025-01-15T10:00:00Z').getTime() })];
+    const transcripts = [
+      createMockTranscript({ transcriptId: '1', startTimeMs: new Date('2025-01-15T10:00:00Z').getTime() }),
+    ];
 
-    const result = groupTracesByDate(traces);
+    const result = groupTranscriptsByDate(transcripts);
 
     expect(result[0][1].label).toContain('2025');
     expect(result[0][1].label).toContain('Jan');

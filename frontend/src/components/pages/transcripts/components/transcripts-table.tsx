@@ -46,7 +46,7 @@ import type { ChangeEvent, FC } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetTraceQuery } from 'react-query/api/tracing';
 
-import { TraceDetailsSheet } from './trace-details-sheet';
+import { TranscriptDetailsSheet } from './transcript-details-sheet';
 import { getIconForServiceName, getServiceName } from '../utils/span-classifier';
 import {
   buildSpanTree,
@@ -55,16 +55,16 @@ import {
   calculateWidth,
   type SpanNode,
 } from '../utils/span-tree-builder';
-import { formatDuration, formatTime } from '../utils/trace-formatters';
-import { groupTracesByDate, isIncompleteTrace } from '../utils/trace-statistics';
+import { formatDuration, formatTime } from '../utils/transcript-formatters';
+import { groupTranscriptsByDate, isIncompleteTranscript } from '../utils/transcript-statistics';
 
-// Trace status type for type safety
-export type TraceStatus = 'completed' | 'in-progress' | 'with-errors';
+// Transcript status type for type safety
+export type TranscriptStatus = 'completed' | 'in-progress' | 'with-errors';
 
 // Enhanced trace summary with computed fields
-export type EnhancedTraceSummary = TraceSummary & {
+export type EnhancedTranscriptSummary = TraceSummary & {
   searchable: string;
-  status: TraceStatus;
+  status: TranscriptStatus;
 };
 
 // Status filter options for traces
@@ -79,7 +79,7 @@ export function TracesDataTableToolbar({
   table,
   traces,
 }: {
-  table: TanstackTable<EnhancedTraceSummary>;
+  table: TanstackTable<EnhancedTranscriptSummary>;
   traces: TraceSummary[];
 }) {
   const isFiltered = table.getState().columnFilters.length > 0;
@@ -111,8 +111,8 @@ export function TracesDataTableToolbar({
           onChange={(event: ChangeEvent<HTMLInputElement>) =>
             table.getColumn('searchable')?.setFilterValue(event.target.value)
           }
-          placeholder="Search traces..."
-          testId="traces-search-input"
+          placeholder="Search transcripts..."
+          testId="transcripts-search-input"
           value={(table.getColumn('searchable')?.getFilterValue() as string) ?? ''}
         />
         {serviceColumn && serviceOptions.length > 0 && (
@@ -633,13 +633,13 @@ const RootTraceRow: FC<{
   return (
     <button
       aria-expanded={isExpanded}
-      aria-label={`${isExpanded ? 'Collapse' : 'Expand'} trace ${traceSummary.rootSpanName || 'unnamed'}, ${traceSummary.spanCount} spans`}
+      aria-label={`${isExpanded ? 'Collapse' : 'Expand'} transcript ${traceSummary.rootSpanName || 'unnamed'}, ${traceSummary.spanCount} spans`}
       className={cn(
         'grid h-9 w-full cursor-pointer items-center border-border/40 border-b bg-muted/10 text-left transition-colors hover:bg-muted/30',
         '[grid-template-columns:72px_minmax(0,1fr)_260px]',
         isIncomplete && 'bg-amber-500/5 hover:bg-amber-500/10'
       )}
-      data-testid={`trace-row-${traceSummary.traceId}`}
+      data-testid={`transcript-row-${traceSummary.traceId}`}
       onClick={onToggle}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -754,7 +754,7 @@ const ExpandedSpansContent: FC<{
     return (
       <div className="flex items-center justify-center gap-2 p-4 text-center text-red-600 text-sm">
         <AlertCircle className="h-4 w-4" />
-        <span>Failed to load trace: {error.message}</span>
+        <span>Failed to load transcript: {error.message}</span>
       </div>
     );
   }
@@ -816,7 +816,7 @@ const TraceGroup: FC<{
   const { expandedSpans, toggleSpan } = useSpanExpansion(spanTree, collapseAllTrigger);
 
   const baseTimestamp = traceSummary.startTime ? new Date(Number(traceSummary.startTime.seconds) * 1000) : new Date();
-  const isIncomplete = isIncompleteTrace(traceSummary.rootSpanName);
+  const isIncomplete = isIncompleteTranscript(traceSummary.rootSpanName);
 
   return (
     <>
@@ -844,7 +844,7 @@ const TraceGroup: FC<{
   );
 };
 
-export const TracesTable: FC<Props> = ({
+export const TranscriptsTable: FC<Props> = ({
   traces,
   isLoading,
   error,
@@ -867,8 +867,8 @@ export const TracesTable: FC<Props> = ({
   // Enhance traces with searchable field and status
   const enhancedTraces = useMemo(
     () =>
-      traces.map((trace): EnhancedTraceSummary => {
-        let status: TraceStatus;
+      traces.map((trace): EnhancedTranscriptSummary => {
+        let status: TranscriptStatus;
         if (trace.errorCount > 0) {
           status = 'with-errors';
         } else if (trace.spanCount === 0) {
@@ -900,7 +900,7 @@ export const TracesTable: FC<Props> = ({
   );
 
   // Memoize columns array to prevent recreation on every render
-  const columns = useMemo<ColumnDef<EnhancedTraceSummary>[]>(
+  const columns = useMemo<ColumnDef<EnhancedTranscriptSummary>[]>(
     () => [
       {
         accessorKey: 'searchable',
@@ -927,7 +927,7 @@ export const TracesTable: FC<Props> = ({
   );
 
   // TanStack Table setup with conditional faceting
-  const table = useReactTable<EnhancedTraceSummary>({
+  const table = useReactTable<EnhancedTranscriptSummary>({
     data: enhancedTraces,
     columns,
     onColumnFiltersChange: (updaterOrValue) => {
@@ -955,7 +955,7 @@ export const TracesTable: FC<Props> = ({
     return sorted;
   }, [filteredTraces, sortOrder]);
 
-  const groupedTraces = useMemo(() => groupTracesByDate(sortedTraces), [sortedTraces]);
+  const groupedTraces = useMemo(() => groupTranscriptsByDate(sortedTraces), [sortedTraces]);
 
   const toggleSortOrder = () => {
     setSortOrder((prev) => (prev === 'newest-first' ? 'oldest-first' : 'newest-first'));
@@ -1001,7 +1001,7 @@ export const TracesTable: FC<Props> = ({
                     : 'Sort by time, currently oldest first'
                 }
                 className="flex shrink-0 cursor-pointer items-center gap-1 px-2 py-1.5 transition-colors hover:text-foreground"
-                data-testid="traces-sort-toggle"
+                data-testid="transcripts-sort-toggle"
                 onClick={toggleSortOrder}
                 title={
                   sortOrder === 'newest-first'
@@ -1027,10 +1027,10 @@ export const TracesTable: FC<Props> = ({
                 return (
                   <div
                     className="flex h-24 items-center justify-center gap-2 text-muted-foreground text-sm"
-                    data-testid="traces-loading-state"
+                    data-testid="transcripts-loading-state"
                   >
                     <Spinner size="sm" />
-                    Loading traces...
+                    Loading transcripts...
                   </div>
                 );
               }
@@ -1039,10 +1039,10 @@ export const TracesTable: FC<Props> = ({
                 return (
                   <div
                     className="flex h-24 items-center justify-center gap-2 text-red-600 text-sm"
-                    data-testid="traces-error-state"
+                    data-testid="transcripts-error-state"
                   >
                     <AlertCircle className="h-4 w-4" />
-                    <span>Error loading traces: {error.message}</span>
+                    <span>Error loading transcripts: {error.message}</span>
                   </div>
                 );
               }
@@ -1051,19 +1051,19 @@ export const TracesTable: FC<Props> = ({
                 return (
                   <div
                     className="flex flex-col items-center justify-center gap-3 py-12"
-                    data-testid="traces-empty-state"
+                    data-testid="transcripts-empty-state"
                   >
                     <Inbox className="h-12 w-12 text-muted-foreground/40" strokeWidth={1.5} />
                     <div className="flex flex-col items-center gap-1.5 text-center">
-                      <h3 className="font-medium text-sm">No traces found</h3>
+                      <h3 className="font-medium text-sm">No transcripts found</h3>
                       <p className="max-w-md text-muted-foreground text-xs leading-relaxed">
                         {isFiltered && hasUnfilteredData
-                          ? 'No traces match your search criteria. Try adjusting your filter or clearing it.'
-                          : `No traces have been recorded in the ${timeRange.toLowerCase()}. Traces will appear here once your agents start processing requests.`}
+                          ? 'No transcripts match your search criteria. Try adjusting your filter or clearing it.'
+                          : `No transcripts have been recorded in the ${timeRange.toLowerCase()}. Transcripts will appear here once your agents start processing requests.`}
                       </p>
                       {!!(isFiltered && hasUnfilteredData) && (
                         <p className="mt-1 text-[11px] text-muted-foreground/70">
-                          <span className="font-medium">Tip:</span> Clear the search filter to see all traces
+                          <span className="font-medium">Tip:</span> Clear the search filter to see all transcripts
                         </p>
                       )}
                     </div>
@@ -1112,7 +1112,7 @@ export const TracesTable: FC<Props> = ({
         {/* Details Panel - Right Side */}
         {!!(selectedTraceId && selectedSpanId) && (
           <div className="h-full w-[380px] flex-shrink-0 border-l">
-            <TraceDetailsSheet
+            <TranscriptDetailsSheet
               isOpen={!!selectedTraceId && !!selectedSpanId}
               onClose={() => {
                 setSelectedTraceId(null);

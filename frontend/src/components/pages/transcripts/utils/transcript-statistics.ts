@@ -15,7 +15,7 @@ import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 
 import { getAttributeFromSpan, hasAttribute } from './attribute-helpers';
 
-export type TraceStatistics = {
+export type TranscriptStatistics = {
   totalInputTokens: number;
   totalOutputTokens: number;
   totalTokens: number;
@@ -23,7 +23,7 @@ export type TraceStatistics = {
   toolCallCount: number;
 };
 
-export const calculateTraceStatistics = (trace: Trace | undefined): TraceStatistics => {
+export const calculateTranscriptStatistics = (trace: Trace | undefined): TranscriptStatistics => {
   if (!trace?.spans) {
     return {
       totalInputTokens: 0,
@@ -85,7 +85,8 @@ export const isRootSpan = (span: Span | undefined): boolean => {
   return !span.parentSpanId || span.parentSpanId.length === 0 || span.parentSpanId.every((b) => b === 0);
 };
 
-export const isIncompleteTrace = (rootSpanName: string | undefined): boolean => !rootSpanName || rootSpanName === '';
+export const isIncompleteTranscript = (rootSpanName: string | undefined): boolean =>
+  !rootSpanName || rootSpanName === '';
 
 export const getConversationId = (trace: Trace | undefined): string | undefined => {
   if (!trace?.spans) {
@@ -103,19 +104,19 @@ export const getConversationId = (trace: Trace | undefined): string | undefined 
   return;
 };
 
-export type TraceDateGroup = {
+export type TranscriptDateGroup = {
   label: string;
   traces: TraceSummary[];
 };
 
 /**
- * Groups traces by date (YYYY-MM-DD) and returns an array of [dateKey, group] tuples.
- * Traces without a startTime are excluded.
+ * Groups transcripts by date (YYYY-MM-DD) and returns an array of [dateKey, group] tuples.
+ * Transcripts without a startTime are excluded.
  */
-export const groupTracesByDate = (traces: TraceSummary[]): [string, TraceDateGroup][] => {
-  const grouped = new Map<string, TraceDateGroup>();
+export const groupTranscriptsByDate = (transcripts: TraceSummary[]): [string, TranscriptDateGroup][] => {
+  const grouped = new Map<string, TranscriptDateGroup>();
 
-  for (const trace of traces) {
+  for (const trace of transcripts) {
     if (!trace.startTime) {
       continue;
     }

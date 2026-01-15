@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { formatDuration, formatTime, formatTraceId, getPreview } from './trace-formatters';
+import { formatDuration, formatTime, formatTranscriptId, getPreview } from './transcript-formatters';
 
 describe('formatDuration', () => {
   it('formats sub-millisecond durations as microseconds', () => {
@@ -44,20 +44,20 @@ describe('formatDuration', () => {
   });
 });
 
-describe('formatTraceId', () => {
+describe('formatTranscriptId', () => {
   it('returns short IDs unchanged', () => {
-    expect(formatTraceId('abc123')).toBe('abc123');
-    expect(formatTraceId('123456789012')).toBe('123456789012');
+    expect(formatTranscriptId('abc123')).toBe('abc123');
+    expect(formatTranscriptId('123456789012')).toBe('123456789012');
   });
 
   it('truncates long IDs with ellipsis', () => {
-    expect(formatTraceId('1234567890123')).toBe('123456789012...');
-    expect(formatTraceId('abcdefghijklmnopqrstuvwxyz')).toBe('abcdefghijkl...');
+    expect(formatTranscriptId('1234567890123')).toBe('123456789012...');
+    expect(formatTranscriptId('abcdefghijklmnopqrstuvwxyz')).toBe('abcdefghijkl...');
   });
 
   it('respects custom maxLength', () => {
-    expect(formatTraceId('1234567890', 5)).toBe('12345...');
-    expect(formatTraceId('12345', 5)).toBe('12345');
+    expect(formatTranscriptId('1234567890', 5)).toBe('12345...');
+    expect(formatTranscriptId('12345', 5)).toBe('12345');
   });
 });
 

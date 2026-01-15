@@ -11,12 +11,12 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 import { ActivityIcon } from 'components/icons';
-import { TraceListPage } from 'components/pages/traces/trace-list-page';
+import { TranscriptListPage } from 'components/pages/transcripts/transcript-list-page';
 
-export const Route = createFileRoute('/traces/')({
+export const Route = createFileRoute('/transcripts/')({
   staticData: {
-    title: 'Traces',
+    title: 'Transcripts',
     icon: ActivityIcon,
   },
-  component: TraceListPage,
+  component: TranscriptListPage,
 });

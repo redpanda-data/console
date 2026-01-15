@@ -39,11 +39,11 @@ export const formatDuration = (ms: number): string => {
 export const formatTimestamp = (ms: number): string => formatDistanceToNow(new Date(ms), { addSuffix: true });
 
 /**
- * Truncates a trace ID to a maximum length with ellipsis.
+ * Truncates a transcript ID to a maximum length with ellipsis.
  * Re-exported from shared utils for backward compatibility.
  * @see truncateWithEllipsis in utils/string.ts
  */
-export const formatTraceId = truncateWithEllipsis;
+export const formatTranscriptId = truncateWithEllipsis;
 
 /**
  * Formats a Date to a 24-hour time string (HH:MM:SS).

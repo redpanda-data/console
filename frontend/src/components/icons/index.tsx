@@ -28,7 +28,7 @@ export {
 // Chevron/directional icons
 // Action/utility icons
 export {
-  Activity as ActivityIcon, // Activity (for Traces)
+  Activity as ActivityIcon, // Activity (for Transcripts)
   AlertCircle as AlertIcon, // MdOutlineError, MdOutlineErrorOutline, AiOutlineExclamationCircle, AlertIcon (Octicons)
   AlertTriangle as WarningIcon, // MdOutlineWarning, MdOutlineWarningAmber, WarningIcon (Chakra)
   Archive as ArchiveIcon, // ArchiveIcon (Heroicons)

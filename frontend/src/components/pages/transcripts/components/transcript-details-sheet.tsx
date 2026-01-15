@@ -29,10 +29,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useGetTraceQuery } from 'react-query/api/tracing';
 import { toast } from 'sonner';
 
-import { getDefaultTab, isLLMSpan, isToolSpan, TraceDetailsTabs } from './trace-details-tabs';
+import { getDefaultTab, isLLMSpan, isToolSpan, TranscriptDetailsTabs } from './transcript-details-tabs';
 import { bytesToHex } from '../utils/hex-utils';
 import { getSpanKind } from '../utils/span-classifier';
-import { isIncompleteTrace, isRootSpan } from '../utils/trace-statistics';
+import { isIncompleteTranscript, isRootSpan } from '../utils/transcript-statistics';
 
 type Props = {
   traceId: string | null;
@@ -41,7 +41,7 @@ type Props = {
   onClose: () => void;
 };
 
-export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose }) => {
+export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useQueryState('tab', parseAsString.withDefault('overview'));
   const { data: traceData, isLoading } = useGetTraceQuery(traceId);
@@ -81,7 +81,7 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
   }, [trace?.spans]);
 
   const selectedSpan = spanId ? spanById.get(spanId) : undefined;
-  const isIncomplete = isIncompleteTrace(trace?.summary?.rootSpanName);
+  const isIncomplete = isIncompleteTranscript(trace?.summary?.rootSpanName);
 
   // Compute which tabs are available for the selected span
   const { showToolTab, showLLMTab, showOverviewTab } = useMemo(() => {
@@ -117,7 +117,7 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
           {!!isIncomplete && (
             <>
               <AlertCircle className="h-4 w-4 text-amber-500" />
-              <span className="text-muted-foreground text-sm">Incomplete Trace</span>
+              <span className="text-muted-foreground text-sm">Incomplete Transcript</span>
             </>
           )}
           {!isIncomplete && (
@@ -135,7 +135,7 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
               <Button
                 aria-label="Copy link to span"
                 className="h-6 w-6"
-                data-testid="trace-details-copy-link"
+                data-testid="transcript-details-copy-link"
                 onClick={handleCopyLink}
                 size="icon"
                 variant="ghost"
@@ -150,7 +150,7 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
               <Button
                 aria-label="Expand to full view"
                 className="h-6 w-6"
-                data-testid="trace-details-expand"
+                data-testid="transcript-details-expand"
                 onClick={() => setIsDialogOpen(true)}
                 size="icon"
                 variant="ghost"
@@ -163,7 +163,7 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
           <Button
             aria-label="Close details panel"
             className="h-6 w-6"
-            data-testid="trace-details-close"
+            data-testid="transcript-details-close"
             onClick={onClose}
             size="icon"
             variant="ghost"
@@ -193,8 +193,8 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
                     Waiting for root span
                   </Text>
                   <Text as="p" className="mt-1" variant="muted">
-                    The parent span for this trace hasn't been received yet. Child spans are displayed in the trace
-                    list. The root span will appear once the operation completes.
+                    The parent span for this transcript hasn't been received yet. Child spans are displayed in the
+                    transcript list. The root span will appear once the operation completes.
                   </Text>
                 </div>
               </div>
@@ -202,11 +202,11 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
 
             <div className="space-y-2">
               <Text as="div" className="uppercase tracking-wide" variant="label">
-                Trace Info
+                Transcript Info
               </Text>
               <div className="space-y-1">
                 <div className="flex justify-between">
-                  <Text variant="muted">Trace ID</Text>
+                  <Text variant="muted">Transcript ID</Text>
                   <InlineCode>{trace?.traceId?.slice(0, 8)}...</InlineCode>
                 </div>
                 <div className="flex justify-between">
@@ -219,7 +219,7 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
         )}
 
         {!isLoading && selectedSpan && (
-          <TraceDetailsTabs onValueChange={setSelectedTab} span={selectedSpan} trace={trace} value={selectedTab} />
+          <TranscriptDetailsTabs onValueChange={setSelectedTab} span={selectedSpan} trace={trace} value={selectedTab} />
         )}
 
         {!(isLoading || selectedSpan || isIncomplete) && (
@@ -236,7 +236,12 @@ export const TraceDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose 
           </DialogHeader>
           <div className="h-[70vh] overflow-auto">
             {!!selectedSpan && (
-              <TraceDetailsTabs onValueChange={setSelectedTab} span={selectedSpan} trace={trace} value={selectedTab} />
+              <TranscriptDetailsTabs
+                onValueChange={setSelectedTab}
+                span={selectedSpan}
+                trace={trace}
+                value={selectedTab}
+              />
             )}
           </div>
         </DialogContent>

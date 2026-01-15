@@ -17,8 +17,8 @@ import type { FC, ReactNode } from 'react';
 import { useMemo } from 'react';
 
 import { ContentPanel } from './content-panel';
-import { formatDuration } from '../utils/trace-formatters';
-import { calculateTraceStatistics, getConversationId } from '../utils/trace-statistics';
+import { formatDuration } from '../utils/transcript-formatters';
+import { calculateTranscriptStatistics, getConversationId } from '../utils/transcript-statistics';
 
 type Props = {
   trace: Trace | undefined;
@@ -55,7 +55,7 @@ const SectionHeader: FC<SectionHeaderProps> = ({ children }) => (
 );
 
 export const OverviewTab: FC<Props> = ({ trace }) => {
-  const statistics = useMemo(() => calculateTraceStatistics(trace), [trace]);
+  const statistics = useMemo(() => calculateTranscriptStatistics(trace), [trace]);
   const summary = trace?.summary;
   const conversationId = useMemo(() => getConversationId(trace), [trace]);
 
@@ -63,7 +63,7 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
     return (
       <div className="space-y-4 p-4">
         <Text className="text-muted-foreground" variant="small">
-          No trace summary available
+          No transcript summary available
         </Text>
       </div>
     );
@@ -71,9 +71,9 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
 
   return (
     <div className="space-y-4 p-3">
-      {/* Trace Summary Section */}
+      {/* Transcript Summary Section */}
       <div className="space-y-2">
-        <SectionHeader>Trace Summary</SectionHeader>
+        <SectionHeader>Transcript Summary</SectionHeader>
         <div className="grid grid-cols-2 gap-2">
           <MetricCard label="Total Spans" value={summary.spanCount} />
           <MetricCard label="Duration" value={formatDuration(summary.duration ? durationMs(summary.duration) : 0)} />

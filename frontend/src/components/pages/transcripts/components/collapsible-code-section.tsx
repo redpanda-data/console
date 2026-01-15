@@ -17,7 +17,7 @@ import { useMemo, useState } from 'react';
 import { prettyBytes } from 'utils/utils';
 
 import { ContentPanel } from './content-panel';
-import { getPreview } from '../utils/trace-formatters';
+import { getPreview } from '../utils/transcript-formatters';
 
 type Props = {
   title: string;

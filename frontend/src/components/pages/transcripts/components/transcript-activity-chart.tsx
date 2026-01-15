@@ -247,7 +247,7 @@ const BucketBar: FC<BucketBarProps> = ({
   ) : (
     // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Hover effect for visual tooltip feedback only
     <div
-      aria-label={`Bucket with ${bucket.count} traces`}
+      aria-label={`Bucket with ${bucket.count} transcripts`}
       className={containerClassName}
       onMouseEnter={() => onHover(true)}
       onMouseLeave={() => onHover(false)}
@@ -258,7 +258,7 @@ const BucketBar: FC<BucketBarProps> = ({
   );
 };
 
-export const TraceActivityChart: FC<Props> = ({
+export const TranscriptActivityChart: FC<Props> = ({
   histogram,
   returnedStartTime,
   returnedEndTime,
@@ -370,7 +370,7 @@ export const TraceActivityChart: FC<Props> = ({
     return (
       <div className="relative z-0 mb-3 rounded-lg border bg-muted/20">
         <div className="flex h-16 items-center justify-center">
-          <span className="text-[10px] text-muted-foreground">No trace data available</span>
+          <span className="text-[10px] text-muted-foreground">No transcript data available</span>
         </div>
       </div>
     );
@@ -383,7 +383,7 @@ export const TraceActivityChart: FC<Props> = ({
         <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-1.5 text-[10px]">
           <span className="text-muted-foreground">
             Showing <span className="font-medium text-foreground">{loadedCount.toLocaleString()}</span> of{' '}
-            <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span> traces
+            <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span> transcripts
             {visibleWindow !== null && (
               <>
                 {' '}

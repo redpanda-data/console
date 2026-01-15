@@ -17,17 +17,17 @@ import { getTrace, listTraces } from 'protogen/redpanda/api/dataplane/v1alpha3/t
 import { screen, waitFor } from 'test-utils';
 
 import {
-  createMockTrace,
-  createMockTraceSummary,
-  REGEX_COMPLETED_TRACE,
+  createMockTranscript,
+  createMockTranscriptSummary,
+  REGEX_COMPLETED_TRANSCRIPT,
   REGEX_ERROR,
-  REGEX_NO_TRACES_FOUND,
-  REGEX_NO_TRACES_RECORDED,
+  REGEX_NO_TRANSCRIPTS_FOUND,
+  REGEX_NO_TRANSCRIPTS_RECORDED,
   REGEX_SERVICE,
   REGEX_STATUS,
-  renderTraceListPage,
+  renderTranscriptListPage,
   setupTransport,
-} from './trace-list-page.test-helpers';
+} from './transcript-list-page.test-helpers';
 
 vi.mock('config', () => ({
   config: {
@@ -62,10 +62,10 @@ global.ResizeObserver = class ResizeObserver {
 
 Element.prototype.scrollIntoView = vi.fn();
 
-describe('TraceListPage', () => {
+describe('TranscriptListPage', () => {
   describe('Basic Rendering', () => {
-    test('should render trace list with basic data', async () => {
-      const trace1 = createMockTraceSummary({
+    test('should render transcript list with basic data', async () => {
+      const transcript1 = createMockTranscriptSummary({
         traceId: 'a1b2c3d4e5f6g7h8',
         rootSpanName: 'chat.completions.create',
         rootServiceName: 'ai-agent',
@@ -73,7 +73,7 @@ describe('TraceListPage', () => {
         errorCount: 0,
       });
 
-      const trace2 = createMockTraceSummary({
+      const transcript2 = createMockTranscriptSummary({
         traceId: 'b2c3d4e5f6g7h8i9',
         rootSpanName: 'data.process',
         rootServiceName: 'data-service',
@@ -83,12 +83,12 @@ describe('TraceListPage', () => {
 
       const { transport, listTracesMock } = setupTransport({
         listTracesResponse: create(ListTracesResponseSchema, {
-          traces: [trace1, trace2],
+          traces: [transcript1, transcript2],
           nextPageToken: '',
         }),
       });
 
-      renderTraceListPage(transport);
+      renderTranscriptListPage(transport);
 
       // Use findBy instead of waitFor(getBy...)
       expect(await screen.findByText('chat.completions.create')).toBeVisible();
@@ -99,7 +99,7 @@ describe('TraceListPage', () => {
       expect(screen.getByText('data-service')).toBeVisible();
 
       // Verify stats summary (more flexible regex)
-      expect(screen.getByText(REGEX_COMPLETED_TRACE)).toBeVisible();
+      expect(screen.getByText(REGEX_COMPLETED_TRANSCRIPT)).toBeVisible();
 
       // Verify API was called
       expect(listTracesMock).toHaveBeenCalled();
@@ -113,16 +113,16 @@ describe('TraceListPage', () => {
   });
 
   describe('Filtering and Search', () => {
-    test('should filter traces by text search', async () => {
+    test('should filter transcripts by text search', async () => {
       const user = userEvent.setup();
 
-      const trace1 = createMockTraceSummary({
+      const transcript1 = createMockTranscriptSummary({
         traceId: 'a1b2c3d4e5f6g7h8',
         rootSpanName: 'ai-agent-operation',
         rootServiceName: 'ai-agent',
       });
 
-      const trace2 = createMockTraceSummary({
+      const transcript2 = createMockTranscriptSummary({
         traceId: 'b2c3d4e5f6g7h8i9',
         rootSpanName: 'data-operation',
         rootServiceName: 'data-service',
@@ -130,40 +130,40 @@ describe('TraceListPage', () => {
 
       const { transport } = setupTransport({
         listTracesResponse: create(ListTracesResponseSchema, {
-          traces: [trace1, trace2],
+          traces: [transcript1, transcript2],
           nextPageToken: '',
         }),
       });
 
-      renderTraceListPage(transport);
+      renderTranscriptListPage(transport);
 
       expect(await screen.findByText('ai-agent-operation')).toBeVisible();
       expect(await screen.findByText('data-operation')).toBeVisible();
 
       // Type in search input
-      const searchInput = screen.getByPlaceholderText('Search traces...');
+      const searchInput = screen.getByPlaceholderText('Search transcripts...');
       await user.type(searchInput, 'ai-agent');
 
-      // Only ai-agent trace should be visible
+      // Only ai-agent transcript should be visible
       expect(await screen.findByText('ai-agent-operation')).toBeVisible();
       expect(screen.queryByText('data-operation')).not.toBeInTheDocument();
     });
 
     test('should render service filter when multiple services exist', async () => {
-      const trace1 = createMockTraceSummary({
-        traceId: 'trace1',
+      const transcript1 = createMockTranscriptSummary({
+        traceId: 'transcript1',
         rootSpanName: 'operation-1',
         rootServiceName: 'ai-agent',
       });
 
-      const trace2 = createMockTraceSummary({
-        traceId: 'trace2',
+      const transcript2 = createMockTranscriptSummary({
+        traceId: 'transcript2',
         rootSpanName: 'operation-2',
         rootServiceName: 'data-service',
       });
 
       const listTracesResponse = create(ListTracesResponseSchema, {
-        traces: [trace1, trace2],
+        traces: [transcript1, transcript2],
         nextPageToken: '',
       });
 
@@ -175,7 +175,7 @@ describe('TraceListPage', () => {
         rpc(getTrace, getTraceMock);
       });
 
-      renderTraceListPage(transport);
+      renderTranscriptListPage(transport);
 
       await waitFor(() => {
         expect(screen.getByText('operation-1')).toBeVisible();
@@ -188,22 +188,22 @@ describe('TraceListPage', () => {
     });
 
     test('should render status filter', async () => {
-      const completedTrace = createMockTraceSummary({
-        traceId: 'trace1',
+      const completedTranscript = createMockTranscriptSummary({
+        traceId: 'transcript1',
         rootSpanName: 'completed-operation',
         errorCount: 0,
         spanCount: 5,
       });
 
-      const errorTrace = createMockTraceSummary({
-        traceId: 'trace2',
+      const errorTranscript = createMockTranscriptSummary({
+        traceId: 'transcript2',
         rootSpanName: 'error-operation',
         errorCount: 2,
         spanCount: 5,
       });
 
       const listTracesResponse = create(ListTracesResponseSchema, {
-        traces: [completedTrace, errorTrace],
+        traces: [completedTranscript, errorTranscript],
         nextPageToken: '',
       });
 
@@ -215,7 +215,7 @@ describe('TraceListPage', () => {
         rpc(getTrace, getTraceMock);
       });
 
-      renderTraceListPage(transport);
+      renderTranscriptListPage(transport);
 
       await waitFor(() => {
         expect(screen.getByText('completed-operation')).toBeVisible();
@@ -229,14 +229,14 @@ describe('TraceListPage', () => {
   });
 
   describe('Time Range Selection', () => {
-    test('should load traces with default time range', async () => {
-      const trace1 = createMockTraceSummary({
-        traceId: 'trace1',
+    test('should load transcripts with default time range', async () => {
+      const transcript1 = createMockTranscriptSummary({
+        traceId: 'transcript1',
         rootSpanName: 'operation-1',
       });
 
       const listTracesResponse = create(ListTracesResponseSchema, {
-        traces: [trace1],
+        traces: [transcript1],
         nextPageToken: '',
       });
 
@@ -248,7 +248,7 @@ describe('TraceListPage', () => {
         rpc(getTrace, getTraceMock);
       });
 
-      renderTraceListPage(transport, '/traces?timeRange=1h');
+      renderTranscriptListPage(transport, '/transcripts?timeRange=1h');
 
       await waitFor(() => {
         expect(screen.getByText('operation-1')).toBeVisible();
@@ -267,19 +267,19 @@ describe('TraceListPage', () => {
     });
 
     test('should call API with correct timestamp range', async () => {
-      const trace1 = createMockTraceSummary({
+      const transcript1 = createMockTranscriptSummary({
         traceId: 'a1b2c3d4e5f6g7h8',
         rootSpanName: 'operation-1',
       });
 
       const { transport, listTracesMock } = setupTransport({
         listTracesResponse: create(ListTracesResponseSchema, {
-          traces: [trace1],
+          traces: [transcript1],
           nextPageToken: '',
         }),
       });
 
-      renderTraceListPage(transport, '/traces?timeRange=1h');
+      renderTranscriptListPage(transport, '/transcripts?timeRange=1h');
 
       expect(await screen.findByText('operation-1')).toBeVisible();
 
@@ -299,11 +299,11 @@ describe('TraceListPage', () => {
     });
   });
 
-  describe('Trace Expansion', () => {
-    test('should expand trace to show spans', async () => {
+  describe('Transcript Expansion', () => {
+    test('should expand transcript to show spans', async () => {
       const user = userEvent.setup();
 
-      const trace1 = createMockTraceSummary({
+      const transcript1 = createMockTranscriptSummary({
         traceId: 'a1b2c3d4e5f6g7h8',
         rootSpanName: 'chat.completions.create',
         rootServiceName: 'ai-agent',
@@ -311,14 +311,14 @@ describe('TraceListPage', () => {
       });
 
       const listTracesResponse = create(ListTracesResponseSchema, {
-        traces: [trace1],
+        traces: [transcript1],
         nextPageToken: '',
       });
 
-      const mockTrace = createMockTrace('a1b2c3d4e5f6g7h8', 'chat.completions.create');
+      const mockTranscript = createMockTranscript('a1b2c3d4e5f6g7h8', 'chat.completions.create');
 
       const getTraceResponse = create(GetTraceResponseSchema, {
-        trace: mockTrace,
+        trace: mockTranscript,
       });
 
       const listTracesMock = vi.fn().mockReturnValue(listTracesResponse);
@@ -329,19 +329,19 @@ describe('TraceListPage', () => {
         rpc(getTrace, getTraceMock);
       });
 
-      renderTraceListPage(transport);
+      renderTranscriptListPage(transport);
 
       await waitFor(() => {
         expect(screen.getByText('chat.completions.create')).toBeVisible();
       });
 
-      // Click the trace row to expand
-      const traceButton = screen.getByText('chat.completions.create').closest('button');
-      expect(traceButton).toBeInTheDocument();
-      if (!traceButton) {
-        throw new Error('Expected trace button to be in document');
+      // Click the transcript row to expand
+      const transcriptButton = screen.getByText('chat.completions.create').closest('button');
+      expect(transcriptButton).toBeInTheDocument();
+      if (!transcriptButton) {
+        throw new Error('Expected transcript button to be in document');
       }
-      await user.click(traceButton);
+      await user.click(transcriptButton);
 
       // Wait for getTrace API to be called
       await waitFor(() => {
@@ -363,7 +363,7 @@ describe('TraceListPage', () => {
   });
 
   describe('Error States', () => {
-    test('should display empty state when no traces exist', async () => {
+    test('should display empty state when no transcripts exist', async () => {
       const listTracesResponse = create(ListTracesResponseSchema, {
         traces: [],
         nextPageToken: '',
@@ -377,14 +377,14 @@ describe('TraceListPage', () => {
         rpc(getTrace, getTraceMock);
       });
 
-      renderTraceListPage(transport);
+      renderTranscriptListPage(transport);
 
       await waitFor(() => {
-        expect(screen.getByText(REGEX_NO_TRACES_FOUND)).toBeVisible();
+        expect(screen.getByText(REGEX_NO_TRANSCRIPTS_FOUND)).toBeVisible();
       });
 
-      // Verify the message about no traces recorded
-      expect(screen.getByText(REGEX_NO_TRACES_RECORDED)).toBeVisible();
+      // Verify the message about no transcripts recorded
+      expect(screen.getByText(REGEX_NO_TRANSCRIPTS_RECORDED)).toBeVisible();
     });
 
     test('should display error state when RPC fails', async () => {
@@ -392,10 +392,10 @@ describe('TraceListPage', () => {
 
       // Make the RPC throw an error
       listTracesMock.mockImplementation(() => {
-        throw new Error('Failed to fetch traces');
+        throw new Error('Failed to fetch transcripts');
       });
 
-      renderTraceListPage(transport);
+      renderTranscriptListPage(transport);
 
       // Wait for error state to appear
       await waitFor(() => {

@@ -257,8 +257,8 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     visibilityCheck: routeVisibility(true, [Feature.TransformsService]),
   },
   {
-    path: '/traces',
-    title: 'Traces',
+    path: '/transcripts',
+    title: 'Transcripts',
     icon: ActivityIcon,
     visibilityCheck: routeVisibility(
       () => isEmbedded() && isFeatureFlagEnabled('enableTracingInConsole'),
