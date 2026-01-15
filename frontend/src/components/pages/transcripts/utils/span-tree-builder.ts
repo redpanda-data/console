@@ -33,7 +33,7 @@ export const buildSpanTree = (spans: Span[]): SpanNode[] => {
   for (const span of spans) {
     const spanId = bytesToHex(span.spanId);
     const parentSpanId = bytesToHex(span.parentSpanId);
-    const duration = Math.max(0, Number((span.endTimeUnixNano - span.startTimeUnixNano) / 1_000_000n));
+    const duration = Math.max(0, Number(span.endTimeUnixNano - span.startTimeUnixNano) / 1_000_000);
 
     nodeMap.set(spanId, {
       spanId,
@@ -110,7 +110,7 @@ export const calculateTimeline = (roots: SpanNode[]) => {
   return {
     minTime,
     maxTime,
-    duration: Number((maxTime - minTime) / 1_000_000n),
+    duration: Number(maxTime - minTime) / 1_000_000,
   };
 };
 
@@ -118,7 +118,7 @@ export const calculateOffset = (startTime: bigint, timeline: ReturnType<typeof c
   if (timeline.duration === 0) {
     return 0;
   }
-  const offset = Number((startTime - timeline.minTime) / 1_000_000n);
+  const offset = Number(startTime - timeline.minTime) / 1_000_000;
   const percentage = (offset / timeline.duration) * 100;
   // Clamp between 0% and 99% to keep bars visible
   return Math.max(0, Math.min(percentage, 99));
