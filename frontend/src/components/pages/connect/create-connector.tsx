@@ -437,7 +437,8 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
           const intervalSec = 100;
           const timer = new TimeSince();
 
-          const connectorName = connectorRef?.propsByName.get('name')?.value as string;
+          // Get connector name from the actual config object (works in both form and JSON mode)
+          const connectorName = propertiesObject?.name as string;
 
           while (true) {
             const elapsedTime = timer.value;
