@@ -31,6 +31,7 @@ import {
 import { Text } from 'components/redpanda-ui/components/typography';
 import { RegexPatternsField } from 'components/ui/regex/regex-patterns-field';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
+import { formatSecretTemplate } from 'components/ui/secret/secret-utils';
 import { TopicSelector } from 'components/ui/topic/topic-selector';
 import { UserSelector } from 'components/ui/user/user-selector';
 import { TableOfContents } from 'lucide-react';
@@ -164,7 +165,7 @@ export const IndexerSection: React.FC<IndexerSectionProps> = ({ form, availableS
                     secretValueDescription: 'Your Redpanda user password',
                     emptyStateDescription: 'Create a secret to securely store your Redpanda password',
                   }}
-                  onChange={field.onChange}
+                  onChange={(secretId) => field.onChange(formatSecretTemplate(secretId))}
                   placeholder="Select password or create new"
                   scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
                   value={field.value}
