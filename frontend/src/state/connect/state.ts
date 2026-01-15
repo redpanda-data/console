@@ -697,7 +697,7 @@ export class ConnectorPropertiesStore {
               // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
               return prop!;
             })
-            .filter((x) => x !== null);
+            .filter((x) => x !== null && x !== undefined);
 
           this.allGroups.push(this.createPropertyGroup(step, groupDef, groupProps));
         }
