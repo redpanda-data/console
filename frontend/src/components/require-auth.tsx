@@ -12,6 +12,7 @@
 import { observer } from 'mobx-react';
 import { Component, type ReactNode } from 'react';
 
+import { ConnectionErrorUI } from './misc/connection-error-ui';
 import { config as appConfig } from '../config';
 import { api } from '../state/backend-api';
 import { featureErrors } from '../state/supported-features';
@@ -60,6 +61,13 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
 
     if (api.userData === undefined) {
       devPrint('user is undefined (probably a fresh page load)');
+
+      // Check if there was a transient server error (5xx)
+      // Show error UI instead of loading or redirecting to prevent infinite loops
+      if (api.userDataError) {
+        devPrint(`user data error: ${api.userDataError.message}`);
+        return <ConnectionErrorUI error={api.userDataError} onRetry={() => api.refreshUserData()} />;
+      }
 
       const client = appConfig.authenticationClient;
       if (!client) {
