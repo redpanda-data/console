@@ -15,7 +15,9 @@ async function dismissErrorModalIfPresent(page: Page): Promise<void> {
     await page
       .locator('.chakra-modal__overlay')
       .waitFor({ state: 'hidden', timeout: 5000 })
-      .catch(() => {});
+      .catch(() => {
+        // no op
+      });
   }
 }
 
