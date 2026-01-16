@@ -91,8 +91,9 @@ const { ToastContainer, toast } = createStandaloneToast({
 export type AclListTab = 'users' | 'roles' | 'acls' | 'permissions-list';
 
 const getCreateUserButtonProps = () => ({
-  isDisabled: !Features.createUser || api.userData?.canManageUsers === false,
+  isDisabled: !(api.isAdminApiConfigured && Features.createUser) || api.userData?.canManageUsers === false,
   tooltip: [
+    !api.isAdminApiConfigured && 'The Redpanda Admin API is not configured.',
     !Features.createUser && "Your cluster doesn't support this feature.",
     api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
   ]
@@ -101,7 +102,9 @@ const getCreateUserButtonProps = () => ({
 });
 
 const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
-  const { data: usersData, isLoading: isUsersLoading } = useLegacyListUsersQuery();
+  const { data: usersData, isLoading: isUsersLoading } = useLegacyListUsersQuery(undefined, {
+    enabled: api.isAdminApiConfigured,
+  });
 
   // Set up page title and breadcrumbs
   useEffect(() => {
@@ -155,6 +158,7 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
       name: 'Users',
       component: <UsersTab data-testid="users-tab" />,
       isDisabled:
+        (!api.isAdminApiConfigured && 'The Redpanda Admin API is not configured.') ||
         (!Features.createUser && "Your cluster doesn't support this feature.") ||
         (api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
     },
