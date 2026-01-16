@@ -645,7 +645,7 @@ const RolesTab = () => {
 };
 
 const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
-  const { data: principalGroups, isLoading } = useListACLAsPrincipalGroups();
+  const { data: principalGroups, isLoading, isError, error } = useListACLAsPrincipalGroups();
   const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
   const invalidateUsersCache = useInvalidateUsersCache();
 
@@ -686,6 +686,10 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
     groups = groups?.filter((aclGroup) => aclGroup.principalName.match(quickSearchRegExp));
   } catch (_e) {
     // Invalid regex, skip filtering
+  }
+
+  if (isError && error) {
+    return <ErrorResult error={error} />;
   }
 
   if (isLoading || !principalGroups) {
