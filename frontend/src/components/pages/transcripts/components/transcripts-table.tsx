@@ -46,6 +46,12 @@ import type { ChangeEvent, FC } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetTraceQuery } from 'react-query/api/tracing';
 
+import {
+  selectableRowBase,
+  selectableRowFocus,
+  selectableRowHover,
+  selectableRowSelected,
+} from './selectable-row-styles';
 import { TranscriptDetailsSheet } from './transcript-details-sheet';
 import { getIconForServiceName, getServiceName } from '../utils/span-classifier';
 import {
@@ -303,6 +309,7 @@ type SpanRowProps = {
   parentDepths: number[];
   expandedSpans?: Set<string>;
   toggleSpan?: (spanId: string) => void;
+  selectedSpanId: string | null | undefined;
 };
 
 const SpanRow: FC<SpanRowProps> = ({
@@ -319,6 +326,7 @@ const SpanRow: FC<SpanRowProps> = ({
   parentDepths,
   expandedSpans,
   toggleSpan,
+  selectedSpanId,
 }) => {
   // Calculate relative position within trace using helper functions
   const barStart = calculateOffset(span.startTime, timeline);
@@ -331,14 +339,22 @@ const SpanRow: FC<SpanRowProps> = ({
   const Icon = getIconForServiceName(span.span);
   const serviceName = getServiceName(span.span);
 
+  // Check if this span is selected
+  const isSelected = selectedSpanId === span.spanId;
+
   return (
     <>
       <button
+        aria-current={isSelected ? 'true' : undefined}
         aria-label={`View span ${span.name}${span.hasError ? ', has error' : ''}`}
         className={cn(
-          'grid h-8 w-full cursor-pointer items-center border-border/30 border-b text-left transition-colors hover:bg-muted/50',
-          '[grid-template-columns:72px_minmax(0,1fr)_260px]'
+          selectableRowBase,
+          selectableRowHover,
+          selectableRowSelected,
+          selectableRowFocus,
+          'h-8 [grid-template-columns:72px_minmax(0,1fr)_260px]'
         )}
+        data-selected={isSelected}
         data-testid={`span-row-${span.spanId}`}
         onClick={() => onClick(traceId, span.spanId)}
         onKeyDown={(e) => {
@@ -437,6 +453,7 @@ const SpanRow: FC<SpanRowProps> = ({
               onClick={onClick}
               onToggle={() => toggleSpan(child.spanId)}
               parentDepths={nextParentDepths}
+              selectedSpanId={selectedSpanId}
               span={child}
               timeline={timeline}
               toggleSpan={toggleSpan}
@@ -525,6 +542,7 @@ const SpanRowWrapper: FC<{
   onToggle: () => void;
   expandedSpans: Set<string>;
   toggleSpan: (spanId: string) => void;
+  selectedSpanId: string | null | undefined;
 }> = ({
   span,
   depth,
@@ -538,6 +556,7 @@ const SpanRowWrapper: FC<{
   onToggle,
   expandedSpans,
   toggleSpan,
+  selectedSpanId,
 }) => {
   const hasChildren = span.children && span.children.length > 0;
 
@@ -552,6 +571,7 @@ const SpanRowWrapper: FC<{
       onClick={onClick}
       onToggle={onToggle}
       parentDepths={parentDepths}
+      selectedSpanId={selectedSpanId}
       span={span}
       timeline={timeline}
       toggleSpan={toggleSpan}
@@ -627,24 +647,59 @@ const RootTraceRow: FC<{
   onToggle: () => void;
   spanTreeLength: number;
   isIncomplete: boolean;
-}> = ({ traceSummary, isExpanded, onToggle, spanTreeLength, isIncomplete }) => {
+  onSpanClick: (traceId: string, spanId: string) => void;
+  rootSpanId: string | undefined;
+  traceId: string;
+  selectedSpanId: string | null | undefined;
+}> = ({
+  traceSummary,
+  isExpanded,
+  onToggle,
+  spanTreeLength,
+  isIncomplete,
+  onSpanClick,
+  rootSpanId,
+  traceId,
+  selectedSpanId,
+}) => {
   const baseTimestamp = traceSummary.startTime ? new Date(Number(traceSummary.startTime.seconds) * 1000) : new Date();
+
+  // Check if this root span is selected
+  const isSelected = rootSpanId && selectedSpanId === rootSpanId;
+
+  // Handler for clicking the root row
+  const handleRowClick = () => {
+    if (rootSpanId) {
+      // If we have a root span, open it for inspection
+      onSpanClick(traceId, rootSpanId);
+    } else {
+      // Fallback for incomplete transcripts: expand/collapse
+      onToggle();
+    }
+  };
 
   return (
     <button
+      aria-current={isSelected ? 'true' : undefined}
       aria-expanded={isExpanded}
-      aria-label={`${isExpanded ? 'Collapse' : 'Expand'} transcript ${traceSummary.rootSpanName || 'unnamed'}, ${traceSummary.spanCount} spans`}
+      aria-label={`${isExpanded ? 'Collapse' : 'Expand'} transcript ${traceSummary.rootSpanName || 'unnamed'}, ${traceSummary.spanCount} spans${rootSpanId ? ', click to inspect root span' : ''}`}
       className={cn(
-        'grid h-9 w-full cursor-pointer items-center border-border/40 border-b bg-muted/10 text-left transition-colors hover:bg-muted/30',
-        '[grid-template-columns:72px_minmax(0,1fr)_260px]',
-        isIncomplete && 'bg-amber-500/5 hover:bg-amber-500/10'
+        selectableRowBase,
+        selectableRowSelected,
+        selectableRowFocus,
+        'h-9 [grid-template-columns:72px_minmax(0,1fr)_260px]',
+        'data-[incomplete=true]:bg-amber-500/5 data-[incomplete=true]:hover:bg-amber-500/10',
+        'data-[incomplete=false]:data-[selected=false]:bg-muted/10 data-[incomplete=false]:data-[selected=false]:hover:bg-slate-50',
+        'dark:data-[incomplete=false]:data-[selected=false]:hover:bg-slate-900/40'
       )}
+      data-incomplete={isIncomplete}
+      data-selected={isSelected}
       data-testid={`transcript-row-${traceSummary.traceId}`}
-      onClick={onToggle}
+      onClick={handleRowClick}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          onToggle();
+          handleRowClick();
         }
       }}
       tabIndex={0}
@@ -740,7 +795,19 @@ const ExpandedSpansContent: FC<{
   timeline: ReturnType<typeof calculateTimeline>;
   onSpanClick: (traceId: string, spanId: string) => void;
   traceId: string;
-}> = ({ isLoading, error, spanTree, baseTimestamp, expandedSpans, toggleSpan, timeline, onSpanClick, traceId }) => {
+  selectedSpanId: string | null | undefined;
+}> = ({
+  isLoading,
+  error,
+  spanTree,
+  baseTimestamp,
+  expandedSpans,
+  toggleSpan,
+  timeline,
+  onSpanClick,
+  traceId,
+  selectedSpanId,
+}) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center gap-2 p-4 text-center text-muted-foreground text-sm">
@@ -776,6 +843,7 @@ const ExpandedSpansContent: FC<{
           onClick={onSpanClick}
           onToggle={() => toggleSpan(span.spanId)}
           parentDepths={[0]}
+          selectedSpanId={selectedSpanId}
           span={span}
           timeline={timeline}
           toggleSpan={toggleSpan}
@@ -793,7 +861,8 @@ const TraceGroup: FC<{
   onToggle: () => void;
   onSpanClick: (traceId: string, spanId: string) => void;
   collapseAllTrigger: number;
-}> = ({ traceSummary, isExpanded, onToggle, onSpanClick, collapseAllTrigger }) => {
+  selectedSpanId: string | null | undefined;
+}> = ({ traceSummary, isExpanded, onToggle, onSpanClick, collapseAllTrigger, selectedSpanId }) => {
   const { data: traceData, isLoading, error } = useGetTraceQuery(traceSummary.traceId, { enabled: isExpanded });
 
   const trace = traceData?.trace;
@@ -812,6 +881,15 @@ const TraceGroup: FC<{
     return calculateTimeline(spanTree);
   }, [spanTree]);
 
+  // Compute root span ID for clickability - use the first root from the span tree
+  // The RootTraceRow displays spanTree[0], so we need its ID
+  const rootSpanId = useMemo(() => {
+    if (spanTree.length === 0) {
+      return;
+    }
+    return spanTree[0].spanId;
+  }, [spanTree]);
+
   // Manage span expansion state
   const { expandedSpans, toggleSpan } = useSpanExpansion(spanTree, collapseAllTrigger);
 
@@ -823,8 +901,12 @@ const TraceGroup: FC<{
       <RootTraceRow
         isExpanded={isExpanded}
         isIncomplete={isIncomplete}
+        onSpanClick={onSpanClick}
         onToggle={onToggle}
+        rootSpanId={rootSpanId}
+        selectedSpanId={selectedSpanId}
         spanTreeLength={spanTree.length}
+        traceId={traceSummary.traceId}
         traceSummary={traceSummary}
       />
       {!!isExpanded && (
@@ -834,6 +916,7 @@ const TraceGroup: FC<{
           expandedSpans={expandedSpans}
           isLoading={isLoading}
           onSpanClick={onSpanClick}
+          selectedSpanId={selectedSpanId}
           spanTree={spanTree}
           timeline={timeline}
           toggleSpan={toggleSpan}
@@ -1097,6 +1180,7 @@ export const TranscriptsTable: FC<Props> = ({
                             key={traceSummary.traceId}
                             onSpanClick={onSpanClick}
                             onToggle={() => toggleTrace(traceSummary.traceId)}
+                            selectedSpanId={selectedSpanId}
                             traceSummary={traceSummary}
                           />
                         ))}
