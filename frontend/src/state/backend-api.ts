@@ -2734,6 +2734,10 @@ export function createMessageSearch() {
     bytesConsumed: 0,
     totalMessagesConsumed: 0,
 
+    // Pagination state
+    nextPageToken: null as string | null,
+    isLoadingMore: false,
+
     // Call 'stopSearch' instead of using this directly
     abortController: null as AbortController | null,
 
@@ -2741,7 +2745,7 @@ export function createMessageSearch() {
     messages: observable([] as TopicMessage[], { deep: false }),
 
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 64, refactor later
-    async startSearch(_searchRequest: MessageSearchRequest): Promise<TopicMessage[]> {
+    async startSearch(_searchRequest: MessageSearchRequest, append = false): Promise<TopicMessage[]> {
       // https://connectrpc.com/docs/web/using-clients
       // https://github.com/connectrpc/connect-es
       // https://github.com/connectrpc/examples-es
@@ -2773,7 +2777,10 @@ export function createMessageSearch() {
       this.searchPhase = 'Connecting';
       this.bytesConsumed = 0;
       this.totalMessagesConsumed = 0;
-      this.messages.length = 0;
+      if (!append) {
+        this.messages.length = 0;
+      }
+      this.isLoadingMore = append;
       this.elapsedMs = null;
 
       const messageSearchAbortController = new AbortController();
@@ -2786,6 +2793,8 @@ export function createMessageSearch() {
       req.startTimestamp = BigInt(searchRequest.startTimestamp);
       req.partitionId = searchRequest.partitionId;
       req.maxResults = searchRequest.maxResults;
+      req.pageToken = searchRequest.pageToken ?? '';
+      req.pageSize = searchRequest.pageSize ?? 0; // Backend will default to 50 if 0
       req.filterInterpreterCode = searchRequest.filterInterpreterCode;
       req.includeOriginalRawPayload = searchRequest.includeRawPayload ?? false;
       req.ignoreMaxSizeLimit = searchRequest.ignoreSizeLimit ?? false;
@@ -2825,6 +2834,8 @@ export function createMessageSearch() {
               case 'done':
                 this.elapsedMs = Number(res.controlMessage.value.elapsedMs);
                 this.bytesConsumed = Number(res.controlMessage.value.bytesConsumed);
+                this.nextPageToken = res.controlMessage.value.nextPageToken || null;
+                this.isLoadingMore = false;
                 // this.MessageSearchCancelled = msg.isCancelled;
                 this.searchPhase = 'Done';
                 this.searchPhase = null;
@@ -3103,6 +3114,23 @@ export function createMessageSearch() {
         this.searchPhase = null;
       }
     },
+
+    async loadMore(): Promise<TopicMessage[]> {
+      if (!this.nextPageToken) {
+        throw new Error('No next page available');
+      }
+
+      if (!this.searchRequest) {
+        throw new Error('No search request available');
+      }
+
+      const nextRequest = {
+        ...this.searchRequest,
+        pageToken: this.nextPageToken,
+      };
+
+      return await this.startSearch(nextRequest, true);
+    },
   };
 
   return observable(messageSearch);
@@ -3250,6 +3278,8 @@ export type MessageSearchRequest = {
   startTimestamp: number;
   partitionId: number;
   maxResults: number; // should also support '-1' soon, so we can do live tailing
+  pageToken?: string; // Page token for pagination (only used when maxResults = -1)
+  pageSize?: number; // Number of messages per page (only used when maxResults = -1, defaults to 50)
   filterInterpreterCode: string; // js code, base64 encoded
   enterprise?: {
     redpandaCloud?: {

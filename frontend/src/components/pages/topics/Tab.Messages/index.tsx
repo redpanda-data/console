@@ -40,6 +40,7 @@ import {
   MenuDivider,
   MenuItem,
   MenuList,
+  Spinner,
   Tooltip,
   useBreakpoint,
   useToast,
@@ -191,6 +192,22 @@ const defaultSelectChakraStyles = {
   menuList: (provided: Record<string, unknown>) => ({
     ...provided,
     minWidth: 'min-content',
+  }),
+} as const;
+
+const maxResultsSelectChakraStyles = {
+  control: (provided: Record<string, unknown>) => ({
+    ...provided,
+    minWidth: '140px', // Ensure enough width for "∞ Unlimited"
+  }),
+  option: (provided: Record<string, unknown>) => ({
+    ...provided,
+    wordBreak: 'keep-all',
+    whiteSpace: 'nowrap',
+  }),
+  menuList: (provided: Record<string, unknown>) => ({
+    ...provided,
+    minWidth: '140px', // Match control width
   }),
 } as const;
 
@@ -451,8 +468,23 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const [totalMessagesConsumed, setTotalMessagesConsumed] = useState(0);
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
 
+  // Pagination state
+  const [messageSearch, setMessageSearch] = useState<ReturnType<typeof createMessageSearch> | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
   const currentSearchRunRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const prevStartOffsetRef = useRef<number>(startOffset);
+  const prevMaxResultsRef = useRef<number>(maxResults);
+  const prevPageIndexRef = useRef<number>(pageIndex);
+  const [forceRefresh, setForceRefresh] = useState(0);
+
+  // Refs for tracking loadMore state to prevent stale closures and memory leaks
+  const currentMessageSearchRef = useRef<ReturnType<typeof createMessageSearch> | null>(null);
+  const loadMoreAbortRef = useRef<AbortController | null>(null);
+  const [loadMoreFailures, setLoadMoreFailures] = useState(0);
+  const isMountedRef = useRef(true);
+  const MAX_LOAD_MORE_RETRIES = 3;
 
   // Filter messages based on quick search
   const filteredMessages = quickSearch
@@ -472,16 +504,65 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     [topicSettings?.previewTags]
   );
 
+  // Keep currentMessageSearchRef in sync with messageSearch state
+  useEffect(() => {
+    currentMessageSearchRef.current = messageSearch;
+  }, [messageSearch]);
+
   // Cleanup effect (replaces componentWillUnmount)
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
+      if (loadMoreAbortRef.current) {
+        loadMoreAbortRef.current.abort();
+      }
       appGlobal.searchMessagesFunc = undefined;
-    },
-    []
-  );
+    };
+  }, []);
+
+  // Clear sorting when entering unlimited pagination mode
+  useEffect(() => {
+    if (maxResults === -1 && sorting.length > 0) {
+      setSortingState([]);
+    }
+  }, [maxResults, sorting.length, setSortingState]);
+
+  // Reset to page 1 when start offset changes (e.g., switching from Newest to Beginning)
+  useEffect(() => {
+    // Only reset if startOffset actually changed (not on initial mount or re-renders)
+    if (prevStartOffsetRef.current !== startOffset) {
+      setPageIndex(0);
+      prevStartOffsetRef.current = startOffset;
+    }
+  }, [startOffset, setPageIndex]);
+
+  // Reset to page 1 when max results changes (e.g., switching from Unlimited to fixed size)
+  useEffect(() => {
+    // Only reset if maxResults actually changed (not on initial mount or re-renders)
+    if (prevMaxResultsRef.current !== maxResults) {
+      setPageIndex(0);
+      prevMaxResultsRef.current = maxResults;
+    }
+  }, [maxResults, setPageIndex]);
+
+  // Reset maxResults to 50 when switching to Latest/Live from unlimited
+  const prevStartOffsetForMaxResultsRef = useRef<number>(startOffset);
+  useEffect(() => {
+    // Only reset if we just switched TO Latest/Live (not already on it)
+    const justSwitchedToLatestLive =
+      prevStartOffsetForMaxResultsRef.current !== PartitionOffsetOrigin.End &&
+      startOffset === PartitionOffsetOrigin.End;
+
+    if (justSwitchedToLatestLive && maxResults === -1) {
+      setMaxResults(50);
+    }
+
+    prevStartOffsetForMaxResultsRef.current = startOffset;
+  }, [startOffset, maxResults, setMaxResults]);
 
   // Convert executeMessageSearch to useCallback
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
@@ -519,12 +600,17 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       }
     }
 
+    // Calculate backend page size: for pagination mode (maxResults === -1),
+    // fetch exactly 1 page at a time to handle compaction gaps reliably
+    const backendPageSize = maxResults === -1 ? pageSize : undefined;
+
     const request = {
       topicName: props.topic.topicName,
       partitionId: partitionID,
       startOffset,
       startTimestamp: currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp,
       maxResults,
+      pageSize: backendPageSize,
       filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
       includeRawPayload: true,
       keyDeserializer,
@@ -535,10 +621,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       setFetchError(null);
       setSearchPhase('Searching...');
 
-      const messageSearch = createMessageSearch();
+      const search = createMessageSearch();
+      setMessageSearch(search);
       const startTime = Date.now();
 
-      const result = await messageSearch.startSearch(request).catch((err: Error) => {
+      const result = await search.startSearch(request).catch((err: Error) => {
         const msg = err.message ?? String(err);
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(`error in searchTopicMessages: ${msg}`);
@@ -551,8 +638,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       setMessages(result);
       setSearchPhase(null);
       setElapsedMs(endTime - startTime);
-      setBytesConsumed(messageSearch.bytesConsumed);
-      setTotalMessagesConsumed(messageSearch.totalMessagesConsumed);
+      setBytesConsumed(search.bytesConsumed);
+      setTotalMessagesConsumed(search.totalMessagesConsumed);
 
       return result;
     } catch (error: unknown) {
@@ -567,6 +654,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     partitionID,
     startOffset,
     maxResults,
+    pageSize,
     getSearchParams,
     keyDeserializer,
     valueDeserializer,
@@ -635,6 +723,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   );
 
   // Auto search when parameters change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: forceRefresh is intentionally watched to trigger forced re-search
   useEffect(() => {
     // Set up auto-search with 100ms delay
     const timer = setTimeout(() => {
@@ -644,7 +733,99 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     appGlobal.searchMessagesFunc = searchFunc;
 
     return () => clearTimeout(timer);
-  }, [searchFunc]);
+  }, [searchFunc, forceRefresh]);
+
+  // Auto-load more messages when user reaches the last loaded page (pagination mode only)
+  useEffect(() => {
+    // Only auto-load in pagination mode (maxResults === -1) and when filters are not active
+    if (
+      maxResults !== -1 ||
+      filters.length > 0 ||
+      !messageSearch ||
+      !messageSearch.nextPageToken ||
+      isLoadingMore ||
+      searchPhase ||
+      loadMoreFailures >= MAX_LOAD_MORE_RETRIES
+    ) {
+      return;
+    }
+
+    const totalLoadedPages = Math.ceil(messages.length / pageSize);
+    const isOnLastPage = pageIndex >= totalLoadedPages - 1;
+
+    if (isOnLastPage && messageSearch.nextPageToken) {
+      // Create abort controller for this loadMore operation
+      const abortController = new AbortController();
+      loadMoreAbortRef.current = abortController;
+
+      // Capture the current messageSearch reference to detect stale responses
+      const capturedMessageSearch = messageSearch;
+
+      setIsLoadingMore(true);
+      capturedMessageSearch
+        .loadMore()
+        .then(() => {
+          // Only update state if component is still mounted and this is still the current search
+          if (isMountedRef.current && currentMessageSearchRef.current === capturedMessageSearch) {
+            setMessages([...capturedMessageSearch.messages]);
+            // Reset failure count on success
+            setLoadMoreFailures(0);
+          }
+        })
+        .catch((err) => {
+          // Only show error if component is still mounted and not aborted
+          if (isMountedRef.current && !abortController.signal.aborted) {
+            setLoadMoreFailures((prev) => prev + 1);
+            toast({
+              title: 'Failed to load more messages',
+              description: (err as Error).message,
+              status: 'error',
+              duration: 5000,
+              isClosable: true,
+            });
+          }
+        })
+        .finally(() => {
+          if (isMountedRef.current) {
+            setIsLoadingMore(false);
+          }
+          if (loadMoreAbortRef.current === abortController) {
+            loadMoreAbortRef.current = null;
+          }
+        });
+    }
+  }, [
+    pageIndex,
+    maxResults,
+    filters.length,
+    messageSearch,
+    isLoadingMore,
+    searchPhase,
+    messages.length,
+    pageSize,
+    toast,
+    loadMoreFailures,
+  ]);
+
+  // Reset pagination when navigating back to page 1 in unlimited mode
+  // This prevents keeping many pages in memory and triggering excessive requests
+  useEffect(() => {
+    // Check if we're in unlimited mode and user navigated back to page 1 from a higher page
+    // Use ref to check messageSearch existence to avoid circular dependency
+    if (maxResults === -1 && pageIndex === 0 && prevPageIndexRef.current > 1 && currentMessageSearchRef.current) {
+      // Clear the message search and state
+      setMessages([]);
+      setMessageSearch(null);
+      // Reset failure count when resetting pagination
+      setLoadMoreFailures(0);
+      // Clear the search run ref and trigger a forced refresh
+      currentSearchRunRef.current = null;
+      setForceRefresh((prev) => prev + 1);
+    }
+    prevPageIndexRef.current = pageIndex;
+    // Note: messageSearch intentionally excluded to avoid circular dependency
+    // We use currentMessageSearchRef.current instead which is always in sync
+  }, [pageIndex, maxResults]);
 
   // Message Table rendering variables and functions
   const paginationParams = {
@@ -677,6 +858,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     timestamp: {
       header: 'Timestamp',
       accessorKey: 'timestamp',
+      enableSorting: maxResults !== -1, // Disable sorting in unlimited pagination mode
       cell: ({
         row: {
           original: { timestamp },
@@ -703,6 +885,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         ),
       size: hasKeyTags ? 300 : 1,
       accessorKey: 'key',
+      enableSorting: maxResults !== -1, // Disable sorting in unlimited pagination mode
       cell: ({ row: { original } }) => (
         <MessageKeyPreview
           msg={original}
@@ -730,6 +913,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           'Value'
         ),
       accessorKey: 'value',
+      enableSorting: maxResults !== -1, // Disable sorting in unlimited pagination mode
       cell: ({ row: { original } }) => (
         <MessagePreview
           isCompactTopic={props.topic.cleanupPolicy.includes('compact')}
@@ -868,7 +1052,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       label: (
         <Flex alignItems="center" gap={2}>
           <ReplyIcon />
-          <span data-testid="start-offset-newest">{`Newest - ${String(maxResults)}`}</span>
+          <span data-testid="start-offset-newest">
+            {maxResults === -1 ? 'Newest' : `Newest - ${String(maxResults)}`}
+          </span>
         </Flex>
       ),
     },
@@ -949,11 +1135,23 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
           <Label text="Max Results">
             <SingleSelect<number>
+              chakraStyles={maxResultsSelectChakraStyles}
               data-testid="max-results-select"
               onChange={(c) => {
                 setMaxResults(c);
               }}
-              options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map((i) => ({ value: i }))}
+              options={[
+                // Only show "Unlimited" option when NOT on "Latest/Live" mode
+                ...(startOffset !== PartitionOffsetOrigin.End
+                  ? [
+                      {
+                        value: -1,
+                        label: '\u221e Unlimited',
+                      },
+                    ]
+                  : []),
+                ...[1, 3, 5, 10, 20, 50, 100, 200, 500].map((i) => ({ value: i })),
+              ]}
               value={maxResults}
             />
           </Label>
@@ -1027,10 +1225,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           {Boolean(searchPhase && searchPhase.length > 0) && (
             <StatusIndicator
               bytesConsumed={prettyBytes(bytesConsumed)}
-              fillFactor={messages.length / maxResults}
+              fillFactor={maxResults === -1 ? 0 : messages.length / maxResults}
               identityKey="messageSearch"
               messagesConsumed={String(totalMessagesConsumed)}
-              progressText={`${messages.length} / ${maxResults}`}
+              progressText={maxResults === -1 ? `${messages.length}` : `${messages.length} / ${maxResults}`}
               // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
               statusText={searchPhase!}
             />
@@ -1204,6 +1402,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
               }
             )}
             onSortingChange={(newSorting) => {
+              // Don't allow sorting changes in unlimited pagination mode
+              if (maxResults === -1) {
+                return;
+              }
+
               const updatedSorting: SortingState = typeof newSorting === 'function' ? newSorting(sorting) : newSorting;
               setSortingState(updatedSorting);
             }}
@@ -1231,6 +1434,25 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
               />
             )}
           />
+
+          {/* Warning when filters are active with pagination */}
+          {maxResults === -1 && filters.length > 0 && messages.length > 0 && (
+            <Alert mt={4} status="info">
+              <AlertIcon />
+              <AlertDescription>
+                Auto-pagination is disabled when filters are active. Remove filters to enable automatic loading.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Loading indicator when fetching more pages */}
+          {maxResults === -1 && isLoadingMore && (
+            <Flex justifyContent="center" mt={4}>
+              <Spinner mr={2} size="sm" />
+              <span>Loading more messages...</span>
+            </Flex>
+          )}
+
           <Button
             data-testid="save-messages-button"
             isDisabled={messages.length === 0}
