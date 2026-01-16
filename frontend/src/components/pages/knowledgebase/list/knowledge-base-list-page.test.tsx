@@ -22,26 +22,23 @@ import {
   deleteKnowledgeBase,
   listKnowledgeBases,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base-KnowledgeBaseService_connectquery';
-import { MemoryRouter } from 'react-router-dom';
-import { render, screen, waitFor, within } from 'test-utils';
+import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
-vi.mock('config', () => ({
-  config: {
-    jwt: 'test-jwt-token',
-  },
-  isFeatureFlagEnabled: vi.fn(() => false),
-}));
+vi.mock('config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('config')>();
+  return {
+    ...actual,
+    config: {
+      jwt: 'test-jwt-token',
+    },
+    isFeatureFlagEnabled: vi.fn(() => false),
+  };
+});
 
 vi.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
-  },
-}));
-
-vi.mock('state/supported-features', () => ({
-  Features: {
-    pipelinesApi: true,
   },
 }));
 
@@ -84,12 +81,7 @@ describe('KnowledgeBaseList', () => {
       rpc(listKnowledgeBases, listKnowledgeBasesMock);
     });
 
-    render(
-      <MemoryRouter>
-        <KnowledgeBaseList />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('Test Knowledge Base 1')).toBeVisible();
@@ -123,12 +115,7 @@ describe('KnowledgeBaseList', () => {
       rpc(listKnowledgeBases, listKnowledgeBasesMock);
     });
 
-    render(
-      <MemoryRouter>
-        <KnowledgeBaseList />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('Test Knowledge Base')).toBeVisible();
@@ -165,12 +152,7 @@ describe('KnowledgeBaseList', () => {
       rpc(deleteKnowledgeBase, deleteKnowledgeBaseMock);
     });
 
-    render(
-      <MemoryRouter>
-        <KnowledgeBaseList />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('Test Knowledge Base 1')).toBeVisible();
@@ -235,12 +217,7 @@ describe('KnowledgeBaseList', () => {
       rpc(listKnowledgeBases, listKnowledgeBasesMock);
     });
 
-    render(
-      <MemoryRouter>
-        <KnowledgeBaseList />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
 
     expect(screen.getByText('Loading knowledge bases...')).toBeVisible();
 
@@ -261,12 +238,7 @@ describe('KnowledgeBaseList', () => {
       rpc(listKnowledgeBases, listKnowledgeBasesMock);
     });
 
-    render(
-      <MemoryRouter>
-        <KnowledgeBaseList />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('No knowledge bases found.')).toBeVisible();
@@ -303,12 +275,7 @@ describe('KnowledgeBaseList', () => {
       rpc(listKnowledgeBases, listKnowledgeBasesMock);
     });
 
-    render(
-      <MemoryRouter>
-        <KnowledgeBaseList />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('Alpha Knowledge Base')).toBeVisible();
@@ -352,12 +319,7 @@ describe('KnowledgeBaseList', () => {
       rpc(listKnowledgeBases, listKnowledgeBasesMock);
     });
 
-    render(
-      <MemoryRouter>
-        <KnowledgeBaseList />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('Production KB')).toBeVisible();
@@ -401,12 +363,7 @@ describe('KnowledgeBaseList', () => {
       rpc(listKnowledgeBases, listKnowledgeBasesMock);
     });
 
-    render(
-      <MemoryRouter>
-        <KnowledgeBaseList />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('First KB')).toBeVisible();

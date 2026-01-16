@@ -5,6 +5,7 @@ import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { pluginYaml } from '@rsbuild/plugin-yaml';
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
+import { TanStackRouterRspack } from '@tanstack/router-plugin/rspack';
 import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
 import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
 
@@ -87,7 +88,20 @@ export default defineConfig({
 
       config.output.publicPath = 'auto';
 
+      // Prevent rebuild loop by ignoring generated route tree file
+      config.watchOptions = {
+        ignored: ['**/routeTree.gen.ts'],
+      };
+
       const plugins = [
+        TanStackRouterRspack({
+          target: 'react',
+          autoCodeSplitting: true,
+          routesDirectory: './src/routes',
+          generatedRouteTree: './src/routeTree.gen.ts',
+          quoteStyle: 'single',
+          semicolons: true,
+        }),
         new NodePolyfillPlugin({
           additionalAliases: ['process'],
         }),

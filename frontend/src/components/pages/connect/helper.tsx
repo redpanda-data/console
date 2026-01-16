@@ -809,7 +809,7 @@ export const TaskState = observer(
 
       const close = () => showErr(undefined);
       errModal = (
-        <Modal isOpen={err !== null} onClose={close}>
+        <Modal isOpen={err !== null && err !== undefined} onClose={close}>
           <ModalOverlay />
           <ModalContent minW="5xl">
             <ModalHeader>

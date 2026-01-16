@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, Grid, GridItem, Heading, Link } from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, Grid, GridItem, Heading } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 
@@ -39,9 +39,13 @@ export const TroubleshootReportViewer = observer((props: { payload: Payload }) =
           pb="4"
         >
           <AlertIcon /> Errors were encountered when deserializing this message
-          <Link onClick={() => setShow(!show)} pl="2">
+          <button
+            className="cursor-pointer border-none bg-transparent pl-2 font-medium text-primary underline underline-offset-4"
+            onClick={() => setShow(!show)}
+            type="button"
+          >
             {show ? 'Hide' : 'Show'}
-          </Link>
+          </button>
         </AlertTitle>
         <AlertDescription display={show ? undefined : 'none'} whiteSpace="pre-wrap">
           <Grid columnGap="4" rowGap="1" templateColumns="auto 1fr">

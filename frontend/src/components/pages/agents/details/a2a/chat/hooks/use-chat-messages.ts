@@ -67,7 +67,6 @@ export const useChatMessages = (agentId: string): UseChatMessagesResult => {
       }
     }
 
-    // biome-ignore lint/nursery/noFloatingPromises: Fire-and-forget with internal error handling
     loadChatMessages();
   }, [agentId, contextId]);
 

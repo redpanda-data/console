@@ -10,11 +10,11 @@
  */
 
 import { Box, Button, createStandaloneToast, DataTable, Flex, Image, SearchField, Text } from '@redpanda-data/ui';
+import { Link } from '@tanstack/react-router';
 import { CheckIcon, CloseIcon, HelpIcon, RotateCwIcon, StopCircleIcon, TrashIcon } from 'components/icons';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { Link } from 'react-router-dom';
 
 import { openDeleteModal } from './modals';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
@@ -213,7 +213,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
               {
                 header: 'ID',
                 cell: ({ row: { original } }) => (
-                  <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
+                  <Link params={{ pipelineId: encodeURIComponentPercents(original.id) }} to="/rp-connect/$pipelineId">
                     <Text>{original.id}</Text>
                   </Link>
                 ),
@@ -222,7 +222,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
               {
                 header: 'Pipeline Name',
                 cell: ({ row: { original } }) => (
-                  <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
+                  <Link params={{ pipelineId: encodeURIComponentPercents(original.id) }} to="/rp-connect/$pipelineId">
                     <Text whiteSpace="break-spaces" wordBreak="break-word">
                       {original.displayName}
                     </Text>

@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
+import { Link as TanStackRouterLink, useNavigate } from '@tanstack/react-router';
 import type { ColumnDef, VisibilityState } from '@tanstack/react-table';
 import { flexRender, getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -27,7 +28,6 @@ import type { Pipeline as APIPipeline, Pipeline_State } from 'protogen/redpanda/
 import { useCallback, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
 import { useDeletePipelineMutation, useListPipelinesQuery } from 'react-query/api/pipeline';
-import { Link as ReactRouterLink, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useResetOnboardingWizardStore } from 'state/onboarding-wizard-store';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -110,7 +110,7 @@ const PipelineListPageContent = () => {
 
   const handleCreateClick = useCallback(() => {
     resetOnboardingWizardStore();
-    navigate('/rp-connect/wizard');
+    navigate({ to: '/rp-connect/wizard', search: { step: undefined, serverless: undefined } });
   }, [resetOnboardingWizardStore, navigate]);
 
   const columns = useMemo<ColumnDef<Pipeline>[]>(
@@ -119,13 +119,13 @@ const PipelineListPageContent = () => {
         accessorKey: 'id',
         header: 'ID',
         cell: ({ row }) => (
-          <Link
-            as={ReactRouterLink}
+          <TanStackRouterLink
             className="text-[1rem] text-foreground underline decoration-dotted underline-offset-[3px]"
-            to={`/rp-connect/${encodeURIComponent(row.original.id)}`}
+            params={{ pipelineId: encodeURIComponent(row.original.id) }}
+            to="/rp-connect/$pipelineId"
           >
             {row.getValue('id')}
-          </Link>
+          </TanStackRouterLink>
         ),
         enableSorting: false,
         size: 120,
@@ -134,13 +134,13 @@ const PipelineListPageContent = () => {
         accessorKey: 'name',
         header: 'Pipeline Name',
         cell: ({ row }) => (
-          <Link
-            as={ReactRouterLink}
+          <TanStackRouterLink
             className="text-[1rem] text-foreground underline decoration-dotted underline-offset-[3px]"
-            to={`/rp-connect/${encodeURIComponent(row.original.id)}`}
+            params={{ pipelineId: encodeURIComponent(row.original.id) }}
+            to="/rp-connect/$pipelineId"
           >
             {row.getValue('name')}
-          </Link>
+          </TanStackRouterLink>
         ),
         size: 250,
       },

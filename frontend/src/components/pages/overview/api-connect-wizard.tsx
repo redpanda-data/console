@@ -1,5 +1,6 @@
 import { TransportProvider } from '@connectrpc/connect-query';
 import { Markdown } from '@redpanda-data/ui';
+import { useNavigate } from '@tanstack/react-router';
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -13,7 +14,6 @@ import { runInAction } from 'mobx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetOnboardingCodeSnippetQuery } from 'react-query/api/onboarding';
 import { useGetServerlessClusterQuery } from 'react-query/api/serverless';
-import { useNavigate } from 'react-router-dom';
 import { useAPIWizardStore } from 'state/api-wizard-store';
 import { uiState } from 'state/ui-state';
 import { capitalizeFirst } from 'utils/utils';
@@ -178,7 +178,7 @@ export const APIConnectWizard = () => {
 
   const handleCancel = useCallback(() => {
     resetApiWizardStore();
-    navigate('/overview');
+    navigate({ to: '/overview' });
     window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
   }, [navigate, resetApiWizardStore]);
 
@@ -205,7 +205,7 @@ export const APIConnectWizard = () => {
 
   const handleCreate = useCallback(() => {
     resetApiWizardStore();
-    navigate('/overview');
+    navigate({ to: '/overview' });
     window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
   }, [navigate, resetApiWizardStore]);
 
@@ -223,8 +223,7 @@ export const APIConnectWizard = () => {
                       of={step.id}
                       onClick={() => {
                         if (step.id === APIWizardStep.ADD_DATA) {
-                          navigate('/get-started?type=input');
-                          window.location.reload(); // Required because we want to load Cloud UI's get-started page.
+                          window.location.href = '/get-started?type=input'; // Required because we want to load Cloud UI's get-started page.
                         } else {
                           methods.goTo(step.id);
                         }
@@ -252,8 +251,7 @@ export const APIConnectWizard = () => {
                     onClick={
                       methods.current.id === APIWizardStep.ADD_TOPIC
                         ? () => {
-                            navigate('/get-started?type=input');
-                            window.location.reload(); // Required because we want to load Cloud UI's get-started page.
+                            window.location.href = '/get-started?type=input';
                           }
                         : methods.prev
                     }

@@ -9,10 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { getRouteApi } from '@tanstack/react-router';
 import { Badge, type BadgeVariant } from 'components/redpanda-ui/components/badge';
 import { AlertCircle, Check, Clock, Loader2, StopCircle } from 'lucide-react';
 import { MCPServer_State, useGetMCPServerQuery } from 'react-query/api/remote-mcp';
-import { useParams } from 'react-router-dom';
+
+const routeApi = getRouteApi('/mcp-servers/$id');
 
 const getMCPServerStatus = (state: typeof MCPServer_State[keyof typeof MCPServer_State]): { icon: React.ReactNode; text: string; variant: BadgeVariant } => {
   switch (state) {
@@ -56,7 +58,7 @@ const getMCPServerStatus = (state: typeof MCPServer_State[keyof typeof MCPServer
 };
 
 export const McpServerStateBadge = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = routeApi.useParams();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
 
   if (!mcpServerData?.mcpServer) {

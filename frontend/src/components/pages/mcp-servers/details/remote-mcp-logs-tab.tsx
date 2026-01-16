@@ -10,6 +10,10 @@
  */
 
 import { DataTable } from '@redpanda-data/ui';
+import { getRouteApi } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/mcp-servers/$id');
+
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { ExpandedMessage } from 'components/pages/topics/Tab.Messages/message-display/expanded-message';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -22,7 +26,6 @@ import { observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
 import { PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
 import type { MessageSearch, MessageSearchRequest } from 'state/backend-api';
 import { createMessageSearch } from 'state/backend-api';
 import type { TopicMessage } from 'state/rest-interfaces';
@@ -106,7 +109,7 @@ function executeMessageSearch(search: MessageSearch, topicName: string, remoteMc
  * In the future, this should be refactored to use useStream, ideally with a custom hook for react-query.
  */
 export const RemoteMCPLogsTab = observer(() => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = routeApi.useParams();
 
   // Initialize default sorting if not set
   if (uiState.remoteMcpDetails.sorting.length === 0) {

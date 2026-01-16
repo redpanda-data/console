@@ -11,6 +11,7 @@
     "ignoreUnknown": false,
     "includes": [
       "**/*",
+      "!**/routeTree.gen.ts",
       "!**/protogen",
       "!**/protogen/**/*",
       "!**/dist/**/*",
@@ -65,7 +66,7 @@
       "nursery": {
         "noReactForwardRef": "off", // enable once we use React 19+
         "noDeprecatedImports": "error", // this may slow down the linting process
-        "noFloatingPromises": "error", // this may slow down the linting process
+        "noFloatingPromises": "off", // Disabled - navigate() and similar fire-and-forget promises are intentional
         "noMisusedPromises": "error", // this may slow down the linting process
         "noImportCycles": "off", // this may slow down the linting process
         "useExhaustiveSwitchCases": "error" // this may slow down the linting process
@@ -181,6 +182,16 @@
         "parser": {
           "allowComments": true,
           "allowTrailingCommas": true
+        }
+      }
+    },
+    {
+      "includes": ["**/routes/**/*"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": "off"
+          }
         }
       }
     }

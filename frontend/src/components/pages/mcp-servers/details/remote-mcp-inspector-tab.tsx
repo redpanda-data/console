@@ -12,6 +12,10 @@
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: leave for now */
 
 import { create } from '@bufbuild/protobuf';
+import { getRouteApi } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/mcp-servers/$id');
+
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -33,7 +37,6 @@ import { MCPServer_State, MCPServer_Tool_ComponentType } from 'protogen/redpanda
 import { useEffect, useRef, useState } from 'react';
 import { useCallMCPServerToolMutation, useGetMCPServerQuery, useListMCPServerTools } from 'react-query/api/remote-mcp';
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
-import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { RemoteMCPToolButton } from './remote-mcp-tool-button';
@@ -142,7 +145,7 @@ const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const RemoteMCPInspectorTab = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = routeApi.useParams();
   const [selectedTool, setSelectedTool] = useState<string>('');
   const [toolParameters, setToolParameters] = useState<JSONValue>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});

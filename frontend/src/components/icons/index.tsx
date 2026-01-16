@@ -28,6 +28,7 @@ export {
 // Chevron/directional icons
 // Action/utility icons
 export {
+  Activity as ActivityIcon, // Activity (for Transcripts)
   AlertCircle as AlertIcon, // MdOutlineError, MdOutlineErrorOutline, AiOutlineExclamationCircle, AlertIcon (Octicons)
   AlertTriangle as WarningIcon, // MdOutlineWarning, MdOutlineWarningAmber, WarningIcon (Chakra)
   Archive as ArchiveIcon, // ArchiveIcon (Heroicons)
@@ -62,6 +63,7 @@ export {
   LayoutGrid as CollectionIcon, // CollectionIcon (Heroicons) - Note: 3x3 grid → 2x2 grid
   Link as LinkIcon, // LinkIcon (Heroicons)
   Linkedin as LinkedInIcon, // FaLinkedin (LinkedIn removed from simple-icons)
+  Loader2 as LoaderIcon, // Loading spinner
   Lock as LockIcon, // LockIcon (Octicons)
   Menu as MenuIcon, // ThreeBarsIcon (Octicons)
   Minus as MinusIcon, // MinusIcon (Chakra)

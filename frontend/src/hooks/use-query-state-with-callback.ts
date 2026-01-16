@@ -1,6 +1,6 @@
+import { useLocation } from '@tanstack/react-router';
 import { type UseQueryStateReturn, useQueryState } from 'nuqs';
 import { useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
 
 /**
  * A custom hook that extends `useQueryState` with callback functionality for syncing state changes.
@@ -59,7 +59,8 @@ export function useQueryStateWithCallback<T, U = null>(
 ): UseQueryStateReturn<T, U> {
   const [key, ...otherOptions] = options;
   const [value, setValue] = useQueryState<T>(key, ...otherOptions);
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.searchStr ?? '');
   const isFirstRender = useRef(true);
 
   useEffect(() => {
@@ -74,7 +75,7 @@ export function useQueryStateWithCallback<T, U = null>(
         setValue(defaultValue as T & {});
       }
     }
-  }, [searchParams, key, setValue, value, params.getDefaultValue]);
+  }, [key, setValue, value, params, searchParams]);
 
   const setValueFinal = (newValue: T & {}) => {
     params.onUpdate(newValue);

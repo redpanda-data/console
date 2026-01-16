@@ -9,12 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams } from '@tanstack/react-router';
 
 export type PipelineMode = 'create' | 'edit' | 'view';
 
 export function usePipelineMode(): { mode: PipelineMode; pipelineId?: string } {
-  const { pipelineId } = useParams<{ pipelineId: string }>();
+  const { pipelineId } = useParams({ strict: false });
   const location = useLocation();
 
   if (location.pathname.includes('/wizard')) {

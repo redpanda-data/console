@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
+import { useNavigate } from '@tanstack/react-router';
 import { Button, type ButtonProps } from 'components/redpanda-ui/components/button';
 import {
   DropdownMenu,
@@ -32,7 +33,6 @@ import { Pipeline_State as PipelineState } from 'protogen/redpanda/api/dataplane
 import type { ReactNode } from 'react';
 import { memo, useCallback, useMemo } from 'react';
 import { useDeletePipelineMutation, useStartPipelineMutation, useStopPipelineMutation } from 'react-query/api/pipeline';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -158,7 +158,7 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
       deleteMutation(deleteRequest, {
         onSuccess: () => {
           toast.success('Pipeline deleted');
-          navigate('/connect-clusters');
+          navigate({ to: '/connect-clusters' });
         },
         onError: (err) => {
           toast.error(
@@ -217,7 +217,7 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
   }, [pipelineId, stopMutation]);
 
   const handleEdit = useCallback(() => {
-    navigate(`/rp-connect/${pipelineId}/edit`);
+    navigate({ to: `/rp-connect/${pipelineId}/edit` });
   }, [navigate, pipelineId]);
 
   const buttonConfig = useMemo(

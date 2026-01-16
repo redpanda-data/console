@@ -76,20 +76,19 @@ export class Feature {
     endpoint: 'redpanda.api.console.v1alpha1.ShadowLinkService',
     method: 'POST',
   };
+  static readonly TracingService: FeatureEntry = {
+    endpoint: 'redpanda.api.dataplane.v1alpha3.TracingService',
+    method: 'POST',
+  };
 }
 
 export function isSupported(f: FeatureEntry): boolean {
   const c = api.endpointCompatibility;
   if (!c) {
-    // c could be null, because the call to /api/console/endpoints failed or is not responded yet,
-    // in that case those endpoints should be considered unsupported
-    switch (f.endpoint) {
-      case Feature.SchemaRegistryACLApi.endpoint:
-      case Feature.ShadowLinkService.endpoint:
-        return false;
-      default:
-        return true;
-    }
+    // c could be null, because the call to /api/console/endpoints failed or has not responded yet.
+    // Return true as default - the sidebar will re-render once the actual data arrives
+    // (requires the consuming component to be wrapped with MobX observer)
+    return true;
   }
 
   for (const e of c.endpoints) {
@@ -98,8 +97,10 @@ export function isSupported(f: FeatureEntry): boolean {
     }
   }
 
-  // Special handling, this will be completely absent in the community version
-  if (f.endpoint.includes('.SecurityService')) {
+  // Special handling for services that may be completely absent from the backend response.
+  // SecurityService: absent in community version
+  // TracingService: may not be implemented in older backends
+  if (f.endpoint.includes('.SecurityService') || f.endpoint.includes('.TracingService')) {
     return false;
   }
 
@@ -112,7 +113,7 @@ export function isSupported(f: FeatureEntry): boolean {
 /**
  * A list of features we should hide instead of showing a disabled message.
  */
-const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas, Feature.ShadowLinkService];
+const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas, Feature.ShadowLinkService, Feature.TracingService];
 export function shouldHideIfNotSupported(f: FeatureEntry): boolean {
   return HIDE_IF_NOT_SUPPORTED_FEATURES.includes(f);
 }
@@ -171,6 +172,9 @@ class SupportedFeatures {
   }
   @computed get shadowLinkService(): boolean {
     return isSupported(Feature.ShadowLinkService);
+  }
+  @computed get tracingService(): boolean {
+    return isSupported(Feature.TracingService);
   }
 }
 

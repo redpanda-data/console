@@ -24,6 +24,7 @@ import {
 import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { RerankerModelSelect } from 'components/ui/ai/reranker-model-select';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
+import { formatSecretTemplate } from 'components/ui/secret/secret-utils';
 import { ExternalLink, Shuffle } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { Controller, type UseFormReturn } from 'react-hook-form';
@@ -117,7 +118,7 @@ export const RetrievalSection: React.FC<RetrievalSectionProps> = ({ form, availa
                         secretValueDescription: 'Your Cohere API key',
                         emptyStateDescription: 'Create a secret to securely store your Cohere API key',
                       }}
-                      onChange={field.onChange}
+                      onChange={(secretId) => field.onChange(formatSecretTemplate(secretId))}
                       placeholder="Select Cohere API key from secrets"
                       scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
                       value={field.value || ''}

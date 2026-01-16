@@ -468,14 +468,23 @@ const apiStore = {
   // undefined = we haven't checked yet
   // null = call completed, and we're not logged in
   userData: undefined as UserData | null | undefined,
+  // Track if refreshUserData is in progress to prevent duplicate requests
+  isUserDataFetchInProgress: false as boolean,
 
   async logout() {
     await appConfig.fetch('./auth/logout');
     this.userData = null;
   },
   async refreshUserData() {
+    // Prevent duplicate concurrent requests to avoid redirect loops
+    if (this.isUserDataFetchInProgress) {
+      return;
+    }
+    this.isUserDataFetchInProgress = true;
+
     const client = appConfig.authenticationClient;
     if (!client) {
+      this.isUserDataFetchInProgress = false;
       throw new Error('security client is not initialized');
     }
 
@@ -597,6 +606,7 @@ const apiStore = {
         }
       })
       .finally(() => {
+        this.isUserDataFetchInProgress = false;
         addHeapEventProperties({
           'Product Name': 'Console',
           Platform: api.isRedpanda ? 'Redpanda' : 'Kafka',

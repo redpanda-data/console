@@ -10,9 +10,9 @@
  */
 
 import { Box, CodeBlock, Empty, Flex, Grid, GridItem, RadioGroup, Text, useToast, VStack } from '@redpanda-data/ui';
+import { useNavigate } from '@tanstack/react-router';
 import type { FC } from 'react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './schema-details';
 import {
@@ -98,9 +98,9 @@ const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName
       <EditSchemaCompatibility
         onClose={() => {
           if (subjectName) {
-            navigate(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
+            navigate({ to: `/schema-registry/subjects/${encodeURIComponent(subjectName)}` });
           } else {
-            navigate('/schema-registry');
+            navigate({ to: '/schema-registry' });
           }
         }}
         schemaCompatibility={schemaCompatibility}

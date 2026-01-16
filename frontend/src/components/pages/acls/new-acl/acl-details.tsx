@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import { useNavigate } from 'react-router-dom';
 
 import { getRuleDataTestId, parsePrincipal, type Rule, type SharedConfig } from './acl.model';
 import { OperationsBadge } from './operations-badge';
@@ -85,7 +85,7 @@ export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDet
                 <CardHeader>
                   <CardTitle className="font-medium text-gray-900 text-lg" data-testid={'acl-rules-length'}>
                     {isSimpleView ? (
-                      <Button onClick={() => navigate(getGoTo(sharedConfig))} variant="link">
+                      <Button onClick={() => navigate({ to: getGoTo(sharedConfig) })} variant="link">
                         {sharedConfig.principal}
                       </Button>
                     ) : (

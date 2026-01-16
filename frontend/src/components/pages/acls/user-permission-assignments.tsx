@@ -10,9 +10,9 @@
  */
 
 import { useQuery } from '@connectrpc/connect-query';
+import { useNavigate } from '@tanstack/react-router';
 import { TagsValue } from 'components/redpanda-ui/components/tags';
 import { observer } from 'mobx-react';
-import { useNavigate } from 'react-router-dom';
 
 import type { ListACLsRequest } from '../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { listACLs } from '../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
@@ -51,7 +51,9 @@ export const UserRoleTags = observer(
 
     if (hasAcls) {
       elements.push(
-        <TagsValue onClick={() => navigate(`/security/acls/${userName}/details`)}>{`User:${userName}`}</TagsValue>
+        <TagsValue
+          onClick={() => navigate({ to: `/security/acls/${userName}/details` })}
+        >{`User:${userName}`}</TagsValue>
       );
     }
 
@@ -74,7 +76,7 @@ export const UserRoleTags = observer(
           <div>
             <TagsValue
               key={r}
-              onClick={() => navigate(`/security/roles/${r}/details`)}
+              onClick={() => navigate({ to: `/security/roles/${r}/details` })}
             >{`RedpandaRole:${r}`}</TagsValue>
           </div>
         );

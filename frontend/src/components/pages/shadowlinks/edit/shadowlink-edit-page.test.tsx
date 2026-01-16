@@ -27,7 +27,6 @@ import {
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { ShadowLinkEditPage } from './shadowlink-edit-page';
@@ -45,6 +44,18 @@ vi.mock('state/ui-state', () => ({
   },
 }));
 
+// Mock config
+vi.mock('config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('config')>();
+  return {
+    ...actual,
+    config: {
+      jwt: 'test-jwt-token',
+    },
+    isFeatureFlagEnabled: vi.fn(() => false),
+  };
+});
+
 // Mock toast notifications
 vi.mock('sonner', () => ({
   toast: {
@@ -53,18 +64,18 @@ vi.mock('sonner', () => ({
   },
 }));
 
-// Mock react-router navigate
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+const SHADOW_LINK_NAME = 'test-shadow-link';
+
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
   return {
     ...actual,
-    useNavigate: () => mockNavigate,
+    useParams: () => ({ name: SHADOW_LINK_NAME }),
   };
 });
 
 import { useEditShadowLink } from 'react-query/api/shadowlink';
-import { render } from 'test-utils';
+import { renderWithFileRoutes } from 'test-utils';
 
 import { buildDefaultFormValues } from '../mappers/dataplane';
 import {
@@ -135,14 +146,7 @@ const createMockShadowLink = (): ShadowLink =>
 /**
  * Render the edit page with all necessary providers
  */
-const renderEditPage = (shadowLink: ShadowLink) =>
-  render(
-    <MemoryRouter initialEntries={[`/shadowlinks/${shadowLink.name}/edit`]}>
-      <Routes>
-        <Route element={<ShadowLinkEditPage />} path="/shadowlinks/:name/edit" />
-      </Routes>
-    </MemoryRouter>
-  );
+const renderEditPage = (_shadowLink: ShadowLink) => renderWithFileRoutes(<ShadowLinkEditPage />);
 
 /**
  * Action dispatcher - routes actions to appropriate helpers

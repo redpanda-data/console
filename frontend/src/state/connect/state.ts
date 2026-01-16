@@ -198,12 +198,14 @@ export class ConnectClusterStore {
           throw new Error('Cluster name is missing or empty. Cannot create secrets without a valid cluster.');
         }
 
-        const connectorName = connector?.propsByName.get('name');
-        if (!connectorName) {
+        // Get connector name from the actual config object (works in both form and JSON mode)
+        const configObj = connector?.getConfigObject() as Record<string, unknown> | undefined;
+        const connectorNameValue = configObj?.name;
+
+        if (connectorNameValue === undefined || connectorNameValue === null) {
           throw new Error("Connector configuration is missing the 'name' property");
         }
 
-        const connectorNameValue = connectorName.value;
         if (typeof connectorNameValue !== 'string') {
           let receivedType: string;
           if (connectorNameValue === null) {
@@ -695,7 +697,7 @@ export class ConnectorPropertiesStore {
               // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
               return prop!;
             })
-            .filter((x) => x !== null);
+            .filter((x) => x !== null && x !== undefined);
 
           this.allGroups.push(this.createPropertyGroup(step, groupDef, groupProps));
         }

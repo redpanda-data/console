@@ -9,13 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
+import { useNavigate } from '@tanstack/react-router';
 import { fromDataplaneShadowLink } from 'components/pages/shadowlinks/mappers/dataplane';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import React, { type FC, useMemo } from 'react';
 import { useGetShadowLinkQuery, useListShadowLinksQuery } from 'react-query/api/shadowlink';
-import { useNavigate } from 'react-router-dom';
 
 import { Feature, isSupported } from '../../../state/supported-features';
 import { ShadowLinkDiagram } from '../shadowlinks/details/shadow-link-diagram';
@@ -43,7 +43,7 @@ export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ 
         <CardTitle>Shadow Cluster</CardTitle>
         <CardAction>
           <Button
-            onClick={() => navigate(`/shadowlinks/${shadowLink.name}`)}
+            onClick={() => navigate({ to: `/shadowlinks/${shadowLink.name}` })}
             size="sm"
             testId="go-to-shadow-link-button"
             variant="outline"

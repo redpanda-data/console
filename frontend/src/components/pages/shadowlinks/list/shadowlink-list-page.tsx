@@ -12,6 +12,7 @@
 'use client';
 
 import { Code } from '@connectrpc/connect';
+import { useNavigate } from '@tanstack/react-router';
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
@@ -21,7 +22,6 @@ import { Loader2, Plus, RefreshCw } from 'lucide-react';
 import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import React, { useEffect } from 'react';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
@@ -133,7 +133,7 @@ export const ShadowLinkListPage = () => {
   }, [error]);
 
   const handleRowClick = (shadowLinkName: string) => {
-    navigate(`/shadowlinks/${shadowLinkName}`);
+    navigate({ to: `/shadowlinks/${shadowLinkName}` });
   };
 
   const columns = React.useMemo(() => createColumns, []);
@@ -177,7 +177,7 @@ export const ShadowLinkListPage = () => {
     }
     return (
       <div className="my-2 flex justify-center gap-2">
-        <ShadowLinkEmptyState onCreateClick={() => navigate('/shadowlinks/create')} />
+        <ShadowLinkEmptyState onCreateClick={() => navigate({ to: '/shadowlinks/create' })} />
       </div>
     );
   }
@@ -205,7 +205,7 @@ export const ShadowLinkListPage = () => {
               <span className="inline-block">
                 <Button
                   disabled={hasShadowLink}
-                  onClick={() => navigate('/shadowlinks/create')}
+                  onClick={() => navigate({ to: '/shadowlinks/create' })}
                   size="sm"
                   variant="secondary"
                 >

@@ -9,16 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
+import { getRouteApi } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/agents/$id');
+
 import { Button } from 'components/redpanda-ui/components/button';
 import { Loader2, Play, Square } from 'lucide-react';
 import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { useGetAIAgentQuery, useStartAIAgentMutation, useStopAIAgentMutation } from 'react-query/api/ai-agent';
-import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const AIAgentToggleButton = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = routeApi.useParams();
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
 
   const { mutateAsync: startAIAgent, isPending: isStarting } = useStartAIAgentMutation();

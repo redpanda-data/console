@@ -28,13 +28,13 @@ import {
   Tooltip,
   VStack,
 } from '@redpanda-data/ui';
+// Routing and state management
+import { Link } from '@tanstack/react-router';
 // Icons
 import { ArchiveIcon, InfoIcon, TrashIcon } from 'components/icons';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-// Routing and state management
-import { Link } from 'react-router-dom';
 
 // Local modals
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
@@ -333,7 +333,9 @@ const SchemaList: FC = () => {
                       <Flex alignItems="center" gap={2}>
                         <Link
                           data-testid="schema-registry-table-name"
-                          to={`/schema-registry/subjects/${encodeURIComponentPercents(name)}?version=latest`}
+                          params={{ subjectName: encodeURIComponentPercents(name) }}
+                          search={{ version: 'latest' }}
+                          to="/schema-registry/subjects/$subjectName"
                         >
                           {name}
                         </Link>

@@ -11,10 +11,7 @@
 
 export {};
 
-// biome-ignore lint/nursery/noFloatingPromises: Dynamic imports for code splitting - intentionally not awaited
 import('react');
-// biome-ignore lint/nursery/noFloatingPromises: Dynamic imports for code splitting - intentionally not awaited
 import('react-dom');
 
-// biome-ignore lint/nursery/noFloatingPromises: Dynamic imports for code splitting - intentionally not awaited
 import('./bootstrap');

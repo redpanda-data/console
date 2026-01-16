@@ -9,19 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { BrowserRouter } from 'react-router-dom';
-import { render, screen } from 'test-utils';
+import { renderWithFileRoutes, screen } from 'test-utils';
 
 import { UserRolesCard } from './user-roles-card';
-
-// Mock useNavigate
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => vi.fn(),
-  };
-});
 
 const mockRoles = [
   {
@@ -36,11 +26,7 @@ const mockRoles = [
 
 describe('UserRolesCard', () => {
   test('should render empty state when no roles provided', () => {
-    render(
-      <BrowserRouter>
-        <UserRolesCard roles={[]} />
-      </BrowserRouter>
-    );
+    renderWithFileRoutes(<UserRolesCard roles={[]} />);
 
     expect(screen.getByText('Roles')).toBeInTheDocument();
     expect(screen.getByText('No permissions assigned to this user.')).toBeInTheDocument();
@@ -48,53 +34,33 @@ describe('UserRolesCard', () => {
 
   test('should render Assign Role button in empty state when onChangeRoles is provided', () => {
     const mockOnChangeRoles = vi.fn();
-    render(
-      <BrowserRouter>
-        <UserRolesCard onChangeRoles={mockOnChangeRoles} roles={[]} />
-      </BrowserRouter>
-    );
+    renderWithFileRoutes(<UserRolesCard onChangeRoles={mockOnChangeRoles} roles={[]} />);
 
     expect(screen.getByTestId('assign-role-button')).toBeInTheDocument();
   });
 
   test('should not render Assign Role button in empty state when onChangeRoles is not provided', () => {
-    render(
-      <BrowserRouter>
-        <UserRolesCard roles={[]} />
-      </BrowserRouter>
-    );
+    renderWithFileRoutes(<UserRolesCard roles={[]} />);
 
     expect(screen.queryByTestId('assign-role-button')).not.toBeInTheDocument();
   });
 
   test('should render roles table with role names', () => {
-    render(
-      <BrowserRouter>
-        <UserRolesCard roles={mockRoles} />
-      </BrowserRouter>
-    );
+    renderWithFileRoutes(<UserRolesCard roles={mockRoles} />);
 
     expect(screen.getByTestId('role-name-admin')).toHaveTextContent('admin');
     expect(screen.getByTestId('role-name-viewer')).toHaveTextContent('viewer');
   });
 
   test('should render action buttons for each role', () => {
-    render(
-      <BrowserRouter>
-        <UserRolesCard roles={mockRoles} />
-      </BrowserRouter>
-    );
+    renderWithFileRoutes(<UserRolesCard roles={mockRoles} />);
 
     expect(screen.getByTestId('view-role-admin')).toBeInTheDocument();
     expect(screen.getByTestId('view-role-viewer')).toBeInTheDocument();
   });
 
   test('should render table headers', () => {
-    render(
-      <BrowserRouter>
-        <UserRolesCard roles={mockRoles} />
-      </BrowserRouter>
-    );
+    renderWithFileRoutes(<UserRolesCard roles={mockRoles} />);
 
     expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.getByText('Actions')).toBeInTheDocument();
@@ -102,11 +68,7 @@ describe('UserRolesCard', () => {
 
   test('should render Change Role button when roles exist and onChangeRoles is provided', () => {
     const mockOnChangeRoles = vi.fn();
-    render(
-      <BrowserRouter>
-        <UserRolesCard onChangeRoles={mockOnChangeRoles} roles={mockRoles} />
-      </BrowserRouter>
-    );
+    renderWithFileRoutes(<UserRolesCard onChangeRoles={mockOnChangeRoles} roles={mockRoles} />);
 
     expect(screen.getByTestId('change-role-button')).toBeInTheDocument();
   });

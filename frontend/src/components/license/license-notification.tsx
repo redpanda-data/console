@@ -1,6 +1,6 @@
 import { Alert, AlertDescription, AlertIcon, Box, Button, Flex } from '@redpanda-data/ui';
+import { Link, useLocation } from '@tanstack/react-router';
 import { observer } from 'mobx-react';
-import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
 
 import {
   coreHasEnterpriseFeatures,
@@ -115,7 +115,7 @@ export const LicenseNotification = observer(() => {
 
           <Flex gap={2} my={2}>
             {Boolean(api.isAdminApiConfigured) && (
-              <Button as={ReactRouterLink} size="sm" to="/upload-license" variant="outline">
+              <Button as={Link} size="sm" to="/upload-license" variant="outline">
                 Upload license
               </Button>
             )}

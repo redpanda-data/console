@@ -175,7 +175,7 @@ export class SchemaPage {
     await cancelButton.click();
 
     // Should navigate back to list
-    await expect(this.page).toHaveURL('/schema-registry?showSoftDeleted=false');
+    await expect(this.page).toHaveURL('/schema-registry/?showSoftDeleted=false');
   }
 
   async recoverVersion() {
