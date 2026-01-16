@@ -17,7 +17,7 @@ export const FEATURE_FLAGS = {
   enableAiAgentsInConsoleServerless: false,
   enableMcpServiceAccount: false,
   enablePipelineServiceAccount: false,
-  enableTranscriptsInConsole: true,
+  enableTranscriptsInConsole: false,
   shadowlinkCloudUi: false,
 };
 
