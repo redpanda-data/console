@@ -53,7 +53,6 @@ import {
   selectableRowSelected,
 } from './selectable-row-styles';
 import { TranscriptDetailsSheet } from './transcript-details-sheet';
-import { bytesToHex } from '../utils/hex-utils';
 import { getIconForServiceName, getServiceName } from '../utils/span-classifier';
 import {
   buildSpanTree,
@@ -63,7 +62,7 @@ import {
   type SpanNode,
 } from '../utils/span-tree-builder';
 import { formatDuration, formatTime } from '../utils/transcript-formatters';
-import { groupTranscriptsByDate, isIncompleteTranscript, isRootSpan } from '../utils/transcript-statistics';
+import { groupTranscriptsByDate, isIncompleteTranscript } from '../utils/transcript-statistics';
 
 // Transcript status type for type safety
 export type TranscriptStatus = 'completed' | 'in-progress' | 'with-errors';
@@ -882,14 +881,14 @@ const TraceGroup: FC<{
     return calculateTimeline(spanTree);
   }, [spanTree]);
 
-  // Compute root span ID for clickability
+  // Compute root span ID for clickability - use the first root from the span tree
+  // The RootTraceRow displays spanTree[0], so we need its ID
   const rootSpanId = useMemo(() => {
-    if (!trace?.spans || trace.spans.length === 0) {
+    if (spanTree.length === 0) {
       return;
     }
-    const rootSpan = trace.spans.find((span) => isRootSpan(span));
-    return rootSpan ? bytesToHex(rootSpan.spanId) : undefined;
-  }, [trace?.spans]);
+    return spanTree[0].spanId;
+  }, [spanTree]);
 
   // Manage span expansion state
   const { expandedSpans, toggleSpan } = useSpanExpansion(spanTree, collapseAllTrigger);
