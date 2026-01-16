@@ -215,7 +215,30 @@ export default AclList;
 type UsersEntry = { name: string; type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
 const PermissionsListTab = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const { data: usersData } = useLegacyListUsersQuery();
+  const {
+    data: usersData,
+    isError: isUsersError,
+    error: usersError,
+  } = useLegacyListUsersQuery(undefined, {
+    enabled: api.isAdminApiConfigured,
+  });
+
+  const { data: principalGroupsData, isError: isAclsError, error: aclsError } = useListACLAsPrincipalGroups();
+
+  // Check for errors from both queries
+  if (isUsersError && usersError) {
+    return (
+      <Alert status="error">
+        <AlertIcon />
+        <AlertTitle>Failed to load users</AlertTitle>
+        <AlertDescription>{usersError.message}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (isAclsError && aclsError) {
+    return <ErrorResult error={aclsError} />;
+  }
 
   const users: UsersEntry[] = (usersData?.users ?? []).map((u) => ({
     name: u.name,
@@ -223,7 +246,7 @@ const PermissionsListTab = () => {
   }));
 
   // In addition, find all principals that are referenced by roles, or acls, that are not service accounts
-  for (const g of principalGroupsView.principalGroups) {
+  for (const g of principalGroupsData ?? []) {
     if (g.principalType === 'User' && !g.principalName.includes('*') && !users.any((u) => u.name === g.principalName)) {
       // is it a user that is being referenced?
       // is the user already listed as a service account?
@@ -231,7 +254,7 @@ const PermissionsListTab = () => {
     }
   }
 
-  for (const [_, roleMembers] of rolesApi.roleMembers) {
+  for (const [_, roleMembers] of rolesApi.roleMembers ?? []) {
     for (const roleMember of roleMembers) {
       if (!users.any((u) => u.name === roleMember.name)) {
         // make sure that user isn't already in the list
