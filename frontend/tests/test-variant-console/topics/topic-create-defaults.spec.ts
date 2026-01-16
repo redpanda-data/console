@@ -12,7 +12,7 @@ const mockClusterResponse = {
     brokers: [
       {
         brokerId: 0,
-        logDirSize: 283431018,
+        logDirSize: 283_431_018,
         address: 'redpanda',
         rack: null,
         config: {

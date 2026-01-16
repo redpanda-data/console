@@ -1,7 +1,7 @@
 import { GenericContainer, Network, Wait } from 'testcontainers';
 
 import { exec } from 'node:child_process';
-import { existsSync, realpathSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -13,26 +13,44 @@ const __dirname = dirname(__filename);
 // Regex for extracting container ID from error messages
 const CONTAINER_ID_REGEX = /container ([a-f0-9]+)/;
 
-const getStateFile = (isEnterprise) =>
-  resolve(__dirname, isEnterprise ? '.testcontainers-state-enterprise.json' : '.testcontainers-state.json');
+const getStateFile = (variantName) => resolve(__dirname, '..', `.testcontainers-state-${variantName}.json`);
+
+/**
+ * Load variant configuration from test-variant-{name}/config/variant.json
+ * @param {string} variantName - The variant name (e.g., "console", "console-enterprise")
+ * @returns {object} - The variant configuration including ports
+ */
+function loadVariantConfig(variantName) {
+  const variantDir = resolve(__dirname, '..', `test-variant-${variantName}`);
+  const configPath = join(variantDir, 'config', 'variant.json');
+
+  if (!existsSync(configPath)) {
+    throw new Error(`Variant config not found: ${configPath}`);
+  }
+
+  const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+  return config;
+}
 
 async function waitForPort(port, maxAttempts = 30, delayMs = 1000) {
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const { stdout } = await execAsync(
-        `curl -s -o /dev/null -w "%{http_code}" http://localhost:${port}/ || echo "0"`
+        `curl -s -m 5 -o /dev/null -w "%{http_code}" http://localhost:${port}/ || echo "0"`
       );
       const statusCode = Number.parseInt(stdout.trim(), 10);
       if (statusCode > 0 && statusCode < 500) {
         return true;
       }
-      if ((i + 1) % 10 === 0) {
-        console.log(`  Still waiting... (attempt ${i + 1}/${maxAttempts})`);
+      if ((i + 1) % 5 === 0) {
+        console.log(
+          `  Still waiting for port ${port}... (attempt ${i + 1}/${maxAttempts}, last status: ${statusCode})`
+        );
       }
-    } catch (_error) {
+    } catch (error) {
       // Port not ready yet
-      if ((i + 1) % 10 === 0) {
-        console.log(`  Still waiting... (attempt ${i + 1}/${maxAttempts})`);
+      if ((i + 1) % 5 === 0) {
+        console.log(`  Still waiting for port ${port}... (attempt ${i + 1}/${maxAttempts}, error: ${error.message})`);
       }
     }
     await new Promise((resolve) => setTimeout(resolve, delayMs));
@@ -48,16 +66,16 @@ async function setupDockerNetwork(state) {
   return network;
 }
 
-async function startRedpandaContainer(network, state) {
+async function startRedpandaContainer(network, state, ports) {
   console.log('Starting Redpanda container...');
   const redpanda = await new GenericContainer('redpandadata/redpanda:v25.3.2')
     .withNetwork(network)
     .withNetworkAliases('redpanda')
     .withExposedPorts(
-      { container: 19_092, host: 19_092 },
-      { container: 18_081, host: 18_081 },
-      { container: 18_082, host: 18_082 },
-      { container: 9644, host: 19_644 }
+      { container: 19_092, host: ports.redpandaKafka },
+      { container: 18_081, host: ports.redpandaSchemaRegistry },
+      { container: 18_082, host: ports.redpandaPandaproxy },
+      { container: 9644, host: ports.redpandaAdmin }
     )
     .withCommand([
       'redpanda',
@@ -73,7 +91,7 @@ async function startRedpandaContainer(network, state) {
       '--pandaproxy-addr',
       'internal://0.0.0.0:8082,external://0.0.0.0:18082',
       '--advertise-pandaproxy-addr',
-      'internal://redpanda:8082,external://localhost:18082',
+      `internal://redpanda:8082,external://localhost:${ports.redpandaPandaproxy}`,
       '--schema-registry-addr',
       'internal://0.0.0.0:8081,external://0.0.0.0:18081',
       '--rpc-addr',
@@ -86,7 +104,7 @@ async function startRedpandaContainer(network, state) {
     })
     .withBindMounts([
       {
-        source: resolve(__dirname, 'config/conf/.bootstrap.yaml'),
+        source: resolve(__dirname, 'conf/.bootstrap.yaml'),
         target: '/etc/redpanda/.bootstrap.yaml',
       },
     ])
@@ -106,18 +124,18 @@ async function startRedpandaContainer(network, state) {
   console.log(`✓ Redpanda container started: ${state.redpandaId}`);
 }
 
-async function verifyRedpandaServices(state) {
+async function verifyRedpandaServices(state, ports) {
   // Give Redpanda a moment to finish internal initialization
   console.log('Waiting for Redpanda services to initialize...');
   await new Promise((resolve) => setTimeout(resolve, 5000));
 
   // Check services are ready
-  console.log('Checking if Admin API is ready (port 19644)...');
-  await waitForPort(19_644, 60, 2000);
+  console.log(`Checking if Admin API is ready (port ${ports.redpandaAdmin})...`);
+  await waitForPort(ports.redpandaAdmin, 60, 2000);
   console.log('✓ Admin API is ready');
 
-  console.log('Checking if Schema Registry is ready (port 18081)...');
-  await waitForPort(18_081, 60, 2000);
+  console.log(`Checking if Schema Registry is ready (port ${ports.redpandaSchemaRegistry})...`);
+  await waitForPort(ports.redpandaSchemaRegistry, 60, 2000);
   console.log('✓ Schema Registry is ready');
 
   // Verify SASL authentication is working
@@ -190,7 +208,7 @@ async function createKafkaConnectTopics(state) {
   }
 }
 
-async function startKafkaConnect(network, state) {
+async function startKafkaConnect(network, state, ports) {
   console.log('Starting Kafka Connect container...');
   const connectConfig = `
 key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
@@ -226,7 +244,7 @@ topic.creation.enable=false
       .withPlatform('linux/amd64')
       .withNetwork(network)
       .withNetworkAliases('connect')
-      .withExposedPorts({ container: 8083, host: 18_083 })
+      .withExposedPorts({ container: 8083, host: ports.kafkaConnect })
       .withEnvironment({
         CONNECT_CONFIGURATION: connectConfig,
         CONNECT_BOOTSTRAP_SERVERS: 'redpanda:9092',
@@ -245,7 +263,7 @@ topic.creation.enable=false
 
     // Verify it's responding
     console.log('Verifying Kafka Connect API...');
-    await waitForPort(18_083, 60, 2000);
+    await waitForPort(ports.kafkaConnect, 60, 2000);
     console.log('✓ Kafka Connect API ready');
   } catch (error) {
     console.log('⚠ Kafka Connect failed to start (connector tests may fail)');
@@ -270,8 +288,8 @@ topic.creation.enable=false
   }
 }
 
-async function buildBackendImage(isEnterprise, devMode = false) {
-  console.log(`Building backend Docker image ${isEnterprise ? '(Enterprise)' : '(OSS)'}${devMode ? ' [DEV MODE]' : ''}...`);
+async function buildBackendImage(isEnterprise) {
+  console.log(`Building backend Docker image ${isEnterprise ? '(Enterprise)' : '(OSS)'}...`);
 
   let backendDir;
   if (isEnterprise) {
@@ -281,10 +299,10 @@ async function buildBackendImage(isEnterprise, devMode = false) {
       console.log(`Using ENTERPRISE_BACKEND_DIR from environment: ${backendDir}`);
     } else {
       // Default to relative path
-      backendDir = resolve(__dirname, '../../../console-enterprise/backend');
+      backendDir = resolve(__dirname, '../../../../console-enterprise/backend');
     }
   } else {
-    backendDir = resolve(__dirname, '../../backend');
+    backendDir = resolve(__dirname, '../../../backend');
   }
 
   // Resolve symlinks to real path (needed for Docker build context)
@@ -307,38 +325,29 @@ async function buildBackendImage(isEnterprise, devMode = false) {
       );
     }
 
+    const frontendBuildDir = resolve(__dirname, '../../build');
+
+    // Check if frontend build exists
+    if (!existsSync(frontendBuildDir)) {
+      throw new Error(
+        `Frontend build directory not found: ${frontendBuildDir}\nRun "bun run build" before running E2E tests.`
+      );
+    }
+
     embedDir = join(backendDir, 'pkg/embed/frontend');
 
-    if (devMode) {
-      // In dev mode, create minimal placeholder (backend won't serve frontend)
-      console.log('Dev mode: Creating minimal frontend placeholder...');
-      await execAsync(`mkdir -p "${embedDir}"`);
-      await execAsync(`echo "<!-- Dev mode: Frontend served separately -->" > "${embedDir}/index.html"`);
-      console.log('✓ Placeholder created');
-    } else {
-      // Normal mode: copy full frontend build
-      const frontendBuildDir = resolve(__dirname, '../build');
+    console.log(`Copying frontend assets to ${isEnterprise ? 'enterprise' : 'OSS'} backend...`);
+    console.log(`  From: ${frontendBuildDir}`);
+    console.log(`  To: ${embedDir}`);
 
-      // Check if frontend build exists
-      if (!existsSync(frontendBuildDir)) {
-        throw new Error(
-          `Frontend build directory not found: ${frontendBuildDir}\nRun "bun run build" before running E2E tests.`
-        );
-      }
-
-      console.log(`Copying frontend assets to ${isEnterprise ? 'enterprise' : 'OSS'} backend...`);
-      console.log(`  From: ${frontendBuildDir}`);
-      console.log(`  To: ${embedDir}`);
-
-      // Copy all files from build/ to pkg/embed/frontend/
-      await execAsync(`cp -r "${frontendBuildDir}"/* "${embedDir}"/`);
-      console.log('✓ Frontend assets copied');
-    }
+    // Copy all files from build/ to pkg/embed/frontend/
+    await execAsync(`cp -r "${frontendBuildDir}"/* "${embedDir}"/`);
+    console.log('✓ Frontend assets copied');
 
     // Build Docker image using testcontainers
     // Docker doesn't allow Dockerfiles to reference files outside build context,
     // so we temporarily copy the Dockerfile into the build context
-    const dockerfilePath = resolve(__dirname, 'config/Dockerfile.backend');
+    const dockerfilePath = resolve(__dirname, 'Dockerfile.backend');
     const tempDockerfile = join(backendDir, '.dockerfile.e2e.tmp');
 
     console.log('Building Docker image with testcontainers...');
@@ -369,18 +378,12 @@ async function buildBackendImage(isEnterprise, devMode = false) {
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: (21) nested test environment setup with multiple configuration checks
-async function startBackendServer(network, isEnterprise, imageTag, state, devMode = false) {
-  console.log(`Starting backend server container${devMode ? ' [DEV MODE]' : ''}...`);
+async function startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports) {
+  console.log('Starting backend server container...');
   console.log(`Image tag: ${imageTag}`);
   console.log(`Enterprise mode: ${isEnterprise}`);
 
-  const backendConfigPath = devMode
-    ? (isEnterprise
-        ? resolve(__dirname, 'config/console.enterprise.dev.config.yaml')
-        : resolve(__dirname, 'config/console.dev.config.yaml'))
-    : (isEnterprise
-        ? resolve(__dirname, 'config/console.enterprise.config.yaml')
-        : resolve(__dirname, 'config/console.config.yaml'));
+  const backendConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
 
   console.log(`Backend config path: ${backendConfigPath}`);
 
@@ -411,9 +414,9 @@ async function startBackendServer(network, isEnterprise, imageTag, state, devMod
       // Default to relative path based on backend directory
       const backendDir = process.env.ENTERPRISE_BACKEND_DIR
         ? resolve(process.env.ENTERPRISE_BACKEND_DIR)
-        : resolve(__dirname, '../../../console-enterprise/backend');
+        : resolve(__dirname, '../../../../console-enterprise/backend');
 
-      const defaultLicensePath = resolve(backendDir, '../configs/shared/redpanda.license');
+      const defaultLicensePath = resolve(backendDir, '../frontend/tests/config/redpanda.license');
       licensePath = process.env.REDPANDA_LICENSE_PATH || defaultLicensePath;
       console.log(`Enterprise license path: ${licensePath}`);
 
@@ -438,23 +441,19 @@ async function startBackendServer(network, isEnterprise, imageTag, state, devMod
   let backend;
   let containerId;
   try {
-    // In dev mode, expose backend on port 9090 (FE dev server proxies to it)
-    // In normal mode, backend serves FE on port 3000
-    const hostPort = devMode ? 9090 : 3000;
-
     console.log('Starting container...');
     console.log('Configuration summary:');
     console.log(`  - Network: ${network.getId ? network.getId() : 'unknown'}`);
     console.log('  - Alias: console-backend');
-    console.log(`  - Port: 3000:${hostPort}`);
+    console.log(`  - Port: ${ports.backend}:3000`);
     console.log('  - Command: --config.filepath=/etc/console/config.yaml');
 
-    // Create container - don't use withWaitStrategy so we can see logs if it fails
+    // Create container without wait strategy first to get the ID immediately
     const container = new GenericContainer(imageTag)
       .withNetwork(network)
       .withNetworkAliases('console-backend')
       .withNetworkMode(network.getName())
-      .withExposedPorts({ container: 3000, host: hostPort })
+      .withExposedPorts({ container: 3000, host: ports.backend })
       .withBindMounts(bindMounts)
       .withCommand(['--config.filepath=/etc/console/config.yaml']);
 
@@ -524,8 +523,8 @@ async function startBackendServer(network, isEnterprise, imageTag, state, devMod
     }
 
     console.log(`Container created with ID: ${containerId}`);
-    console.log('Waiting 2 seconds for container to initialize...');
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    console.log('Waiting 5 seconds for container to fully initialize...');
+    await new Promise((resolve) => setTimeout(resolve, 5000));
 
     // Check if container is still running
     const { stdout: inspectOutput } = await execAsync(`docker inspect ${containerId} --format='{{.State.Status}}'`);
@@ -557,9 +556,10 @@ async function startBackendServer(network, isEnterprise, imageTag, state, devMod
     }
 
     // Now wait for port to be ready
-    console.log(`Waiting for port ${hostPort} to be ready...`);
-    await waitForPort(hostPort, 60, 1000);
-    console.log(`✓ Port ${hostPort} is ready`);
+    console.log(`Waiting for port ${ports.backend} to be ready...`);
+    console.log('Testing connection with curl...');
+    await waitForPort(ports.backend, 90, 2000);
+    console.log(`✓ Port ${ports.backend} is ready`);
   } catch (error) {
     console.error('Failed to start backend container:', error.message);
 
@@ -585,16 +585,16 @@ async function startBackendServer(network, isEnterprise, imageTag, state, devMod
   }
 }
 
-async function startDestinationRedpandaContainer(network, state) {
+async function startDestinationRedpandaContainer(network, state, ports) {
   console.log('Starting destination Redpanda container for shadowlink...');
   const destRedpanda = await new GenericContainer('redpandadata/redpanda:v25.3.2')
     .withNetwork(network)
     .withNetworkAliases('dest-cluster')
     .withExposedPorts(
-      { container: 19_093, host: 19_093 },
-      { container: 18_091, host: 18_091 },
-      { container: 18_092, host: 18_092 },
-      { container: 9644, host: 19_645 }
+      { container: 19_093, host: ports.destRedpandaKafka },
+      { container: 18_091, host: ports.destRedpandaSchemaRegistry },
+      { container: 18_092, host: ports.destRedpandaPandaproxy },
+      { container: 9644, host: ports.destRedpandaAdmin }
     )
     .withCommand([
       'redpanda',
@@ -610,7 +610,7 @@ async function startDestinationRedpandaContainer(network, state) {
       '--pandaproxy-addr',
       'internal://0.0.0.0:8082,external://0.0.0.0:18092',
       '--advertise-pandaproxy-addr',
-      'internal://dest-cluster:8082,external://localhost:18092',
+      `internal://dest-cluster:8082,external://localhost:${ports.destRedpandaPandaproxy}`,
       '--schema-registry-addr',
       'internal://0.0.0.0:8081,external://0.0.0.0:18091',
       '--rpc-addr',
@@ -623,7 +623,7 @@ async function startDestinationRedpandaContainer(network, state) {
     })
     .withBindMounts([
       {
-        source: resolve(__dirname, 'config/conf/.bootstrap-dest.yaml'),
+        source: resolve(__dirname, 'conf/.bootstrap-dest.yaml'),
         target: '/etc/redpanda/.bootstrap.yaml',
       },
     ])
@@ -641,18 +641,40 @@ async function startDestinationRedpandaContainer(network, state) {
   state.destRedpandaId = destRedpanda.getId();
   state.destRedpandaContainer = destRedpanda;
   console.log(`✓ Destination Redpanda container started: ${state.destRedpandaId}`);
+
+  // Debug: Check port mappings
+  try {
+    const { stdout: portOutput } = await execAsync(`docker port ${state.destRedpandaId}`);
+    console.log('Destination container port mappings:');
+    console.log(portOutput);
+  } catch (e) {
+    console.log('Could not get port mappings:', e.message);
+  }
 }
 
-async function verifyDestinationRedpandaServices(state) {
+async function verifyDestinationRedpandaServices(state, ports) {
   console.log('Waiting for destination Redpanda services...');
   await new Promise((resolve) => setTimeout(resolve, 5000));
 
-  console.log('Checking destination Admin API (port 19645)...');
-  await waitForPort(19_645, 60, 2000);
+  // Debug: Check if container is still running
+  try {
+    const { stdout: status } = await execAsync(`docker inspect ${state.destRedpandaId} --format='{{.State.Status}}'`);
+    console.log(`Destination container status: ${status.trim()}`);
+    if (status.trim() !== 'running') {
+      const { stdout: logs } = await execAsync(`docker logs ${state.destRedpandaId} 2>&1 | tail -30`);
+      console.log('Destination container logs:');
+      console.log(logs);
+    }
+  } catch (e) {
+    console.log('Could not check container status:', e.message);
+  }
+
+  console.log(`Checking destination Admin API (port ${ports.destRedpandaAdmin})...`);
+  await waitForPort(ports.destRedpandaAdmin, 60, 2000);
   console.log('✓ Destination Admin API ready');
 
-  console.log('Checking destination Schema Registry (port 18091)...');
-  await waitForPort(18_091, 60, 2000);
+  console.log(`Checking destination Schema Registry (port ${ports.destRedpandaSchemaRegistry})...`);
+  await waitForPort(ports.destRedpandaSchemaRegistry, 60, 2000);
   console.log('✓ Destination Schema Registry ready');
 }
 
@@ -686,7 +708,10 @@ async function startBackendServerWithConfig(
       licensePath = `${tempDir}/redpanda.license`;
       writeFileSync(licensePath, process.env.ENTERPRISE_LICENSE_CONTENT);
     } else {
-      const defaultLicensePath = resolve(__dirname, '../../../console-enterprise/configs/shared/redpanda.license');
+      const defaultLicensePath = resolve(
+        __dirname,
+        '../../../../console-enterprise/frontend/tests/config/redpanda.license'
+      );
       licensePath = process.env.REDPANDA_LICENSE_PATH || defaultLicensePath;
 
       if (!fs.existsSync(licensePath)) {
@@ -702,67 +727,31 @@ async function startBackendServerWithConfig(
   }
 
   let containerId;
-  let backend;
-
-  console.log(`Attempting to start container on port ${externalPort}...`);
-  console.log('Bind mounts:', JSON.stringify(bindMounts, null, 2));
-
   try {
-    console.log('Calling GenericContainer.start()...');
-    const containerBuilder = new GenericContainer(imageTag)
+    const backend = await new GenericContainer(imageTag)
       .withNetwork(network)
       .withNetworkAliases(networkAlias)
       .withExposedPorts({ container: 3000, host: externalPort })
       .withBindMounts(bindMounts)
       .withCommand(['--config.filepath=/etc/console/config.yaml'])
-      .withLogConsumer((stream) => {
-        stream.on('data', (line) => console.log(`[CONTAINER LOG] ${line}`));
-        stream.on('err', (line) => console.error(`[CONTAINER ERR] ${line}`));
-        stream.on('end', () => console.log('[CONTAINER] Stream ended'));
-      });
-
-    // In CI, start container with logs streaming to catch failures
-    if (process.env.CI) {
-      console.log('CI detected - container logs will be streamed in real-time');
-    }
-
-    backend = await containerBuilder.start();
-    console.log('GenericContainer.start() completed successfully');
+      .start();
 
     containerId = backend.getId();
     state.backendId = containerId;
     state.backendContainer = backend;
-    console.log(`✓ Container started with ID: ${containerId}`);
 
-  } catch (startError) {
-    console.error(`Error during container.start() on port ${externalPort}:`, startError.message);
-    // Logs are already captured by withLogConsumer above
-    throw startError;
-  }
-
-  try {
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Check if container is still running
     const { stdout: status } = await execAsync(`docker inspect ${containerId} --format='{{.State.Status}}'`);
     if (status.trim() !== 'running') {
-      console.error(`Container ${containerId} is not running (status: ${status.trim()})`);
       const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
       const { stdout: exitCode } = await execAsync(`docker inspect ${containerId} --format='{{.State.ExitCode}}'`);
-      console.error(`Exit code: ${exitCode.trim()}`);
-      console.error('Container logs:');
+      console.error(`Container ${containerId} stopped (exit ${exitCode.trim()}):`);
       console.error(logs);
       throw new Error(`Container stopped immediately with status: ${status.trim()}`);
     }
 
-    console.log(`✓ Container ${containerId} is running`);
-
-    // Show initial logs
-    console.log('Initial container logs (last 30 lines):');
-    const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1 | tail -30`);
-    console.log(logs || '(no logs yet)');
-
-    console.log(`Waiting for port ${externalPort} to be ready...`);
     await waitForPort(externalPort, 60, 1000);
     console.log(`✓ Backend ready at http://localhost:${externalPort}`);
   } catch (error) {
@@ -770,14 +759,11 @@ async function startBackendServerWithConfig(
 
     if (containerId) {
       try {
-        console.log('Fetching full diagnostics...');
         const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
         const { stdout: inspect } = await execAsync(`docker inspect ${containerId}`);
         const inspectJson = JSON.parse(inspect);
-        console.error('=== FULL CONTAINER LOGS ===');
-        console.error(logs);
-        console.error('=== CONTAINER STATE ===');
-        console.error(JSON.stringify(inspectJson[0].State, null, 2));
+        console.error('Container state:', JSON.stringify(inspectJson[0].State, null, 2));
+        console.error('Container logs:', logs);
       } catch (logError) {
         console.error('Could not fetch container diagnostics:', logError.message);
       }
@@ -785,48 +771,6 @@ async function startBackendServerWithConfig(
 
     throw error;
   }
-}
-
-async function startSourceBackendServer(network, isEnterprise, imageTag, state) {
-  console.log('Starting source backend server container (port 3001)...');
-
-  // Use existing console.enterprise.config.yaml for source cluster
-  const sourceBackendConfigPath = isEnterprise
-    ? resolve(__dirname, 'config/console.enterprise.config.yaml')
-    : resolve(__dirname, 'config/console.config.yaml');
-
-  const bindMounts = [
-    {
-      source: sourceBackendConfigPath,
-      target: '/etc/console/config.yaml',
-      mode: 'ro',
-    },
-  ];
-
-  if (isEnterprise) {
-    const defaultLicensePath = resolve(__dirname, '../../../console-enterprise/configs/shared/redpanda.license');
-    const licensePath = process.env.REDPANDA_LICENSE_PATH || defaultLicensePath;
-    bindMounts.push({
-      source: licensePath,
-      target: '/etc/console/redpanda.license',
-      mode: 'ro',
-    });
-  }
-
-  const sourceBackend = await new GenericContainer(imageTag)
-    .withNetwork(network)
-    .withNetworkAliases('console-backend-source')
-    .withExposedPorts({ container: 3000, host: 3001 }) // Map to 3001 externally
-    .withBindMounts(bindMounts)
-    .withCommand(['--config.filepath=/etc/console/config.yaml'])
-    .start();
-
-  state.sourceBackendId = sourceBackend.getId();
-  state.sourceBackendContainer = sourceBackend;
-
-  console.log('Waiting for source backend port 3001...');
-  await waitForPort(3001, 60, 1000);
-  console.log('✓ Source backend ready at http://localhost:3001');
 }
 
 async function cleanupOnFailure(state) {
@@ -877,23 +821,27 @@ async function cleanupOnFailure(state) {
 }
 
 export default async function globalSetup(config = {}) {
+  // Get variant configuration from metadata
+  const variantName = config?.metadata?.variantName ?? 'console';
+  const configFile = config?.metadata?.configFile ?? 'console.config.yaml';
   const isEnterprise = config?.metadata?.isEnterprise ?? false;
   const needsShadowlink = config?.metadata?.needsShadowlink ?? false;
-  const devMode = process.env.E2E_DEV_MODE === 'true';
+
+  // Load ports from variant's config/variant.json
+  const variantConfig = loadVariantConfig(variantName);
+  const ports = variantConfig.ports;
 
   console.log('\n\n========================================');
-  console.log(
-    `🚀 GLOBAL SETUP STARTED ${isEnterprise ? '(ENTERPRISE MODE)' : '(OSS MODE)'}${needsShadowlink ? ' + SHADOWLINK' : ''}${devMode ? ' [DEV MODE]' : ''}`
-  );
+  console.log(`🚀 GLOBAL SETUP: ${variantName}${needsShadowlink ? ' + SHADOWLINK' : ''}`);
   console.log('========================================\n');
+  console.log('DEBUG - Config metadata:', {
+    variantName,
+    configFile,
+    isEnterprise,
+    needsShadowlink,
+    ports,
+  });
   console.log('Starting testcontainers environment...');
-
-  if (devMode) {
-    console.log('\n⚡ DEV MODE ENABLED');
-    console.log('  - Backend will run on port 9090');
-    console.log('  - Start FE dev server with: bun start');
-    console.log('  - FE dev server will proxy to backend at localhost:9090\n');
-  }
 
   const state = {
     networkId: '',
@@ -905,100 +853,89 @@ export default async function globalSetup(config = {}) {
     sourceBackendId: '',
     isEnterprise,
     needsShadowlink,
-    devMode,
   };
 
   try {
     // Build backend Docker image
-    const imageTag = await buildBackendImage(isEnterprise, devMode);
+    const imageTag = await buildBackendImage(isEnterprise);
 
     // Setup Docker infrastructure
     const network = await setupDockerNetwork(state);
 
     // Start source cluster (existing cluster - has OwlShop data)
-    await startRedpandaContainer(network, state);
-    await verifyRedpandaServices(state);
+    await startRedpandaContainer(network, state, ports);
+    await verifyRedpandaServices(state, ports);
     await startOwlShop(network, state);
     await createKafkaConnectTopics(state);
-    // await startKafkaConnect(network, state);
+    // await startKafkaConnect(network, state, ports);
 
     // Start destination cluster for shadowlink if needed
     if (isEnterprise && needsShadowlink) {
-      await startDestinationRedpandaContainer(network, state);
-      await verifyDestinationRedpandaServices(state);
+      await startDestinationRedpandaContainer(network, state, ports);
+      await verifyDestinationRedpandaServices(state, ports);
     }
 
     console.log('');
     console.log('=== Docker Environment Ready ===');
-    console.log('  - Source Redpanda broker (external): localhost:19092');
+    console.log(`  - Source Redpanda broker (external): localhost:${ports.redpandaKafka}`);
     console.log('  - Source Redpanda broker (internal): redpanda:9092');
-    console.log('  - Schema Registry: http://localhost:18081');
-    console.log('  - Admin API: http://localhost:19644');
+    console.log(`  - Schema Registry: http://localhost:${ports.redpandaSchemaRegistry}`);
+    console.log(`  - Admin API: http://localhost:${ports.redpandaAdmin}`);
     if (needsShadowlink) {
-      console.log('  - Destination Redpanda broker (external): localhost:19093');
+      console.log(`  - Destination Redpanda broker (external): localhost:${ports.destRedpandaKafka}`);
       console.log('  - Destination Redpanda broker (internal): dest-cluster:9092');
-      console.log('  - Destination Schema Registry: http://localhost:18091');
-      console.log('  - Destination Admin API: http://localhost:19645');
+      console.log(`  - Destination Schema Registry: http://localhost:${ports.destRedpandaSchemaRegistry}`);
+      console.log(`  - Destination Admin API: http://localhost:${ports.destRedpandaAdmin}`);
     }
-    console.log('  - Kafka Connect: http://localhost:18083');
+    console.log(`  - Kafka Connect: http://localhost:${ports.kafkaConnect}`);
     console.log('================================\n');
 
     // Start backend server(s)
     if (needsShadowlink) {
-      // For shadowlink tests: start source backend on port 3000 (existing data)
-      const sourceBackendConfigPath = isEnterprise
-        ? resolve(__dirname, 'config/console.enterprise.config.yaml')
-        : resolve(__dirname, 'config/console.config.yaml');
+      // For shadowlink tests: start source backend on port ports.backend (existing data)
+      const sourceBackendConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
       await startBackendServerWithConfig(
         network,
         isEnterprise,
         imageTag,
         state,
         sourceBackendConfigPath,
-        3000,
+        ports.backend,
         'console-backend'
       );
 
-      // Start destination backend on port 3001 (where shadowlinks are created)
-      const destBackendConfigPath = resolve(__dirname, 'config/console.dest.config.yaml');
+      // Start destination backend on port ports.backendDest (where shadowlinks are created)
+      const destBackendConfigPath = resolve(__dirname, 'console.dest.config.yaml');
       await startBackendServerWithConfig(
         network,
         isEnterprise,
         imageTag,
         state,
         destBackendConfigPath,
-        3001,
+        ports.backendDest,
         'console-backend-dest'
       );
     } else {
       // Normal setup - single backend on existing cluster
-      await startBackendServer(network, isEnterprise, imageTag, state, devMode);
+      await startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports);
     }
 
     // Wait for services to be ready
-    const backendPort = devMode ? 9090 : 3000;
-    console.log(`Waiting for backend to be ready on port ${backendPort}...`);
-    await waitForPort(backendPort, 60, 1000);
+    console.log('Waiting for backend to be ready...');
+    await waitForPort(ports.backend, 60, 1000);
     console.log('Backend is ready');
 
-    if (devMode) {
-      console.log('\n⚡ Backend is ready on port 9090');
-      console.log('⚡ Now start FE dev server: bun start');
-      console.log('⚡ Then run Playwright tests - they will use http://localhost:3000\n');
-    } else {
-      console.log('Waiting for frontend to be ready...');
-      await waitForPort(3000, 60, 1000);
-    }
+    console.log('Waiting for frontend to be ready...');
+    await waitForPort(ports.backend, 60, 1000);
 
     // Give services extra time to stabilize in CI (especially shadowlink replication)
-    // Shadowlink needs time to establish connection between clusters and start replication
     if (isEnterprise && needsShadowlink && process.env.CI) {
-      console.log('CI detected: Giving services 30 seconds to stabilize (shadowlink replication)...');
-      await new Promise((resolve) => setTimeout(resolve, 30_000));
+      console.log('CI detected: Giving services 10 seconds to stabilize...');
+      await new Promise((resolve) => setTimeout(resolve, 10_000));
       console.log('✓ Stabilization period complete');
     }
 
-    writeFileSync(getStateFile(isEnterprise), JSON.stringify(state, null, 2));
+    writeFileSync(getStateFile(variantName), JSON.stringify(state, null, 2));
 
     console.log('\n✅ All services ready! Starting tests...\n');
   } catch (error) {

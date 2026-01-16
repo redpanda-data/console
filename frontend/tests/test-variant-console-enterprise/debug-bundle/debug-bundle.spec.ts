@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { DebugBundlePage } from '../../console/utils/debug-bundle-page';
+import { DebugBundlePage } from '../../test-variant-console/utils/debug-bundle-page';
 
 /**
  * Debug Bundle E2E Tests
