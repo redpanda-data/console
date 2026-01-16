@@ -288,9 +288,9 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     icon: ShieldIcon,
     visibilityCheck: routeVisibility(() => {
       if (isEmbedded()) {
-        return isFeatureFlagEnabled('shadowlinkCloudUi');
+        return isFeatureFlagEnabled('shadowlinkCloudUi') && !isServerless();
       }
-      return true;
+      return true; // self-hosted always visible
     }),
   },
   {
