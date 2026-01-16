@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { useColorMode } from '@redpanda-data/ui';
 import { Link, useLocation } from '@tanstack/react-router';
 import { Avatar, AvatarFallback, AvatarImage } from 'components/redpanda-ui/components/avatar';
 import {
@@ -39,10 +38,8 @@ import type React from 'react';
 import { useEffect, useState } from 'react';
 import { createVisibleSidebarItems } from 'utils/route-utils';
 
-import RedpandaIconColor from '../../assets/logos/redpanda-icon-color.svg';
-import RedpandaIconWhite from '../../assets/logos/redpanda-icon-white.svg';
-import RedpandaTextColor from '../../assets/logos/redpanda-text-color.svg';
-import RedpandaTextWhite from '../../assets/logos/redpanda-text-white.svg';
+import RedpandaIcon from '../../assets/redpanda/redpanda-icon-next.svg';
+import RedpandaLogoWhite from '../../assets/redpanda/redpanda-logo-next-white.svg';
 import { AuthenticationMethod } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { api } from '../../state/backend-api';
 import { AppFeatures } from '../../utils/env';
@@ -52,17 +49,12 @@ import { Text } from '../redpanda-ui/components/typography';
 
 function SidebarLogo() {
   const { state, isMobile } = useSidebar();
-  const { colorMode } = useColorMode();
 
   const isExpanded = isMobile || state === 'expanded';
-  const isDark = colorMode === 'dark';
-
-  const fullLogo = isDark ? RedpandaTextWhite : RedpandaTextColor;
-  const iconLogo = isDark ? RedpandaIconWhite : RedpandaIconColor;
 
   return (
     <Link aria-label="Go to Overview" className="flex items-center" to="/overview">
-      <img alt="" className={isExpanded ? 'h-6' : 'h-6 w-6'} src={isExpanded ? fullLogo : iconLogo} />
+      <img alt="" className={isExpanded ? 'h-6' : 'h-6 w-6'} src={isExpanded ? RedpandaLogoWhite : RedpandaIcon} />
     </Link>
   );
 }
