@@ -325,7 +325,7 @@ const SpanRow: FC<SpanRowProps> = ({
   const barWidth = calculateWidth(span.duration, timeline);
 
   // Calculate span timestamp
-  const startOffsetMs = Number((span.startTime - timeline.minTime) / 1_000_000n);
+  const startOffsetMs = Number(span.startTime - timeline.minTime) / 1_000_000;
   const spanTimestamp = new Date(baseTimestamp.getTime() + startOffsetMs);
 
   const Icon = getIconForServiceName(span.span);
