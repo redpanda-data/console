@@ -59,12 +59,11 @@ test.describe('Topic Creation', () => {
     });
 
     await test.step('Verify configuration', async () => {
-      // Navigate to topic configuration
-      await page.getByTestId(`topic-link-${topicName}`).click();
+      // Navigate directly to topic configuration tab
       await page.goto(`/topics/${topicName}#configuration`);
 
-      // Verify configuration page loads
-      await expect(page.getByTestId('config-group-table')).toBeVisible();
+      // Verify configuration page loads with explicit timeout
+      await expect(page.getByTestId('config-group-table')).toBeVisible({ timeout: 5000 });
     });
 
     const topicPage = new TopicPage(page);

@@ -39,6 +39,7 @@ import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs'
 import { Link, useNavigate } from '@tanstack/react-router';
 import { EditIcon, MoreHorizontalIcon, TrashIcon } from 'components/icons';
 import { isServerless } from 'config';
+import { observer } from 'mobx-react';
 import { parseAsString } from 'nuqs';
 import {
   ACL_Operation,
@@ -90,18 +91,25 @@ const { ToastContainer, toast } = createStandaloneToast({
 
 export type AclListTab = 'users' | 'roles' | 'acls' | 'permissions-list';
 
-const getCreateUserButtonProps = () => ({
-  isDisabled: !(api.isAdminApiConfigured && Features.createUser) || api.userData?.canManageUsers === false,
-  tooltip: [
-    !api.isAdminApiConfigured && 'The Redpanda Admin API is not configured.',
-    !Features.createUser && "Your cluster doesn't support this feature.",
-    api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
-  ]
-    .filter(Boolean)
-    .join(' '),
-});
+const getCreateUserButtonProps = () => {
+  const hasRBAC = api.userData?.canManageUsers !== undefined;
 
-const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
+  return {
+    isDisabled:
+      !(api.isAdminApiConfigured && Features.createUser) || (hasRBAC && api.userData?.canManageUsers === false),
+    tooltip: [
+      !api.isAdminApiConfigured && 'The Redpanda Admin API is not configured.',
+      !Features.createUser && "Your cluster doesn't support this feature.",
+      hasRBAC &&
+        api.userData?.canManageUsers === false &&
+        'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
+    ]
+      .filter(Boolean)
+      .join(' '),
+  };
+};
+
+const AclList: FC<{ tab?: AclListTab }> = observer(({ tab }: { tab?: AclListTab }) => {
   const { data: usersData, isLoading: isUsersLoading } = useLegacyListUsersQuery(undefined, {
     enabled: api.isAdminApiConfigured,
   });
@@ -160,7 +168,9 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
       isDisabled:
         (!api.isAdminApiConfigured && 'The Redpanda Admin API is not configured.') ||
         (!Features.createUser && "Your cluster doesn't support this feature.") ||
-        (api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
+        (api.userData?.canManageUsers !== undefined &&
+          api.userData?.canManageUsers === false &&
+          'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
     },
     isServerless()
       ? null
@@ -208,7 +218,7 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
       </PageContent>
     </>
   );
-};
+});
 
 export default AclList;
 
