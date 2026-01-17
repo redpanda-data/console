@@ -1252,7 +1252,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             onRequireRawPayload={() => executeMessageSearch()}
           />
 
-          <ColumnSettings getShowDialog={() => showColumnSettingsModal} setShowDialog={setShowColumnSettingsModal} />
+          <ColumnSettings
+            getShowDialog={() => showColumnSettingsModal}
+            setShowDialog={setShowColumnSettingsModal}
+            topicName={props.topic.topicName}
+          />
 
           <PreviewFieldsModal
             getShowDialog={() => showPreviewFieldsModal}
