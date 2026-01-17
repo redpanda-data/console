@@ -25,27 +25,32 @@ import {
   Stack,
   Text,
 } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 import type { FC } from 'react';
 
 import type { ColumnList, TimestampDisplayFormat } from '../../../../../state/ui';
-import { uiState } from '../../../../../state/ui-state';
+import { useTopicSettingsStore } from '../../../../../stores/topic-settings-store';
 import { Label, TimestampDisplay } from '../../../../../utils/tsx-utils';
 import { SingleSelect } from '../../../../misc/select';
+
+const COLUMN_SETTINGS: ColumnList[] = [
+  { title: 'Offset', dataIndex: 'offset' },
+  { title: 'Partition', dataIndex: 'partitionID' },
+  { title: 'Timestamp', dataIndex: 'timestamp' },
+  { title: 'Key', dataIndex: 'key' },
+  { title: 'Value', dataIndex: 'value' },
+  { title: 'Key Size', dataIndex: 'keySize' },
+  { title: 'Value Size', dataIndex: 'valueSize' },
+];
 
 export const ColumnSettings: FC<{
   getShowDialog: () => boolean;
   setShowDialog: (val: boolean) => void;
-}> = observer(({ getShowDialog, setShowDialog }) => {
-  const columnSettings: ColumnList[] = [
-    { title: 'Offset', dataIndex: 'offset' },
-    { title: 'Partition', dataIndex: 'partitionID' },
-    { title: 'Timestamp', dataIndex: 'timestamp' },
-    { title: 'Key', dataIndex: 'key' },
-    { title: 'Value', dataIndex: 'value' },
-    { title: 'Key Size', dataIndex: 'keySize' },
-    { title: 'Value Size', dataIndex: 'valueSize' },
-  ];
+  topicName: string;
+}> = ({ getShowDialog, setShowDialog, topicName }) => {
+  const { perTopicSettings, setTopicSettings, getTopicSettings } = useTopicSettingsStore();
+  const topicSettings = perTopicSettings.find((t) => t.topicName === topicName);
+  const previewColumnFields = topicSettings?.previewColumnFields ?? [];
+  const previewTimestamps = topicSettings?.previewTimestamps ?? 'default';
 
   return (
     <Modal
@@ -63,22 +68,25 @@ export const ColumnSettings: FC<{
           <Box my={6}>
             <Label text="Columns shown">
               <Stack direction="row" spacing={5}>
-                {columnSettings.map(({ title, dataIndex }) => (
+                {COLUMN_SETTINGS.map(({ title, dataIndex }) => (
                   <Checkbox
-                    isChecked={!!uiState.topicSettings.previewColumnFields.find((x) => x.dataIndex === dataIndex)}
+                    isChecked={previewColumnFields.some((x) => x.dataIndex === dataIndex)}
                     key={dataIndex}
                     onChange={({ target: { checked } }) => {
+                      const currentFields = getTopicSettings(topicName)?.previewColumnFields ?? [];
+
+                      let newFields: ColumnList[];
                       if (checked) {
-                        uiState.topicSettings.previewColumnFields.pushDistinct({
-                          title,
-                          dataIndex,
-                        });
+                        // Add column if not already present (prevent duplicates)
+                        newFields = currentFields.some((f) => f.dataIndex === dataIndex)
+                          ? currentFields
+                          : [...currentFields, { title, dataIndex }];
                       } else {
-                        const idxToRemove = uiState.topicSettings.previewColumnFields.findIndex(
-                          (x) => x.dataIndex === dataIndex
-                        );
-                        uiState.topicSettings.previewColumnFields.splice(idxToRemove, 1);
+                        // Remove column
+                        newFields = currentFields.filter((x) => x.dataIndex !== dataIndex);
                       }
+
+                      setTopicSettings(topicName, { previewColumnFields: newFields });
                     }}
                     size="lg"
                   >
@@ -90,7 +98,7 @@ export const ColumnSettings: FC<{
             <Button
               mt={2}
               onClick={() => {
-                uiState.topicSettings.previewColumnFields = [];
+                setTopicSettings(topicName, { previewColumnFields: [] });
               }}
               // we need to pass this using sx to increase specificity, using p={0} won't work
               sx={{ padding: 0 }}
@@ -104,7 +112,7 @@ export const ColumnSettings: FC<{
               <Label text="Timestamp format">
                 <SingleSelect<TimestampDisplayFormat>
                   onChange={(e) => {
-                    uiState.topicSettings.previewTimestamps = e;
+                    setTopicSettings(topicName, { previewTimestamps: e });
                   }}
                   options={[
                     { label: 'Local DateTime', value: 'default' },
@@ -114,13 +122,13 @@ export const ColumnSettings: FC<{
                     { label: 'Local Time', value: 'onlyTime' },
                     { label: 'Unix Millis', value: 'unixMillis' },
                   ]}
-                  value={uiState.topicSettings.previewTimestamps}
+                  value={previewTimestamps}
                 />
               </Label>
             </GridItem>
             <GridItem>
               <Label text="Preview">
-                <TimestampDisplay format={uiState.topicSettings.previewTimestamps} unixEpochMillisecond={Date.now()} />
+                <TimestampDisplay format={previewTimestamps} unixEpochMillisecond={Date.now()} />
               </Label>
             </GridItem>
           </Grid>
@@ -138,4 +146,4 @@ export const ColumnSettings: FC<{
       </ModalContent>
     </Modal>
   );
-});
+};
