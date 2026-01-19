@@ -11,6 +11,7 @@
     "ignoreUnknown": false,
     "includes": [
       "**/*",
+      "!**/node_modules",
       "!**/routeTree.gen.ts",
       "!**/protogen",
       "!**/protogen/**/*",
