@@ -207,16 +207,18 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 	}
 
 	// OSS defaults
-	endpoints = append(endpoints, EndpointCompatibilityEndpoint{
-		Endpoint:    consolev1alpha1connect.PipelineServiceName,
-		Method:      "POST",
-		IsSupported: false,
-	})
-	endpoints = append(endpoints, EndpointCompatibilityEndpoint{
-		Endpoint:    dataplanev1alpha3connect.TracingServiceName,
-		Method:      "POST",
-		IsSupported: false,
-	})
+	endpoints = append(endpoints,
+		EndpointCompatibilityEndpoint{
+			Endpoint:    consolev1alpha1connect.PipelineServiceName,
+			Method:      "POST",
+			IsSupported: false,
+		},
+		EndpointCompatibilityEndpoint{
+			Endpoint:    dataplanev1alpha3connect.TracingServiceName,
+			Method:      "POST",
+			IsSupported: false,
+		},
+	)
 
 	return EndpointCompatibility{
 		KafkaClusterVersion: clusterVersion,
