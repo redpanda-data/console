@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from 'components/redpanda-ui/components/alert-dialog';
-import type { ButtonProps } from 'components/redpanda-ui/components/button';
+import type { ButtonVariants } from 'components/redpanda-ui/components/button';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DropdownMenuItem } from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
@@ -42,7 +42,7 @@ export type DeleteResourceAlertDialogProps = {
   // Trigger variant: "dropdown" renders a DropdownMenuItem, "button" renders a Button
   triggerVariant?: 'dropdown' | 'button';
   // Button-specific props when triggerVariant is "button"
-  buttonVariant?: ButtonProps['variant'];
+  buttonVariant?: ButtonVariants['variant'];
   buttonIcon?: React.ReactNode;
   buttonText?: string;
 };
@@ -56,7 +56,7 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
   isDeleting,
   children,
   triggerVariant = 'dropdown',
-  buttonVariant = 'destructiveOutline',
+  buttonVariant = 'destructive-outline',
   buttonIcon,
   buttonText = 'Delete',
 }) => {

@@ -140,7 +140,7 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(...steps: Steps): 
                   "rounded-full",
                   isActive && 'ring-3 ring-secondary/20'
                 )}
-                variant={dataState !== 'inactive' ? 'secondary' : 'secondaryOutline'}
+                variant={dataState !== 'inactive' ? 'secondary' : 'secondary-outline'}
                 size="icon"
                 aria-controls={`step-panel-${props.of}`}
                 aria-current={isActive ? 'step' : undefined}

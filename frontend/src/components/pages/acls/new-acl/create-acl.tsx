@@ -176,7 +176,7 @@ const ResourceTypeSelection = ({
                 key={`rt-${resourceType}-button-${ruleIndex}`}
                 onClick={() => handleResourceTypeChange(rule.id, resourceType)}
                 size="sm"
-                variant={rule.resourceType === resourceType ? 'default' : 'ghost'}
+                variant={rule.resourceType === resourceType ? 'primary' : 'ghost'}
               >
                 {name}
               </Button>

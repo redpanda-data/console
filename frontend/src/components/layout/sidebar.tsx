@@ -116,7 +116,7 @@ const UserProfile = observer(() => {
           <SidebarMenuButton
             aria-label={`User menu for ${user.displayName}`}
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            size={isCollapsed ? 'default' : 'lg'}
+            size={isCollapsed ? 'md' : 'lg'}
             tooltip={isCollapsed ? user.displayName : undefined}
           >
             <Avatar className={isCollapsed ? 'h-7 w-7 shrink-0' : 'h-8 w-8 shrink-0'}>

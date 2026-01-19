@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Badge } from 'components/redpanda-ui/components/badge';
+import { Badge, type BadgeVariant } from 'components/redpanda-ui/components/badge';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { ScrollArea } from 'components/redpanda-ui/components/scroll-area';
 import { Pre } from 'components/redpanda-ui/components/typography';
@@ -46,9 +46,9 @@ export const ConversationTab: FC<Props> = ({ trace }) => {
           const isAssistant = message.role === 'assistant';
           const isSystem = message.role === 'system';
 
-          let badgeVariant: 'default-inverted' | 'secondary-inverted' | 'outline' = 'outline';
+          let badgeVariant: BadgeVariant = 'outline';
           if (isUser) {
-            badgeVariant = 'default-inverted';
+            badgeVariant = 'neutral-inverted';
           } else if (isAssistant) {
             badgeVariant = 'secondary-inverted';
           }

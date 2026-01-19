@@ -113,7 +113,7 @@ export function Details({ readonly = false, pipeline }: DetailsProps) {
         />
 
         <Accordion collapsible type="single">
-          <AccordionItem value="advanced" variant="contained">
+          <AccordionItem value="advanced">
             <AccordionTrigger>Advanced settings</AccordionTrigger>
             <AccordionContent className="space-y-4 pt-4">
               <FormField

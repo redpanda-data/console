@@ -170,18 +170,24 @@ const buttonVariants = (isNewThemeEnabled?: boolean) =>
 
 export type ButtonVariants = VariantProps<ReturnType<typeof buttonVariants>>;
 
+export type ButtonProps = React.ComponentProps<'button'> &
+  ButtonVariants & {
+    asChild?: boolean;
+    as?: ElementType;
+    to?: string;
+    icon?: React.ReactNode;
+    // Support anchor element props when as="a"
+    href?: string;
+    target?: string;
+    rel?: string;
+  } & SharedProps;
+
 const Button = React.forwardRef<
 	HTMLButtonElement,
-	React.ComponentProps<"button"> &
-		ButtonVariants &
-		SharedProps & {
-			asChild?: boolean;
-			as?: ElementType;
-			to?: string;
-		}
+	ButtonProps
 >(
 	(
-		{ className, variant, size, asChild = false, testId, as, to, ...props },
+		{ className, variant, size, asChild = false, testId, as, to, icon, children, ...props },
 		ref,
 	) => {
 		const Comp = as ?? (asChild ? SlotPrimitive.Slot : "button");
@@ -209,7 +215,10 @@ const Button = React.forwardRef<
 				ref={ref}
 				to={to}
 				{...props}
-			/>
+			>
+				{children}
+				{icon ? <span className="size-4">{icon}</span> : null}
+			</Comp>
 		);
 	},
 );

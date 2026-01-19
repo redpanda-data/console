@@ -213,7 +213,7 @@ export const AddSecretsCard = ({
           )}
           <Button
             onClick={() => setIsSecretsDialogOpen(true)}
-            size={existingSecrets.length > 0 ? 'sm' : 'default'}
+            size={existingSecrets.length > 0 ? 'sm' : 'md'}
             variant="outline"
           >
             {existingSecrets.length > 0 ? 'Add more secrets' : 'Add secret'}
