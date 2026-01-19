@@ -183,6 +183,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 onClick={() => setShowPassword(!showPassword)}
                 type="button"
                 variant="ghost"
+                size="icon-lg"
               >
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </Button>

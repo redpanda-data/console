@@ -79,7 +79,7 @@ const Footer = memo(({ mode, onSave, onCancel, isSaving, disabled }: FooterProps
   if (mode === 'view') {
     return (
       <div className="flex items-center justify-between gap-2 border-t pt-4">
-        <Button onClick={onCancel} variant="outline">
+        <Button onClick={onCancel} variant="secondary-ghost">
           Cancel
         </Button>
       </div>
@@ -88,7 +88,7 @@ const Footer = memo(({ mode, onSave, onCancel, isSaving, disabled }: FooterProps
 
   return (
     <div className="flex items-center justify-between gap-2 border-t pt-4">
-      <Button disabled={isSaving} onClick={onCancel} variant="outline">
+      <Button disabled={isSaving} onClick={onCancel} variant="secondary-ghost">
         Cancel
       </Button>
       <Button className="min-w-[70px]" disabled={isSaving || disabled} onClick={onSave}>
@@ -512,7 +512,7 @@ export default function PipelinePage() {
 
       {mode !== 'view' && Object.keys(lintHints).length > 0 && (
         <div className="mt-4">
-          <Alert variant="destructive">
+          <Alert icon={undefined} variant="destructive">
             <AlertDescription>
               <LintHintList className="w-full" isPending={isLinting} lintHints={lintHints} />
             </AlertDescription>

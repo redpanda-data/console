@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
+import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Heading, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import {
@@ -370,21 +371,32 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                 <div className="flex flex-col gap-2">
                   <FormLabel>Authentication Method</FormLabel>
                   <FormDescription>Choose how to authenticate the pipeline with your Redpanda cluster</FormDescription>
-                  <ToggleGroup
-                    disabled={isPending || isServiceAccountPending}
+                  <Tabs
                     onValueChange={(value) => {
                       if (!value) {
                         return;
                       }
                       setAuthMethod(value as AuthenticationMethodType);
                     }}
-                    type="single"
                     value={authMethod}
-                    variant="outline"
                   >
-                    <ToggleGroupItem value={AuthenticationMethod.SASL}>SASL User</ToggleGroupItem>
-                    <ToggleGroupItem value={AuthenticationMethod.SERVICE_ACCOUNT}>Service Account</ToggleGroupItem>
-                  </ToggleGroup>
+                    <TabsList variant="underline">
+                      <TabsTrigger
+                        disabled={isPending || isServiceAccountPending}
+                        value={AuthenticationMethod.SASL}
+                        variant="underline"
+                      >
+                        SASL User
+                      </TabsTrigger>
+                      <TabsTrigger
+                        disabled={isPending || isServiceAccountPending}
+                        value={AuthenticationMethod.SERVICE_ACCOUNT}
+                        variant="underline"
+                      >
+                        Service Account
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
                 </div>
               )}
 
@@ -545,14 +557,19 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                             </FormDescription>
                             <FormControl>
                               <Group>
-                                <Input type="password" {...field} className="w-[300px]" />
-                                <CopyButton content={field.value} disabled={isReadOnly} size="icon" variant="outline" />
+                                <Input containerClassName="max-w-[300px]" type="password" {...field} />
+                                <CopyButton
+                                  content={field.value}
+                                  disabled={isReadOnly}
+                                  size="icon-sm"
+                                  variant="outline"
+                                />
                                 <Button
                                   disabled={isReadOnly}
                                   onClick={generateNewPassword}
-                                  size="icon"
+                                  size="icon-sm"
                                   type="button"
-                                  variant="outline"
+                                  variant="secondary-outline"
                                 >
                                   <RefreshCcw size={15} />
                                 </Button>
@@ -565,14 +582,20 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                               control={form.control}
                               name="specialCharactersEnabled"
                               render={({ field: specialCharsField }) => (
-                                <Label className="flex-row items-center font-normal text-muted-foreground">
+                                <div className="flex flex-row items-center gap-2">
                                   <Checkbox
                                     checked={specialCharsField.value}
+                                    id="specialCharactersEnabled"
                                     onCheckedChange={(val) => handleSpecialCharsChange(val, specialCharsField.onChange)}
                                     {...field}
                                   />
-                                  Generate with special characters
-                                </Label>
+                                  <Label
+                                    className="font-normal text-muted-foreground"
+                                    htmlFor="specialCharactersEnabled"
+                                  >
+                                    Generate with special characters
+                                  </Label>
+                                </div>
                               )}
                             />
                           </FormItem>
@@ -755,16 +778,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
 
               {authMethod === AuthenticationMethod.SERVICE_ACCOUNT && (
                 <div className="space-y-4">
-                  <Alert>
-                    <CircleAlert className="h-4 w-4" />
-                    <AlertTitle>Service Account Authentication</AlertTitle>
-                    <AlertDescription>
-                      A service account will be created with Writer role permissions on the cluster. Credentials are
-                      stored securely and referenced in the pipeline configuration.
-                    </AlertDescription>
-                  </Alert>
-
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-1.5">
                     <FormLabel htmlFor="serviceAccountName">Service Account Name</FormLabel>
                     <FormDescription>
                       Auto-generated name for the service account. You can customize it if needed.
@@ -787,6 +801,14 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                     secretScopes={[Scope.REDPANDA_CONNECT]}
                     serviceAccountName={serviceAccountName}
                   />
+
+                  <Alert variant="warning">
+                    <AlertTitle>Service Account Authentication</AlertTitle>
+                    <AlertDescription>
+                      A service account will be created with Writer role permissions on the cluster. Credentials are
+                      stored securely and referenced in the pipeline configuration.
+                    </AlertDescription>
+                  </Alert>
                 </div>
               )}
             </div>

@@ -22,7 +22,7 @@ import {
 import { Group } from 'components/redpanda-ui/components/group';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { AlertCircle, Check, ChevronDown, Loader2, Pause, Pencil, Play, RotateCcw } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, Loader2, Pause, Pencil, Play, RotateCcw, Trash } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
   StartPipelineRequestSchema,
@@ -279,10 +279,10 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
       <div>
         <Group className="items-center">
           {renderActionButton()}
-          <Button icon={<Pencil />} onClick={handleEdit} variant="outline">
-            Edit
-          </Button>
+          <Button icon={<Pencil />} onClick={handleEdit} size="icon" variant="outline" />
           <DeleteResourceAlertDialog
+            buttonIcon={<Trash />}
+            buttonText={undefined}
             isDeleting={isDeletePending}
             onDelete={handleDelete}
             resourceId={pipelineId}

@@ -418,8 +418,8 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                     </div>
                   ) : (
                     <>
-                      <Plus className="h-4 w-4" />
                       {newlyCreatedSecrets.length > 0 ? 'Create Another Secret' : 'Create Secret'}
+                      <Plus className="h-4 w-4" />
                     </>
                   )}
                 </Button>

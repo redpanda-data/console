@@ -383,9 +383,9 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
         <MCPDataTableToolbar table={table} />
         <div className="flex items-center justify-between">
           <DataTableViewOptions table={table} />
-          <Button onClick={() => navigate({ to: '/mcp-servers/create' })} size="sm" variant="secondary">
-            <Plus className="h-4 w-4" />
+          <Button onClick={() => navigate({ to: '/mcp-servers/create' })}>
             Create MCP Server
+            <Plus className="h-4 w-4" />
           </Button>
         </div>
         <Table>

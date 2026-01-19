@@ -69,7 +69,7 @@ const buttonVariants = (isNewThemeEnabled?: boolean) =>
 						"disabled:bg-surface-inverse-disabled disabled:text-disabled",
 					],
 					outline: [
-						"!border-outline-primary border text-primary-inverse shadow-xs",
+						"!border-outline-primary border text-primary shadow-xs",
 						"hover:border-outline-primary-hover hover:bg-primary-alpha-subtle",
 						"active:border-outline-primary-pressed active:bg-primary-alpha-subtle-default",
 						"disabled:border-outline-inverse-disabled disabled:text-disabled",
@@ -208,6 +208,7 @@ const Button = React.forwardRef<
 				className={cn(
 					buttonVariants(isNewThemeEnabled)({ variant, size, className }),
 					positionClasses,
+					icon && "flex items-center gap-2",
 					className,
 				)}
 				data-slot="button"
@@ -217,7 +218,7 @@ const Button = React.forwardRef<
 				{...props}
 			>
 				{children}
-				{icon ? <span className="size-4">{icon}</span> : null}
+				{icon ? {icon} : null}
 			</Comp>
 		);
 	},

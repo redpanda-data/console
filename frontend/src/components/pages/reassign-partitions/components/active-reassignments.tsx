@@ -347,7 +347,7 @@ const CancelReassignmentButton: FC<{ onConfirm: () => void }> = ({ onConfirm }) 
         <PopoverFooter display="flex" justifyContent="flex-end">
           <ButtonGroup size="sm">
             <Button variant="ghost">No</Button>
-            <Button colorScheme="red" onClick={onConfirm}>
+            <Button onClick={onConfirm} variant="solid">
               Yes
             </Button>
           </ButtonGroup>

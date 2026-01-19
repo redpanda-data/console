@@ -332,7 +332,7 @@ function SidebarTrigger({ className, onClick, ...props }: SidebarTriggerProps) {
 				toggleSidebar();
 			}}
 			size="icon"
-			variant="ghost"
+			variant="secondary-ghost"
 			{...props}
 		>
 			<PanelLeftIcon />

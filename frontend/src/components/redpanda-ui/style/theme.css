@@ -397,8 +397,8 @@
   /* Surface Base */
   --color-surface-default: var(--color-grey-white);
   --color-surface-default-hover: var(--color-grey-100);
-  --color-surface-subtle: var(--color-grey-100);
-  --color-surface-subtle-hover: var(--color-grey-200);
+  --color-surface-subtle: var(--color-grey-50);
+  --color-surface-subtle-hover: var(--color-grey-100);
   --color-surface-strong: var(--color-grey-200);
   --color-surface-strong-hover: var(--color-grey-300);
 
@@ -407,24 +407,24 @@
   --color-surface-primary-hover: var(--color-indigo-700);
   --color-surface-primary-pressed: var(--color-indigo-800);
   --color-surface-primary-disabled: var(--color-grey-400);
-  --color-surface-primary-subtle: var(--color-indigo-alpha-100);
-  --color-surface-primary-subtle-hover: var(--color-indigo-alpha-200);
+  --color-surface-primary-subtle: var(--color-indigo-alpha-50);
+  --color-surface-primary-subtle-hover: var(--color-indigo-alpha-100);
 
   /* Surface Secondary */
   --color-surface-secondary: var(--color-dark-blue-600);
   --color-surface-secondary-hover: var(--color-dark-blue-800);
   --color-surface-secondary-pressed: var(--color-dark-blue-900);
   --color-surface-secondary-disabled: var(--color-grey-400);
-  --color-surface-secondary-subtle: var(--color-dark-blue-alpha-100);
-  --color-surface-secondary-subtle-hover: var(--color-dark-blue-alpha-200);
+  --color-surface-secondary-subtle: var(--color-dark-blue-alpha-50);
+  --color-surface-secondary-subtle-hover: var(--color-dark-blue-alpha-100);
 
   /* Surface Brand (4 states) */
   --color-surface-brand: var(--color-primary-brand-600);
   --color-surface-brand-hover: var(--color-primary-brand-700);
   --color-surface-brand-pressed: var(--color-primary-brand-800);
   --color-surface-brand-disabled: var(--color-grey-400);
-  --color-surface-brand-subtle: var(--color-primary-brand-alpha-100);
-  --color-surface-brand-subtle-hover: var(--color-primary-brand-alpha-200);
+  --color-surface-brand-subtle: var(--color-primary-brand-alpha-50);
+  --color-surface-brand-subtle-hover: var(--color-primary-brand-alpha-100);
 
   /* Surface Inverse (4 states) */
   --color-surface-inverse: var(--color-grey-white);
@@ -461,16 +461,16 @@
   --color-surface-success-hover: var(--color-green-700);
   --color-surface-success-pressed: var(--color-green-800);
   --color-surface-success-disabled: var(--color-grey-400);
-  --color-surface-success-subtle: var(--color-green-100);
-  --color-surface-success-subtle-hover: var(--color-green-200);
+  --color-surface-success-subtle: var(--color-green-50);
+  --color-surface-success-subtle-hover: var(--color-green-100);
 
   /* Surface Informative (4 states) */
   --color-surface-informative: var(--color-blue-600);
   --color-surface-informative-hover: var(--color-blue-700);
   --color-surface-informative-pressed: var(--color-blue-800);
   --color-surface-informative-disabled: var(--color-grey-400);
-  --color-surface-informative-subtle: var(--color-blue-100);
-  --color-surface-informative-subtle-hover: var(--color-blue-200);
+  --color-surface-informative-subtle: var(--color-blue-50);
+  --color-surface-informative-subtle-hover: var(--color-blue-100);
 
   /* ===================================================================
      OPACITY/ALPHA SEMANTIC COLORS (Light Mode)

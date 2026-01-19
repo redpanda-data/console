@@ -368,7 +368,7 @@ const AclRules = ({
                   data-testid={`remove-rule-button-${getRuleDataTestId(rule)}`}
                   onClick={() => removeRule(rule.id)}
                   size="icon"
-                  variant="ghost"
+                  variant="destructive-ghost"
                 >
                   <Trash2 />
                 </Button>
@@ -1095,11 +1095,11 @@ export default function CreateACL({
             <div className="lg:col-span-1">
               <div className="sticky top-20">
                 <div className="mb-2 flex h-10 justify-end gap-2">
-                  <Button className="sticky border-gray-300 text-gray-700" onClick={onCancel} variant="outline">
+                  <Button className="sticky" onClick={onCancel} variant="secondary-ghost">
                     Cancel
                   </Button>
                   <Button
-                    className="sticky bg-gray-900 text-white hover:bg-gray-800"
+                    className="sticky"
                     data-testid="submit-acl-button"
                     disabled={!!principalError || !isValidRule}
                     onClick={() => {

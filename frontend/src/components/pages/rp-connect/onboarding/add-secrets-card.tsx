@@ -154,7 +154,7 @@ export const AddSecretsCard = ({
                       className="cursor-pointer font-mono hover:opacity-80"
                       key={secret}
                       onClick={() => handleSecretClick(secret)}
-                      variant="secondary"
+                      variant="neutral-inverted"
                     >
                       {`\${secrets.${secret}}`}
                     </Badge>
@@ -170,7 +170,7 @@ export const AddSecretsCard = ({
                         className="cursor-pointer font-mono hover:opacity-80"
                         key={secret}
                         onClick={() => handleSecretClick(secret)}
-                        variant="secondary"
+                        variant="neutral-inverted"
                       >
                         {`\${secrets.${secret}}`}
                       </Badge>

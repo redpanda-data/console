@@ -152,9 +152,9 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
                         disabled={isDeleting}
                         onClick={() => handleRemoveUser(member.principal)}
                         size="sm"
-                        variant="ghost"
+                        variant="destructive-ghost"
                       >
-                        <Trash2 className="h-4 w-4 text-red-600" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   );
@@ -195,8 +195,14 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
                   >
                     <Check className="h-4 w-4 text-green-600" />
                   </Button>
-                  <Button className="px-2" disabled={isSubmitting} onClick={handleCancel} size="sm" variant="ghost">
-                    <X className="h-4 w-4 text-red-600" />
+                  <Button
+                    className="px-2"
+                    disabled={isSubmitting}
+                    onClick={handleCancel}
+                    size="sm"
+                    variant="destructive-ghost"
+                  >
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
               ) : (

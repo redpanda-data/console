@@ -268,7 +268,7 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
             onClick={() => {
               setIsOpen(false);
             }}
-            variant="ghost"
+            variant="secondary-ghost"
           >
             Cancel
           </Button>

@@ -311,10 +311,11 @@ export const ConnectTiles = memo(
               {!hideFilters && (
                 <div className="sticky top-0 z-10 mb-0 flex flex-col gap-4 border-b-2 bg-background pt-2 pb-4">
                   <div className="flex gap-4">
-                    <Label className="w-[240px]">
-                      Search connectors
+                    <div className="flex w-[240px] flex-col gap-1.5">
+                      <Label htmlFor="search-connectors">Search connectors</Label>
                       <Input
                         className="flex-1"
+                        id="search-connectors"
                         onChange={(e) => {
                           setFilter(e.target.value);
                         }}
@@ -325,11 +326,12 @@ export const ConnectTiles = memo(
                           <SearchIcon className="size-4" />
                         </InputStart>
                       </Input>
-                    </Label>
-                    <Label className="w-[240px]">
-                      Categories
+                    </div>
+                    <div className="flex w-[240px] flex-col gap-1.5">
+                      <Label htmlFor="categories-filter">Categories</Label>
                       <SimpleMultiSelect
                         container={document.getElementById('rp-connect-onboarding-wizard') ?? undefined}
+                        id="categories-filter"
                         onValueChange={setSelectedCategories}
                         options={categories.map((category) => ({
                           value: category.id,
@@ -339,7 +341,7 @@ export const ConnectTiles = memo(
                         value={selectedCategories}
                         width="full"
                       />
-                    </Label>
+                    </div>
                   </div>
                 </div>
               )}

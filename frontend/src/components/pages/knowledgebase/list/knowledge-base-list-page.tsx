@@ -488,9 +488,9 @@ export const KnowledgeBaseListPage = () => {
       <KnowledgeBaseDataTableToolbar table={table} />
       <div className="flex items-center justify-between">
         <DataTableViewOptions table={table} />
-        <Button onClick={() => navigate({ to: '/knowledgebases/create' })} size="sm" variant="secondary">
-          <Plus className="h-4 w-4" />
+        <Button onClick={() => navigate({ to: '/knowledgebases/create' })}>
           Create Knowledge Base
+          <Plus className="h-4 w-4" />
         </Button>
       </div>
       <Table>

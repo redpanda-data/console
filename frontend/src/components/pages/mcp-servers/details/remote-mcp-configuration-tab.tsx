@@ -648,19 +648,19 @@ export const RemoteMCPConfigurationTab = () => {
                 <div className="space-y-6">
                   <div className="space-y-4">
                     <div className="space-y-4">
-                      <div className="space-y-2">
+                      <div className="flex flex-col gap-1.5">
                         <Label htmlFor="id">Server ID</Label>
                         <div className="w-full">
                           <DynamicCodeBlock code={displayData.id} lang="text" />
                         </div>
                       </div>
-                      <div className="space-y-2">
+                      <div className="flex flex-col gap-1.5">
                         <Label htmlFor="serverUrl">Server URL</Label>
                         <div className="w-full">
                           <DynamicCodeBlock code={displayData.url} lang="text" />
                         </div>
                       </div>
-                      <div className="space-y-2">
+                      <div className="flex flex-col gap-1.5">
                         <Label htmlFor="displayName">Display Name</Label>
                         <Input
                           disabled={!isEditing}
@@ -678,7 +678,7 @@ export const RemoteMCPConfigurationTab = () => {
                           value={displayData.displayName}
                         />
                       </div>
-                      <div className="space-y-2">
+                      <div className="flex flex-col gap-1.5">
                         <Label htmlFor="description">Description</Label>
                         <Textarea
                           disabled={!isEditing}
@@ -715,7 +715,7 @@ export const RemoteMCPConfigurationTab = () => {
               <CardContent className="px-4 pb-4">
                 <div className="space-y-6">
                   <div className="space-y-4">
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-1.5">
                       <Label htmlFor="resources">Resources</Label>
                       {isEditing ? (
                         <ResourceTierSelect
@@ -835,8 +835,10 @@ export const RemoteMCPConfigurationTab = () => {
                     <div className="space-y-4">
                       {isEditing ? (
                         <div className="grid grid-cols-1 gap-4 rounded-lg bg-muted/30 p-4 md:grid-cols-3">
-                          <div className="space-y-2">
-                            <Label className="font-medium text-sm">Component Type</Label>
+                          <div className="flex flex-col gap-1.5">
+                            <Label className="font-medium text-sm" htmlFor="component-type">
+                              Component Type
+                            </Label>
                             <Select
                               onValueChange={(value) => {
                                 const componentType = Number.parseInt(
@@ -849,7 +851,7 @@ export const RemoteMCPConfigurationTab = () => {
                               }}
                               value={selectedTool.componentType.toString()}
                             >
-                              <SelectTrigger>
+                              <SelectTrigger id="component-type">
                                 <SelectValue>
                                   <RedpandaConnectComponentTypeBadge componentType={selectedTool.componentType} />
                                 </SelectValue>
@@ -872,9 +874,12 @@ export const RemoteMCPConfigurationTab = () => {
                               </SelectContent>
                             </Select>
                           </div>
-                          <div className="space-y-2">
-                            <Label className="font-medium text-sm">Tool Name</Label>
+                          <div className="flex flex-col gap-1.5">
+                            <Label className="font-medium text-sm" htmlFor="tool-name">
+                              Tool Name
+                            </Label>
                             <Input
+                              id="tool-name"
                               onChange={(e) =>
                                 handleUpdateTool(selectedTool.id, {
                                   name: e.target.value,
@@ -884,8 +889,10 @@ export const RemoteMCPConfigurationTab = () => {
                               value={selectedTool.name}
                             />
                           </div>
-                          <div className="space-y-2">
-                            <Label className="font-medium text-sm">Template</Label>
+                          <div className="flex flex-col gap-1.5">
+                            <Label className="font-medium text-sm" htmlFor="template-select">
+                              Template
+                            </Label>
                             <Select
                               onValueChange={(templateName) => {
                                 const template = templates.find((t) => t.name === templateName);
@@ -895,7 +902,7 @@ export const RemoteMCPConfigurationTab = () => {
                               }}
                               value={selectedTool.selectedTemplate || ''}
                             >
-                              <SelectTrigger>
+                              <SelectTrigger id="template-select">
                                 <SelectValue placeholder="Choose template (optional)">
                                   {selectedTool.selectedTemplate ? (
                                     <div className="flex items-center gap-2">

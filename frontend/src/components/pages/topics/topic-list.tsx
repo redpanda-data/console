@@ -183,7 +183,6 @@ const TopicList: FC = () => {
         <div className="flex items-center justify-between gap-4">
           <Button
             className="min-w-[160px]"
-            colorScheme="brand"
             data-testid="create-topic-button"
             onClick={() => showCreateTopicModal()}
             variant="solid"

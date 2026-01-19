@@ -296,7 +296,6 @@ const SchemaList: FC = () => {
           <Section>
             <Flex justifyContent={'space-between'} pb={3}>
               <Button
-                colorScheme="brand"
                 data-testid="schema-list-create-btn"
                 disabledReason={
                   api.userData?.canCreateSchemas === false
@@ -304,6 +303,7 @@ const SchemaList: FC = () => {
                     : undefined
                 }
                 onClick={() => appGlobal.historyPush('/schema-registry/create')}
+                variant="solid"
               >
                 Create new schema
               </Button>

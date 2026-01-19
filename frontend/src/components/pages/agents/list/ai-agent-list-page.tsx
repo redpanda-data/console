@@ -417,9 +417,9 @@ const AIAgentsListPageContent = ({
         <AIAgentDataTableToolbar table={table} />
         <div className="flex items-center justify-between">
           <DataTableViewOptions table={table} />
-          <Button onClick={() => navigate({ to: '/agents/create' })} size="sm" variant="secondary">
-            <Plus className="h-4 w-4" />
+          <Button onClick={() => navigate({ to: '/agents/create' })}>
             Create AI Agent
+            <Plus className="h-4 w-4" />
           </Button>
         </div>
         <Table>

@@ -430,7 +430,6 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
         >
           <Button
             data-testid="create-user-button"
-            variant="outline"
             {...getCreateUserButtonProps(isAdminApiConfigured)}
             onClick={() => appGlobal.historyPush('/security/users/create')}
           >
@@ -800,7 +799,6 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
               sourceEntries: [],
             });
           }}
-          variant="outline"
         >
           Create ACLs
         </Button>

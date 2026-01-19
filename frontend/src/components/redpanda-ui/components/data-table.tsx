@@ -228,7 +228,7 @@ export function DataTableColumnHeader<TData, TValue>({
     <div className={cn('flex items-center gap-2', className)} data-testid={testId}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="data-[state=open]:bg-accent -ml-3 h-8">
+          <Button variant="secondary-ghost" size="sm" className="data-[state=open]:bg-accent -ml-3 h-8">
             <span>{title}</span>
             {column.getIsSorted() === 'desc' ? (
               <ArrowDown />
@@ -468,7 +468,7 @@ export function DataTableRowActions<TData>({ row }: DataTableRowActionsProps<TDa
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="data-[state=open]:bg-muted size-8">
+        <Button variant="secondary-ghost" size="icon" className="data-[state=open]:bg-muted size-8">
           <MoreHorizontal />
           <span className="sr-only">Open menu</span>
         </Button>
@@ -524,7 +524,7 @@ export function DataTableToolbar<TData>({ table, testId }: DataTableToolbarProps
           <DataTableFacetedFilter column={table.getColumn('priority')} title="Priority" options={priorities} />
         )}
         {isFiltered && (
-          <Button variant="ghost" size="sm" onClick={() => table.resetColumnFilters()}>
+          <Button variant="secondary-ghost" size="sm" onClick={() => table.resetColumnFilters()}>
             Reset
             <X />
           </Button>

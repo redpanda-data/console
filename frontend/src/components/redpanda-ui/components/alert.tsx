@@ -31,9 +31,12 @@ const Alert = React.forwardRef<
 		SharedProps & { icon?: React.ReactNode }
 >(
 	(
-		{ className, variant, testId, icon = <InfoIcon />, children, ...props },
+		{ className, variant, testId, icon: iconProp, children, ...props },
 		ref,
-	) => (
+	) => {
+		const icon = iconProp === undefined ? undefined : <InfoIcon />;
+
+		return (
 		<div
 			className={cn(alertVariants({ variant }), className)}
 			data-slot="alert"
@@ -45,7 +48,7 @@ const Alert = React.forwardRef<
 			{icon}
 			{children}
 		</div>
-	),
+	)},
 );
 
 Alert.displayName = "Alert";

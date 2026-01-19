@@ -117,7 +117,7 @@ export const ContextTrigger = ({ children, ...props }: ContextTriggerProps) => {
   return (
     <HoverCardTrigger asChild>
       {children ?? (
-        <Button type="button" variant="ghost" {...props}>
+        <Button type="button" variant="secondary-ghost" {...props}>
           <span className="font-medium text-muted-foreground">
             {renderedPercent}
           </span>

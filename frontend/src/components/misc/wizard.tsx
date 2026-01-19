@@ -21,7 +21,7 @@ export function Wizard<State extends WizardState>({ state }: { state: State }) {
       <div className={styles.content}>{currentStep.content}</div>
       <div className={styles.footer}>
         {currentStep.nextButtonLabel !== null && (
-          <Button colorScheme="brand" disabled={!state.canContinue()} onClick={state.next} px="8" variant="solid">
+          <Button disabled={!state.canContinue()} onClick={state.next} px="8" variant="solid">
             {currentStep.nextButtonLabel ?? 'Next'}
           </Button>
         )}

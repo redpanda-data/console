@@ -11,62 +11,62 @@ const badgeVariants = cva(
       variant: {
         // === NEUTRAL (Grey - semantic tokens) ===
         neutral:
-          'border-transparent bg-background-inverse-subtle text-inverse [a&]:hover:bg-background-inverse-subtle-hover',
-        'neutral-inverted': 'border-transparent bg-surface-subtle [a&]:hover:bg-background-subtle-hover',
+          '!border-transparent bg-background-inverse-subtle text-inverse [a&]:hover:bg-background-inverse-subtle-hover',
+        'neutral-inverted': '!border-transparent bg-surface-subtle [a&]:hover:bg-background-subtle-hover',
         'neutral-outline': '!border-outline-inverse border [a&]:hover:bg-background-subtle-hover',
 
         // === SIMPLE (Light grey - semantic tokens) ===
         simple: 'text-secondary [a&]:hover:bg-background-subtle-hover',
-        'simple-inverted': 'text-secondary [a&]:hover:bg-background-subtle-hover',
+        'simple-inverted': '!border-transparent text-secondary [a&]:hover:bg-background-subtle-hover',
         'simple-outline': '!border-outline-inverse border text-secondary [a&]:hover:bg-background-subtle-hover',
 
         // === INFO (Blue - semantic tokens) ===
-        info: 'border-transparent bg-surface-informative text-inverse [a&]:hover:bg-surface-informative-hover',
+        info: '!border-transparent bg-surface-informative text-inverse [a&]:hover:bg-surface-informative-hover',
         'info-inverted':
-          'border-transparent bg-surface-informative-subtle text-info [a&]:hover:bg-surface-informative-subtle-hover',
-        'info-outline': 'border-outline-informative bg-transparent text-info [a&]:hover:bg-surface-informative-subtle',
+          '!border-transparent bg-surface-informative-subtle text-info [a&]:hover:bg-surface-informative-subtle-hover',
+        'info-outline': '!border-outline-informative bg-transparent text-info [a&]:hover:bg-surface-informative-subtle',
 
         // === ACCENT (Brand Red - uses theme brand tokens) ===
-        accent: 'border-transparent bg-brand text-brand-foreground [a&]:hover:bg-surface-brand-hover',
-        'accent-inverted': 'border-transparent bg-background-brand-subtle text-brand [a&]:hover:bg-brand-alpha-default',
-        'accent-outline': 'border-outline-brand bg-transparent text-brand [a&]:hover:bg-brand-alpha-subtle',
+        accent: '!border-transparent bg-brand text-brand-foreground [a&]:hover:bg-surface-brand-hover',
+        'accent-inverted': '!border-transparent bg-background-brand-subtle text-brand [a&]:hover:bg-brand-alpha-default',
+        'accent-outline': '!border-outline-brand bg-transparent text-brand [a&]:hover:bg-brand-alpha-subtle',
 
         // === SUCCESS (Green - semantic tokens) ===
-        success: 'border-transparent bg-surface-success text-inverse [a&]:hover:bg-surface-success-hover',
+        success: '!border-transparent bg-surface-success text-inverse [a&]:hover:bg-surface-success-hover',
         'success-inverted':
-          'border-transparent bg-surface-success-subtle text-success [a&]:hover:bg-surface-success-subtle-hover',
-        'success-outline': 'border-outline-success bg-transparent text-success [a&]:hover:bg-surface-success-subtle',
+          '!border-transparent bg-surface-success-subtle text-success [a&]:hover:bg-surface-success-subtle-hover',
+        'success-outline': '!border-outline-success bg-transparent text-success [a&]:hover:bg-surface-success-subtle',
 
         // === WARNING (Yellow/Orange - semantic tokens) ===
-        warning: 'border-transparent bg-surface-warning text-inverse [a&]:hover:bg-surface-warning-hover',
-        'warning-inverted': 'border-transparent bg-background-warning-subtle text-warning [a&]:hover:bg-warning-subtle',
-        'warning-outline': 'border-outline-warning bg-transparent text-warning [a&]:hover:bg-background-warning-subtle',
+        warning: '!border-transparent bg-surface-warning text-inverse [a&]:hover:bg-surface-warning-hover',
+        'warning-inverted': '!border-transparent bg-background-warning-subtle text-warning [a&]:hover:bg-warning-subtle',
+        'warning-outline': '!border-outline-warning bg-transparent text-warning [a&]:hover:bg-background-warning-subtle',
 
         // === DISABLED (Muted - semantic tokens) ===
-        disabled: 'cursor-not-allowed border-transparent bg-background-disabled text-disabled',
-        'disabled-inverted': 'cursor-not-allowed border-transparent bg-surface-subtle text-disabled',
-        'disabled-outline': 'cursor-not-allowed border-border-strong bg-transparent text-disabled',
+        disabled: 'cursor-not-allowed !border-transparent bg-background-disabled text-disabled',
+        'disabled-inverted': 'cursor-not-allowed !border-transparent bg-surface-subtle text-disabled',
+        'disabled-outline': 'cursor-not-allowed !border-border-strong bg-transparent text-disabled',
 
         // === DESTRUCTIVE/ERROR (Red - semantic tokens) ===
         destructive:
-          'border-transparent bg-surface-error text-inverse focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-surface-error-hover',
+          '!border-transparent bg-surface-error text-inverse focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-surface-error-hover',
         'destructive-inverted':
-          'border-transparent bg-background-error-subtle text-destructive [a&]:hover:bg-destructive-subtle',
+          '!border-transparent bg-background-error-subtle text-destructive [a&]:hover:bg-destructive-subtle',
         'destructive-outline':
-          'border-outline-error bg-transparent text-destructive [a&]:hover:bg-background-error-subtle',
+          '!border-outline-error bg-transparent text-destructive [a&]:hover:bg-background-error-subtle',
 
         // === SECONDARY (Dark Blue) ===
-        secondary: 'border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90',
-        'secondary-inverted': 'border-transparent bg-secondary/10 text-secondary [a&]:hover:bg-secondary/20',
-        'secondary-outline': 'border-secondary text-secondary [a&]:hover:bg-secondary/10',
+        secondary: '!border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90',
+        'secondary-inverted': '!border-transparent bg-secondary/10 text-secondary [a&]:hover:bg-secondary/20',
+        'secondary-outline': '!border-secondary text-secondary [a&]:hover:bg-secondary/10',
 
         // === PRIMARY (Indigo) ===
-        primary: 'border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90',
-        'primary-inverted': 'border-transparent bg-primary/10 text-primary [a&]:hover:bg-primary/20',
-        'primary-outline': 'border-primary text-primary [a&]:hover:bg-primary/10',
+        primary: '!border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90',
+        'primary-inverted': '!border-transparent bg-primary/10 text-primary [a&]:hover:bg-primary/20',
+        'primary-outline': '!border-primary text-primary [a&]:hover:bg-primary/10',
 
         // === OUTLINE (generic) ===
-        outline: 'border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
+        outline: '!border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
       },
       size: {
         // Small: 20px height (from Figma)

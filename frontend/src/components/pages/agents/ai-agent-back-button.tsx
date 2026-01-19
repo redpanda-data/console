@@ -15,7 +15,7 @@ import { ArrowLeft } from 'lucide-react';
 
 export const AIAgentBackButton = () => (
   <Link to="/agents">
-    <Button className="gap-2" size="sm" variant="ghost">
+    <Button className="gap-2" size="sm" variant="secondary-ghost">
       <ArrowLeft className="h-4 w-4" />
       Back to AI Agents
     </Button>
