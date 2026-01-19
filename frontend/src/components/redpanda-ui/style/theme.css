@@ -1,145 +1,1045 @@
+/* =============================================================================
+   TAILWIND CSS V4 THEME CONFIGURATION
+   
+   Structure:
+   1. @theme {} - All design tokens (colors with light mode defaults)
+   2. @custom-variant - Dark mode selector configuration
+   3. .dark {} - Dark mode overrides only
+   4. @layer base {} - Global styles and defaults
+   ============================================================================= */
+
 @theme {
-  /* Base color scale */
-  --color-base-50: oklch(1 0 0);
-  --color-base-100: oklch(0.9699 0 0);
-  --color-base-200: oklch(0.9218 0 0);
-  --color-base-300: oklch(0.8697 0 0);
-  --color-base-400: oklch(0.7077 0 0);
-  --color-base-500: oklch(0.5557 0 0);
-  --color-base-600: oklch(0.4387 0 0);
-  --color-base-700: oklch(0.3707 0 0);
-  --color-base-800: oklch(0.2688 0 0);
-  --color-base-900: oklch(0.2048 0 0);
-  --color-base-950: oklch(0.1449 0 0);
-  --color-base-1000: oklch(0.1059 0 0);
+  /* ===================================================================
+     TYPOGRAPHY TOKENS
+     =================================================================== */
 
-  /* Primary color scale */
-  --color-primary-50: oklch(0.953 0.019 25.6);
-  --color-primary-100: oklch(0.9265 0.03 30.64);
-  --color-primary-200: oklch(0.8366 0.071 30.62);
-  --color-primary-300: oklch(0.7512 0.115 31.21);
-  --color-primary-400: oklch(0.6744 0.16 32.12);
-  --color-primary-500: oklch(0.6111 0.2 32.16);
-  --color-primary-600: oklch(0.5278 0.178 32.26);
-  --color-primary-700: oklch(0.4358 0.145 32.16);
-  --color-primary-800: oklch(0.3369 0.107 32.44);
-  --color-primary-900: oklch(0.2795 0.085 32.44);
-  --color-primary-950: oklch(0.2211 0.067 32.44);
-  --color-primary-1000: oklch(0.1627 0.05 32.44);
+  /* Font Families */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Inter Display', 'Inter', ui-sans-serif, system-ui, sans-serif;
 
-  /* Secondary color scale */
-  --color-secondary-50: oklch(0.958 0.007 268.55);
-  --color-secondary-100: oklch(0.9325 0.012 259.82);
-  --color-secondary-200: oklch(0.8462 0.027 262.33);
-  --color-secondary-300: oklch(0.7563 0.046 265.5);
-  --color-secondary-400: oklch(0.5547 0.087 264.14);
-  --color-secondary-500: oklch(0.4734 0.073 264.32);
-  --color-secondary-600: oklch(0.3485 0.047 262.99);
-  --color-secondary-700: oklch(0.2817 0.037 264.6);
-  --color-secondary-800: oklch(0.2348 0.031 262.56);
-  --color-secondary-900: oklch(0.236 0.029 266.34);
-  --color-secondary-950: oklch(0.1895 0.033 266.34);
-  --color-secondary-1000: oklch(0.1428 0.037 266.34);
+  /* Letter Spacing */
+  --tracking-heading: -0.01em;
+  --tracking-label: -0.0125em;
+  --tracking-caption: 0.01em;
+  --tracking-number: -0.05em;
+  --tracking-number-tight: -0.025em;
+  --tracking-caption-wide: 0.05em;
 
-  /* Sidebar specific colors */
-  --color-sidebar-light: oklch(0.2348 0.0314 262.56);
-  --color-sidebar-dark: oklch(0.3351 0.0331 260.91);
+  /* Font Sizes (custom sizes not in Tailwind) */
+  --text-9xl: 4.5rem;
+  --text-8xl: 3.5rem;
+  --text-7xl: 3rem;
+  --text-6xl: 2.5rem;
+  --text-caption-sm: 0.625rem;
 
-  /* Semantic colors for light mode */
-  --color-background: var(--color-base-50);
-  --color-foreground: var(--color-base-800);
-  --color-card: var(--color-white);
-  --color-card-foreground: var(--color-base-800);
-  --color-popover: var(--color-white);
-  --color-popover-foreground: var(--color-base-800);
-  --color-primary: var(--color-primary-500);
-  --color-primary-foreground: var(--color-white);
-  --color-secondary: var(--color-secondary-900);
-  --color-secondary-foreground: var(--color-white);
-  --color-muted: var(--color-base-100);
-  --color-muted-foreground: var(--color-base-600);
-  --color-accent: var(--color-base-100);
-  --color-accent-foreground: var(--color-base-800);
-  --color-destructive: oklch(0.577 0.245 27.325);
-  --color-border: var(--color-base-200);
-  --color-input: var(--color-base-300);
-  --color-ring: var(--color-selected);
-  --color-chart-1: var(--color-primary-500);
-  --color-chart-2: var(--color-secondary-900);
-  --color-chart-3: var(--color-primary-300);
-  --color-chart-4: var(--color-secondary-300);
-  --color-chart-5: var(--color-primary-100);
-  --color-sidebar: var(--color-sidebar-light);
-  --color-sidebar-foreground: var(--color-base-200);
-  --color-sidebar-primary: var(--color-primary-500);
-  --color-sidebar-primary-foreground: var(--color-white);
-  --color-sidebar-accent: oklch(1 0 0 / 8%);
-  --color-sidebar-accent-foreground: var(--color-base-100);
-  --color-sidebar-border: var(--color-base-600);
-  --color-sidebar-ring: var(--color-primary-500);
-  --color-selection: oklch(0.8462 0.027 262.33);
-  --color-selection-foreground: var(--color-base-800);
-  --color-sidebar-selection: oklch(0.5547 0.087 264.14);
-  --color-sidebar-selection-foreground: oklch(1 0 0);
-  --color-selected: oklch(0.2348 0.0314 262.56);
-  --color-selected-foreground: oklch(1 0 0);
+  /* Line Heights (custom values) */
+  --leading-heading: 100%;
+  --leading-title-lg: 2.5rem;
+  --leading-title-md: 2rem;
+  --leading-title-sm: 1.75rem;
 
-  /* Design tokens */
+  /* ===================================================================
+     GLOBAL COLOR SCALES
+     Base color values from Figma Design System
+     These are the foundational color scales used to build semantic tokens.
+     =================================================================== */
+
+  /* Grey Scale */
+  --color-grey-50: #f5f5f5;
+  --color-grey-100: #dcdcde;
+  --color-grey-200: #c3c4c6;
+  --color-grey-300: #aaabae;
+  --color-grey-400: #919295;
+  --color-grey-500: #79797d;
+  --color-grey-600: #606164;
+  --color-grey-700: #48484a;
+  --color-grey-800: #303032;
+  --color-grey-900: #181818;
+  --color-grey-white: #ffffff;
+  --color-grey-black: #000000;
+
+  /* Blue Scale */
+  --color-blue-50: #e8f5fc;
+  --color-blue-100: #d2ebf9;
+  --color-blue-200: #bbe1f7;
+  --color-blue-300: #a4d7f4;
+  --color-blue-400: #84c9f0;
+  --color-blue-500: #6ebfed;
+  --color-blue-600: #45ade8;
+  --color-blue-700: #1c9be3;
+  --color-blue-800: #115d88;
+  --color-blue-900: #0b3e5b;
+
+  /* Indigo Scale */
+  --color-indigo-50: #eef4ff;
+  --color-indigo-100: #e0eaff;
+  --color-indigo-200: #c7d2fe;
+  --color-indigo-300: #a4bcfd;
+  --color-indigo-400: #8098f9;
+  --color-indigo-500: #6172f3;
+  --color-indigo-600: #444ce7;
+  --color-indigo-700: #3538cd;
+  --color-indigo-800: #2c30a0;
+  --color-indigo-900: #2d3282;
+
+  /* Purple Scale */
+  --color-purple-50: #f9f5ff;
+  --color-purple-100: #f4ebff;
+  --color-purple-200: #e9d7fe;
+  --color-purple-300: #d6bbfb;
+  --color-purple-400: #b692f6;
+  --color-purple-500: #9e77ed;
+  --color-purple-600: #7f56d9;
+  --color-purple-700: #6941c6;
+  --color-purple-800: #53389e;
+  --color-purple-900: #42307d;
+
+  /* Red Scale */
+  --color-red-50: #fff6f5;
+  --color-red-100: #fee8e6;
+  --color-red-200: #fed0cd;
+  --color-red-300: #fea19a;
+  --color-red-400: #ff8b60;
+  --color-red-500: #ea4a3e;
+  --color-red-600: #cd372c;
+  --color-red-700: #be1b0e;
+  --color-red-800: #a21107;
+  --color-red-900: #901704;
+
+  /* Orange Scale */
+  --color-orange-50: #fef0e7;
+  --color-orange-100: #fdd7bd;
+  --color-orange-200: #fbbc91;
+  --color-orange-300: #faaf7b;
+  --color-orange-400: #f9a165;
+  --color-orange-500: #f9944f;
+  --color-orange-600: #f88639;
+  --color-orange-700: #f77923;
+  --color-orange-800: #da5d08;
+  --color-orange-900: #be5107;
+
+  /* Yellow Scale */
+  --color-yellow-50: #fefbe8;
+  --color-yellow-100: #fef7c3;
+  --color-yellow-200: #faf089;
+  --color-yellow-300: #fde272;
+  --color-yellow-400: #ecc94b;
+  --color-yellow-500: #eaaa08;
+  --color-yellow-600: #ca8504;
+  --color-yellow-700: #a15c07;
+  --color-yellow-800: #854a0e;
+  --color-yellow-900: #713b12;
+
+  /* Green Scale */
+  --color-green-50: #f4fbf6;
+  --color-green-100: #d7eed5;
+  --color-green-200: #9ae6b4;
+  --color-green-300: #68d391;
+  --color-green-400: #48bb78;
+  --color-green-500: #38a169;
+  --color-green-600: #25855a;
+  --color-green-700: #276749;
+  --color-green-800: #22543d;
+  --color-green-900: #1c4532;
+
+  /* Dark Blue Scale */
+  --color-dark-blue-50: #eff1f6;
+  --color-dark-blue-100: #e5e9f0;
+  --color-dark-blue-200: #c6cedc;
+  --color-dark-blue-300: #a8b2c7;
+  --color-dark-blue-400: #5972a6;
+  --color-dark-blue-500: #475b85;
+  --color-dark-blue-600: #2d3a53;
+  --color-dark-blue-700: #20293c;
+  --color-dark-blue-800: #161e2d;
+  --color-dark-blue-900: #101828;
+
+  /* Primary Brand Scale (Redpanda Red) */
+  --color-primary-brand-50: #fff5f5;
+  --color-primary-brand-100: #fcebe9;
+  --color-primary-brand-200: #fae0db;
+  --color-primary-brand-300: #f4b9ae;
+  --color-primary-brand-400: #ee9281;
+  --color-primary-brand-500: #e86b54;
+  --color-primary-brand-600: #e24328;
+  --color-primary-brand-700: #c1331a;
+  --color-primary-brand-800: #9e2e1a;
+  --color-primary-brand-900: #711e0f;
+
+  /* ===================================================================
+     ALPHA COLOR SCALES
+     Transparent color values for subtle backgrounds and overlays
+     =================================================================== */
+
+  /* Black Alpha */
+  --color-black-alpha-100: rgba(0, 0, 0, 0.04);
+  --color-black-alpha-200: rgba(0, 0, 0, 0.08);
+  --color-black-alpha-300: rgba(0, 0, 0, 0.12);
+  --color-black-alpha-400: rgba(0, 0, 0, 0.24);
+  --color-black-alpha-500: rgba(0, 0, 0, 0.36);
+  --color-black-alpha-600: rgba(0, 0, 0, 0.48);
+  --color-black-alpha-700: rgba(0, 0, 0, 0.64);
+  --color-black-alpha-800: rgba(0, 0, 0, 0.8);
+  --color-black-alpha-900: rgba(0, 0, 0, 0.92);
+
+  /* White Alpha */
+  --color-white-alpha-100: rgba(255, 255, 255, 0.04);
+  --color-white-alpha-200: rgba(255, 255, 255, 0.08);
+  --color-white-alpha-300: rgba(255, 255, 255, 0.12);
+  --color-white-alpha-400: rgba(255, 255, 255, 0.24);
+  --color-white-alpha-500: rgba(255, 255, 255, 0.36);
+  --color-white-alpha-600: rgba(255, 255, 255, 0.48);
+  --color-white-alpha-700: rgba(255, 255, 255, 0.64);
+  --color-white-alpha-800: rgba(255, 255, 255, 0.8);
+  --color-white-alpha-900: rgba(255, 255, 255, 0.92);
+
+  /* Indigo Alpha */
+  --color-indigo-alpha-100: rgba(99, 102, 241, 0.04);
+  --color-indigo-alpha-200: rgba(99, 102, 241, 0.08);
+  --color-indigo-alpha-300: rgba(99, 102, 241, 0.12);
+  --color-indigo-alpha-400: rgba(99, 102, 241, 0.24);
+  --color-indigo-alpha-500: rgba(99, 102, 241, 0.36);
+  --color-indigo-alpha-600: rgba(99, 102, 241, 0.48);
+
+  /* Primary Brand Alpha */
+  --color-primary-brand-alpha-100: rgba(215, 61, 35, 0.04);
+  --color-primary-brand-alpha-200: rgba(215, 61, 35, 0.08);
+  --color-primary-brand-alpha-300: rgba(215, 61, 35, 0.12);
+  --color-primary-brand-alpha-400: rgba(215, 61, 35, 0.24);
+  --color-primary-brand-alpha-500: rgba(215, 61, 35, 0.36);
+  --color-primary-brand-alpha-600: rgba(215, 61, 35, 0.48);
+
+  /* Dark Blue Alpha */
+  --color-dark-blue-alpha-100: rgba(37, 99, 235, 0.04);
+  --color-dark-blue-alpha-200: rgba(37, 99, 235, 0.08);
+  --color-dark-blue-alpha-300: rgba(37, 99, 235, 0.12);
+  --color-dark-blue-alpha-400: rgba(37, 99, 235, 0.24);
+  --color-dark-blue-alpha-500: rgba(37, 99, 235, 0.36);
+  --color-dark-blue-alpha-600: rgba(37, 99, 235, 0.48);
+
+  /* Red Alpha */
+  --color-red-alpha-100: rgba(220, 38, 38, 0.04);
+  --color-red-alpha-200: rgba(220, 38, 38, 0.08);
+  --color-red-alpha-300: rgba(220, 38, 38, 0.12);
+  --color-red-alpha-400: rgba(220, 38, 38, 0.24);
+  --color-red-alpha-500: rgba(220, 38, 38, 0.36);
+  --color-red-alpha-600: rgba(220, 38, 38, 0.48);
+
+  /* Blue Alpha */
+  --color-blue-alpha-100: rgba(69, 173, 232, 0.04);
+  --color-blue-alpha-200: rgba(69, 173, 232, 0.08);
+  --color-blue-alpha-300: rgba(69, 173, 232, 0.12);
+  --color-blue-alpha-400: rgba(69, 173, 232, 0.24);
+  --color-blue-alpha-500: rgba(69, 173, 232, 0.36);
+  --color-blue-alpha-600: rgba(69, 173, 232, 0.48);
+
+  /* Green Alpha */
+  --color-green-alpha-100: rgba(22, 163, 74, 0.04);
+  --color-green-alpha-200: rgba(22, 163, 74, 0.08);
+  --color-green-alpha-300: rgba(22, 163, 74, 0.12);
+  --color-green-alpha-400: rgba(22, 163, 74, 0.24);
+  --color-green-alpha-500: rgba(22, 163, 74, 0.36);
+  --color-green-alpha-600: rgba(22, 163, 74, 0.48);
+
+  /* Yellow Alpha */
+  --color-yellow-alpha-100: rgba(234, 170, 8, 0.04);
+  --color-yellow-alpha-200: rgba(234, 170, 8, 0.08);
+  --color-yellow-alpha-300: rgba(234, 170, 8, 0.12);
+  --color-yellow-alpha-400: rgba(234, 170, 8, 0.24);
+  --color-yellow-alpha-500: rgba(234, 170, 8, 0.36);
+  --color-yellow-alpha-600: rgba(234, 170, 8, 0.48);
+
+  /* ===================================================================
+     SEMANTIC COLORS (Light Mode Defaults)
+     These generate utility classes like bg-background, text-foreground, etc.
+     =================================================================== */
+
+  /* Core Semantic */
+  --color-background: var(--color-grey-white);
+  --color-card: var(--color-grey-white);
+  --color-card-foreground: var(--color-grey-800);
+  --color-popover: var(--color-grey-white);
+  --color-popover-foreground: var(--color-grey-800);
+
+  /* Background - Basic (from Figma Static Palette) */
+  --color-background-strong: var(--color-grey-white);
+  --color-background-base: #f5f5f5;
+  --color-background-subtle: #f0f4f8;
+
+  /* Background - Inverse */
+  --color-background-inverse-subtle: var(--color-grey-600);
+  --color-background-inverse-base: var(--color-dark-blue-900);
+
+  /* Background - Disabled */
+  --color-background-disabled: var(--color-grey-100);
+
+  /* Background - Brand */
+  --color-background-brand-subtle: var(--color-primary-brand-200);
+  --color-background-brand-strong: var(--color-primary-brand-700);
+
+  /* Background - Semantic */
+  --color-background-success-subtle: var(--color-green-50);
+  --color-background-success-strong: var(--color-green-500);
+  --color-background-warning-subtle: var(--color-orange-50);
+  --color-background-warning-strong: var(--color-orange-700);
+  --color-background-error-subtle: var(--color-red-50);
+  --color-background-error-strong: var(--color-red-600);
+  --color-background-informative-subtle: var(--color-blue-50);
+  --color-background-informative-strong: var(--color-blue-600);
+
+  /* Text Hierarchy (generates text-strong, text-subtle, etc.) */
+  --color-strong: var(--color-grey-900);
+  --color-foreground: var(--color-grey-700);
+  --color-muted-foreground: var(--color-grey-600);
+  --color-subtle: var(--color-grey-500);
+  --color-disabled: var(--color-grey-400);
+  --color-muted: var(--color-grey-100);
+
+  /* Text Interactive - Action (4 variants from Figma) */
+  --color-action-primary: var(--color-indigo-600);
+  --color-action-hover: var(--color-indigo-800);
+  --color-action-accent: var(--color-primary-brand-700);
+  --color-action-secondary: var(--color-dark-blue-500);
+
+  /* Text Interactive - Inverse (4 states) */
+  --color-inverse: var(--color-grey-white);
+  --color-inverse-hover: var(--color-grey-200);
+  --color-inverse-pressed: var(--color-grey-300);
+  --color-inverse-disabled: var(--color-grey-400);
+
+  /* Text Interactive - Inverse Primary (always white, for dark backgrounds) */
+  --color-inverse-primary: var(--color-grey-white);
+
+  /* Background Variants (generates bg-page, bg-surface, etc.) */
+  --color-page: var(--color-grey-100);
+  --color-surface: var(--color-grey-white);
+  --color-surface-subtle: var(--color-grey-100);
+  --color-surface-strong: var(--color-grey-200);
+
+  /* Primary (Indigo - UI actions) */
+  --color-primary: var(--color-indigo-600);
+  --color-primary-foreground: var(--color-grey-white);
+  --color-primary-subtle: var(--color-indigo-alpha-100);
+
+  /* Secondary (dark-blue - for secondary surfaces/buttons) */
+  --color-secondary: var(--color-dark-blue-600);
+  --color-secondary-foreground: var(--color-grey-white);
+  --color-secondary-subtle: var(--color-dark-blue-alpha-100);
+
+  /* Accent */
+  --color-accent: var(--color-indigo-100);
+  --color-accent-foreground: var(--color-grey-900);
+  --color-accent-subtle: var(--color-indigo-alpha-100);
+
+  /* Brand (Redpanda Red) */
+  --color-brand: var(--color-primary-brand-600);
+  --color-brand-foreground: var(--color-grey-white);
+  --color-brand-subtle: var(--color-primary-brand-alpha-100);
+
+  /* Destructive/Error */
+  --color-destructive: var(--color-red-600);
+  --color-destructive-foreground: var(--color-grey-white);
+  --color-destructive-subtle: var(--color-red-alpha-100);
+
+  /* Status Colors */
+  --color-success: var(--color-green-600);
+  --color-success-foreground: var(--color-grey-white);
+  --color-success-subtle: var(--color-green-alpha-100);
+  --color-warning: var(--color-orange-500);
+  --color-warning-foreground: var(--color-grey-900);
+  --color-warning-subtle: var(--color-orange-alpha-100);
+  --color-info: var(--color-blue-600);
+  --color-info-foreground: var(--color-grey-white);
+  --color-info-subtle: var(--color-blue-alpha-100);
+  --color-neutral: var(--color-grey-600);
+  --color-neutral-foreground: var(--color-grey-white);
+
+  /* Informative (alias for info) */
+  --color-informative: var(--color-blue-600);
+  --color-informative-foreground: var(--color-grey-white);
+
+  /* Border, Input, Ring */
+  --color-border: var(--color-grey-200);
+  --color-border-subtle: var(--color-grey-100);
+  --color-border-strong: var(--color-grey-300);
+  --color-input: var(--color-grey-300);
+  --color-ring: var(--color-primary-600);
+
+  /* Charts */
+  --color-chart-1: var(--color-indigo-500);
+  --color-chart-2: var(--color-dark-blue-500);
+  --color-chart-3: var(--color-indigo-300);
+  --color-chart-4: var(--color-dark-blue-300);
+  --color-chart-5: var(--color-indigo-100);
+
+  /* Sidebar */
+  --color-sidebar: var(--color-dark-blue-800);
+  --color-sidebar-foreground: var(--color-grey-200);
+  --color-sidebar-primary: var(--color-indigo-500);
+  --color-sidebar-primary-foreground: var(--color-grey-white);
+  --color-sidebar-accent: var(--color-white-alpha-200);
+  --color-sidebar-accent-foreground: var(--color-grey-100);
+  --color-sidebar-border: var(--color-grey-600);
+  --color-sidebar-ring: var(--color-indigo-500);
+
+  /* Selection */
+  --color-selection: var(--color-indigo-200);
+  --color-selection-foreground: var(--color-grey-800);
+  --color-selected: var(--color-indigo-800);
+  --color-selected-foreground: var(--color-grey-white);
+
+  /* ===================================================================
+     SURFACE INTERACTIVE COLORS (Light Mode)
+     Interactive surfaces with hover, pressed, disabled states
+     From Figma Interactive Palette
+     =================================================================== */
+
+  /* Surface Base */
+  --color-surface-default: var(--color-grey-white);
+  --color-surface-default-hover: var(--color-grey-100);
+  --color-surface-subtle: var(--color-grey-100);
+  --color-surface-subtle-hover: var(--color-grey-200);
+  --color-surface-strong: var(--color-grey-200);
+  --color-surface-strong-hover: var(--color-grey-300);
+
+  /* Surface Primary (4 states) */
+  --color-surface-primary: var(--color-indigo-600);
+  --color-surface-primary-hover: var(--color-indigo-700);
+  --color-surface-primary-pressed: var(--color-indigo-800);
+  --color-surface-primary-disabled: var(--color-grey-400);
+  --color-surface-primary-subtle: var(--color-indigo-alpha-100);
+  --color-surface-primary-subtle-hover: var(--color-indigo-alpha-200);
+
+  /* Surface Secondary */
+  --color-surface-secondary: var(--color-dark-blue-600);
+  --color-surface-secondary-hover: var(--color-dark-blue-800);
+  --color-surface-secondary-pressed: var(--color-dark-blue-900);
+  --color-surface-secondary-disabled: var(--color-grey-400);
+  --color-surface-secondary-subtle: var(--color-dark-blue-alpha-100);
+  --color-surface-secondary-subtle-hover: var(--color-dark-blue-alpha-200);
+
+  /* Surface Brand (4 states) */
+  --color-surface-brand: var(--color-primary-brand-600);
+  --color-surface-brand-hover: var(--color-primary-brand-700);
+  --color-surface-brand-pressed: var(--color-primary-brand-800);
+  --color-surface-brand-disabled: var(--color-grey-400);
+  --color-surface-brand-subtle: var(--color-primary-brand-alpha-100);
+  --color-surface-brand-subtle-hover: var(--color-primary-brand-alpha-200);
+
+  /* Surface Inverse (4 states) */
+  --color-surface-inverse: var(--color-grey-white);
+  --color-surface-inverse-hover: var(--color-grey-50);
+  --color-surface-inverse-pressed: var(--color-grey-100);
+  --color-surface-inverse-disabled: var(--color-grey-50);
+
+  /* Surface Neutral Dark (4 states) */
+  --color-surface-neutral-dark: var(--color-grey-800);
+  --color-surface-neutral-dark-hover: var(--color-grey-700);
+  --color-surface-neutral-dark-pressed: var(--color-grey-600);
+  --color-surface-neutral-dark-disabled: var(--color-grey-400);
+
+  /* Surface Neutral Light (4 states) */
+  --color-surface-neutral-light: var(--color-grey-200);
+  --color-surface-neutral-light-hover: var(--color-grey-300);
+  --color-surface-neutral-light-pressed: var(--color-grey-400);
+  --color-surface-neutral-light-disabled: var(--color-grey-100);
+
+  /* Surface Error (4 states) */
+  --color-surface-error: var(--color-red-600);
+  --color-surface-error-hover: var(--color-red-700);
+  --color-surface-error-pressed: var(--color-red-800);
+  --color-surface-error-disabled: var(--color-grey-400);
+
+  /* Surface Warning (4 states) */
+  --color-surface-warning: var(--color-orange-400);
+  --color-surface-warning-hover: var(--color-orange-500);
+  --color-surface-warning-pressed: var(--color-orange-600);
+  --color-surface-warning-disabled: var(--color-grey-400);
+
+  /* Surface Success (4 states) */
+  --color-surface-success: var(--color-green-600);
+  --color-surface-success-hover: var(--color-green-700);
+  --color-surface-success-pressed: var(--color-green-800);
+  --color-surface-success-disabled: var(--color-grey-400);
+  --color-surface-success-subtle: var(--color-green-100);
+  --color-surface-success-subtle-hover: var(--color-green-200);
+
+  /* Surface Informative (4 states) */
+  --color-surface-informative: var(--color-blue-600);
+  --color-surface-informative-hover: var(--color-blue-700);
+  --color-surface-informative-pressed: var(--color-blue-800);
+  --color-surface-informative-disabled: var(--color-grey-400);
+  --color-surface-informative-subtle: var(--color-blue-100);
+  --color-surface-informative-subtle-hover: var(--color-blue-200);
+
+  /* ===================================================================
+     OPACITY/ALPHA SEMANTIC COLORS (Light Mode)
+     Transparent overlays and subtle backgrounds
+     From Figma Static Palette - Opacity section
+     =================================================================== */
+
+  /* Dark Opacity */
+  --color-dark-alpha-subtle: var(--color-black-alpha-100);
+  --color-dark-alpha-default: var(--color-black-alpha-200);
+  --color-dark-alpha-strong: var(--color-black-alpha-400);
+  --color-dark-alpha-stronger: var(--color-black-alpha-500);
+  --color-dark-alpha-strongest: var(--color-black-alpha-700);
+
+  /* Light Opacity */
+  --color-light-alpha-subtle: var(--color-white-alpha-100);
+  --color-light-alpha-default: var(--color-white-alpha-200);
+  --color-light-alpha-strong: var(--color-white-alpha-400);
+  --color-light-alpha-stronger: var(--color-white-alpha-500);
+  --color-light-alpha-strongest: var(--color-white-alpha-700);
+
+  /* Primary Opacity */
+  --color-primary-alpha-subtle: var(--color-indigo-alpha-100);
+  --color-primary-alpha-default: var(--color-indigo-alpha-200);
+  --color-primary-alpha-strong: var(--color-indigo-alpha-400);
+
+  /* Secondary Opacity */
+  --color-secondary-alpha-subtle: var(--color-dark-blue-alpha-100);
+  --color-secondary-alpha-default: var(--color-dark-blue-alpha-200);
+  --color-secondary-alpha-strong: var(--color-dark-blue-alpha-400);
+
+  /* Brand Opacity */
+  --color-brand-alpha-subtle: var(--color-primary-brand-alpha-100);
+  --color-brand-alpha-default: var(--color-primary-brand-alpha-200);
+  --color-brand-alpha-strong: var(--color-primary-brand-alpha-400);
+
+  /* Destructive Opacity */
+  --color-destructive-alpha-subtle: var(--color-red-alpha-100);
+  --color-destructive-alpha-default: var(--color-red-alpha-200);
+  --color-destructive-alpha-strong: var(--color-red-alpha-400);
+
+  /* Informative Opacity */
+  --color-informative-alpha-subtle: var(--color-blue-alpha-100);
+  --color-informative-alpha-default: var(--color-blue-alpha-200);
+  --color-informative-alpha-strong: var(--color-blue-alpha-400);
+
+  /* ===================================================================
+     BORDER TOKENS
+     From Figma Design System (node 32:1048)
+     =================================================================== */
+
+  /* Border Radius */
+  --radius-none: 0px;
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.25rem;
+  --radius-full: 9999px;
   --radius: 0.5rem;
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Border Width */
+  --border-width-default: 0.0625rem;
+  --border-width-2: 0.125rem;
+  --border-width-4: 0.25rem;
+
+  /* ===================================================================
+     ELEVATION TOKENS (Shadows)
+     From Figma Design System (node 22:2861)
+     =================================================================== */
+
+  --shadow-sm: 0 1px 4px 0 rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px 0 rgba(0, 0, 0, 0.05);
+  --shadow-2xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px 0 rgba(0, 0, 0, 0.04);
+  --shadow-3xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   --shadow-elevated: 4px 4px 0px 0px oklch(0 0 0 / 0.08);
+
+  /* ===================================================================
+     LEGACY COLOR SCALES (mapped to new global tokens)
+     =================================================================== */
+
+  /* Base color scale → Grey */
+  --color-base-50: var(--color-grey-white);
+  --color-base-100: var(--color-grey-100);
+  --color-base-200: var(--color-grey-200);
+  --color-base-300: var(--color-grey-300);
+  --color-base-400: var(--color-grey-400);
+  --color-base-500: var(--color-grey-500);
+  --color-base-600: var(--color-grey-600);
+  --color-base-700: var(--color-grey-700);
+  --color-base-800: var(--color-grey-800);
+  --color-base-900: var(--color-grey-900);
+  --color-base-950: var(--color-grey-900);
+  --color-base-1000: var(--color-grey-black);
+
+  /* Primary color scale → Indigo (UI actions, buttons) */
+  --color-primary-50: var(--color-indigo-100);
+  --color-primary-100: var(--color-indigo-100);
+  --color-primary-200: var(--color-indigo-200);
+  --color-primary-300: var(--color-indigo-300);
+  --color-primary-400: var(--color-indigo-400);
+  --color-primary-500: var(--color-indigo-500);
+  --color-primary-600: var(--color-indigo-600);
+  --color-primary-700: var(--color-indigo-700);
+  --color-primary-800: var(--color-indigo-800);
+  --color-primary-900: var(--color-indigo-900);
+  --color-primary-950: var(--color-indigo-900);
+  --color-primary-1000: var(--color-indigo-900);
+
+  /* Secondary color scale → dark-blue */
+  --color-secondary-50: var(--color-dark-blue-100);
+  --color-secondary-100: var(--color-dark-blue-100);
+  --color-secondary-200: var(--color-dark-blue-200);
+  --color-secondary-300: var(--color-dark-blue-300);
+  --color-secondary-400: var(--color-dark-blue-400);
+  --color-secondary-500: var(--color-dark-blue-500);
+  --color-secondary-600: var(--color-dark-blue-600);
+  --color-secondary-700: var(--color-dark-blue-700);
+  --color-secondary-800: var(--color-dark-blue-800);
+  --color-secondary-900: var(--color-dark-blue-900);
+  --color-secondary-950: var(--color-dark-blue-900);
+  --color-secondary-1000: var(--color-dark-blue-900);
+
+  /* Special/Non-semantic Colors (Charts) */
+  --color-special-fill-1: var(--color-blue-600);
+  --color-special-fill-2: var(--color-purple-600);
+  --color-special-fill-3: var(--color-orange-500);
+  --color-special-fill-4: var(--color-primary-brand-600);
+  --color-special-fill-5: var(--color-orange-100);
+
+  /* Modal/Overlay Colors */
+  --color-modal-overlay: var(--color-black-alpha-500);
+  --color-modal-overlay-dark: var(--color-black-alpha-700);
+
+  /* Outline - Primary (4 states: Enabled, Hover, Pressed, Disabled) */
+  --color-outline-primary-subtle: var(--color-indigo-300);
+  --color-outline-primary-subtle-hover: var(--color-indigo-400);
+  --color-outline-primary: var(--color-indigo-400);
+  --color-outline-primary-hover: var(--color-indigo-500);
+  --color-outline-primary-pressed: var(--color-indigo-600);
+  --color-outline-primary-disabled: var(--color-grey-200);
+
+  /* Outline - Secondary (5 states: Enabled, Hover, Pressed, Subtle, Disabled) */
+  --color-outline-secondary: var(--color-dark-blue-300);
+  --color-outline-secondary-hover: var(--color-dark-blue-400);
+  --color-outline-secondary-pressed: var(--color-dark-blue-500);
+  --color-outline-secondary-subtle: var(--color-dark-blue-100);
+  --color-outline-secondary-disabled: var(--color-grey-50);
+
+  /* Outline - Brand (4 states) */
+  --color-outline-brand: var(--color-primary-brand-300);
+  --color-outline-brand-hover: var(--color-primary-brand-500);
+  --color-outline-brand-pressed: var(--color-primary-brand-500);
+  --color-outline-brand-disabled: var(--color-primary-brand-50);
+
+  /* Outline - Inverse (4 states) */
+  --color-outline-inverse: var(--color-dark-blue-100);
+  --color-outline-inverse-hover: var(--color-dark-blue-300);
+  --color-outline-inverse-pressed: var(--color-dark-blue-300);
+  --color-outline-inverse-disabled: var(--color-grey-50);
+
+  /* Outline - Neutral (4 states) */
+  --color-outline-neutral: var(--color-grey-600);
+  --color-outline-neutral-hover: var(--color-grey-800);
+  --color-outline-neutral-pressed: var(--color-grey-800);
+  --color-outline-neutral-disabled: var(--color-grey-400);
+
+  /* Outline - Error (4 states) */
+  --color-outline-error: var(--color-red-400);
+  --color-outline-error-hover: var(--color-red-500);
+  --color-outline-error-pressed: var(--color-red-600);
+  --color-outline-error-disabled: var(--color-grey-400);
+
+  /* Outline - Warning (4 states) */
+  --color-outline-warning: var(--color-orange-400);
+  --color-outline-warning-hover: var(--color-orange-500);
+  --color-outline-warning-pressed: var(--color-orange-600);
+  --color-outline-warning-disabled: var(--color-grey-400);
+
+  /* Outline - Informative (4 states) */
+  --color-outline-informative: var(--color-blue-400);
+  --color-outline-informative-hover: var(--color-blue-500);
+  --color-outline-informative-pressed: var(--color-blue-600);
+  --color-outline-informative-disabled: var(--color-grey-400);
+
+  /* Outline - Success (4 states) */
+  --color-outline-success: var(--color-green-500);
+  --color-outline-success-hover: var(--color-green-600);
+  --color-outline-success-pressed: var(--color-green-700);
+  --color-outline-success-disabled: var(--color-grey-400);
 }
+
+/* =============================================================================
+   CUSTOM VARIANT FOR DARK MODE
+   ============================================================================= */
 
 @custom-variant dark (&:is(.dark *));
 
+/* =============================================================================
+   DARK MODE OVERRIDES
+   Only override what changes from light mode
+   ============================================================================= */
+
 .dark {
-  --color-background: var(--color-base-950);
-  --color-foreground: var(--color-base-200);
-  --color-card: var(--color-base-900);
-  --color-card-foreground: var(--color-base-200);
-  --color-popover: var(--color-base-900);
-  --color-popover-foreground: var(--color-base-200);
-  --color-primary: var(--color-primary-500);
-  --color-primary-foreground: var(--color-white);
-  --color-secondary: var(--color-secondary-900);
-  --color-secondary-foreground: var(--color-white);
-  --color-muted: var(--color-base-800);
-  --color-muted-foreground: var(--color-base-300);
-  --color-accent: var(--color-base-800);
-  --color-accent-foreground: var(--color-base-200);
-  --color-destructive: oklch(0.704 0.191 22.216);
-  --color-border: var(--color-base-800);
-  --color-input: var(--color-base-700);
-  --color-ring: var(--color-selected);
-  --color-chart-1: var(--color-primary-500);
-  --color-chart-2: var(--color-secondary-900);
-  --color-chart-3: var(--color-primary-300);
-  --color-chart-4: var(--color-secondary-300);
-  --color-chart-5: var(--color-primary-100);
+  /* Core Semantic */
+  --color-background: var(--color-grey-900);
+  --color-foreground: var(--color-grey-200);
+  --color-card: var(--color-grey-800);
+  --color-card-foreground: var(--color-grey-200);
+  --color-popover: var(--color-grey-800);
+  --color-popover-foreground: var(--color-grey-200);
+
+  /* Background - Basic (Dark Mode) */
+  --color-background-strong: var(--color-grey-900);
+  --color-background-base: var(--color-grey-800);
+  --color-background-subtle: #1e2a3a;
+
+  /* Background - Inverse (Dark Mode) */
+  --color-background-inverse-subtle: var(--color-grey-400);
+  --color-background-inverse-base: var(--color-grey-100);
+
+  /* Background - Disabled (Dark Mode) */
+  --color-background-disabled: var(--color-grey-800);
+
+  /* Background - Brand (Dark Mode) */
+  --color-background-brand-subtle: var(--color-primary-brand-alpha-200);
+  --color-background-brand-strong: var(--color-primary-brand-500);
+
+  /* Background - Semantic (Dark Mode) */
+  --color-background-success-subtle: #14532d;
+  --color-background-success-strong: var(--color-green-400);
+  --color-background-warning-subtle: #78350f;
+  --color-background-warning-strong: var(--color-orange-300);
+  --color-background-error-subtle: #7f1d1d;
+  --color-background-error-strong: var(--color-red-400);
+  --color-background-informative-subtle: #1e3a8a;
+  --color-background-informative-strong: var(--color-blue-400);
+
+  /* Text Hierarchy */
+  --color-strong: var(--color-grey-100);
+  --color-subtle: var(--color-grey-500);
+  --color-disabled: var(--color-grey-600);
+
+  /* Text Interactive - Action (4 variants from Figma) - Dark Mode */
+  --color-action-primary: var(--color-indigo-400);
+  --color-action-hover: var(--color-indigo-200);
+  --color-action-accent: var(--color-primary-brand-400);
+  --color-action-secondary: var(--color-dark-blue-400);
+
+  /* Text Interactive - Inverse (4 states) - Dark Mode */
+  --color-inverse: var(--color-grey-900);
+  --color-inverse-hover: var(--color-grey-800);
+  --color-inverse-pressed: var(--color-grey-700);
+  --color-inverse-disabled: var(--color-grey-600);
+
+  /* Background Variants */
+  --color-page: var(--color-grey-900);
+  --color-surface: var(--color-grey-800);
+  --color-surface-subtle: var(--color-grey-800);
+  --color-surface-strong: var(--color-grey-700);
+
+  /* Primary */
+  --color-primary: var(--color-indigo-500);
+  --color-primary-foreground: var(--color-grey-900);
+  --color-primary-subtle: var(--color-indigo-alpha-200);
+
+  /* Secondary */
+  --color-secondary: var(--color-dark-blue-400);
+  --color-secondary-foreground: var(--color-grey-900);
+  --color-secondary-subtle: var(--color-dark-blue-alpha-200);
+
+  /* Muted */
+  --color-muted: var(--color-grey-800);
+  --color-muted-foreground: var(--color-grey-400);
+
+  /* Accent */
+  --color-accent: var(--color-indigo-alpha-300);
+  --color-accent-foreground: var(--color-grey-100);
+  --color-accent-subtle: var(--color-indigo-alpha-200);
+
+  /* Brand */
+  --color-brand: var(--color-primary-brand-500);
+  --color-brand-foreground: var(--color-grey-900);
+  --color-brand-subtle: var(--color-primary-brand-alpha-200);
+
+  /* Destructive */
+  --color-destructive: var(--color-red-500);
+  --color-destructive-foreground: var(--color-grey-900);
+  --color-destructive-subtle: var(--color-red-alpha-200);
+
+  /* Status Colors */
+  --color-success: var(--color-green-500);
+  --color-success-foreground: var(--color-grey-900);
+  --color-success-subtle: var(--color-green-alpha-200);
+  --color-warning: var(--color-orange-400);
+  --color-warning-foreground: var(--color-grey-900);
+  --color-warning-subtle: var(--color-orange-50);
+  --color-info: var(--color-blue-400);
+  --color-info-foreground: var(--color-grey-900);
+  --color-info-subtle: var(--color-blue-alpha-200);
+  --color-neutral: var(--color-grey-500);
+  --color-neutral-foreground: var(--color-grey-900);
+
+  /* Informative */
+  --color-informative: var(--color-blue-400);
+  --color-informative-foreground: var(--color-grey-900);
+
+  /* Border, Input, Ring */
+  --color-border: var(--color-grey-700);
+  --color-border-subtle: var(--color-grey-800);
+  --color-border-strong: var(--color-grey-600);
+  --color-input: var(--color-grey-600);
+  --color-ring: var(--color-grey-white);
+
+  /* Charts */
+  --color-chart-1: var(--color-indigo-400);
+  --color-chart-2: var(--color-dark-blue-400);
+  --color-chart-3: var(--color-indigo-300);
+  --color-chart-4: var(--color-dark-blue-300);
+  --color-chart-5: var(--color-indigo-200);
+
+  /* Sidebar */
+  --color-sidebar: var(--color-dark-blue-700);
+  --color-sidebar-foreground: var(--color-grey-100);
+  --color-sidebar-primary: var(--color-indigo-400);
+  --color-sidebar-primary-foreground: var(--color-grey-white);
+  --color-sidebar-accent: var(--color-black-alpha-400);
+  --color-sidebar-accent-foreground: var(--color-grey-100);
+  --color-sidebar-border: var(--color-grey-500);
+  --color-sidebar-ring: var(--color-indigo-400);
+
+  /* Selection */
+  --color-selection: var(--color-indigo-300);
+  --color-selection-foreground: var(--color-grey-200);
+  --color-selected: var(--color-grey-white);
+  --color-selected-foreground: var(--color-indigo-800);
+
+  /* Surface Interactive - Dark Mode */
+  --color-surface-subtle-hover: var(--color-grey-700);
+  --color-surface-strong-hover: var(--color-grey-600);
+
+  /* Surface Primary (4 states) */
+  --color-surface-primary: var(--color-indigo-500);
+  --color-surface-primary-hover: var(--color-indigo-400);
+  --color-surface-primary-pressed: var(--color-indigo-300);
+  --color-surface-primary-disabled: var(--color-grey-600);
+  --color-surface-primary-subtle: var(--color-indigo-alpha-200);
+  --color-surface-primary-subtle-hover: var(--color-indigo-alpha-300);
+
+  /* Surface Secondary (4 states) */
+  --color-surface-secondary: var(--color-dark-blue-400);
+  --color-surface-secondary-hover: var(--color-dark-blue-300);
+  --color-surface-secondary-pressed: var(--color-dark-blue-200);
+  --color-surface-secondary-disabled: var(--color-grey-600);
+  --color-surface-secondary-subtle: var(--color-dark-blue-alpha-200);
+  --color-surface-secondary-subtle-hover: var(--color-dark-blue-alpha-300);
+
+  /* Surface Brand (4 states) */
+  --color-surface-brand: var(--color-primary-brand-alpha-200);
+  --color-surface-brand-hover: var(--color-primary-brand-alpha-300);
+  --color-surface-brand-pressed: var(--color-primary-brand-alpha-400);
+  --color-surface-brand-disabled: var(--color-grey-600);
+  --color-surface-brand-strong: var(--color-primary-brand-500);
+  --color-surface-brand-strong-hover: var(--color-primary-brand-400);
+
+  /* Surface Inverse (4 states) */
+  --color-surface-inverse: var(--color-grey-100);
+  --color-surface-inverse-hover: var(--color-grey-200);
+  --color-surface-inverse-pressed: var(--color-grey-300);
+  --color-surface-inverse-disabled: var(--color-grey-600);
+
+  /* Surface Neutral Dark (4 states) */
+  --color-surface-neutral-dark: var(--color-grey-700);
+  --color-surface-neutral-dark-hover: var(--color-grey-600);
+  --color-surface-neutral-dark-pressed: var(--color-grey-500);
+  --color-surface-neutral-dark-disabled: var(--color-grey-800);
+
+  /* Surface Neutral Light (4 states) */
+  --color-surface-neutral-light: var(--color-grey-300);
+  --color-surface-neutral-light-hover: var(--color-grey-400);
+  --color-surface-neutral-light-pressed: var(--color-grey-500);
+  --color-surface-neutral-light-disabled: var(--color-grey-200);
+
+  /* Surface Error (4 states) */
+  --color-surface-error: var(--color-red-500);
+  --color-surface-error-hover: var(--color-red-400);
+  --color-surface-error-pressed: var(--color-red-300);
+  --color-surface-error-disabled: var(--color-grey-600);
+
+  /* Surface Warning (4 states) */
+  --color-surface-warning: var(--color-orange-400);
+  --color-surface-warning-hover: var(--color-orange-300);
+  --color-surface-warning-pressed: var(--color-orange-200);
+  --color-surface-warning-disabled: var(--color-grey-600);
+
+  /* Surface Success (4 states) */
+  --color-surface-success: var(--color-green-500);
+  --color-surface-success-hover: var(--color-green-400);
+  --color-surface-success-pressed: var(--color-green-300);
+  --color-surface-success-disabled: var(--color-grey-600);
+  --color-surface-success-subtle: var(--color-green-900);
+  --color-surface-success-subtle-hover: var(--color-green-800);
+
+  /* Surface Informative (4 states) */
+  --color-surface-informative: var(--color-blue-400);
+  --color-surface-informative-hover: var(--color-blue-300);
+  --color-surface-informative-pressed: var(--color-blue-200);
+  --color-surface-informative-disabled: var(--color-grey-600);
+  --color-surface-informative-subtle: var(--color-blue-900);
+  --color-surface-informative-subtle-hover: var(--color-blue-800);
+
+  /* Opacity/Alpha - Dark Mode */
+  --color-dark-alpha-subtle: var(--color-black-alpha-200);
+  --color-dark-alpha-default: var(--color-black-alpha-300);
+  --color-dark-alpha-strong: var(--color-black-alpha-500);
+  --color-dark-alpha-stronger: var(--color-black-alpha-600);
+  --color-dark-alpha-strongest: var(--color-black-alpha-800);
+  --color-primary-alpha-subtle: var(--color-indigo-alpha-200);
+  --color-primary-alpha-default: var(--color-indigo-alpha-300);
+  --color-primary-alpha-strong: var(--color-indigo-alpha-500);
+  --color-secondary-alpha-subtle: var(--color-dark-blue-alpha-200);
+  --color-secondary-alpha-default: var(--color-dark-blue-alpha-300);
+  --color-secondary-alpha-strong: var(--color-dark-blue-alpha-500);
+  --color-brand-alpha-subtle: var(--color-primary-brand-alpha-200);
+  --color-brand-alpha-default: var(--color-primary-brand-alpha-300);
+  --color-brand-alpha-strong: var(--color-primary-brand-alpha-500);
+  --color-informative-alpha-subtle: var(--color-blue-alpha-200);
+  --color-informative-alpha-default: var(--color-blue-alpha-300);
+  --color-informative-alpha-strong: var(--color-blue-alpha-500);
+  --color-destructive-alpha-subtle: var(--color-red-alpha-200);
+  --color-destructive-alpha-default: var(--color-red-alpha-300);
+  --color-destructive-alpha-strong: var(--color-red-alpha-500);
+
+  /* Special/Non-semantic Colors - Dark Mode */
+  --color-special-fill-1: var(--color-blue-400);
+  --color-special-fill-2: var(--color-purple-500);
+  --color-special-fill-3: var(--color-orange-400);
+  --color-special-fill-4: var(--color-primary-brand-500);
+  --color-special-fill-5: var(--color-orange-200);
+
+  /* Modal/Overlay Colors - Dark Mode */
+  --color-modal-overlay: var(--color-black-alpha-600);
+  --color-modal-overlay-dark: var(--color-black-alpha-800);
+
+  /* Text Colors - Dark Mode */
+  --color-text-strong: var(--color-grey-100);
+  --color-text-default: var(--color-grey-200);
+  --color-text-tertiary: var(--color-grey-400);
+  --color-text-subtle: var(--color-grey-500);
+  --color-text-disabled: var(--color-grey-600);
+  --color-text-primary: var(--color-indigo-400);
+  --color-text-accent: var(--color-indigo-400);
+  --color-text-brand: var(--color-primary-brand-400);
+  --color-text-success: var(--color-green-400);
+  --color-text-informative: var(--color-blue-400);
+  --color-text-base: var(--color-grey-200);
+  --color-text-secondary: var(--color-grey-400);
+  --color-text-warning: var(--color-orange-400);
+  --color-text-error: var(--color-red-400);
+
+  /* Icon Colors - Dark Mode */
+  --color-icon-strong: var(--color-grey-100);
+  --color-icon-default: var(--color-grey-200);
+  --color-icon-tertiary: var(--color-grey-400);
+  --color-icon-subtle: var(--color-grey-500);
+  --color-icon-disabled: var(--color-grey-600);
+  --color-icon-primary: var(--color-indigo-400);
+  --color-icon-accent: var(--color-indigo-400);
+  --color-icon-brand: var(--color-primary-brand-400);
+  --color-icon-success: var(--color-green-400);
+  --color-icon-informative: var(--color-blue-400);
+
+  /* Divider Colors - Dark Mode */
+  --color-divider-default: var(--color-grey-700);
+  --color-divider-subtle: var(--color-grey-800);
+  --color-divider-strong: var(--color-grey-600);
+  --color-divider-invert: var(--color-black-alpha-300);
+
+  /* Outline - Primary (Dark Mode) */
+  --color-outline-primary: var(--color-indigo-500);
+  --color-outline-primary-hover: var(--color-indigo-400);
+  --color-outline-primary-pressed: var(--color-indigo-300);
+  --color-outline-primary-disabled: var(--color-grey-700);
+
+  /* Outline - Secondary (Dark Mode) */
+  --color-outline-secondary: var(--color-dark-blue-400);
+  --color-outline-secondary-hover: var(--color-dark-blue-300);
+  --color-outline-secondary-pressed: var(--color-dark-blue-200);
+  --color-outline-secondary-subtle: var(--color-dark-blue-800);
+  --color-outline-secondary-disabled: var(--color-grey-800);
+
+  /* Outline - Brand (Dark Mode) */
+  --color-outline-brand: var(--color-primary-brand-400);
+  --color-outline-brand-hover: var(--color-primary-brand-300);
+  --color-outline-brand-pressed: var(--color-primary-brand-200);
+  --color-outline-brand-disabled: var(--color-primary-brand-900);
+
+  /* Outline - Inverse (Dark Mode) */
+  --color-outline-inverse: var(--color-grey-700);
+  --color-outline-inverse-hover: var(--color-grey-600);
+  --color-outline-inverse-pressed: var(--color-grey-500);
+  --color-outline-inverse-disabled: var(--color-grey-800);
+
+  /* Outline - Neutral (Dark Mode) */
+  --color-outline-neutral: var(--color-grey-400);
+  --color-outline-neutral-hover: var(--color-grey-300);
+  --color-outline-neutral-pressed: var(--color-grey-200);
+  --color-outline-neutral-disabled: var(--color-grey-600);
+
+  /* Outline - Error (Dark Mode) */
+  --color-outline-error: var(--color-red-500);
+  --color-outline-error-hover: var(--color-red-400);
+  --color-outline-error-pressed: var(--color-red-300);
+
+  /* Outline - Warning (Dark Mode) */
+  --color-outline-warning: var(--color-orange-500);
+  --color-outline-warning-hover: var(--color-orange-400);
+  --color-outline-warning-pressed: var(--color-orange-300);
+
+  /* Outline - Informative (Dark Mode) */
+  --color-outline-informative: var(--color-blue-500);
+  --color-outline-informative-hover: var(--color-blue-400);
+  --color-outline-informative-pressed: var(--color-blue-300);
+
+  /* Outline - Success (Dark Mode) */
+  --color-outline-success: var(--color-green-500);
+  --color-outline-success-hover: var(--color-green-400);
+  --color-outline-success-pressed: var(--color-green-300);
+
+  /* Opacity Colors - Dark Mode */
+  --color-opacity-dark-subtle: var(--color-black-alpha-200);
+  --color-opacity-dark-default: var(--color-black-alpha-300);
+  --color-opacity-dark-strong: var(--color-black-alpha-500);
+  --color-opacity-dark-stronger: var(--color-black-alpha-600);
+  --color-opacity-dark-strongest: var(--color-black-alpha-800);
+  --color-opacity-primary-subtle: var(--color-indigo-alpha-200);
+  --color-opacity-primary-default: var(--color-indigo-alpha-300);
+  --color-opacity-primary-strong: var(--color-indigo-alpha-500);
+  --color-opacity-secondary-subtle: var(--color-dark-blue-alpha-200);
+  --color-opacity-secondary-default: var(--color-dark-blue-alpha-300);
+  --color-opacity-secondary-strong: var(--color-dark-blue-alpha-500);
+  --color-opacity-brand-subtle: var(--color-primary-brand-alpha-200);
+  --color-opacity-brand-default: var(--color-primary-brand-alpha-300);
+  --color-opacity-brand-strong: var(--color-primary-brand-alpha-500);
+  --color-opacity-informative-subtle: var(--color-blue-alpha-200);
+  --color-opacity-informative-default: var(--color-blue-alpha-300);
+  --color-opacity-informative-strong: var(--color-blue-alpha-500);
+  --color-opacity-warning-subtle: var(--color-orange-alpha-200);
+  --color-opacity-warning-default: var(--color-orange-alpha-300);
+  --color-opacity-warning-strong: var(--color-orange-alpha-500);
+  --color-opacity-error-subtle: var(--color-red-alpha-200);
+  --color-opacity-error-default: var(--color-red-alpha-300);
+  --color-opacity-error-strong: var(--color-red-alpha-500);
+
   --shadow-elevated: 4px 4px 0px 0px oklch(1 0 0 / 0.04);
-  --color-sidebar: var(--color-sidebar-dark);
-  --color-sidebar-foreground: var(--color-base-100);
-  --color-sidebar-primary: var(--color-primary-500);
-  --color-sidebar-primary-foreground: var(--color-white);
-  --color-sidebar-accent: oklch(0 0 0 / 24%);
-  --color-sidebar-accent-foreground: var(--color-base-100);
-  --color-sidebar-border: var(--color-base-500);
-  --color-sidebar-ring: var(--color-primary-500);
-  --color-selection: oklch(0.8462 0.027 262.33);
-  --color-selection-foreground: var(--color-base-200);
-  --color-sidebar-selection: oklch(0.5547 0.087 264.14);
-  --color-sidebar-selection-foreground: oklch(1 0 0);
-  --color-selected: oklch(1 0 0);
-  --color-selected-foreground: oklch(0.2348 0.0314 262.56);
 }
+
+/* =============================================================================
+   BASE LAYER (Global defaults)
+   ============================================================================= */
 
 @layer base {
   /* Global defaults */
   * {
-    @apply border-border outline-ring/50;
+    @apply outline-ring/50;
   }
 
   body {
@@ -154,9 +1054,9 @@
   }
 
   [data-sidebar] *::selection,
-  [data-slot*="sidebar"] *::selection {
-    background-color: var(--color-sidebar-selection) !important;
-    color: var(--color-sidebar-selection-foreground) !important;
+  [data-slot*='sidebar'] *::selection {
+    background-color: var(--color-indigo-400);
+    color: var(--color-grey-white);
   }
 
   /* Animation keyframes */

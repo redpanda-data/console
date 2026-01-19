@@ -7,45 +7,47 @@ import React, { createContext, useEffect, useState } from 'react';
 
 import { Button } from './button';
 import { useGroup } from './group';
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
 export const inputVariants = cva(
-  'file:text-foreground placeholder:!text-muted-foreground selection:bg-selection selection:text-selection-foreground dark:bg-input/30 border-input flex w-full min-w-0 border bg-transparent text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]',
+  'placeholder:!text-muted-foreground flex w-full min-w-0 border border-input bg-transparent text-base shadow-xs outline-none transition-[color,box-shadow] [-moz-appearance:textfield] selection:bg-selection selection:text-selection-foreground file:inline-flex file:border-0 file:bg-transparent file:font-medium file:text-foreground file:text-sm focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:ring-destructive/40 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
   {
     variants: {
       size: {
         sm: 'h-8 px-2.5 py-1 text-sm file:h-6',
-        default: 'h-9 px-3 py-1 file:h-7',
+        md: 'h-9 px-3 py-1 file:h-7',
         lg: 'h-10 px-4 py-2 file:h-8',
       },
       variant: {
-        default: '',
+        standard: '',
         password: 'pr-10',
       },
     },
     defaultVariants: {
-      size: 'default',
-      variant: 'default',
+      size: 'md',
+      variant: 'standard',
     },
-  },
+  }
 );
 
 const inputContainerVariants = cva('', {
   variants: {
     layout: {
-      default: 'flex items-center relative',
-      password: 'flex relative flex-1',
+      standard: 'relative flex items-center',
+      password: 'relative flex flex-1',
       number: 'flex items-center gap-2',
     },
   },
   defaultVariants: {
-    layout: 'default',
+    layout: 'standard',
   },
 });
 
-interface InputProps extends Omit<React.ComponentProps<'input'>, 'size'>, VariantProps<typeof inputVariants> {
+interface InputProps
+  extends Omit<React.ComponentProps<'input'>, 'size'>,
+    VariantProps<typeof inputVariants>,
+    SharedProps {
   showStepControls?: boolean;
-  testId?: string;
   children?: React.ReactNode;
   containerClassName?: string;
 }
@@ -67,7 +69,7 @@ function useNumberInputHandlers(
   value: string,
   setValue: React.Dispatch<React.SetStateAction<string>>,
   step: number,
-  onChange?: React.ChangeEventHandler<HTMLInputElement>,
+  onChange?: React.ChangeEventHandler<HTMLInputElement>
 ) {
   const createChangeEvent = (newValue: string): React.ChangeEvent<HTMLInputElement> =>
     ({
@@ -99,7 +101,7 @@ function useNumberInputHandlers(
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   (
     { className, type, showStepControls, size, variant, testId, children, containerClassName, readOnly, ...props },
-    ref,
+    ref
   ) => {
     const { value, setValue, showPassword, setShowPassword } = useInputState(props);
     const [startWidth, setStartWidth] = useState<number | undefined>();
@@ -115,32 +117,43 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     const { increment, decrement, handleInputChange } = useNumberInputHandlers(value, setValue, step, props.onChange);
 
+    let positionClasses = 'rounded-md';
+    if (attached && groupPosition === 'first') {
+      positionClasses = 'rounded-r-none rounded-l-md border-r-0';
+    } else if (attached && groupPosition === 'last') {
+      positionClasses = 'rounded-r-md rounded-l-none border-l-0';
+    } else if (attached && groupPosition === 'middle') {
+      positionClasses = 'rounded-none border-r-0 border-l-0';
+    }
+
+    let inputType = type;
+    if (isPasswordInput) {
+      inputType = showPassword ? 'text' : 'password';
+    }
+
+    let layout: 'number' | 'password' | typeof variant = variant;
+    if (shouldShowControls) {
+      layout = 'number';
+    } else if (isPasswordInput) {
+      layout = 'password';
+    }
+
     const inputElement = (
       <input
         {...props}
-        ref={ref}
-        type={isPasswordInput ? (showPassword ? 'text' : 'password') : type}
-        step={isNumberInput ? step : undefined}
-        value={isNumberInput ? value : props.value}
-        onChange={isNumberInput ? handleInputChange : props.onChange}
+        className={cn(inputVariants({ size, variant: inputVariant }), positionClasses, className)}
         data-slot="input"
         data-testid={testId}
-        className={cn(
-          inputVariants({ size, variant: inputVariant }),
-          attached && groupPosition === 'first'
-            ? 'rounded-r-none rounded-l-md border-r-0'
-            : attached && groupPosition === 'last'
-              ? 'rounded-l-none rounded-r-md border-l-0'
-              : attached && groupPosition === 'middle'
-                ? 'rounded-none border-l-0 border-r-0'
-                : 'rounded-md',
-          className,
-        )}
+        onChange={isNumberInput ? handleInputChange : props.onChange}
+        readOnly={readOnly}
+        ref={ref}
+        step={isNumberInput ? step : undefined}
         style={{
           paddingLeft: startWidth ? startWidth + 16 : undefined,
           paddingRight: endWidth ? endWidth + 16 : undefined,
         }}
-        readOnly={readOnly}
+        type={inputType}
+        value={isNumberInput ? value : props.value}
       />
     );
 
@@ -156,51 +169,51 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <div
           className={cn(
             inputContainerVariants({
-              layout: shouldShowControls ? 'number' : isPasswordInput ? 'password' : variant,
+              layout,
             }),
-            containerClassName,
+            containerClassName
           )}
         >
           {inputElement}
           {children}
-          {isPasswordInput && (
+          {isPasswordInput ? (
             <InputEnd className="pointer-events-auto">
               <Button
+                disabled={props.disabled || readOnly}
+                onClick={() => setShowPassword(!showPassword)}
                 type="button"
                 variant="ghost"
-                onClick={() => setShowPassword(!showPassword)}
-                disabled={props.disabled || readOnly}
               >
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </Button>
             </InputEnd>
-          )}
-          {shouldShowControls && (
+          ) : null}
+          {shouldShowControls ? (
             <div className="flex flex-row gap-1">
               <Button
-                type="button"
-                onClick={decrement}
                 disabled={props.disabled || readOnly}
-                size={size}
-                variant="outline"
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-              <Button
-                type="button"
                 onClick={increment}
-                disabled={props.disabled || readOnly}
                 size={size}
+                type="button"
                 variant="outline"
               >
                 <Plus className="h-4 w-4" />
               </Button>
+              <Button
+                disabled={props.disabled || readOnly}
+                onClick={decrement}
+                size={size}
+                type="button"
+                variant="outline"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
             </div>
-          )}
+          ) : null}
         </div>
       </InputContext.Provider>
     );
-  },
+  }
 );
 
 const inputEndClassNames = 'absolute top-1/2 -translate-y-1/2 z-10 pointer-events-none right-2';
@@ -211,8 +224,12 @@ const InputContext = createContext<{
   startWidth: number | undefined;
   endWidth: number | undefined;
 }>({
-  setStartWidth: () => {},
-  setEndWidth: () => {},
+  setStartWidth: () => {
+    // Default no-op function
+  },
+  setEndWidth: () => {
+    // Default no-op function
+  },
   startWidth: undefined,
   endWidth: undefined,
 });
@@ -235,7 +252,7 @@ const InputStart = ({ children, className, ...props }: { children: React.ReactNo
 
   return (
     <span
-      className={cn('absolute top-1/2 -translate-y-1/2 z-10 pointer-events-none left-2', className)}
+      className={cn('pointer-events-none absolute top-1/2 left-2 z-10 -translate-y-1/2', className)}
       ref={startRef}
       {...props}
     >

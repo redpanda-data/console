@@ -1,30 +1,29 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
-const skeletonVariants = cva('bg-accent animate-pulse', {
+const skeletonVariants = cva('animate-pulse bg-accent', {
   variants: {
     variant: {
-      default: 'rounded-md',
+      rounded: 'rounded-md',
       circle: 'rounded-full',
-      text: 'rounded-md h-4',
-      heading: 'rounded-md h-6',
-      avatar: 'rounded-full aspect-square',
-      button: 'rounded-md h-9',
+      text: 'h-4 rounded-md',
+      heading: 'h-6 rounded-md',
+      avatar: 'aspect-square rounded-full',
+      button: 'h-9 rounded-md',
       card: 'rounded-lg',
     },
     size: {
       xs: 'h-2',
       sm: 'h-4',
-      default: 'h-6',
+      md: 'h-6',
       lg: 'h-8',
       xl: 'h-12',
     },
     width: {
       xs: 'w-16',
       sm: 'w-24',
-      default: 'w-32',
       md: 'w-48',
       lg: 'w-64',
       xl: 'w-80',
@@ -33,59 +32,50 @@ const skeletonVariants = cva('bg-accent animate-pulse', {
     },
   },
   defaultVariants: {
-    variant: 'default',
-    size: 'default',
-    width: 'default',
+    variant: 'rounded',
+    size: 'md',
+    width: 'md',
   },
 });
 
-interface SkeletonProps extends React.ComponentProps<'div'>, VariantProps<typeof skeletonVariants> {
-  testId?: string;
-}
+interface SkeletonProps extends React.ComponentProps<'div'>, VariantProps<typeof skeletonVariants>, SharedProps {}
 
 function Skeleton({ className, variant, size, width, testId, ...props }: SkeletonProps) {
   return (
     <div
+      className={cn(skeletonVariants({ variant, size, width }), className)}
       data-slot="skeleton"
       data-testid={testId}
-      className={cn(skeletonVariants({ variant, size, width }), className)}
       {...props}
     />
   );
 }
 
 // Compound skeleton components for common patterns
-interface SkeletonGroupProps {
+interface SkeletonGroupProps extends SharedProps {
   children: React.ReactNode;
   direction?: 'horizontal' | 'vertical';
-  spacing?: 'none' | 'sm' | 'default' | 'lg';
+  spacing?: 'none' | 'sm' | 'md' | 'lg';
   className?: string;
-  testId?: string;
 }
 
-function SkeletonGroup({
-  children,
-  direction = 'vertical',
-  spacing = 'default',
-  className,
-  testId,
-}: SkeletonGroupProps) {
+function SkeletonGroup({ children, direction = 'vertical', spacing = 'md', className, testId }: SkeletonGroupProps) {
   const spacingClasses = {
     none: '',
     sm: direction === 'horizontal' ? 'space-x-2' : 'space-y-1',
-    default: direction === 'horizontal' ? 'space-x-4' : 'space-y-2',
+    md: direction === 'horizontal' ? 'space-x-4' : 'space-y-2',
     lg: direction === 'horizontal' ? 'space-x-6' : 'space-y-4',
   };
 
   return (
     <div
-      data-testid={testId}
       className={cn(
         'flex',
         direction === 'horizontal' ? 'flex-row items-center' : 'flex-col',
         spacingClasses[spacing],
-        className,
+        className
       )}
+      data-testid={testId}
     >
       {children}
     </div>
@@ -93,19 +83,19 @@ function SkeletonGroup({
 }
 
 // Pre-built skeleton patterns
-function SkeletonAvatar({ size = 'default' }: { size?: 'sm' | 'default' | 'lg' }) {
+function SkeletonAvatar({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   const sizeMap = {
     sm: { size: 'sm' as const, width: 'fit' as const },
-    default: { size: 'xl' as const, width: 'fit' as const },
+    md: { size: 'xl' as const, width: 'fit' as const },
     lg: { size: 'xl' as const, width: 'fit' as const },
   };
 
   return <Skeleton variant="avatar" {...sizeMap[size]} />;
 }
 
-function SkeletonText({ lines = 1, width = 'default' }: { lines?: number; width?: 'sm' | 'default' | 'lg' | 'full' }) {
+function SkeletonText({ lines = 1, width = 'md' }: { lines?: number; width?: 'sm' | 'md' | 'lg' | 'full' }) {
   const skeletonLines = Array.from({ length: lines }, (_, i) => ({
-    width: (i === lines - 1 && lines > 1 ? 'md' : width) as 'sm' | 'default' | 'lg' | 'md' | 'xl' | 'full' | 'fit',
+    width: (i === lines - 1 && lines > 1 ? 'md' : width) as 'sm' | 'md' | 'lg' | 'xl' | 'full' | 'fit',
     id: `skeleton-${lines}-${i === lines - 1 && lines > 1 ? 'md' : width}-line-${i}`,
   }));
 
@@ -120,10 +110,10 @@ function SkeletonText({ lines = 1, width = 'default' }: { lines?: number; width?
 
 function SkeletonCard() {
   return (
-    <div className="p-4 border rounded-lg bg-white dark:bg-gray-900">
-      <SkeletonGroup direction="horizontal" spacing="default">
+    <div className="rounded-lg border bg-card p-4">
+      <SkeletonGroup direction="horizontal">
         <SkeletonAvatar />
-        <SkeletonGroup direction="vertical" spacing="sm" className="flex-1">
+        <SkeletonGroup className="flex-1" direction="vertical" spacing="sm">
           <Skeleton variant="heading" width="md" />
           <SkeletonText lines={2} width="lg" />
         </SkeletonGroup>

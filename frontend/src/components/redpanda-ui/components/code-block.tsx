@@ -6,62 +6,60 @@ import { forwardRef, type HTMLAttributes, type ReactNode, type RefObject, useCal
 
 import { CopyButton } from './copy-button';
 import { ScrollArea, ScrollBar, ScrollViewport } from './scroll-area';
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
 const codeBlockVariants = cva(
-  'group fd-codeblock relative overflow-hidden rounded-xl border border-border text-sm [&.shiki]:!bg-card',
+  'group fd-codeblock [&.shiki]:!bg-card relative overflow-hidden rounded-xl border border-border text-sm',
   {
     variants: {
       size: {
         sm: 'my-3 text-xs',
-        default: 'my-6 text-sm',
+        md: 'my-6 text-sm',
         lg: 'my-8 text-base',
       },
       width: {
         auto: 'w-auto',
         sm: 'w-full max-w-md',
-        default: 'w-full max-w-2xl',
+        md: 'w-full max-w-2xl',
         lg: 'w-full max-w-4xl',
         full: 'w-full',
       },
       maxHeight: {
         sm: '[&_[data-radix-scroll-area-viewport]]:max-h-[300px]',
-        default: '[&_[data-radix-scroll-area-viewport]]:max-h-[600px]',
+        md: '[&_[data-radix-scroll-area-viewport]]:max-h-[600px]',
         lg: '[&_[data-radix-scroll-area-viewport]]:max-h-[800px]',
         none: '[&_[data-radix-scroll-area-viewport]]:max-h-none',
       },
     },
     defaultVariants: {
-      size: 'default',
-      width: 'default',
-      maxHeight: 'default',
+      size: 'md',
+      width: 'md',
+      maxHeight: 'md',
     },
-  },
+  }
 );
 
 export type CodeBlockProps = HTMLAttributes<HTMLElement> &
-  VariantProps<typeof codeBlockVariants> & {
+  VariantProps<typeof codeBlockVariants> &
+  SharedProps & {
     icon?: ReactNode;
     allowCopy?: boolean;
     viewportProps?: ScrollAreaPrimitive.ScrollAreaViewportProps;
     onCopy?: () => void;
-    testId?: string;
   };
 
-export const Pre = forwardRef<HTMLPreElement, HTMLAttributes<HTMLPreElement>>(({ className, ...props }, ref) => {
-  return (
-    <pre
-      ref={ref}
-      className={cn(
-        'no-scrollbar min-w-0 overflow-x-auto px-4 py-3.5 outline-none has-[[data-highlighted-line]]:px-0 has-[[data-line-numbers]]:px-0 has-[[data-slot=tabs]]:p-0',
-        className,
-      )}
-      {...props}
-    >
-      {props.children}
-    </pre>
-  );
-});
+export const Pre = forwardRef<HTMLPreElement, HTMLAttributes<HTMLPreElement>>(({ className, ...props }, ref) => (
+  <pre
+    className={cn(
+      'no-scrollbar min-w-0 overflow-x-auto px-4 py-3.5 outline-none has-[[data-slot=tabs]]:p-0 has-[[data-highlighted-line]]:px-0 has-[[data-line-numbers]]:px-0',
+      className
+    )}
+    ref={ref}
+    {...props}
+  >
+    {props.children}
+  </pre>
+));
 
 Pre.displayName = 'Pre';
 
@@ -80,7 +78,7 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
       testId,
       ...props
     },
-    ref,
+    ref
   ) => {
     const [isCopied, setIsCopied] = useState(false);
     const areaRef = useRef<HTMLDivElement>(null);
@@ -88,13 +86,15 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
     const onCopy = useCallback(() => {
       const pre = areaRef.current?.getElementsByTagName('pre').item(0);
 
-      if (!pre) return;
+      if (!pre) {
+        return;
+      }
 
       const clone = pre.cloneNode(true) as HTMLElement;
 
-      clone.querySelectorAll('.nd-copy-ignore').forEach((node) => {
+      for (const node of Array.from(clone.querySelectorAll('.nd-copy-ignore'))) {
         node.remove();
-      });
+      }
 
       // biome-ignore lint/complexity/noVoid: part of clipboard implementation
       void navigator.clipboard.writeText(clone.textContent ?? '').then(() => {
@@ -106,13 +106,13 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
 
     return (
       <figure
-        ref={ref}
         data-testid={testId}
+        ref={ref}
         {...props}
         className={cn(codeBlockVariants({ size, width, maxHeight }), className)}
       >
         {title ? (
-          <div className="flex flex-row items-center gap-2 bg-muted border-b border-border px-4 h-10">
+          <div className="flex h-10 flex-row items-center gap-2 border-border border-b bg-muted px-4">
             {icon ? (
               <div
                 className="text-muted-foreground [&_svg]:size-3.5"
@@ -126,22 +126,22 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
             <figcaption className="flex-1 truncate text-muted-foreground">{title}</figcaption>
             {allowCopy ? (
               <CopyButton
+                className="-me-2 bg-transparent selection:bg-selected selection:text-selected-foreground hover:bg-primary/10"
+                isCopied={isCopied}
+                onClick={onCopy}
                 size="sm"
                 variant="ghost"
-                className="-me-2 bg-transparent hover:bg-primary/10 selection:bg-selected selection:text-selected-foreground"
-                onClick={onCopy}
-                isCopied={isCopied}
               />
             ) : null}
           </div>
         ) : (
           allowCopy && (
             <CopyButton
+              className="absolute top-2 right-2 z-[2] bg-transparent backdrop-blur-md selection:bg-selected selection:text-selected-foreground hover:bg-primary/10"
+              isCopied={isCopied}
+              onClick={onCopy}
               size="sm"
               variant="ghost"
-              className="absolute right-2 top-2 z-[2] backdrop-blur-md bg-transparent hover:bg-primary/10 selection:bg-selected selection:text-selected-foreground"
-              onClick={onCopy}
-              isCopied={isCopied}
             />
           )
         )}
@@ -157,29 +157,25 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
         </ScrollArea>
       </figure>
     );
-  },
+  }
 );
 
 CodeBlock.displayName = 'CodeBlock';
 
 // Simplified interface for backend developers
-interface SimpleCodeBlockProps {
+type SimpleCodeBlockProps = {
   code: string;
   language?: string;
   title?: string;
   icon?: ReactNode;
   allowCopy?: boolean;
-  size?: 'sm' | 'default' | 'lg';
-  width?: 'auto' | 'sm' | 'default' | 'lg' | 'full';
-  maxHeight?: 'sm' | 'default' | 'lg' | 'none';
+  size?: 'sm' | 'md' | 'lg';
+  width?: 'auto' | 'sm' | 'md' | 'lg' | 'full';
+  maxHeight?: 'sm' | 'md' | 'lg' | 'none';
   onCopy?: () => void;
   className?: string;
-  /**
-   * Class name for the code block
-   */
-  codeClassName?: string;
   testId?: string;
-}
+};
 
 export const SimpleCodeBlock = ({
   code,
@@ -187,31 +183,28 @@ export const SimpleCodeBlock = ({
   title,
   icon,
   allowCopy = true,
-  size = 'default',
-  width = 'default',
-  maxHeight = 'default',
+  size = 'md',
+  width = 'md',
+  maxHeight = 'md',
   onCopy,
   className,
-  codeClassName,
   testId,
-}: SimpleCodeBlockProps) => {
-  return (
-    <CodeBlock
-      title={title}
-      icon={icon}
-      allowCopy={allowCopy}
-      size={size}
-      width={width}
-      maxHeight={maxHeight}
-      onCopy={onCopy}
-      className={className}
-      testId={testId}
-    >
-      <Pre>
-        <code className={cn(language, 'break-all wrap-break-word whitespace-pre-wrap', codeClassName)}>{code}</code>
-      </Pre>
-    </CodeBlock>
-  );
-};
+}: SimpleCodeBlockProps) => (
+  <CodeBlock
+    allowCopy={allowCopy}
+    className={className}
+    icon={icon}
+    maxHeight={maxHeight}
+    onCopy={onCopy}
+    size={size}
+    testId={testId}
+    title={title}
+    width={width}
+  >
+    <Pre>
+      <code className={language}>{code}</code>
+    </Pre>
+  </CodeBlock>
+);
 
 export { codeBlockVariants };

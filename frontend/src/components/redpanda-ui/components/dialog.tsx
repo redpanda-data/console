@@ -3,14 +3,9 @@ import { X } from 'lucide-react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 import React from 'react';
 
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
-function Dialog({
-  testId,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Root> & {
-  testId?: string;
-}) {
+function Dialog({ testId, ...props }: React.ComponentProps<typeof DialogPrimitive.Root> & SharedProps) {
   return <DialogPrimitive.Root data-slot="dialog" data-testid={testId} {...props} />;
 }
 
@@ -29,18 +24,18 @@ function DialogClose({ ...props }: React.ComponentProps<typeof DialogPrimitive.C
 function DialogOverlay({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
   return (
     <DialogPrimitive.Overlay
-      data-slot="dialog-overlay"
       className={cn(
-        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/40 backdrop-blur-xs',
-        className,
+        'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/40 backdrop-blur-xs data-[state=closed]:animate-out data-[state=open]:animate-in',
+        className
       )}
+      data-slot="dialog-overlay"
       {...props}
     />
   );
 }
 
 const dialogContentVariants = cva(
-  'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-[50%] top-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] border shadow-lg duration-200 rounded-xl',
+  'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-xl border bg-background shadow-lg duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in',
   {
     variants: {
       size: {
@@ -51,23 +46,24 @@ const dialogContentVariants = cva(
         full: 'gap-4 p-6 sm:max-w-[90vw]',
       },
       variant: {
-        default: '',
+        standard: '',
         centered: 'text-center',
         destructive: 'border-destructive/50',
       },
     },
     defaultVariants: {
       size: 'md',
-      variant: 'default',
+      variant: 'standard',
     },
-  },
+  }
 );
 
 interface DialogContentProps
   extends React.ComponentProps<typeof DialogPrimitive.Content>,
-    VariantProps<typeof dialogContentVariants> {
+    VariantProps<typeof dialogContentVariants>,
+    SharedProps {
   showCloseButton?: boolean;
-  testId?: string;
+  container?: Element;
 }
 
 function DialogContent({
@@ -77,30 +73,31 @@ function DialogContent({
   size,
   variant,
   testId,
+  container,
   ...props
 }: DialogContentProps) {
   return (
-    <DialogPortal>
+    <DialogPortal container={container}>
       <DialogOverlay />
       <DialogPrimitive.Content
+        className={cn(dialogContentVariants({ size, variant }), className)}
         data-slot="dialog-content"
         data-testid={testId}
-        className={cn(dialogContentVariants({ size, variant }), className)}
         {...props}
       >
         {children}
-        {showCloseButton && (
-          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+        {showCloseButton ? (
+          <DialogPrimitive.Close className="absolute top-4 right-4 rounded-sm p-1 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
             <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
-        )}
+        ) : null}
       </DialogPrimitive.Content>
     </DialogPortal>
   );
 }
 
-const dialogHeaderVariants = cva('flex flex-col gap-2', {
+const dialogHeaderVariants = cva('flex flex-col', {
   variants: {
     align: {
       left: 'text-left',
@@ -123,7 +120,7 @@ interface DialogHeaderProps extends React.ComponentProps<'div'>, VariantProps<ty
 
 function DialogHeader({ className, align, spacing, ...props }: DialogHeaderProps) {
   return (
-    <div data-slot="dialog-header" className={cn(dialogHeaderVariants({ align, spacing }), className)} {...props} />
+    <div className={cn(dialogHeaderVariants({ align, spacing }), className)} data-slot="dialog-header" {...props} />
   );
 }
 
@@ -158,8 +155,8 @@ interface DialogFooterProps extends React.ComponentProps<'div'>, VariantProps<ty
 function DialogFooter({ className, direction, justify, gap, ...props }: DialogFooterProps) {
   return (
     <div
-      data-slot="dialog-footer"
       className={cn(dialogFooterVariants({ direction, justify, gap }), className)}
+      data-slot="dialog-footer"
       {...props}
     />
   );
@@ -168,8 +165,8 @@ function DialogFooter({ className, direction, justify, gap, ...props }: DialogFo
 function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
+      className={cn('font-semibold text-lg leading-none tracking-tight', className)}
       data-slot="dialog-title"
-      className={cn('text-lg font-semibold leading-none tracking-tight', className)}
       {...props}
     />
   );
@@ -178,8 +175,8 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
 function DialogDescription({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Description>) {
   return (
     <DialogPrimitive.Description
+      className={cn('text-muted-foreground text-sm', className)}
       data-slot="dialog-description"
-      className={cn('text-sm text-muted-foreground', className)}
       {...props}
     />
   );
@@ -210,7 +207,7 @@ const dialogBodyVariants = cva('', {
 interface DialogBodyProps extends React.ComponentProps<'div'>, VariantProps<typeof dialogBodyVariants> {}
 
 function DialogBody({ className, spacing, padding, ...props }: DialogBodyProps) {
-  return <div data-slot="dialog-body" className={cn(dialogBodyVariants({ spacing, padding }), className)} {...props} />;
+  return <div className={cn(dialogBodyVariants({ spacing, padding }), className)} data-slot="dialog-body" {...props} />;
 }
 
 // Form-specific layout helpers

@@ -1,16 +1,34 @@
 'use client';
 
+import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 import React, { type HTMLAttributes, useContext, useEffect, useState } from 'react';
 
 import { Button } from './button';
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
-interface BannerContextValue {
+const bannerVariants = cva(
+  'sticky top-0 z-40 flex w-full flex-row items-center justify-center px-4 text-center font-medium text-sm selection:bg-foreground selection:text-background',
+  {
+    variants: {
+      variant: {
+        secondary: 'bg-secondary text-secondary-foreground [&_button]:text-foreground',
+        accent: 'bg-accent text-accent-foreground [&_button]:text-foreground',
+        muted: 'bg-muted text-muted-foreground [&_button]:text-foreground',
+        primary: 'bg-primary',
+      },
+    },
+    defaultVariants: {
+      variant: 'secondary',
+    },
+  }
+);
+
+type BannerContextValue = {
   open: boolean;
   setOpen: (open: boolean) => void;
   globalKey: string | null;
-}
+};
 
 const BannerContext = React.createContext<BannerContextValue | null>(null);
 
@@ -22,30 +40,31 @@ function useBanner() {
   return context;
 }
 
-interface BannerProps extends HTMLAttributes<HTMLDivElement> {
+interface BannerProps extends HTMLAttributes<HTMLDivElement>, VariantProps<typeof bannerVariants>, SharedProps {
   height?: string;
 }
 
-function Banner({ id, height = '3rem', ...props }: BannerProps) {
+function Banner({ id, height = '3rem', variant, testId, ...props }: BannerProps) {
   const [open, setOpen] = useState(true);
   const globalKey = id ? `redpanda-cloud-banner-${id}` : null;
 
   useEffect(() => {
-    if (globalKey) setOpen(localStorage.getItem(globalKey) !== 'true');
+    if (globalKey) {
+      setOpen(localStorage.getItem(globalKey) !== 'true');
+    }
   }, [globalKey]);
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   return (
     <BannerContext.Provider value={{ open, setOpen, globalKey }}>
       <div
+        data-testid={testId}
         id={id}
         {...props}
-        className={cn(
-          'sticky top-0 z-40 w-full flex flex-row items-center justify-center bg-secondary px-4 text-center text-sm font-medium text-secondary-foreground selection:bg-foreground selection:text-background [&_button]:text-foreground',
-          !open && 'hidden',
-          props.className,
-        )}
+        className={cn(bannerVariants({ variant }), !open && 'hidden', props.className)}
         style={{
           height,
         }}
@@ -73,14 +92,16 @@ function BannerClose({ ...props }: BannerCloseProps) {
 
   return (
     <Button
-      type="button"
       aria-label="Close Banner"
       onClick={() => {
         setOpen(false);
-        if (globalKey) localStorage.setItem(globalKey, 'true');
+        if (globalKey) {
+          localStorage.setItem(globalKey, 'true');
+        }
       }}
-      variant="outline"
       size="icon"
+      type="button"
+      variant="outline"
       {...props}
     >
       <X />
@@ -88,4 +109,4 @@ function BannerClose({ ...props }: BannerCloseProps) {
   );
 }
 
-export { Banner, BannerContent, BannerClose };
+export { Banner, BannerContent, BannerClose, bannerVariants };

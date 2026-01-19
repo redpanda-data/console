@@ -1,7 +1,6 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 
-import { type SharedProps } from 'components/redpanda-ui/lib/shared-types';
-import { cn } from 'components/redpanda-ui/lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
 function Empty({ className, testId, ...props }: React.ComponentProps<'div'> & SharedProps) {
   return (
@@ -33,19 +32,19 @@ const emptyMediaVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-transparent',
+        transparent: 'bg-transparent',
         icon: "flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground [&_svg:not([class*='size-'])]:size-6",
       },
     },
     defaultVariants: {
-      variant: 'default',
+      variant: 'transparent',
     },
   }
 );
 
 function EmptyMedia({
   className,
-  variant = 'default',
+  variant = 'transparent',
   ...props
 }: React.ComponentProps<'div'> & VariantProps<typeof emptyMediaVariants>) {
   return (

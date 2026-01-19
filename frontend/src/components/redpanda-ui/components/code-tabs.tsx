@@ -7,60 +7,67 @@ import { CopyButton } from './copy-button';
 import { Tabs, TabsContent, TabsContents, TabsList, type TabsProps, TabsTrigger } from './tabs';
 import { cn } from '../lib/utils';
 
-const codeTabsVariants = cva('w-full gap-0 bg-card rounded-xl border overflow-hidden', {
+const codeTabsVariants = cva('w-full gap-0 overflow-hidden rounded-xl border bg-card', {
   variants: {
     variant: {
-      default: 'w-full gap-0 bg-card rounded-xl border overflow-hidden',
+      standard: 'w-full gap-0 overflow-hidden rounded-xl border bg-card',
     },
   },
   defaultVariants: {
-    variant: 'default',
+    variant: 'standard',
   },
 });
 
 const codeTabsListVariants = cva(
-  'w-full relative justify-between rounded-none h-10 bg-muted border-b border-border text-current py-0 px-4',
+  'relative h-10 w-full justify-between rounded-none border-border border-b bg-muted px-4 py-0 text-current',
   {
     variants: {
       variant: {
-        default:
-          'w-full relative justify-between rounded-none h-10 bg-muted border-b border-border text-current py-0 px-4',
+        standard:
+          'relative h-10 w-full justify-between rounded-none border-border border-b bg-muted px-4 py-0 text-current',
       },
     },
     defaultVariants: {
-      variant: 'default',
+      variant: 'standard',
     },
-  },
+  }
 );
 
 const codeTabsActiveVariants = cva(
-  "rounded-none shadow-none bg-transparent after:content-[''] after:absolute after:inset-x-0 after:h-0.5 after:bottom-0 after:bg-selected after:rounded-t-full",
+  "rounded-none bg-transparent shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-full after:bg-selected after:content-['']",
   {
     variants: {
       variant: {
-        default:
-          "rounded-none shadow-none bg-transparent after:content-[''] after:absolute after:inset-x-0 after:h-0.5 after:bottom-0 after:bg-selected after:rounded-t-full",
+        standard:
+          "rounded-none bg-transparent shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-full after:bg-selected after:content-['']",
       },
     },
     defaultVariants: {
-      variant: 'default',
+      variant: 'standard',
     },
-  },
+  }
 );
 
-const codeTabsContentVariants = cva('w-full text-sm flex items-center p-4 overflow-auto', {
+const codeTabsContentVariants = cva('flex w-full items-center overflow-auto p-4 text-sm', {
   variants: {
     variant: {
-      default: 'w-full text-sm flex items-center p-4 overflow-auto',
+      standard: 'flex w-full items-center overflow-auto p-4 text-sm',
     },
   },
   defaultVariants: {
-    variant: 'default',
+    variant: 'standard',
   },
 });
 
+type CodeTabItem = {
+  id: string;
+  label: React.ReactNode;
+  code: string;
+};
+
 type CodeTabsProps = {
-  codes: Record<string, string>;
+  codes?: Record<string, string>;
+  items?: CodeTabItem[];
   lang?: string;
   themes?: {
     light: string;
@@ -75,6 +82,7 @@ type CodeTabsProps = {
 
 function CodeTabs({
   codes,
+  items,
   lang = 'bash',
   themes = {
     light: 'github-light',
@@ -91,17 +99,32 @@ function CodeTabs({
   testId,
   ...props
 }: CodeTabsProps) {
-  const [highlightedCodes, setHighlightedCodes] = React.useState<Record<string, string> | null>(null);
-  const [selectedCode, setSelectedCode] = React.useState<string>(value ?? defaultValue ?? Object.keys(codes)[0] ?? '');
+  // Normalize the input - convert codes to items format if needed
+  const normalizedItems = React.useMemo<CodeTabItem[]>(() => {
+    if (items) {
+      return items;
+    }
+    if (codes) {
+      return Object.entries(codes).map(([key, code]) => ({
+        id: key,
+        label: key,
+        code,
+      }));
+    }
+    return [];
+  }, [codes, items]);
+
+  const [highlightedItems, setHighlightedItems] = React.useState<CodeTabItem[] | null>(null);
+  const [selectedCode, setSelectedCode] = React.useState<string>(value ?? defaultValue ?? normalizedItems[0]?.id ?? '');
 
   React.useEffect(() => {
     async function loadHighlightedCode() {
       try {
         const { codeToHtml } = await import('shiki');
-        const newHighlightedCodes: Record<string, string> = {};
+        const newHighlightedItems: CodeTabItem[] = [];
 
-        for (const [command, val] of Object.entries(codes)) {
-          const highlighted = await codeToHtml(val, {
+        for (const item of normalizedItems) {
+          const highlighted = await codeToHtml(item.code, {
             lang,
             themes: {
               light: themes.light,
@@ -110,74 +133,81 @@ function CodeTabs({
             defaultColor: theme === 'dark' ? 'dark' : 'light',
           });
 
-          newHighlightedCodes[command] = highlighted;
+          newHighlightedItems.push({
+            id: item.id,
+            label: item.label,
+            code: highlighted,
+          });
         }
 
-        setHighlightedCodes(newHighlightedCodes);
+        setHighlightedItems(newHighlightedItems);
       } catch (error) {
+        // biome-ignore lint/suspicious/noConsole: needed for code tabs implementation
         console.error('Error highlighting codes', error);
-        setHighlightedCodes(codes);
+        setHighlightedItems(normalizedItems);
       }
     }
+    // biome-ignore lint/nursery/noFloatingPromises: intentionally fire-and-forget in useEffect
     loadHighlightedCode();
-  }, [theme, lang, themes.light, themes.dark, codes]);
+  }, [theme, lang, themes.light, themes.dark, normalizedItems]);
+
+  // Find the original code content for the copy button
+  const selectedItem = normalizedItems.find((item) => item.id === selectedCode);
 
   return (
     <Tabs
+      className={cn(codeTabsVariants({ variant }), className)}
       data-slot="install-tabs"
       data-testid={testId}
-      className={cn(codeTabsVariants({ variant }), className)}
       {...props}
-      value={selectedCode}
       onValueChange={(val) => {
         setSelectedCode(val);
         onValueChange?.(val);
       }}
+      value={selectedCode}
     >
       <TabsList
-        data-slot="install-tabs-list"
-        className={codeTabsListVariants({ variant })}
         activeClassName={codeTabsActiveVariants({ variant })}
+        className={codeTabsListVariants({ variant })}
+        data-slot="install-tabs-list"
       >
-        <div className="flex gap-x-3 h-full">
-          {highlightedCodes &&
-            Object.keys(highlightedCodes).map((code) => (
-              <TabsTrigger
-                key={code}
-                value={code}
-                className="text-muted-foreground data-[state=active]:text-selected px-0"
-              >
-                {code}
-              </TabsTrigger>
-            ))}
+        <div className="flex h-full gap-x-1 overflow-x-auto [scrollbar-width:none] sm:gap-x-2 [&::-webkit-scrollbar]:hidden">
+          {highlightedItems?.map((item) => (
+            <TabsTrigger
+              className="shrink-0 px-2 text-muted-foreground text-xs data-[state=active]:text-selected sm:px-3"
+              key={item.id}
+              value={item.id}
+            >
+              {item.label}
+            </TabsTrigger>
+          ))}
         </div>
 
-        {copyButton && highlightedCodes && (
+        {copyButton && highlightedItems && selectedItem ? (
           <CopyButton
-            content={codes[selectedCode]}
+            className="-me-2 bg-transparent hover:bg-selected/10"
+            content={selectedItem.code}
+            onCopy={onCopy}
             size="sm"
             variant="ghost"
-            className="-me-2 bg-transparent hover:bg-selected/10"
-            onCopy={onCopy}
           />
-        )}
+        ) : null}
       </TabsList>
       <TabsContents data-slot="install-tabs-contents">
-        {highlightedCodes &&
-          Object.entries(highlightedCodes).map(([code, val]) => (
-            <TabsContent
-              data-slot="install-tabs-content"
-              key={code}
-              className={codeTabsContentVariants({ variant })}
-              value={code}
-            >
-              <div
-                className="[&>pre,_&_code]:!bg-transparent [&>pre,_&_code]:[background:transparent_!important] [&>pre,_&_code]:border-none [&_code]:!text-[13px]"
-                // biome-ignore lint/security/noDangerouslySetInnerHtml: part of code tabs implementation
-                dangerouslySetInnerHTML={{ __html: val }}
-              />
-            </TabsContent>
-          ))}
+        {highlightedItems?.map((item) => (
+          <TabsContent
+            className={codeTabsContentVariants({ variant })}
+            data-slot="install-tabs-content"
+            key={item.id}
+            value={item.id}
+          >
+            <div
+              className="[&>pre,_&_code]:!bg-transparent [&_code]:!text-[13px] [&>pre,_&_code]:border-none [&>pre,_&_code]:[background:transparent_!important]"
+              // biome-ignore lint/security/noDangerouslySetInnerHtml: part of code tabs implementation
+              dangerouslySetInnerHTML={{ __html: item.code }}
+            />
+          </TabsContent>
+        ))}
       </TabsContents>
     </Tabs>
   );
@@ -190,4 +220,5 @@ export {
   codeTabsActiveVariants,
   codeTabsContentVariants,
   type CodeTabsProps,
+  type CodeTabItem,
 };
