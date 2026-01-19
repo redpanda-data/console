@@ -66,6 +66,7 @@ import { UserRoleTags } from './user-permission-assignments';
 import ErrorResult from '../../../components/misc/error-result';
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 import { useDeleteAclMutation, useListACLAsPrincipalGroups } from '../../../react-query/api/acl';
+import { useGetRedpandaInfoQuery } from '../../../react-query/api/cluster-status';
 import { useInvalidateUsersCache, useLegacyListUsersQuery } from '../../../react-query/api/user';
 import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
@@ -90,20 +91,32 @@ const { ToastContainer, toast } = createStandaloneToast({
 
 export type AclListTab = 'users' | 'roles' | 'acls' | 'permissions-list';
 
-const getCreateUserButtonProps = () => ({
-  isDisabled: !(api.isAdminApiConfigured && Features.createUser) || api.userData?.canManageUsers === false,
-  tooltip: [
-    !api.isAdminApiConfigured && 'The Redpanda Admin API is not configured.',
-    !Features.createUser && "Your cluster doesn't support this feature.",
-    api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
-  ]
-    .filter(Boolean)
-    .join(' '),
-});
+const getCreateUserButtonProps = (isAdminApiConfigured: boolean) => {
+  const hasRBAC = api.userData?.canManageUsers !== undefined;
+
+  return {
+    isDisabled: !(isAdminApiConfigured && Features.createUser) || (hasRBAC && api.userData?.canManageUsers === false),
+    tooltip: [
+      !isAdminApiConfigured && 'The Redpanda Admin API is not configured.',
+      !Features.createUser && "Your cluster doesn't support this feature.",
+      hasRBAC &&
+        api.userData?.canManageUsers === false &&
+        'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
+    ]
+      .filter(Boolean)
+      .join(' '),
+  };
+};
 
 const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
+  // Check if Redpanda Admin API is configured using React Query
+  const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
+  // Admin API is configured if the query succeeded and returned data (even if it's an empty object)
+  // This matches the MobX logic where api.isAdminApiConfigured checks if clusterOverview.redpanda !== null
+  const isAdminApiConfigured = isRedpandaInfoSuccess && Boolean(redpandaInfo);
+
   const { data: usersData, isLoading: isUsersLoading } = useLegacyListUsersQuery(undefined, {
-    enabled: api.isAdminApiConfigured,
+    enabled: isAdminApiConfigured,
   });
 
   // Set up page title and breadcrumbs
@@ -114,7 +127,7 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
 
     // Set up refresh handler
     const refreshData = async () => {
-      await Promise.allSettled([rolesApi.refreshRoles(), api.refreshUserData()]);
+      await Promise.allSettled([api.refreshClusterOverview(), rolesApi.refreshRoles(), api.refreshUserData()]);
       await rolesApi.refreshRoleMembers();
     };
 
@@ -156,11 +169,13 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
     {
       key: 'users' as AclListTab,
       name: 'Users',
-      component: <UsersTab data-testid="users-tab" />,
+      component: <UsersTab data-testid="users-tab" isAdminApiConfigured={isAdminApiConfigured} />,
       isDisabled:
-        (!api.isAdminApiConfigured && 'The Redpanda Admin API is not configured.') ||
+        (!isAdminApiConfigured && 'The Redpanda Admin API is not configured.') ||
         (!Features.createUser && "Your cluster doesn't support this feature.") ||
-        (api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
+        (api.userData?.canManageUsers !== undefined &&
+          api.userData?.canManageUsers === false &&
+          'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
     },
     isServerless()
       ? null
@@ -215,12 +230,17 @@ export default AclList;
 type UsersEntry = { name: string; type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
 const PermissionsListTab = () => {
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Check if Redpanda Admin API is configured using React Query
+  const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
+  const isAdminApiConfigured = isRedpandaInfoSuccess && Boolean(redpandaInfo);
+
   const {
     data: usersData,
     isError: isUsersError,
     error: usersError,
   } = useLegacyListUsersQuery(undefined, {
-    enabled: api.isAdminApiConfigured,
+    enabled: isAdminApiConfigured,
   });
 
   const { data: principalGroupsData, isError: isAclsError, error: aclsError } = useListACLAsPrincipalGroups();
@@ -323,7 +343,7 @@ const PermissionsListTab = () => {
             emptyAction={
               <Button
                 variant="outline"
-                {...getCreateUserButtonProps()}
+                {...getCreateUserButtonProps(isAdminApiConfigured)}
                 onClick={() => appGlobal.historyPush('/security/users/create')}
               >
                 Create user
@@ -339,7 +359,7 @@ const PermissionsListTab = () => {
   );
 };
 
-const UsersTab = () => {
+const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) => {
   const [searchQuery, setSearchQuery] = useQueryStateWithCallback<string>(
     {
       onUpdate: () => {
@@ -350,7 +370,13 @@ const UsersTab = () => {
     'q',
     parseAsString.withDefault('')
   );
-  const { data: usersData, isError, error } = useLegacyListUsersQuery();
+  const {
+    data: usersData,
+    isError,
+    error,
+  } = useLegacyListUsersQuery(undefined, {
+    enabled: isAdminApiConfigured,
+  });
 
   const users: UsersEntry[] = (usersData?.users ?? []).map((u) => ({
     name: u.name,
@@ -405,7 +431,7 @@ const UsersTab = () => {
           <Button
             data-testid="create-user-button"
             variant="outline"
-            {...getCreateUserButtonProps()}
+            {...getCreateUserButtonProps(isAdminApiConfigured)}
             onClick={() => appGlobal.historyPush('/security/users/create')}
           >
             Create user
@@ -450,7 +476,7 @@ const UsersTab = () => {
             emptyAction={
               <Button
                 variant="outline"
-                {...getCreateUserButtonProps()}
+                {...getCreateUserButtonProps(isAdminApiConfigured)}
                 onClick={() => appGlobal.historyPush('/security/users/create')}
               >
                 Create user
