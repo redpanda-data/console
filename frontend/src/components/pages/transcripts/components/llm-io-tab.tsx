@@ -295,7 +295,7 @@ const flattenMessageParts = (otelMsg: OTelMessage): Message => {
 
   const textParts: string[] = [];
 
-  for (const part of otelMsg.parts || []) {
+  for (const [index, part] of (otelMsg.parts || []).entries()) {
     switch (part.type) {
       case 'text':
         if (part.content) {
@@ -308,7 +308,7 @@ const flattenMessageParts = (otelMsg: OTelMessage): Message => {
           message.toolCalls?.push({
             name: part.name,
             arguments: part.arguments,
-            uiKey: crypto.randomUUID(),
+            uiKey: `tool-call-${index}-${part.name}`,
           });
         }
         break;
@@ -317,7 +317,7 @@ const flattenMessageParts = (otelMsg: OTelMessage): Message => {
         if (part.response) {
           message.toolResponses?.push({
             response: part.response,
-            uiKey: crypto.randomUUID(),
+            uiKey: `tool-response-${index}`,
           });
         }
         break;
