@@ -3,6 +3,8 @@ components:
     AIAgent:
       description: Defines the AI Agent resource.
       properties:
+        agent_card:
+          $ref: '#/components/schemas/AgentCard'
         description:
           description: Optional AI agent description.
           type: string
@@ -123,6 +125,8 @@ components:
     AIAgentCreate:
       description: AIAgentCreate contains the details for the AI agent creation request.
       properties:
+        agent_card:
+          $ref: '#/components/schemas/AgentCard'
         description:
           description: AI agent description.
           type: string
@@ -169,6 +173,8 @@ components:
       type: object
     AIAgentUpdate:
       properties:
+        agent_card:
+          $ref: '#/components/schemas/AgentCard'
         description:
           description: AI agent description.
           type: string
@@ -301,6 +307,33 @@ components:
             A map of tags to add, update or delete.
             If a tag's value is empty, the server interprets that as a deletion.
           type: object
+      type: object
+    AgentCard:
+      description: A2A agent card configuration for customizing agent discovery metadata.
+      properties:
+        documentation_url:
+          description: URL to documentation for the agent.
+          type: string
+        icon_url:
+          description: URL to an icon image for the agent.
+          type: string
+        provider:
+          $ref: '#/components/schemas/AgentCard.Provider'
+        skills:
+          description: Skills that this agent can perform.
+          items:
+            $ref: '#/components/schemas/Skill'
+          type: array
+      type: object
+    AgentCard.Provider:
+      description: Agent provider metadata.
+      properties:
+        organization:
+          description: 'Organization name (default: "Redpanda").'
+          type: string
+        url:
+          description: 'Organization URL (default: "https://redpanda.com").'
+          type: string
       type: object
     Anthropic:
       properties:
@@ -1322,6 +1355,43 @@ components:
         - SASL_MECHANISM_SCRAM_SHA_256
         - SASL_MECHANISM_SCRAM_SHA_512
       type: string
+    Skill:
+      description: A skill that the agent can perform.
+      properties:
+        description:
+          description: Description of what the skill does.
+          type: string
+        examples:
+          description: Example prompts that demonstrate the skill.
+          items:
+            type: string
+          type: array
+        id:
+          description: Unique identifier for the skill.
+          type: string
+        input_modes:
+          description: Supported input modes (e.g., "text", "file").
+          items:
+            type: string
+          type: array
+        name:
+          description: Human-readable name for the skill.
+          type: string
+        output_modes:
+          description: Supported output modes (e.g., "text", "file").
+          items:
+            type: string
+          type: array
+        tags:
+          description: Tags for categorizing the skill.
+          items:
+            type: string
+          type: array
+      required:
+        - id
+        - name
+        - description
+      type: object
     Span:
       description: |-
         A Span represents a single operation performed by a single component of the
@@ -2688,7 +2758,7 @@ paths:
           schema:
             format: date-time
             type: string
-        - description: Maximum number of traces to return per page. Defaults to 500 if not specified or set to 0. Use -1 to disable pagination.
+        - description: Maximum number of traces to return per page. Defaults to 100 if not specified or set to 0. Use -1 to disable pagination.
           in: query
           name: page_size
           schema:
