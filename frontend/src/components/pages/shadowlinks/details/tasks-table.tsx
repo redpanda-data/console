@@ -9,114 +9,164 @@
  * by the Apache License, Version 2.0
  */
 
-'use client';
+"use client";
 
-import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { Text } from 'components/redpanda-ui/components/typography';
-import { RefreshCw } from 'lucide-react';
-import type { ShadowLinkTaskStatus } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { useMemo } from 'react';
+import {
+	createColumnHelper,
+	flexRender,
+	getCoreRowModel,
+	useReactTable,
+} from "@tanstack/react-table";
+import { Button } from "components/redpanda-ui/components/button";
+import {
+	Card,
+	CardAction,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "components/redpanda-ui/components/card";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "components/redpanda-ui/components/table";
+import { Text } from "components/redpanda-ui/components/typography";
+import { RefreshCw } from "lucide-react";
+import type { ShadowLinkTaskStatus } from "protogen/redpanda/core/admin/v2/shadow_link_pb";
+import { useMemo } from "react";
 
-import { TaskStatusBadge } from './task-status-badge';
+import { TaskStatusBadge } from "./task-status-badge";
 
 type TasksTableProps = {
-  tasks: ShadowLinkTaskStatus[];
-  onRefresh?: () => void;
-  /** When true, shows "Data unavailable" instead of "No tasks found" for empty state */
-  dataUnavailable?: boolean;
+	tasks: ShadowLinkTaskStatus[];
+	onRefresh?: () => void;
+	/** When true, shows "Data unavailable" instead of "No tasks found" for empty state */
+	dataUnavailable?: boolean;
 };
 
-export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProps) => {
-  const columnHelper = createColumnHelper<ShadowLinkTaskStatus>();
+export const TasksTable = ({
+	tasks,
+	onRefresh,
+	dataUnavailable,
+}: TasksTableProps) => {
+	const columnHelper = createColumnHelper<ShadowLinkTaskStatus>();
 
-  const columns = useMemo(
-    () => [
-      columnHelper.accessor('name', {
-        header: 'Task name',
-        size: 250,
-        cell: (info) => (
-          <Text className="font-medium" variant="default">
-            {info.getValue()}
-          </Text>
-        ),
-      }),
-      columnHelper.accessor('state', {
-        header: 'State',
-        size: 150,
-        cell: (info) => <TaskStatusBadge state={info.getValue()} taskId={info.row.original.name} />,
-      }),
-      columnHelper.accessor('brokerId', {
-        header: 'Broker ID',
-        size: 100,
-        cell: (info) => <Text>{info.getValue()}</Text>,
-      }),
-      columnHelper.accessor('shard', {
-        header: 'Shard ID',
-        size: 100,
-        cell: (info) => <Text>{info.getValue()}</Text>,
-      }),
-      columnHelper.accessor('reason', {
-        header: 'Reason',
-        size: 300,
-        cell: (info) => <Text className="text-muted-foreground">{info.getValue()}</Text>,
-      }),
-    ],
-    [columnHelper]
-  );
+	const columns = useMemo(
+		() => [
+			columnHelper.accessor("name", {
+				header: "Task name",
+				size: 250,
+				cell: (info) => <Text className="font-medium">{info.getValue()}</Text>,
+			}),
+			columnHelper.accessor("state", {
+				header: "State",
+				size: 150,
+				cell: (info) => (
+					<TaskStatusBadge
+						state={info.getValue()}
+						taskId={info.row.original.name}
+					/>
+				),
+			}),
+			columnHelper.accessor("brokerId", {
+				header: "Broker ID",
+				size: 100,
+				cell: (info) => <Text>{info.getValue()}</Text>,
+			}),
+			columnHelper.accessor("shard", {
+				header: "Shard ID",
+				size: 100,
+				cell: (info) => <Text>{info.getValue()}</Text>,
+			}),
+			columnHelper.accessor("reason", {
+				header: "Reason",
+				size: 300,
+				cell: (info) => (
+					<Text className="text-muted-foreground">{info.getValue()}</Text>
+				),
+			}),
+		],
+		[columnHelper],
+	);
 
-  const table = useReactTable<ShadowLinkTaskStatus>({
-    data: tasks ?? [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
+	const table = useReactTable<ShadowLinkTaskStatus>({
+		data: tasks ?? [],
+		columns,
+		getCoreRowModel: getCoreRowModel(),
+	});
 
-  return (
-    <Card size="full" testId="tasks-table-card">
-      <CardHeader>
-        <CardTitle>Tasks</CardTitle>
-        {Boolean(onRefresh) && (
-          <CardAction>
-            <Button data-testid="refresh-tasks-button" onClick={onRefresh} size="icon" type="button" variant="ghost">
-              <RefreshCw className="h-5 w-5" />
-            </Button>
-          </CardAction>
-        )}
-      </CardHeader>
-      <CardContent>
-        {tasks?.length === 0 ? (
-          <div className="flex items-center justify-center py-8" data-testid="tasks-empty-state">
-            <Text className="text-muted-foreground">
-              {dataUnavailable ? 'Task data unavailable' : 'No tasks found'}
-            </Text>
-          </div>
-        ) : (
-          <Table testId="tasks-table">
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} style={{ width: header.getSize() }}>
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map((row) => (
-                <TableRow data-testid={`task-row-${row.original.name}`} key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
-  );
+	return (
+		<Card size="full" testId="tasks-table-card">
+			<CardHeader>
+				<CardTitle>Tasks</CardTitle>
+				{Boolean(onRefresh) && (
+					<CardAction>
+						<Button
+							data-testid="refresh-tasks-button"
+							onClick={onRefresh}
+							size="icon"
+							type="button"
+							variant="ghost"
+						>
+							<RefreshCw className="h-5 w-5" />
+						</Button>
+					</CardAction>
+				)}
+			</CardHeader>
+			<CardContent>
+				{tasks?.length === 0 ? (
+					<div
+						className="flex items-center justify-center py-8"
+						data-testid="tasks-empty-state"
+					>
+						<Text className="text-muted-foreground">
+							{dataUnavailable ? "Task data unavailable" : "No tasks found"}
+						</Text>
+					</div>
+				) : (
+					<Table testId="tasks-table">
+						<TableHeader>
+							{table.getHeaderGroups().map((headerGroup) => (
+								<TableRow key={headerGroup.id}>
+									{headerGroup.headers.map((header) => (
+										<TableHead
+											key={header.id}
+											style={{ width: header.getSize() }}
+										>
+											{header.isPlaceholder
+												? null
+												: flexRender(
+														header.column.columnDef.header,
+														header.getContext(),
+													)}
+										</TableHead>
+									))}
+								</TableRow>
+							))}
+						</TableHeader>
+						<TableBody>
+							{table.getRowModel().rows.map((row) => (
+								<TableRow
+									data-testid={`task-row-${row.original.name}`}
+									key={row.id}
+								>
+									{row.getVisibleCells().map((cell) => (
+										<TableCell key={cell.id}>
+											{flexRender(
+												cell.column.columnDef.cell,
+												cell.getContext(),
+											)}
+										</TableCell>
+									))}
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
+				)}
+			</CardContent>
+		</Card>
+	);
 };
