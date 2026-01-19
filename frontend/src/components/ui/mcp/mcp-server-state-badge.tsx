@@ -22,37 +22,37 @@ const getMCPServerStatus = (state: typeof MCPServer_State[keyof typeof MCPServer
       return {
         icon: <Check className="h-3 w-3" />,
         text: 'Running',
-        variant: 'green',
+        variant: 'success-inverted',
       };
     case MCPServer_State.STARTING:
       return {
         icon: <Loader2 className="h-3 w-3 animate-spin" />,
         text: 'Starting',
-        variant: 'blue',
+        variant: 'info-inverted',
       };
     case MCPServer_State.ERROR:
       return {
         icon: <AlertCircle className="h-3 w-3" />,
         text: 'Error',
-        variant: 'red',
+        variant: 'destructive-inverted',
       };
     case MCPServer_State.STOPPED:
       return {
         icon: <StopCircle className="h-3 w-3" />,
         text: 'Stopped',
-        variant: 'gray',
+        variant: 'neutral-inverted',
       };
     case MCPServer_State.STOPPING:
       return {
         icon: <Loader2 className="h-3 w-3 animate-spin" />,
         text: 'Stopping',
-        variant: 'yellow',
+        variant: 'warning-inverted',
       };
     default:
       return {
         icon: <Clock className="h-3 w-3" />,
         text: 'Unknown',
-        variant: 'gray',
+        variant: 'neutral-inverted',
       };
   }
 };

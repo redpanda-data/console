@@ -73,7 +73,7 @@ export const ConnectTile = ({
               component.status === ComponentStatus.EXPERIMENTAL ||
               component.status === ComponentStatus.DEPRECATED) &&
               component.name !== 'redpanda' && (
-                <Badge size="sm" variant="gray">
+                <Badge size="sm" variant="neutral-inverted">
                   {componentStatusToString(component.status)}
                 </Badge>
               )}

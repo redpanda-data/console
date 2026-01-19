@@ -145,7 +145,7 @@ export const AddSecretsCard = ({
                 <Text className="font-medium text-sm">Existing secrets:</Text>
                 <div className="flex flex-wrap gap-2">
                   {visibleSecrets.used.map((secret) => (
-                    <Badge className="font-mono" icon={<Check />} key={secret} variant="green">
+                    <Badge className="font-mono" icon={<Check />} key={secret} variant="success-inverted">
                       {`\${secrets.${secret}}`}
                     </Badge>
                   ))}
@@ -161,7 +161,7 @@ export const AddSecretsCard = ({
                   ))}
                   <CollapsibleContent className="flex flex-wrap gap-2">
                     {collapsibleSecrets.used.map((secret) => (
-                      <Badge className="font-mono" icon={<Check />} key={secret} variant="green">
+                      <Badge className="font-mono" icon={<Check />} key={secret} variant="success-inverted">
                         {`\${secrets.${secret}}`}
                       </Badge>
                     ))}
@@ -202,7 +202,7 @@ export const AddSecretsCard = ({
                     className="cursor-pointer text-sm hover:opacity-80"
                     key={secret}
                     onClick={() => setIsSecretsDialogOpen(true)}
-                    variant="red"
+                    variant="destructive-inverted"
                   >
                     Create <InlineCode className="bg-transparent">$secrets.{secret}</InlineCode>
                     <PlusIcon className="size-4" />

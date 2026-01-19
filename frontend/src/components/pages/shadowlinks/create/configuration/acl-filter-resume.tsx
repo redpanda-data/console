@@ -37,43 +37,43 @@ export const ACLFilterResume = ({ index }: { index: number }) => {
       <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-3">
         <div>
           <span className="text-muted-foreground">Resource type:</span>{' '}
-          <Badge size="sm" variant="blue">
+          <Badge size="sm" variant="info-inverted">
             {getResourceTypeLabel(resourceType)}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Pattern:</span>{' '}
-          <Badge size="sm" variant="blue">
+          <Badge size="sm" variant="info-inverted">
             {getPatternTypeLabel(resourcePattern)}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Resource name:</span>{' '}
-          <Badge size="sm" variant="blue">
+          <Badge size="sm" variant="info-inverted">
             {resourceName || 'All'}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Principal:</span>{' '}
-          <Badge size="sm" variant="blue">
+          <Badge size="sm" variant="info-inverted">
             {principal || 'All'}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Operation:</span>{' '}
-          <Badge size="sm" variant="blue">
+          <Badge size="sm" variant="info-inverted">
             {getOperationLabel(operation)}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Permission:</span>{' '}
-          <Badge size="sm" variant="blue">
+          <Badge size="sm" variant="info-inverted">
             {getPermissionTypeLabel(permissionType)}
           </Badge>
         </div>
         <div className="md:col-span-3">
           <span className="text-muted-foreground">Host:</span>{' '}
-          <Badge size="sm" variant="blue">
+          <Badge size="sm" variant="info-inverted">
             {host || 'All'}
           </Badge>
         </div>

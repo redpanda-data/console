@@ -19,13 +19,13 @@ type TaskStatusBadgeProps = {
 
 export const TaskStatusBadge = ({ state, taskId }: TaskStatusBadgeProps) => {
   const stateInfo = {
-    [TaskState.UNSPECIFIED]: { text: 'Unknown', variant: 'gray' as const },
-    [TaskState.ACTIVE]: { text: 'Active', variant: 'green' as const },
-    [TaskState.PAUSED]: { text: 'Paused', variant: 'yellow' as const },
-    [TaskState.LINK_UNAVAILABLE]: { text: 'Link Unavailable', variant: 'orange' as const },
-    [TaskState.NOT_RUNNING]: { text: 'Not Running', variant: 'gray' as const },
-    [TaskState.FAULTED]: { text: 'Faulted', variant: 'red' as const },
-  }[state] || { text: 'Unknown', variant: 'gray' as const };
+    [TaskState.UNSPECIFIED]: { text: 'Unknown', variant: 'neutral-inverted' as const },
+    [TaskState.ACTIVE]: { text: 'Active', variant: 'success-inverted' as const },
+    [TaskState.PAUSED]: { text: 'Paused', variant: 'warning-inverted' as const },
+    [TaskState.LINK_UNAVAILABLE]: { text: 'Link Unavailable', variant: 'warning-inverted' as const },
+    [TaskState.NOT_RUNNING]: { text: 'Not Running', variant: 'neutral-inverted' as const },
+    [TaskState.FAULTED]: { text: 'Faulted', variant: 'destructive-inverted' as const },
+  }[state] || { text: 'Unknown', variant: 'neutral-inverted' as const };
 
   return (
     <Badge data-testid={`task-status-badge-${taskId}`} variant={stateInfo.variant}>

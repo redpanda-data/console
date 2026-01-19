@@ -46,11 +46,11 @@ export const ConversationTab: FC<Props> = ({ trace }) => {
           const isAssistant = message.role === 'assistant';
           const isSystem = message.role === 'system';
 
-          let badgeVariant: 'default' | 'secondary' | 'outline' = 'outline';
+          let badgeVariant: 'default-inverted' | 'secondary-inverted' | 'outline' = 'outline';
           if (isUser) {
-            badgeVariant = 'default';
+            badgeVariant = 'default-inverted';
           } else if (isAssistant) {
-            badgeVariant = 'secondary';
+            badgeVariant = 'secondary-inverted';
           }
 
           return (

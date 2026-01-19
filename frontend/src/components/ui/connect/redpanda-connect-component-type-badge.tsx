@@ -25,31 +25,31 @@ const getComponentTypeConfig = (
       return {
         icon: <Cpu className="h-4 w-4" />,
         text: 'Processor',
-        variant: 'blue',
+        variant: 'info-inverted',
       };
     case MCPServer_Tool_ComponentType.CACHE:
       return {
         icon: <Database className="h-4 w-4" />,
         text: 'Cache',
-        variant: 'purple',
+        variant: 'secondary-inverted',
       };
     case MCPServer_Tool_ComponentType.INPUT:
       return {
         icon: <FolderInput className="h-4 w-4" />,
         text: 'Input',
-        variant: 'green',
+        variant: 'success-inverted',
       };
     case MCPServer_Tool_ComponentType.OUTPUT:
       return {
         icon: <FolderOutput className="h-4 w-4" />,
         text: 'Output',
-        variant: 'orange',
+        variant: 'warning-inverted',
       };
     default:
       return {
         icon: <HelpCircle className="h-4 w-4" />,
         text: 'Unspecified',
-        variant: 'gray',
+        variant: 'neutral-inverted',
       };
   }
 };

@@ -127,7 +127,7 @@ export const AddContextualVariablesCard = ({
                       icon={<Check />}
                       key={variable.name}
                       title={variable.description}
-                      variant="green"
+                      variant="success-inverted"
                     >
                       {getContextualVariableSyntax(variable.name as keyof typeof REDPANDA_CONTEXTUAL_VARIABLES)}
                     </Badge>
@@ -150,7 +150,7 @@ export const AddContextualVariablesCard = ({
                         icon={<Check />}
                         key={variable.name}
                         title={variable.description}
-                        variant="green"
+                        variant="success-inverted"
                       >
                         {getContextualVariableSyntax(variable.name as keyof typeof REDPANDA_CONTEXTUAL_VARIABLES)}
                       </Badge>

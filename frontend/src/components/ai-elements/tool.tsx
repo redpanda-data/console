@@ -44,7 +44,7 @@ export type ToolHeaderProps = {
 const getStatusBadge = (status: ToolUIPart["state"]) => {
   if (status === "output-available") {
     return (
-      <Badge variant="green" className="rounded-full">
+      <Badge variant="success-inverted" className="rounded-full">
         <Text variant="small" className="flex items-center gap-2">
           <CheckIcon className="size-4" />
           Completed
@@ -54,7 +54,7 @@ const getStatusBadge = (status: ToolUIPart["state"]) => {
   }
   if (status === "input-available") {
     return (
-      <Badge variant="blue" className="rounded-full">
+      <Badge variant="info-inverted" className="rounded-full">
         <Text variant="small" className="flex items-center gap-2">
           <LoaderIcon className="size-4 animate-spin" />
           Working
@@ -64,7 +64,7 @@ const getStatusBadge = (status: ToolUIPart["state"]) => {
   }
   if (status === "output-error") {
     return (
-      <Badge variant="red" className="rounded-full">
+      <Badge variant="destructive-inverted" className="rounded-full">
         <Text variant="small" className="flex items-center gap-2">
           <XIcon className="size-4" />
           Error
@@ -74,7 +74,7 @@ const getStatusBadge = (status: ToolUIPart["state"]) => {
   }
   if (status === "input-streaming") {
     return (
-      <Badge variant="gray" className="rounded-full">
+      <Badge variant="neutral-inverted" className="rounded-full">
         <Text variant="small" className="flex items-center gap-2">
           <ClockIcon className="size-4" />
           Pending

@@ -38,11 +38,11 @@ const NameFilterDisplay = ({ filter, index }: { filter: UnifiedNameFilter; index
       <div className="font-medium text-sm">{filterLabel}</div>
       <div className="flex flex-wrap gap-2">
         {filter.name ? (
-          <Badge size="sm" testId={`filter-${index}-name`} variant="blue">
+          <Badge size="sm" testId={`filter-${index}-name`} variant="info-inverted">
             {filter.name}
           </Badge>
         ) : (
-          <Badge size="sm" variant="gray">
+          <Badge size="sm" variant="neutral-inverted">
             (empty)
           </Badge>
         )}
@@ -98,43 +98,43 @@ const ACLFilterDisplay = ({ filter, index }: { filter: UnifiedACLFilter; index: 
       <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-3">
         <div>
           <span className="text-muted-foreground">Resource type:</span>{' '}
-          <Badge size="sm" variant="blue">
+          <Badge size="sm" variant="info-inverted">
             {getResourceTypeLabel(resourceFilter?.resourceType)}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Pattern:</span>{' '}
-          <Badge size="sm" variant="blue">
+          <Badge size="sm" variant="info-inverted">
             {getPatternTypeLabel(resourceFilter?.patternType)}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Resource name:</span>{' '}
-          <Badge size="sm" variant="blue">
+          <Badge size="sm" variant="info-inverted">
             {resourceFilter?.name || 'All'}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Principal:</span>{' '}
-          <Badge size="sm" variant="blue">
+          <Badge size="sm" variant="info-inverted">
             {accessFilter?.principal || 'All'}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Operation:</span>{' '}
-          <Badge size="sm" variant="blue">
+          <Badge size="sm" variant="info-inverted">
             {getOperationLabel(accessFilter?.operation)}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Permission:</span>{' '}
-          <Badge size="sm" variant="blue">
+          <Badge size="sm" variant="info-inverted">
             {getPermissionTypeLabel(accessFilter?.permissionType)}
           </Badge>
         </div>
         <div className="md:col-span-3">
           <span className="text-muted-foreground">Host:</span>{' '}
-          <Badge size="sm" variant="blue">
+          <Badge size="sm" variant="info-inverted">
             {accessFilter?.host || 'All'}
           </Badge>
         </div>
@@ -154,7 +154,7 @@ const ACLFilterSection = ({ filters }: { filters: UnifiedACLFilter[] }) => {
       </CardHeader>
       <CardContent>
         {hasAllACLs ? (
-          <Badge testId="all-acls-badge" variant="secondary">
+          <Badge testId="all-acls-badge" variant="secondary-inverted">
             All ACLs
           </Badge>
         ) : (
@@ -183,7 +183,7 @@ const SchemaRegistrySection = ({ isEnabled }: { isEnabled: boolean }) => (
       <Text className="mt-2 text-muted-foreground text-sm">
         Replicate the source cluster's _schema topic, which replaces the shadow cluster's Schema Registry.
       </Text>
-      <Badge testId="schema-registry-status-badge" variant={isEnabled ? 'green' : 'gray'}>
+      <Badge testId="schema-registry-status-badge" variant={isEnabled ? 'success-inverted' : 'neutral-inverted'}>
         {isEnabled ? 'Enabled' : 'Disabled'}
       </Badge>
     </CardContent>

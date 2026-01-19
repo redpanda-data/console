@@ -14,15 +14,39 @@ import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb
 
 export const ShadowTopicStatusBadge = ({ state }: { state: ShadowTopicState }) => {
   const stateInfo = {
-    [ShadowTopicState.UNSPECIFIED]: { text: 'Unknown', variant: 'gray' as const },
-    [ShadowTopicState.ACTIVE]: { text: 'Active', variant: 'green' as const },
-    [ShadowTopicState.FAULTED]: { text: 'Error', variant: 'red' as const },
-    [ShadowTopicState.PAUSED]: { text: 'Paused', variant: 'yellow' as const },
-    [ShadowTopicState.FAILING_OVER]: { text: 'Failing over', variant: 'orange' as const },
-    [ShadowTopicState.FAILED_OVER]: { text: 'Failed over', variant: 'blue' as const },
-    [ShadowTopicState.PROMOTING]: { text: 'Promoting', variant: 'purple' as const },
-    [ShadowTopicState.PROMOTED]: { text: 'Promoted', variant: 'purple' as const },
-  }[state] || { text: 'Unknown', variant: 'gray' as const };
+    [ShadowTopicState.UNSPECIFIED]: {
+      text: 'Unknown',
+      variant: 'neutral-inverted' as const,
+    },
+    [ShadowTopicState.ACTIVE]: {
+      text: 'Active',
+      variant: 'success-inverted' as const,
+    },
+    [ShadowTopicState.FAULTED]: {
+      text: 'Error',
+      variant: 'destructive-inverted' as const,
+    },
+    [ShadowTopicState.PAUSED]: {
+      text: 'Paused',
+      variant: 'warning-inverted' as const,
+    },
+    [ShadowTopicState.FAILING_OVER]: {
+      text: 'Failing over',
+      variant: 'warning-inverted' as const,
+    },
+    [ShadowTopicState.FAILED_OVER]: {
+      text: 'Failed over',
+      variant: 'info-inverted' as const,
+    },
+    [ShadowTopicState.PROMOTING]: {
+      text: 'Promoting',
+      variant: 'info-inverted' as const,
+    },
+    [ShadowTopicState.PROMOTED]: {
+      text: 'Promoted',
+      variant: 'info-inverted' as const,
+    },
+  }[state] || { text: 'Unknown', variant: 'neutral-inverted' as const };
 
   return <Badge variant={stateInfo.variant}>{stateInfo.text}</Badge>;
 };
