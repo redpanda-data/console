@@ -5,11 +5,15 @@ import { expect, test } from '@playwright/test';
 
 test.describe('ACL User Management', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to Security/Users page
-    await page.goto('/security/', {
+    // Navigate directly to Security/Users page
+    await page.goto('/security/users', {
       waitUntil: 'domcontentloaded',
     });
     await expect(page).toHaveURL('/security/users');
+
+    // Wait for the Create user button to become enabled
+    // This ensures API initialization and feature detection have completed
+    await expect(page.getByTestId('create-user-button')).toBeEnabled({ timeout: 15000 });
   });
 
   test('should create a new user with special characters in password', async ({ page }) => {
