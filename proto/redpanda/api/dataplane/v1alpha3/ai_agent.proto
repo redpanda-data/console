@@ -100,6 +100,9 @@ message AIAgent {
   // Optional gateway configuration for routing requests through an AI Gateway.
   GatewayConfig gateway = 16;
 
+  // Optional A2A agent card configuration.
+  AgentCard agent_card = 17;
+
   message Provider {
     message OpenAI {
       string api_key = 1 [
@@ -217,6 +220,59 @@ message AIAgent {
       (buf.validate.field).string.len = 20,
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Virtual gateway ID (20-character XID format)."}
     ];
+  }
+
+  // A2A agent card configuration for customizing agent discovery metadata.
+  message AgentCard {
+    // URL to an icon image for the agent.
+    string icon_url = 1 [(buf.validate.field).string.max_len = 512];
+
+    // URL to documentation for the agent.
+    string documentation_url = 2 [(buf.validate.field).string.max_len = 512];
+
+    // Agent provider information.
+    Provider provider = 3;
+
+    // Skills that this agent can perform.
+    repeated Skill skills = 4;
+
+    // Agent provider metadata.
+    message Provider {
+      // Organization name (default: "Redpanda").
+      string organization = 1 [(buf.validate.field).string.max_len = 128];
+      // Organization URL (default: "https://redpanda.com").
+      string url = 2 [(buf.validate.field).string.max_len = 512];
+    }
+
+    // A skill that the agent can perform.
+    message Skill {
+      // Unique identifier for the skill.
+      string id = 1 [
+        (google.api.field_behavior) = REQUIRED,
+        (buf.validate.field).required = true,
+        (buf.validate.field).string.max_len = 64
+      ];
+      // Human-readable name for the skill.
+      string name = 2 [
+        (google.api.field_behavior) = REQUIRED,
+        (buf.validate.field).required = true,
+        (buf.validate.field).string.max_len = 128
+      ];
+      // Description of what the skill does.
+      string description = 3 [
+        (google.api.field_behavior) = REQUIRED,
+        (buf.validate.field).required = true,
+        (buf.validate.field).string.max_len = 512
+      ];
+      // Tags for categorizing the skill.
+      repeated string tags = 4;
+      // Example prompts that demonstrate the skill.
+      repeated string examples = 5;
+      // Supported input modes (e.g., "text", "file").
+      repeated string input_modes = 6;
+      // Supported output modes (e.g., "text", "file").
+      repeated string output_modes = 7;
+    }
   }
 }
 
@@ -498,6 +554,9 @@ message AIAgentCreate {
 
   // Optional gateway configuration for routing requests through an AI Gateway.
   AIAgent.GatewayConfig gateway = 13;
+
+  // Optional A2A agent card configuration.
+  AIAgent.AgentCard agent_card = 14;
 }
 
 // CreateAIAgentRequest is the request of CreateAIAgent.
@@ -636,6 +695,9 @@ message AIAgentUpdate {
 
   // Optional gateway configuration. Set to empty message to remove the gateway association.
   AIAgent.GatewayConfig gateway = 13;
+
+  // Optional A2A agent card configuration.
+  AIAgent.AgentCard agent_card = 14;
 }
 
 message UpdateAIAgentRequest {
