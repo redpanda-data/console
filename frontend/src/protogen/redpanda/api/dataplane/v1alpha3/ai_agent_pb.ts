@@ -130,7 +130,11 @@ export type AIAgent = Message<"redpanda.api.dataplane.v1alpha3.AIAgent"> & {
   gateway?: AIAgent_GatewayConfig;
 
   /**
-   * Optional A2A agent card configuration.
+   * Optional A2A agent card configuration for customizing discovery metadata.
+   * If not set, a default card is generated using the agent's display_name and description.
+   * Auto-populated fields: name, description, url, version, capabilities (streaming,
+   * state_transition_history), and default input/output modes.
+   * Not user-configurable: capabilities and authentication (managed by Redpanda).
    *
    * @generated from field: redpanda.api.dataplane.v1alpha3.AIAgent.AgentCard agent_card = 17;
    */

@@ -100,7 +100,11 @@ message AIAgent {
   // Optional gateway configuration for routing requests through an AI Gateway.
   GatewayConfig gateway = 16;
 
-  // Optional A2A agent card configuration.
+  // Optional A2A agent card configuration for customizing discovery metadata.
+  // If not set, a default card is generated using the agent's display_name and description.
+  // Auto-populated fields: name, description, url, version, capabilities (streaming,
+  // state_transition_history), and default input/output modes.
+  // Not user-configurable: capabilities and authentication (managed by Redpanda).
   AgentCard agent_card = 17;
 
   message Provider {

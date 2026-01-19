@@ -124,7 +124,11 @@ type AIAgent struct {
 	Subagents map[string]*AIAgent_Subagent `protobuf:"bytes,15,rep,name=subagents,proto3" json:"subagents,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// Optional gateway configuration for routing requests through an AI Gateway.
 	Gateway *AIAgent_GatewayConfig `protobuf:"bytes,16,opt,name=gateway,proto3" json:"gateway,omitempty"`
-	// Optional A2A agent card configuration.
+	// Optional A2A agent card configuration for customizing discovery metadata.
+	// If not set, a default card is generated using the agent's display_name and description.
+	// Auto-populated fields: name, description, url, version, capabilities (streaming,
+	// state_transition_history), and default input/output modes.
+	// Not user-configurable: capabilities and authentication (managed by Redpanda).
 	AgentCard     *AIAgent_AgentCard `protobuf:"bytes,17,opt,name=agent_card,json=agentCard,proto3" json:"agent_card,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
