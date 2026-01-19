@@ -19,6 +19,7 @@ import (
 
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1/dataplanev1connect"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha3/dataplanev1alpha3connect"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
@@ -208,6 +209,11 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 	// OSS defaults
 	endpoints = append(endpoints, EndpointCompatibilityEndpoint{
 		Endpoint:    consolev1alpha1connect.PipelineServiceName,
+		Method:      "POST",
+		IsSupported: false,
+	})
+	endpoints = append(endpoints, EndpointCompatibilityEndpoint{
+		Endpoint:    dataplanev1alpha3connect.TracingServiceName,
 		Method:      "POST",
 		IsSupported: false,
 	})
