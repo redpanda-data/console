@@ -66,6 +66,7 @@ import { UserRoleTags } from './user-permission-assignments';
 import ErrorResult from '../../../components/misc/error-result';
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 import { useDeleteAclMutation, useListACLAsPrincipalGroups } from '../../../react-query/api/acl';
+import { useGetRedpandaInfoQuery } from '../../../react-query/api/cluster-status';
 import { useInvalidateUsersCache, useLegacyListUsersQuery } from '../../../react-query/api/user';
 import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
@@ -90,18 +91,33 @@ const { ToastContainer, toast } = createStandaloneToast({
 
 export type AclListTab = 'users' | 'roles' | 'acls' | 'permissions-list';
 
-const getCreateUserButtonProps = () => ({
-  isDisabled: !Features.createUser || api.userData?.canManageUsers === false,
-  tooltip: [
-    !Features.createUser && "Your cluster doesn't support this feature.",
-    api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
-  ]
-    .filter(Boolean)
-    .join(' '),
-});
+const getCreateUserButtonProps = (isAdminApiConfigured: boolean) => {
+  const hasRBAC = api.userData?.canManageUsers !== undefined;
+
+  return {
+    isDisabled: !(isAdminApiConfigured && Features.createUser) || (hasRBAC && api.userData?.canManageUsers === false),
+    tooltip: [
+      !isAdminApiConfigured && 'The Redpanda Admin API is not configured.',
+      !Features.createUser && "Your cluster doesn't support this feature.",
+      hasRBAC &&
+        api.userData?.canManageUsers === false &&
+        'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
+    ]
+      .filter(Boolean)
+      .join(' '),
+  };
+};
 
 const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
-  const { data: usersData, isLoading: isUsersLoading } = useLegacyListUsersQuery();
+  // Check if Redpanda Admin API is configured using React Query
+  const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
+  // Admin API is configured if the query succeeded and returned data (even if it's an empty object)
+  // This matches the MobX logic where api.isAdminApiConfigured checks if clusterOverview.redpanda !== null
+  const isAdminApiConfigured = isRedpandaInfoSuccess && Boolean(redpandaInfo);
+
+  const { data: usersData, isLoading: isUsersLoading } = useLegacyListUsersQuery(undefined, {
+    enabled: isAdminApiConfigured,
+  });
 
   // Set up page title and breadcrumbs
   useEffect(() => {
@@ -111,7 +127,7 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
 
     // Set up refresh handler
     const refreshData = async () => {
-      await Promise.allSettled([rolesApi.refreshRoles(), api.refreshUserData()]);
+      await Promise.allSettled([api.refreshClusterOverview(), rolesApi.refreshRoles(), api.refreshUserData()]);
       await rolesApi.refreshRoleMembers();
     };
 
@@ -153,10 +169,13 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
     {
       key: 'users' as AclListTab,
       name: 'Users',
-      component: <UsersTab data-testid="users-tab" />,
+      component: <UsersTab data-testid="users-tab" isAdminApiConfigured={isAdminApiConfigured} />,
       isDisabled:
+        (!isAdminApiConfigured && 'The Redpanda Admin API is not configured.') ||
         (!Features.createUser && "Your cluster doesn't support this feature.") ||
-        (api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
+        (api.userData?.canManageUsers !== undefined &&
+          api.userData?.canManageUsers === false &&
+          'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
     },
     isServerless()
       ? null
@@ -211,7 +230,35 @@ export default AclList;
 type UsersEntry = { name: string; type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
 const PermissionsListTab = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const { data: usersData } = useLegacyListUsersQuery();
+
+  // Check if Redpanda Admin API is configured using React Query
+  const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
+  const isAdminApiConfigured = isRedpandaInfoSuccess && Boolean(redpandaInfo);
+
+  const {
+    data: usersData,
+    isError: isUsersError,
+    error: usersError,
+  } = useLegacyListUsersQuery(undefined, {
+    enabled: isAdminApiConfigured,
+  });
+
+  const { data: principalGroupsData, isError: isAclsError, error: aclsError } = useListACLAsPrincipalGroups();
+
+  // Check for errors from both queries
+  if (isUsersError && usersError) {
+    return (
+      <Alert status="error">
+        <AlertIcon />
+        <AlertTitle>Failed to load users</AlertTitle>
+        <AlertDescription>{usersError.message}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (isAclsError && aclsError) {
+    return <ErrorResult error={aclsError} />;
+  }
 
   const users: UsersEntry[] = (usersData?.users ?? []).map((u) => ({
     name: u.name,
@@ -219,7 +266,7 @@ const PermissionsListTab = () => {
   }));
 
   // In addition, find all principals that are referenced by roles, or acls, that are not service accounts
-  for (const g of principalGroupsView.principalGroups) {
+  for (const g of principalGroupsData ?? []) {
     if (g.principalType === 'User' && !g.principalName.includes('*') && !users.any((u) => u.name === g.principalName)) {
       // is it a user that is being referenced?
       // is the user already listed as a service account?
@@ -227,7 +274,7 @@ const PermissionsListTab = () => {
     }
   }
 
-  for (const [_, roleMembers] of rolesApi.roleMembers) {
+  for (const [_, roleMembers] of rolesApi.roleMembers ?? []) {
     for (const roleMember of roleMembers) {
       if (!users.any((u) => u.name === roleMember.name)) {
         // make sure that user isn't already in the list
@@ -296,7 +343,7 @@ const PermissionsListTab = () => {
             emptyAction={
               <Button
                 variant="outline"
-                {...getCreateUserButtonProps()}
+                {...getCreateUserButtonProps(isAdminApiConfigured)}
                 onClick={() => appGlobal.historyPush('/security/users/create')}
               >
                 Create user
@@ -312,7 +359,7 @@ const PermissionsListTab = () => {
   );
 };
 
-const UsersTab = () => {
+const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) => {
   const [searchQuery, setSearchQuery] = useQueryStateWithCallback<string>(
     {
       onUpdate: () => {
@@ -323,7 +370,13 @@ const UsersTab = () => {
     'q',
     parseAsString.withDefault('')
   );
-  const { data: usersData, isError, error } = useLegacyListUsersQuery();
+  const {
+    data: usersData,
+    isError,
+    error,
+  } = useLegacyListUsersQuery(undefined, {
+    enabled: isAdminApiConfigured,
+  });
 
   const users: UsersEntry[] = (usersData?.users ?? []).map((u) => ({
     name: u.name,
@@ -378,7 +431,7 @@ const UsersTab = () => {
           <Button
             data-testid="create-user-button"
             variant="outline"
-            {...getCreateUserButtonProps()}
+            {...getCreateUserButtonProps(isAdminApiConfigured)}
             onClick={() => appGlobal.historyPush('/security/users/create')}
           >
             Create user
@@ -423,7 +476,7 @@ const UsersTab = () => {
             emptyAction={
               <Button
                 variant="outline"
-                {...getCreateUserButtonProps()}
+                {...getCreateUserButtonProps(isAdminApiConfigured)}
                 onClick={() => appGlobal.historyPush('/security/users/create')}
               >
                 Create user
@@ -641,7 +694,7 @@ const RolesTab = () => {
 };
 
 const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
-  const { data: principalGroups, isLoading } = useListACLAsPrincipalGroups();
+  const { data: principalGroups, isLoading, isError, error } = useListACLAsPrincipalGroups();
   const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
   const invalidateUsersCache = useInvalidateUsersCache();
 
@@ -682,6 +735,10 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
     groups = groups?.filter((aclGroup) => aclGroup.principalName.match(quickSearchRegExp));
   } catch (_e) {
     // Invalid regex, skip filtering
+  }
+
+  if (isError && error) {
+    return <ErrorResult error={error} />;
   }
 
   if (isLoading || !principalGroups) {

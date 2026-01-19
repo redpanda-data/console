@@ -85,10 +85,16 @@ export class Feature {
 export function isSupported(f: FeatureEntry): boolean {
   const c = api.endpointCompatibility;
   if (!c) {
-    // c could be null, because the call to /api/console/endpoints failed or has not responded yet.
-    // Return true as default - the sidebar will re-render once the actual data arrives
-    // (requires the consuming component to be wrapped with MobX observer)
-    return true;
+    // c could be null, because the call to /api/console/endpoints failed or is not responded yet,
+    // in that case those endpoints should be considered unsupported
+    switch (f.endpoint) {
+      case Feature.SchemaRegistryACLApi.endpoint:
+      case Feature.ShadowLinkService.endpoint:
+      case Feature.TracingService.endpoint:
+        return false;
+      default:
+        return true;
+    }
   }
 
   for (const e of c.endpoints) {
@@ -99,8 +105,7 @@ export function isSupported(f: FeatureEntry): boolean {
 
   // Special handling for services that may be completely absent from the backend response.
   // SecurityService: absent in community version
-  // TracingService: may not be implemented in older backends
-  if (f.endpoint.includes('.SecurityService') || f.endpoint.includes('.TracingService')) {
+  if (f.endpoint.includes('.SecurityService')) {
     return false;
   }
 

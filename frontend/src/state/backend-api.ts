@@ -470,6 +470,8 @@ const apiStore = {
   userData: undefined as UserData | null | undefined,
   // Track if refreshUserData is in progress to prevent duplicate requests
   isUserDataFetchInProgress: false as boolean,
+  // Store transient errors (5xx) to show error UI instead of redirect loop
+  userDataError: null as ConnectError | null,
 
   async logout() {
     await appConfig.fetch('./auth/logout');
@@ -491,6 +493,8 @@ const apiStore = {
     await client
       .getIdentity({})
       .then((r: GetIdentityResponse) => {
+        // Clear any previous error on success
+        this.userDataError = null;
         api.userData = {
           displayName: r.displayName,
           avatarUrl: r.avatarUrl,
@@ -568,7 +572,8 @@ const apiStore = {
         // }
       })
       .catch((err) => {
-        this.userData = null;
+        // Clear previous error
+        this.userDataError = null;
 
         if (isEmbedded()) {
           // Create a mocked empty userData with all permissions set to false
@@ -597,13 +602,26 @@ const apiStore = {
           return;
         }
 
+        // Authentication failure (401) - redirect to login
+        if (err.code === Code.Unauthenticated) {
+          this.userData = null;
+          appGlobal.historyPush('/login');
+          return;
+        }
+
+        // Permission denied (403) - redirect with error info
         if (err.code === Code.PermissionDenied) {
+          this.userData = null;
           // TODO - solve typings, provide corresponding Reason type
           const subject = getOidcSubject(err);
           appGlobal.historyPush(`/login?error_code=permission_denied&oidc_subject=${subject}`);
-        } else {
-          appGlobal.historyPush('/login');
+          return;
         }
+
+        // Transient errors (5xx: Unavailable, DeadlineExceeded, Internal, Unknown)
+        // Do NOT redirect to login - this causes infinite loops
+        // Keep userData as undefined and store error for UI to display
+        this.userDataError = err;
       })
       .finally(() => {
         this.isUserDataFetchInProgress = false;
@@ -973,12 +991,18 @@ const apiStore = {
   },
 
   async refreshSupportedEndpoints(): Promise<EndpointCompatibilityResponse | null> {
-    const r = await rest<EndpointCompatibilityResponse>(`${appConfig.restBasePath}/console/endpoints`);
-    if (!r) {
+    try {
+      const r = await rest<EndpointCompatibilityResponse>(`${appConfig.restBasePath}/console/endpoints`);
+      if (!r) {
+        return null;
+      }
+      this.endpointCompatibility = r.endpointCompatibility;
+      return r;
+    } catch (err) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
+      console.error('Failed to fetch supported endpoints:', err);
       return null;
     }
-    this.endpointCompatibility = r.endpointCompatibility;
-    return r;
   },
 
   async refreshClusterOverview() {
