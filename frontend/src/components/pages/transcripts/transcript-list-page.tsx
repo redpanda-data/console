@@ -29,15 +29,14 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { ArrowLeft, Database, RefreshCw, X } from 'lucide-react';
-import { runInAction } from 'mobx';
 import { parseAsString, useQueryState } from 'nuqs';
 import type { TraceHistogram, TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { ChangeEvent, FC } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useListTracesQuery } from 'react-query/api/tracing';
 import { appGlobal } from 'state/app-global';
-import { uiState } from 'state/ui-state';
 import { pluralize } from 'utils/string';
 
 import { TranscriptActivityChart } from './components/transcript-activity-chart';
@@ -240,13 +239,6 @@ type TranscriptListPageProps = {
 };
 
 export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFaceting = false }) => {
-  useEffect(() => {
-    runInAction(() => {
-      uiState.pageTitle = 'Transcripts';
-      uiState.pageBreadcrumbs = [{ title: 'Transcripts', linkTo: '', heading: 'Transcripts' }];
-    });
-  }, []);
-
   const [selectedTraceId, setSelectedTraceId] = useQueryState('traceId', parseAsString);
   const [selectedSpanId, setSelectedSpanId] = useQueryState('spanId', parseAsString);
   const [timeRange, setTimeRange] = useQueryState('timeRange', parseAsString.withDefault('1h'));
@@ -516,6 +508,10 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   // Calculate the actual visible window from accumulated traces
   const visibleWindow = useMemo(() => calculateVisibleWindow(accumulatedTraces), [accumulatedTraces]);
 
+  // Determine if we're viewing the latest traces (first page, no time jump)
+  // This affects how the timeline chart displays the loaded data range
+  const isViewingLiveHead = useMemo(() => currentPageToken === '' && jumpedTo === null, [currentPageToken, jumpedTo]);
+
   // Use initial histogram for display (shows full query range distribution)
   // When in jumped mode, use current data's histogram
   const displayHistogram = jumpedTo ? data?.histogram : initialHistogram;
@@ -523,12 +519,10 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Page Description */}
-      <div>
-        <p className="text-muted-foreground text-sm">
-          Inspect LLM calls, tool invocations, and nested spans from your AI agents
-        </p>
-      </div>
+      <header className="flex flex-col gap-2">
+        <Heading level={1}>Transcripts</Heading>
+        <Text variant="muted">Inspect LLM calls, tool invocations, and nested spans from your AI agents</Text>
+      </header>
 
       {/* Toolbar with Search Controls and Time Range */}
       <TraceListToolbar
@@ -551,6 +545,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
       {displayHistogram && displayHistogram.buckets.length > 0 && (
         <TranscriptActivityChart
           histogram={displayHistogram}
+          isViewingLatest={isViewingLiveHead}
           loadedCount={accumulatedTraces.length}
           onBucketClick={jumpedTo ? undefined : handleBucketClick}
           queryEndMs={jumpedTo ? jumpedTo.endMs : timestamps.endMs}
