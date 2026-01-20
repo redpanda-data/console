@@ -118,15 +118,16 @@ export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onC
           {!!isIncomplete && (
             <>
               <AlertCircle className="h-4 w-4 text-amber-500" />
-              <span className="text-muted-foreground text-sm">Incomplete Transcript</span>
+              <Text className="text-muted-foreground" variant="small">
+                Incomplete Transcript
+              </Text>
             </>
           )}
           {!isIncomplete && (
-            <Badge
-              className="h-4 border-border bg-muted/50 px-1 py-0 text-[10px] text-muted-foreground"
-              variant="outline"
-            >
-              {spanKind}
+            <Badge className="h-4 border-border bg-muted/50 px-1 py-0 text-muted-foreground" variant="outline">
+              <Text as="span" variant="small">
+                {spanKind}
+              </Text>
             </Badge>
           )}
         </div>

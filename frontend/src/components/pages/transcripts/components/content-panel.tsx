@@ -14,7 +14,7 @@ import type { FC, ReactNode } from 'react';
 
 type ContentPanelProps = {
   children: ReactNode;
-  /** Padding size: 'sm' = p-2, 'md' = p-3 */
+  /** Padding size: 'sm' = p-3, 'md' = p-4 */
   padding?: 'sm' | 'md';
   /** Add internal spacing between children */
   spacing?: boolean;
@@ -28,7 +28,7 @@ type ContentPanelProps = {
  */
 export const ContentPanel: FC<ContentPanelProps> = ({ children, padding = 'sm', spacing = false, className }) => (
   <div
-    className={cn('rounded border bg-muted/30', padding === 'sm' ? 'p-2' : 'p-3', spacing && 'space-y-2', className)}
+    className={cn('rounded border bg-muted/30', padding === 'sm' ? 'p-3' : 'p-4', spacing && 'space-y-2', className)}
   >
     {children}
   </div>

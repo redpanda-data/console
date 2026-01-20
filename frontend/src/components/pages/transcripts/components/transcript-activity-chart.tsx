@@ -11,6 +11,7 @@
 
 import type { Timestamp } from '@bufbuild/protobuf/wkt';
 import { durationMs, timestampDate } from '@bufbuild/protobuf/wkt';
+import { Small } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { TraceHistogram, TraceHistogramBucket } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { FC } from 'react';
@@ -164,7 +165,9 @@ const BucketTooltip: FC<BucketTooltipProps> = ({ time, successCount, errorCount,
         ) : null}
       </div>
       {isInWindow ? (
-        <div className="mt-1.5 border-border/50 border-t pt-1.5 text-[10px] text-primary">In view</div>
+        <div className="mt-1.5 border-border/50 border-t pt-1.5 text-primary">
+          <Small>In view</Small>
+        </div>
       ) : null}
     </div>
   </div>
@@ -425,7 +428,7 @@ export const TranscriptActivityChart: FC<Props> = ({
     return (
       <div className="relative z-0 mb-3 rounded-lg border bg-muted/20">
         <div className="flex h-16 items-center justify-center">
-          <span className="text-[10px] text-muted-foreground">No transcript data available</span>
+          <Small className="text-muted-foreground">No transcript data available</Small>
         </div>
       </div>
     );
@@ -435,8 +438,8 @@ export const TranscriptActivityChart: FC<Props> = ({
     <div className="relative z-0 mb-3 rounded-lg border bg-muted/20">
       {/* Header bar */}
       {totalCount > 0 && (
-        <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-1.5 text-[10px]">
-          <span className="text-muted-foreground">
+        <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-2.5">
+          <Small className="text-muted-foreground">
             Showing <span className="font-medium text-foreground">{loadedCount.toLocaleString()}</span> of{' '}
             <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span> transcripts
             {chartAxisRange !== null && (
@@ -447,17 +450,17 @@ export const TranscriptActivityChart: FC<Props> = ({
                 to <span className="font-medium text-foreground">{formatVisibleWindowTime(chartAxisRange.endMs)}</span>
               </>
             )}
-          </span>
+          </Small>
         </div>
       )}
 
       {/* Histogram Bars */}
-      <div className="relative px-2 pt-4 pb-1">
+      <div className="relative px-3 pt-4 pb-2">
         <div className="relative flex">
           {/* Y-axis labels */}
-          <div className="relative mr-2 flex w-8 shrink-0 flex-col justify-between text-right text-[9px] text-muted-foreground">
+          <div className="relative mr-3 flex w-9 shrink-0 flex-col justify-between text-right text-muted-foreground">
             {[...yAxisTicks].reverse().map((tick) => (
-              <span key={tick}>{tick}</span>
+              <Small key={tick}>{tick}</Small>
             ))}
           </div>
 
@@ -499,7 +502,7 @@ export const TranscriptActivityChart: FC<Props> = ({
 
         {/* Visible window range indicator - shows which portion of the timeline is loaded */}
         {overlayStyle !== null && (
-          <div className="relative mt-1.5 ml-10 h-1 bg-muted/50">
+          <div className="relative mt-2 ml-12 h-1 bg-muted/50">
             {/* Visible range highlight */}
             <div className="absolute h-full bg-foreground/20" style={overlayStyle} />
             {/* Left edge marker */}
@@ -515,23 +518,23 @@ export const TranscriptActivityChart: FC<Props> = ({
           </div>
         )}
 
-        {/* Time Labels - offset to align with bars (w-8 + mr-2 = 40px = ml-10) */}
-        <div className="mt-1.5 ml-10 flex justify-between px-0.5 text-[9px] text-muted-foreground">
+        {/* Time Labels - offset to align with bars (w-9 + mr-3 = 48px = ml-12) */}
+        <div className="mt-2 ml-12 flex justify-between px-0.5 text-muted-foreground">
           {timeLabels.map((item) => (
-            <span key={item.key}>{item.label}</span>
+            <Small key={item.key}>{item.label}</Small>
           ))}
         </div>
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 border-t px-3 py-1.5 text-[9px] text-muted-foreground">
+      <div className="flex items-center gap-4 border-t px-3 py-2 text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <div className="h-2 w-2 rounded-sm bg-emerald-500/70" />
-          <span>Successful</span>
+          <Small>Successful</Small>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="h-2 w-2 rounded-sm bg-red-500/70" />
-          <span>Errors</span>
+          <Small>Errors</Small>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="relative h-2 w-6 bg-muted/50">
@@ -539,7 +542,7 @@ export const TranscriptActivityChart: FC<Props> = ({
             <div className="absolute top-1/2 right-0 h-3 w-0.5 -translate-y-1/2 bg-foreground/40" />
             <div className="absolute top-1/2 right-1/2 h-3 w-0.5 -translate-y-1/2 bg-foreground/40" />
           </div>
-          <span>Loaded data</span>
+          <Small>Loaded data</Small>
         </div>
       </div>
     </div>

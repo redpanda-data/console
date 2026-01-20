@@ -123,7 +123,7 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
   }
 
   return (
-    <div className="space-y-4 p-3">
+    <div className="space-y-4 p-4">
       {/* Tool Header */}
       {!!toolData.name && (
         <div className="flex items-center gap-2">
@@ -151,18 +151,22 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
       {/* Tool Description */}
       {!!toolData.description && (
         <ContentPanel className="bg-muted/20">
-          <p className="text-[10px] text-muted-foreground leading-relaxed">{toolData.description}</p>
+          <Text className="leading-relaxed" variant="muted">
+            {toolData.description}
+          </Text>
         </ContentPanel>
       )}
 
       {/* Tool ID */}
       {!!toolData.callId && (
         <div className="space-y-1">
-          <Text as="span" variant="label">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
             CALL ID
           </Text>
           <ContentPanel>
-            <p className="break-all font-mono text-[10px]">{toolData.callId}</p>
+            <Text className="break-all font-mono" variant="small">
+              {toolData.callId}
+            </Text>
           </ContentPanel>
         </div>
       )}

@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { Heading, Small, Text } from 'components/redpanda-ui/components/typography';
 import { ArrowLeft, Database, RefreshCw, X } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
 import type { TraceHistogram, TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
@@ -66,14 +66,14 @@ type TranscriptsStatsRowProps = {
 const TranscriptsStatsRow: FC<TranscriptsStatsRowProps> = ({ isLoading, isInitialLoad, stats, onCollapseAll }) => {
   if (isLoading && isInitialLoad) {
     return (
-      <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
-        <span className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-1 text-muted-foreground">
+        <Small className="flex items-center gap-2">
           <Spinner size="xs" />
           Loading transcripts...
-        </span>
+        </Small>
         <div className="flex items-center gap-3">
-          <Button className="h-6 px-2 text-[10px]" onClick={onCollapseAll} size="sm" variant="ghost">
-            Collapse all
+          <Button className="h-6 px-2" onClick={onCollapseAll} size="sm" variant="ghost">
+            <Small>Collapse all</Small>
           </Button>
         </div>
       </div>
@@ -83,8 +83,8 @@ const TranscriptsStatsRow: FC<TranscriptsStatsRowProps> = ({ isLoading, isInitia
   const hasAnomalies = stats.withErrors > 0 || stats.inProgress > 0;
 
   return (
-    <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
-      <span>
+    <div className="flex items-center justify-between px-1 text-muted-foreground">
+      <Small>
         Showing {stats.total} {pluralize(stats.total, 'transcript')}
         {hasAnomalies ? (
           <span className="text-muted-foreground/70">
@@ -94,10 +94,10 @@ const TranscriptsStatsRow: FC<TranscriptsStatsRowProps> = ({ isLoading, isInitia
             {stats.inProgress > 0 ? `, ${stats.inProgress} in-progress` : null})
           </span>
         ) : null}
-      </span>
+      </Small>
       <div className="flex items-center gap-3">
-        <Button className="h-6 px-2 text-[10px]" onClick={onCollapseAll} size="sm" variant="ghost">
-          Collapse all
+        <Button className="h-6 px-2" onClick={onCollapseAll} size="sm" variant="ghost">
+          <Small>Collapse all</Small>
         </Button>
       </div>
     </div>
@@ -207,7 +207,7 @@ const TraceListToolbar: FC<TraceListToolbarProps> = ({
     </div>
     <div className="flex items-center gap-2">
       {jumpedTo !== null ? (
-        <span className="rounded bg-muted px-2 py-1 text-muted-foreground text-xs">Viewing: {jumpedTo.label}</span>
+        <Small className="rounded bg-muted px-2 py-1 text-muted-foreground">Viewing: {jumpedTo.label}</Small>
       ) : null}
       <Select disabled={jumpedTo !== null} onValueChange={onTimeRangeChange} value={timeRange}>
         <SelectTrigger className="h-8 w-[140px] text-xs">

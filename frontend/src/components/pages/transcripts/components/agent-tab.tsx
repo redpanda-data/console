@@ -70,15 +70,17 @@ export const AgentTab: FC<Props> = ({ span }) => {
   const totalTokens = agentData.inputTokens + agentData.outputTokens;
 
   return (
-    <div className="space-y-4 p-3">
+    <div className="space-y-4 p-4">
       {/* Agent Name */}
       {!!agentData.agentName && (
         <div className="space-y-1.5">
-          <Text as="span" variant="label">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
             AGENT NAME
           </Text>
           <ContentPanel>
-            <p className="font-medium text-sm">{agentData.agentName}</p>
+            <Text className="font-medium" variant="small">
+              {agentData.agentName}
+            </Text>
           </ContentPanel>
         </div>
       )}
@@ -86,13 +88,13 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Agent Description */}
       {!!agentData.agentDescription && (
         <div className="space-y-1.5">
-          <Text as="span" variant="label">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
             DESCRIPTION
           </Text>
           <ContentPanel>
-            <p className="whitespace-pre-wrap break-words text-[10px] text-muted-foreground leading-relaxed">
+            <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="muted">
               {agentData.agentDescription}
-            </p>
+            </Text>
           </ContentPanel>
         </div>
       )}
@@ -100,13 +102,13 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Agent Input */}
       {!!agentData.agentInput && (
         <div className="space-y-1.5">
-          <Text as="span" variant="label">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
             INPUT
           </Text>
           <ContentPanel>
-            <p className="whitespace-pre-wrap break-words text-[10px] text-muted-foreground leading-relaxed">
+            <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="muted">
               {agentData.agentInput}
-            </p>
+            </Text>
           </ContentPanel>
         </div>
       )}
@@ -114,13 +116,13 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Agent Output */}
       {!!agentData.agentOutput && (
         <div className="space-y-1.5">
-          <Text as="span" variant="label">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
             OUTPUT
           </Text>
           <ContentPanel>
-            <p className="whitespace-pre-wrap break-words text-[10px] text-muted-foreground leading-relaxed">
+            <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="muted">
               {agentData.agentOutput}
-            </p>
+            </Text>
           </ContentPanel>
         </div>
       )}
@@ -128,48 +130,56 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Agent ID */}
       {!!agentData.agentId && (
         <div className="space-y-1.5">
-          <Text as="span" variant="label">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
             AGENT ID
           </Text>
           <ContentPanel>
-            <p className="font-mono text-[10px] text-muted-foreground">{agentData.agentId}</p>
+            <Text className="font-mono" variant="muted">
+              {agentData.agentId}
+            </Text>
           </ContentPanel>
         </div>
       )}
 
       {/* Model */}
       {!!agentData.model && (
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground text-xs">Model:</span>
-          <Badge className="text-xs" variant="secondary">
-            {agentData.model}
-          </Badge>
+        <div className="space-y-1.5">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
+            MODEL
+          </Text>
+          <div>
+            <Badge variant="secondary">
+              <Text variant="small">{agentData.model}</Text>
+            </Badge>
+          </div>
         </div>
       )}
 
       {/* Token Usage Summary */}
       {agentData.inputTokens > 0 && (
         <div className="space-y-1.5">
-          <Text as="span" variant="label">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
             TOKEN USAGE
           </Text>
           <ContentPanel className="bg-muted/20">
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between">
               <div className="space-x-3">
-                <span className="text-muted-foreground">
+                <Text variant="muted">
                   Input:{' '}
                   <span className="font-medium font-mono text-foreground">
                     {agentData.inputTokens.toLocaleString()}
                   </span>
-                </span>
-                <span className="text-muted-foreground">
+                </Text>
+                <Text variant="muted">
                   Output:{' '}
                   <span className="font-medium font-mono text-foreground">
                     {agentData.outputTokens.toLocaleString()}
                   </span>
-                </span>
+                </Text>
               </div>
-              <span className="font-medium text-muted-foreground">{totalTokens.toLocaleString()} total</span>
+              <Text className="font-medium" variant="muted">
+                {totalTokens.toLocaleString()} total
+              </Text>
             </div>
           </ContentPanel>
         </div>
@@ -178,11 +188,13 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Conversation ID */}
       {!!agentData.conversationId && (
         <div className="space-y-1.5">
-          <Text as="span" variant="label">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
             CONVERSATION ID
           </Text>
           <ContentPanel>
-            <p className="font-mono text-[10px] text-muted-foreground">{agentData.conversationId}</p>
+            <Text className="font-mono" variant="muted">
+              {agentData.conversationId}
+            </Text>
           </ContentPanel>
         </div>
       )}
