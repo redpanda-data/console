@@ -294,7 +294,7 @@ describe('LLMIOTab - OpenTelemetry Message Support', () => {
 
     // Should not crash when JSON is malformed
     // Model is present, so component renders but without messages
-    expect(screen.getByText('Model:')).toBeInTheDocument();
+    expect(screen.getByText('MODEL')).toBeInTheDocument();
     expect(screen.getByText('test-model')).toBeInTheDocument();
 
     // No INPUT/OUTPUT sections should be shown since no valid messages
@@ -362,7 +362,7 @@ describe('LLMIOTab - OpenTelemetry Message Support', () => {
 
     render(<LLMIOTab span={span} />);
 
-    expect(screen.getByText('Model:')).toBeInTheDocument();
+    expect(screen.getByText('MODEL')).toBeInTheDocument();
     expect(screen.getByText('test-model')).toBeInTheDocument();
   });
 
