@@ -10,6 +10,7 @@
  */
 
 import { Input } from 'components/redpanda-ui/components/input';
+import { Text } from 'components/redpanda-ui/components/typography';
 import JSONBigIntFactory from 'json-bigint';
 import { Search } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
@@ -145,11 +146,11 @@ export const AttributesTab: FC<Props> = ({ span }) => {
   }
 
   return (
-    <div className="space-y-4 p-3">
+    <div className="space-y-4 p-4">
       <div className="relative">
         <Search className="pointer-events-none absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
         <Input
-          className="h-7 pl-7 text-xs"
+          className="h-8 pl-7 text-sm"
           data-testid="attributes-search-input"
           onChange={(e) => setSearchQuery(e.target.value || null)}
           placeholder="Search attributes..."
@@ -161,14 +162,20 @@ export const AttributesTab: FC<Props> = ({ span }) => {
         {filteredAttributes.map((attr) => (
           <ContentPanel key={attr.key}>
             <div className="space-y-0.5">
-              <div className="break-all font-mono text-[10px] text-muted-foreground">{attr.key}</div>
-              <div className="break-all font-mono text-[10px]">{attr.value}</div>
+              <Text className="break-all font-mono" variant="muted">
+                {attr.key}
+              </Text>
+              <Text className="break-all font-mono" variant="small">
+                {attr.value}
+              </Text>
             </div>
           </ContentPanel>
         ))}
 
         {filteredAttributes.length === 0 && (
-          <div className="p-8 text-center text-muted-foreground text-xs">No attributes match your search</div>
+          <div className="p-8 text-center text-muted-foreground">
+            <Text variant="muted">No attributes match your search</Text>
+          </div>
         )}
       </div>
     </div>

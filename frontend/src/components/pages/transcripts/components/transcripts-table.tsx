@@ -26,6 +26,7 @@ import { DataTableFacetedFilter } from 'components/redpanda-ui/components/data-t
 import { Input } from 'components/redpanda-ui/components/input';
 import { ScrollArea } from 'components/redpanda-ui/components/scroll-area';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Small, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
   AlertCircle,
@@ -368,7 +369,7 @@ const SpanRow: FC<SpanRowProps> = ({
       >
         {/* Timestamp */}
         <div className="shrink-0 px-2 py-1">
-          <span className="font-mono text-[10px] text-muted-foreground">{formatTime(spanTimestamp)}</span>
+          <Small className="font-mono text-muted-foreground">{formatTime(spanTimestamp)}</Small>
         </div>
 
         {/* Span Info with Tree Lines */}
@@ -387,30 +388,30 @@ const SpanRow: FC<SpanRowProps> = ({
 
           {/* Service badge */}
           <Badge
-            className="flex h-4 max-w-[150px] shrink-0 items-center border-border bg-muted/50 px-1.5 py-0 font-normal text-[10px] text-muted-foreground"
+            className="flex h-4 max-w-[150px] shrink-0 items-center border-border bg-muted/50 px-1.5 py-0 font-normal text-muted-foreground"
             variant="outline"
           >
             <Icon className="mr-1 h-3 w-3 shrink-0" />
-            <span className="truncate" title={serviceName}>
+            <Small className="truncate" title={serviceName}>
               {serviceName}
-            </span>
+            </Small>
           </Badge>
 
           {/* Children count */}
           {!!hasChildren && (
             <Badge
-              className="h-4 shrink-0 border-border bg-muted/50 px-1 py-0 font-mono text-[10px] text-muted-foreground"
+              className="h-4 shrink-0 border-border bg-muted/50 px-1 py-0 font-mono text-muted-foreground"
               variant="outline"
             >
-              {span.children?.length || 0}
+              <Small>{span.children?.length || 0}</Small>
             </Badge>
           )}
 
           {/* Span name - wrapped in container for proper truncation */}
           <div className="min-w-0 flex-1">
-            <span className="block truncate text-[11px]" title={span.name}>
+            <Text as="span" className="block truncate" title={span.name} variant="small">
               {span.name}
-            </span>
+            </Text>
           </div>
 
           {/* Error badge */}
@@ -432,9 +433,9 @@ const SpanRow: FC<SpanRowProps> = ({
               }}
             />
           </div>
-          <span className="w-14 shrink-0 text-left font-mono text-[10px] text-muted-foreground">
+          <Small className="w-14 shrink-0 text-left font-mono text-muted-foreground">
             {formatDuration(span.duration)}
-          </span>
+          </Small>
         </div>
       </button>
 
@@ -588,23 +589,23 @@ const RootTraceServiceBadge: FC<{ isIncomplete: boolean; serviceName: string | u
   if (isIncomplete) {
     return (
       <Badge
-        className="flex h-4 shrink-0 items-center border-amber-500/30 bg-amber-500/10 px-1.5 py-0 font-normal text-[10px] text-amber-600"
+        className="flex h-4 shrink-0 items-center border-amber-500/30 bg-amber-500/10 px-1.5 py-0 font-normal text-amber-600"
         variant="outline"
       >
         <AlertCircle className="mr-1 h-3 w-3 shrink-0" />
-        <span className="truncate">awaiting root</span>
+        <Small className="truncate">awaiting root</Small>
       </Badge>
     );
   }
   return (
     <Badge
-      className="flex h-4 max-w-[150px] shrink-0 items-center border-border bg-muted/50 px-1.5 py-0 font-normal text-[10px] text-muted-foreground"
+      className="flex h-4 max-w-[150px] shrink-0 items-center border-border bg-muted/50 px-1.5 py-0 font-normal text-muted-foreground"
       variant="outline"
     >
       <Cpu className="mr-1 h-3 w-3 shrink-0" />
-      <span className="truncate" title={serviceName || 'service'}>
+      <Small className="truncate" title={serviceName || 'service'}>
         {serviceName || 'service'}
-      </span>
+      </Small>
     </Badge>
   );
 };
@@ -621,7 +622,7 @@ const RootTraceDurationCell: FC<{
         <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
           <div className="h-full w-full rounded-full bg-amber-500/30" />
         </div>
-        <span className="w-14 shrink-0 text-left font-mono text-[10px] text-muted-foreground">—</span>
+        <Small className="w-14 shrink-0 text-left font-mono text-muted-foreground">—</Small>
       </>
     );
   }
@@ -633,9 +634,7 @@ const RootTraceDurationCell: FC<{
           style={{ width: '100%' }}
         />
       </div>
-      <span className="w-14 shrink-0 text-left font-mono text-[10px] text-muted-foreground">
-        {formatDuration(duration)}
-      </span>
+      <Small className="w-14 shrink-0 text-left font-mono text-muted-foreground">{formatDuration(duration)}</Small>
     </>
   );
 };
@@ -707,7 +706,7 @@ const RootTraceRow: FC<{
     >
       {/* Timestamp */}
       <div className="shrink-0 px-2 py-1.5">
-        <span className="font-mono text-[10px] text-muted-foreground">{formatTime(baseTimestamp)}</span>
+        <Small className="font-mono text-muted-foreground">{formatTime(baseTimestamp)}</Small>
       </div>
 
       {/* Message column */}
@@ -746,22 +745,24 @@ const RootTraceRow: FC<{
 
         {/* Span count */}
         <Badge
-          className="h-4 shrink-0 border-border bg-muted/50 px-1 py-0 font-mono text-[10px] text-muted-foreground"
+          className="h-4 shrink-0 border-border bg-muted/50 px-1 py-0 font-mono text-muted-foreground"
           variant="outline"
         >
-          {traceSummary.spanCount}
+          <Small>{traceSummary.spanCount}</Small>
         </Badge>
 
         {/* Trace name - wrapped in container for proper truncation */}
         <div className="min-w-0 flex-1">
-          <span
-            className={cn('block truncate text-[11px]', isIncomplete && 'text-muted-foreground italic')}
+          <Text
+            as="span"
+            className={cn('block truncate', isIncomplete && 'text-muted-foreground italic')}
             title={traceSummary.rootSpanName}
+            variant="small"
           >
             {isIncomplete
               ? `${traceSummary.rootServiceName || 'unknown'} — waiting for parent span`
               : traceSummary.rootSpanName}
-          </span>
+          </Text>
         </div>
 
         {/* Error badge */}
@@ -1076,14 +1077,14 @@ export const TranscriptsTable: FC<Props> = ({
         <div className={selectedTraceId ? 'flex h-full min-w-0 flex-1 flex-col' : 'flex h-full w-full flex-col'}>
           <div className="flex flex-1 flex-col overflow-hidden bg-background">
             {/* Column Headers */}
-            <div className="sticky top-0 grid items-center border-b bg-muted/50 font-medium text-[10px] text-muted-foreground [grid-template-columns:72px_minmax(0,1fr)_260px]">
+            <div className="sticky top-0 grid border-b bg-muted/50 font-medium text-muted-foreground [grid-template-columns:72px_minmax(0,1fr)_260px]">
               <button
                 aria-label={
                   sortOrder === 'newest-first'
                     ? 'Sort by time, currently newest first'
                     : 'Sort by time, currently oldest first'
                 }
-                className="flex shrink-0 cursor-pointer items-center gap-1 px-2 py-1.5 transition-colors hover:text-foreground"
+                className="flex shrink-0 cursor-pointer items-center gap-1 px-2 py-2.5 transition-colors hover:text-foreground"
                 data-testid="transcripts-sort-toggle"
                 onClick={toggleSortOrder}
                 title={
@@ -1093,15 +1094,25 @@ export const TranscriptsTable: FC<Props> = ({
                 }
                 type="button"
               >
-                <span>Time</span>
+                <Text as="span" variant="small">
+                  Time
+                </Text>
                 {sortOrder === 'newest-first' ? (
                   <ArrowDown aria-hidden="true" className="h-3 w-3" />
                 ) : (
                   <ArrowUp aria-hidden="true" className="h-3 w-3" />
                 )}
               </button>
-              <div className="min-w-0 px-1 py-1.5">Span</div>
-              <div className="shrink-0 py-1.5 pr-6 pl-2">Duration</div>
+              <div className="flex min-w-0 items-center px-1 py-2.5">
+                <Text as="span" variant="small">
+                  Span
+                </Text>
+              </div>
+              <div className="flex shrink-0 items-center py-2.5 pr-6 pl-2">
+                <Text as="span" variant="small">
+                  Duration
+                </Text>
+              </div>
             </div>
 
             {/* Table Body */}
@@ -1139,15 +1150,15 @@ export const TranscriptsTable: FC<Props> = ({
                     <Inbox className="h-12 w-12 text-muted-foreground/40" strokeWidth={1.5} />
                     <div className="flex flex-col items-center gap-1.5 text-center">
                       <h3 className="font-medium text-sm">No transcripts found</h3>
-                      <p className="max-w-md text-muted-foreground text-xs leading-relaxed">
+                      <Text as="p" className="max-w-md leading-relaxed" variant="muted">
                         {isFiltered && hasUnfilteredData
                           ? 'No transcripts match your search criteria. Try adjusting your filter or clearing it.'
                           : `No transcripts have been recorded in the ${timeRange.toLowerCase()}. Transcripts will appear here once your agents start processing requests.`}
-                      </p>
+                      </Text>
                       {!!(isFiltered && hasUnfilteredData) && (
-                        <p className="mt-1 text-[11px] text-muted-foreground/70">
+                        <Small className="mt-1 text-muted-foreground/70">
                           <span className="font-medium">Tip:</span> Clear the search filter to see all transcripts
-                        </p>
+                        </Small>
                       )}
                     </div>
                   </div>
@@ -1161,15 +1172,15 @@ export const TranscriptsTable: FC<Props> = ({
                     {groupedTraces.map(([dateKey, { label, traces: dateTraces }], index) => (
                       <div key={dateKey}>
                         {/* Date Separator */}
-                        <div className="border-border/30 border-b py-1.5 text-center">
-                          <span className="text-[10px] text-muted-foreground">
+                        <div className="border-border/30 border-b py-2 text-center">
+                          <Small className="text-muted-foreground">
                             {label}
                             {index === 0 && (
                               <span className="ml-1.5 text-muted-foreground/60">
                                 • {sortOrder === 'newest-first' ? 'Newest' : 'Oldest'}
                               </span>
                             )}
-                          </span>
+                          </Small>
                         </div>
 
                         {/* Traces for this date */}

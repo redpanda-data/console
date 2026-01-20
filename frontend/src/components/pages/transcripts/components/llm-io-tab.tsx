@@ -71,7 +71,9 @@ const ToolCallDisplay: FC<{ toolCall: ToolCall }> = ({ toolCall }) => (
   <div className="space-y-1.5">
     <div className="flex items-center gap-1.5">
       <Wrench className="h-3 w-3 text-muted-foreground" />
-      <span className="font-medium text-[10px] text-muted-foreground">Tool Call: {toolCall.name}</span>
+      <Text className="font-medium" variant="muted">
+        Tool Call: {toolCall.name}
+      </Text>
     </div>
     <CollapsibleCodeSection content={JSON.stringify(toolCall.arguments, null, 2)} title="ARGUMENTS" />
   </div>
@@ -82,7 +84,9 @@ const ToolResponseDisplay: FC<{ response: ToolResponse }> = ({ response }) => (
   <div className="space-y-1.5">
     <div className="flex items-center gap-1.5">
       <CheckCircle className="h-3 w-3 text-muted-foreground" />
-      <span className="font-medium text-[10px] text-muted-foreground">Tool Response</span>
+      <Text className="font-medium" variant="muted">
+        Tool Response
+      </Text>
     </div>
     <CollapsibleCodeSection content={JSON.stringify(response.response, null, 2)} title="RESPONSE" />
   </div>
@@ -102,18 +106,22 @@ const HistoryMessageItem: FC<{ message: Message; index: number }> = ({ message, 
       {/* Role header */}
       <div className="flex items-center gap-1.5">
         <Icon className="h-3 w-3 text-muted-foreground" />
-        <span className="font-medium text-[10px] capitalize">{message.role}</span>
+        <Text className="font-medium capitalize" variant="small">
+          {message.role}
+        </Text>
       </div>
 
       {/* Text content */}
       {hasContent ? (
-        <div className="text-[10px] leading-relaxed">
+        <div className="leading-relaxed">
           {isJson ? (
-            <div className="[&_*]:text-[10px]">
+            <div className="[&_*]:text-xs">
               <DynamicCodeBlock code={formatJsonContent(message.content)} lang="json" />
             </div>
           ) : (
-            <p className="whitespace-pre-wrap break-words text-muted-foreground">{message.content}</p>
+            <Text className="whitespace-pre-wrap break-words" variant="muted">
+              {message.content}
+            </Text>
           )}
         </div>
       ) : null}
@@ -148,7 +156,7 @@ const InputSection: FC<{ input: string; lastInputMessage?: Message }> = ({ input
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1">
-        <Text as="span" variant="label">
+        <Text as="div" className="uppercase tracking-wide" variant="label">
           INPUT
         </Text>
         <TooltipProvider>
@@ -166,7 +174,11 @@ const InputSection: FC<{ input: string; lastInputMessage?: Message }> = ({ input
         </TooltipProvider>
       </div>
       <ContentPanel spacing>
-        {!!input && <p className="whitespace-pre-wrap break-words text-[10px] leading-relaxed">{input}</p>}
+        {!!input && (
+          <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="small">
+            {input}
+          </Text>
+        )}
 
         {/* Tool responses in input */}
         {lastInputMessage?.toolResponses && lastInputMessage.toolResponses.length > 0 ? (
@@ -176,7 +188,6 @@ const InputSection: FC<{ input: string; lastInputMessage?: Message }> = ({ input
             ))}
           </div>
         ) : null}
-
         {/* Tool calls in input (rare but possible) */}
         {lastInputMessage?.toolCalls && lastInputMessage.toolCalls.length > 0 ? (
           <div className="space-y-4">
@@ -199,7 +210,7 @@ const OutputSection: FC<{ output: string; lastOutputMessage?: Message }> = ({ ou
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1">
-        <Text as="span" variant="label">
+        <Text as="div" className="uppercase tracking-wide" variant="label">
           OUTPUT
         </Text>
         <TooltipProvider>
@@ -214,7 +225,11 @@ const OutputSection: FC<{ output: string; lastOutputMessage?: Message }> = ({ ou
         </TooltipProvider>
       </div>
       <ContentPanel spacing>
-        {!!output && <p className="whitespace-pre-wrap break-words text-[10px] leading-relaxed">{output}</p>}
+        {!!output && (
+          <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="small">
+            {output}
+          </Text>
+        )}
 
         {/* Tool calls in output (LLM making tool calls) */}
         {lastOutputMessage?.toolCalls && lastOutputMessage.toolCalls.length > 0 ? (
@@ -224,7 +239,6 @@ const OutputSection: FC<{ output: string; lastOutputMessage?: Message }> = ({ ou
             ))}
           </div>
         ) : null}
-
         {/* Tool responses in output (rare but possible) */}
         {lastOutputMessage?.toolResponses && lastOutputMessage.toolResponses.length > 0 ? (
           <div className="space-y-4">
@@ -542,31 +556,37 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
   const hasConversationHistory = isHistoryOpen && historyMessages.length > 0;
 
   return (
-    <div className="space-y-4 p-3">
+    <div className="space-y-4 p-4">
       {/* Model Info & Token Counts */}
       {!!llmData.model && (
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground text-xs">Model:</span>
-          <Badge className="text-xs" variant="secondary">
-            {llmData.model}
-          </Badge>
+        <div className="space-y-1.5">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
+            MODEL
+          </Text>
+          <div>
+            <Badge variant="secondary">
+              <Text variant="small">{llmData.model}</Text>
+            </Badge>
+          </div>
         </div>
       )}
 
       {/* Token Counts - Compact */}
       {llmData.inputTokens > 0 && (
-        <ContentPanel className="flex items-center justify-between bg-muted/20 text-xs">
+        <ContentPanel className="flex items-center justify-between bg-muted/20">
           <div className="space-x-3">
-            <span className="text-muted-foreground">
+            <Text variant="muted">
               Input:{' '}
               <span className="font-medium font-mono text-foreground">{llmData.inputTokens.toLocaleString()}</span>
-            </span>
-            <span className="text-muted-foreground">
+            </Text>
+            <Text variant="muted">
               Output:{' '}
               <span className="font-medium font-mono text-foreground">{llmData.outputTokens.toLocaleString()}</span>
-            </span>
+            </Text>
           </div>
-          <span className="font-medium text-muted-foreground">{totalTokens.toLocaleString()} total</span>
+          <Text className="font-medium" variant="muted">
+            {totalTokens.toLocaleString()} total
+          </Text>
         </ContentPanel>
       )}
 
@@ -576,13 +596,15 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
       {/* Conversation History */}
       <Collapsible onOpenChange={setIsHistoryOpen} open={isHistoryOpen}>
         <CollapsibleTrigger asChild>
-          <Button className="h-7 w-full justify-between px-2 text-xs hover:bg-muted/50" variant="ghost">
+          <Button className="h-7 w-full justify-between px-2 hover:bg-muted/50" variant="ghost">
             <div className="flex items-center gap-1.5">
               <History className="h-3 w-3" />
-              <span>Conversation History</span>
+              <Text variant="small">Conversation History</Text>
               {historyMessageCount > 0 && (
-                <Badge className="h-4 bg-muted/50 px-1 text-[9px]" variant="outline">
-                  {historyMessageCount} {historyMessageCount === 1 ? 'message' : 'messages'}
+                <Badge className="h-4 bg-muted/50 px-1" variant="outline">
+                  <Text variant="small">
+                    {historyMessageCount} {historyMessageCount === 1 ? 'message' : 'messages'}
+                  </Text>
                 </Badge>
               )}
             </div>

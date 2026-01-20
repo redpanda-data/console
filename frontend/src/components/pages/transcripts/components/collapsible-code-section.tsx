@@ -61,7 +61,9 @@ export const CollapsibleCodeSection: FC<Props> = ({ title, content, defaultExpan
             {title}
           </Text>
         </div>
-        <span className="font-mono text-[9px] text-muted-foreground">{prettyBytes(payloadSize)}</span>
+        <Text as="span" className="font-mono" variant="muted">
+          {prettyBytes(payloadSize)}
+        </Text>
       </Button>
 
       {!isExpanded && hasPreview ? (
@@ -72,19 +74,19 @@ export const CollapsibleCodeSection: FC<Props> = ({ title, content, defaultExpan
           type="button"
         >
           <ContentPanel>
-            <p className="line-clamp-3 break-all font-mono text-[9px] text-muted-foreground leading-relaxed">
+            <Text as="p" className="line-clamp-3 break-all font-mono leading-relaxed" variant="muted">
               {preview}
-            </p>
-            <div className="mt-2 flex items-center justify-center font-medium text-[9px] text-muted-foreground/60">
+            </Text>
+            <Text className="mt-2 flex items-center justify-center font-medium opacity-60" variant="muted">
               Click to expand
-            </div>
+            </Text>
           </ContentPanel>
         </button>
       ) : null}
 
       {isExpanded ? (
         <ContentPanel padding="md">
-          <pre className="whitespace-pre-wrap break-words font-mono text-[10px] leading-relaxed" id={sectionId}>
+          <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" id={sectionId}>
             {content}
           </pre>
         </ContentPanel>
