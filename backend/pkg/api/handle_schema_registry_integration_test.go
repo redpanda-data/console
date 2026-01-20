@@ -337,3 +337,93 @@ enum MyEnumA {
 		assert.Equal(thirdSchemaID, fourthSchemaID, "with normalize=true, schemas with different enum value order should produce the same schema ID")
 	})
 }
+
+func (s *APIIntegrationTestSuite) TestSchemaMetadata() {
+	t := s.T()
+	t.Skip() //todo remove skip once redpanda v26.1 is GA
+	require := require.New(t)
+	assert := assert.New(t)
+
+	t.Run("create schema with metadata properties", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+		defer cancel()
+
+		schemaStr := `{"type":"record","name":"User","fields":[{"name":"id","type":"string"}]}`
+		req := struct {
+			Schema   string `json:"schema"`
+			Type     string `json:"schemaType"`
+			Metadata struct {
+				Properties map[string]string `json:"properties"`
+			} `json:"metadata"`
+		}{
+			Schema: schemaStr,
+			Type:   sr.TypeAvro.String(),
+		}
+		req.Metadata.Properties = map[string]string{
+			"owner":   "team-platform",
+			"version": "1.0.0",
+		}
+
+		res, body := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/test-metadata/versions", req)
+		require.Equal(200, res.StatusCode)
+
+		createResponse := struct {
+			ID int `json:"id"`
+		}{}
+		err := json.Unmarshal(body, &createResponse)
+		require.NoError(err)
+		assert.Greater(createResponse.ID, 0, "schema ID should be returned")
+	})
+
+	t.Run("retrieve schema with metadata", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+		defer cancel()
+
+		res, body := s.apiRequest(ctx, http.MethodGet, "/api/schema-registry/subjects/test-metadata/versions/latest", nil)
+		require.Equal(200, res.StatusCode)
+
+		var details console.SchemaRegistrySubjectDetails
+		err := json.Unmarshal(body, &details)
+		require.NoError(err)
+
+		// Verify metadata is present in response
+		require.Len(details.Schemas, 1, "should have one schema")
+		require.NotNil(details.Schemas[0].Metadata, "metadata should not be nil")
+		assert.Equal("team-platform", details.Schemas[0].Metadata.Properties["owner"], "owner property should match")
+		assert.Equal("1.0.0", details.Schemas[0].Metadata.Properties["version"], "version property should match")
+	})
+
+	t.Run("create schema without metadata (backward compatibility)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+		defer cancel()
+
+		schemaStr := `{"type":"record","name":"Event","fields":[{"name":"id","type":"string"}]}`
+		req := struct {
+			Schema string `json:"schema"`
+			Type   string `json:"schemaType"`
+		}{
+			Schema: schemaStr,
+			Type:   sr.TypeAvro.String(),
+		}
+
+		res, body := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/test-no-metadata/versions", req)
+		require.Equal(200, res.StatusCode)
+
+		createResponse := struct {
+			ID int `json:"id"`
+		}{}
+		err := json.Unmarshal(body, &createResponse)
+		require.NoError(err)
+		assert.Greater(createResponse.ID, 0, "schema ID should be returned")
+
+		// Verify schema without metadata retrieves correctly
+		res, body = s.apiRequest(ctx, http.MethodGet, "/api/schema-registry/subjects/test-no-metadata/versions/latest", nil)
+		require.Equal(200, res.StatusCode)
+
+		var details console.SchemaRegistrySubjectDetails
+		err = json.Unmarshal(body, &details)
+		require.NoError(err)
+		require.Len(details.Schemas, 1, "should have one schema")
+		assert.Nil(details.Schemas[0].Metadata, "metadata should be nil for schema without metadata")
+	})
+}

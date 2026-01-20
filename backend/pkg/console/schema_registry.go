@@ -186,6 +186,16 @@ func mapSubjectSchema(in sr.SubjectSchema, isSoftDeleted bool) SchemaRegistryVer
 			Version: ref.Version,
 		}
 	}
+
+	var metadata *SchemaMetadata
+	if in.Schema.SchemaMetadata != nil {
+		metadata = &SchemaMetadata{
+			Tags:       in.Schema.SchemaMetadata.Tags,
+			Properties: in.Schema.SchemaMetadata.Properties,
+			Sensitive:  in.Schema.SchemaMetadata.Sensitive,
+		}
+	}
+
 	return SchemaRegistryVersionedSchema{
 		ID:            in.ID,
 		Version:       in.Version,
@@ -193,6 +203,7 @@ func mapSubjectSchema(in sr.SubjectSchema, isSoftDeleted bool) SchemaRegistryVer
 		Type:          in.Type,
 		Schema:        in.Schema.Schema,
 		References:    references,
+		Metadata:      metadata,
 	}
 }
 
@@ -395,12 +406,13 @@ func (s *Service) getSubjectCompatibilityLevel(ctx context.Context, srClient *rp
 
 // SchemaRegistryVersionedSchema describes a retrieved schema.
 type SchemaRegistryVersionedSchema struct {
-	ID            int           `json:"id"`
-	Version       int           `json:"version"`
-	IsSoftDeleted bool          `json:"isSoftDeleted"`
-	Type          sr.SchemaType `json:"type"`
-	Schema        string        `json:"schema"`
-	References    []Reference   `json:"references"`
+	ID            int              `json:"id"`
+	Version       int              `json:"version"`
+	IsSoftDeleted bool             `json:"isSoftDeleted"`
+	Type          sr.SchemaType    `json:"type"`
+	Schema        string           `json:"schema"`
+	References    []Reference      `json:"references"`
+	Metadata      *SchemaMetadata  `json:"metadata,omitempty"`
 }
 
 // Reference describes a reference to a different schema stored in the schema registry.
@@ -408,6 +420,13 @@ type Reference struct {
 	Name    string `json:"name"`
 	Subject string `json:"subject"`
 	Version int    `json:"version"`
+}
+
+// SchemaMetadata contains metadata associated with a schema version.
+type SchemaMetadata struct {
+	Tags       map[string][]string `json:"tags,omitempty"`
+	Properties map[string]string   `json:"properties,omitempty"`
+	Sensitive  []string            `json:"sensitive,omitempty"`
 }
 
 // GetSchemaRegistrySchema retrieves a schema for a given subject, version tuple from the
