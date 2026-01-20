@@ -29,6 +29,7 @@ import {
 } from '@redpanda-data/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 
 const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
 
@@ -306,6 +307,13 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
       navigate({ search: { version: String(fallbackVersion) }, replace: true });
     }
   }, [versionNumber, requestedVersionExists, fallbackVersion, toast, navigate]);
+
+  // When URL is "latest", sync selectedVersion with the actual latest version from data
+  useEffect(() => {
+    if (queryVersion === 'latest' && fallbackVersion && selectedVersion !== fallbackVersion) {
+      setSelectedVersion(fallbackVersion);
+    }
+  }, [queryVersion, fallbackVersion, selectedVersion]);
 
   const schema = subjectData.schemas.first((x) => x.version === selectedVersion);
 
@@ -645,6 +653,46 @@ const VersionDiff = (p: { subject: SchemaRegistrySubjectDetails }) => {
   );
 };
 
+const SchemaMetadataSection = ({ schema }: { schema: SchemaRegistryVersionedSchema }) => {
+  const metadata = schema.metadata;
+  const properties = metadata?.properties;
+  const hasProperties = properties && Object.keys(properties).length > 0;
+
+  return (
+    <>
+      <Text data-testid="schema-metadata-heading" fontSize="lg" fontWeight="bold" mt="20">
+        Metadata
+      </Text>
+      <Text mb="4">Metadata associated with this schema version.</Text>
+
+      <Text fontSize="md" fontWeight="bold" mb="3">
+        Properties
+      </Text>
+
+      {hasProperties ? (
+        <Table testId="schema-metadata-properties">
+          <TableHeader>
+            <TableRow>
+              <TableHead width="sm">Key</TableHead>
+              <TableHead>Value</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Object.entries(properties).map(([key, value]) => (
+              <TableRow key={key}>
+                <TableCell weight="semibold">{key}</TableCell>
+                <TableCell>{value}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <Text color="gray.500">No properties defined.</Text>
+      )}
+    </>
+  );
+};
+
 const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: SchemaRegistryVersionedSchema }) => {
   const { subject, schema } = p;
   const version = schema.version;
@@ -654,6 +702,8 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
 
   return (
     <>
+      <SchemaMetadataSection schema={schema} />
+
       <Text data-testid="schema-references-heading" fontSize="lg" fontWeight="bold" mt="20">
         References
       </Text>

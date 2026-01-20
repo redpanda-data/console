@@ -23,8 +23,10 @@ import {
   IconButton,
   Input,
   RadioGroup,
+  Text,
   useToast,
 } from '@redpanda-data/ui';
+import { useQueryClient } from '@tanstack/react-query';
 import { TrashIcon } from 'components/icons';
 import { InfoIcon } from 'lucide-react';
 import { observable } from 'mobx';
@@ -150,6 +152,16 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
       this.editorState.references = schema.references;
       this.editorState.strategy = 'CUSTOM';
       this.editorState.userInput = subject.name;
+
+      // Load existing metadata properties for editing
+      if (schema.metadata?.properties) {
+        this.editorState.metadataProperties = Object.entries(schema.metadata.properties).map(([key, value]) => ({
+          key,
+          value,
+        }));
+        // Add an empty row for adding new properties
+        this.editorState.metadataProperties.push({ key: '', value: '' });
+      }
     }
 
     return (
@@ -176,6 +188,7 @@ const SchemaPageButtons = observer(
     editorState: SchemaEditorStateHelper;
   }) => {
     const toast = useToast();
+    const queryClient = useQueryClient();
     const [isValidating, setValidating] = useState(false);
     const [isCreating, setCreating] = useState(false);
     const [persistentValidationError, setPersistentValidationError] = useState<{
@@ -248,6 +261,7 @@ const SchemaPageButtons = observer(
                     schemaType: editorState.format as SchemaTypeType,
                     schema: editorState.schemaText,
                     references: editorState.references.filter((x) => x.name && x.subject),
+                    metadata: editorState.computedMetadata,
                     params: {
                       normalize: editorState.normalize,
                     },
@@ -256,15 +270,17 @@ const SchemaPageButtons = observer(
 
                 await api.refreshSchemaDetails(subjectName, true);
 
-                // success: navigate to details
-                const latestVersion = api.schemaDetails.get(subjectName)?.latestActiveVersion;
+                // Invalidate React Query cache so details page shows latest data
+                await queryClient.invalidateQueries({
+                  queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
+                });
+
+                // success: navigate to details with "latest" so it picks up the new version
                 // biome-ignore lint/suspicious/noConsole: intentional console usage
                 console.log('schema created', { response: r });
                 // biome-ignore lint/suspicious/noConsole: intentional console usage
-                console.log('navigating to details', { subjectName, latestVersion });
-                appGlobal.historyReplace(
-                  `/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=${latestVersion}`
-                );
+                console.log('navigating to details', { subjectName });
+                appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=latest`);
               } catch (err) {
                 // error: open modal
                 // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -547,6 +563,13 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
         {/* <Text>This is an example help text about the references list, to be updated later</Text> */}
 
         <ReferencesEditor state={state} />
+
+        <Heading mt="8" variant="lg">
+          Schema metadata
+        </Heading>
+        <Text>Optional key-value properties to associate with this schema.</Text>
+
+        <MetadataPropertiesEditor state={state} />
       </Flex>
     </>
   );
@@ -636,6 +659,59 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
   );
 });
 
+const MetadataPropertiesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
+  const { state } = p;
+  const props = state.metadataProperties;
+
+  const renderRow = (prop: { key: string; value: string }, index: number) => (
+    <Flex alignItems="flex-end" gap="4" key={index}>
+      <FormField label="Key">
+        <Input
+          data-testid={`schema-create-metadata-key-input-${index}`}
+          onChange={(e) => {
+            prop.key = e.target.value;
+          }}
+          placeholder="e.g. owner"
+          value={prop.key}
+        />
+      </FormField>
+      <FormField label="Value">
+        <Input
+          data-testid={`schema-create-metadata-value-input-${index}`}
+          onChange={(e) => {
+            prop.value = e.target.value;
+          }}
+          placeholder="e.g. team-platform"
+          value={prop.value}
+        />
+      </FormField>
+      <IconButton
+        aria-label="delete"
+        data-testid={`schema-create-metadata-delete-btn-${index}`}
+        icon={<TrashIcon fontSize="19px" />}
+        onClick={() => props.remove(prop)}
+        variant="ghost"
+      />
+    </Flex>
+  );
+
+  return (
+    <Flex direction="column" gap="4">
+      {props.map((x, index) => renderRow(x, index))}
+
+      <Button
+        data-testid="schema-create-add-metadata-btn"
+        onClick={() => props.push({ key: '', value: '' })}
+        size="sm"
+        variant="outline"
+        width="fit-content"
+      >
+        Add property
+      </Button>
+    </Flex>
+  );
+});
+
 function createSchemaState() {
   return observable({
     strategy: 'TOPIC' as
@@ -654,6 +730,17 @@ function createSchemaState() {
       version: number;
     }[],
     normalize: false,
+    metadataProperties: [{ key: '', value: '' }] as { key: string; value: string }[],
+
+    get computedMetadata(): { properties: Record<string, string> } | undefined {
+      const properties: Record<string, string> = {};
+      for (const prop of this.metadataProperties) {
+        if (prop.key && prop.value) {
+          properties[prop.key] = prop.value;
+        }
+      }
+      return Object.keys(properties).length > 0 ? { properties } : undefined;
+    },
 
     get isInvalidKeyOrValue() {
       return this.strategy === 'TOPIC' && this.userInput.length > 0 && !this.keyOrValue;
