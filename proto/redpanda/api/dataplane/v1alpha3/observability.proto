@@ -21,6 +21,8 @@ message QueryMetadata {
   string unit = 3;
   // Available filters for this query
   repeated Filter filters = 4;
+  // Labels for grouping queries (e.g., category, type, component)
+  map<string, string> labels = 5;
 }
 
 message ListQueriesRequest {}
