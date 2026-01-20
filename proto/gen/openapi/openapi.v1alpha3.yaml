@@ -321,6 +321,16 @@ components:
         mcp_server:
           $ref: '#/components/schemas/v1alpha3.MCPServer'
       type: object
+    DataPoint:
+      description: A single data point made of value and date when it's been measured.
+      properties:
+        timestamp:
+          format: date-time
+          type: string
+        value:
+          format: double
+          type: number
+      type: object
     DeleteAIAgentResponse:
       type: object
     DeleteKnowledgeBaseResponse:
@@ -356,6 +366,14 @@ components:
         time_unix_nano:
           description: The time the event occurred.
           format: uint64
+          type: string
+      type: object
+    FilterMetadata:
+      description: Description of a filter that may be available in a query.
+      properties:
+        description:
+          type: string
+        key:
           type: string
       type: object
     GatewayConfig:
@@ -1058,6 +1076,14 @@ components:
           description: Token to retrieve the next page of results. Empty if there are no more results.
           type: string
       type: object
+    ListQueriesResponse:
+      description: Response of the ListQueries operation.
+      properties:
+        queries:
+          items:
+            $ref: '#/components/schemas/QueryMetadata'
+          type: array
+      type: object
     ListTracesResponse:
       description: ListTracesResponse is the response message for listing traces.
       properties:
@@ -1166,6 +1192,61 @@ components:
           type: string
       required:
         - base_url
+      type: object
+    QueryMetadata:
+      description: A description of a predefined query available in the system.
+      properties:
+        description:
+          title: What this query returns
+          type: string
+        filters:
+          items:
+            $ref: '#/components/schemas/FilterMetadata'
+          title: Available filters for this query
+          type: array
+        labels:
+          additionalProperties:
+            type: string
+          title: Labels for grouping queries (e.g., category, type, component)
+          type: object
+        name:
+          type: string
+        unit:
+          title: Unit of measurement for the returned time series
+          type: string
+      type: object
+    QueryRequest:
+      description: Input data for a Query operation.
+      properties:
+        end:
+          format: date-time
+          title: Optional - defaults to current date
+          type: string
+        filters:
+          additionalProperties:
+            type: string
+          title: Optional filter values to apply to the query, if the query supports them
+          type: object
+        query_name:
+          title: Predefined query to request data from
+          type: string
+        start:
+          format: date-time
+          title: Optional - if not provided, performs an instant query at end time (or current time if both are absent)
+          type: string
+        step:
+          title: Query resolution step width (optional)
+          type: string
+      type: object
+    QueryResponse:
+      description: Response of a Query operation.
+      properties:
+        metadata:
+          $ref: '#/components/schemas/QueryMetadata'
+        result:
+          items:
+            $ref: '#/components/schemas/TimeSeries'
+          type: array
       type: object
     Resource:
       description: Resource information.
@@ -1519,6 +1600,23 @@ components:
           type: string
       required:
         - system_prompt
+      type: object
+    TimeSeries:
+      description: A sequence of data points for a label combination.
+      properties:
+        labels:
+          additionalProperties:
+            type: string
+          description: Labels associated to the time series.
+          type: object
+        name:
+          description: Name is a human friendly name for the series, computed from labels.
+          type: string
+        values:
+          items:
+            $ref: '#/components/schemas/DataPoint'
+          title: Multiple for range queries, single item for instant queries
+          type: array
       type: object
     Tool:
       description: A configuration tool for the MCP server.
@@ -2060,6 +2158,54 @@ paths:
           description: An unexpected error response.
       tags:
         - KnowledgeBaseService
+  /v1alpha3/observability/queries:
+    get:
+      description: List all available predefined queries with their metadata (name, description, unit, and available filters).
+      operationId: ObservabilityService_ListQueries
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListQueriesResponse'
+          description: Queries metadata
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Available Queries
+      tags:
+        - Observability
+  /v1alpha3/observability/query:
+    post:
+      description: Execute a predefined query. If start time is not provided, performs an instant query at the end time (or current time if both are absent). If start time is provided, performs a range query over the time range. Optional filters can be applied as key-value pairs.
+      operationId: ObservabilityService_Query
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+        description: Input data for a Query operation.
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+          description: Query results
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Execute Query
+      tags:
+        - Observability
   /v1alpha3/redpanda-connect/mcp-servers:
     get:
       description: Lists MCP servers. Optionally filter by display name, tags, or secret ID.
@@ -2428,5 +2574,7 @@ tags:
     name: Redpanda AI KnowledgeBase
   - description: Create and manage MCP servers and their configurations.
     name: Remote MCP
+  - description: Observability operations for Redpanda.
+    name: Observability
   - description: Query and retrieve OpenTelemetry traces from Redpanda.
     name: Tracing
