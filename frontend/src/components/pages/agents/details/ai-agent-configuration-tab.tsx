@@ -1260,8 +1260,10 @@ export const AIAgentConfigurationTab = () => {
                       <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
                         <Text variant="default">
                           {displayData.gatewayId
-                            ? availableGateways.find((gw: { id: string; displayName: string; description: string }) => gw.id === displayData.gatewayId)?.displayName ||
-                              displayData.gatewayId
+                            ? availableGateways.find(
+                                (gw: { id: string; displayName: string; description: string }) =>
+                                  gw.id === displayData.gatewayId
+                              )?.displayName || displayData.gatewayId
                             : 'None'}
                         </Text>
                       </div>

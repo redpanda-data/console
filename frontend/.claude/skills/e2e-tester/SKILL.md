@@ -8,18 +8,26 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, mcp__ide__getDiagnosti
 
 Write end-to-end tests using Playwright against a full Redpanda Console stack running in Docker containers via testcontainers.
 
+## When to Use This Skill
+
+- Testing 2+ step user journeys (login → action → verify)
+- Multi-page workflows
+- Browser automation with Playwright
+
+**NOT for:** Component unit tests → use [testing](../testing/SKILL.md)
+
 ## Critical Rules
 
 **ALWAYS:**
 
 - Run `bun run build` before running E2E tests (frontend assets required)
 - Use `testcontainers` API for container management (never manual `docker` commands in tests)
-- Test complete user workflows (multi-page, multi-step scenarios)
+- Test 2+ step user journeys (multi-page, multi-step scenarios)
 - Use `page.getByRole()` and `page.getByLabel()` selectors (avoid CSS selectors)
 - Add `data-testid` attributes to components when semantic selectors aren't available
 - Use Task tool with MCP Playwright agents to analyze failures and get test status
 - Use Task tool with Explore agent to find missing testids in UI components
-- Clean up test data after tests complete
+- Clean up test data using `afterEach` to call cleanup API endpoints
 
 **NEVER:**
 
