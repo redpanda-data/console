@@ -78,3 +78,8 @@ Load skill when task matches trigger:
 | Security | [security-scan](.claude/skills/security-scan/SKILL.md) |
 | Router migration | [tanstack-router-migration](.claude/skills/tanstack-router-migration/SKILL.md) |
 | Design review | [web-design-guidelines](.claude/skills/web-design-guidelines/SKILL.md) |
+
+## Plan Mode
+
+- Make the plan extremely concise. Sacrifice grammar for the sake of concision.
+- At the end of each plan, give me a list of unresolved questions to answer, if any.
