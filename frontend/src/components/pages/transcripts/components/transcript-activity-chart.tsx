@@ -31,14 +31,57 @@ type Props = {
   queryStartMs: number;
   /** Query end time in milliseconds */
   queryEndMs: number;
+  /** Whether we're viewing the latest traces (first page, not jumped) */
+  isViewingLatest: boolean;
   /** Callback when a bucket is clicked for navigation */
   onBucketClick?: (bucketStartMs: number, bucketEndMs: number) => void;
 };
 
-type VisibleWindow = {
+/** Represents a time range with start and end timestamps in milliseconds */
+type TimeRange = {
   startMs: number;
   endMs: number;
-} | null;
+};
+
+type DisplayWindowOptions = {
+  loadedCount: number;
+  totalCount: number;
+  queryStartMs: number;
+  queryEndMs: number;
+  loadedDataRange: TimeRange | null;
+  isViewingLatest: boolean;
+};
+
+/**
+ * Calculates the time range to display on the chart axis based on pagination state.
+ *
+ * Three scenarios:
+ * 1. All data loaded: Show full query range (covers gaps in data)
+ * 2. Viewing latest: Extend from oldest loaded trace to query end (covers gap to "now")
+ * 3. Historical/paginated: Show only loaded trace range
+ */
+const calculateChartAxisRange = (options: DisplayWindowOptions): TimeRange | null => {
+  const { loadedCount, totalCount, queryStartMs, queryEndMs, loadedDataRange, isViewingLatest } = options;
+
+  // Guard clause: No data loaded yet
+  if (loadedDataRange === null) {
+    return null;
+  }
+
+  // Scenario 1: All data is loaded - show full query range
+  // Use >= to handle potential count synchronization issues
+  if (loadedCount >= totalCount) {
+    return { startMs: queryStartMs, endMs: queryEndMs };
+  }
+
+  // Scenario 2: Viewing latest (live tailing/first page) - anchor to the end
+  if (isViewingLatest) {
+    return { startMs: loadedDataRange.startMs, endMs: queryEndMs };
+  }
+
+  // Scenario 3: Historical viewing (page 2+ or jumped) - show only loaded data
+  return loadedDataRange;
+};
 
 /**
  * Generates "nice" tick values for a chart Y-axis using the Nice Numbers algorithm.
@@ -266,14 +309,15 @@ export const TranscriptActivityChart: FC<Props> = ({
   loadedCount,
   queryStartMs,
   queryEndMs,
+  isViewingLatest,
   onBucketClick,
 }) => {
   const [hoveredBucket, setHoveredBucket] = useState<number | null>(null);
   const buckets = histogram?.buckets ?? [];
   const bucketDurationMs = histogram?.bucketDuration ? durationMs(histogram.bucketDuration) : 0;
 
-  // Calculate the visible window boundaries in milliseconds
-  const visibleWindow: VisibleWindow = useMemo(() => {
+  // Calculate the loaded data range boundaries in milliseconds (from actual trace timestamps)
+  const loadedDataRange: TimeRange | null = useMemo(() => {
     if (returnedStartTime === undefined || returnedEndTime === undefined) {
       return null;
     }
@@ -282,6 +326,20 @@ export const TranscriptActivityChart: FC<Props> = ({
       endMs: timestampDate(returnedEndTime).getTime(),
     };
   }, [returnedStartTime, returnedEndTime]);
+
+  // Calculate the chart axis range to display based on pagination state
+  const chartAxisRange = useMemo(
+    () =>
+      calculateChartAxisRange({
+        loadedCount,
+        totalCount,
+        queryStartMs,
+        queryEndMs,
+        loadedDataRange,
+        isViewingLatest,
+      }),
+    [loadedCount, totalCount, queryStartMs, queryEndMs, loadedDataRange, isViewingLatest]
+  );
 
   // Calculate max count for scaling bar heights
   const maxCount = useMemo(() => Math.max(...buckets.map((b) => b.count), 1), [buckets]);
@@ -312,14 +370,14 @@ export const TranscriptActivityChart: FC<Props> = ({
     });
   }, [buckets.length, queryStartMs, queryEndMs]);
 
-  // Check if a bucket is within the visible window
-  const isBucketInVisibleWindow = (bucketStartMs: number): boolean => {
-    if (visibleWindow === null) {
+  // Check if a bucket is within the chart axis range (loaded data indicator)
+  const isBucketInChartAxisRange = (bucketStartMs: number): boolean => {
+    if (chartAxisRange === null) {
       return false;
     }
     const bucketEndMs = bucketStartMs + bucketDurationMs;
-    // Bucket overlaps with visible window
-    return bucketEndMs > visibleWindow.startMs && bucketStartMs < visibleWindow.endMs;
+    // Bucket overlaps with the displayed axis range
+    return bucketEndMs > chartAxisRange.startMs && bucketStartMs < chartAxisRange.endMs;
   };
 
   // Format bucket time for tooltip (just HH:MM format)
@@ -340,14 +398,14 @@ export const TranscriptActivityChart: FC<Props> = ({
       hour12: false,
     });
 
-  // Calculate visible window overlay position based on which buckets are actually highlighted
-  // This ensures the indicator matches the bucket opacity exactly
+  // Calculate the overlay position based on which buckets fall within the chart axis range
+  // This visual indicator shows what portion of the timeline contains loaded data
   const overlayStyle = useMemo(() => {
-    if (visibleWindow === null || buckets.length === 0) {
+    if (chartAxisRange === null || buckets.length === 0) {
       return null;
     }
 
-    const range = findHighlightedBucketRange(buckets, bucketDurationMs, visibleWindow.startMs, visibleWindow.endMs);
+    const range = findHighlightedBucketRange(buckets, bucketDurationMs, chartAxisRange.startMs, chartAxisRange.endMs);
     if (range === null) {
       return null;
     }
@@ -355,16 +413,13 @@ export const TranscriptActivityChart: FC<Props> = ({
     const leftPercent = (range.first / buckets.length) * 100;
     const widthPercent = ((range.last - range.first + 1) / buckets.length) * 100;
 
-    // Only show if not covering almost all buckets
-    if (widthPercent >= 99) {
-      return null;
-    }
-
+    // Always show the overlay when we have a valid range
+    // This provides useful information about what portion of the timeline has loaded data
     return {
       left: `${leftPercent}%`,
       width: `${widthPercent}%`,
     };
-  }, [visibleWindow, buckets, bucketDurationMs]);
+  }, [chartAxisRange, buckets, bucketDurationMs]);
 
   if (buckets.length === 0) {
     return (
@@ -384,12 +439,12 @@ export const TranscriptActivityChart: FC<Props> = ({
           <span className="text-muted-foreground">
             Showing <span className="font-medium text-foreground">{loadedCount.toLocaleString()}</span> of{' '}
             <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span> transcripts
-            {visibleWindow !== null && (
+            {chartAxisRange !== null && (
               <>
                 {' '}
                 from{' '}
-                <span className="font-medium text-foreground">{formatVisibleWindowTime(visibleWindow.startMs)}</span> to{' '}
-                <span className="font-medium text-foreground">{formatVisibleWindowTime(visibleWindow.endMs)}</span>
+                <span className="font-medium text-foreground">{formatVisibleWindowTime(chartAxisRange.startMs)}</span>{' '}
+                to <span className="font-medium text-foreground">{formatVisibleWindowTime(chartAxisRange.endMs)}</span>
               </>
             )}
           </span>
@@ -430,7 +485,7 @@ export const TranscriptActivityChart: FC<Props> = ({
                     bucketDurationMs={bucketDurationMs}
                     formatBucketTime={formatBucketTime}
                     isHovered={hoveredBucket === index}
-                    isInWindow={isBucketInVisibleWindow(bucketStartMs)}
+                    isInWindow={isBucketInChartAxisRange(bucketStartMs)}
                     key={bucketStartMs}
                     maxCount={scaleMax}
                     onBucketClick={onBucketClick}
