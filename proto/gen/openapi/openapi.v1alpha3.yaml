@@ -93,8 +93,6 @@ components:
           type: string
         base_url:
           type: string
-      required:
-        - api_key
       type: object
     AIAgent.ServiceAccount:
       properties:
@@ -341,8 +339,6 @@ components:
           type: string
         base_url:
           type: string
-      required:
-        - api_key
       type: object
     Any:
       additionalProperties: {}
@@ -509,8 +505,6 @@ components:
           type: string
         base_url:
           type: string
-      required:
-        - api_key
       type: object
     InstrumentationScope:
       description: |-
@@ -1296,7 +1290,6 @@ components:
         base_url:
           type: string
       required:
-        - api_key
         - base_url
       type: object
     Resource:
