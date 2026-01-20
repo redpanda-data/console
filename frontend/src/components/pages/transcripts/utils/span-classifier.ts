@@ -229,3 +229,51 @@ export const getIconForServiceName = (span: Span): LucideIcon => {
   // For most services, use the span kind icon
   return getSpanIcon(span);
 };
+
+/**
+ * Check if span is an agent invocation span.
+ * Uses gen_ai.operation.name as primary signal, with fallback to agent-specific attributes.
+ */
+export const isAgentSpan = (span: Span): boolean => {
+  const opType = getSpanOperationType(span);
+  if (opType === 'invoke_agent' || opType === 'create_agent') {
+    return true;
+  }
+  return hasAttribute(span, 'gen_ai.agent.name') || hasAttribute(span, 'gen_ai.agent.id');
+};
+
+/**
+ * Check if span is a tool execution span.
+ * Uses gen_ai.operation.name as primary signal, with fallback to tool-specific attributes.
+ */
+export const isToolSpan = (span: Span): boolean => {
+  const opType = getSpanOperationType(span);
+  if (opType === 'execute_tool') {
+    return true;
+  }
+  return (
+    hasAttribute(span, 'gen_ai.tool.name') ||
+    hasAttribute(span, 'gen_ai.tool.call.id') ||
+    hasAttribute(span, 'gen_ai.tool.call.arguments') ||
+    hasAttribute(span, 'gen_ai.tool.call.result')
+  );
+};
+
+/**
+ * Check if span is an LLM/model interaction span.
+ * CRITICAL: Excludes agent spans even if they have gen_ai.request.model.
+ */
+export const isLLMSpan = (span: Span): boolean => {
+  const opType = getSpanOperationType(span);
+  if (opType === 'chat' || opType === 'text_completion') {
+    return true;
+  }
+  if (isAgentSpan(span)) {
+    return false;
+  }
+  return (
+    hasAttribute(span, 'gen_ai.input.messages') ||
+    hasAttribute(span, 'gen_ai.prompt') ||
+    hasAttribute(span, 'gen_ai.completion')
+  );
+};

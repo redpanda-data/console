@@ -10,6 +10,7 @@
  */
 
 import { Badge } from 'components/redpanda-ui/components/badge';
+import { Text } from 'components/redpanda-ui/components/typography';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo } from 'react';
@@ -73,7 +74,9 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Agent Name */}
       {!!agentData.agentName && (
         <div className="space-y-1.5">
-          <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">AGENT NAME</h5>
+          <Text as="span" variant="label">
+            AGENT NAME
+          </Text>
           <ContentPanel>
             <p className="font-medium text-sm">{agentData.agentName}</p>
           </ContentPanel>
@@ -83,7 +86,9 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Agent Description */}
       {!!agentData.agentDescription && (
         <div className="space-y-1.5">
-          <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">DESCRIPTION</h5>
+          <Text as="span" variant="label">
+            DESCRIPTION
+          </Text>
           <ContentPanel>
             <p className="whitespace-pre-wrap break-words text-[10px] text-muted-foreground leading-relaxed">
               {agentData.agentDescription}
@@ -95,7 +100,9 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Agent Input */}
       {!!agentData.agentInput && (
         <div className="space-y-1.5">
-          <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">INPUT</h5>
+          <Text as="span" variant="label">
+            INPUT
+          </Text>
           <ContentPanel>
             <p className="whitespace-pre-wrap break-words text-[10px] text-muted-foreground leading-relaxed">
               {agentData.agentInput}
@@ -107,7 +114,9 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Agent Output */}
       {!!agentData.agentOutput && (
         <div className="space-y-1.5">
-          <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">OUTPUT</h5>
+          <Text as="span" variant="label">
+            OUTPUT
+          </Text>
           <ContentPanel>
             <p className="whitespace-pre-wrap break-words text-[10px] text-muted-foreground leading-relaxed">
               {agentData.agentOutput}
@@ -119,7 +128,9 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Agent ID */}
       {!!agentData.agentId && (
         <div className="space-y-1.5">
-          <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">AGENT ID</h5>
+          <Text as="span" variant="label">
+            AGENT ID
+          </Text>
           <ContentPanel>
             <p className="font-mono text-[10px] text-muted-foreground">{agentData.agentId}</p>
           </ContentPanel>
@@ -139,7 +150,9 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Token Usage Summary */}
       {agentData.inputTokens > 0 && (
         <div className="space-y-1.5">
-          <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">TOKEN USAGE</h5>
+          <Text as="span" variant="label">
+            TOKEN USAGE
+          </Text>
           <ContentPanel className="bg-muted/20">
             <div className="flex items-center justify-between text-xs">
               <div className="space-x-3">
@@ -165,7 +178,9 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Conversation ID */}
       {!!agentData.conversationId && (
         <div className="space-y-1.5">
-          <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">CONVERSATION ID</h5>
+          <Text as="span" variant="label">
+            CONVERSATION ID
+          </Text>
           <ContentPanel>
             <p className="font-mono text-[10px] text-muted-foreground">{agentData.conversationId}</p>
           </ContentPanel>

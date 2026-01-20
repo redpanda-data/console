@@ -29,9 +29,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useGetTraceQuery } from 'react-query/api/tracing';
 import { toast } from 'sonner';
 
-import { getDefaultTab, isAgentSpan, isLLMSpan, isToolSpan, TranscriptDetailsTabs } from './transcript-details-tabs';
+import { getDefaultTab, TranscriptDetailsTabs } from './transcript-details-tabs';
 import { bytesToHex } from '../utils/hex-utils';
-import { getSpanKind } from '../utils/span-classifier';
+import { getSpanKind, isAgentSpan, isLLMSpan, isToolSpan } from '../utils/span-classifier';
 import { isIncompleteTranscript, isRootSpan } from '../utils/transcript-statistics';
 
 type Props = {
