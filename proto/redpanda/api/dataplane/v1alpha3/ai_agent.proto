@@ -110,8 +110,7 @@ message AIAgent {
   message Provider {
     message OpenAI {
       string api_key = 1 [
-        (google.api.field_behavior) = REQUIRED,
-        (buf.validate.field).required = true,
+        (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
         (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"
       ];
       string base_url = 2;
@@ -119,8 +118,7 @@ message AIAgent {
 
     message Anthropic {
       string api_key = 1 [
-        (google.api.field_behavior) = REQUIRED,
-        (buf.validate.field).required = true,
+        (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
         (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"
       ];
       string base_url = 2;
@@ -128,8 +126,7 @@ message AIAgent {
 
     message Google {
       string api_key = 1 [
-        (google.api.field_behavior) = REQUIRED,
-        (buf.validate.field).required = true,
+        (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
         (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"
       ];
       string base_url = 2;
@@ -137,8 +134,7 @@ message AIAgent {
 
     message OpenAICompatible {
       string api_key = 1 [
-        (google.api.field_behavior) = REQUIRED,
-        (buf.validate.field).required = true,
+        (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
         (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"
       ];
       string base_url = 2 [
