@@ -21,7 +21,7 @@ import { LLMIOTab } from './llm-io-tab';
 import { OverviewTab } from './overview-tab';
 import { RawJSONTab } from './raw-json-tab';
 import { ToolCallTab } from './tool-call-tab';
-import { getSpanOperationType } from '../utils/span-classifier';
+import { isAgentSpan, isLLMSpan, isToolSpan } from '../utils/span-classifier';
 import { isRootSpan } from '../utils/transcript-statistics';
 
 type Props = {
@@ -29,74 +29,6 @@ type Props = {
   trace?: Trace;
   value?: string; // Controlled mode: externally managed tab state
   onValueChange?: (value: string) => void; // Controlled mode: callback when tab changes
-};
-
-const hasAttribute = (span: Span, key: string): boolean =>
-  span.attributes?.some((attr) => attr.key === key && attr.value?.value) ?? false;
-
-/**
- * Check if span is an agent invocation span.
- * Uses gen_ai.operation.name as primary signal, with fallback to agent-specific attributes.
- */
-export const isAgentSpan = (span: Span): boolean => {
-  const opType = getSpanOperationType(span);
-
-  // Primary: Check operation name
-  if (opType === 'invoke_agent' || opType === 'create_agent') {
-    return true;
-  }
-
-  // Fallback: Has agent-specific attributes
-  return hasAttribute(span, 'gen_ai.agent.name') || hasAttribute(span, 'gen_ai.agent.id');
-};
-
-/**
- * Check if span is a tool execution span.
- * Uses gen_ai.operation.name as primary signal, with fallback to tool-specific attributes.
- */
-export const isToolSpan = (span: Span): boolean => {
-  const opType = getSpanOperationType(span);
-
-  // Primary: Check operation name
-  if (opType === 'execute_tool') {
-    return true;
-  }
-
-  // Fallback: Has tool-specific attributes
-  return (
-    hasAttribute(span, 'gen_ai.tool.name') ||
-    hasAttribute(span, 'gen_ai.tool.call.id') ||
-    hasAttribute(span, 'gen_ai.tool.call.arguments') ||
-    hasAttribute(span, 'gen_ai.tool.call.result')
-  );
-};
-
-/**
- * Check if span is an LLM/model interaction span.
- * CRITICAL: Excludes agent spans even if they have gen_ai.request.model.
- * Requires messages or prompt/completion attributes to distinguish from agent spans.
- */
-export const isLLMSpan = (span: Span): boolean => {
-  const opType = getSpanOperationType(span);
-
-  // Primary: Check operation name (most reliable)
-  if (opType === 'chat' || opType === 'text_completion') {
-    return true;
-  }
-
-  // CRITICAL: Exclude agent spans even if they have gen_ai.request.model
-  if (isAgentSpan(span)) {
-    return false;
-  }
-
-  // Fallback: Has LLM-specific attributes
-  // Note: gen_ai.request.model alone is NOT enough (agents also have this!)
-  // Must have either messages OR prompt/completion
-  return (
-    hasAttribute(span, 'gen_ai.input.messages') ||
-    hasAttribute(span, 'gen_ai.prompt') ||
-    hasAttribute(span, 'gen_ai.completion')
-  );
 };
 
 export const getDefaultTab = (

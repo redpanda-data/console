@@ -14,6 +14,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { CheckCircle, ChevronDown, ChevronRight, HelpCircle, History, MessageSquare, User, Wrench } from 'lucide-react';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
@@ -147,7 +148,9 @@ const InputSection: FC<{ input: string; lastInputMessage?: Message }> = ({ input
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1">
-        <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">INPUT</h5>
+        <Text as="span" variant="label">
+          INPUT
+        </Text>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -196,7 +199,9 @@ const OutputSection: FC<{ output: string; lastOutputMessage?: Message }> = ({ ou
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1">
-        <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">OUTPUT</h5>
+        <Text as="span" variant="label">
+          OUTPUT
+        </Text>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
