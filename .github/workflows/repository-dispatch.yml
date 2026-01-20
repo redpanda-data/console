@@ -14,7 +14,7 @@ permissions:
   contents: read
 jobs:
   dispatch:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:

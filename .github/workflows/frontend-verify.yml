@@ -16,7 +16,7 @@ env:
 jobs:
   lint:
     timeout-minutes: 3
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     defaults:
       run:
         working-directory: frontend
@@ -50,7 +50,7 @@ jobs:
 
   type-check:
     timeout-minutes: 3
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     defaults:
       run:
         working-directory: frontend
@@ -75,7 +75,7 @@ jobs:
 
   build:
     timeout-minutes: 5
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     defaults:
       run:
         working-directory: frontend
@@ -105,7 +105,7 @@ jobs:
 
   test-unit:
     timeout-minutes: 3
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     defaults:
       run:
         working-directory: frontend
@@ -136,7 +136,7 @@ jobs:
 
   test-integration:
     timeout-minutes: 5
-    runs-on: ubuntu-latest-8
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     strategy:
       fail-fast: false
       matrix:
@@ -172,7 +172,7 @@ jobs:
   e2e-test:
     needs: ["lint", "type-check", "build"]
     timeout-minutes: 30
-    runs-on: ubuntu-latest-8
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     defaults:
       run:
         working-directory: frontend

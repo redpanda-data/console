@@ -20,7 +20,7 @@ permissions:
 jobs:
   verify:
     name: Lint & Test Backend
-    runs-on: ubuntu-latest-4
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
