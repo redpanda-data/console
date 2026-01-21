@@ -126,25 +126,32 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
     <div className="space-y-4 p-4">
       {/* Tool Header */}
       {!!toolData.name && (
-        <div className="flex items-center gap-2">
-          <Wrench className="h-4 w-4 text-muted-foreground" />
-          <span className="font-medium text-sm">{toolData.name}</span>
-          {!!toolData.type && (
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="inline-flex">
-                    <Badge className="cursor-help text-xs" variant="secondary">
-                      {toolData.type}
-                    </Badge>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent arrow={false} className="max-w-sm border bg-popover text-popover-foreground">
-                  <p className="text-xs">{getToolTypeTooltip(toolData.type, toolData.rawType)}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
+        <div className="space-y-1.5">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
+            TOOL
+          </Text>
+          <div className="flex items-center gap-2">
+            <Wrench className="h-4 w-4 text-muted-foreground" />
+            <Text className="font-medium" variant="small">
+              {toolData.name}
+            </Text>
+            {!!toolData.type && (
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="inline-flex">
+                      <Badge className="cursor-help text-xs" variant="secondary">
+                        {toolData.type}
+                      </Badge>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent arrow={false} className="max-w-sm border bg-popover text-popover-foreground">
+                    <p className="text-xs">{getToolTypeTooltip(toolData.type, toolData.rawType)}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
         </div>
       )}
 
