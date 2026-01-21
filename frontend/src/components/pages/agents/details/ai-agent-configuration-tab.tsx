@@ -48,6 +48,9 @@ import { ServiceAccountSection } from 'components/ui/service-account/service-acc
 import { Edit, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
+  AIAgent_AgentCard_ProviderSchema,
+  AIAgent_AgentCard_SkillSchema,
+  AIAgent_AgentCardSchema,
   AIAgent_GatewayConfigSchema,
   AIAgent_MCPServerSchema,
   type AIAgent_Provider,
@@ -92,6 +95,21 @@ type LocalAIAgent = {
     selectedMcpServers: string[];
   }>;
   gatewayId?: string;
+  agentCard?: {
+    iconUrl: string;
+    documentationUrl: string;
+    provider?: {
+      organization: string;
+      url: string;
+    };
+    skills: Array<{
+      id: string;
+      name: string;
+      description: string;
+      tags: string[];
+      examples: string[];
+    }>;
+  };
 };
 
 /**
@@ -372,6 +390,25 @@ export const AIAgentConfigurationTab = () => {
           selectedMcpServers: Object.values(subagent.mcpServers || {}).map((server) => server.id),
         })),
         gatewayId: aiAgentData.aiAgent.gateway?.virtualGatewayId,
+        agentCard: aiAgentData.aiAgent.agentCard
+          ? {
+              iconUrl: aiAgentData.aiAgent.agentCard.iconUrl || '',
+              documentationUrl: aiAgentData.aiAgent.agentCard.documentationUrl || '',
+              provider: aiAgentData.aiAgent.agentCard.provider
+                ? {
+                    organization: aiAgentData.aiAgent.agentCard.provider.organization || '',
+                    url: aiAgentData.aiAgent.agentCard.provider.url || '',
+                  }
+                : undefined,
+              skills: aiAgentData.aiAgent.agentCard.skills.map((skill) => ({
+                id: skill.id,
+                name: skill.name,
+                description: skill.description,
+                tags: skill.tags || [],
+                examples: skill.examples || [],
+              })),
+            }
+          : undefined,
       };
     }
 
@@ -639,6 +676,46 @@ export const AIAgentConfigurationTab = () => {
             })
           : undefined;
 
+      const hasAgentCardData = (card?: LocalAIAgent['agentCard']): boolean => {
+        if (!card) {
+          return false;
+        }
+        return !!(
+          card.iconUrl ||
+          card.documentationUrl ||
+          card.skills?.length > 0 ||
+          card.provider?.organization ||
+          card.provider?.url
+        );
+      };
+
+      const hasProviderData = (provider?: { organization?: string; url?: string }): boolean =>
+        !!(provider?.organization || provider?.url);
+
+      const agentCard =
+        currentData.agentCard && hasAgentCardData(currentData.agentCard)
+          ? create(AIAgent_AgentCardSchema, {
+              iconUrl: currentData.agentCard.iconUrl || undefined,
+              documentationUrl: currentData.agentCard.documentationUrl || undefined,
+              provider:
+                currentData.agentCard.provider && hasProviderData(currentData.agentCard.provider)
+                  ? create(AIAgent_AgentCard_ProviderSchema, {
+                      organization: currentData.agentCard.provider.organization || undefined,
+                      url: currentData.agentCard.provider.url || undefined,
+                    })
+                  : undefined,
+              skills: currentData.agentCard.skills.map((skill) =>
+                create(AIAgent_AgentCard_SkillSchema, {
+                  id: skill.id.trim(),
+                  name: skill.name.trim(),
+                  description: skill.description.trim(),
+                  tags: skill.tags.filter((t: string) => t.trim()),
+                  examples: skill.examples.filter((e: string) => e.trim()),
+                })
+              ),
+            })
+          : undefined;
+
       await updateAIAgent(
         create(UpdateAIAgentRequestSchema, {
           id,
@@ -658,6 +735,7 @@ export const AIAgentConfigurationTab = () => {
             subagents: subagentsMap,
             tags: tagsMap,
             gateway: gatewayConfig,
+            agentCard,
           }),
           updateMask: create(FieldMaskSchema, {
             paths: [
@@ -673,6 +751,11 @@ export const AIAgentConfigurationTab = () => {
               'mcp_servers',
               'subagents',
               'tags',
+              'agent_card.icon_url',
+              'agent_card.documentation_url',
+              'agent_card.provider.organization',
+              'agent_card.provider.url',
+              'agent_card.skills',
             ],
           }),
         }),
@@ -759,14 +842,6 @@ export const AIAgentConfigurationTab = () => {
                     <DynamicCodeBlock code={agent.id} lang="text" />
                   </div>
                 </div>
-                {Boolean(agent.url) && (
-                  <div className="space-y-2">
-                    <Label>URL</Label>
-                    <div className="flex-1">
-                      <DynamicCodeBlock code={agent.url} lang="text" />
-                    </div>
-                  </div>
-                )}
                 <div className="space-y-2">
                   <Label htmlFor="displayName">Display Name</Label>
                   {isEditing ? (
@@ -1260,8 +1335,10 @@ export const AIAgentConfigurationTab = () => {
                       <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
                         <Text variant="default">
                           {displayData.gatewayId
-                            ? availableGateways.find((gw: { id: string; displayName: string; description: string }) => gw.id === displayData.gatewayId)?.displayName ||
-                              displayData.gatewayId
+                            ? availableGateways.find(
+                                (gw: { id: string; displayName: string; description: string }) =>
+                                  gw.id === displayData.gatewayId
+                              )?.displayName || displayData.gatewayId
                             : 'None'}
                         </Text>
                       </div>

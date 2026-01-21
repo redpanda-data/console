@@ -99,4 +99,5 @@ export type ChatMessage = {
 
 export type AIAgentChatProps = {
   agent: AIAgent;
+  headerActions?: React.ReactNode;
 };

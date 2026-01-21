@@ -15,12 +15,13 @@ const routeApi = getRouteApi('/agents/$id');
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { isFeatureFlagEnabled } from 'config';
-import { AlertCircle, Loader2, Search, Settings } from 'lucide-react';
+import { AlertCircle, Loader2, Network, Search, Settings } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
 import { uiState } from 'state/ui-state';
 
+import { AIAgentCardTab } from './ai-agent-card-tab';
 import { AIAgentConfigurationTab } from './ai-agent-configuration-tab';
 import { AIAgentDetailsHeader } from './ai-agent-details-header';
 import { AIAgentInspectorTab } from './ai-agent-inspector-tab';
@@ -104,6 +105,12 @@ export const AIAgentDetailsPage = () => {
               Configuration
             </div>
           </TabsTrigger>
+          <TabsTrigger className="gap-2" value="agent-card">
+            <div className="flex items-center gap-2">
+              <Network className="h-4 w-4" />
+              A2A
+            </div>
+          </TabsTrigger>
           {Boolean(isAiAgentsInspectorFeatureEnabled) && (
             <TabsTrigger className="gap-2" value="inspector">
               <Search className="h-4 w-4" />
@@ -114,6 +121,9 @@ export const AIAgentDetailsPage = () => {
 
         <TabsContent value="configuration">
           <AIAgentConfigurationTab />
+        </TabsContent>
+        <TabsContent value="agent-card">
+          <AIAgentCardTab />
         </TabsContent>
         {Boolean(isAiAgentsInspectorFeatureEnabled) && (
           <TabsContent className="flex h-full flex-col" value="inspector">
