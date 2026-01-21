@@ -485,93 +485,96 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   // Convert executeMessageSearch to useCallback
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-  const executeMessageSearch = useCallback(async (): Promise<TopicMessage[]> => {
-    const canUseFilters =
-      (api.topicPermissions.get(props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
+  const executeMessageSearch = useCallback(
+    async (abortSignal?: AbortSignal): Promise<TopicMessage[]> => {
+      const canUseFilters =
+        (api.topicPermissions.get(props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
 
-    // Get current search params from Zustand store for filters
-    const currentSearchParams = getSearchParams(props.topic.topicName);
+      // Get current search params from Zustand store for filters
+      const currentSearchParams = getSearchParams(props.topic.topicName);
 
-    let filterCode = '';
-    if (canUseFilters) {
-      const functionNames: string[] = [];
-      const functions: string[] = [];
+      let filterCode = '';
+      if (canUseFilters) {
+        const functionNames: string[] = [];
+        const functions: string[] = [];
 
-      // Use filters from URL state instead of localStorage
-      const filteredSearchParams = filters.filter(
-        (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode
-      );
+        // Use filters from URL state instead of localStorage
+        const filteredSearchParams = filters.filter(
+          (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode
+        );
 
-      for (const searchParam of filteredSearchParams) {
-        const name = `filter${functionNames.length + 1}`;
-        functionNames.push(name);
-        functions.push(`function ${name}() {
+        for (const searchParam of filteredSearchParams) {
+          const name = `filter${functionNames.length + 1}`;
+          functionNames.push(name);
+          functions.push(`function ${name}() {
                     ${wrapFilterFragment(searchParam.transpiledCode)}
                 }`);
-      }
+        }
 
-      if (functions.length > 0) {
-        filterCode = `${functions.join('\n\n')}\n\nreturn ${functionNames.map((f) => `${f}()`).join(' && ')}`;
-        if (IsDev) {
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.log(`constructed filter code (${functions.length} functions)`, `\n\n${filterCode}`);
+        if (functions.length > 0) {
+          filterCode = `${functions.join('\n\n')}\n\nreturn ${functionNames.map((f) => `${f}()`).join(' && ')}`;
+          if (IsDev) {
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
+            console.log(`constructed filter code (${functions.length} functions)`, `\n\n${filterCode}`);
+          }
         }
       }
-    }
 
-    const request = {
-      topicName: props.topic.topicName,
-      partitionId: partitionID,
-      startOffset,
-      startTimestamp: currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp,
-      maxResults,
-      filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
-      includeRawPayload: true,
-      keyDeserializer,
-      valueDeserializer,
-    } as MessageSearchRequest;
+      const request = {
+        topicName: props.topic.topicName,
+        partitionId: partitionID,
+        startOffset,
+        startTimestamp: currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp,
+        maxResults,
+        filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
+        includeRawPayload: true,
+        keyDeserializer,
+        valueDeserializer,
+      } as MessageSearchRequest;
 
-    try {
-      setFetchError(null);
-      setSearchPhase('Searching...');
+      try {
+        setFetchError(null);
+        setSearchPhase('Searching...');
 
-      const messageSearch = createMessageSearch();
-      const startTime = Date.now();
+        const messageSearch = createMessageSearch();
+        const startTime = Date.now();
 
-      const result = await messageSearch.startSearch(request).catch((err: Error) => {
-        const msg = err.message ?? String(err);
+        const result = await messageSearch.startSearch(request, abortSignal).catch((err: Error) => {
+          const msg = err.message ?? String(err);
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          console.error(`error in searchTopicMessages: ${msg}`);
+          setFetchError(err);
+          setSearchPhase(null);
+          return [];
+        });
+
+        const endTime = Date.now();
+        setMessages(result);
+        setSearchPhase(null);
+        setElapsedMs(endTime - startTime);
+        setBytesConsumed(messageSearch.bytesConsumed);
+        setTotalMessagesConsumed(messageSearch.totalMessagesConsumed);
+
+        return result;
+      } catch (error: unknown) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error(`error in searchTopicMessages: ${msg}`);
-        setFetchError(err);
+        console.error(`error in searchTopicMessages: ${(error as Error).message ?? String(error)}`);
+        setFetchError(error as Error);
         setSearchPhase(null);
         return [];
-      });
-
-      const endTime = Date.now();
-      setMessages(result);
-      setSearchPhase(null);
-      setElapsedMs(endTime - startTime);
-      setBytesConsumed(messageSearch.bytesConsumed);
-      setTotalMessagesConsumed(messageSearch.totalMessagesConsumed);
-
-      return result;
-    } catch (error: unknown) {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error(`error in searchTopicMessages: ${(error as Error).message ?? String(error)}`);
-      setFetchError(error as Error);
-      setSearchPhase(null);
-      return [];
-    }
-  }, [
-    props.topic.topicName,
-    partitionID,
-    startOffset,
-    maxResults,
-    getSearchParams,
-    keyDeserializer,
-    valueDeserializer,
-    filters,
-  ]);
+      }
+    },
+    [
+      props.topic.topicName,
+      partitionID,
+      startOffset,
+      maxResults,
+      getSearchParams,
+      keyDeserializer,
+      valueDeserializer,
+      filters,
+    ]
+  );
 
   // Convert searchFunc to useCallback
   const searchFunc = useCallback(
@@ -582,12 +585,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       const searchParams = `${startOffset} ${maxResults} ${partitionID} ${currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp} ${keyDeserializer} ${valueDeserializer} ${filtersSignature}`;
 
       if (searchParams === currentSearchRunRef.current && source === 'auto') {
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.log('ignoring search, search params are up to date, and source is auto', {
-          newParams: searchParams,
-          oldParams: currentSearchRunRef.current,
-          trigger: source,
-        });
         return;
       }
 
@@ -597,19 +594,15 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         abortControllerRef.current = null;
       }
 
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.log('starting a new message search', {
-        newParams: searchParams,
-        oldParams: currentSearchRunRef.current,
-        trigger: source,
-      });
-
       // Start new search
       currentSearchRunRef.current = searchParams;
       abortControllerRef.current = new AbortController();
 
+      // Clear messages immediately when starting new search
+      setMessages([]);
+
       try {
-        executeMessageSearch()
+        executeMessageSearch(abortControllerRef.current?.signal)
           // biome-ignore lint/suspicious/noConsole: intentional console usage
           .catch(console.error)
           .finally(() => {
