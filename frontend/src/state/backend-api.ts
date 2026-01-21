@@ -14,6 +14,7 @@
 import { create, type Registry } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { Code } from '@connectrpc/connect';
+import { createLinkedAbortController } from '@connectrpc/connect/protocol';
 import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 import {
   consoleHasEnterpriseFeature,
@@ -2765,7 +2766,7 @@ export function createMessageSearch() {
     messages: observable([] as TopicMessage[], { deep: false }),
 
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 64, refactor later
-    async startSearch(_searchRequest: MessageSearchRequest): Promise<TopicMessage[]> {
+    async startSearch(_searchRequest: MessageSearchRequest, externalSignal?: AbortSignal): Promise<TopicMessage[]> {
       // https://connectrpc.com/docs/web/using-clients
       // https://github.com/connectrpc/connect-es
       // https://github.com/connectrpc/examples-es
@@ -2800,8 +2801,11 @@ export function createMessageSearch() {
       this.messages.length = 0;
       this.elapsedMs = null;
 
-      const messageSearchAbortController = new AbortController();
-      this.abortController = messageSearchAbortController;
+      // Links external signal (component control) with internal controller - both can abort the same stream
+      // Ensures cleanup works from component unmount AND direct stopSearch() calls
+      const linkedController = createLinkedAbortController(externalSignal);
+      this.abortController = linkedController;
+      const abortSignal = linkedController.signal;
 
       // do it
       const req = create(ListMessagesRequestSchema);
@@ -2826,23 +2830,19 @@ export function createMessageSearch() {
 
       try {
         for await (const res of client.listMessages(req, {
-          signal: messageSearchAbortController.signal,
+          signal: abortSignal,
           timeoutMs,
         })) {
-          if (messageSearchAbortController.signal.aborted) {
+          if (abortSignal.aborted) {
             break;
           }
 
           try {
             switch (res.controlMessage.case) {
               case 'phase':
-                // biome-ignore lint/suspicious/noConsole: intentional console usage
-                console.log(`phase: ${res.controlMessage.value.phase}`);
                 this.searchPhase = res.controlMessage.value.phase;
                 break;
               case 'progress':
-                // biome-ignore lint/suspicious/noConsole: intentional console usage
-                console.log(`progress: ${res.controlMessage.value.messagesConsumed}`);
                 this.bytesConsumed = Number(res.controlMessage.value.bytesConsumed);
                 this.totalMessagesConsumed = Number(res.controlMessage.value.messagesConsumed);
                 break;
@@ -3094,19 +3094,22 @@ export function createMessageSearch() {
           }
         }
       } catch (e) {
-        this.abortController = null;
         this.searchPhase = 'Done';
         this.bytesConsumed = 0;
         this.totalMessagesConsumed = 0;
         this.searchPhase = null;
         // https://connectrpc.com/docs/web/errors
-        if (messageSearchAbortController.signal.aborted) {
+        if (abortSignal.aborted) {
           // Do not throw, this is a user cancellation
         } else {
           // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error('startMessageSearchNew: error in await loop of client.listMessages', { error: e });
           throw e;
         }
+      } finally {
+        // Always cleanup the abort controller reference to prevent memory leaks
+        // This ensures cleanup happens whether the stream completes, errors, or is cancelled
+        this.abortController = null;
       }
 
       // one done
