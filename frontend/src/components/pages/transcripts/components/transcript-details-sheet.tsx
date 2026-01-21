@@ -29,9 +29,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useGetTraceQuery } from 'react-query/api/tracing';
 import { toast } from 'sonner';
 
-import { getDefaultTab, isLLMSpan, isToolSpan, TranscriptDetailsTabs } from './transcript-details-tabs';
+import { getDefaultTab, TranscriptDetailsTabs } from './transcript-details-tabs';
 import { bytesToHex } from '../utils/hex-utils';
-import { getSpanKind } from '../utils/span-classifier';
+import { getSpanKind, isAgentSpan, isLLMSpan, isToolSpan } from '../utils/span-classifier';
 import { isIncompleteTranscript, isRootSpan } from '../utils/transcript-statistics';
 
 type Props = {
@@ -84,13 +84,14 @@ export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onC
   const isIncomplete = isIncompleteTranscript(trace?.summary?.rootSpanName);
 
   // Compute which tabs are available for the selected span
-  const { showToolTab, showLLMTab, showOverviewTab } = useMemo(() => {
+  const { showToolTab, showLLMTab, showAgentTab, showOverviewTab } = useMemo(() => {
     if (!selectedSpan) {
-      return { showToolTab: false, showLLMTab: false, showOverviewTab: false };
+      return { showToolTab: false, showLLMTab: false, showAgentTab: false, showOverviewTab: false };
     }
     return {
       showToolTab: isToolSpan(selectedSpan),
       showLLMTab: isLLMSpan(selectedSpan),
+      showAgentTab: isAgentSpan(selectedSpan),
       showOverviewTab: isRootSpan(selectedSpan),
     };
   }, [selectedSpan]);
@@ -98,10 +99,10 @@ export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onC
   // Reset to default tab when span changes
   useEffect(() => {
     if (selectedSpan) {
-      const defaultTab = getDefaultTab(showOverviewTab, showLLMTab, showToolTab);
+      const defaultTab = getDefaultTab(showOverviewTab, showAgentTab, showLLMTab, showToolTab);
       setSelectedTab(defaultTab);
     }
-  }, [showOverviewTab, showLLMTab, showToolTab, selectedSpan, setSelectedTab]);
+  }, [showOverviewTab, showAgentTab, showLLMTab, showToolTab, selectedSpan, setSelectedTab]);
 
   if (!isOpen) {
     return null;

@@ -31,11 +31,11 @@ import {
 
 ### FORBIDDEN (Legacy Patterns)
 
+See [no-legacy](../code-standards/rules/no-legacy.md) for prohibited patterns.
+
 ```tsx
-// ❌ Never import or use these
+// ❌ Also never import legacy form components
 import { Form } from "components/redpanda-ui/components/form";
-import { Form, FormControl, FormLabel } from "@redpanda-data/ui";
-import { FormControl, FormLabel } from "@chakra-ui/react";
 ```
 
 ## Refactoring Workflow

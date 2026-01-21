@@ -12,6 +12,7 @@
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { Wrench } from 'lucide-react';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
@@ -157,7 +158,9 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
       {/* Tool ID */}
       {!!toolData.callId && (
         <div className="space-y-1">
-          <h5 className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">CALL ID</h5>
+          <Text as="span" variant="label">
+            CALL ID
+          </Text>
           <ContentPanel>
             <p className="break-all font-mono text-[10px]">{toolData.callId}</p>
           </ContentPanel>

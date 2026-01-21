@@ -50,7 +50,7 @@ export const FormSchema = z
       ),
     triggerType: z.enum(['http', 'slack', 'kafka']).default('http'),
     provider: z.enum(['openai', 'anthropic', 'google', 'openaiCompatible']).default('openai'),
-    apiKeySecret: z.string().min(1, 'API Token is required'),
+    apiKeySecret: z.string(),
     model: z.string().min(1, 'Model is required'),
     baseUrl: z.string().url('Must be a valid URL').optional().or(z.literal('')),
     maxIterations: z
@@ -77,7 +77,14 @@ export const FormSchema = z
         },
         { message: 'Subagent names must be unique' }
       ),
+    gatewayId: z
+      .string()
+      .length(20, 'Gateway ID must be exactly 20 characters')
+      .regex(/^[a-z0-9]+$/, 'Gateway ID must contain only lowercase letters and numbers')
+      .optional()
+      .or(z.literal('')),
   })
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex validation logic with multiple conditional checks
   .superRefine((data, ctx) => {
     if (data.provider === 'openaiCompatible') {
       if (!data.baseUrl || data.baseUrl.trim() === '') {
@@ -105,6 +112,15 @@ export const FormSchema = z
         }
       }
     }
+
+    // API Key is required when not using a gateway
+    if ((!data.gatewayId || data.gatewayId.trim() === '') && (!data.apiKeySecret || data.apiKeySecret.trim() === '')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'API Token is required when not using a gateway',
+        path: ['apiKeySecret'],
+      });
+    }
   });
 
 export type FormValues = z.infer<typeof FormSchema>;
@@ -126,4 +142,5 @@ export const initialValues: FormValues = {
   systemPrompt: '',
   serviceAccountName: '',
   subagents: [],
+  gatewayId: '',
 };

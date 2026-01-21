@@ -57,7 +57,7 @@ export const CollapsibleCodeSection: FC<Props> = ({ title, content, defaultExpan
           ) : (
             <ChevronRight aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
           )}
-          <Text as="div" className="uppercase tracking-wide" variant="label">
+          <Text as="span" variant="label">
             {title}
           </Text>
         </div>

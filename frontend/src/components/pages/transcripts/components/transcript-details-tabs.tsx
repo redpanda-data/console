@@ -15,11 +15,13 @@ import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
+import { AgentTab } from './agent-tab';
 import { AttributesTab } from './attributes-tab';
 import { LLMIOTab } from './llm-io-tab';
 import { OverviewTab } from './overview-tab';
 import { RawJSONTab } from './raw-json-tab';
 import { ToolCallTab } from './tool-call-tab';
+import { isAgentSpan, isLLMSpan, isToolSpan } from '../utils/span-classifier';
 import { isRootSpan } from '../utils/transcript-statistics';
 
 type Props = {
@@ -29,24 +31,17 @@ type Props = {
   onValueChange?: (value: string) => void; // Controlled mode: callback when tab changes
 };
 
-const hasAttribute = (span: Span, key: string): boolean =>
-  span.attributes?.some((attr) => attr.key === key && attr.value?.value) ?? false;
-
-export const isToolSpan = (span: Span): boolean =>
-  hasAttribute(span, 'gen_ai.tool.name') ||
-  hasAttribute(span, 'gen_ai.tool.call.id') ||
-  hasAttribute(span, 'gen_ai.tool.call.arguments') ||
-  hasAttribute(span, 'gen_ai.tool.call.result');
-
-export const isLLMSpan = (span: Span): boolean =>
-  hasAttribute(span, 'gen_ai.request.model') ||
-  hasAttribute(span, 'gen_ai.prompt') ||
-  hasAttribute(span, 'gen_ai.completion') ||
-  hasAttribute(span, 'gen_ai.input.messages');
-
-export const getDefaultTab = (showOverviewTab: boolean, showLLMTab: boolean, showToolTab: boolean): string => {
+export const getDefaultTab = (
+  showOverviewTab: boolean,
+  showAgentTab: boolean,
+  showLLMTab: boolean,
+  showToolTab: boolean
+): string => {
   if (showOverviewTab) {
     return 'overview';
+  }
+  if (showAgentTab) {
+    return 'agent';
   }
   if (showLLMTab) {
     return 'llm-io';
@@ -58,17 +53,20 @@ export const getDefaultTab = (showOverviewTab: boolean, showLLMTab: boolean, sho
 };
 
 export const TranscriptDetailsTabs: FC<Props> = ({ span, trace, value, onValueChange }) => {
-  const { showToolTab, showLLMTab, showOverviewTab } = useMemo(
+  const { showToolTab, showLLMTab, showAgentTab, showOverviewTab } = useMemo(
     () => ({
       showToolTab: isToolSpan(span),
       showLLMTab: isLLMSpan(span),
+      showAgentTab: isAgentSpan(span),
       showOverviewTab: isRootSpan(span),
     }),
     [span]
   );
 
   // Internal state for uncontrolled mode
-  const [internalTab, setInternalTab] = useState(() => getDefaultTab(showOverviewTab, showLLMTab, showToolTab));
+  const [internalTab, setInternalTab] = useState(() =>
+    getDefaultTab(showOverviewTab, showAgentTab, showLLMTab, showToolTab)
+  );
 
   // Use controlled value if provided, otherwise use internal state
   const activeTab = value ?? internalTab;
@@ -85,14 +83,15 @@ export const TranscriptDetailsTabs: FC<Props> = ({ span, trace, value, onValueCh
   // Reset to default tab when span changes (only in uncontrolled mode)
   useEffect(() => {
     if (value === undefined) {
-      const defaultTab = getDefaultTab(showOverviewTab, showLLMTab, showToolTab);
+      const defaultTab = getDefaultTab(showOverviewTab, showAgentTab, showLLMTab, showToolTab);
       setInternalTab(defaultTab);
     }
-  }, [showOverviewTab, showLLMTab, showToolTab, value]);
+  }, [showOverviewTab, showAgentTab, showLLMTab, showToolTab, value]);
 
   // Build tabs array
   const tabs = [
     ...(showOverviewTab ? [{ id: 'overview', label: 'Overview' }] : []),
+    ...(showAgentTab && !showOverviewTab ? [{ id: 'agent', label: 'Agent' }] : []),
     ...(showLLMTab && !showOverviewTab ? [{ id: 'llm-io', label: 'LLM I/O' }] : []),
     ...(showToolTab ? [{ id: 'tool-call', label: 'Tool Call' }] : []),
     { id: 'attributes', label: 'Attributes' },
@@ -133,6 +132,7 @@ export const TranscriptDetailsTabs: FC<Props> = ({ span, trace, value, onValueCh
         role="tabpanel"
       >
         {activeTab === 'overview' && showOverviewTab && <OverviewTab trace={trace} />}
+        {activeTab === 'agent' && showAgentTab && !showOverviewTab && <AgentTab span={span} />}
         {activeTab === 'llm-io' && showLLMTab && !showOverviewTab && <LLMIOTab span={span} />}
         {activeTab === 'tool-call' && showToolTab && <ToolCallTab span={span} />}
         {activeTab === 'attributes' && <AttributesTab span={span} />}

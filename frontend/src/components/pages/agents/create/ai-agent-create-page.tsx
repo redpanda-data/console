@@ -35,6 +35,7 @@ import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { Loader2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
+  AIAgent_GatewayConfigSchema,
   AIAgent_MCPServerSchema,
   type AIAgent_Provider,
   AIAgent_Provider_AnthropicSchema,
@@ -47,9 +48,11 @@ import {
   AIAgentCreateSchema,
   CreateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
+import { type AIGateway, AIGateway_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_gateway_pb';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { useCreateAIAgentMutation } from 'react-query/api/ai-agent';
+import { useListAIGatewaysQuery } from 'react-query/api/ai-gateway';
 import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
@@ -70,6 +73,32 @@ export const AIAgentCreatePage = () => {
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation({
     skipInvalidation: true,
   });
+
+  // Gateway detection
+  const { data: gatewaysData, isLoading: isLoadingGateways } = useListAIGatewaysQuery(
+    { pageSize: -1 },
+    { enabled: true }
+  );
+
+  const hasGatewayDeployed = useMemo(() => {
+    if (isLoadingGateways) {
+      return false;
+    }
+    return Boolean(gatewaysData?.aiGateways && gatewaysData.aiGateways.length > 0);
+  }, [gatewaysData, isLoadingGateways]);
+
+  const availableGateways = useMemo(() => {
+    if (!gatewaysData?.aiGateways) {
+      return [];
+    }
+    return gatewaysData.aiGateways
+      .filter((gw: AIGateway) => gw.state === AIGateway_State.RUNNING)
+      .map((gw: AIGateway) => ({
+        id: gw.id,
+        displayName: gw.displayName,
+        description: gw.description,
+      }));
+  }, [gatewaysData]);
 
   // Ref to ServiceAccountSelector to call createServiceAccount
   const serviceAccountSelectorRef = useRef<ServiceAccountSelectorRef>(null);
@@ -342,6 +371,13 @@ export const AIAgentCreatePage = () => {
         });
     }
 
+    const gatewayConfig =
+      values.gatewayId && values.gatewayId.trim() !== ''
+        ? create(AIAgent_GatewayConfigSchema, {
+            virtualGatewayId: values.gatewayId,
+          })
+        : undefined;
+
     await createAgent(
       create(CreateAIAgentRequestSchema, {
         aiAgent: create(AIAgentCreateSchema, {
@@ -359,6 +395,7 @@ export const AIAgentCreatePage = () => {
             memoryShares: selectedTier?.memory || '800M',
           },
           serviceAccount: serviceAccountConfig,
+          gateway: gatewayConfig,
         }),
       }),
       {
@@ -455,6 +492,7 @@ export const AIAgentCreatePage = () => {
                 </CardHeader>
                 <CardContent>
                   <LLMConfigSection
+                    availableGateways={availableGateways}
                     availableSecrets={availableSecrets}
                     fieldNames={{
                       provider: 'provider',
@@ -462,8 +500,10 @@ export const AIAgentCreatePage = () => {
                       apiKeySecret: 'apiKeySecret',
                       baseUrl: 'baseUrl',
                       maxIterations: 'maxIterations',
+                      gatewayId: 'gatewayId',
                     }}
                     form={form}
+                    hasGatewayDeployed={hasGatewayDeployed}
                     mode="create"
                     scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
                     showBaseUrl={form.watch('provider') === 'openaiCompatible'}
