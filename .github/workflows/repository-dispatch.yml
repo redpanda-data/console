@@ -13,7 +13,18 @@ permissions:
   id-token: write
   contents: read
 jobs:
+  backend-verify:
+    uses: ./.github/workflows/backend-lint-test.yml
+    permissions:
+      contents: read
+
+  frontend-verify:
+    uses: ./.github/workflows/frontend-verify.yml
+    permissions:
+      contents: read
+
   dispatch:
+    needs: [backend-verify, frontend-verify]
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
