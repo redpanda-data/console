@@ -193,44 +193,34 @@ const SchemaList: FC = () => {
         <SmallStat title="Compatibility">{schemaCompatibility ?? <InlineSkeleton width="100px" />}</SmallStat>
       </Flex>
 
-      <Button
-        data-testid="schema-list-edit-compatibility-btn"
-        disabledReason={
-          api.userData?.canManageSchemaRegistry === false
-            ? "You don't have the 'canManageSchemaRegistry' permission"
-            : undefined
-        }
-        mb="4"
-        onClick={() => appGlobal.historyPush('/schema-registry/edit-compatibility')}
-        variant="outline"
-        width="fit-content"
-      >
-        Edit compatibility
-      </Button>
+      <div className="mb-4 flex items-center gap-2">
+        <Button
+          data-testid="schema-list-create-btn"
+          disabledReason={
+            api.userData?.canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined
+          }
+          onClick={() => appGlobal.historyPush('/schema-registry/create')}
+          variant="solid"
+        >
+          Create new schema
+        </Button>
+        <Button
+          data-testid="schema-list-edit-compatibility-btn"
+          disabledReason={
+            api.userData?.canManageSchemaRegistry === false
+              ? "You don't have the 'canManageSchemaRegistry' permission"
+              : undefined
+          }
+          onClick={() => appGlobal.historyPush('/schema-registry/edit-compatibility')}
+          variant="outline"
+          width="fit-content"
+        >
+          Edit compatibility
+        </Button>
+      </div>
 
       <RequestErrors />
 
-      <Flex alignItems="center" gap="2">
-        <SearchField
-          data-testid="schema-list-search-field"
-          placeholderText="Filter by subject name or schema ID..."
-          searchText={quickSearch ?? ''}
-          setSearchText={setQuickSearch}
-          width="350px"
-        />
-        <Tooltip hasArrow label="Help with schema search" placement="top">
-          <Box
-            alignItems="center"
-            cursor="pointer"
-            data-testid="schema-search-help"
-            display="inline-flex"
-            onClick={() => setIsHelpSidebarOpen(true)}
-          >
-            <InfoIcon />
-          </Box>
-        </Tooltip>
-        <Spinner display={isLoadingSchemaVersionMatches ? undefined : 'none'} size="md" />
-      </Flex>
       <Drawer direction="right" onOpenChange={setIsHelpSidebarOpen} open={isHelpSidebarOpen}>
         <DrawerContent aria-labelledby="schema-help-title" className="w-[600px] sm:max-w-[600px]" role="dialog">
           <DrawerHeader className="border-b">
@@ -295,18 +285,27 @@ const SchemaList: FC = () => {
         return (
           <Section>
             <Flex justifyContent={'space-between'} pb={3}>
-              <Button
-                data-testid="schema-list-create-btn"
-                disabledReason={
-                  api.userData?.canCreateSchemas === false
-                    ? "You don't have the 'canCreateSchemas' permission"
-                    : undefined
-                }
-                onClick={() => appGlobal.historyPush('/schema-registry/create')}
-                variant="solid"
-              >
-                Create new schema
-              </Button>
+              <Flex alignItems="center" gap="2">
+                <SearchField
+                  data-testid="schema-list-search-field"
+                  placeholderText="Filter by subject name or schema ID..."
+                  searchText={quickSearch ?? ''}
+                  setSearchText={setQuickSearch}
+                  width="350px"
+                />
+                <Tooltip hasArrow label="Help with schema search" placement="top">
+                  <Box
+                    alignItems="center"
+                    cursor="pointer"
+                    data-testid="schema-search-help"
+                    display="inline-flex"
+                    onClick={() => setIsHelpSidebarOpen(true)}
+                  >
+                    <InfoIcon />
+                  </Box>
+                </Tooltip>
+                <Spinner display={isLoadingSchemaVersionMatches ? undefined : 'none'} size="md" />
+              </Flex>
               <Checkbox
                 data-testid="schema-list-show-soft-deleted-checkbox"
                 isChecked={showSoftDeleted}

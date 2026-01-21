@@ -39,7 +39,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, CircleUser, Link, Loader2, Plus, Server, Waypoints, X } from 'lucide-react';
+import { AlertCircle, CircleUser, Link, Loader2, Server, Waypoints, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import {
   ListSecretsFilterSchema,
@@ -347,15 +347,13 @@ export const SecretsStoreListPage = () => {
             page and reference them when creating a new resource such as Redpanda Connect pipelines.
           </Text>
         </header>
-
-        <SecretsStoreDataTableToolbar table={table} />
+        <div className="mt-2 mb-4">
+          <Button onClick={() => navigate({ to: '/secrets/create' })}>Create Secret</Button>
+        </div>
 
         <div className="flex items-center justify-between">
+          <SecretsStoreDataTableToolbar table={table} />
           <DataTableViewOptions table={table} />
-          <Button onClick={() => navigate({ to: '/secrets/create' })}>
-            Create Secret
-            <Plus className="h-4 w-4" />
-          </Button>
         </div>
 
         <Table>

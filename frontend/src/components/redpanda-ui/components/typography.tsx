@@ -114,10 +114,10 @@ interface HeadingProps
     VariantProps<typeof headingVariants>,
     SharedProps {
   children: React.ReactNode;
-  as?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5';
+  as?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'span';
 }
 
-export const Heading = forwardRef<HTMLHeadingElement, HeadingProps>((componentProps, ref) => {
+export const Heading = forwardRef<HTMLHeadingElement | HTMLSpanElement, HeadingProps>((componentProps, ref) => {
   const { align, className, children, testId, as, level: levelProp, ...props } = componentProps;
   const headingLevel = levelProp ?? 1;
   const HeadingTag = as ?? (`h${headingLevel}` as keyof React.JSX.IntrinsicElements);

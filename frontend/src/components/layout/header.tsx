@@ -9,8 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
+import { Box, Button, ColorModeSwitch, CopyButton, Flex } from '@redpanda-data/ui';
 import { Link, useLocation, useMatchRoute } from '@tanstack/react-router';
+import { Heading } from 'components/redpanda-ui/components/typography';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { Fragment } from 'react';
@@ -38,7 +40,7 @@ type BreadcrumbHeaderRowProps = {
 
 function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeaderRowProps) {
   return (
-    <Flex alignItems="center" justifyContent="space-between" mb={5}>
+    <Flex alignItems="center" justifyContent="space-between">
       <Flex alignItems="center" gap={2}>
         {useNewSidebar ? (
           <>
@@ -101,23 +103,13 @@ const AppPageHeader = observer(() => {
       <Flex alignItems="center" justifyContent="space-between" pb={2}>
         <Flex alignItems="center">
           {lastBreadcrumb ? (
-            <Text
-              as="span"
-              fontSize="xl"
-              fontWeight={700}
-              mr={2}
-              role="heading"
-              {...(lastBreadcrumb.options?.canBeTruncated
-                ? {
-                    wordBreak: 'break-all',
-                    whiteSpace: 'break-spaces',
-                  }
-                : {
-                    whiteSpace: 'nowrap',
-                  })}
+            <Heading
+              // as="span"
+              className={cn('mr-2', lastBreadcrumb.options?.canBeTruncated ? 'break-spaces break-all' : 'nowrap')}
+              level={1}
             >
               {lastBreadcrumb.title}
-            </Text>
+            </Heading>
           ) : null}
           {lastBreadcrumb ? (
             <Box>

@@ -151,45 +151,44 @@ const TopicList: FC = () => {
         </Flex>
       </Section>
 
-      <Box pt={6}>
-        <Flex gap={2}>
-          <SearchField
-            placeholderText="Enter search term/regex"
-            searchText={localSearchValue}
-            setSearchText={setLocalSearchValue}
-            width="350px"
-          />
-          <AnimatePresence>
-            {Boolean(localSearchValue) && (
-              <motion.div
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                initial={{ opacity: 0 }}
-                style={{ display: 'flex', alignItems: 'center' }}
-                transition={{ duration: 0.12 }}
-              >
-                <Text alignSelf="center" lineHeight="1" ml={4} whiteSpace="nowrap">
-                  <Text display="inline" fontWeight="bold">
-                    {topics.length}
-                  </Text>{' '}
-                  {topics.length === 1 ? 'result' : 'results'}
-                </Text>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Flex>
-      </Box>
+      <div className="mt-2 mb-4">
+        <Button
+          className="min-w-[160px]"
+          data-testid="create-topic-button"
+          onClick={() => showCreateTopicModal()}
+          variant="solid"
+        >
+          Create topic
+        </Button>
+      </div>
       <Section>
         <div className="flex items-center justify-between gap-4">
-          <Button
-            className="min-w-[160px]"
-            data-testid="create-topic-button"
-            onClick={() => showCreateTopicModal()}
-            variant="solid"
-          >
-            Create topic
-          </Button>
-
+          <Flex gap={2}>
+            <SearchField
+              placeholderText="Enter search term/regex"
+              searchText={localSearchValue}
+              setSearchText={setLocalSearchValue}
+              width="350px"
+            />
+            <AnimatePresence>
+              {Boolean(localSearchValue) && (
+                <motion.div
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  initial={{ opacity: 0 }}
+                  style={{ display: 'flex', alignItems: 'center' }}
+                  transition={{ duration: 0.12 }}
+                >
+                  <Text alignSelf="center" lineHeight="1" ml={4} whiteSpace="nowrap">
+                    <Text display="inline" fontWeight="bold">
+                      {topics.length}
+                    </Text>{' '}
+                    {topics.length === 1 ? 'result' : 'results'}
+                  </Text>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Flex>
           <Checkbox
             data-testid="show-internal-topics-checkbox"
             isChecked={showInternalTopics}

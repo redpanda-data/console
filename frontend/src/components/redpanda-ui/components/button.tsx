@@ -18,8 +18,8 @@ const buttonVariants = (isNewThemeEnabled?: boolean) =>
 			"cursor-pointer",
 			// Disabled state
 			"disabled:pointer-events-none disabled:cursor-not-allowed",
-			// Icon styles
-			"shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+			// Icon styles (size set per variant)
+			"shrink-0 [&_svg]:pointer-events-none [&_svg]:shrink-0",
 			// Focus ring
 			"outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
 			// Selection
@@ -69,7 +69,7 @@ const buttonVariants = (isNewThemeEnabled?: boolean) =>
 						"disabled:bg-surface-inverse-disabled disabled:text-disabled",
 					],
 					outline: [
-						"!border-outline-primary border text-primary shadow-xs",
+						"!border-outline-primary border text-primary-inverse shadow-xs",
 						"hover:border-outline-primary-hover hover:bg-primary-alpha-subtle",
 						"active:border-outline-primary-pressed active:bg-primary-alpha-subtle-default",
 						"disabled:border-outline-inverse-disabled disabled:text-disabled",
@@ -147,18 +147,18 @@ const buttonVariants = (isNewThemeEnabled?: boolean) =>
 				},
 				size: {
 					// XS: height 24px, padding 0 8px, gap 4px, font 12px (from Figma)
-					xs: "h-6 gap-1 px-2 py-0 text-xs has-[>svg]:px-1.5",
+					xs: "h-6 gap-1 px-2 py-0 text-xs has-[>svg]:px-1.5 [&_svg]:size-3",
 					// SM: height 32px, padding 0 12px, gap 8px, font 12px (from Figma)
-					sm: "h-8 gap-2 px-3 py-0 text-xs has-[>svg]:px-2.5",
+					sm: "h-8 gap-2 px-3 py-0 text-xs has-[>svg]:px-2.5 [&_svg]:size-3.5",
 					// MD (default): height 40px, padding 0 16px, gap 8px, font 14px (from Figma)
-					md: "h-10 gap-2 px-4 py-0 text-sm has-[>svg]:px-3",
+					md: "h-10 gap-2 px-4 py-0 text-sm has-[>svg]:px-3 [&_svg]:size-4",
 					// LG: height 48px, padding 0 24px, gap 8px, font 16px (from Figma)
-					lg: "h-12 gap-2 px-6 py-0 text-base has-[>svg]:px-4",
-					// Icon sizes
-					icon: "size-10",
-					"icon-xs": "size-6",
-					"icon-sm": "size-8",
-					"icon-lg": "size-12",
+					lg: "h-12 gap-2 px-6 py-0 text-base has-[>svg]:px-4 [&_svg]:size-5",
+					// Icon-only sizes (square buttons with centered, slightly smaller icons)
+					icon: "size-10 [&_svg]:size-5",
+					"icon-xs": "size-6 [&_svg]:size-3.5",
+					"icon-sm": "size-8 [&_svg]:size-4",
+					"icon-lg": "size-12 [&_svg]:size-6",
 				},
 			},
 			defaultVariants: {
@@ -170,24 +170,30 @@ const buttonVariants = (isNewThemeEnabled?: boolean) =>
 
 export type ButtonVariants = VariantProps<ReturnType<typeof buttonVariants>>;
 
-export type ButtonProps = React.ComponentProps<'button'> &
-  ButtonVariants & {
-    asChild?: boolean;
-    as?: ElementType;
-    to?: string;
-    icon?: React.ReactNode;
-    // Support anchor element props when as="a"
-    href?: string;
-    target?: string;
-    rel?: string;
-  } & SharedProps;
-
 const Button = React.forwardRef<
 	HTMLButtonElement,
-	ButtonProps
+	React.ComponentProps<"button"> &
+		ButtonVariants &
+		SharedProps & {
+			asChild?: boolean;
+			as?: ElementType;
+			to?: string;
+			icon?: React.ReactNode;
+		}
 >(
 	(
-		{ className, variant, size, asChild = false, testId, as, to, icon, children, ...props },
+		{
+			className,
+			variant,
+			size,
+			asChild = false,
+			testId,
+			as,
+			to,
+			icon,
+			children,
+			...props
+		},
 		ref,
 	) => {
 		const Comp = as ?? (asChild ? SlotPrimitive.Slot : "button");
@@ -208,7 +214,7 @@ const Button = React.forwardRef<
 				className={cn(
 					buttonVariants(isNewThemeEnabled)({ variant, size, className }),
 					positionClasses,
-					icon && "flex items-center gap-2",
+					icon && "gap-2",
 					className,
 				)}
 				data-slot="button"
@@ -218,7 +224,7 @@ const Button = React.forwardRef<
 				{...props}
 			>
 				{children}
-				{icon ? {icon} : null}
+				{icon ? icon : null}
 			</Comp>
 		);
 	},

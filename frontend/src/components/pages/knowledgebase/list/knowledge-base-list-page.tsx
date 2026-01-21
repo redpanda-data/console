@@ -40,7 +40,7 @@ import {
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, Loader2, Plus, X } from 'lucide-react';
+import { AlertCircle, Loader2, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import type { KnowledgeBase } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import React, { useCallback, useEffect, useMemo } from 'react';
@@ -485,13 +485,12 @@ export const KnowledgeBaseListPage = () => {
           create intelligent systems that can answer questions and provide insights from your knowledge repository.
         </Text>
       </header>
-      <KnowledgeBaseDataTableToolbar table={table} />
+      <div className="mb-4">
+        <Button onClick={() => navigate({ to: '/knowledgebases/create' })}>Create Knowledge Base</Button>
+      </div>
       <div className="flex items-center justify-between">
+        <KnowledgeBaseDataTableToolbar table={table} />
         <DataTableViewOptions table={table} />
-        <Button onClick={() => navigate({ to: '/knowledgebases/create' })}>
-          Create Knowledge Base
-          <Plus className="h-4 w-4" />
-        </Button>
       </div>
       <Table>
         <TableHeader>

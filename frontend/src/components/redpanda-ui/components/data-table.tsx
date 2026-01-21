@@ -14,6 +14,7 @@ import {
   Circle,
   CircleOff,
   EyeOff,
+  FilterIcon,
   HelpCircle,
   MoreHorizontal,
   Settings2,
@@ -282,7 +283,7 @@ export function DataTableFacetedFilter<TData, TValue>({
   return (
     <Popover testId={testId}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 border-dashed">
+        <Button variant="secondary-outline" size="sm">
           {title}
           {selectedValues?.size > 0 && (
             <>

@@ -92,7 +92,7 @@ export const DataRefreshButton = observer(() => {
 
   // maybe we need to use the same 'no vertical expansion' trick:
   return (
-    <>
+    <div className="flex items-center gap-1">
       <Box>
         <Popover
           content={
@@ -111,6 +111,7 @@ export const DataRefreshButton = observer(() => {
             icon={autoRefresh.active ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
             onClick={autoRefresh.toggleAutorefresh}
             p={0}
+            size="xs"
             variant="ghost"
           />
         </Popover>
@@ -137,6 +138,7 @@ export const DataRefreshButton = observer(() => {
               icon={<RefreshIcon size={18} />}
               onClick={() => appGlobal.onRefresh()}
               p={0}
+              size="xs"
               variant="ghost"
             />
           </Popover>
@@ -148,7 +150,7 @@ export const DataRefreshButton = observer(() => {
         )}
         {api.activeRequests.length > 0 && <>Fetching data... {countStr}</>}
       </Text>
-    </>
+    </div>
   );
 });
 
