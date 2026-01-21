@@ -12,6 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { DevTool } from '@hookform/devtools';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
@@ -37,7 +38,6 @@ import {
 import { TLSSettingsSchema } from 'protogen/redpanda/core/common/v1/tls_pb';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
@@ -233,7 +233,7 @@ export const ShadowLinkCreatePage = () => {
   const { mutateAsync: createShadowLink, isPending: isCreating } = useCreateShadowLinkMutation({
     onSuccess: () => {
       toast.success('Shadow link created successfully');
-      navigate('/shadowlinks');
+      navigate({ to: '/shadowlinks' });
     },
     onError: (error) => {
       toast.error('Shadow link create failed', {
@@ -325,7 +325,7 @@ export const ShadowLinkCreatePage = () => {
                 )}
 
                 {methods.isFirst ? (
-                  <Button onClick={() => navigate('/shadowlinks')} type="button" variant="outline">
+                  <Button onClick={() => navigate({ to: '/shadowlinks' })} type="button" variant="outline">
                     Cancel
                   </Button>
                 ) : (

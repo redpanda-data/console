@@ -193,21 +193,68 @@ export class ConnectClusterStore {
     const secrets = connector?.secrets;
     if (secrets) {
       try {
-        const connectorName = connector?.propsByName.get('name');
-        if (!connectorName) {
-          throw new Error("For some reason your connector doesn't have a name");
+        // Validate cluster name
+        if (!this.clusterName || this.clusterName.trim() === '') {
+          throw new Error('Cluster name is missing or empty. Cannot create secrets without a valid cluster.');
+        }
+
+        // Get connector name from the actual config object (works in both form and JSON mode)
+        const configObj = connector?.getConfigObject() as Record<string, unknown> | undefined;
+        const connectorNameValue = configObj?.name;
+
+        if (connectorNameValue === undefined || connectorNameValue === null) {
+          throw new Error("Connector configuration is missing the 'name' property");
+        }
+
+        if (typeof connectorNameValue !== 'string') {
+          let receivedType: string;
+          if (connectorNameValue === null) {
+            receivedType = 'null';
+          } else if (Array.isArray(connectorNameValue)) {
+            receivedType = 'array';
+          } else {
+            receivedType = typeof connectorNameValue;
+          }
+          throw new Error(`Connector name must be a string, but received ${receivedType}`);
+        }
+
+        if (connectorNameValue.trim() === '') {
+          throw new Error(
+            'Connector name cannot be empty. Please provide a valid connector name before creating secrets.'
+          );
         }
 
         for (const [key, secret] of secrets.secrets) {
+          // Validate secret key
+          if (!key || key.trim() === '') {
+            throw new Error('Secret key is empty. Each secret must have a valid key identifier.');
+          }
+
+          // Validate secret value
+          if (!secret.value || secret.value.trim() === '') {
+            throw new Error(`Secret value for key "${key}" is empty. Please provide a value for this secret.`);
+          }
+
+          // Validate serialized secret data
+          const serializedSecret = secret.serialized;
+          if (!serializedSecret || serializedSecret.trim() === '') {
+            throw new Error(`Failed to serialize secret for key "${key}". The encoded secret data is empty.`);
+          }
+
           const createSecretResponse = (yield api.createSecret(
             this.clusterName,
-            connectorName.value as string,
-            secret.serialized
+            connectorNameValue,
+            serializedSecret
           )) as CreateSecretResponse;
+
+          if (!createSecretResponse?.secretId) {
+            throw new Error(`Failed to create secret for key "${key}": API response did not include a secretId`);
+          }
+
           const property = connector?.propsByName.get(key);
 
           if (property) {
-            property.value = secret.getSecretString(key, createSecretResponse?.secretId);
+            property.value = secret.getSecretString(key, createSecretResponse.secretId);
             updatedConfig[property.name] = property.value;
           }
         }
@@ -650,7 +697,7 @@ export class ConnectorPropertiesStore {
               // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
               return prop!;
             })
-            .filter((x) => x !== null);
+            .filter((x) => x !== null && x !== undefined);
 
           this.allGroups.push(this.createPropertyGroup(step, groupDef, groupProps));
         }

@@ -9,7 +9,6 @@
  */
 
 import { Input } from 'components/redpanda-ui/components/input';
-import { Label } from 'components/redpanda-ui/components/label';
 import {
   Select,
   SelectContent,
@@ -21,17 +20,11 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Text } from 'components/redpanda-ui/components/typography';
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from 'components/redpanda-ui/components/form';
+import { Field, FieldLabel, FieldDescription, FieldError } from 'components/redpanda-ui/components/field';
 import { AI_AGENT_SECRET_TEXT, SecretSelector } from 'components/ui/secret/secret-selector';
 import { type Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect, useMemo } from 'react';
-import { type UseFormReturn } from 'react-hook-form';
+import { Controller, type UseFormReturn } from 'react-hook-form';
 
 import { detectProvider, MODEL_OPTIONS_BY_PROVIDER } from '../../pages/agents/ai-agent-model';
 
@@ -44,11 +37,14 @@ export interface LLMConfigSectionProps {
     apiKeySecret: string;
     baseUrl?: string;
     maxIterations: string;
+    gatewayId?: string;
   };
   availableSecrets: Array<{ id: string; name: string }>;
   scopes: Scope[];
   showBaseUrl?: boolean;
   showMaxIterations?: boolean;
+  hasGatewayDeployed?: boolean;
+  availableGateways?: Array<{ id: string; displayName: string; description?: string }>;
 }
 
 export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
@@ -59,8 +55,15 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
   scopes,
   showBaseUrl = false,
   showMaxIterations = true,
+  hasGatewayDeployed = false,
+  availableGateways = [],
 }) => {
+  const GATEWAY_HARDCODED_PROVIDER = 'openai';
+  const GATEWAY_HARDCODED_MODEL = 'gpt-4o';
+
   const selectedProvider = form.watch(fieldNames.provider) as keyof typeof MODEL_OPTIONS_BY_PROVIDER;
+  const selectedGatewayId = fieldNames.gatewayId ? form.watch(fieldNames.gatewayId) : undefined;
+  const isUsingGateway = hasGatewayDeployed && !!selectedGatewayId;
 
   const filteredModels = useMemo(() => {
     if (!selectedProvider) return [];
@@ -69,7 +72,15 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
   }, [selectedProvider]);
 
   useEffect(() => {
-    if (mode === 'create' && filteredModels.length > 0 && filteredModels[0]) {
+    if (isUsingGateway) {
+      form.setValue(fieldNames.provider, GATEWAY_HARDCODED_PROVIDER);
+      form.setValue(fieldNames.model, GATEWAY_HARDCODED_MODEL);
+      form.setValue(fieldNames.apiKeySecret, '');
+    }
+  }, [isUsingGateway, form, fieldNames]);
+
+  useEffect(() => {
+    if (mode === 'create' && filteredModels.length > 0 && filteredModels[0] && !isUsingGateway) {
       const currentModel = form.getValues(fieldNames.model);
       const isValid = filteredModels.some((m: { value: string }) => m.value === currentModel);
 
@@ -77,23 +88,52 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
         form.setValue(fieldNames.model, filteredModels[0].value);
       }
     }
-  }, [selectedProvider, mode, filteredModels, form, fieldNames]);
+  }, [selectedProvider, mode, filteredModels, form, fieldNames, isUsingGateway]);
 
   return (
     <div className="space-y-4">
+      {hasGatewayDeployed && availableGateways.length > 0 && fieldNames.gatewayId && (
+        <Field data-invalid={!!form.formState.errors[fieldNames.gatewayId]}>
+          <FieldLabel htmlFor="gateway">AI Gateway</FieldLabel>
+          <FieldDescription>Route requests through an AI Gateway</FieldDescription>
+          <Controller
+            control={form.control}
+            name={fieldNames.gatewayId}
+            render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value || ''}>
+                <SelectTrigger id="gateway">
+                  <SelectValue placeholder="No gateway" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No gateway</SelectItem>
+                  {availableGateways.map((gw) => (
+                    <SelectItem key={gw.id} value={gw.id}>
+                      {gw.displayName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {form.formState.errors[fieldNames.gatewayId] && (
+            <FieldError>{form.formState.errors[fieldNames.gatewayId]?.message as string}</FieldError>
+          )}
+        </Field>
+      )}
+
       {mode === 'create' ? (
-        <FormField
-          control={form.control}
-          name={fieldNames.provider}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel required>Provider</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select provider" />
-                  </SelectTrigger>
-                </FormControl>
+        <Field data-invalid={!!form.formState.errors[fieldNames.provider]}>
+          <FieldLabel htmlFor="provider" required>
+            Provider
+          </FieldLabel>
+          <Controller
+            control={form.control}
+            name={fieldNames.provider}
+            render={({ field }) => (
+              <Select disabled={isUsingGateway} onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger id="provider">
+                  <SelectValue placeholder="Select provider" />
+                </SelectTrigger>
                 <SelectContent>
                   {Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([providerId, provider]) => (
                     <SelectItem key={providerId} value={providerId}>
@@ -105,13 +145,15 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
-            </FormItem>
+            )}
+          />
+          {form.formState.errors[fieldNames.provider] && (
+            <FieldError>{form.formState.errors[fieldNames.provider]?.message as string}</FieldError>
           )}
-        />
+        </Field>
       ) : (
-        <div className="space-y-2">
-          <Label>Provider</Label>
+        <Field>
+          <FieldLabel>Provider</FieldLabel>
           <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
             <Text variant="default">
               {selectedProvider === 'openai' && 'OpenAI'}
@@ -121,48 +163,51 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
               {!selectedProvider && 'Unknown Provider'}
             </Text>
           </div>
-        </div>
+        </Field>
       )}
 
-      <FormField
-        control={form.control}
-        name={fieldNames.model}
-        render={({ field }: { field: any }) => {
-          const providerData = selectedProvider ? MODEL_OPTIONS_BY_PROVIDER[selectedProvider] : null;
-          const detectedProvider = field.value ? detectProvider(field.value as string) : null;
-          const isFreeTextMode = providerData && providerData.models.length === 0;
+      <Field data-invalid={!!form.formState.errors[fieldNames.model]}>
+        <FieldLabel htmlFor="model" required>
+          Model
+        </FieldLabel>
+        <Controller
+          control={form.control}
+          name={fieldNames.model}
+          render={({ field }) => {
+            const providerData = selectedProvider ? MODEL_OPTIONS_BY_PROVIDER[selectedProvider] : null;
+            const detectedProvider = field.value ? detectProvider(field.value as string) : null;
+            const isFreeTextMode = providerData && providerData.models.length === 0;
 
-          if (isFreeTextMode) {
+            if (isFreeTextMode) {
+              return (
+                <>
+                  <Input
+                    disabled={isUsingGateway}
+                    id="model"
+                    placeholder="Enter model name (e.g., llama-3.1-70b)"
+                    {...field}
+                    aria-invalid={!!form.formState.errors[fieldNames.model]}
+                    aria-describedby={form.formState.errors[fieldNames.model] ? 'model-error' : undefined}
+                  />
+                  <FieldDescription>Enter the model name exactly as supported by your API endpoint</FieldDescription>
+                </>
+              );
+            }
+
             return (
-              <FormItem>
-                <FormLabel required>Model</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter model name (e.g., llama-3.1-70b)" {...field} />
-                </FormControl>
-                <Text variant="muted">Enter the model name exactly as supported by your API endpoint</Text>
-                <FormMessage />
-              </FormItem>
-            );
-          }
-
-          return (
-            <FormItem>
-              <FormLabel required>Model</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select AI model">
-                      {field.value && detectedProvider ? (
-                        <div className="flex items-center gap-2">
-                          <img alt={detectedProvider.label} className="h-4 w-4" src={detectedProvider.icon} />
-                          <span>{field.value}</span>
-                        </div>
-                      ) : (
-                        'Select AI model'
-                      )}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
+              <Select disabled={isUsingGateway} onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger id="model">
+                  <SelectValue placeholder="Select AI model">
+                    {field.value && detectedProvider ? (
+                      <div className="flex items-center gap-2">
+                        <img alt={detectedProvider.label} className="h-4 w-4" src={detectedProvider.icon} />
+                        <span>{field.value}</span>
+                      </div>
+                    ) : (
+                      'Select AI model'
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   {providerData ? (
                     <SelectGroup>
@@ -190,19 +235,23 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
                   )}
                 </SelectContent>
               </Select>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
-      />
+            );
+          }}
+        />
+        {form.formState.errors[fieldNames.model] && (
+          <FieldError id="model-error">{form.formState.errors[fieldNames.model]?.message as string}</FieldError>
+        )}
+      </Field>
 
-      <FormField
-        control={form.control}
-        name={fieldNames.apiKeySecret}
-        render={({ field }: { field: any }) => (
-          <FormItem>
-            <FormLabel required>API Token</FormLabel>
-            <FormControl>
+      {!isUsingGateway && (
+        <Field data-invalid={!!form.formState.errors[fieldNames.apiKeySecret]}>
+          <FieldLabel htmlFor="apiKeySecret" required>
+            API Token
+          </FieldLabel>
+          <Controller
+            control={form.control}
+            name={fieldNames.apiKeySecret}
+            render={({ field }) => (
               <SecretSelector
                 availableSecrets={availableSecrets}
                 customText={AI_AGENT_SECRET_TEXT}
@@ -211,58 +260,60 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
                 scopes={scopes}
                 value={field.value}
               />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+            )}
+          />
+          {form.formState.errors[fieldNames.apiKeySecret] && (
+            <FieldError>{form.formState.errors[fieldNames.apiKeySecret]?.message as string}</FieldError>
+          )}
+        </Field>
+      )}
 
-      {showBaseUrl && fieldNames.baseUrl && (
-        <FormField
-          control={form.control}
-          name={fieldNames.baseUrl}
-          render={({ field }: { field: any }) => {
-            const isRequired = selectedProvider === 'openaiCompatible';
-            return (
-              <FormItem>
-                <FormLabel required={isRequired}>Base URL {!isRequired && '(optional)'}</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://api.example.com/v1" {...field} />
-                </FormControl>
-                <Text variant="muted">
-                  {isRequired
-                    ? 'API endpoint URL for your OpenAI-compatible service'
-                    : 'Override the default API endpoint for this provider'}
-                </Text>
-                <FormMessage />
-              </FormItem>
-            );
-          }}
-        />
+      {!isUsingGateway && showBaseUrl && fieldNames.baseUrl && (
+        <Field data-invalid={!!form.formState.errors[fieldNames.baseUrl]}>
+          <FieldLabel htmlFor="baseUrl" required={selectedProvider === 'openaiCompatible'}>
+            Base URL {selectedProvider !== 'openaiCompatible' && '(optional)'}
+          </FieldLabel>
+          <Input
+            id="baseUrl"
+            placeholder="https://api.example.com/v1"
+            {...form.register(fieldNames.baseUrl)}
+            aria-invalid={!!form.formState.errors[fieldNames.baseUrl]}
+            aria-describedby={form.formState.errors[fieldNames.baseUrl] ? 'baseUrl-error' : undefined}
+          />
+          <FieldDescription>
+            {selectedProvider === 'openaiCompatible'
+              ? 'API endpoint URL for your OpenAI-compatible service'
+              : 'Override the default API endpoint for this provider'}
+          </FieldDescription>
+          {form.formState.errors[fieldNames.baseUrl] && (
+            <FieldError id="baseUrl-error">{form.formState.errors[fieldNames.baseUrl]?.message as string}</FieldError>
+          )}
+        </Field>
       )}
 
       {showMaxIterations && (
-        <FormField
-          control={form.control}
-          name={fieldNames.maxIterations}
-          render={({ field }: { field: any }) => (
-            <FormItem>
-              <div className="flex items-center justify-between">
-                <FormLabel>Max Iterations</FormLabel>
-                <Text className="font-medium text-sm">{field.value}</Text>
-              </div>
-              <FormControl>
-                <Slider
-                  max={100}
-                  min={10}
-                  onValueChange={(values) => field.onChange(values[0])}
-                  value={[field.value]}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+        <Field data-invalid={!!form.formState.errors[fieldNames.maxIterations]}>
+          <div className="flex items-center justify-between">
+            <FieldLabel htmlFor="maxIterations">Max Iterations</FieldLabel>
+            <Text className="font-medium text-sm">{form.watch(fieldNames.maxIterations)}</Text>
+          </div>
+          <Controller
+            control={form.control}
+            name={fieldNames.maxIterations}
+            render={({ field }) => (
+              <Slider
+                id="maxIterations"
+                max={100}
+                min={10}
+                onValueChange={(values) => field.onChange(values[0])}
+                value={[field.value]}
+              />
+            )}
+          />
+          {form.formState.errors[fieldNames.maxIterations] && (
+            <FieldError>{form.formState.errors[fieldNames.maxIterations]?.message as string}</FieldError>
           )}
-        />
+        </Field>
       )}
     </div>
   );

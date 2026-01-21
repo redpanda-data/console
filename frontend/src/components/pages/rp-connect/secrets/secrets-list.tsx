@@ -15,9 +15,9 @@ import {
   Text,
   Tooltip,
 } from '@redpanda-data/ui';
+import { Link } from '@tanstack/react-router';
 import { EditIcon, TrashIcon } from 'components/icons';
 import { observer } from 'mobx-react';
-import { Link as ReactRouterLink } from 'react-router-dom';
 
 import SittingPanda from '../../../../assets/redpanda/SittingPanda.svg';
 import { DeleteSecretRequestSchema, type Secret } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -33,7 +33,7 @@ const { ToastContainer, toast } = createStandaloneToast();
 
 const CreateSecretButton = () => (
   <Flex marginBottom={'.5em'}>
-    <Button as={ReactRouterLink} data-testid="create-rpcn-secret-button" to={'/rp-connect/secrets/create'}>
+    <Button as={Link} data-testid="create-rpcn-secret-button" to={'/rp-connect/secrets/create'}>
       Create secret
     </Button>
   </Flex>
@@ -157,7 +157,7 @@ class RpConnectSecretsList extends PageComponent {
                         ?.find((x) => x.secretId === original.id)
                         ?.pipelines?.map(({ id, displayName }, index, array) => (
                           <ChakraLink
-                            as={ReactRouterLink}
+                            as={Link}
                             key={`pipeline-${id}`}
                             textDecoration={'initial'}
                             to={`/rp-connect/${id}`}

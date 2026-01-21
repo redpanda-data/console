@@ -9,14 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
+import { useNavigate } from '@tanstack/react-router';
 import { Eye, EyeOff, Pencil } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../../redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
-import { type AclDetail, getRuleDataTestId, handleUrlWithHost, parsePrincipal } from '../acls/new-acl/acl.model';
+import { type AclDetail, getRuleDataTestId, parsePrincipal } from '../acls/new-acl/acl.model';
 import { OperationsBadge } from '../acls/new-acl/operations-badge';
 
 type UserAclsCardProps = {
@@ -45,12 +45,10 @@ const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
           <Button
             onClick={(e) => {
               e.stopPropagation();
-              navigate(
-                handleUrlWithHost(
-                  `/security/acls/${parsePrincipal(acl.sharedConfig.principal).name}/details`,
-                  acl.sharedConfig.host
-                )
-              );
+              navigate({
+                to: `/security/acls/${parsePrincipal(acl.sharedConfig.principal).name}/details`,
+                search: { host: acl.sharedConfig.host },
+              });
             }}
             size="sm"
             testId={`edit-acl-${rowKey}`}
@@ -106,7 +104,10 @@ export const UserAclsCard = ({ acls }: UserAclsCardProps) => {
           <CardAction>
             <Button
               onClick={() => {
-                navigate('/security/acls/create');
+                navigate({
+                  to: '/security/acls/create',
+                  search: { principalType: undefined, principalName: undefined },
+                });
               }}
               testId="create-acl-button"
               variant="outline"

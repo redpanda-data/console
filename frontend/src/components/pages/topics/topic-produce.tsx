@@ -12,17 +12,16 @@ import {
   HStack,
   IconButton,
   Input,
-  Link,
   SectionHeading,
   Text,
   useToast,
 } from '@redpanda-data/ui';
+import { Link } from '@tanstack/react-router';
 import { TrashIcon } from 'components/icons';
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { type FC, useEffect, useState } from 'react';
 import { Controller, type SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
-import { Link as ReactRouterLink } from 'react-router-dom';
 
 import { setMonacoTheme } from '../../../config';
 import {
@@ -85,9 +84,9 @@ const encodingOptions: EncodingOption[] = [
 const protoBufInfoElement = (
   <Text>
     Protobuf schemas can define multiple types. Specify which type you want to use for this message.{' '}
-    <Link href="https://protobuf.dev/reference/protobuf/google.protobuf/" rel="noopener noreferrer" target="_blank">
+    <a href="https://protobuf.dev/reference/protobuf/google.protobuf/" rel="noopener noreferrer" target="_blank">
       Learn more here.
-    </Link>
+    </a>
   </Text>
 );
 
@@ -666,7 +665,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
           <Button colorScheme="brand" data-testid="produce-button" isLoading={isSubmitting} type="submit">
             Produce
           </Button>
-          <Link as={ReactRouterLink} to={`/topics/${encodeURIComponent(topicName)}`}>
+          <Link params={{ topicName: encodeURIComponent(topicName) }} to="/topics/$topicName">
             Go Back
           </Link>
         </Flex>

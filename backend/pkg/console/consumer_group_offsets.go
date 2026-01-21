@@ -16,6 +16,7 @@ import (
 	"log/slog"
 
 	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kerr"
 )
 
 type partitionOffsets map[int32]int64
@@ -98,9 +99,17 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, adminCl *kadm.Cli
 	if err != nil {
 		return nil, fmt.Errorf("failed to list end offsets for topics: %w", err)
 	}
-	if topicsEndOffsets.Error() != nil {
+	if tErr := topicsEndOffsets.Error(); tErr != nil && !errors.Is(tErr, kerr.UnknownTopicOrPartition) {
 		return nil, fmt.Errorf("failed to list end offsets for topics: %w", topicsEndOffsets.Error())
 	}
+
+	// Collect topics that don't exist (franz-go return an UnknownTopicOrPartition for these).
+	nonExistentTopics := make(map[string]struct{})
+	topicsEndOffsets.Each(func(lo kadm.ListedOffset) {
+		if errors.Is(lo.Err, kerr.UnknownTopicOrPartition) {
+			nonExistentTopics[lo.Topic] = struct{}{}
+		}
+	})
 
 	// topicPartitions whose high watermark shall be requested
 	topicPartitions := make(map[string][]int32, len(metadata.Topics))
@@ -144,6 +153,12 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, adminCl *kadm.Cli
 		for topic, partitionOffsets := range groupOffsets[group] {
 			// In this scope we iterate on a single group's, single topic's offset
 			childLogger := s.logger.With(slog.String("group", group), slog.String("topic", topic))
+
+			// Topic doesn't exist, skip it silently.
+			if _, isNonExistent := nonExistentTopics[topic]; isNonExistent {
+				childLogger.WarnContext(ctx, "skipping non-existent topic")
+				continue
+			}
 
 			highWaterMarks, ok := partitionInfoByIDAndTopic[topic]
 			if !ok {

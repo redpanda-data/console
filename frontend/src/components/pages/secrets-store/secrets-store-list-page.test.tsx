@@ -14,8 +14,7 @@ import { createRouterTransport } from '@connectrpc/connect';
 import { ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import { Scope, SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { MemoryRouter } from 'react-router-dom';
-import { render, screen, waitFor } from 'test-utils';
+import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 vi.mock('state/ui-state', () => ({
   uiState: {
@@ -23,6 +22,17 @@ vi.mock('state/ui-state', () => ({
     pageBreadcrumbs: [],
   },
 }));
+
+vi.mock('config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('config')>();
+  return {
+    ...actual,
+    config: {
+      jwt: 'test-jwt-token',
+    },
+    isFeatureFlagEnabled: vi.fn(() => false),
+  };
+});
 
 import { SecretsStoreListPage } from './secrets-store-list-page';
 
@@ -47,12 +57,7 @@ describe('SecretsStoreListPage', () => {
       rpc(listSecrets, listSecretsMock);
     });
 
-    render(
-      <MemoryRouter>
-        <SecretsStoreListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('test-secret-123')).toBeVisible();
@@ -81,12 +86,7 @@ describe('SecretsStoreListPage', () => {
       rpc(listSecrets, listSecretsMock);
     });
 
-    render(
-      <MemoryRouter>
-        <SecretsStoreListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('No secrets found.')).toBeVisible();
@@ -114,12 +114,7 @@ describe('SecretsStoreListPage', () => {
       rpc(listSecrets, listSecretsMock);
     });
 
-    render(
-      <MemoryRouter>
-        <SecretsStoreListPage />
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
 
     expect(screen.getByText('Loading secrets...')).toBeVisible();
 

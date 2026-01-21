@@ -9,22 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { fireEvent, renderWithRouter, screen, waitFor } from 'test-utils';
+import { fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import { HostSelector } from './host-selector';
 
-const mockNavigate = vi.fn();
-const mockSearchParams = new URLSearchParams();
 const MULTIPLE_HOSTS_PATTERN = /principal has ACLs configured for multiple hosts/i;
-
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-    useSearchParams: () => [mockSearchParams],
-  };
-});
 
 describe('HostSelector', () => {
   const defaultProps = {
@@ -37,13 +26,9 @@ describe('HostSelector', () => {
     baseUrl: '/security/acls/test-user/details',
   };
 
-  beforeEach(() => {
-    mockNavigate.mockClear();
-  });
-
   describe('Rendering', () => {
     test('should render card with title, description, and all host rows', () => {
-      renderWithRouter(<HostSelector {...defaultProps} />);
+      renderWithFileRoutes(<HostSelector {...defaultProps} />);
 
       // Verify title
       expect(screen.getByText('Multiple hosts found')).toBeVisible();
@@ -68,7 +53,7 @@ describe('HostSelector', () => {
 
   describe('Table structure', () => {
     test('should render table headers and display principal name and host value in each row', () => {
-      renderWithRouter(<HostSelector {...defaultProps} />);
+      renderWithFileRoutes(<HostSelector {...defaultProps} />);
 
       // Verify table headers
       expect(screen.getByText('Principal')).toBeVisible();
@@ -87,26 +72,27 @@ describe('HostSelector', () => {
 
   describe('Navigation', () => {
     test('should navigate with correct query parameter when clicking a host row', async () => {
-      renderWithRouter(<HostSelector {...defaultProps} />);
+      const { router } = renderWithFileRoutes(<HostSelector {...defaultProps} />);
 
       const firstRow = screen.getByTestId('host-selector-row-192.168.1.1');
       fireEvent.click(firstRow);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledTimes(1);
-        expect(mockNavigate).toHaveBeenCalledWith('/security/acls/test-user/details?host=192.168.1.1');
+        expect(router.state.location.pathname).toBe('/security/acls/test-user/details');
+        expect(router.state.location.search).toEqual({ host: '192.168.1.1' });
       });
     });
 
     test('should navigate to different URLs when clicking different hosts', async () => {
-      renderWithRouter(<HostSelector {...defaultProps} />);
+      const { router } = renderWithFileRoutes(<HostSelector {...defaultProps} />);
 
       // Click first host
       const firstRow = screen.getByTestId('host-selector-row-192.168.1.1');
       fireEvent.click(firstRow);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/security/acls/test-user/details?host=192.168.1.1');
+        expect(router.state.location.pathname).toBe('/security/acls/test-user/details');
+        expect(router.state.location.search).toEqual({ host: '192.168.1.1' });
       });
 
       // Click second host
@@ -114,11 +100,12 @@ describe('HostSelector', () => {
       fireEvent.click(secondRow);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/security/acls/test-user/details?host=192.168.1.2');
+        expect(router.state.location.pathname).toBe('/security/acls/test-user/details');
+        expect(router.state.location.search).toEqual({ host: '192.168.1.2' });
       });
     });
 
-    test('should properly encode host values with special characters', async () => {
+    test('should properly handle host values with special characters', async () => {
       const propsWithSpecialChars = {
         ...defaultProps,
         hosts: [
@@ -128,13 +115,14 @@ describe('HostSelector', () => {
         ],
       };
 
-      renderWithRouter(<HostSelector {...propsWithSpecialChars} />);
+      const { router } = renderWithFileRoutes(<HostSelector {...propsWithSpecialChars} />);
 
       const row = screen.getByTestId('host-selector-row-host@example.com');
       fireEvent.click(row);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/security/acls/test-user/details?host=host%40example.com');
+        expect(router.state.location.pathname).toBe('/security/acls/test-user/details');
+        expect(router.state.location.search).toEqual({ host: 'host@example.com' });
       });
     });
 
@@ -145,13 +133,14 @@ describe('HostSelector', () => {
         baseUrl: customBaseUrl,
       };
 
-      renderWithRouter(<HostSelector {...customProps} />);
+      const { router } = renderWithFileRoutes(<HostSelector {...customProps} />);
 
       const row = screen.getByTestId('host-selector-row-192.168.1.1');
       fireEvent.click(row);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/security/roles/my-role/details?host=192.168.1.1');
+        expect(router.state.location.pathname).toBe('/security/roles/my-role/details');
+        expect(router.state.location.search).toEqual({ host: '192.168.1.1' });
       });
     });
   });
@@ -163,7 +152,7 @@ describe('HostSelector', () => {
         hosts: [{ sharedConfig: { principal: 'test-user', host: '192.168.1.1' }, rules: [] }],
       };
 
-      renderWithRouter(<HostSelector {...singleHostProps} />);
+      renderWithFileRoutes(<HostSelector {...singleHostProps} />);
 
       expect(screen.getByTestId('host-selector-row-192.168.1.1')).toBeVisible();
       expect(screen.getByTestId('host-selector-host-192.168.1.1')).toHaveTextContent('192.168.1.1');
@@ -178,7 +167,7 @@ describe('HostSelector', () => {
         })),
       };
 
-      renderWithRouter(<HostSelector {...manyHostsProps} />);
+      renderWithFileRoutes(<HostSelector {...manyHostsProps} />);
 
       // Verify first and last host are present
       expect(screen.getByTestId('host-selector-row-192.168.1.1')).toBeVisible();

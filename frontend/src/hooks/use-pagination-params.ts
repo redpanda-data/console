@@ -1,6 +1,6 @@
+import { useLocation } from '@tanstack/react-router';
 import { DEFAULT_TABLE_PAGE_SIZE } from 'components/constants';
 import { useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
 
 /**
  * Custom hook for parsing pagination parameters from the URL search query.
@@ -15,14 +15,15 @@ import { useLocation } from 'react-router-dom';
  * @returns {{ pageSize: number; pageIndex: number }} An object containing the pageSize and pageIndex.
  *
  * @example
- * // In a component using react-router
+ * // In a component using TanStack Router
  * const { pageSize, pageIndex } = usePaginationParams(20);
  */
 const usePaginationParams = (
   totalDataLength: number,
   defaultPageSize: number = DEFAULT_TABLE_PAGE_SIZE
 ): { pageSize: number; pageIndex: number } => {
-  const { search } = useLocation();
+  const location = useLocation();
+  const search = location.searchStr ?? '';
 
   return useMemo(() => {
     const searchParams = new URLSearchParams(search);

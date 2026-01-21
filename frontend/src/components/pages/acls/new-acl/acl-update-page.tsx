@@ -10,10 +10,13 @@
  */
 
 import { useToast } from '@redpanda-data/ui';
+import { getRouteApi, useNavigate } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/security/acls/$aclName/update');
+
 import {
   getOperationsForResourceType,
   handleResponses,
-  handleUrlWithHost,
   ModeAllowAll,
   ModeDenyAll,
   OperationTypeAllow,
@@ -25,7 +28,6 @@ import {
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
 import { HostSelector } from 'components/pages/acls/new-acl/host-selector';
 import { useEffect } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../../react-query/api/acl';
 import { uiState } from '../../../../state/ui-state';
@@ -33,10 +35,10 @@ import PageContent from '../../../misc/page-content';
 
 const AclUpdatePage = () => {
   const toast = useToast();
-  const navigate = useNavigate();
-  const { aclName = '' } = useParams<{ aclName: string }>();
-  const [searchParams] = useSearchParams();
-  const host = searchParams.get('host') ?? undefined;
+  const navigate = useNavigate({ from: '/security/acls/$aclName/update' });
+  const { aclName } = routeApi.useParams();
+  const search = routeApi.useSearch();
+  const host = search.host ?? undefined;
 
   useEffect(() => {
     uiState.pageBreadcrumbs = [
@@ -59,8 +61,10 @@ const AclUpdatePage = () => {
       const applyResult = await applyUpdates(actualRules, sharedConfig, rules);
       handleResponses(toast, applyResult.errors, applyResult.created);
 
-      const detailsPath = `/security/acls/${aclName}/details`;
-      navigate(handleUrlWithHost(detailsPath, host));
+      navigate({
+        to: `/security/acls/${aclName}/details`,
+        search: { host },
+      });
     };
 
   if (isLoading) {
@@ -114,7 +118,12 @@ const AclUpdatePage = () => {
     <PageContent>
       <CreateACL
         edit={true}
-        onCancel={() => navigate(handleUrlWithHost(`/security/acls/${aclName}/details`, host))}
+        onCancel={() =>
+          navigate({
+            to: `/security/acls/${aclName}/details`,
+            search: { host },
+          })
+        }
         onSubmit={updateAclMutation(acls.rules, acls.sharedConfig)}
         principalType={PrincipalTypeUser}
         rules={rulesWithAllOperations}

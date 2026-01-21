@@ -1779,7 +1779,9 @@ components:
           description: Filter results only roles named with the prefix.
           type: string
         principal:
-          description: Return only roles assigned to this principal.
+          description: |-
+            Return only roles assigned to this principal. The principal must contain
+            the principal type. For example: "User:jane" is a valid principal format.
           type: string
       type: object
     ListRolesResponse:
@@ -6428,7 +6430,9 @@ paths:
           name: filter.name_contains
           schema:
             type: string
-        - description: Return only roles assigned to this principal.
+        - description: |-
+            Return only roles assigned to this principal. The principal must contain
+            the principal type. For example: "User:jane" is a valid principal format.
           in: query
           name: filter.principal
           schema:
@@ -7829,7 +7833,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

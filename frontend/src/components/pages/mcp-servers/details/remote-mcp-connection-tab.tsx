@@ -10,6 +10,10 @@
  */
 
 import { Markdown } from '@redpanda-data/ui';
+import { getRouteApi } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/mcp-servers/$id');
+
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
@@ -21,7 +25,6 @@ import { isFeatureFlagEnabled, isServerless } from 'config';
 import { AlertCircle, Code, Link as LinkIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useGetMCPCodeSnippetQuery, useGetMCPServerQuery } from 'react-query/api/remote-mcp';
-import { useParams } from 'react-router-dom';
 
 import GoLogo from '../../../../assets/go.svg';
 import JavaLogo from '../../../../assets/java.svg';
@@ -47,7 +50,7 @@ const getLanguageIcon = (language: string) => {
 };
 
 export const RemoteMCPConnectionTab = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = routeApi.useParams();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
 
   const [selectedLanguage, setSelectedLanguage] = useState<string>('python');

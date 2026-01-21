@@ -41,7 +41,7 @@ permissions:
 jobs:
   validate:
     if: github.event_name == 'push' || github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v5
       - name: Buf – lint, format & breaking
@@ -61,7 +61,7 @@ jobs:
       github.event_name == 'push' &&
       github.repository == 'redpanda-data/console'
     needs: validate  # Only run after validation passes
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -94,7 +94,7 @@ jobs:
     if: |
       github.event_name == 'delete' &&
       github.repository == 'redpanda-data/console'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:

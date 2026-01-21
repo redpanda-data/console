@@ -11,12 +11,12 @@
 
 import { ConnectError } from '@connectrpc/connect';
 import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
+import { Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { makeObservable, observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { toast as sonnerToast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -83,6 +83,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
     if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
       return <PipelinePage />;
     }
+
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }
@@ -117,7 +118,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
         </Box>
 
         <Flex gap="4" mb="4">
-          <Link to={`/rp-connect/${pipelineId}/edit`}>
+          <Link params={{ pipelineId }} to="/rp-connect/$pipelineId/edit">
             <Button variant="solid">Edit</Button>
           </Link>
 

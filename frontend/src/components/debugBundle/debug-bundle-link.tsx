@@ -1,5 +1,5 @@
 import { timestampDate } from '@bufbuild/protobuf/wkt';
-import { Box, Flex, IconButton, Link, Text, Tooltip } from '@redpanda-data/ui';
+import { Box, Flex, IconButton, Text, Tooltip } from '@redpanda-data/ui';
 import { TrashIcon } from 'components/icons';
 
 import { config } from '../../config';
@@ -34,7 +34,8 @@ const DebugBundleLink = ({
   return (
     <Box>
       <Flex alignItems="center" gap={1}>
-        <Link
+        <button
+          className="cursor-pointer border-none bg-transparent p-0 font-medium text-primary underline underline-offset-4"
           onClick={() => {
             config.fetch(`${config.restBasePath}/debug_bundle/files/${downloadFilename}`).then(async (response) => {
               const url = window.URL.createObjectURL(await response.blob());
@@ -59,11 +60,10 @@ const DebugBundleLink = ({
               window.URL.revokeObjectURL(url);
             });
           }}
-          px={0}
-          role="button"
+          type="button"
         >
           {downloadFilename}
-        </Link>
+        </button>
         {Boolean(showDeleteButton) && (
           <Tooltip hasArrow label="Delete bundle" placement="top">
             <IconButton

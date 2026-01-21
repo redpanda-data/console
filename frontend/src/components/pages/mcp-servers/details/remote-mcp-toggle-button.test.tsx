@@ -26,8 +26,7 @@ import {
   startMCPServer,
   stopMCPServer,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp-MCPServerService_connectquery';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { fireEvent, render, screen, waitFor } from 'test-utils';
+import { fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 vi.mock('config', () => ({
   config: {
@@ -35,6 +34,18 @@ vi.mock('config', () => ({
   },
   isFeatureFlagEnabled: vi.fn(() => false),
 }));
+
+const SERVER_ID = 'server-1';
+
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+  return {
+    ...actual,
+    getRouteApi: () => ({
+      useParams: () => ({ id: SERVER_ID }),
+    }),
+  };
+});
 
 import { RemoteMCPToggleButton } from './remote-mcp-toggle-button';
 
@@ -73,14 +84,7 @@ describe('RemoteMCPToggleButton', () => {
       rpc(stopMCPServer, stopMCPServerMock);
     });
 
-    render(
-      <MemoryRouter initialEntries={[`/mcp-servers/${serverId}`]}>
-        <Routes>
-          <Route element={<RemoteMCPToggleButton />} path="/mcp-servers/:id" />
-        </Routes>
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<RemoteMCPToggleButton />, { transport });
 
     await waitFor(() => {
       expect(screen.getByTestId('stop-mcp-server-button')).toBeVisible();
@@ -141,14 +145,7 @@ describe('RemoteMCPToggleButton', () => {
       rpc(startMCPServer, startMCPServerMock);
     });
 
-    render(
-      <MemoryRouter initialEntries={[`/mcp-servers/${serverId}`]}>
-        <Routes>
-          <Route element={<RemoteMCPToggleButton />} path="/mcp-servers/:id" />
-        </Routes>
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<RemoteMCPToggleButton />, { transport });
 
     await waitFor(() => {
       expect(screen.getByTestId('start-mcp-server-button')).toBeVisible();
@@ -200,14 +197,7 @@ describe('RemoteMCPToggleButton', () => {
       rpc(getMCPServer, getMCPServerMock);
     });
 
-    render(
-      <MemoryRouter initialEntries={[`/mcp-servers/${serverId}`]}>
-        <Routes>
-          <Route element={<RemoteMCPToggleButton />} path="/mcp-servers/:id" />
-        </Routes>
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<RemoteMCPToggleButton />, { transport });
 
     await waitFor(() => {
       const stopButton = screen.getByTestId('stop-mcp-server-button');
@@ -241,14 +231,7 @@ describe('RemoteMCPToggleButton', () => {
       rpc(getMCPServer, getMCPServerMock);
     });
 
-    render(
-      <MemoryRouter initialEntries={[`/mcp-servers/${serverId}`]}>
-        <Routes>
-          <Route element={<RemoteMCPToggleButton />} path="/mcp-servers/:id" />
-        </Routes>
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<RemoteMCPToggleButton />, { transport });
 
     await waitFor(() => {
       const startButton = screen.getByTestId('start-mcp-server-button');
@@ -282,14 +265,7 @@ describe('RemoteMCPToggleButton', () => {
       rpc(getMCPServer, getMCPServerMock);
     });
 
-    render(
-      <MemoryRouter initialEntries={[`/mcp-servers/${serverId}`]}>
-        <Routes>
-          <Route element={<RemoteMCPToggleButton />} path="/mcp-servers/:id" />
-        </Routes>
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<RemoteMCPToggleButton />, { transport });
 
     await waitFor(() => {
       const startButton = screen.getByRole('button', { name: 'Start' });

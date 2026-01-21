@@ -32,6 +32,7 @@ import {
   Tooltip,
   useToast,
 } from '@redpanda-data/ui';
+import { Link } from '@tanstack/react-router';
 import { BanIcon, CheckIcon, ErrorIcon, EyeOffIcon, TrashIcon, WarningIcon } from 'components/icons';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useQueryStateWithCallback } from 'hooks/use-query-state-with-callback';
@@ -39,7 +40,6 @@ import { observable } from 'mobx';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
-import { Link } from 'react-router-dom';
 
 import { CreateTopicModalContent, type CreateTopicModalState } from './CreateTopicModal/create-topic-modal';
 import colors from '../../../colors';
@@ -247,7 +247,8 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
                 <Flex alignItems="center" gap={2} whiteSpace="break-spaces" wordBreak="break-word">
                   <Link
                     data-testid={`topic-link-${topic.topicName}`}
-                    to={`/topics/${encodeURIComponent(topic.topicName)}`}
+                    params={{ topicName: encodeURIComponent(topic.topicName) }}
+                    to="/topics/$topicName"
                   >
                     {renderName(topic)}
                   </Link>

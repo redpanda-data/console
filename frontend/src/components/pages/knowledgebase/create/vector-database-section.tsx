@@ -22,6 +22,7 @@ import {
 import { Input } from 'components/redpanda-ui/components/input';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
+import { formatSecretTemplate } from 'components/ui/secret/secret-utils';
 import { Database } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { Controller, type UseFormReturn } from 'react-hook-form';
@@ -62,7 +63,7 @@ export const VectorDatabaseSection: React.FC<VectorDatabaseSectionProps> = ({ fo
                     secretValueDescription: 'PostgreSQL connection string',
                     emptyStateDescription: 'Create a secret to securely store your PostgreSQL connection string',
                   }}
-                  onChange={field.onChange}
+                  onChange={(secretId) => field.onChange(formatSecretTemplate(secretId))}
                   placeholder="postgresql://user:password@host:port/database"
                   scopes={[Scope.MCP_SERVER, Scope.AI_AGENT, Scope.REDPANDA_CONNECT, Scope.REDPANDA_CLUSTER]}
                   value={field.value}

@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Link } from '@redpanda-data/ui';
+import { Link } from '@tanstack/react-router';
 import { observer } from 'mobx-react';
-import { Link as ReactRouterLink } from 'react-router-dom';
 
 import { api } from '../../../../../state/backend-api';
 
@@ -24,7 +23,11 @@ export const MessageSchema = observer((p: { schemaId: number }) => {
 
   const s = subjects[0];
   return (
-    <Link as={ReactRouterLink} to={`/schema-registry/subjects/${encodeURIComponent(s.subject)}?version=${s.version}`}>
+    <Link
+      params={{ subjectName: encodeURIComponent(s.subject) }}
+      search={{ version: String(s.version) }}
+      to="/schema-registry/subjects/$subjectName"
+    >
       {s.subject} (version {s.version})
     </Link>
   );

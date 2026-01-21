@@ -9,11 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
+import { getRouteApi } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/agents/$id');
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
-import { useParams } from 'react-router-dom';
 
 import { AIAgentChat } from './a2a/chat/ai-agent-chat';
 
@@ -26,7 +29,7 @@ import { AIAgentChat } from './a2a/chat/ai-agent-chat';
  * based on the agent's state and availability.
  */
 export const AIAgentInspectorTab = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = routeApi.useParams();
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
 
   const agent = aiAgentData?.aiAgent;

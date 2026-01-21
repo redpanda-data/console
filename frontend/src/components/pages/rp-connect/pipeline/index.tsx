@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card } from 'components/redpanda-ui/components/card';
@@ -18,6 +19,8 @@ import { Form } from 'components/redpanda-ui/components/form';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { Heading } from 'components/redpanda-ui/components/typography';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { useDebounce } from 'hooks/use-debounce';
@@ -44,7 +47,6 @@ import {
   useListComponentsQuery,
 } from 'react-query/api/connect';
 import { useCreatePipelineMutation, useGetPipelineQuery, useUpdatePipelineMutation } from 'react-query/api/pipeline';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   useOnboardingUserDataStore,
@@ -171,7 +173,10 @@ const PipelinePageSkeleton = memo(({ mode }: { mode: PipelineMode }) => {
 });
 
 const pipelineFormSchema = z.object({
-  name: z.string().min(1, 'Pipeline name is required').max(100, 'Pipeline name must be less than 100 characters'),
+  name: z
+    .string()
+    .min(3, 'Pipeline name must be at least 3 characters')
+    .max(100, 'Pipeline name must be less than 100 characters'),
   description: z.string().optional(),
   computeUnits: z.number().min(MIN_TASKS).int(),
 });
@@ -181,10 +186,11 @@ type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
 export default function PipelinePage() {
   const { mode, pipelineId } = usePipelineMode();
   const navigate = useNavigate();
+  const router = useRouter();
+  const search = useSearch({ strict: false }) as { serverless?: string };
 
   // Zustand store for wizard persistence (CREATE mode only)
-  const [searchParams] = useSearchParams();
-  const isServerlessMode = searchParams.get('serverless') === 'true';
+  const isServerlessMode = search.serverless === 'true';
   const hasInitializedServerless = useRef(false);
   const persistedYamlContent = useOnboardingYamlContentStore((state) => state.yamlContent);
   const setPersistedYamlContent = useOnboardingYamlContentStore((state) => state.setYamlContent);
@@ -192,6 +198,7 @@ export default function PipelinePage() {
 
   const form = useForm<PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema),
+    mode: 'onChange',
     defaultValues: {
       name: '',
       description: '',
@@ -336,11 +343,11 @@ export default function PipelinePage() {
       clearWizardStore();
     }
     if (mode === 'view') {
-      navigate('/connect-clusters');
+      navigate({ to: '/connect-clusters' });
     } else {
-      navigate(-1);
+      router.history.back();
     }
-  }, [mode, clearWizardStore, navigate]);
+  }, [mode, clearWizardStore, navigate, router]);
 
   const handleSave = useCallback(async () => {
     // Validate form
@@ -399,9 +406,9 @@ export default function PipelinePage() {
           }
           const newPipelineId = response.response?.pipeline?.id;
           if (newPipelineId) {
-            navigate(`/rp-connect/${newPipelineId}`);
+            navigate({ to: `/rp-connect/${newPipelineId}` });
           } else {
-            navigate('/connect-clusters');
+            navigate({ to: '/connect-clusters' });
           }
         },
         onError: (err) => {
@@ -445,7 +452,7 @@ export default function PipelinePage() {
           if (retUnits && currentUnits !== retUnits) {
             toast.warning(`Pipeline has been resized to use ${retUnits} compute units`);
           }
-          navigate(`/rp-connect/${pipelineId}`);
+          navigate({ to: `/rp-connect/${pipelineId}` });
         },
         onError: (err) => {
           setLintHints(extractLintHintsFromError(err));
@@ -482,7 +489,7 @@ export default function PipelinePage() {
   const content = (
     <>
       <Form {...form}>
-        <Details readonly={mode === 'view'} />
+        <Details pipeline={pipeline} readonly={mode === 'view'} />
       </Form>
 
       <YamlEditorCard
@@ -544,22 +551,30 @@ export default function PipelinePage() {
   };
 
   return (
-    <div className="grid grid-cols-[minmax(auto,_950px)_260px] gap-4">
-      <div className="flex flex-1 flex-col gap-4">
-        {mode === 'view' && pipelineId && (
-          <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />
-        )}
-        {renderContent()}
-      </div>
-      {(mode === 'create' || mode === 'edit') && (
-        <CreatePipelineSidebar
-          componentList={componentListResponse?.components}
-          editorContent={yamlContent}
-          editorInstance={editorInstance}
-          isComponentListLoading={isComponentListLoading}
-          setYamlContent={handleSetYamlContent}
-        />
+    <div>
+      {mode === 'edit' && (
+        <div className="mt-12 mb-4">
+          <Heading level={1}>Edit pipeline</Heading>
+        </div>
       )}
+      <div className={cn((mode === 'create' || mode === 'edit') && 'grid grid-cols-[minmax(auto,950px)_260px] gap-4')}>
+        <div className="flex flex-1 flex-col gap-4">
+          {mode === 'view' && pipelineId && (
+            <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />
+          )}
+
+          {renderContent()}
+        </div>
+        {(mode === 'create' || mode === 'edit') && (
+          <CreatePipelineSidebar
+            componentList={componentListResponse?.components}
+            editorContent={yamlContent}
+            editorInstance={editorInstance}
+            isComponentListLoading={isComponentListLoading}
+            setYamlContent={handleSetYamlContent}
+          />
+        )}
+      </div>
     </div>
   );
 }

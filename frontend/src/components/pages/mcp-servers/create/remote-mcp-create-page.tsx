@@ -14,8 +14,8 @@ import { create } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { Code as ConnectCode } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { useLintHints } from 'components/ui/lint-hint/use-lint-hints';
@@ -33,7 +33,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useCreateMCPServerMutation, useLintMCPConfigMutation } from 'react-query/api/remote-mcp';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   addServiceAccountTags,
@@ -351,7 +350,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
         onSuccess: (data) => {
           if (data?.mcpServer?.id) {
             toast.success('MCP server created');
-            navigate(`/mcp-servers/${data.mcpServer.id}`);
+            navigate({ to: `/mcp-servers/${data.mcpServer.id}` });
           }
         },
       }
@@ -389,82 +388,81 @@ export const RemoteMCPCreatePage: React.FC = () => {
               </Stepper.Step>
             </Stepper.Navigation>
 
-            <Form {...form}>
-              {/* METADATA STEP */}
-              {methods.current.id === 'metadata' && (
-                <Stepper.Panel>
-                  <MetadataStep
-                    appendTag={appendTag}
-                    form={form}
-                    onSubmit={onSubmit}
-                    removeTag={removeTag}
-                    tagFields={tagFields}
-                  />
-                </Stepper.Panel>
-              )}
+            {/* METADATA STEP */}
+            {methods.current.id === 'metadata' && (
+              <Stepper.Panel>
+                <MetadataStep
+                  appendTag={appendTag}
+                  form={form}
+                  onSubmit={onSubmit}
+                  removeTag={removeTag}
+                  tagFields={tagFields}
+                />
+              </Stepper.Panel>
+            )}
 
-              {/* TOOLS STEP */}
-              {methods.current.id === 'tools' && (
-                <Stepper.Panel>
-                  <ToolsStep
-                    appendTool={appendTool}
-                    detectedSecrets={detectedSecrets}
-                    existingSecrets={existingSecrets}
-                    form={form}
-                    hasSecretWarnings={hasSecretWarnings}
-                    isLintConfigPending={isLintConfigPending}
-                    lintHints={lintHints}
-                    onExpandTool={(index) => setExpandedTool({ index, isOpen: true })}
-                    onLintTool={handleLintTool}
-                    onSubmit={onSubmit}
-                    removeTool={removeTool}
-                    toolFields={toolFields}
-                  />
-                </Stepper.Panel>
-              )}
+            {/* TOOLS STEP */}
+            {methods.current.id === 'tools' && (
+              <Stepper.Panel>
+                <ToolsStep
+                  appendTool={appendTool}
+                  detectedSecrets={detectedSecrets}
+                  existingSecrets={existingSecrets}
+                  form={form}
+                  hasSecretWarnings={hasSecretWarnings}
+                  isLintConfigPending={isLintConfigPending}
+                  lintHints={lintHints}
+                  onExpandTool={(index) => setExpandedTool({ index, isOpen: true })}
+                  onLintTool={handleLintTool}
+                  onSubmit={onSubmit}
+                  removeTool={removeTool}
+                  toolFields={toolFields}
+                />
+              </Stepper.Panel>
+            )}
 
-              <Stepper.Controls className={methods.isFirst ? 'flex justify-end' : 'flex justify-between'}>
-                {!methods.isFirst && (
-                  <Button
-                    disabled={isCreateMCPServerPending || isCreateServiceAccountPending}
-                    onClick={methods.prev}
-                    variant="outline"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                )}
-                {methods.isLast ? (
-                  <Button
-                    disabled={
-                      isCreateMCPServerPending ||
-                      isCreateServiceAccountPending ||
-                      isCreateSecretPending ||
-                      hasFormErrors ||
-                      hasLintingIssues ||
-                      hasSecretWarnings
-                    }
-                    onClick={form.handleSubmit(onSubmit)}
-                  >
-                    {isCreateMCPServerPending || isCreateServiceAccountPending || isCreateSecretPending ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <Text as="span">Creating...</Text>
-                      </div>
-                    ) : (
-                      'Create MCP Server'
-                    )}
-                  </Button>
-                ) : (
-                  <Button
-                    disabled={methods.current.id === 'metadata' ? !!isMetadataInvalid : false}
-                    onClick={() => handleNext(methods.current.id === 'metadata', methods.next)}
-                  >
-                    Next
-                  </Button>
-                )}
-              </Stepper.Controls>
-            </Form>
+            <Stepper.Controls className={methods.isFirst ? 'flex justify-end' : 'flex justify-between'}>
+              {!methods.isFirst && (
+                <Button
+                  disabled={isCreateMCPServerPending || isCreateServiceAccountPending}
+                  onClick={methods.prev}
+                  variant="outline"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+              )}
+              {methods.isLast ? (
+                <Button
+                  disabled={
+                    isCreateMCPServerPending ||
+                    isCreateServiceAccountPending ||
+                    isCreateSecretPending ||
+                    hasFormErrors ||
+                    hasLintingIssues ||
+                    hasSecretWarnings
+                  }
+                  onClick={form.handleSubmit(onSubmit)}
+                >
+                  {isCreateMCPServerPending || isCreateServiceAccountPending || isCreateSecretPending ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Text as="span">Creating...</Text>
+                    </div>
+                  ) : (
+                    'Create MCP Server'
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  disabled={methods.current.id === 'metadata' ? !!isMetadataInvalid : false}
+                  onClick={() => handleNext(methods.current.id === 'metadata', methods.next)}
+                >
+                  Next
+                </Button>
+              )}
+            </Stepper.Controls>
+
             {isFeatureFlagEnabled('enableMcpServiceAccount') && (
               <ServiceAccountSelector
                 createSecret={createSecret}

@@ -1,10 +1,18 @@
+/**
+ * Copyright 2022 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
 import { observer } from 'mobx-react';
 import { Component, type ReactNode } from 'react';
-import { Route, Routes } from 'react-router-dom';
 
-import HistorySetter from './misc/history-setter';
-import LoginPage from './misc/login';
-import LoginCompletePage from './misc/login-complete';
+import { ConnectionErrorUI } from './misc/connection-error-ui';
 import { config as appConfig } from '../config';
 import { api } from '../state/backend-api';
 import { featureErrors } from '../state/supported-features';
@@ -21,14 +29,7 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
 
     return (
       <>
-        <HistorySetter />
-        <Routes>
-          {/* Login (and callbacks) */}
-          <Route element={<LoginPage />} path="/login" />
-          <Route element={<LoginCompletePage />} path="/login/callbacks/:provider" />
-          {/* Default View */}
-          <Route element={this.props.children} path="*" />
-        </Routes>
+        {this.props.children}
         <FeatureErrorCheck />
       </>
     );
@@ -61,14 +62,24 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
     if (api.userData === undefined) {
       devPrint('user is undefined (probably a fresh page load)');
 
+      // Check if there was a transient server error (5xx)
+      // Show error UI instead of loading or redirecting to prevent infinite loops
+      if (api.userDataError) {
+        devPrint(`user data error: ${api.userDataError.message}`);
+        return <ConnectionErrorUI error={api.userDataError} onRetry={() => api.refreshUserData()} />;
+      }
+
       const client = appConfig.authenticationClient;
       if (!client) {
         throw new Error('security client is not initialized');
       }
 
-      api.refreshUserData().catch(() => {
-        // Intentionally ignore errors during initial load
-      });
+      // Only fetch if not already fetching to prevent redirect loops
+      if (!api.isUserDataFetchInProgress) {
+        api.refreshUserData().catch(() => {
+          // Intentionally ignore errors during initial load
+        });
+      }
 
       return preLogin;
     }

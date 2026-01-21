@@ -806,7 +806,8 @@ type ListRolesRequest_Filter struct {
 	NamePrefix string `protobuf:"bytes,1,opt,name=name_prefix,json=namePrefix,proto3" json:"name_prefix,omitempty"`
 	// Filter results to only roles with names which contain the string.
 	NameContains string `protobuf:"bytes,2,opt,name=name_contains,json=nameContains,proto3" json:"name_contains,omitempty"`
-	// Return only roles assigned to this principal.
+	// Return only roles assigned to this principal. The principal must contain
+	// the principal type. For example: "User:jane" is a valid principal format.
 	Principal     string `protobuf:"bytes,3,opt,name=principal,proto3" json:"principal,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

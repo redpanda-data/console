@@ -10,14 +10,7 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from 'components/redpanda-ui/components/form';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import {
   Select,
@@ -33,7 +26,7 @@ import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { Trash2 } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import type { UseFormReturn } from 'react-hook-form';
+import { Controller, type UseFormReturn } from 'react-hook-form';
 
 import { applyTemplateToTool } from './form-helpers';
 import type { FormValues } from './schemas';
@@ -63,6 +56,8 @@ export const ToolCard: React.FC<ToolCardProps> = ({
 }) => {
   const selectedComponentType = form.watch(`tools.${toolIndex}.componentType`);
   const templateSelectionValue = form.watch(`tools.${toolIndex}.selectedTemplate`) || '';
+  const componentTypeError = form.formState.errors.tools?.[toolIndex]?.componentType;
+  const nameError = form.formState.errors.tools?.[toolIndex]?.name;
 
   // Sort templates: matching component type first, then by component type and name
   const templateOptions = [...templates].sort((a, b) => {
@@ -92,66 +87,62 @@ export const ToolCard: React.FC<ToolCardProps> = ({
           </div>
 
           <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
-            <FormField
-              control={form.control}
-              name={`tools.${toolIndex}.componentType` as const}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Component Type</FormLabel>
-                  <FormControl>
-                    <Select
-                      onValueChange={(v) => {
-                        const numericValue = Number(v);
-                        field.onChange(numericValue);
-                        // Always clear the selected template when component type changes
-                        form.setValue(`tools.${toolIndex}.selectedTemplate`, '', {
-                          shouldDirty: true,
-                          shouldValidate: false,
-                        });
-                      }}
-                      value={String(field.value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select component type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.values(MCPServer_Tool_ComponentType)
-                          .filter(
-                            (type): type is MCPServer_Tool_ComponentType =>
-                              typeof type === 'number' && type !== MCPServer_Tool_ComponentType.UNSPECIFIED
-                          )
-                          .map((componentType) => (
-                            <SelectItem key={componentType} value={String(componentType)}>
-                              <RedpandaConnectComponentTypeBadge componentType={componentType} />
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormDescription>
-                    <RemoteMCPComponentTypeDescription componentType={selectedComponentType} />
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <Field data-invalid={!!componentTypeError}>
+              <FieldLabel htmlFor={`tool-${toolIndex}-componentType`}>Component Type</FieldLabel>
+              <Controller
+                control={form.control}
+                name={`tools.${toolIndex}.componentType` as const}
+                render={({ field }) => (
+                  <Select
+                    onValueChange={(v) => {
+                      const numericValue = Number(v);
+                      field.onChange(numericValue);
+                      // Always clear the selected template when component type changes
+                      form.setValue(`tools.${toolIndex}.selectedTemplate`, '', {
+                        shouldDirty: true,
+                        shouldValidate: false,
+                      });
+                    }}
+                    value={String(field.value)}
+                  >
+                    <SelectTrigger id={`tool-${toolIndex}-componentType`}>
+                      <SelectValue placeholder="Select component type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(MCPServer_Tool_ComponentType)
+                        .filter(
+                          (type): type is MCPServer_Tool_ComponentType =>
+                            typeof type === 'number' && type !== MCPServer_Tool_ComponentType.UNSPECIFIED
+                        )
+                        .map((componentType) => (
+                          <SelectItem key={componentType} value={String(componentType)}>
+                            <RedpandaConnectComponentTypeBadge componentType={componentType} />
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <FieldDescription>
+                <RemoteMCPComponentTypeDescription componentType={selectedComponentType} />
+              </FieldDescription>
+              {!!componentTypeError && <FieldError>{componentTypeError.message}</FieldError>}
+            </Field>
 
-            <FormField
-              control={form.control}
-              name={`tools.${toolIndex}.name` as const}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tool Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="my_tool" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <Field data-invalid={!!nameError}>
+              <FieldLabel htmlFor={`tool-${toolIndex}-name`}>Tool Name</FieldLabel>
+              <Input
+                id={`tool-${toolIndex}-name`}
+                placeholder="my_tool"
+                {...form.register(`tools.${toolIndex}.name` as const)}
+                aria-describedby={nameError ? `tool-${toolIndex}-name-error` : undefined}
+                aria-invalid={!!nameError}
+              />
+              {!!nameError && <FieldError id={`tool-${toolIndex}-name-error`}>{nameError.message}</FieldError>}
+            </Field>
 
-            <FormItem>
-              <FormLabel>Template (Optional)</FormLabel>
+            <Field>
+              <FieldLabel htmlFor={`tool-${toolIndex}-template`}>Template (Optional)</FieldLabel>
               <Select
                 onValueChange={(value) => {
                   const tpl = templates.find((x) => x.name === value);
@@ -166,7 +157,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                 }}
                 value={templateSelectionValue}
               >
-                <SelectTrigger>
+                <SelectTrigger id={`tool-${toolIndex}-template`}>
                   <SelectValue placeholder="Choose template (optional)">
                     {templateSelectionValue &&
                       templateSelectionValue.length > 0 &&
@@ -200,7 +191,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-              <Text variant="muted">
+              <FieldDescription>
                 {(() => {
                   if (!templateSelectionValue || templateSelectionValue.length === 0) {
                     return 'Select a template to prefill configuration';
@@ -211,8 +202,8 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                   }
                   return selectedTemplate.description;
                 })()}
-              </Text>
-            </FormItem>
+              </FieldDescription>
+            </Field>
           </div>
 
           <div className="space-y-2">
@@ -226,7 +217,6 @@ export const ToolCard: React.FC<ToolCardProps> = ({
               showLint
               value={form.watch(`tools.${toolIndex}.config`)}
             />
-            <FormMessage />
             <LintHintList lintHints={lintHints} />
           </div>
         </div>

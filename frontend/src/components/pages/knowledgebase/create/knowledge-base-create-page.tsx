@@ -14,8 +14,8 @@
 import { create } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Form, FormContainer } from 'components/redpanda-ui/components/form';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Loader2 } from 'lucide-react';
 import { runInAction } from 'mobx';
@@ -41,7 +41,6 @@ import { useEffect, useMemo } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useCreateKnowledgeBaseMutation } from 'react-query/api/knowledge-base';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -286,10 +285,16 @@ export const KnowledgeBaseCreatePage = () => {
       await createKnowledgeBase(create(CreateKnowledgeBaseRequestSchema, { knowledgeBase }));
 
       toast.success('Knowledge base created successfully');
-      navigate('/knowledgebases');
+      navigate({ to: '/knowledgebases' });
     } catch (err) {
       const connectError = err as ConnectError;
-      toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'create', entity: 'knowledge base' }));
+      toast.error(
+        formatToastErrorMessageGRPC({
+          error: connectError,
+          action: 'create',
+          entity: 'knowledge base',
+        })
+      );
     }
   };
 
@@ -301,44 +306,42 @@ export const KnowledgeBaseCreatePage = () => {
         <Text variant="muted">Set up a new knowledge base from scratch</Text>
       </header>
 
-      <Form {...form}>
-        <FormContainer className="w-full" layout="default" onSubmit={form.handleSubmit(onSubmit)} width="full">
-          <div className="space-y-4">
-            <BasicInformationSection appendTag={appendTag} form={form} removeTag={removeTag} tagFields={tagFields} />
+      <form className="w-full space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="space-y-4">
+          <BasicInformationSection appendTag={appendTag} form={form} removeTag={removeTag} tagFields={tagFields} />
 
-            <VectorDatabaseSection availableSecrets={availableSecrets} form={form} />
+          <VectorDatabaseSection availableSecrets={availableSecrets} form={form} />
 
-            <EmbeddingGeneratorSection
-              availableSecrets={availableSecrets}
-              embeddingProvider={embeddingProvider}
-              form={form}
-            />
+          <EmbeddingGeneratorSection
+            availableSecrets={availableSecrets}
+            embeddingProvider={embeddingProvider}
+            form={form}
+          />
 
-            <IndexerSection availableSecrets={availableSecrets} form={form} />
+          <IndexerSection availableSecrets={availableSecrets} form={form} />
 
-            <RetrievalSection availableSecrets={availableSecrets} form={form} rerankerEnabled={rerankerEnabled} />
+          <RetrievalSection availableSecrets={availableSecrets} form={form} rerankerEnabled={rerankerEnabled} />
 
-            {/* Generation Section hidden - deprecated, defaults to gpt-5 with OpenAI */}
+          {/* Generation Section hidden - deprecated, defaults to gpt-5 with OpenAI */}
 
-            {/* Actions */}
-            <div className="flex justify-end gap-2">
-              <Button onClick={() => navigate('/knowledgebases')} type="button" variant="outline">
-                Cancel
-              </Button>
-              <Button disabled={!form.formState.isValid || isCreating} type="submit">
-                {isCreating ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <Text as="span">Creating...</Text>
-                  </div>
-                ) : (
-                  'Create'
-                )}
-              </Button>
-            </div>
+          {/* Actions */}
+          <div className="flex justify-end gap-2">
+            <Button onClick={() => navigate({ to: '/knowledgebases' })} type="button" variant="outline">
+              Cancel
+            </Button>
+            <Button disabled={!form.formState.isValid || isCreating} type="submit">
+              {isCreating ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Text as="span">Creating...</Text>
+                </div>
+              ) : (
+                'Create'
+              )}
+            </Button>
           </div>
-        </FormContainer>
-      </Form>
+        </div>
+      </form>
     </div>
   );
 };

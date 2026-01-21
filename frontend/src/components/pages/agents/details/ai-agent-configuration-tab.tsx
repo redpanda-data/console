@@ -11,6 +11,10 @@
 
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
+import { getRouteApi } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/agents/$id');
+
 import { CLOUD_MANAGED_TAG_KEYS, isCloudManagedTagKey } from 'components/constants';
 import {
   Accordion,
@@ -44,6 +48,7 @@ import { ServiceAccountSection } from 'components/ui/service-account/service-acc
 import { Edit, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
+  AIAgent_GatewayConfigSchema,
   AIAgent_MCPServerSchema,
   type AIAgent_Provider,
   AIAgent_Provider_AnthropicSchema,
@@ -55,11 +60,12 @@ import {
   AIAgentUpdateSchema,
   UpdateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
+import { type AIGateway, AIGateway_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_gateway_pb';
 import { useCallback, useMemo, useState } from 'react';
 import { useGetAIAgentQuery, useUpdateAIAgentMutation } from 'react-query/api/ai-agent';
+import { useListAIGatewaysQuery } from 'react-query/api/ai-gateway';
 import { type MCPServer, useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -85,6 +91,7 @@ type LocalAIAgent = {
     systemPrompt: string;
     selectedMcpServers: string[];
   }>;
+  gatewayId?: string;
 };
 
 /**
@@ -263,11 +270,37 @@ const MCPServersSection = ({
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Large configuration form with many conditionals - already refactored with helper functions
 export const AIAgentConfigurationTab = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = routeApi.useParams();
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
   const { mutateAsync: updateAIAgent, isPending: isUpdateAIAgentPending } = useUpdateAIAgentMutation();
   const { data: mcpServersData } = useListMCPServersQuery();
   const { data: secretsData } = useListSecretsQuery();
+
+  // Gateway detection
+  const { data: gatewaysData, isLoading: isLoadingGateways } = useListAIGatewaysQuery(
+    { pageSize: -1 },
+    { enabled: true }
+  );
+
+  const hasGatewayDeployed = useMemo(() => {
+    if (isLoadingGateways) {
+      return false;
+    }
+    return Boolean(gatewaysData?.aiGateways && gatewaysData.aiGateways.length > 0);
+  }, [gatewaysData, isLoadingGateways]);
+
+  const availableGateways = useMemo(() => {
+    if (!gatewaysData?.aiGateways) {
+      return [];
+    }
+    return gatewaysData.aiGateways
+      .filter((gw: AIGateway) => gw.state === AIGateway_State.RUNNING)
+      .map((gw: AIGateway) => ({
+        id: gw.id,
+        displayName: gw.displayName,
+        description: gw.description,
+      }));
+  }, [gatewaysData]);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedAgentData, setEditedAgentData] = useState<LocalAIAgent | null>(null);
@@ -338,6 +371,7 @@ export const AIAgentConfigurationTab = () => {
           systemPrompt: subagent.systemPrompt,
           selectedMcpServers: Object.values(subagent.mcpServers || {}).map((server) => server.id),
         })),
+        gatewayId: aiAgentData.aiAgent.gateway?.virtualGatewayId,
       };
     }
 
@@ -598,6 +632,13 @@ export const AIAgentConfigurationTab = () => {
       const apiKeyRef = `\${secrets.${currentData.apiKeySecret}}`;
       const updatedProvider = createUpdatedProvider(currentData.provider.provider.case, apiKeyRef, currentData.baseUrl);
 
+      const gatewayConfig =
+        currentData.gatewayId && currentData.gatewayId.trim() !== ''
+          ? create(AIAgent_GatewayConfigSchema, {
+              virtualGatewayId: currentData.gatewayId,
+            })
+          : undefined;
+
       await updateAIAgent(
         create(UpdateAIAgentRequestSchema, {
           id,
@@ -616,6 +657,7 @@ export const AIAgentConfigurationTab = () => {
             mcpServers: mcpServersMap,
             subagents: subagentsMap,
             tags: tagsMap,
+            gateway: gatewayConfig,
           }),
           updateMask: create(FieldMaskSchema, {
             paths: [
@@ -627,6 +669,7 @@ export const AIAgentConfigurationTab = () => {
               'system_prompt',
               'service_account',
               'resources',
+              'gateway',
               'mcp_servers',
               'subagents',
               'tags',
@@ -1004,10 +1047,35 @@ export const AIAgentConfigurationTab = () => {
             <CardContent className="px-4 pb-4">
               {isEditing ? (
                 <div className="space-y-4">
+                  {/* Gateway Selection - only show if gateways deployed */}
+                  {hasGatewayDeployed && availableGateways.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>AI Gateway</Label>
+                      <Text className="text-muted-foreground text-xs">Route requests through an AI Gateway</Text>
+                      <Select
+                        onValueChange={(value) => updateField({ gatewayId: value || undefined })}
+                        value={displayData.gatewayId || ''}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="No gateway" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">No gateway</SelectItem>
+                          {availableGateways.map((gw: { id: string; displayName: string; description: string }) => (
+                            <SelectItem key={gw.id} value={gw.id}>
+                              {gw.displayName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   {/* Provider - now editable */}
                   <div className="space-y-2">
                     <Label htmlFor="provider">Provider</Label>
                     <Select
+                      disabled={!!displayData.gatewayId}
                       onValueChange={(value: 'openai' | 'anthropic' | 'google' | 'openaiCompatible') => {
                         const newProviderData = MODEL_OPTIONS_BY_PROVIDER[value];
                         const firstModel =
@@ -1068,12 +1136,17 @@ export const AIAgentConfigurationTab = () => {
                     <Label htmlFor="model">Model</Label>
                     {displayData.provider?.provider.case === 'openaiCompatible' ? (
                       <Input
+                        disabled={!!displayData.gatewayId}
                         onChange={(e) => updateField({ model: e.target.value })}
                         placeholder="Enter model name (e.g., llama-3.1-70b)"
                         value={displayData.model}
                       />
                     ) : (
-                      <Select onValueChange={(value) => updateField({ model: value })} value={displayData.model}>
+                      <Select
+                        disabled={!!displayData.gatewayId}
+                        onValueChange={(value) => updateField({ model: value })}
+                        value={displayData.model}
+                      >
                         <SelectTrigger>
                           <SelectValue>
                             {Boolean(displayData.model) && detectProvider(displayData.model) ? (
@@ -1134,23 +1207,25 @@ export const AIAgentConfigurationTab = () => {
                     )}
                   </div>
 
-                  {/* API Token */}
-                  <div className="space-y-2">
-                    <Label htmlFor="apiKeySecret">API Token</Label>
-                    <div className="[&>div]:flex-col [&>div]:items-stretch [&>div]:gap-2">
-                      <SecretSelector
-                        availableSecrets={availableSecrets}
-                        customText={AI_AGENT_SECRET_TEXT}
-                        onChange={(value) => updateField({ apiKeySecret: value })}
-                        placeholder="Select from secrets store or create new"
-                        scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
-                        value={displayData.apiKeySecret}
-                      />
+                  {/* API Token - HIDE if using gateway */}
+                  {!displayData.gatewayId && (
+                    <div className="space-y-2">
+                      <Label htmlFor="apiKeySecret">API Token</Label>
+                      <div className="[&>div]:flex-col [&>div]:items-stretch [&>div]:gap-2">
+                        <SecretSelector
+                          availableSecrets={availableSecrets}
+                          customText={AI_AGENT_SECRET_TEXT}
+                          onChange={(value) => updateField({ apiKeySecret: value })}
+                          placeholder="Select from secrets store or create new"
+                          scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
+                          value={displayData.apiKeySecret}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Base URL - only show for openaiCompatible */}
-                  {displayData.provider?.provider.case === 'openaiCompatible' && (
+                  {/* Base URL - only show for openaiCompatible and when not using gateway */}
+                  {!displayData.gatewayId && displayData.provider?.provider.case === 'openaiCompatible' && (
                     <div className="space-y-2">
                       <Label htmlFor="baseUrl">Base URL (required)</Label>
                       <Input
@@ -1178,6 +1253,23 @@ export const AIAgentConfigurationTab = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {/* Gateway - only show if gateways deployed */}
+                  {hasGatewayDeployed && availableGateways.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>AI Gateway</Label>
+                      <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                        <Text variant="default">
+                          {displayData.gatewayId
+                            ? availableGateways.find(
+                                (gw: { id: string; displayName: string; description: string }) =>
+                                  gw.id === displayData.gatewayId
+                              )?.displayName || displayData.gatewayId
+                            : 'None'}
+                        </Text>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label>Provider</Label>
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
@@ -1195,20 +1287,25 @@ export const AIAgentConfigurationTab = () => {
                       <AIAgentModel model={displayData.model} />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>API Token</Label>
-                    <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text variant="default">{displayData.apiKeySecret || 'No secret configured'}</Text>
-                    </div>
-                  </div>
-                  {agent.provider?.provider.case === 'openaiCompatible' && displayData.baseUrl && (
+                  {/* API Token - HIDE if using gateway */}
+                  {!displayData.gatewayId && (
                     <div className="space-y-2">
-                      <Label>Base URL</Label>
+                      <Label>API Token</Label>
                       <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <Text variant="default">{displayData.baseUrl}</Text>
+                        <Text variant="default">{displayData.apiKeySecret || 'No secret configured'}</Text>
                       </div>
                     </div>
                   )}
+                  {!displayData.gatewayId &&
+                    agent.provider?.provider.case === 'openaiCompatible' &&
+                    displayData.baseUrl && (
+                      <div className="space-y-2">
+                        <Label>Base URL</Label>
+                        <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                          <Text variant="default">{displayData.baseUrl}</Text>
+                        </div>
+                      </div>
+                    )}
                   <div className="space-y-2">
                     <Label>Max Iterations</Label>
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">

@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React, { forwardRef } from 'react';
-import { Link as ReactRouterLink, type To } from 'react-router-dom';
+import { Link as TanstackRouterLink } from '@tanstack/react-router';
 
 import { cn } from '../lib/utils';
 
@@ -183,23 +183,22 @@ type LinkProps =
         href: string;
       })
   | (BaseLinkProps &
-      React.ComponentProps<typeof ReactRouterLink> & {
-        as: typeof ReactRouterLink;
-        to: To;
+      React.ComponentProps<typeof TanstackRouterLink> & {
+        as: typeof TanstackRouterLink;
       });
 
 export function Link({ className, children, testId, ...props }: LinkProps) {
-  if ('as' in props && props.as === ReactRouterLink) {
+  if ('as' in props && props.as === TanstackRouterLink) {
     // Render as React Router Link when explicitly specified
     const { as, ...routerProps } = props;
     return (
-      <ReactRouterLink
+      <TanstackRouterLink
         className={cn('font-medium text-primary underline underline-offset-4', className)}
         data-testid={testId}
         {...routerProps}
       >
         {children}
-      </ReactRouterLink>
+      </TanstackRouterLink>
     );
   }
   // Render as anchor tag (default)

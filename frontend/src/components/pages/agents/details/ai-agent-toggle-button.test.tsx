@@ -26,8 +26,7 @@ import {
   startAIAgent,
   stopAIAgent,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { fireEvent, render, screen, waitFor } from 'test-utils';
+import { fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 vi.mock('config', () => ({
   config: {
@@ -35,6 +34,18 @@ vi.mock('config', () => ({
   },
   isFeatureFlagEnabled: vi.fn(() => false),
 }));
+
+const AGENT_ID = 'agent-1';
+
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+  return {
+    ...actual,
+    getRouteApi: () => ({
+      useParams: () => ({ id: AGENT_ID }),
+    }),
+  };
+});
 
 import { AIAgentToggleButton } from './ai-agent-toggle-button';
 
@@ -80,14 +91,7 @@ describe('AIAgentToggleButton', () => {
       rpc(stopAIAgent, stopAIAgentMock);
     });
 
-    render(
-      <MemoryRouter initialEntries={[`/agents/${agentId}`]}>
-        <Routes>
-          <Route element={<AIAgentToggleButton />} path="/agents/:id" />
-        </Routes>
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<AIAgentToggleButton />, { transport });
 
     await waitFor(() => {
       expect(screen.getByTestId('stop-ai-agent-button')).toBeVisible();
@@ -153,14 +157,7 @@ describe('AIAgentToggleButton', () => {
       rpc(startAIAgent, startAIAgentMock);
     });
 
-    render(
-      <MemoryRouter initialEntries={[`/agents/${agentId}`]}>
-        <Routes>
-          <Route element={<AIAgentToggleButton />} path="/agents/:id" />
-        </Routes>
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<AIAgentToggleButton />, { transport });
 
     await waitFor(() => {
       expect(screen.getByTestId('start-ai-agent-button')).toBeVisible();
@@ -217,14 +214,7 @@ describe('AIAgentToggleButton', () => {
       rpc(getAIAgent, getAIAgentMock);
     });
 
-    render(
-      <MemoryRouter initialEntries={[`/agents/${agentId}`]}>
-        <Routes>
-          <Route element={<AIAgentToggleButton />} path="/agents/:id" />
-        </Routes>
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<AIAgentToggleButton />, { transport });
 
     await waitFor(() => {
       const stopButton = screen.getByTestId('stop-ai-agent-button');
@@ -263,14 +253,7 @@ describe('AIAgentToggleButton', () => {
       rpc(getAIAgent, getAIAgentMock);
     });
 
-    render(
-      <MemoryRouter initialEntries={[`/agents/${agentId}`]}>
-        <Routes>
-          <Route element={<AIAgentToggleButton />} path="/agents/:id" />
-        </Routes>
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<AIAgentToggleButton />, { transport });
 
     await waitFor(() => {
       const startButton = screen.getByRole('button', { name: START_BUTTON_REGEX });
@@ -309,14 +292,7 @@ describe('AIAgentToggleButton', () => {
       rpc(getAIAgent, getAIAgentMock);
     });
 
-    render(
-      <MemoryRouter initialEntries={[`/agents/${agentId}`]}>
-        <Routes>
-          <Route element={<AIAgentToggleButton />} path="/agents/:id" />
-        </Routes>
-      </MemoryRouter>,
-      { transport }
-    );
+    renderWithFileRoutes(<AIAgentToggleButton />, { transport });
 
     await waitFor(() => {
       const startButton = screen.getByRole('button', { name: START_BUTTON_REGEX });

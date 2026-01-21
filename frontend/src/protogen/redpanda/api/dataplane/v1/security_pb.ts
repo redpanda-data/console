@@ -94,7 +94,8 @@ export type ListRolesRequest_Filter = Message<"redpanda.api.dataplane.v1.ListRol
   nameContains: string;
 
   /**
-   * Return only roles assigned to this principal.
+   * Return only roles assigned to this principal. The principal must contain
+   * the principal type. For example: "User:jane" is a valid principal format.
    *
    * @generated from field: string principal = 3;
    */

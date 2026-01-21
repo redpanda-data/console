@@ -10,13 +10,13 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate, useParams } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { useEffect, useState } from 'react';
 import { type FieldErrors, useForm } from 'react-hook-form';
-import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
@@ -67,7 +67,7 @@ const tabDisplayNames: Record<string, string> = {
 };
 
 export const ShadowLinkEditPage = () => {
-  const { name } = useParams<{ name: string }>();
+  const { name } = useParams({ from: '/shadowlinks/$name/edit' });
   const navigate = useNavigate();
 
   if (!name) {
@@ -93,7 +93,7 @@ export const ShadowLinkEditPage = () => {
   useEffect(() => {
     if (dataplaneUpdate.isSuccess || controlplaneUpdate.isSuccess) {
       toast.success('Shadow link updated successfully');
-      navigate(`/shadowlinks/${name}`);
+      navigate({ to: `/shadowlinks/${name}` });
     }
   }, [dataplaneUpdate.isSuccess, controlplaneUpdate.isSuccess, navigate, name]);
 
@@ -164,7 +164,7 @@ export const ShadowLinkEditPage = () => {
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-8">
         <Text variant="large">Shadow link not found</Text>
-        <Button onClick={() => navigate('/shadowlinks')} variant="secondary">
+        <Button onClick={() => navigate({ to: '/shadowlinks' })} variant="secondary">
           Back to Shadow Links
         </Button>
       </div>
@@ -222,7 +222,7 @@ export const ShadowLinkEditPage = () => {
             <Button disabled={isUpdating} type="submit" variant="default">
               Save
             </Button>
-            <Button onClick={() => navigate(`/shadowlinks/${name}`)} type="button" variant="outline">
+            <Button onClick={() => navigate({ to: `/shadowlinks/${name}` })} type="button" variant="outline">
               Cancel
             </Button>
           </div>

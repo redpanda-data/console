@@ -13,6 +13,10 @@
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import { ConnectError } from '@connectrpc/connect';
+import { getRouteApi } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/mcp-servers/$id');
+
 import { CLOUD_MANAGED_TAG_KEYS, isCloudManagedTagKey } from 'components/constants';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -50,7 +54,6 @@ import {
   useUpdateMCPServerMutation,
 } from 'react-query/api/remote-mcp';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { parse, stringify } from 'yaml';
@@ -82,7 +85,7 @@ type LocalMCPServer = {
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: This component manages complex configuration UI with multiple states and conditional renders
 export const RemoteMCPConfigurationTab = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = routeApi.useParams();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
   const { mutateAsync: updateMCPServer, isPending: isUpdateMCPServerPending } = useUpdateMCPServerMutation();
   const { mutateAsync: lintConfig, isPending: isLintConfigPending } = useLintMCPConfigMutation();

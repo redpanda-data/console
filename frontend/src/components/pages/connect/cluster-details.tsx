@@ -10,9 +10,9 @@
  */
 
 import { Box, Button, DataTable, Text } from '@redpanda-data/ui';
+import { Link } from '@tanstack/react-router';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { Link } from 'react-router-dom';
 
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TaskState, TasksColumn } from './helper';
 import { isEmbedded } from '../../../config';
@@ -88,7 +88,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
           {/* Connectors List */}
           <div>
             <div style={{ display: 'flex', marginBottom: '.5em' }}>
-              <Link to={`/connect-clusters/${clusterName}/create-connector`}>
+              <Link params={{ clusterName }} to="/connect-clusters/$clusterName/create-connector">
                 <Button colorScheme="brand" variant="solid">
                   Create connector
                 </Button>
@@ -117,7 +117,11 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                   accessorKey: 'name',
                   cell: ({ row: { original } }) => (
                     <Link
-                      to={`/connect-clusters/${encodeURIComponent(clusterName)}/${encodeURIComponent(original.name)}`}
+                      params={{
+                        clusterName: encodeURIComponent(clusterName),
+                        connector: encodeURIComponent(original.name),
+                      }}
+                      to="/connect-clusters/$clusterName/$connector"
                     >
                       <Text whiteSpace="break-spaces" wordBreak="break-word">
                         {original.name}

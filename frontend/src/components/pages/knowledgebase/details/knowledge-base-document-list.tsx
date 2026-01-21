@@ -8,6 +8,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { useNavigate } from '@tanstack/react-router';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -25,7 +26,6 @@ import {
 import { config } from 'config';
 import { Loader2, X } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../../../redpanda-ui/components/button';
 import {
@@ -182,7 +182,12 @@ export const KnowledgeBaseDocumentList: React.FC<KnowledgeBaseDocumentListProps>
       return;
     }
     const result = row.original;
-    navigate(`/knowledgebases/${knowledgebaseId}/documents/${encodeURIComponent(result.document_name)}`, {
+    navigate({
+      to: '/knowledgebases/$knowledgebaseId/documents/$documentId',
+      params: {
+        knowledgebaseId,
+        documentId: encodeURIComponent(result.document_name),
+      },
       state: {
         chunkId: result.chunk_id,
         topic: result.topic,

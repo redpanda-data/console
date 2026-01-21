@@ -11,11 +11,18 @@
 
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
-import { Button } from 'components/redpanda-ui/components/button';
+import { useNavigate } from '@tanstack/react-router';
+import { Button, type ButtonProps } from 'components/redpanda-ui/components/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from 'components/redpanda-ui/components/dropdown-menu';
 import { Group } from 'components/redpanda-ui/components/group';
-import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Heading } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { Pause, Pencil, Play } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, Loader2, Pause, Pencil, Play, RotateCcw } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
   StartPipelineRequestSchema,
@@ -23,11 +30,26 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import type { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Pipeline_State as PipelineState } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import type { ReactNode } from 'react';
 import { memo, useCallback, useMemo } from 'react';
 import { useDeletePipelineMutation, useStartPipelineMutation, useStopPipelineMutation } from 'react-query/api/pipeline';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+
+type DropdownOption = {
+  label: string;
+  icon: ReactNode;
+  action: () => void;
+  variant?: 'default' | 'destructive';
+};
+
+type ButtonConfig = {
+  icon: ReactNode;
+  text: string;
+  action?: () => void;
+  dropdown?: DropdownOption[];
+  variant?: ButtonProps['variant'];
+};
 
 type ToolbarProps = {
   pipelineId: string;
@@ -35,17 +57,97 @@ type ToolbarProps = {
   pipelineState?: Pipeline_State;
 };
 
+type ButtonConfigFactoryParams = {
+  handleStart: () => void;
+  handleStop: () => void;
+  isStartPending: boolean;
+  isStopPending: boolean;
+};
+
+function createStoppedConfig({ handleStart, isStartPending }: ButtonConfigFactoryParams): ButtonConfig {
+  return {
+    icon: isStartPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />,
+    text: isStartPending ? 'Starting' : 'Start',
+    action: handleStart,
+    variant: isStartPending ? undefined : 'secondary',
+  };
+}
+
+function createRunningConfig({ handleStop, isStopPending }: ButtonConfigFactoryParams): ButtonConfig {
+  return {
+    icon: isStopPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />,
+    text: isStopPending ? 'Stopping' : 'Stop',
+    action: handleStop,
+    variant: isStopPending ? undefined : 'destructive',
+  };
+}
+
+function createStartingConfig({ handleStart, handleStop }: ButtonConfigFactoryParams): ButtonConfig {
+  return {
+    icon: <Loader2 className="h-4 w-4 animate-spin" />,
+    text: 'Starting',
+    dropdown: [
+      { label: 'Try again', icon: <RotateCcw className="h-4 w-4" />, action: handleStart },
+      { label: 'Stop', icon: <Pause className="h-4 w-4" />, action: handleStop, variant: 'destructive' },
+    ],
+  };
+}
+
+function createStoppingConfig({ handleStop, handleStart }: ButtonConfigFactoryParams): ButtonConfig {
+  return {
+    icon: <Loader2 className="h-4 w-4 animate-spin" />,
+    text: 'Stopping',
+    dropdown: [
+      { label: 'Try again', icon: <RotateCcw className="h-4 w-4" />, action: handleStop },
+      { label: 'Start', icon: <Play className="h-4 w-4" />, action: handleStart },
+    ],
+  };
+}
+
+function createErrorConfig({ handleStart }: ButtonConfigFactoryParams): ButtonConfig {
+  return {
+    icon: <AlertCircle className="h-4 w-4" />,
+    text: 'Error',
+    dropdown: [{ label: 'Start', icon: <Play className="h-4 w-4" />, action: handleStart }],
+  };
+}
+
+function createCompletedConfig({ handleStart }: ButtonConfigFactoryParams): ButtonConfig {
+  return {
+    icon: <Check className="h-4 w-4" />,
+    text: 'Restart',
+    action: handleStart,
+  };
+}
+
+function getPipelineButtonConfig(
+  pipelineState: Pipeline_State | undefined,
+  params: ButtonConfigFactoryParams
+): ButtonConfig | null {
+  switch (pipelineState) {
+    case PipelineState.STOPPED:
+      return createStoppedConfig(params);
+    case PipelineState.RUNNING:
+      return createRunningConfig(params);
+    case PipelineState.STARTING:
+      return createStartingConfig(params);
+    case PipelineState.STOPPING:
+      return createStoppingConfig(params);
+    case PipelineState.ERROR:
+      return createErrorConfig(params);
+    case PipelineState.COMPLETED:
+      return createCompletedConfig(params);
+    default:
+      return null;
+  }
+}
+
 export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: ToolbarProps) => {
   const navigate = useNavigate();
 
   const { mutate: deleteMutation, isPending: isDeletePending } = useDeletePipelineMutation();
   const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
   const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
-
-  const isRunning = pipelineState === PipelineState.RUNNING;
-  const isTransitioning = pipelineState === PipelineState.STARTING || pipelineState === PipelineState.STOPPING;
-  const isActionLoading = isStartPending || isStopPending || isDeletePending;
-  const isLoading = isActionLoading || isTransitioning;
 
   const handleDelete = useCallback(
     (id: string) => {
@@ -56,7 +158,7 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
       deleteMutation(deleteRequest, {
         onSuccess: () => {
           toast.success('Pipeline deleted');
-          navigate('/connect-clusters');
+          navigate({ to: '/connect-clusters' });
         },
         onError: (err) => {
           toast.error(
@@ -72,77 +174,111 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
     [deleteMutation, navigate]
   );
 
-  const handleStartStop = useCallback(() => {
-    if (isRunning) {
-      const stopRequest = create(StopPipelineRequestSchema, {
-        request: { id: pipelineId },
-      });
+  const handleStart = useCallback(() => {
+    const startRequest = create(StartPipelineRequestSchema, {
+      request: { id: pipelineId },
+    });
 
-      stopMutation(stopRequest, {
-        onSuccess: () => {
-          toast.success('Pipeline stopped');
-        },
-        onError: (err) => {
-          toast.error(
-            formatToastErrorMessageGRPC({
-              error: ConnectError.from(err),
-              action: 'stop',
-              entity: 'pipeline',
-            })
-          );
-        },
-      });
-    } else {
-      const startRequest = create(StartPipelineRequestSchema, {
-        request: { id: pipelineId },
-      });
+    startMutation(startRequest, {
+      onSuccess: () => {
+        toast.success('Pipeline started');
+      },
+      onError: (err) => {
+        toast.error(
+          formatToastErrorMessageGRPC({
+            error: ConnectError.from(err),
+            action: 'start',
+            entity: 'pipeline',
+          })
+        );
+      },
+    });
+  }, [pipelineId, startMutation]);
 
-      startMutation(startRequest, {
-        onSuccess: () => {
-          toast.success('Pipeline started');
-        },
-        onError: (err) => {
-          toast.error(
-            formatToastErrorMessageGRPC({
-              error: ConnectError.from(err),
-              action: 'start',
-              entity: 'pipeline',
-            })
-          );
-        },
-      });
-    }
-  }, [pipelineId, isRunning, startMutation, stopMutation]);
+  const handleStop = useCallback(() => {
+    const stopRequest = create(StopPipelineRequestSchema, {
+      request: { id: pipelineId },
+    });
+
+    stopMutation(stopRequest, {
+      onSuccess: () => {
+        toast.success('Pipeline stopped');
+      },
+      onError: (err) => {
+        toast.error(
+          formatToastErrorMessageGRPC({
+            error: ConnectError.from(err),
+            action: 'stop',
+            entity: 'pipeline',
+          })
+        );
+      },
+    });
+  }, [pipelineId, stopMutation]);
 
   const handleEdit = useCallback(() => {
-    navigate(`/rp-connect/${pipelineId}/edit`);
+    navigate({ to: `/rp-connect/${pipelineId}/edit` });
   }, [navigate, pipelineId]);
 
-  const primaryButtonProps = useMemo(() => {
-    if (isLoading) {
-      return {
-        icon: <Spinner size="sm" />,
-        children: isRunning ? 'Stopping...' : 'Starting...',
-      };
+  const buttonConfig = useMemo(
+    () =>
+      getPipelineButtonConfig(pipelineState, {
+        handleStart,
+        handleStop,
+        isStartPending,
+        isStopPending,
+      }),
+    [pipelineState, handleStart, handleStop, isStartPending, isStopPending]
+  );
+
+  const renderActionButton = useCallback(() => {
+    if (!buttonConfig) {
+      return null;
     }
-    if (isRunning) {
-      return {
-        icon: <Pause />,
-        children: 'Stop',
-      };
+
+    if (buttonConfig.dropdown) {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="min-w-[110px]" variant={buttonConfig.variant ?? 'outline'}>
+              {buttonConfig.icon}
+              {buttonConfig.text}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {buttonConfig.dropdown.map((option) => (
+              <DropdownMenuItem key={option.label} onClick={option.action} variant={option.variant}>
+                {option.icon}
+                {option.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
     }
-    return {
-      icon: <Play />,
-      children: 'Start',
-    };
-  }, [isRunning, isLoading]);
+
+    return (
+      <Button
+        disabled={isStartPending || isStopPending}
+        icon={buttonConfig.icon}
+        onClick={buttonConfig.action}
+        variant={buttonConfig.variant ?? 'outline'}
+      >
+        {buttonConfig.text}
+      </Button>
+    );
+  }, [buttonConfig, isStartPending, isStopPending]);
 
   return (
-    <div className="flex items-center justify-between">
-      <Button disabled={isLoading} onClick={handleStartStop} variant="secondary" {...primaryButtonProps} />
+    <div className="mt-5 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <Heading level={1}>{pipelineName ?? pipelineId}</Heading>
+      </div>
 
       <div>
-        <Group>
+        <Group className="items-center">
+          {renderActionButton()}
           <Button icon={<Pencil />} onClick={handleEdit} variant="outline">
             Edit
           </Button>

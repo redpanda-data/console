@@ -1,5 +1,5 @@
-import { Button, Link } from '@redpanda-data/ui';
-import { Link as ReactRouterLink } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
+import { Button } from 'components/redpanda-ui/components/button';
 import { prettyMilliseconds } from 'utils/utils';
 
 import {
@@ -390,20 +390,18 @@ export const SERVERLESS_LINK = 'https://www.redpanda.com/product/serverless';
 
 export const UploadLicenseButton = () =>
   api.isAdminApiConfigured ? (
-    <Button as={ReactRouterLink} size="sm" to="/upload-license" variant="outline">
+    <Button as={Link} size="sm" to="/upload-license" variant="outline">
       Upload license
     </Button>
   ) : null;
 
 export const UpgradeButton = () => (
   <Button
-    as={Link}
+    as="a"
+    className="no-underline"
     href={getEnterpriseCTALink('upgrade')}
     rel="noopener noreferrer"
     size="sm"
-    style={{
-      textDecoration: 'none',
-    }}
     target="_blank"
     variant="outline"
   >
@@ -418,7 +416,7 @@ export const RegisterButton = ({ onRegisterModalOpen }: { onRegisterModalOpen: (
     </Button>
   ) : (
     <Button
-      as={Link}
+      as="a"
       href={getEnterpriseCTALink('tryEnterprise')}
       rel="noopener noreferrer"
       size="sm"

@@ -9,50 +9,93 @@
  * by the Apache License, Version 2.0
  */
 
-import type { Location, NavigateFunction } from 'react-router-dom';
+import type { ParsedLocation, Router } from '@tanstack/react-router';
 
 import { api } from './backend-api';
 import { uiState } from './ui-state';
 
+type NavigateFn = (to: string, options?: { replace?: boolean }) => void;
+
+// Regex for normalizing paths by removing trailing slashes
+const TRAILING_SLASH_REGEX = /\/+$/;
+
 class AppGlobal {
-  private _navigate = null as unknown as NavigateFunction;
-  private _location = null as unknown as Location;
+  private _navigate: NavigateFn | null = null;
+  private _location: ParsedLocation | null = null;
+  // biome-ignore lint/suspicious/noExplicitAny: Router type is complex and varies based on route tree
+  private _router: Router<any, any, any> | null = null;
+
+  /**
+   * Normalizes a path by removing trailing slashes for consistent comparison.
+   * This prevents duplicate navigations when paths differ only by trailing slash.
+   */
+  private normalizePath(path: string | undefined): string {
+    if (!path) {
+      return '/';
+    }
+    return path.replace(TRAILING_SLASH_REGEX, '') || '/';
+  }
 
   historyPush(path: string) {
+    // Skip navigation if already at this path to prevent navigation loops
+    // This is critical for embedded mode where shell and console routers can conflict
+    if (this.normalizePath(this._location?.pathname) === this.normalizePath(path)) {
+      return;
+    }
     uiState.pathName = path;
     api.errors = [];
-    return this._navigate(path);
+    this._navigate?.(path);
   }
+
   historyReplace(path: string) {
+    // Skip navigation if already at this path to prevent navigation loops
+    if (this.normalizePath(this._location?.pathname) === this.normalizePath(path)) {
+      return;
+    }
     uiState.pathName = path;
     api.errors = [];
-    return this._navigate(path, { replace: true });
+    this._navigate?.(path, { replace: true });
   }
+
   historyLocation() {
     return this._location;
   }
 
-  set navigate(n: NavigateFunction) {
-    if (this._navigate === n || !n) {
+  setNavigate(fn: NavigateFn) {
+    if (this._navigate === fn || !fn) {
       return;
     }
-
-    this._navigate = n;
+    this._navigate = fn;
   }
 
-  get location(): Location {
+  // biome-ignore lint/suspicious/noExplicitAny: Router type is complex and varies based on route tree
+  setRouter(router: Router<any, any, any>) {
+    if (this._router === router || !router) {
+      return;
+    }
+    this._router = router;
+  }
+
+  setLocation(location: ParsedLocation) {
+    if (this._location === location || !location) {
+      return;
+    }
+    this._location = location;
+  }
+
+  get location(): ParsedLocation {
     if (!this._location) {
-      throw new Error('Location is not initialized. Make sure HistorySetter is mounted.');
+      throw new Error('Location is not initialized. Make sure RouterSync is mounted.');
     }
     return this._location;
   }
 
-  set location(l: Location) {
-    if (this._location === l || !l) {
-      return;
+  // biome-ignore lint/suspicious/noExplicitAny: Router type is complex and varies based on route tree
+  get router(): Router<any, any, any> {
+    if (!this._router) {
+      throw new Error('Router is not initialized. Make sure RouterSync is mounted.');
     }
-
-    this._location = l;
+    return this._router;
   }
 
   onRefresh: () => void = () => {

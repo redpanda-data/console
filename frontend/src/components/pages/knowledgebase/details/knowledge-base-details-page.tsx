@@ -13,6 +13,10 @@
 
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
+import { getRouteApi } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/knowledgebases/$knowledgebaseId/');
+
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
@@ -50,7 +54,6 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { useLegacyConsumerGroupDetailsQuery } from 'react-query/api/consumer-group';
 import { useGetKnowledgeBaseQuery, useUpdateKnowledgeBaseMutation } from 'react-query/api/knowledge-base';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
@@ -212,7 +215,7 @@ function initializeFormData(kb: KnowledgeBase): KnowledgeBaseUpdateForm {
 }
 
 export const KnowledgeBaseDetailsPage = () => {
-  const { knowledgebaseId } = useParams<{ knowledgebaseId: string }>();
+  const { knowledgebaseId } = routeApi.useParams();
 
   // Local state
   const [isEditMode, setIsEditMode] = useState(false);
