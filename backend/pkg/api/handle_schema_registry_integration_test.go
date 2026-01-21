@@ -340,7 +340,7 @@ enum MyEnumA {
 
 func (s *APIIntegrationTestSuite) TestSchemaMetadata() {
 	t := s.T()
-	t.Skip() //todo remove skip once redpanda v26.1 is GA
+	t.Skip() // todo remove skip once redpanda v26.1 is GA
 	require := require.New(t)
 	assert := assert.New(t)
 

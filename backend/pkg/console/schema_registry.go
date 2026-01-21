@@ -188,11 +188,11 @@ func mapSubjectSchema(in sr.SubjectSchema, isSoftDeleted bool) SchemaRegistryVer
 	}
 
 	var metadata *SchemaMetadata
-	if in.Schema.SchemaMetadata != nil {
+	if in.SchemaMetadata != nil {
 		metadata = &SchemaMetadata{
-			Tags:       in.Schema.SchemaMetadata.Tags,
-			Properties: in.Schema.SchemaMetadata.Properties,
-			Sensitive:  in.Schema.SchemaMetadata.Sensitive,
+			Tags:       in.SchemaMetadata.Tags,
+			Properties: in.SchemaMetadata.Properties,
+			Sensitive:  in.SchemaMetadata.Sensitive,
 		}
 	}
 
@@ -406,13 +406,13 @@ func (s *Service) getSubjectCompatibilityLevel(ctx context.Context, srClient *rp
 
 // SchemaRegistryVersionedSchema describes a retrieved schema.
 type SchemaRegistryVersionedSchema struct {
-	ID            int              `json:"id"`
-	Version       int              `json:"version"`
-	IsSoftDeleted bool             `json:"isSoftDeleted"`
-	Type          sr.SchemaType    `json:"type"`
-	Schema        string           `json:"schema"`
-	References    []Reference      `json:"references"`
-	Metadata      *SchemaMetadata  `json:"metadata,omitempty"`
+	ID            int             `json:"id"`
+	Version       int             `json:"version"`
+	IsSoftDeleted bool            `json:"isSoftDeleted"`
+	Type          sr.SchemaType   `json:"type"`
+	Schema        string          `json:"schema"`
+	References    []Reference     `json:"references"`
+	Metadata      *SchemaMetadata `json:"metadata,omitempty"`
 }
 
 // Reference describes a reference to a different schema stored in the schema registry.
