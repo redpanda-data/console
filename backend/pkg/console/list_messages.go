@@ -206,8 +206,8 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	if err != nil {
 		return fmt.Errorf("failed to get end offsets: %w", err)
 	}
-	if startOffsets.Error() != nil {
-		return fmt.Errorf("failed to get start offsets: %w", startOffsets.Error())
+	if endOffsets.Error() != nil {
+		return fmt.Errorf("failed to get end offsets: %w", endOffsets.Error())
 	}
 
 	// Get partition consume request by calculating start and end offsets for each partition
@@ -255,7 +255,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 // be returned if it fails to request the partition offsets for the given timestamp.
 // makes it harder to understand how the consume request is calculated in total though.
 //
-//nolint:cyclop,gocognit // This is indeed a complex function. Breaking this into multiple smaller functions possibly
+//nolint:cyclop,gocognit,gocyclo // This is indeed a complex function. Breaking this into multiple smaller functions possibly
 func (s *Service) calculateConsumeRequests(
 	ctx context.Context,
 	cl *kgo.Client,
@@ -284,13 +284,46 @@ func (s *Service) calculateConsumeRequests(
 	// Init result map
 	notInitialized := int64(-100)
 	for _, partitionID := range partitionIDs {
-		startOffset, exists := startOffsets.Lookup(listReq.TopicName, partitionID)
-		if !exists {
-			return nil, fmt.Errorf("could not find partition end offset for topic %q and partition %d", listReq.TopicName, partitionID)
+		startOffset, startExists := startOffsets.Lookup(listReq.TopicName, partitionID)
+		endOffset, endExists := endOffsets.Lookup(listReq.TopicName, partitionID)
+
+		// Check if partition offsets are missing from the response (exists=false means the
+		// partition is not in the map, possibly due to ACL restrictions on internal topics)
+		if !startExists {
+			s.logger.WarnContext(ctx,
+				"skipping partition: start offset not in response",
+				slog.String("topic", listReq.TopicName),
+				slog.Int("partition", int(partitionID)),
+			)
+			continue
 		}
-		endOffset, exists := endOffsets.Lookup(listReq.TopicName, partitionID)
-		if !exists {
-			return nil, fmt.Errorf("could not find partition end offset for topic %q and partition %d", listReq.TopicName, partitionID)
+		if !endExists {
+			s.logger.WarnContext(ctx,
+				"skipping partition: end offset not in response",
+				slog.String("topic", listReq.TopicName),
+				slog.Int("partition", int(partitionID)),
+			)
+			continue
+		}
+
+		// Check for errors on the partition offsets that are in the response
+		if startOffset.Err != nil {
+			s.logger.WarnContext(ctx,
+				"skipping partition: failed to get start offset",
+				slog.String("topic", listReq.TopicName),
+				slog.Int("partition", int(partitionID)),
+				slog.Any("error", startOffset.Err),
+			)
+			continue
+		}
+		if endOffset.Err != nil {
+			s.logger.WarnContext(ctx,
+				"skipping partition: failed to get end offset",
+				slog.String("topic", listReq.TopicName),
+				slog.Int("partition", int(partitionID)),
+				slog.Any("error", endOffset.Err),
+			)
+			continue
 		}
 
 		p := PartitionConsumeRequest{
@@ -356,6 +389,11 @@ func (s *Service) calculateConsumeRequests(
 		}
 
 		requests[startOffset.Partition] = &p
+	}
+
+	// Validate that at least one partition was successfully processed
+	if len(requests) == 0 {
+		return nil, fmt.Errorf("no partitions available for consumption: all partitions failed offset retrieval. Check topic availability and permissions for %q", listReq.TopicName)
 	}
 
 	if !predictableResults {
