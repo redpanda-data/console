@@ -24,8 +24,8 @@ import {
   DialogTrigger,
 } from 'components/redpanda-ui/components/dialog';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { config } from 'config';
 import { JSONView } from 'components/ui/json/json-view';
+import { config } from 'config';
 import { FileJson, Loader2 } from 'lucide-react';
 import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { useState } from 'react';
@@ -45,6 +45,12 @@ import { AIAgentChat } from './a2a/chat/ai-agent-chat';
 export const AIAgentInspectorTab = () => {
   const { id } = routeApi.useParams();
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
+
+  // Hooks must be at the top level
+  const [liveAgentCard, setLiveAgentCard] = useState<unknown>(null);
+  const [isLoadingCard, setIsLoadingCard] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
+  const [cardUrl, setCardUrl] = useState<string | null>(null);
 
   const agent = aiAgentData?.aiAgent;
   const isAgentRunning = agent?.state === AIAgent_State.RUNNING;
@@ -98,11 +104,6 @@ export const AIAgentInspectorTab = () => {
     );
   }
 
-  const [liveAgentCard, setLiveAgentCard] = useState<unknown>(null);
-  const [isLoadingCard, setIsLoadingCard] = useState(false);
-  const [cardError, setCardError] = useState<string | null>(null);
-  const [cardUrl, setCardUrl] = useState<string | null>(null);
-
   const fetchLiveAgentCard = async () => {
     setIsLoadingCard(true);
     setCardError(null);
@@ -151,28 +152,44 @@ export const AIAgentInspectorTab = () => {
               View Agent Card
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-h-[85vh] w-[70vw] max-w-[1200px] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()} size="full">
+          <DialogContent
+            className="max-h-[85vh] w-[70vw] max-w-[1200px] overflow-y-auto"
+            onOpenAutoFocus={(e) => e.preventDefault()}
+            size="full"
+          >
             <DialogHeader>
               <DialogTitle>Agent Card</DialogTitle>
-              {cardUrl && <DialogDescription className="font-mono text-xs">{cardUrl}</DialogDescription>}
+              {Boolean(cardUrl) && <DialogDescription className="font-mono text-xs">{cardUrl}</DialogDescription>}
             </DialogHeader>
             <div className="mt-2">
-              {isLoadingCard ? (
-                <div className="flex items-center justify-center p-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                  <Text className="ml-2">Fetching agent card from A2A endpoint...</Text>
-                </div>
-              ) : cardError ? (
-                <div className="rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/30">
-                  <Text className="text-red-800 dark:text-red-200">{cardError}</Text>
-                </div>
-              ) : liveAgentCard ? (
-                <JSONView data={liveAgentCard} initialExpandDepth={5} />
-              ) : (
-                <div className="flex items-center justify-center p-8">
-                  <Text className="text-muted-foreground">Click the button to load agent card</Text>
-                </div>
-              )}
+              {(() => {
+                if (isLoadingCard) {
+                  return (
+                    <div className="flex items-center justify-center p-8">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <Text className="ml-2">Fetching agent card from A2A endpoint...</Text>
+                    </div>
+                  );
+                }
+
+                if (cardError) {
+                  return (
+                    <div className="rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/30">
+                      <Text className="text-red-800 dark:text-red-200">{cardError}</Text>
+                    </div>
+                  );
+                }
+
+                if (liveAgentCard) {
+                  return <JSONView data={liveAgentCard} initialExpandDepth={5} />;
+                }
+
+                return (
+                  <div className="flex items-center justify-center p-8">
+                    <Text className="text-muted-foreground">Click the button to load agent card</Text>
+                  </div>
+                );
+              })()}
             </div>
           </DialogContent>
         </Dialog>

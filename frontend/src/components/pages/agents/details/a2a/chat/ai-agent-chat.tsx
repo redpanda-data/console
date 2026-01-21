@@ -89,31 +89,29 @@ export const AIAgentChat = ({ agent, headerActions }: AIAgentChatProps) => {
     <div className="flex h-[calc(100vh-210px)] flex-col" ref={containerRef}>
       {/* Context ID header */}
       {Boolean(contextId) && (
-        <>
-          <div className="shrink-0 border-b bg-gradient-to-r from-muted/50 to-muted/30 px-4 py-1.5">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <div className="flex h-5 w-5 items-center justify-center rounded bg-primary/10">
-                  <Fingerprint className="h-3 w-3 text-primary" />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Context ID</span>
-                  <Badge className="font-mono text-xs" variant="outline">
-                    {contextId}
-                  </Badge>
-                  <CopyButton
-                    className="h-6 w-6 min-h-6 min-w-6 shrink-0 p-0"
-                    content={contextId}
-                    size="icon"
-                    variant="ghost"
-                    whileHover={{ scale: 1 }}
-                  />
-                </div>
+        <div className="shrink-0 border-b bg-gradient-to-r from-muted/50 to-muted/30 px-4 py-1.5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-5 w-5 items-center justify-center rounded bg-primary/10">
+                <Fingerprint className="h-3 w-3 text-primary" />
               </div>
-              {headerActions}
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Context ID</span>
+                <Badge className="font-mono text-xs" variant="outline">
+                  {contextId}
+                </Badge>
+                <CopyButton
+                  className="h-6 min-h-6 w-6 min-w-6 shrink-0 p-0"
+                  content={contextId}
+                  size="icon"
+                  variant="ghost"
+                  whileHover={{ scale: 1 }}
+                />
+              </div>
             </div>
+            {headerActions}
           </div>
-        </>
+        </div>
       )}
 
       <Conversation className="min-h-0 flex-1" initial="instant" resize="instant">
