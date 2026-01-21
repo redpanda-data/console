@@ -225,9 +225,7 @@ const fetchA2ACodeSnippet = async (language?: string): Promise<string> => {
     return '';
   }
 
-  // TODO: Change back to /refs/heads/main/ after PR #16 is merged
-  // Using commit SHA from PR #16 for testing
-  const response = await fetch(`${GITHUB_CODE_SNIPPETS_API_BASE_URL}/97ee525/a2a/${language}/README.md`);
+  const response = await fetch(`${GITHUB_CODE_SNIPPETS_API_BASE_URL}/refs/heads/main/a2a/${language}/README.md`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch code snippet: ${response.status}`);
