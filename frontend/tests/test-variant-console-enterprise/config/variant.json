@@ -1,0 +1,21 @@
+{
+  "name": "console-enterprise",
+  "displayName": "Console Enterprise",
+  "isEnterprise": true,
+  "needsShadowlink": true,
+  "needsAuth": true,
+  "requiresLicense": true,
+  "ports": {
+    "backend": 3100,
+    "backendDest": 3101,
+    "redpandaKafka": 19192,
+    "redpandaSchemaRegistry": 18181,
+    "redpandaAdmin": 19744,
+    "redpandaPandaproxy": 18182,
+    "kafkaConnect": 18183,
+    "destRedpandaKafka": 19193,
+    "destRedpandaSchemaRegistry": 18191,
+    "destRedpandaAdmin": 19745,
+    "destRedpandaPandaproxy": 18192
+  }
+}

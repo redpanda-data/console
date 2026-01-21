@@ -91,6 +91,252 @@ bun run e2e-test:teardown
 - 🎯 Run only the tests you're working on
 - 🖥️ Keep services running between test runs
 
+## Test Variants
+
+This project supports multiple test variants for different configurations. Each variant has its own:
+- Configuration file (`tests/config/console.[variant].config.yaml`)
+- Test directory (`tests/console-[variant]/`)
+- Playwright config (`playwright.[variant].config.ts`)
+- Isolated port allocations (no conflicts)
+- Independent container lifecycle
+
+### Available Variants
+
+View all configured variants:
+```bash
+bun run variant:list
+```
+
+**Currently configured:**
+- **console** (OSS) - Open-source tests without enterprise features
+- **console-enterprise** (Enterprise) - Enterprise tests with authentication and shadowlink
+
+### Running Variant Tests
+
+```bash
+# Run OSS tests
+bun run e2e-test
+
+# Run Enterprise tests
+bun run e2e-test-enterprise
+
+# Run with UI mode
+bun run e2e-test:ui
+bun run e2e-test-enterprise:ui
+
+# Run using variant CLI
+bun run variant run console
+bun run variant run console-enterprise
+```
+
+### Parallel Execution
+
+Variants use isolated ports, enabling parallel execution:
+
+```bash
+# Terminal 1 - Run OSS tests
+bun run e2e-test
+
+# Terminal 2 - Run Enterprise tests simultaneously
+bun run e2e-test-enterprise
+
+# No port conflicts!
+```
+
+### Port Allocation
+
+Each variant uses a dedicated port range (offset by +100):
+
+| Variant | Backend | Kafka | Schema Registry | Admin API | Connect |
+|---------|---------|-------|-----------------|-----------|---------|
+| console | 3000 | 19092 | 18081 | 19644 | 18083 |
+| console-enterprise | 3100 | 19192 | 18181 | 19744 | 18183 |
+| console-custom1 | 3200 | 19292 | 18281 | 19844 | 18283 |
+
+**Formula:** `port = basePort + (variantIndex × 100)`
+
+This prevents conflicts and allows running up to 600+ variants simultaneously.
+
+### Creating a New Variant
+
+Step-by-step guide to create a new test variant:
+
+**1. Scaffold the variant:**
+```bash
+bun run variant:create console-qa
+```
+
+This creates:
+- `tests/console-qa/` - Test directory
+- `tests/config/console.qa.config.yaml` - Backend config (copied from OSS template)
+- `playwright.qa.config.ts` - Playwright config
+- `tests/console-qa/smoke.spec.ts` - Sample test
+
+**2. Add to variant registry:**
+
+Edit `tests/variants.config.mjs` and add your variant:
+
+```javascript
+'console-qa': {
+  name: 'console-qa',
+  displayName: 'QA',
+  configFile: 'console.qa.config.yaml',
+  testDir: 'console-qa',
+  metadata: {
+    isEnterprise: false,  // Change to true if enterprise features needed
+    needsShadowlink: false  // Change to true if shadowlink needed
+  },
+  ports: {
+    backend: 3200,
+    redpandaKafka: 19292,
+    redpandaSchemaRegistry: 18281,
+    redpandaAdmin: 19844,
+    kafkaConnect: 18283
+  }
+}
+```
+
+**3. Add package.json script:**
+
+```json
+{
+  "scripts": {
+    "e2e-test-qa": "playwright test tests/console-qa/ -c playwright.qa.config.ts"
+  }
+}
+```
+
+**4. Customize configuration:**
+
+Edit `tests/config/console.qa.config.yaml` to customize backend settings:
+- Feature flags
+- Authentication settings
+- Cluster connections
+- Service endpoints
+
+**5. Write your tests:**
+
+Add test files in `tests/console-qa/`:
+
+```typescript
+// tests/console-qa/my-feature.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('QA environment smoke test', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveTitle(/Redpanda Console/);
+});
+```
+
+**6. Run your tests:**
+
+```bash
+bun run e2e-test-qa
+```
+
+### Variant CLI Commands
+
+```bash
+# List all variants with details
+bun run variant:list
+
+# Create a new variant
+bun run variant:create console-staging
+
+# Validate configuration
+bun run variant:validate
+
+# Run variant tests
+bun run variant run console-qa
+```
+
+### Validation
+
+Validate your variant configuration:
+
+```bash
+bun run variant:validate
+```
+
+This checks for:
+- ✅ Port conflicts between variants
+- ✅ Missing test directories
+- ✅ Unconfigured test directories
+- ✅ Missing configuration files
+- ✅ Invalid variant definitions
+
+### Variant Architecture
+
+```
+tests/
+├── variants.config.mjs           # Single source of truth for all variants
+├── playwright-config-factory.mjs # Generates variant-specific configs
+├── variant-cli.mjs               # Management CLI
+├── global-setup.mjs              # Variant-aware container setup
+├── global-teardown.mjs           # Variant-aware cleanup
+├── config/
+│   ├── console.config.yaml       # OSS config
+│   ├── console.enterprise.config.yaml  # Enterprise config
+│   ├── console.qa.config.yaml    # Custom variant config
+│   └── Dockerfile.backend        # Backend container image
+├── console/                      # OSS tests
+│   ├── topics/
+│   └── connectors/
+├── console-enterprise/           # Enterprise tests
+│   ├── users.spec.ts
+│   ├── acl.spec.ts
+│   └── shadowlink/
+└── console-qa/                   # Custom variant tests
+    └── smoke.spec.ts
+```
+
+### Container State Files
+
+Each variant maintains its own container state file:
+- `.testcontainers-state-console.json`
+- `.testcontainers-state-console-enterprise.json`
+- `.testcontainers-state-console-qa.json`
+
+This allows independent lifecycle management per variant.
+
+### Troubleshooting Variants
+
+**Port Already in Use:**
+```bash
+# Check what's using a port
+lsof -i :3100
+
+# Stop all test containers
+docker ps | grep -E "redpanda|console-backend|owlshop|connect" | awk '{print $1}' | xargs docker stop
+```
+
+**Variant Not Found:**
+```bash
+# Check available variants
+bun run variant:list
+
+# Validate configuration
+bun run variant:validate
+```
+
+**Configuration Issues:**
+```bash
+# Run validation to diagnose
+bun run variant:validate
+
+# Check variant registry
+cat tests/variants.config.mjs
+```
+
+**Stale Container State:**
+```bash
+# Remove state files to force cleanup
+rm tests/.testcontainers-state-*.json
+
+# Restart Docker
+docker restart
+```
+
 ## Services
 
 The following services are automatically started:

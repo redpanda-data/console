@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { ACCESS_KEY, S3_BUCKET_NAME, SECRET_ACCESS_KEY } from './console/connectors/connector.spec';
+import { ACCESS_KEY, S3_BUCKET_NAME, SECRET_ACCESS_KEY } from '../test-variant-console/connectors/connector.spec';
 
 export const createConnector = async (
   page: Page,
