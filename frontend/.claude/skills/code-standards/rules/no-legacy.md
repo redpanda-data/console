@@ -88,6 +88,15 @@ When modifying files with legacy patterns:
 3. **Keep changes minimal** if just fixing bugs
 4. **New features** must use modern patterns
 
+### MobX → React State: Check Side-Effects
+
+When converting observables to React state, automatic behaviors must become explicit:
+- MobX observable arrays auto-update UI when mutated
+- React state requires explicit `setState()` calls
+- Clearing, resetting, or initializing state needs manual handling
+
+**Checklist**: List all observable mutations → add equivalent `setState` calls.
+
 ## Legacy Locations
 
 - MobX stores: `src/state/` (do not add new files)

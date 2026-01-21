@@ -40,6 +40,13 @@ Most issues are auto-fixed:
 bun x ultracite fix
 ```
 
+## Console Logging
+
+- **Never** use `console.log`, `console.debug`, or `console.info` in production code
+- Only use `console.error` and `console.warn` for actionable errors
+- For debug logging, wrap in `if (IsDev) { ... }`
+- Don't use `biome-ignore` to suppress console warnings - remove the logs instead
+
 ## Rules
 
 See `rules/` directory for detailed guidance.
