@@ -40,6 +40,14 @@ bun run test:coverage     # Coverage report
 
 - `.test.ts` = unit (Node.js), `.test.tsx` = integration (JSDOM)
 - Always use `test-utils/test-utils.tsx` for React component tests
+- Test that features are fully wired: UI elements must connect to actual functionality
+
+### Feature Completeness Testing
+
+When implementing interactive features (buttons, forms, etc.):
+- Verify event handlers call the correct functions with proper parameters
+- Test that AbortSignals, callbacks, and other "plumbing" are passed through
+- Don't assume UI presence means functionality works - test the connection
 
 ## When to Use This Skill
 
