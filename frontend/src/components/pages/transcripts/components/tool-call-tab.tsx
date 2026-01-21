@@ -13,7 +13,6 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { Wrench } from 'lucide-react';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo } from 'react';
@@ -131,7 +130,6 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
             TOOL
           </Text>
           <div className="flex items-center gap-2">
-            <Wrench className="h-4 w-4 text-muted-foreground" />
             <Text className="font-medium" variant="small">
               {toolData.name}
             </Text>
