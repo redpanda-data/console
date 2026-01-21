@@ -117,6 +117,27 @@ type LocalAIAgent = {
  */
 const SECRET_TEMPLATE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
 const SUBAGENT_NAME_REGEX = /^[A-Za-z0-9_-]+$/;
+
+type SkillInput = {
+  id: string;
+  name: string;
+  description: string;
+  tags: string[];
+  examples: string[];
+};
+
+/**
+ * Sanitizes a skill object by trimming all string fields and filtering empty array entries
+ */
+const sanitizeSkill = (skill: SkillInput) =>
+  create(AIAgent_AgentCard_SkillSchema, {
+    id: skill.id.trim(),
+    name: skill.name.trim(),
+    description: skill.description.trim(),
+    tags: skill.tags.map((t) => t.trim()).filter(Boolean),
+    examples: skill.examples.map((e) => e.trim()).filter(Boolean),
+  });
+
 /**
  * Extracts the secret name from the template string format: ${secrets.SECRET_NAME} -> SECRET_NAME
  */
@@ -704,15 +725,7 @@ export const AIAgentConfigurationTab = () => {
                       url: currentData.agentCard.provider.url || undefined,
                     })
                   : undefined,
-              skills: currentData.agentCard.skills.map((skill) =>
-                create(AIAgent_AgentCard_SkillSchema, {
-                  id: skill.id.trim(),
-                  name: skill.name.trim(),
-                  description: skill.description.trim(),
-                  tags: skill.tags.filter((t: string) => t.trim()),
-                  examples: skill.examples.filter((e: string) => e.trim()),
-                })
-              ),
+              skills: currentData.agentCard.skills.map(sanitizeSkill),
             })
           : undefined;
 

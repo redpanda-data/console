@@ -53,6 +53,7 @@ export {
   Eye as EyeIcon, // IoMdEye, EyeIcon (Heroicons)
   EyeOff as EyeOffIcon, // IoMdEyeOff, MdOutlineVisibilityOff, EyeOffIcon (Heroicons), EyeClosedIcon (Octicons)
   Filter as FilterIcon, // FilterIcon (Heroicons)
+  Fingerprint as FingerprintIcon, // Fingerprint icon for context IDs
   Flame as FlameIcon, // MdLocalFireDepartment
   HelpCircle as HelpIcon, // MdHelpOutline, MdOutlineQuestionMark
   Home as HomeIcon, // HomeIcon (Heroicons)

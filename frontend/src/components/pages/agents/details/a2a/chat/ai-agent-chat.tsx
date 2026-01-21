@@ -13,9 +13,9 @@
 
 import { Conversation, ConversationContent, ConversationEmptyState } from 'components/ai-elements/conversation';
 import { Loader } from 'components/ai-elements/loader';
+import { FingerprintIcon } from 'components/icons';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
-import { Fingerprint } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 
 import { ChatInput } from './components/chat-input';
@@ -93,7 +93,7 @@ export const AIAgentChat = ({ agent, headerActions }: AIAgentChatProps) => {
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <div className="flex h-5 w-5 items-center justify-center rounded bg-primary/10">
-                <Fingerprint className="h-3 w-3 text-primary" />
+                <FingerprintIcon className="h-3 w-3 text-primary" />
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Context ID</span>

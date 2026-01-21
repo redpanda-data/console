@@ -9,9 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+import { CloseIcon } from 'components/icons';
 import { Badge } from 'components/redpanda-ui/components/badge';
+import { Button } from 'components/redpanda-ui/components/button';
 import { Input } from 'components/redpanda-ui/components/input';
-import { X } from 'lucide-react';
 import { useState, type KeyboardEvent } from 'react';
 
 type StringArrayInputProps = {
@@ -43,13 +44,15 @@ export const StringArrayInput = ({ value, onChange, placeholder }: StringArrayIn
         {value.map((item, index) => (
           <Badge className="gap-1 pr-1" key={item} variant="secondary">
             {item}
-            <button
-              className="ml-1 rounded-full p-0.5 hover:bg-muted"
+            <Button
+              className="ml-1 h-4 min-h-4 w-4 min-w-4 rounded-full p-0"
               onClick={() => removeItem(index)}
+              size="icon"
               type="button"
+              variant="ghost"
             >
-              <X className="h-3 w-3" />
-            </button>
+              <CloseIcon className="h-3 w-3" />
+            </Button>
           </Badge>
         ))}
       </div>
