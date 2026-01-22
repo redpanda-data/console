@@ -10,14 +10,6 @@ on:
       - '*'
     branches:
       - '**'
-  pull_request:
-    paths:
-      - "frontend/**"
-      - "backend/**"
-      - '.github/workflows/repository-dispatch.yml'
-concurrency:
-  group: repo-dispatch-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
 permissions:
   id-token: write
   contents: read
@@ -34,7 +26,7 @@ jobs:
 
   dispatch:
     needs: [backend-verify, frontend-verify]
-    if: always() && !failure() && !cancelled() && github.event_name == 'push'
+    if: always() && !failure() && !cancelled()
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: aws-actions/configure-aws-credentials@v4

@@ -1,0 +1,21 @@
+---
+name: PR verification (forks)
+on:
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "backend/**"
+permissions:
+  contents: read
+jobs:
+  backend-verify:
+    if: github.event.pull_request.head.repo.fork == true
+    uses: ./.github/workflows/backend-lint-test.yml
+    permissions:
+      contents: read
+
+  frontend-verify:
+    if: github.event.pull_request.head.repo.fork == true
+    uses: ./.github/workflows/frontend-verify.yml
+    permissions:
+      contents: read
