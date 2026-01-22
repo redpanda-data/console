@@ -6,6 +6,8 @@ on:
       - "frontend/**"
       - "backend/**"
       - '.github/workflows/repository-dispatch.yml'
+      - '.github/workflows/backend-lint-test.yml'
+      - '.github/workflows/frontend-verify.yml'
     tags:
       - '*'
     branches:
