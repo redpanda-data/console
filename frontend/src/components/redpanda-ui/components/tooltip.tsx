@@ -81,7 +81,7 @@ function TooltipContent({
   className,
   side = 'top',
   sideOffset = 4,
-  transition = { type: 'spring', stiffness: 300, damping: 25 },
+  transition = { type: 'tween', ease: 'easeOut', duration: 0.15 },
   arrow = true,
   children,
   testId,
@@ -104,7 +104,7 @@ function TooltipContent({
               exit={{ opacity: 0, scale: 0, ...initialPosition }}
               transition={transition}
               className={cn(
-                'relative bg-primary text-primary-foreground shadow-md w-fit origin-(--radix-tooltip-content-transform-origin) rounded-md px-3 py-1.5 text-sm text-balance',
+                'relative bg-base-800 dark:bg-base-700 text-white shadow-md w-fit origin-(--radix-tooltip-content-transform-origin) rounded-md px-3 py-1.5 text-sm text-balance',
                 className,
               )}
             >
@@ -113,7 +113,7 @@ function TooltipContent({
               {arrow && (
                 <TooltipPrimitive.Arrow
                   data-slot="tooltip-content-arrow"
-                  className="bg-primary fill-primary z-50 size-2.5 translate-y-[calc(-50%-2px)] rotate-45 rounded-[2px]"
+                  className="bg-base-800 fill-base-800 dark:bg-base-700 dark:fill-base-700 z-50 size-2.5 translate-y-[calc(-50%-2px)] rotate-45 rounded-[2px]"
                 />
               )}
             </motion.div>
