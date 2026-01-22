@@ -5,20 +5,31 @@ on:
 permissions:
   contents: read
 jobs:
-  verify:
-    name: Lint & Test Backend
+  lint:
+    name: Lint Backend
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'backend/go.mod'
+          cache-dependency-path: 'backend/go.sum'
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.4
           working-directory: backend
           args: --timeout=10m --config=.golangci.yaml
+
+  test:
+    name: Test Backend
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'backend/go.mod'
+          cache-dependency-path: 'backend/go.sum'
       - name: Install Task
         uses: arduino/setup-task@v1
         with:
