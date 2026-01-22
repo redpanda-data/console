@@ -1518,12 +1518,19 @@ export type SchemaRegistryVersionedSchema = {
   type: SchemaTypeType;
   schema: string;
   references: SchemaReference[];
+  metadata?: SchemaMetadata;
 };
 
 export type SchemaReference = {
   name: string;
   subject: string;
   version: number;
+};
+
+export type SchemaMetadata = {
+  tags?: Record<string, string[]>;
+  properties?: Record<string, string>;
+  sensitive?: string[];
 };
 
 // DELETE /schema-registry/subjects/{subject}/versions/{version}
@@ -1541,6 +1548,7 @@ export type SchemaRegistryCreateSchema = {
   schema: string;
   schemaType: SchemaTypeType;
   references: SchemaReference[];
+  metadata?: SchemaMetadata;
   params?: {
     normalize?: boolean;
   };
