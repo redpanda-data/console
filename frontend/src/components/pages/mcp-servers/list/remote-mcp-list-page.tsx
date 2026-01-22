@@ -39,7 +39,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, Check, Loader2, Pause, Plus, X } from 'lucide-react';
+import { AlertCircle, Check, Loader2, Pause } from 'lucide-react';
 import { runInAction } from 'mobx';
 import React, { useCallback, useEffect } from 'react';
 import {
@@ -245,8 +245,7 @@ function MCPDataTableToolbar({ table }: { table: TanstackTable<MCPServer> }) {
         )}
         {Boolean(isFiltered) && (
           <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
-            Reset
-            <X className="ml-2 h-4 w-4" />
+            Clear
           </Button>
         )}
       </div>
@@ -380,13 +379,12 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
           <Heading level={1}>Remote MCP</Heading>
           <Text variant="muted">Manage your Model Context Protocol (MCP) servers.</Text>
         </header>
-        <MCPDataTableToolbar table={table} />
+        <div className="mb-4">
+          <Button onClick={() => navigate({ to: '/mcp-servers/create' })}>Create MCP Server</Button>
+        </div>
         <div className="flex items-center justify-between">
+          <MCPDataTableToolbar table={table} />
           <DataTableViewOptions table={table} />
-          <Button onClick={() => navigate({ to: '/mcp-servers/create' })}>
-            Create MCP Server
-            <Plus className="h-4 w-4" />
-          </Button>
         </div>
         <Table>
           <TableHeader>

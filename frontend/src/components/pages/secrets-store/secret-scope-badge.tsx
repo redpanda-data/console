@@ -33,7 +33,7 @@ const getScopeConfig = (scope: Scope): { text: string; icon?: React.ReactNode } 
   }
 };
 
-export const SecretScopeBadge = ({ scope, variant = 'secondary' }: { scope: Scope; variant?: BadgeVariant }) => {
+export const SecretScopeBadge = ({ scope, variant = 'primary-inverted' }: { scope: Scope; variant?: BadgeVariant }) => {
   const config = getScopeConfig(scope);
   return (
     <Badge icon={config.icon} variant={variant}>

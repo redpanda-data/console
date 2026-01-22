@@ -39,7 +39,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, Check, Loader2, Pause, Plus, X } from 'lucide-react';
+import { AlertCircle, Check, Loader2, Pause } from 'lucide-react';
 import { runInAction } from 'mobx';
 import type { AIAgent as APIAIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
@@ -258,8 +258,7 @@ function AIAgentDataTableToolbar({ table }: { table: TanstackTable<AIAgent> }) {
         )}
         {Boolean(isFiltered) && (
           <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
-            Reset
-            <X className="ml-2 h-4 w-4" />
+            Clear
           </Button>
         )}
       </div>
@@ -414,13 +413,12 @@ const AIAgentsListPageContent = ({
           <Heading level={1}>AI Agents</Heading>
           <Text variant="muted">Manage your AI agents with custom configurations and LLM providers.</Text>
         </header>
-        <AIAgentDataTableToolbar table={table} />
+        <div className="mb-4">
+          <Button onClick={() => navigate({ to: '/agents/create' })}>Create AI Agent</Button>
+        </div>
         <div className="flex items-center justify-between">
+          <AIAgentDataTableToolbar table={table} />
           <DataTableViewOptions table={table} />
-          <Button onClick={() => navigate({ to: '/agents/create' })}>
-            Create AI Agent
-            <Plus className="h-4 w-4" />
-          </Button>
         </div>
         <Table>
           <TableHeader>

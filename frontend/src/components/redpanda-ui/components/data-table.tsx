@@ -18,8 +18,7 @@ import {
   HelpCircle,
   MoreHorizontal,
   Settings2,
-  Timer,
-  X,
+  Timer
 } from 'lucide-react';
 import { DropdownMenu as DropdownMenuPrimitive } from 'radix-ui';
 import React from 'react';
@@ -283,24 +282,24 @@ export function DataTableFacetedFilter<TData, TValue>({
   return (
     <Popover testId={testId}>
       <PopoverTrigger asChild>
-        <Button variant="secondary-outline" size="sm">
+        <Button variant="secondary-outline" size="sm" icon={<FilterIcon />}>
           {title}
           {selectedValues?.size > 0 && (
             <>
               <Separator orientation="vertical" className="mx-2 h-4" />
-              <Badge variant="secondary" className="rounded-sm px-1 font-normal lg:hidden">
+              <Badge variant="primary-inverted" className="lg:hidden">
                 {selectedValues.size}
               </Badge>
               <div className="hidden gap-1 lg:flex">
                 {selectedValues.size > 2 ? (
-                  <Badge variant="secondary" className="rounded-sm px-1 font-normal">
+                  <Badge variant="primary-inverted">
                     {selectedValues.size} selected
                   </Badge>
                 ) : (
                   options
                     .filter((option) => selectedValues.has(option.value))
                     .map((option) => (
-                      <Badge variant="secondary" key={option.value} className="rounded-sm px-1 font-normal">
+                      <Badge variant="primary-inverted" key={option.value}>
                         {option.label}
                       </Badge>
                     ))
@@ -526,8 +525,7 @@ export function DataTableToolbar<TData>({ table, testId }: DataTableToolbarProps
         )}
         {isFiltered && (
           <Button variant="secondary-ghost" size="sm" onClick={() => table.resetColumnFilters()}>
-            Reset
-            <X />
+            Clear
           </Button>
         )}
       </div>

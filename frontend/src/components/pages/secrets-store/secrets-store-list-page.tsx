@@ -170,7 +170,7 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<SecretTa
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="cursor-help">
-                    <Badge variant="secondary">+{scopes.length - 2} more</Badge>
+                    <Badge variant="primary-inverted">+{scopes.length - 2} more</Badge>
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>

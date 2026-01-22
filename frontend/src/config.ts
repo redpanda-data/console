@@ -329,11 +329,16 @@ export function isEmbedded() {
 }
 
 /**
+ * Type for feature flag keys - use this for typing mock implementations
+ */
+export type FeatureFlagKey = keyof typeof FEATURE_FLAGS;
+
+/**
  * @description use in non-functional components if you must
  * @param featureFlag feature flag key to track
  * @returns feature flag value, false if no feature flag with that key exists, false if the feature flags are not loaded.
  */
-export function isFeatureFlagEnabled(featureFlag: keyof typeof FEATURE_FLAGS) {
+export function isFeatureFlagEnabled(featureFlag: FeatureFlagKey) {
   return config.featureFlags?.[featureFlag] ?? false;
 }
 

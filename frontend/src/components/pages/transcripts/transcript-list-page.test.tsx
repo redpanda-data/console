@@ -33,6 +33,7 @@ vi.mock('config', () => ({
   config: {
     jwt: 'test-jwt-token',
   },
+  isFeatureFlagEnabled: vi.fn(() => false),
 }));
 
 vi.mock('state/ui-state', () => ({
