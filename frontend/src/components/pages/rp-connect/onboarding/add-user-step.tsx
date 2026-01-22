@@ -558,12 +558,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                             <FormControl>
                               <Group>
                                 <Input containerClassName="max-w-[300px]" type="password" {...field} />
-                                <CopyButton
-                                  content={field.value}
-                                  disabled={isReadOnly}
-                                  size="icon-sm"
-                                  variant="outline"
-                                />
+                                <CopyButton content={field.value} disabled={isReadOnly} size="sm" variant="outline" />
                                 <Button
                                   disabled={isReadOnly}
                                   onClick={generateNewPassword}
