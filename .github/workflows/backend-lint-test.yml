@@ -1,21 +1,15 @@
 ---
 name: "Backend verify"
 on:
-  push:
-    tags:
-      - v*
-    branches:
-      - master
-    paths:
-      - 'backend/**.go'
-      - 'backend/go.mod'
-      - '.github/workflows/backend-lint-test.yml'
   pull_request:
     paths:
       - 'backend/**.go'
       - 'backend/go.mod'
       - '.github/workflows/backend-lint-test.yml'
   workflow_call:
+concurrency:
+  group: backend-verify-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

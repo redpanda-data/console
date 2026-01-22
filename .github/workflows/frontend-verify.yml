@@ -1,17 +1,14 @@
 ---
 name: "Frontend Lint & Compile check"
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - "frontend/**"
-      - ".github/workflows/frontend-verify.yml"
   pull_request:
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-verify.yml"
   workflow_call:
+concurrency:
+  group: frontend-verify-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 env:
   CI: true
 jobs:
