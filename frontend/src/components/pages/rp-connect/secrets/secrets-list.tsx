@@ -25,6 +25,7 @@ import { appGlobal } from '../../../../state/app-global';
 import { rpcnSecretManagerApi } from '../../../../state/backend-api';
 import { Features } from '../../../../state/supported-features';
 import { uiSettings } from '../../../../state/ui';
+import { getSearchRegex } from '../../../../utils/regex';
 import PageContent from '../../../misc/page-content';
 import Section from '../../../misc/section';
 import { PageComponent, type PageInitHelper } from '../../page';
@@ -86,20 +87,12 @@ class RpConnectSecretsList extends PageComponent {
   }
 
   render() {
+    const filter = uiSettings.rpcnSecretList.quickSearch;
     const filteredSecrets = (rpcnSecretManagerApi.secrets ?? []).filter((u) => {
-      const filter = uiSettings.rpcnSecretList.quickSearch;
       if (!filter) {
         return true;
       }
-      try {
-        const quickSearchRegExp = new RegExp(filter, 'i');
-        if (u.id.match(quickSearchRegExp)) {
-          return true;
-        }
-        return false;
-      } catch {
-        return false;
-      }
+      return u.id.match(getSearchRegex(filter));
     });
 
     return (

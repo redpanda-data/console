@@ -3,6 +3,7 @@
 import { X } from 'lucide-react';
 import React, { type HTMLAttributes, useContext, useEffect, useState } from 'react';
 
+import { getLocalStorageFlag, setLocalStorageFlag } from '../../../hooks/use-safe-local-storage';
 import { Button } from './button';
 import { cn } from '../lib/utils';
 
@@ -31,7 +32,7 @@ function Banner({ id, height = '3rem', ...props }: BannerProps) {
   const globalKey = id ? `redpanda-cloud-banner-${id}` : null;
 
   useEffect(() => {
-    if (globalKey) setOpen(localStorage.getItem(globalKey) !== 'true');
+    if (globalKey) setOpen(!getLocalStorageFlag(globalKey));
   }, [globalKey]);
 
   if (!open) return null;
@@ -77,7 +78,7 @@ function BannerClose({ ...props }: BannerCloseProps) {
       aria-label="Close Banner"
       onClick={() => {
         setOpen(false);
-        if (globalKey) localStorage.setItem(globalKey, 'true');
+        if (globalKey) setLocalStorageFlag(globalKey, true);
       }}
       variant="outline"
       size="icon"

@@ -20,6 +20,7 @@ import { AclPrincipalGroupPermissionsTable } from './user-details';
 import { appGlobal } from '../../../state/app-global';
 import { api, type RolePrincipal, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
+import { getSearchRegex } from '../../../utils/regex';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import { PageComponent, type PageInitHelper, type PageProps } from '../page';
@@ -85,12 +86,8 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
     );
 
     let members = rolesApi.roleMembers.get(this.roleName) ?? [];
-    try {
-      const quickSearchRegExp = new RegExp(this.principalSearch, 'i');
-      members = members.filter(({ name }) => name.match(quickSearchRegExp));
-    } catch (_e) {
-      // biome-ignore lint/suspicious/noConsole: warning for invalid user input
-      console.warn('Invalid expression');
+    if (this.principalSearch) {
+      members = members.filter(({ name }) => name.match(getSearchRegex(this.principalSearch)));
     }
 
     const numberOfPrincipals = rolesApi.roleMembers.get(this.roleName)?.length ?? 0;

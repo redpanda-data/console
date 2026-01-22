@@ -23,6 +23,7 @@ import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi } from '../../../state/backend-api';
 import { Features } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
+import { getSearchRegex } from '../../../utils/regex';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
@@ -165,25 +166,15 @@ class RpConnectPipelinesList extends PageComponent<{}> {
       return DefaultSkeleton;
     }
 
+    const filter = uiSettings.pipelinesList.quickSearch;
     const filteredPipelines = (pipelinesApi.pipelines ?? [])
       ?.filter((pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_type !== 'agent') // Ensure we do not show the agents
       .filter((u) => {
-        const filter = uiSettings.pipelinesList.quickSearch;
         if (!filter) {
           return true;
         }
-        try {
-          const quickSearchRegExp = new RegExp(filter, 'i');
-          if (u.id.match(quickSearchRegExp)) {
-            return true;
-          }
-          if (u.displayName.match(quickSearchRegExp)) {
-            return true;
-          }
-          return false;
-        } catch {
-          return false;
-        }
+        const searchRegex = getSearchRegex(filter);
+        return u.id.match(searchRegex) || u.displayName.match(searchRegex);
       });
 
     return (
