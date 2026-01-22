@@ -7,7 +7,7 @@ on:
       - ".github/workflows/frontend-verify.yml"
   workflow_call:
 concurrency:
-  group: frontend-verify-${{ github.head_ref || github.ref }}
+  group: frontend-verify-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 env:
   CI: true
