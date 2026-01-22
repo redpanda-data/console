@@ -560,7 +560,9 @@ const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREAT
         <Heading mt="8" variant="lg">
           Schema metadata
         </Heading>
-        <Text>Optional key-value properties to associate with this schema.</Text>
+        <Text>
+          Optional key-value properties to associate with this schema. Metadata will be ignored if not supported by schema registry.
+        </Text>
 
         <MetadataPropertiesEditor state={state} />
       </Flex>

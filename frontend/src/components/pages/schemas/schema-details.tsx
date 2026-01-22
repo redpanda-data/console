@@ -29,6 +29,7 @@ import {
 } from '@redpanda-data/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 
 const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
@@ -687,7 +688,12 @@ const SchemaMetadataSection = ({ schema }: { schema: SchemaRegistryVersionedSche
           </TableBody>
         </Table>
       ) : (
-        <Text color="gray.500">No properties defined.</Text>
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>No properties</EmptyTitle>
+            <EmptyDescription>No properties defined for this schema version.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       )}
     </>
   );
