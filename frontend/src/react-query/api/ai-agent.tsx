@@ -2,7 +2,7 @@ import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import type { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery as useTanstackQuery } from '@tanstack/react-query';
 import {
   AIAgent_State,
   AIAgentService,
@@ -216,3 +216,27 @@ export const useStartAIAgentMutation = () => {
       }),
   });
 };
+
+const GITHUB_CODE_SNIPPETS_API_BASE_URL =
+  'https://raw.githubusercontent.com/redpanda-data/how-to-connect-code-snippets';
+
+const fetchA2ACodeSnippet = async (language?: string): Promise<string> => {
+  if (!language) {
+    return '';
+  }
+
+  const response = await fetch(`${GITHUB_CODE_SNIPPETS_API_BASE_URL}/refs/heads/main/a2a/${language}/README.md`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch code snippet: ${response.status}`);
+  }
+
+  return response.text();
+};
+
+export const useGetA2ACodeSnippetQuery = (input: { language?: string }) =>
+  useTanstackQuery({
+    queryKey: ['a2a-code-snippet', input.language],
+    queryFn: () => fetchA2ACodeSnippet(input.language),
+    enabled: !!input.language,
+  });

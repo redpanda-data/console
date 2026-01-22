@@ -215,97 +215,6 @@ components:
             If a tag's value is empty, the server interprets that as a deletion.
           type: object
       type: object
-    AIGateway:
-      description: Defines the AI Gateway resource.
-      properties:
-        config_yaml:
-          description: YAML configuration that defines the AI gateway's behavior, routing rules, and settings.
-          type: string
-        description:
-          description: Optional AI gateway description.
-          type: string
-        display_name:
-          description: User-friendly AI gateway name.
-          type: string
-        id:
-          description: AI Gateway ID.
-          readOnly: true
-          type: string
-        resources:
-          $ref: '#/components/schemas/Resources'
-        state:
-          $ref: '#/components/schemas/AIGateway.State'
-        tags:
-          additionalProperties:
-            type: string
-          description: |-
-            Tags are key-value pairs that can be assigned to an AI gateway resource.
-            They help organize AI gateways and enable filtering when listing them.
-          type: object
-      required:
-        - display_name
-        - config_yaml
-      type: object
-    AIGateway.State:
-      description: |-
-        State of the AI gateway.
-
-         - STATE_STARTING: The AI gateway is starting.
-         - STATE_RUNNING: The AI gateway is running and ready to handle requests.
-         - STATE_STOPPING: The AI gateway is in the process of stopping.
-         - STATE_STOPPED: The AI gateway is stopped and in paused state.
-         - STATE_ERROR: The AI gateway encountered an error.
-      enum:
-        - STATE_STARTING
-        - STATE_RUNNING
-        - STATE_STOPPING
-        - STATE_STOPPED
-        - STATE_ERROR
-      type: string
-    AIGatewayCreate:
-      description: AIGatewayCreate contains the details for the AI gateway creation request.
-      properties:
-        config_yaml:
-          description: YAML configuration that defines the AI gateway's behavior, routing rules, and settings.
-          type: string
-        description:
-          description: AI gateway description.
-          type: string
-        display_name:
-          description: User-friendly AI gateway name.
-          type: string
-        resources:
-          $ref: '#/components/schemas/Resources'
-        tags:
-          additionalProperties:
-            type: string
-          description: Optional list of tags to attach to an AI gateway.
-          type: object
-      required:
-        - display_name
-        - config_yaml
-      type: object
-    AIGatewayUpdate:
-      properties:
-        config_yaml:
-          description: YAML configuration that defines the AI gateway's behavior, routing rules, and settings.
-          type: string
-        description:
-          description: AI gateway description.
-          type: string
-        display_name:
-          description: User-friendly AI gateway name.
-          type: string
-        resources:
-          $ref: '#/components/schemas/Resources'
-        tags:
-          additionalProperties:
-            type: string
-          description: |-
-            A map of tags to add, update or delete.
-            If a tag's value is empty, the server interprets that as a deletion.
-          type: object
-      type: object
     AgentCard:
       description: A2A agent card configuration for customizing agent discovery metadata.
       properties:
@@ -402,11 +311,6 @@ components:
         ai_agent:
           $ref: '#/components/schemas/AIAgent'
       type: object
-    CreateAIGatewayResponse:
-      properties:
-        ai_gateway:
-          $ref: '#/components/schemas/AIGateway'
-      type: object
     CreateKnowledgeBaseResponse:
       properties:
         knowledge_base:
@@ -418,8 +322,6 @@ components:
           $ref: '#/components/schemas/v1alpha3.MCPServer'
       type: object
     DeleteAIAgentResponse:
-      type: object
-    DeleteAIGatewayResponse:
       type: object
     DeleteKnowledgeBaseResponse:
       type: object
@@ -469,11 +371,6 @@ components:
       properties:
         ai_agent:
           $ref: '#/components/schemas/AIAgent'
-      type: object
-    GetAIGatewayResponse:
-      properties:
-        ai_gateway:
-          $ref: '#/components/schemas/AIGateway'
       type: object
     GetKnowledgeBaseResponse:
       properties:
@@ -1117,28 +1014,6 @@ components:
         next_page_token:
           type: string
       type: object
-    ListAIGatewaysRequest.Filter:
-      properties:
-        name_contains:
-          description: Any AI gateways that partially match this name will be returned.
-          type: string
-        secret_id:
-          type: string
-        tags[string]:
-          additionalProperties:
-            type: string
-          description: AI gateways that match all the provided tags will be returned.
-          type: object
-      type: object
-    ListAIGatewaysResponse:
-      properties:
-        ai_gateways:
-          items:
-            $ref: '#/components/schemas/AIGateway'
-          type: array
-        next_page_token:
-          type: string
-      type: object
     ListKnowledgeBasesRequest.Filter:
       properties:
         name_contains:
@@ -1599,11 +1474,6 @@ components:
         ai_agent:
           $ref: '#/components/schemas/AIAgent'
       type: object
-    StartAIGatewayResponse:
-      properties:
-        ai_gateway:
-          $ref: '#/components/schemas/AIGateway'
-      type: object
     StartMCPServerResponse:
       properties:
         mcp_server:
@@ -1625,11 +1495,6 @@ components:
       properties:
         ai_agent:
           $ref: '#/components/schemas/AIAgent'
-      type: object
-    StopAIGatewayResponse:
-      properties:
-        ai_gateway:
-          $ref: '#/components/schemas/AIGateway'
       type: object
     StopMCPServerResponse:
       properties:
@@ -1746,11 +1611,6 @@ components:
       properties:
         ai_agent:
           $ref: '#/components/schemas/AIAgent'
-      type: object
-    UpdateAIGatewayResponse:
-      properties:
-        ai_gateway:
-          $ref: '#/components/schemas/AIGateway'
       type: object
     UpdateKnowledgeBaseResponse:
       properties:
@@ -2086,250 +1946,6 @@ paths:
       summary: Stop AI Agent
       tags:
         - AI Agents
-  /v1alpha3/ai-gateways:
-    get:
-      description: 'List AI gateways. Optional: filter based on AI gateway name.'
-      operationId: AIGatewayService_ListAIGateways
-      parameters:
-        - description: Any AI gateways that partially match this name will be returned.
-          in: query
-          name: filter.name_contains
-          schema:
-            type: string
-        - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-          in: query
-          name: filter.tags[string]
-          schema:
-            type: string
-        - in: query
-          name: filter.secret_id
-          schema:
-            type: string
-        - description: Limit the paginated response to a number of items. Defaults to 50. Use -1 to disable pagination.
-          in: query
-          name: page_size
-          schema:
-            format: int32
-            type: integer
-        - description: |-
-            Value of the next_page_token field returned by the previous response.
-            If not provided, the system assumes the first page is requested.
-          in: query
-          name: page_token
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ListAIGatewaysResponse'
-          description: OK
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: List AI Gateways
-      tags:
-        - AI Gateways
-    post:
-      description: Create a new AI gateway.
-      operationId: AIGatewayService_CreateAIGateway
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AIGatewayCreate'
-        required: true
-        x-originalParamName: ai_gateway
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AIGateway'
-          description: Created
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Create AI Gateway
-      tags:
-        - AI Gateways
-  /v1alpha3/ai-gateways/{id}:
-    delete:
-      description: Delete an AI gateway.
-      operationId: AIGatewayService_DeleteAIGateway
-      parameters:
-        - description: AI Gateway ID.
-          in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          content:
-            application/json:
-              schema: {}
-          description: Deleted
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Delete AI Gateway
-      tags:
-        - AI Gateways
-    get:
-      description: Get a specific AI gateway.
-      operationId: AIGatewayService_GetAIGateway
-      parameters:
-        - description: AI Gateway ID.
-          in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AIGateway'
-          description: OK
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Get AI Gateway
-      tags:
-        - AI Gateways
-    put:
-      description: Update the configuration of an AI gateway.
-      operationId: AIGatewayService_UpdateAIGateway
-      parameters:
-        - description: AI Gateway ID.
-          in: path
-          name: id
-          required: true
-          schema:
-            type: string
-        - description: |-
-            Specifies which fields should be updated. If not provided,
-            all fields will be updated.
-          in: query
-          name: update_mask
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AIGatewayUpdate'
-        required: true
-        x-originalParamName: ai_gateway
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AIGateway'
-          description: OK
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Update AI Gateway
-      tags:
-        - AI Gateways
-  /v1alpha3/ai-gateways/{id}:start:
-    put:
-      description: Start a stopped AI gateway.
-      operationId: AIGatewayService_StartAIGateway
-      parameters:
-        - description: AI Gateway ID.
-          in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AIGateway'
-          description: Started
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Start AI Gateway
-      tags:
-        - AI Gateways
-  /v1alpha3/ai-gateways/{id}:stop:
-    put:
-      description: Stop a running AI gateway.
-      operationId: AIGatewayService_StopAIGateway
-      parameters:
-        - description: AI Gateway ID.
-          in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AIGateway'
-          description: Stopped
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Stop AI Gateway
-      tags:
-        - AI Gateways
   /v1alpha3/knowledge-bases:
     get:
       operationId: KnowledgeBaseService_ListKnowledgeBases
@@ -2808,8 +2424,6 @@ servers:
 tags:
   - description: Create and manage AI agents and their configurations.
     name: AI Agents
-  - description: Create and manage AI gateways and their configurations.
-    name: AI Gateways
   - description: Create and manage retrieval-augmented generation (RAG) knowledge bases.
     name: Redpanda AI KnowledgeBase
   - description: Create and manage MCP servers and their configurations.

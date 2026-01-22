@@ -101,8 +101,8 @@ const authenticationApi = observable({
 
 const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
   [AuthenticationMethod.NONE]: observer(() => {
-    const { search } = useLocation();
-    const searchParams = new URLSearchParams(search);
+    const { searchStr } = useLocation();
+    const searchParams = new URLSearchParams(searchStr);
     // Don't auto-redirect if there was an auth error - user needs to see the login page
     const hasError = searchParams.has('error_code') || authenticationApi.methodsErrorResponse !== null;
 
@@ -218,8 +218,8 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
 };
 
 const LoginPage = observer(() => {
-  const { search } = useLocation();
-  const searchParams = new URLSearchParams(search);
+  const { searchStr } = useLocation();
+  const searchParams = new URLSearchParams(searchStr);
 
   useEffect(() => {
     authenticationApi.refreshAuthenticationMethods();

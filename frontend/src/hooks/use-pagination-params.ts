@@ -1,13 +1,14 @@
-import { useLocation } from '@tanstack/react-router';
 import { DEFAULT_TABLE_PAGE_SIZE } from 'components/constants';
+import { parseAsInteger, useQueryState } from 'nuqs';
 import { useMemo } from 'react';
 
 /**
  * Custom hook for parsing pagination parameters from the URL search query.
  *
- * This hook extracts 'pageSize' and 'pageIndex' parameters from the URL search query.
+ * This hook extracts 'pageSize' and 'pageIndex' parameters from the URL search query
+ * using nuqs for type-safe URL state management.
  * If these parameters are not present in the URL, it falls back to default values.
- * 'pageSize' defaults to the value passed as an argument, or 10 if not provided.
+ * 'pageSize' defaults to the value passed as an argument, or DEFAULT_TABLE_PAGE_SIZE if not provided.
  * 'pageIndex' defaults to 0 if not present in the URL.
  *
  * @param {number} totalDataLength - The total length of the data to paginate over.
@@ -22,22 +23,18 @@ const usePaginationParams = (
   totalDataLength: number,
   defaultPageSize: number = DEFAULT_TABLE_PAGE_SIZE
 ): { pageSize: number; pageIndex: number } => {
-  const location = useLocation();
-  const search = location.searchStr ?? '';
+  const [pageSize] = useQueryState('pageSize', parseAsInteger.withDefault(defaultPageSize));
+  const [pageIndex] = useQueryState('page', parseAsInteger.withDefault(0));
 
   return useMemo(() => {
-    const searchParams = new URLSearchParams(search);
-    const pageSize = searchParams.has('pageSize') ? Number(searchParams.get('pageSize')) : defaultPageSize;
-    const pageIndex = searchParams.has('page') ? Number(searchParams.get('page')) : 0;
     const totalPages = Math.ceil(totalDataLength / pageSize);
-
     const boundedPageIndex = Math.max(0, Math.min(pageIndex, totalPages - 1));
 
     return {
       pageSize,
       pageIndex: boundedPageIndex,
     };
-  }, [search, defaultPageSize, totalDataLength]);
+  }, [pageSize, pageIndex, totalDataLength]);
 };
 
 export default usePaginationParams;

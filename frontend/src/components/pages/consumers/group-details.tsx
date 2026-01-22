@@ -44,13 +44,17 @@ import { api } from '../../../state/backend-api';
 import type { GroupDescription, GroupMemberDescription } from '../../../state/rest-interfaces';
 import { Features } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
-import { editQuery, queryToObj } from '../../../utils/query-helper';
 import { Button, DefaultSkeleton, IconButton, numberToThousandsString } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import { ShortNum } from '../../misc/short-num';
 import { Statistic } from '../../misc/statistic';
 import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 import AclList from '../topics/Tab.Acl/acl-list';
+
+type GroupSearchParams = {
+  q?: string;
+  withLag?: boolean;
+};
 
 const DEFAULT_MATCH_ALL_REGEX = /.*/s;
 const QUICK_SEARCH_REGEX_CACHE = new Map<string, RegExp>();
@@ -71,8 +75,14 @@ function getQuickSearchRegex(pattern: string): RegExp {
   return regExp;
 }
 
+type GroupDetailsProps = {
+  groupId: string;
+  search: GroupSearchParams;
+  onSearchChange: (updates: Partial<GroupSearchParams>) => void;
+};
+
 @observer
-class GroupDetails extends PageComponent<{ groupId: string }> {
+class GroupDetails extends PageComponent<GroupDetailsProps> {
   @observable edittingOffsets: GroupOffset[] | null = null;
   @observable editedTopic: string | null = null;
   @observable editedPartition: number | null = null;
@@ -80,12 +90,14 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
   @observable deletingMode: GroupDeletingMode = 'group';
   @observable deletingOffsets: GroupOffset[] | null = null;
 
-  @observable quickSearch = queryToObj(window.location.search).q;
-  @observable showWithLagOnly = Boolean(queryToObj(window.location.search).withLag);
+  @observable quickSearch = '';
+  @observable showWithLagOnly = false;
 
-  constructor(p: Readonly<PageProps<{ groupId: string }>>) {
+  constructor(p: Readonly<PageProps<GroupDetailsProps>>) {
     super(p);
     makeObservable(this);
+    this.quickSearch = p.search?.q ?? '';
+    this.showWithLagOnly = p.search?.withLag ?? false;
   }
 
   initPage(p: PageInitHelper): void {
@@ -118,21 +130,16 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
             placeholderText="Filter by member"
             searchText={this.quickSearch}
             setSearchText={(filterText) => {
-              editQuery((query) => {
-                this.quickSearch = filterText;
-                const q = String(filterText);
-                query.q = q;
-              });
+              this.quickSearch = filterText;
+              this.props.onSearchChange({ q: filterText });
             }}
             width={300}
           />
           <Checkbox
             isChecked={this.showWithLagOnly}
             onChange={(e) => {
-              editQuery((query) => {
-                this.showWithLagOnly = e.target.checked;
-                query.withLag = this.showWithLagOnly ? 'true' : null;
-              });
+              this.showWithLagOnly = e.target.checked;
+              this.props.onSearchChange({ withLag: e.target.checked });
             }}
           >
             Only show topics with lag

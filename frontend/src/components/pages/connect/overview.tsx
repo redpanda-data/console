@@ -11,7 +11,6 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Box, DataTable, Stack, Tooltip } from '@redpanda-data/ui';
-import { useLocation } from '@tanstack/react-router';
 import ErrorResult from 'components/misc/error-result';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Link, Text } from 'components/redpanda-ui/components/typography';
@@ -79,21 +78,20 @@ const getDefaultView = (defaultView: string): { initialTab: ConnectView; redpand
   }
 };
 
-const WrapKafkaConnectOverview: FunctionComponent<{ matchedPath: string }> = (props) => {
-  const { search } = useLocation();
-  const searchParams = new URLSearchParams(search);
-  const defaultTab = searchParams.get('defaultTab') || '';
-
+const WrapKafkaConnectOverview: FunctionComponent<{
+  matchedPath: string;
+  defaultTab?: ConnectView;
+}> = (props) => {
   const { data: kafkaConnectors, isLoading: isLoadingKafkaConnectors } = useKafkaConnectConnectorsQuery();
 
   const isKafkaConnectEnabled = kafkaConnectors?.isConfigured === true;
 
   return (
     <KafkaConnectOverview
-      defaultView={defaultTab}
+      defaultView={props.defaultTab ?? ''}
       isKafkaConnectEnabled={isKafkaConnectEnabled}
       isLoadingKafkaConnectors={isLoadingKafkaConnectors}
-      {...props}
+      matchedPath={props.matchedPath}
     />
   );
 };

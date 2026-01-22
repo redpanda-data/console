@@ -11,6 +11,19 @@
 
 import { appGlobal } from '../state/app-global';
 
+/**
+ * Converts a URL search string to an object.
+ *
+ * @deprecated Use TanStack Router's `useSearch()` hook with route-level `validateSearch` instead.
+ * This provides type-safe search params with Zod validation.
+ *
+ * @example
+ * // Instead of:
+ * const params = queryToObj(window.location.search);
+ *
+ * // Use:
+ * const search = useSearch({ from: '/your-route' });
+ */
 export const queryToObj = (str: string) => {
   const query = new URLSearchParams(str);
   const obj = {} as Record<string, string>;
@@ -20,6 +33,20 @@ export const queryToObj = (str: string) => {
 
   return obj;
 };
+
+/**
+ * Converts an object to a URL query string.
+ *
+ * @deprecated Use TanStack Router's `navigate({ search: ... })` instead.
+ * This provides type-safe navigation with search params.
+ *
+ * @example
+ * // Instead of:
+ * const queryStr = objToQuery({ page: 1, filter: 'active' });
+ *
+ * // Use:
+ * navigate({ search: { page: 1, filter: 'active' } });
+ */
 export const objToQuery = (obj: { [key: string]: unknown }) => {
   // '?' + queryString.stringify(obj, stringifyOptions)
   const query = new URLSearchParams();
@@ -33,8 +60,25 @@ export const objToQuery = (obj: { [key: string]: unknown }) => {
   return `?${query.toString()}`;
 };
 
-// edit the current search query,
-// IFF you make any changes inside editFunction, it returns the stringified version of the search query
+/**
+ * Edit the current search query.
+ *
+ * @deprecated Use TanStack Router's `navigate({ search: (prev) => ... })` instead.
+ * This provides type-safe search param updates with proper React integration.
+ *
+ * @example
+ * // Instead of:
+ * editQuery((query) => {
+ *   query.filter = 'active';
+ * });
+ *
+ * // Use:
+ * const navigate = useNavigate({ from: '/your-route' });
+ * navigate({
+ *   search: (prev) => ({ ...prev, filter: 'active' }),
+ *   replace: true,
+ * });
+ */
 export function editQuery(editFunction: (queryObject: Record<string, string | null | undefined>) => void) {
   try {
     const location = appGlobal.historyLocation();

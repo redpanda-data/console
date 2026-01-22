@@ -19,7 +19,6 @@ import type { ApiError, UserData } from '../../state/rest-interfaces';
 import { uiState } from '../../state/ui-state';
 import { getBasePath } from '../../utils/env';
 import fetchWithTimeout from '../../utils/fetch-with-timeout';
-import { queryToObj } from '../../utils/query-helper';
 
 class LoginCompletePage extends Component<{ provider: string }> {
   componentDidMount() {
@@ -30,14 +29,16 @@ class LoginCompletePage extends Component<{ provider: string }> {
   async completeLogin(provider: string, location: Location) {
     const query = location.search;
 
-    const queryObj = queryToObj(query);
-    if (queryObj.error || queryObj.error_description) {
+    const searchParams = new URLSearchParams(query);
+    const error = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
+    if (error || errorDescription) {
       let errorString = '';
-      if (queryObj.error) {
-        errorString += `Error: ${queryObj.error}\n`;
+      if (error) {
+        errorString += `Error: ${error}\n`;
       }
-      if (queryObj.error_description) {
-        errorString += `Description: ${queryObj.error_description}\n`;
+      if (errorDescription) {
+        errorString += `Description: ${errorDescription}\n`;
       }
       uiState.loginError = errorString.trim();
       appGlobal.historyReplace(`${getBasePath()}/login`);

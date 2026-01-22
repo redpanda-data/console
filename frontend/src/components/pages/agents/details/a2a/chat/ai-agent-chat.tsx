@@ -13,6 +13,9 @@
 
 import { Conversation, ConversationContent, ConversationEmptyState } from 'components/ai-elements/conversation';
 import { Loader } from 'components/ai-elements/loader';
+import { FingerprintIcon } from 'components/icons';
+import { Badge } from 'components/redpanda-ui/components/badge';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { useCallback, useEffect, useRef } from 'react';
 
 import { ChatInput } from './components/chat-input';
@@ -22,7 +25,7 @@ import { useChatMessages } from './hooks/use-chat-messages';
 import { useCumulativeUsage } from './hooks/use-cumulative-usage';
 import type { AIAgentChatProps } from './types';
 
-export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
+export const AIAgentChat = ({ agent, headerActions }: AIAgentChatProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -86,10 +89,27 @@ export const AIAgentChat = ({ agent }: AIAgentChatProps) => {
     <div className="flex h-[calc(100vh-210px)] flex-col" ref={containerRef}>
       {/* Context ID header */}
       {Boolean(contextId) && (
-        <div className="shrink-0 border-b bg-muted/30 px-4 py-2">
-          <div className="flex gap-1.5 text-muted-foreground text-xs">
-            <span className="font-medium">context_id:</span>
-            <span className="font-mono">{contextId}</span>
+        <div className="shrink-0 border-b bg-gradient-to-r from-muted/50 to-muted/30 px-4 py-1.5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-5 w-5 items-center justify-center rounded bg-primary/10">
+                <FingerprintIcon className="h-3 w-3 text-primary" />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Context ID</span>
+                <Badge className="font-mono text-xs" variant="outline">
+                  {contextId}
+                </Badge>
+                <CopyButton
+                  className="h-6 min-h-6 w-6 min-w-6 shrink-0 p-0"
+                  content={contextId}
+                  size="icon"
+                  variant="ghost"
+                  whileHover={{ scale: 1 }}
+                />
+              </div>
+            </div>
+            {headerActions}
           </div>
         </div>
       )}
