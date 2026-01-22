@@ -1102,7 +1102,7 @@ export default function CreateACL({
       </main>
 
       {/* Sticky Footer - Action Buttons */}
-      <div className="fixed inset-x-0 bottom-0 border-border border-t bg-background shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-border border-t bg-background shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-start gap-2 px-6">
           <Button
             data-testid="submit-acl-button"
