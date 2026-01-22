@@ -607,7 +607,7 @@ func (s *Service) CreateSchemaRegistrySchema(ctx context.Context, subjectName st
 		// If metadata was included and we got a parse error, retry without metadata.
 		// Older Redpanda versions don't support the metadata field.
 		if schema.SchemaMetadata != nil {
-			s.logger.Warn("retrying schema creation without metadata (unsupported by this Redpanda version)",
+			s.logger.WarnContext(ctx, "retrying schema creation without metadata (unsupported by this Redpanda version)",
 				slog.String("subject", subjectName))
 			schema.SchemaMetadata = nil
 			subjectSchema, err = srClient.CreateSchema(ctx, subjectName, schema)
