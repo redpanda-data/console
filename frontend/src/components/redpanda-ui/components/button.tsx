@@ -170,17 +170,19 @@ const buttonVariants = (isNewThemeEnabled?: boolean) =>
 
 export type ButtonVariants = VariantProps<ReturnType<typeof buttonVariants>>;
 
-const Button = React.forwardRef<
-	HTMLButtonElement,
-	React.ComponentProps<"button"> &
-		ButtonVariants &
-		SharedProps & {
-			asChild?: boolean;
-			as?: ElementType;
-			to?: string;
-			icon?: React.ReactNode;
-		}
->(
+export type ButtonProps = React.ComponentProps<"button"> &
+	ButtonVariants & {
+		asChild?: boolean;
+		as?: ElementType;
+		to?: string;
+		icon?: React.ReactNode;
+		// Support anchor element props when as="a"
+		href?: string;
+		target?: string;
+		rel?: string;
+	} & SharedProps;
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 	(
 		{
 			className,
@@ -209,6 +211,27 @@ const Button = React.forwardRef<
 			positionClasses = "rounded-none border-r-0 border-l-0";
 		}
 
+		// When asChild is used with Slot, we can only pass ONE child element
+		// to satisfy React.Children.only(). In asChild mode, users must include
+		// icons inside children instead of using the icon prop.
+		const renderContent = () => {
+			if (asChild) {
+				return children;
+			}
+
+			// Normal button mode - can have children + icon prop
+			if (icon) {
+				return (
+					<>
+						{children}
+						{icon}
+					</>
+				);
+			}
+
+			return children;
+		};
+
 		return (
 			<Comp
 				className={cn(
@@ -223,8 +246,7 @@ const Button = React.forwardRef<
 				to={to}
 				{...props}
 			>
-				{children}
-				{icon ? icon : null}
+				{renderContent()}
 			</Comp>
 		);
 	},

@@ -17,7 +17,7 @@ const badgeVariants = cva(
 
         // === SIMPLE (Light grey - semantic tokens) ===
         simple: 'text-secondary [a&]:hover:bg-background-subtle-hover',
-        'simple-inverted': '!border-transparent text-secondary [a&]:hover:bg-background-subtle-hover',
+        'simple-inverted': 'border-transparent text-secondary [a&]:hover:bg-background-subtle-hover',
         'simple-outline': '!border-outline-inverse border text-secondary [a&]:hover:bg-background-subtle-hover',
 
         // === INFO (Blue - semantic tokens) ===
@@ -70,11 +70,11 @@ const badgeVariants = cva(
       },
       size: {
         // Small: 20px height (from Figma)
-        sm: 'h-5 gap-1 px-1.5 py-0 text-[11px] [&>svg]:size-3',
+        sm: 'h-5 gap-1 px-1.5 py-0 text-[11px] has-[>svg]:px-1 [&_svg]:size-3',
         // Medium: 24px height (from Figma)
-        md: 'h-6 gap-1 px-2 py-0 text-xs [&>svg]:size-3.5',
+        md: 'h-6 gap-1 px-2 py-0 text-xs has-[>svg]:px-1.5 [&_svg]:size-3.5',
         // Large: 32px height (from Figma)
-        lg: 'h-8 gap-1.5 px-3 py-0 text-sm [&>svg]:size-4',
+        lg: 'h-8 gap-1.5 px-3 py-0 text-sm has-[>svg]:px-2 [&_svg]:size-4',
       },
     },
     defaultVariants: {
@@ -105,10 +105,38 @@ function Badge({
   }) {
   const Comp = asChild ? SlotPrimitive.Slot : 'span';
 
+  // When asChild is used with Slot, we can only pass ONE child element
+  // to satisfy React.Children.only(). In asChild mode, users must include
+  // icons inside children instead of using the icon prop.
+  const renderContent = () => {
+    if (asChild) {
+      return children;
+    }
+
+    // Normal badge mode - can have icon + children
+    if (icon && children) {
+      return (
+        <>
+          {icon}
+          <span className="truncate">{children}</span>
+        </>
+      );
+    }
+
+    if (icon) {
+      return icon;
+    }
+
+    if (children) {
+      return <span className="truncate">{children}</span>;
+    }
+
+    return null;
+  };
+
   return (
     <Comp className={cn(badgeVariants({ variant, size }), className)} data-slot="badge" data-testid={testId} {...props}>
-      {icon}
-      {children ? <span className="truncate">{children}</span> : null}
+      {renderContent()}
     </Comp>
   );
 }
