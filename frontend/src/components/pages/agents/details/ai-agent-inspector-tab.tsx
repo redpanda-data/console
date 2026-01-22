@@ -13,10 +13,24 @@ import { getRouteApi } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/agents/$id');
 
+import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from 'components/redpanda-ui/components/dialog';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { JSONView } from 'components/ui/json/json-view';
+import { config } from 'config';
+import { FileJson, Loader2 } from 'lucide-react';
 import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
+import { useState } from 'react';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
+import { getAgentCardUrls } from 'utils/ai-agent.utils';
 
 import { AIAgentChat } from './a2a/chat/ai-agent-chat';
 
@@ -31,6 +45,12 @@ import { AIAgentChat } from './a2a/chat/ai-agent-chat';
 export const AIAgentInspectorTab = () => {
   const { id } = routeApi.useParams();
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
+
+  // Hooks must be at the top level
+  const [liveAgentCard, setLiveAgentCard] = useState<unknown>(null);
+  const [isLoadingCard, setIsLoadingCard] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
+  const [cardUrl, setCardUrl] = useState<string | null>(null);
 
   const agent = aiAgentData?.aiAgent;
   const isAgentRunning = agent?.state === AIAgent_State.RUNNING;
@@ -84,5 +104,96 @@ export const AIAgentInspectorTab = () => {
     );
   }
 
-  return <AIAgentChat agent={agent} />;
+  const fetchLiveAgentCard = async () => {
+    setIsLoadingCard(true);
+    setCardError(null);
+    setCardUrl(null);
+    try {
+      const urls = getAgentCardUrls({ agentUrl: agent.url });
+      const errors: Error[] = [];
+
+      for (const url of urls) {
+        try {
+          const response = await fetch(url, {
+            headers: config.jwt ? { Authorization: `Bearer ${config.jwt}` } : {},
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const cardData = await response.json();
+          setLiveAgentCard(cardData);
+          setCardUrl(url);
+          return;
+        } catch (error) {
+          errors.push(error as Error);
+        }
+      }
+
+      throw new Error(
+        `Failed to fetch agent card from any URL. Tried: ${urls.join(', ')}. Errors: ${errors.map((e) => e.message).join('; ')}`
+      );
+    } catch (error) {
+      setCardError((error as Error).message);
+    } finally {
+      setIsLoadingCard(false);
+    }
+  };
+
+  return (
+    <AIAgentChat
+      agent={agent}
+      headerActions={
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button onClick={fetchLiveAgentCard} size="sm" variant="ghost">
+              <FileJson className="h-4 w-4" />
+              View Agent Card
+            </Button>
+          </DialogTrigger>
+          <DialogContent
+            className="max-h-[85vh] w-[70vw] max-w-[1200px] overflow-y-auto"
+            onOpenAutoFocus={(e) => e.preventDefault()}
+            size="full"
+          >
+            <DialogHeader>
+              <DialogTitle>Agent Card</DialogTitle>
+              {Boolean(cardUrl) && <DialogDescription className="font-mono text-xs">{cardUrl}</DialogDescription>}
+            </DialogHeader>
+            <div className="mt-2">
+              {(() => {
+                if (isLoadingCard) {
+                  return (
+                    <div className="flex items-center justify-center p-8">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <Text className="ml-2">Fetching agent card from A2A endpoint...</Text>
+                    </div>
+                  );
+                }
+
+                if (cardError) {
+                  return (
+                    <div className="rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/30">
+                      <Text className="text-red-800 dark:text-red-200">{cardError}</Text>
+                    </div>
+                  );
+                }
+
+                if (liveAgentCard) {
+                  return <JSONView data={liveAgentCard} initialExpandDepth={5} />;
+                }
+
+                return (
+                  <div className="flex items-center justify-center p-8">
+                    <Text className="text-muted-foreground">Click the button to load agent card</Text>
+                  </div>
+                );
+              })()}
+            </div>
+          </DialogContent>
+        </Dialog>
+      }
+    />
+  );
 };

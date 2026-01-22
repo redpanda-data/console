@@ -48,6 +48,9 @@ import { ServiceAccountSection } from 'components/ui/service-account/service-acc
 import { Edit, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
+  AIAgent_AgentCard_ProviderSchema,
+  AIAgent_AgentCard_SkillSchema,
+  AIAgent_AgentCardSchema,
   AIAgent_GatewayConfigSchema,
   AIAgent_MCPServerSchema,
   type AIAgent_Provider,
@@ -92,6 +95,21 @@ type LocalAIAgent = {
     selectedMcpServers: string[];
   }>;
   gatewayId?: string;
+  agentCard?: {
+    iconUrl: string;
+    documentationUrl: string;
+    provider?: {
+      organization: string;
+      url: string;
+    };
+    skills: Array<{
+      id: string;
+      name: string;
+      description: string;
+      tags: string[];
+      examples: string[];
+    }>;
+  };
 };
 
 /**
@@ -99,6 +117,27 @@ type LocalAIAgent = {
  */
 const SECRET_TEMPLATE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
 const SUBAGENT_NAME_REGEX = /^[A-Za-z0-9_-]+$/;
+
+type SkillInput = {
+  id: string;
+  name: string;
+  description: string;
+  tags: string[];
+  examples: string[];
+};
+
+/**
+ * Sanitizes a skill object by trimming all string fields and filtering empty array entries
+ */
+const sanitizeSkill = (skill: SkillInput) =>
+  create(AIAgent_AgentCard_SkillSchema, {
+    id: skill.id.trim(),
+    name: skill.name.trim(),
+    description: skill.description.trim(),
+    tags: skill.tags.map((t) => t.trim()).filter(Boolean),
+    examples: skill.examples.map((e) => e.trim()).filter(Boolean),
+  });
+
 /**
  * Extracts the secret name from the template string format: ${secrets.SECRET_NAME} -> SECRET_NAME
  */
@@ -372,6 +411,25 @@ export const AIAgentConfigurationTab = () => {
           selectedMcpServers: Object.values(subagent.mcpServers || {}).map((server) => server.id),
         })),
         gatewayId: aiAgentData.aiAgent.gateway?.virtualGatewayId,
+        agentCard: aiAgentData.aiAgent.agentCard
+          ? {
+              iconUrl: aiAgentData.aiAgent.agentCard.iconUrl || '',
+              documentationUrl: aiAgentData.aiAgent.agentCard.documentationUrl || '',
+              provider: aiAgentData.aiAgent.agentCard.provider
+                ? {
+                    organization: aiAgentData.aiAgent.agentCard.provider.organization || '',
+                    url: aiAgentData.aiAgent.agentCard.provider.url || '',
+                  }
+                : undefined,
+              skills: aiAgentData.aiAgent.agentCard.skills.map((skill) => ({
+                id: skill.id,
+                name: skill.name,
+                description: skill.description,
+                tags: skill.tags || [],
+                examples: skill.examples || [],
+              })),
+            }
+          : undefined,
       };
     }
 
@@ -639,6 +697,38 @@ export const AIAgentConfigurationTab = () => {
             })
           : undefined;
 
+      const hasAgentCardData = (card?: LocalAIAgent['agentCard']): boolean => {
+        if (!card) {
+          return false;
+        }
+        return !!(
+          card.iconUrl ||
+          card.documentationUrl ||
+          card.skills?.length > 0 ||
+          card.provider?.organization ||
+          card.provider?.url
+        );
+      };
+
+      const hasProviderData = (provider?: { organization?: string; url?: string }): boolean =>
+        !!(provider?.organization || provider?.url);
+
+      const agentCard =
+        currentData.agentCard && hasAgentCardData(currentData.agentCard)
+          ? create(AIAgent_AgentCardSchema, {
+              iconUrl: currentData.agentCard.iconUrl || undefined,
+              documentationUrl: currentData.agentCard.documentationUrl || undefined,
+              provider:
+                currentData.agentCard.provider && hasProviderData(currentData.agentCard.provider)
+                  ? create(AIAgent_AgentCard_ProviderSchema, {
+                      organization: currentData.agentCard.provider.organization || undefined,
+                      url: currentData.agentCard.provider.url || undefined,
+                    })
+                  : undefined,
+              skills: currentData.agentCard.skills.map(sanitizeSkill),
+            })
+          : undefined;
+
       await updateAIAgent(
         create(UpdateAIAgentRequestSchema, {
           id,
@@ -658,6 +748,7 @@ export const AIAgentConfigurationTab = () => {
             subagents: subagentsMap,
             tags: tagsMap,
             gateway: gatewayConfig,
+            agentCard,
           }),
           updateMask: create(FieldMaskSchema, {
             paths: [
@@ -673,6 +764,11 @@ export const AIAgentConfigurationTab = () => {
               'mcp_servers',
               'subagents',
               'tags',
+              'agent_card.icon_url',
+              'agent_card.documentation_url',
+              'agent_card.provider.organization',
+              'agent_card.provider.url',
+              'agent_card.skills',
             ],
           }),
         }),
@@ -759,14 +855,6 @@ export const AIAgentConfigurationTab = () => {
                     <DynamicCodeBlock code={agent.id} lang="text" />
                   </div>
                 </div>
-                {Boolean(agent.url) && (
-                  <div className="space-y-2">
-                    <Label>URL</Label>
-                    <div className="flex-1">
-                      <DynamicCodeBlock code={agent.url} lang="text" />
-                    </div>
-                  </div>
-                )}
                 <div className="space-y-2">
                   <Label htmlFor="displayName">Display Name</Label>
                   {isEditing ? (
