@@ -251,7 +251,7 @@ function Sidebar({
       {/* This is what handles the sidebar gap on desktop */}
       <div
         className={cn(
-          'relative w-(--sidebar-width) bg-transparent transition-[width] duration-400 ease-[cubic-bezier(0.7,-0.15,0.25,1.15)]',
+          'relative w-(--sidebar-width) bg-transparent transition-[width] duration-300 ease-out',
           'group-data-[collapsible=offcanvas]:w-0',
           'group-data-[side=right]:rotate-180',
           variant === 'floating' || variant === 'inset'
@@ -262,7 +262,7 @@ function Sidebar({
       />
       <div
         className={cn(
-          'fixed inset-y-0 z-10 flex max-md:hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-400 ease-[cubic-bezier(0.75,0,0.25,1)]',
+          'fixed inset-y-0 z-10 flex max-md:hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-300 ease-out',
           side === 'left'
             ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
             : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
@@ -723,7 +723,7 @@ function SidebarMenuSub({ className, ...props }: SidebarMenuSubProps) {
   return (
     <ul
       className={cn(
-        'mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l px-2.5 py-0.5',
+        'mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l px-1 py-0.5',
         'group-data-[collapsible=icon]:hidden',
         className
       )}
@@ -764,7 +764,7 @@ const SidebarMenuSubButton = React.forwardRef<HTMLAnchorElement, SidebarMenuSubB
         <Comp
           aria-disabled={props['aria-disabled']}
           className={cn(
-            'flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-0.5 text-sidebar-foreground outline-hidden ring-sidebar-ring focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 [&:not([data-highlight])]:hover:bg-sidebar-accent [&:not([data-highlight])]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground',
+            'flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-hidden ring-sidebar-ring focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 [&:not([data-highlight])]:hover:bg-sidebar-accent [&:not([data-highlight])]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground',
             'data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground',
             size === 'sm' && 'text-xs',
             size === 'md' && 'text-sm',

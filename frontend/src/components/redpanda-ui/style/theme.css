@@ -76,7 +76,7 @@
   --color-sidebar-accent: oklch(1 0 0 / 8%);
   --color-sidebar-accent-foreground: var(--color-base-100);
   --color-sidebar-border: var(--color-base-600);
-  --color-sidebar-ring: var(--color-primary-500);
+  --color-sidebar-ring: var(--color-secondary-400);
   --color-selection: oklch(0.8462 0.027 262.33);
   --color-selection-foreground: var(--color-base-800);
   --color-sidebar-selection: oklch(0.5547 0.087 264.14);
@@ -127,7 +127,7 @@
   --color-sidebar-accent: oklch(0 0 0 / 24%);
   --color-sidebar-accent-foreground: var(--color-base-100);
   --color-sidebar-border: var(--color-base-500);
-  --color-sidebar-ring: var(--color-primary-500);
+  --color-sidebar-ring: var(--color-secondary-400);
   --color-selection: oklch(0.8462 0.027 262.33);
   --color-selection-foreground: var(--color-base-200);
   --color-sidebar-selection: oklch(0.5547 0.087 264.14);
