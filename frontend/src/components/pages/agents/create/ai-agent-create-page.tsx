@@ -48,11 +48,9 @@ import {
   AIAgentCreateSchema,
   CreateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
-import { type AIGateway, AIGateway_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_gateway_pb';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { useCreateAIAgentMutation } from 'react-query/api/ai-agent';
-import { useListAIGatewaysQuery } from 'react-query/api/ai-gateway';
 import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
@@ -73,32 +71,6 @@ export const AIAgentCreatePage = () => {
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation({
     skipInvalidation: true,
   });
-
-  // Gateway detection
-  const { data: gatewaysData, isLoading: isLoadingGateways } = useListAIGatewaysQuery(
-    { pageSize: -1 },
-    { enabled: true }
-  );
-
-  const hasGatewayDeployed = useMemo(() => {
-    if (isLoadingGateways) {
-      return false;
-    }
-    return Boolean(gatewaysData?.aiGateways && gatewaysData.aiGateways.length > 0);
-  }, [gatewaysData, isLoadingGateways]);
-
-  const availableGateways = useMemo(() => {
-    if (!gatewaysData?.aiGateways) {
-      return [];
-    }
-    return gatewaysData.aiGateways
-      .filter((gw: AIGateway) => gw.state === AIGateway_State.RUNNING)
-      .map((gw: AIGateway) => ({
-        id: gw.id,
-        displayName: gw.displayName,
-        description: gw.description,
-      }));
-  }, [gatewaysData]);
 
   // Ref to ServiceAccountSelector to call createServiceAccount
   const serviceAccountSelectorRef = useRef<ServiceAccountSelectorRef>(null);
@@ -492,7 +464,7 @@ export const AIAgentCreatePage = () => {
                 </CardHeader>
                 <CardContent>
                   <LLMConfigSection
-                    availableGateways={availableGateways}
+                    availableGateways={[]}
                     availableSecrets={availableSecrets}
                     fieldNames={{
                       provider: 'provider',
@@ -503,7 +475,7 @@ export const AIAgentCreatePage = () => {
                       gatewayId: 'gatewayId',
                     }}
                     form={form}
-                    hasGatewayDeployed={hasGatewayDeployed}
+                    hasGatewayDeployed={false}
                     mode="create"
                     scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
                     showBaseUrl={form.watch('provider') === 'openaiCompatible'}
