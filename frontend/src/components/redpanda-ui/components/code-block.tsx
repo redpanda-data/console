@@ -9,7 +9,7 @@ import { ScrollArea, ScrollBar, ScrollViewport } from './scroll-area';
 import { cn, type SharedProps } from '../lib/utils';
 
 const codeBlockVariants = cva(
-  'group fd-codeblock [&.shiki]:!bg-card relative overflow-hidden rounded-xl border border-border text-sm',
+  'group fd-codeblock [&.shiki]:!bg-card !border-border relative overflow-hidden rounded-xl border text-sm',
   {
     variants: {
       size: {
@@ -112,7 +112,7 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
         className={cn(codeBlockVariants({ size, width, maxHeight }), className)}
       >
         {title ? (
-          <div className="flex h-10 flex-row items-center gap-2 border-border border-b bg-muted px-4">
+          <div className="!border-border flex h-10 flex-row items-center gap-2 border-b bg-muted px-4">
             {icon ? (
               <div
                 className="text-muted-foreground [&_svg]:size-3.5"

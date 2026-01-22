@@ -47,7 +47,7 @@ const tabsListVariants = cva('inline-flex h-10 items-center justify-center text-
     variant: {
       default: 'w-fit gap-1 rounded-lg bg-muted p-1',
       underline:
-        'relative w-full justify-start rounded-t-xl border-border border-b bg-background px-4 py-0 text-current',
+        '!border-border relative w-full justify-start rounded-t-xl border-b bg-background px-4 py-0 text-current',
     },
     layout: {
       auto: '',

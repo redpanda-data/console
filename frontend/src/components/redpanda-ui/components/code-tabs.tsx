@@ -19,12 +19,12 @@ const codeTabsVariants = cva('w-full gap-0 overflow-hidden rounded-xl border bg-
 });
 
 const codeTabsListVariants = cva(
-  'relative h-10 w-full justify-between rounded-none border-border border-b bg-muted px-4 py-0 text-current',
+  '!border-border relative h-10 w-full justify-between rounded-none border-b bg-muted px-4 py-0 text-current',
   {
     variants: {
       variant: {
         standard:
-          'relative h-10 w-full justify-between rounded-none border-border border-b bg-muted px-4 py-0 text-current',
+          '!border-border relative h-10 w-full justify-between rounded-none border-b bg-muted px-4 py-0 text-current',
       },
     },
     defaultVariants: {
