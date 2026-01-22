@@ -73,6 +73,7 @@ import { api, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
 import { Features } from '../../../state/supported-features';
 import { uiState } from '../../../state/ui-state';
+import { getSearchRegex } from '../../../utils/regex';
 import { Code as CodeEl, DefaultSkeleton } from '../../../utils/tsx-utils';
 import { FeatureLicenseNotification } from '../../license/feature-license-notification';
 import { NullFallbackBoundary } from '../../misc/null-fallback-boundary';
@@ -284,17 +285,10 @@ const PermissionsListTab = () => {
   }
 
   const usersFiltered = users.filter((u) => {
-    const filter = searchQuery;
-    if (!filter) {
+    if (!searchQuery) {
       return true;
     }
-
-    try {
-      const quickSearchRegExp = new RegExp(filter, 'i');
-      return u.name.match(quickSearchRegExp);
-    } catch {
-      return false;
-    }
+    return u.name.match(getSearchRegex(searchQuery));
   });
 
   return (
@@ -384,17 +378,10 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
   }));
 
   const usersFiltered = users.filter((u) => {
-    const filter = searchQuery;
-    if (!filter) {
+    if (!searchQuery) {
       return true;
     }
-
-    try {
-      const quickSearchRegExp = new RegExp(filter, 'i');
-      return u.name.match(quickSearchRegExp);
-    } catch {
-      return false;
-    }
+    return u.name.match(getSearchRegex(searchQuery));
   });
 
   if (isError && error) {
@@ -568,16 +555,10 @@ const RolesTab = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const roles = (rolesApi.roles ?? []).filter((u) => {
-    const filter = searchQuery;
-    if (!filter) {
+    if (!searchQuery) {
       return true;
     }
-    try {
-      const quickSearchRegExp = new RegExp(filter, 'i');
-      return u.match(quickSearchRegExp);
-    } catch {
-      return false;
-    }
+    return u.match(getSearchRegex(searchQuery));
   });
 
   const rolesWithMembers = roles.map((r) => {
@@ -730,11 +711,8 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
 
   let groups = principalGroups?.filter((g) => g.principalType === 'User') || [];
 
-  try {
-    const quickSearchRegExp = new RegExp(searchQuery, 'i');
-    groups = groups?.filter((aclGroup) => aclGroup.principalName.match(quickSearchRegExp));
-  } catch (_e) {
-    // Invalid regex, skip filtering
+  if (searchQuery) {
+    groups = groups.filter((aclGroup) => aclGroup.principalName.match(getSearchRegex(searchQuery)));
   }
 
   if (isError && error) {

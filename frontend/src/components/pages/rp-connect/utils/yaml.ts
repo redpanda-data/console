@@ -33,14 +33,16 @@ const mergeCacheResource = (doc: Document.Parsed, newConfigObject: Partial<Conne
   let newResource = cacheConfigObj?.cache_resources?.[0] as Record<string, unknown> | undefined;
 
   if (newResource) {
-    const existingLabels = Array.isArray(cacheResources)
-      ? (cacheResources as Record<string, unknown>[]).map((r) => r?.label).filter(Boolean)
-      : [];
+    const existingLabelsSet = new Set(
+      Array.isArray(cacheResources)
+        ? (cacheResources as Record<string, unknown>[]).map((r) => r?.label).filter(Boolean)
+        : []
+    );
 
-    if (existingLabels.includes(newResource.label as string)) {
+    if (existingLabelsSet.has(newResource.label as string)) {
       let counter = 1;
       let uniqueLabel = `${newResource.label}_${counter}`;
-      while (existingLabels.includes(uniqueLabel)) {
+      while (existingLabelsSet.has(uniqueLabel)) {
         counter += 1;
         uniqueLabel = `${newResource.label}_${counter}`;
       }
@@ -60,14 +62,16 @@ const mergeRateLimitResource = (doc: Document.Parsed, newConfigObject: Partial<C
   let newResource = rateLimitConfigObj?.rate_limit_resources?.[0] as Record<string, unknown> | undefined;
 
   if (newResource) {
-    const existingLabels = Array.isArray(rateLimitResources)
-      ? (rateLimitResources as Record<string, unknown>[]).map((r) => r?.label).filter(Boolean)
-      : [];
+    const existingLabelsSet = new Set(
+      Array.isArray(rateLimitResources)
+        ? (rateLimitResources as Record<string, unknown>[]).map((r) => r?.label).filter(Boolean)
+        : []
+    );
 
-    if (existingLabels.includes(newResource.label as string)) {
+    if (existingLabelsSet.has(newResource.label as string)) {
       let counter = 1;
       let uniqueLabel = `${newResource.label}_${counter}`;
-      while (existingLabels.includes(uniqueLabel)) {
+      while (existingLabelsSet.has(uniqueLabel)) {
         counter += 1;
         uniqueLabel = `${newResource.label}_${counter}`;
       }

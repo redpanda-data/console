@@ -20,6 +20,7 @@ import { api } from '../../../state/backend-api';
 import type { GroupDescription } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { editQuery } from '../../../utils/query-helper';
+import { getSearchRegex } from '../../../utils/regex';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import { BrokerList } from '../../misc/broker-list';
 import PageContent from '../../misc/page-content';
@@ -75,15 +76,12 @@ class GroupList extends PageComponent {
 
     let groups = Array.from(api.consumerGroups.values());
 
-    try {
-      const quickSearchRegExp = new RegExp(uiSettings.consumerGroupList.quickSearch, 'i');
+    if (uiSettings.consumerGroupList.quickSearch) {
+      const searchRegex = getSearchRegex(uiSettings.consumerGroupList.quickSearch);
       groups = groups.filter(
         (groupDescription) =>
-          groupDescription.groupId.match(quickSearchRegExp) || groupDescription.protocol.match(quickSearchRegExp)
+          groupDescription.groupId.match(searchRegex) || groupDescription.protocol.match(searchRegex)
       );
-    } catch (_e) {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.warn('Invalid expression');
     }
 
     const stateGroups = groups.groupInto((g) => g.state);

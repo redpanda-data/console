@@ -35,6 +35,7 @@ import { api, rpcnSecretManagerApi } from '../../../state/backend-api';
 import type { ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo } from '../../../state/rest-interfaces';
 import { Features } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
+import { getSearchRegex } from '../../../utils/regex';
 import { Code, DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import SearchBar from '../../misc/search-bar';
@@ -289,13 +290,9 @@ const TabConnectors = observer(() => {
     filteredResults: [],
   }));
 
-  const isFilterMatch = (filter: string, item: ConnectorType): boolean => {
-    try {
-      const quickSearchRegExp = new RegExp(uiSettings.clusterOverview.connectorsList.quickSearch, 'i');
-      return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp));
-    } catch (_e) {
-      return item.name.toLowerCase().includes(filter.toLowerCase());
-    }
+  const isFilterMatch = (_filter: string, item: ConnectorType): boolean => {
+    const searchRegex = getSearchRegex(uiSettings.clusterOverview.connectorsList.quickSearch);
+    return Boolean(item.name.match(searchRegex)) || Boolean(item.class.match(searchRegex));
   };
 
   return (

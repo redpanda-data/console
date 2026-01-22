@@ -318,12 +318,7 @@ export const AIAgentConfigurationTab = () => {
   const [expandedSubagent, setExpandedSubagent] = useState<string | undefined>(undefined);
 
   // Get available MCP servers
-  const availableMcpServers = useMemo(() => {
-    if (!mcpServersData?.mcpServers || mcpServersData.mcpServers.length === 0) {
-      return [];
-    }
-    return mcpServersData.mcpServers;
-  }, [mcpServersData]);
+  const availableMcpServers = mcpServersData?.mcpServers ?? [];
 
   // Get available secrets for API key dropdown
   const availableSecrets = useMemo(() => {
@@ -1176,10 +1171,7 @@ export const AIAgentConfigurationTab = () => {
                         value={displayData.model}
                       />
                     ) : (
-                      <Select
-                        onValueChange={(value) => updateField({ model: value })}
-                        value={displayData.model}
-                      >
+                      <Select onValueChange={(value) => updateField({ model: value })} value={displayData.model}>
                         <SelectTrigger>
                           <SelectValue>
                             {Boolean(displayData.model) && detectProvider(displayData.model) ? (

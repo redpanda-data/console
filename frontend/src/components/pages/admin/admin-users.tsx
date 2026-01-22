@@ -21,6 +21,7 @@ import { UserCircleIcon } from 'components/icons';
 import { makeObservable, observable } from 'mobx';
 
 import { RoleComponent } from './admin-roles';
+import { getSearchRegex } from '../../../utils/regex';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 
 @observer
@@ -39,14 +40,9 @@ export class AdminUsers extends Component<Record<string, never>> {
 
     let users = api.adminInfo.users;
 
-    try {
-      const quickSearchRegExp = new RegExp(this.quickSearch, 'i');
-      users = users.filter(
-        (u) => u.internalIdentifier.match(quickSearchRegExp) || u.oauthUserId.match(quickSearchRegExp)
-      );
-    } catch (_e) {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.warn('Invalid expression');
+    if (this.quickSearch) {
+      const searchRegex = getSearchRegex(this.quickSearch);
+      users = users.filter((u) => u.internalIdentifier.match(searchRegex) || u.oauthUserId.match(searchRegex));
     }
 
     const table = (

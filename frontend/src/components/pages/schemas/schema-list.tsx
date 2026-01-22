@@ -55,7 +55,7 @@ import { api } from '../../../state/backend-api';
 import type { SchemaRegistrySubject } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
-// Utility components and functions
+import { getSearchRegex } from '../../../utils/regex';
 import { Button, InlineSkeleton } from '../../../utils/tsx-utils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 // Layout components
@@ -162,14 +162,8 @@ const SchemaList: FC = () => {
       // Find by schema ID
       const filterAsNumber = Number(searchQuery.trim());
       if (Number.isNaN(filterAsNumber)) {
-        // Find by regex or string matching
-        try {
-          const quickSearchRegExp = new RegExp(searchQuery, 'i');
-          subjects = subjects.filter((subject) => Boolean(subject.name.match(quickSearchRegExp)));
-        } catch (_e) {
-          const searchLower = searchQuery.toLowerCase();
-          subjects = subjects.filter((subject) => subject.name.toLowerCase().includes(searchLower));
-        }
+        // Find by string matching
+        subjects = subjects.filter((subject) => Boolean(subject.name.match(getSearchRegex(searchQuery))));
       } else {
         const matchingSubjectNames = new Set(schemaUsages?.map((s) => s.subject) ?? []);
         subjects = subjects.filter((subject) => matchingSubjectNames.has(subject.name));

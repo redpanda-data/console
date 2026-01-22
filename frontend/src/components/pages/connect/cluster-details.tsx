@@ -20,6 +20,7 @@ import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import type { ClusterAdditionalInfo, ClusterConnectorInfo } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
+import { getSearchRegex } from '../../../utils/regex';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import SearchBar from '../../misc/search-bar';
@@ -53,15 +54,9 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
     api.refreshClusterAdditionalInfo(clusterName, force);
   }
 
-  isFilterMatch(filter: string, item: ClusterConnectorInfo): boolean {
-    try {
-      const quickSearchRegExp = new RegExp(uiSettings.connectorsList.quickSearch, 'i');
-      return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp));
-    } catch (_e) {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.warn('Invalid expression');
-      return item.name.toLowerCase().includes(filter.toLowerCase());
-    }
+  isFilterMatch(_filter: string, item: ClusterConnectorInfo): boolean {
+    const searchRegex = getSearchRegex(uiSettings.connectorsList.quickSearch);
+    return Boolean(item.name.match(searchRegex)) || Boolean(item.class.match(searchRegex));
   }
 
   render() {

@@ -33,6 +33,7 @@ import {
 import { appGlobal } from '../../../state/app-global';
 import { transformsApi } from '../../../state/backend-api';
 import { uiSettings } from '../../../state/ui';
+import { getSearchRegex } from '../../../utils/regex';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
@@ -101,17 +102,12 @@ class TransformsList extends PageComponent {
       return null;
     }
 
+    const filter = uiSettings.transformsList.quickSearch;
     const filteredTransforms = (transformsApi.transforms ?? []).filter((u) => {
-      const filter = uiSettings.transformsList.quickSearch;
       if (!filter) {
         return true;
       }
-      try {
-        const quickSearchRegExp = new RegExp(filter, 'i');
-        return u.name.match(quickSearchRegExp);
-      } catch {
-        return false;
-      }
+      return u.name.match(getSearchRegex(filter));
     });
 
     return (

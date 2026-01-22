@@ -51,15 +51,13 @@ import { uiState } from '../../../state/ui-state';
 import createAutoModal from '../../../utils/create-auto-modal';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/query-helper';
+import { getSearchRegex } from '../../../utils/regex';
 import type { RetentionSizeUnit, RetentionTimeUnit } from '../../../utils/topic-utils';
 import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsx-utils';
 import { renderLogDirSummary } from '../../misc/common';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 import { Statistic } from '../../misc/statistic';
-
-// Regex for quick search filtering
-const QUICK_SEARCH_REGEX_CACHE = new Map<string, RegExp>();
 
 const TopicList: FC = () => {
   useEffect(() => {
@@ -102,21 +100,10 @@ const TopicList: FC = () => {
       filteredTopics = filteredTopics.filter((x) => !(x.isInternal || x.topicName.startsWith('_')));
     }
 
-    const searchQuery = localSearchValue;
-    if (searchQuery) {
-      try {
-        let quickSearchRegExp = QUICK_SEARCH_REGEX_CACHE.get(searchQuery);
-        if (!quickSearchRegExp) {
-          quickSearchRegExp = new RegExp(searchQuery, 'i');
-          QUICK_SEARCH_REGEX_CACHE.set(searchQuery, quickSearchRegExp);
-        }
-        filteredTopics = filteredTopics.filter((topic) => Boolean(topic.topicName.match(quickSearchRegExp)));
-      } catch (_e) {
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.warn('Invalid expression');
-        const searchLower = searchQuery.toLowerCase();
-        filteredTopics = filteredTopics.filter((topic) => topic.topicName.toLowerCase().includes(searchLower));
-      }
+    if (localSearchValue) {
+      filteredTopics = filteredTopics.filter((topic) =>
+        Boolean(topic.topicName.match(getSearchRegex(localSearchValue)))
+      );
     }
 
     return filteredTopics;

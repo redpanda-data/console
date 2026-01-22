@@ -160,12 +160,19 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     name: 'headers',
   });
 
+  // Watch individual fields for narrower deps (minimizes effect reruns)
+  const keyEncoding = watch('key.encoding');
+  const keyData = watch('key.data');
+  const valueEncoding = watch('value.encoding');
+  const valueData = watch('value.data');
+
+  // Keep object watchers for JSX usage
   const keyPayloadOptions = watch('key');
   const valuePayloadOptions = watch('value');
 
   const [isKeyExpanded, setKeyExpanded] = useState(false);
   useEffect(() => {
-    if (keyPayloadOptions.encoding === PayloadEncoding.BINARY && !isValidBase64(keyPayloadOptions.data)) {
+    if (keyEncoding === PayloadEncoding.BINARY && !isValidBase64(keyData)) {
       setError('key.data', {
         type: 'manual',
         message: 'Invalid Base64 format',
@@ -173,10 +180,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     } else {
       clearErrors('key.data');
     }
-  }, [keyPayloadOptions.encoding, keyPayloadOptions.data, setError, clearErrors]);
+  }, [keyEncoding, keyData, setError, clearErrors]);
 
   useEffect(() => {
-    if (valuePayloadOptions.encoding === PayloadEncoding.BINARY && !isValidBase64(valuePayloadOptions.data)) {
+    if (valueEncoding === PayloadEncoding.BINARY && !isValidBase64(valueData)) {
       setError('value.data', {
         type: 'manual',
         message: 'Invalid Base64 format',
@@ -184,7 +191,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     } else {
       clearErrors('value.data');
     }
-  }, [valuePayloadOptions.encoding, valuePayloadOptions.data, setError, clearErrors]);
+  }, [valueEncoding, valueData, setError, clearErrors]);
 
   useEffect(() => {
     setValue('key.data', '');
