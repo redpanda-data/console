@@ -10,14 +10,23 @@
  */
 
 import { createFileRoute } from '@tanstack/react-router';
+import { fallback, zodValidator } from '@tanstack/zod-adapter';
+import { DEFAULT_TABLE_PAGE_SIZE } from 'components/constants';
 import { CollectionIcon } from 'components/icons';
+import { z } from 'zod';
 
 import TopicList from '../../components/pages/topics/topic-list';
+
+const searchSchema = z.object({
+  pageSize: fallback(z.number().int().positive().optional(), DEFAULT_TABLE_PAGE_SIZE),
+  page: fallback(z.number().int().nonnegative().optional(), 0),
+});
 
 export const Route = createFileRoute('/topics/')({
   staticData: {
     title: 'Topics',
     icon: CollectionIcon,
   },
+  validateSearch: zodValidator(searchSchema),
   component: TopicList,
 });
