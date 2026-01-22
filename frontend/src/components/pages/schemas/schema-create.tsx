@@ -256,7 +256,7 @@ const SchemaPageButtons = observer(
               setCreating(true);
               try {
                 const subjectName = editorState.computedSubjectName;
-                const r = await api
+                await api
                   .createSchema(editorState.computedSubjectName, {
                     schemaType: editorState.format as SchemaTypeType,
                     schema: editorState.schemaText,
@@ -276,15 +276,8 @@ const SchemaPageButtons = observer(
                 });
 
                 // success: navigate to details with "latest" so it picks up the new version
-                // biome-ignore lint/suspicious/noConsole: intentional console usage
-                console.log('schema created', { response: r });
-                // biome-ignore lint/suspicious/noConsole: intentional console usage
-                console.log('navigating to details', { subjectName });
                 appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=latest`);
               } catch (err) {
-                // error: open modal
-                // biome-ignore lint/suspicious/noConsole: intentional console usage
-                console.log('failed to create schema', { err });
                 toast({
                   status: 'error',
                   duration: undefined,
