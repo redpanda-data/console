@@ -1176,10 +1176,7 @@ export const AIAgentConfigurationTab = () => {
                         value={displayData.model}
                       />
                     ) : (
-                      <Select
-                        onValueChange={(value) => updateField({ model: value })}
-                        value={displayData.model}
-                      >
+                      <Select onValueChange={(value) => updateField({ model: value })} value={displayData.model}>
                         <SelectTrigger>
                           <SelectValue>
                             {Boolean(displayData.model) && detectProvider(displayData.model) ? (
