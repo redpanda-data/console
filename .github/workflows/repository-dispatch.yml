@@ -5,6 +5,7 @@ on:
     paths:
       - "frontend/**"
       - "backend/**"
+      - '.github/workflows/repository-dispatch.yml'
     tags:
       - '*'
     branches:
