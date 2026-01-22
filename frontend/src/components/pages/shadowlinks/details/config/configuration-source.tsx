@@ -112,7 +112,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
                     Enabled
                   </Badge>
                 ) : (
-                  <Badge testId="tls-status-badge" variant="secondary-inverted">
+                  <Badge testId="tls-status-badge" variant="neutral-inverted">
                     Disabled
                   </Badge>
                 )
@@ -140,7 +140,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
                     Enabled
                   </Badge>
                 ) : (
-                  <Badge testId="auth-status-badge" variant="secondary-inverted">
+                  <Badge testId="auth-status-badge" variant="neutral-inverted">
                     Disabled
                   </Badge>
                 )

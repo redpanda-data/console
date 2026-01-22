@@ -15,55 +15,55 @@ export const getConnectorTypeBadgeProps = (type: ConnectComponentType): ConnectB
       return {
         icon: <FolderInput className="h-3 w-3" />,
         text: 'Input',
-        variant: 'success-inverted',
+        variant: 'neutral-inverted',
       };
     case 'output':
       return {
         icon: <FolderOutput className="h-3 w-3" />,
         text: 'Output',
-        variant: 'info-inverted',
+        variant: 'neutral-inverted',
       };
     case 'processor':
       return {
         icon: <Cpu className="h-3 w-3" />,
         text: 'Processor',
-        variant: 'primary-inverted',
+        variant: 'neutral-inverted',
       };
     case 'cache':
       return {
         icon: <Database className="h-3 w-3" />,
         text: 'Cache',
-        variant: 'secondary-inverted',
+        variant: 'neutral-inverted',
       };
     case 'buffer':
       return {
         icon: <Layers className="h-3 w-3" />,
         text: 'Buffer',
-        variant: 'secondary-inverted',
+        variant: 'neutral-inverted',
       };
     case 'rate_limit':
       return {
         icon: <Timer className="h-3 w-3" />,
         text: 'Rate Limit',
-        variant: 'warning-inverted',
+        variant: 'neutral-inverted',
       };
     case 'scanner':
       return {
         icon: <Search className="h-3 w-3" />,
         text: 'Scanner',
-        variant: 'info-inverted',
+        variant: 'neutral-inverted',
       };
     case 'metrics':
       return {
         icon: <HelpCircle className="h-3 w-3" />,
         text: 'Metrics',
-        variant: 'secondary-inverted',
+        variant: 'neutral-inverted',
       };
     case 'tracer':
       return {
         icon: <HelpCircle className="h-3 w-3" />,
         text: 'Tracer',
-        variant: 'secondary-inverted',
+        variant: 'neutral-inverted',
       };
     default:
       return {
