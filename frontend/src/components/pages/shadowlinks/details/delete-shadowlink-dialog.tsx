@@ -43,9 +43,11 @@ export const DeleteShadowLinkDialog = ({
 
   const isDeleteConfirmed = confirmationText.toLowerCase() === 'delete';
 
-  const handleCancel = () => {
-    setConfirmationText('');
-    onOpenChange(false);
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      setConfirmationText(''); // Cleanup on close
+    }
+    onOpenChange(newOpen);
   };
 
   const handleConfirm = () => {
@@ -55,7 +57,7 @@ export const DeleteShadowLinkDialog = ({
   };
 
   return (
-    <AlertDialog onOpenChange={onOpenChange} open={open}>
+    <AlertDialog onOpenChange={handleOpenChange} open={open}>
       <AlertDialogContent>
         <AlertDialogHeader className="text-left">
           <AlertDialogTitle>Delete Shadowlink</AlertDialogTitle>
@@ -73,7 +75,7 @@ export const DeleteShadowLinkDialog = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel asChild onClick={handleCancel}>
+          <AlertDialogCancel asChild>
             <Button variant="secondary-ghost">Cancel</Button>
           </AlertDialogCancel>
           <AlertDialogAction asChild disabled={!isDeleteConfirmed || isLoading} onClick={handleConfirm}>

@@ -128,17 +128,11 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel asChild onClick={() => setConfirmationText('')}>
+          <AlertDialogCancel asChild>
             <Button variant="secondary-ghost">Cancel</Button>
           </AlertDialogCancel>
-          <AlertDialogAction
-            asChild
-            disabled={!isDeleteConfirmed || isDeleting}
-            onClick={handleDelete}
-          >
-            <Button variant="destructive" disabled={!isDeleteConfirmed || isDeleting} onClick={handleDelete}>
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </Button>
+          <AlertDialogAction asChild disabled={!isDeleteConfirmed || isDeleting} onClick={handleDelete}>
+            <Button variant="destructive">{isDeleting ? 'Deleting...' : 'Delete'}</Button>
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
