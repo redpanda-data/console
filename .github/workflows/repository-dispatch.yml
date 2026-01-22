@@ -15,6 +15,9 @@ on:
       - "frontend/**"
       - "backend/**"
       - '.github/workflows/repository-dispatch.yml'
+concurrency:
+  group: repo-dispatch-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 permissions:
   id-token: write
   contents: read
