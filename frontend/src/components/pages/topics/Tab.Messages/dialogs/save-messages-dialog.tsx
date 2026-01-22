@@ -231,7 +231,7 @@ export const SaveMessagesDialog = observer(
             </Checkbox>
           </ModalBody>
           <ModalFooter gap={2}>
-            <Button colorScheme="red" onClick={onClose} variant="outline">
+            <Button onClick={onClose} variant="ghost">
               Cancel
             </Button>
             <Button isDisabled={!messages || messages.length === 0} onClick={() => saveMessages()} variant="solid">

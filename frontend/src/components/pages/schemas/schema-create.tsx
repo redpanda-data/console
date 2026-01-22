@@ -72,10 +72,6 @@ export class SchemaCreatePage extends PageComponent {
   render() {
     return (
       <PageContent key="b">
-        <Heading data-testid="schema-create-heading" variant="xl">
-          Create schema
-        </Heading>
-
         <SchemaEditor mode="CREATE" state={this.editorState} />
 
         <SchemaPageButtons editorState={this.editorState} />

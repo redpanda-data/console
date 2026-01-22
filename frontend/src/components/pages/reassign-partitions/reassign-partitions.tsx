@@ -413,7 +413,7 @@ class ReassignPartitions extends PageComponent {
                   onClick={() => {
                     this.removeThrottleFromTopicsContent = null;
                   }}
-                  variant="outline"
+                  variant="ghost"
                 >
                   Cancel
                 </Button>

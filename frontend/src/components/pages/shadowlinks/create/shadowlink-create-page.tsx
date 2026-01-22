@@ -315,21 +315,21 @@ export const ShadowLinkCreatePage = () => {
             <div className="w-1/2">
               <Stepper.Controls className="flex justify-start">
                 {methods.isLast ? (
-                  <Button disabled={isCreating} onClick={form.handleSubmit(onSubmit)} variant="secondary">
+                  <Button disabled={isCreating} onClick={form.handleSubmit(onSubmit)}>
                     Create shadow link
                   </Button>
                 ) : (
-                  <Button onClick={() => next(methods)} type="button" variant="secondary">
+                  <Button onClick={() => next(methods)} type="button">
                     Next
                   </Button>
                 )}
 
                 {methods.isFirst ? (
-                  <Button onClick={() => navigate({ to: '/shadowlinks' })} type="button" variant="outline">
+                  <Button onClick={() => navigate({ to: '/shadowlinks' })} type="button" variant="secondary-ghost">
                     Cancel
                   </Button>
                 ) : (
-                  <Button onClick={methods.prev} type="button" variant="outline">
+                  <Button onClick={methods.prev} type="button" variant="secondary-ghost">
                     Back
                   </Button>
                 )}

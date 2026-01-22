@@ -190,7 +190,7 @@ const PipelineListPageContent = () => {
               <DeleteResourceAlertDialog
                 buttonIcon={<Trash2 />}
                 buttonText={undefined}
-                buttonVariant="ghost"
+                buttonVariant="destructive-ghost"
                 isDeleting={isDeletingPipeline}
                 onDelete={handleDelete}
                 resourceId={row.original.id}

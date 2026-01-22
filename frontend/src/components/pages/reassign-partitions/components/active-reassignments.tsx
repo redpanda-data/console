@@ -308,7 +308,7 @@ export const ThrottleDialog: FC<{ visible: boolean; lastKnownMinThrottle: number
             </Button>
 
             <Flex gap={2}>
-              <Button onClick={onClose} style={{ marginLeft: 'auto' }}>
+              <Button onClick={onClose} style={{ marginLeft: 'auto' }} variant="ghost">
                 Close
               </Button>
               <Button
@@ -446,7 +446,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
           <ModalHeader>Reassignment: {state.topicName}</ModalHeader>
           <ModalBody>{modalContent}</ModalBody>
           <ModalFooter gap={2}>
-            <Button onClick={this.props.onClose} variant="outline">
+            <Button onClick={this.props.onClose} variant="ghost">
               Close
             </Button>
             <Button

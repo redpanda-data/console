@@ -12,7 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
-import { Button, type ButtonProps } from 'components/redpanda-ui/components/button';
+import { Button } from 'components/redpanda-ui/components/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,7 +48,6 @@ type ButtonConfig = {
   text: string;
   action?: () => void;
   dropdown?: DropdownOption[];
-  variant?: ButtonProps['variant'];
 };
 
 type ToolbarProps = {
@@ -69,7 +68,6 @@ function createStoppedConfig({ handleStart, isStartPending }: ButtonConfigFactor
     icon: isStartPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />,
     text: isStartPending ? 'Starting' : 'Start',
     action: handleStart,
-    variant: isStartPending ? undefined : 'secondary',
   };
 }
 
@@ -78,7 +76,6 @@ function createRunningConfig({ handleStop, isStopPending }: ButtonConfigFactoryP
     icon: isStopPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />,
     text: isStopPending ? 'Stopping' : 'Stop',
     action: handleStop,
-    variant: isStopPending ? undefined : 'destructive',
   };
 }
 
@@ -240,7 +237,7 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="min-w-[110px]" variant={buttonConfig.variant ?? 'outline'}>
+            <Button className="min-w-[110px]">
               {buttonConfig.icon}
               {buttonConfig.text}
               <ChevronDown className="ml-1 h-3 w-3" />
@@ -259,12 +256,7 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
     }
 
     return (
-      <Button
-        disabled={isStartPending || isStopPending}
-        icon={buttonConfig.icon}
-        onClick={buttonConfig.action}
-        variant={buttonConfig.variant ?? 'outline'}
-      >
+      <Button disabled={isStartPending || isStopPending} icon={buttonConfig.icon} onClick={buttonConfig.action}>
         {buttonConfig.text}
       </Button>
     );
@@ -283,6 +275,7 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
           <DeleteResourceAlertDialog
             buttonIcon={<Trash />}
             buttonText={undefined}
+            buttonVariant="destructive-outline"
             isDeleting={isDeletePending}
             onDelete={handleDelete}
             resourceId={pipelineId}

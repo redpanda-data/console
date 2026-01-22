@@ -178,15 +178,7 @@ export const SecretCreatePage = () => {
           tagFields={labelFields}
         />
 
-        <div className="flex justify-end gap-3 pt-4">
-          <Button
-            data-testid="secret-create-cancel-button"
-            onClick={() => navigate({ to: '/secrets' })}
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
+        <div className="flex justify-start gap-3 pt-4">
           <Button
             data-testid="secret-create-submit-button"
             disabled={!form.formState.isValid || isCreating}
@@ -200,6 +192,14 @@ export const SecretCreatePage = () => {
             ) : (
               'Create Secret'
             )}
+          </Button>
+          <Button
+            data-testid="secret-create-cancel-button"
+            onClick={() => navigate({ to: '/secrets' })}
+            type="button"
+            variant="secondary-ghost"
+          >
+            Cancel
           </Button>
         </div>
       </form>

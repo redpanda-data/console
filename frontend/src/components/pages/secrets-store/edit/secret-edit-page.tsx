@@ -227,15 +227,7 @@ export const SecretEditPage = () => {
           tagFields={labelFields}
         />
 
-        <div className="flex justify-end gap-3 pt-4">
-          <Button
-            data-testid="secret-edit-cancel-button"
-            onClick={() => navigate({ to: '/secrets' })}
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
+        <div className="flex justify-start gap-3 pt-4">
           <Button
             data-testid="secret-edit-submit-button"
             disabled={!form.formState.isValid || isUpdating}
@@ -249,6 +241,14 @@ export const SecretEditPage = () => {
             ) : (
               'Update Secret'
             )}
+          </Button>
+          <Button
+            data-testid="secret-edit-cancel-button"
+            onClick={() => navigate({ to: '/secrets' })}
+            type="button"
+            variant="secondary-ghost"
+          >
+            Cancel
           </Button>
         </div>
       </form>

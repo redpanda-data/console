@@ -624,16 +624,7 @@ export const AIAgentCreatePage = () => {
             />
 
             {/* Actions */}
-            <div className="flex justify-end gap-2">
-              <Button
-                onClick={() => {
-                  navigate({ to: '/agents' });
-                }}
-                type="button"
-                variant="outline"
-              >
-                Cancel
-              </Button>
+            <div className="flex justify-start gap-2">
               <Button
                 disabled={
                   !form.formState.isValid ||
@@ -651,6 +642,15 @@ export const AIAgentCreatePage = () => {
                 ) : (
                   'Create Agent'
                 )}
+              </Button>
+              <Button
+                onClick={() => {
+                  navigate({ to: '/agents' });
+                }}
+                type="button"
+                variant="secondary-ghost"
+              >
+                Cancel
               </Button>
             </div>
           </div>

@@ -109,13 +109,6 @@ export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => 
 
             <ModalFooter>
               <ButtonGroup isDisabled={isCreateTopicPending}>
-                <form.SubscribeButton
-                  data-testid="create-topic-button"
-                  label="Create"
-                  loadingText="Creating"
-                  variant="brand"
-                />
-
                 <Button
                   data-testid="cancel-button"
                   onClick={() => {
@@ -125,6 +118,13 @@ export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => 
                 >
                   Cancel
                 </Button>
+
+                <form.SubscribeButton
+                  data-testid="create-topic-button"
+                  label="Create"
+                  loadingText="Creating"
+                  variant="solid"
+                />
               </ButtonGroup>
             </ModalFooter>
           </form.AppForm>
