@@ -9,9 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { useQuery } from '@connectrpc/connect-query';
+import { createConnectQueryKey } from '@connectrpc/connect-query';
 import { Alert, AlertIcon, Button, DataTable, Result, Skeleton } from '@redpanda-data/ui';
+import { useQuery } from '@tanstack/react-query';
 import { SkipIcon } from 'components/icons';
+import { config } from 'config';
 import { useMemo } from 'react';
 
 import {
@@ -20,22 +22,90 @@ import {
   Quota_ValueType,
 } from '../../../protogen/redpanda/api/dataplane/v1/quota_pb';
 import { listQuotas } from '../../../protogen/redpanda/api/dataplane/v1/quota-QuotaService_connectquery';
+import type { QuotaResponse, QuotaResponseSetting } from '../../../state/rest-interfaces';
 import { InfoText } from '../../../utils/tsx-utils';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 
+/**
+ * Maps REST API quota value types to protobuf ValueType enum
+ */
+const mapValueTypeToProto = (key: string): Quota_ValueType => {
+  switch (key) {
+    case 'producer_byte_rate':
+      return Quota_ValueType.PRODUCER_BYTE_RATE;
+    case 'consumer_byte_rate':
+      return Quota_ValueType.CONSUMER_BYTE_RATE;
+    case 'controller_mutation_rate':
+      return Quota_ValueType.CONTROLLER_MUTATION_RATE;
+    case 'request_percentage':
+      return Quota_ValueType.REQUEST_PERCENTAGE;
+    default:
+      return Quota_ValueType.UNSPECIFIED;
+  }
+};
+
+/**
+ * Maps REST API entity type to protobuf EntityType enum
+ */
+const mapEntityTypeToProto = (entityType: string): Quota_EntityType => {
+  switch (entityType) {
+    case 'client-id':
+      return Quota_EntityType.CLIENT_ID;
+    case 'user':
+      return Quota_EntityType.USER;
+    case 'ip':
+      return Quota_EntityType.IP;
+    default:
+      return Quota_EntityType.UNSPECIFIED;
+  }
+};
+
+/**
+ * Custom hook to fetch quotas from REST API until protobuf endpoint is available
+ */
+const useQuotasQuery = () => {
+  // Create a query key compatible with Connect Query for future migration
+  const queryKey = createConnectQueryKey({
+    schema: listQuotas,
+    input: {},
+    cardinality: 'finite',
+  });
+
+  return useQuery<QuotaResponse | null>({
+    queryKey,
+    queryFn: async () => {
+      const response = await config.fetch(`${config.restBasePath}/quotas`, {
+        method: 'GET',
+        headers: {},
+      });
+
+      if (!response.ok) {
+        if (response.status === 403 || response.status === 401) {
+          throw new Error('You do not have permission to view quotas');
+        }
+        throw new Error(`Failed to fetch quotas: ${response.statusText}`);
+      }
+
+      const data: QuotaResponse = await response.json();
+      return data;
+    },
+    refetchOnMount: 'always',
+  });
+};
+
 const QuotasList = () => {
-  const { data, error, isLoading } = useQuery(listQuotas, {});
+  const { data, error, isLoading } = useQuotasQuery();
 
   const quotasData = useMemo(() => {
-    if (!data?.quotas) {
+    if (!data?.items) {
       return [];
     }
 
-    return data.quotas.map((entry) => {
-      const entityType = entry.entity?.entityType;
-      const entityName = entry.entity?.entityName;
+    return data.items.map((item) => {
+      const entityType = mapEntityTypeToProto(item.entityType);
+      const entityName = item.entityName;
 
       // Map entity type to display string
       let displayType: 'client-id' | 'user' | 'ip' | 'unknown' = 'unknown';
@@ -47,11 +117,20 @@ const QuotasList = () => {
         displayType = 'ip';
       }
 
+      // Transform REST API settings to protobuf Value format
+      const values: Quota_Value[] = item.settings.map(
+        (setting: QuotaResponseSetting): Quota_Value => ({
+          valueType: mapValueTypeToProto(setting.key),
+          value: setting.value,
+          $typeName: 'redpanda.api.dataplane.v1.Quota.Value',
+        })
+      );
+
       return {
         eqKey: `${entityType}-${entityName}`,
         entityType: displayType,
         entityName: entityName || undefined,
-        values: entry.values,
+        values,
       };
     });
   }, [data]);
@@ -122,6 +201,19 @@ const QuotasList = () => {
           <Alert status="warning" style={{ marginBottom: '1em' }} variant="solid">
             <AlertIcon />
             {error.message || 'Failed to load quotas'}
+          </Alert>
+        </Section>
+      </PageContent>
+    );
+  }
+
+  if (data?.error) {
+    return (
+      <PageContent>
+        <Section>
+          <Alert status="warning" style={{ marginBottom: '1em' }} variant="solid">
+            <AlertIcon />
+            {data.error}
           </Alert>
         </Section>
       </PageContent>
