@@ -9,18 +9,18 @@ import {
   ListGatewaysRequestSchema,
   type ListGatewaysResponse,
 } from 'protogen/redpanda/api/aigateway/v1/gateway_pb';
+import { listGateways } from 'protogen/redpanda/api/aigateway/v1/gateway-GatewayService_connectquery';
 import {
   type ListModelProvidersRequest,
   ListModelProvidersRequestSchema,
   type ListModelProvidersResponse,
 } from 'protogen/redpanda/api/aigateway/v1/model_providers_pb';
+import { listModelProviders } from 'protogen/redpanda/api/aigateway/v1/model_providers-ModelProvidersService_connectquery';
 import {
   type ListModelsRequest,
   ListModelsRequestSchema,
   type ListModelsResponse,
 } from 'protogen/redpanda/api/aigateway/v1/models_pb';
-import { listGateways } from 'protogen/redpanda/api/aigateway/v1/gateway-GatewayService_connectquery';
-import { listModelProviders } from 'protogen/redpanda/api/aigateway/v1/model_providers-ModelProvidersService_connectquery';
 import { listModels } from 'protogen/redpanda/api/aigateway/v1/models-ModelsService_connectquery';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 
@@ -46,8 +46,8 @@ export const useListGatewaysQuery = (
   return useQuery(listGateways, listGatewaysRequest, {
     enabled: options?.enabled,
     transport,
-    staleTime: 60000, // 1 minute - prevent excessive refetching
-    gcTime: 300000, // 5 minutes cache
+    staleTime: 60_000, // 1 minute - prevent excessive refetching
+    gcTime: 300_000, // 5 minutes cache
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
@@ -73,8 +73,8 @@ export const useListModelProvidersQuery = (
   return useQuery(listModelProviders, listModelProvidersRequest, {
     enabled: options?.enabled,
     transport,
-    staleTime: 60000, // 1 minute - prevent excessive refetching
-    gcTime: 300000, // 5 minutes cache
+    staleTime: 60_000, // 1 minute - prevent excessive refetching
+    gcTime: 300_000, // 5 minutes cache
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
@@ -105,8 +105,8 @@ export const useListModelsQuery = (
   return useQuery(listModels, listModelsRequest, {
     enabled: options?.enabled,
     transport,
-    staleTime: 60000, // 1 minute - prevent excessive refetching
-    gcTime: 300000, // 5 minutes cache
+    staleTime: 60_000, // 1 minute - prevent excessive refetching
+    gcTime: 300_000, // 5 minutes cache
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,

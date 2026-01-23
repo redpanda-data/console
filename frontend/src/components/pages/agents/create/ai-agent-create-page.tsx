@@ -75,24 +75,24 @@ export const AIAgentCreatePage = () => {
   });
 
   // Feature flag: when true, use legacy API key mode (hardcoded providers)
-  const useLegacyApiKeyMode = isFeatureFlagEnabled('enableApiKeyConfigurationAgent');
+  const isLegacyApiKeyMode = isFeatureFlagEnabled('enableApiKeyConfigurationAgent');
 
   // Gateway detection and list query (using v1 API from ai-gateway module)
   // Only fetch when NOT in legacy mode
   const { data: gatewaysData, isLoading: isLoadingGateways } = useListGatewaysQuery(
-    { pageSize: 1000 }, // Get all gateways (max 1000)
-    { enabled: !useLegacyApiKeyMode }
+    { pageSize: 100 },
+    { enabled: !isLegacyApiKeyMode }
   );
 
   const hasGatewayDeployed = useMemo(() => {
-    if (useLegacyApiKeyMode || isLoadingGateways) {
+    if (isLegacyApiKeyMode || isLoadingGateways) {
       return false;
     }
     return Boolean(gatewaysData?.gateways && gatewaysData.gateways.length > 0);
-  }, [useLegacyApiKeyMode, gatewaysData, isLoadingGateways]);
+  }, [isLegacyApiKeyMode, gatewaysData, isLoadingGateways]);
 
   const availableGateways = useMemo(() => {
-    if (useLegacyApiKeyMode || !gatewaysData?.gateways) {
+    if (isLegacyApiKeyMode || !gatewaysData?.gateways) {
       return [];
     }
     return gatewaysData.gateways.map((gw) => {
@@ -104,7 +104,7 @@ export const AIAgentCreatePage = () => {
         description: gw.description,
       };
     });
-  }, [useLegacyApiKeyMode, gatewaysData]);
+  }, [isLegacyApiKeyMode, gatewaysData]);
 
   // Ref to ServiceAccountSelector to call createServiceAccount
   const serviceAccountSelectorRef = useRef<ServiceAccountSelectorRef>(null);
@@ -143,10 +143,10 @@ export const AIAgentCreatePage = () => {
 
   // Auto-select first gateway when gateways are available (only if not in legacy mode)
   useEffect(() => {
-    if (!useLegacyApiKeyMode && availableGateways.length > 0 && !form.getValues('gatewayId')) {
+    if (!isLegacyApiKeyMode && availableGateways.length > 0 && !form.getValues('gatewayId')) {
       form.setValue('gatewayId', availableGateways[0].id);
     }
-  }, [useLegacyApiKeyMode, availableGateways.length, form]);
+  }, [isLegacyApiKeyMode, availableGateways.length, form]);
 
   const {
     fields: tagFields,
