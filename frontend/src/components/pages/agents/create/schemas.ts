@@ -160,5 +160,4 @@ export const initialValues: FormValues = {
   systemPrompt: '',
   serviceAccountName: '',
   subagents: [],
-  gatewayId: '',
 };

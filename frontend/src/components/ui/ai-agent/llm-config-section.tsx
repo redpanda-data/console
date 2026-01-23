@@ -55,6 +55,7 @@ export interface LLMConfigSectionProps {
   showBaseUrl?: boolean;
   showMaxIterations?: boolean;
   hasGatewayDeployed?: boolean;
+  isLoadingGateways?: boolean;
   availableGateways?: Array<{ id: string; displayName: string; description?: string }>;
 }
 
