@@ -28,7 +28,17 @@ test.describe('Quotas - Display 50 quotas', () => {
     });
 
     await test.step(`Verify all ${QUOTAS_TEST_LIMIT} quotas are visible on the page`, async () => {
-      // Count rows containing our test quota IDs
+      // Wait for all quotas to load (app loads in batches)
+      // Use toPass() to retry until all batches have loaded
+      await expect(async () => {
+        const visibleQuotaCount = await page
+          .locator('tr')
+          .filter({ hasText: `quota-test-${timestamp}` })
+          .count();
+        expect(visibleQuotaCount).toBe(QUOTAS_TEST_LIMIT);
+      }).toPass({ timeout: 15_000, intervals: [500, 1000, 5000] });
+
+      // Final verification - count should now be stable at 50
       const visibleQuotaCount = await page
         .locator('tr')
         .filter({ hasText: `quota-test-${timestamp}` })
