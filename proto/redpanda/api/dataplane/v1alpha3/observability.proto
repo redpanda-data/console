@@ -8,11 +8,13 @@ import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
 
-message Filter {
+// Description of a filter that may be available in a query.
+message FilterMetadata {
   string key = 1;
   string description = 2;
 }
 
+// A description of a predefined query available in the system.
 message QueryMetadata {
   string name = 1;
   // What this query returns
@@ -25,43 +27,52 @@ message QueryMetadata {
   map<string, string> labels = 5;
 }
 
+// Contains details of a ListQueries request.
 message ListQueriesRequest {}
 
+// Response of the ListQueries operation.
 message ListQueriesResponse {
   repeated QueryMetadata queries = 1;
 }
 
+// A single data point made of value and date when it's been measured.
 message DataPoint {
   google.protobuf.Timestamp timestamp = 1;
   double value = 2;
 }
 
+// A sequence of data points for a label combination.
 message TimeSeries {
+  // Name is a human friendly name for the series, computed from labels.
   string name = 1;
-  // Optional labels
+  // Labels associated to the time series.
   map<string, string> labels = 2;
   // Multiple for range queries, single item for instant queries
   repeated DataPoint values = 3;
 }
 
+// Input data for a Query operation.
 message QueryRequest {
+  // Predefined query to request data from
   string query_name = 1;
   // Optional - if not provided, performs an instant query at end time (or current time if both are absent)
   google.protobuf.Timestamp start = 2;
-  // Optional - required if start is provided
+  // Optional - defaults to current date
   google.protobuf.Timestamp end = 3;
   // Query resolution step width (optional)
   google.protobuf.Duration step = 4;
-  // Optional filter values to apply to the query
+  // Optional filter values to apply to the query, if the query supports them
   map<string, string> filters = 5;
 }
 
+// Response of a Query operation.
 message QueryResponse {
   QueryMetadata metadata = 1;
 
   repeated TimeSeries result = 2;
 }
 
+// ObservabilityService provides query access to Redpanda metrics.
 service ObservabilityService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
     name: "Observability"
