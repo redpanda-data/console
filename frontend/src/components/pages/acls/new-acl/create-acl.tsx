@@ -1095,33 +1095,29 @@ export default function CreateACL({
             <div className="lg:col-span-1">
               <div className="sticky top-20">
                 <Summary rules={rules} sharedConfig={sharedConfig} />
+                <div className="mt-4 flex items-center gap-2">
+                  <Button
+                    data-testid="submit-acl-button"
+                    disabled={!!principalError || !isValidRule}
+                    onClick={() => {
+                      if (parsePrincipal(sharedConfig.principal).name) {
+                        onSubmit?.(sharedConfig.principal, sharedConfig.host, rules);
+                      } else {
+                        setPrincipalError('Principal is required');
+                      }
+                    }}
+                  >
+                    {edit ? 'Save' : 'Create'}
+                  </Button>
+                  <Button onClick={onCancel} variant="secondary-ghost">
+                    Cancel
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </main>
-
-      {/* Sticky Footer - Action Buttons */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-border border-t bg-background shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-start gap-2 px-6">
-          <Button
-            data-testid="submit-acl-button"
-            disabled={!!principalError || !isValidRule}
-            onClick={() => {
-              if (parsePrincipal(sharedConfig.principal).name) {
-                onSubmit?.(sharedConfig.principal, sharedConfig.host, rules);
-              } else {
-                setPrincipalError('Principal is required');
-              }
-            }}
-          >
-            {edit ? 'Save' : 'Create'}
-          </Button>
-          <Button onClick={onCancel} variant="secondary-ghost">
-            Cancel
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }
