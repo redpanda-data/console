@@ -483,8 +483,10 @@ func (s *Service) fetchMessages(ctx context.Context, cl *kgo.Client, progress IL
 	defer client.Close()
 
 	// 2. Create consumer workers
-	jobs := make(chan *kgo.Record, 100)
-	resultsCh := make(chan *TopicMessage, 100)
+	// Reduced from 100 to 20 to limit memory usage in serverless environments
+	// With large records (up to 1MB), 100 records = 1GB+ after deserialization
+	jobs := make(chan *kgo.Record, 20)
+	resultsCh := make(chan *TopicMessage, 20)
 	workerCtx, cancel := context.WithCancelCause(ctx)
 	defer cancel(errors.New("worker cancel"))
 
