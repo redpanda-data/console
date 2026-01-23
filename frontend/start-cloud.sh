@@ -26,7 +26,13 @@ if [ -z "$BACKEND_URL" ]; then
   exit 1
 fi
 
+# Extract cluster ID from backend URL
+# Example: https://console-2fd2fedf.d5mst2vnnfekmiescdb0.fmc.ign.cloud.redpanda.com
+# Extracts: d5mst2vnnfekmiescdb0
+CLUSTER_ID=$(echo "$BACKEND_URL" | sed -E 's/.*\.([a-z0-9]+)\.(fmc\.ign|rpd)\.cloud\.redpanda\.com.*/\1/')
+
 export PROXY_TARGET="$BACKEND_URL"
+export AI_GATEWAY_URL="https://ai-gateway.${CLUSTER_ID}.clusters.ign.rdpa.co"
 export REACT_APP_ENABLED_FEATURES=SINGLE_SIGN_ON,REASSIGN_PARTITIONS
 
 echo "Starting frontend dev server..."

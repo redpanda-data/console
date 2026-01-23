@@ -11,6 +11,7 @@ deps:
   - buf.build/redpandadata/common
   - buf.build/redpandadata/core:05aa34b3829a4d5a801d9487623a7c76
   - buf.build/redpandadata/otel
+  - buf.build/redpandadata/ai-gateway
 lint:
   use:
     - STANDARD
