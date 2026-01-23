@@ -14,7 +14,7 @@ import { Alert, AlertIcon, Button, DataTable, Result, Skeleton } from '@redpanda
 import { useQuery } from '@tanstack/react-query';
 import { SkipIcon } from 'components/icons';
 import { config } from 'config';
-import { useMemo } from 'react';
+import { useLayoutEffect, useMemo } from 'react';
 
 import {
   Quota_EntityType,
@@ -23,6 +23,7 @@ import {
 } from '../../../protogen/redpanda/api/dataplane/v1/quota_pb';
 import { listQuotas } from '../../../protogen/redpanda/api/dataplane/v1/quota-QuotaService_connectquery';
 import type { QuotaResponse, QuotaResponseSetting } from '../../../state/rest-interfaces';
+import { uiState } from '../../../state/ui-state';
 import { InfoText } from '../../../utils/tsx-utils';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
@@ -96,6 +97,13 @@ const useQuotasQuery = () => {
 };
 
 const QuotasList = () => {
+  // Set page title and breadcrumbs using useLayoutEffect for synchronous execution
+  // This runs before browser paint, ensuring header renders immediately (fixes CI E2E tests)
+  useLayoutEffect(() => {
+    uiState.pageBreadcrumbs = [{ title: 'Quotas', linkTo: '/quotas' }];
+    uiState.pageTitle = 'Quotas';
+  }, []);
+
   const { data, error, isLoading } = useQuotasQuery();
 
   const quotasData = useMemo(() => {
