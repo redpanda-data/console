@@ -2770,7 +2770,11 @@ export function createMessageSearch() {
     messages: observable([] as TopicMessage[], { deep: false }),
 
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 64, refactor later
-    async startSearch(_searchRequest: MessageSearchRequest, externalSignal?: AbortSignal): Promise<TopicMessage[]> {
+    async startSearch(
+      _searchRequest: MessageSearchRequest,
+      externalSignal?: AbortSignal,
+      append = false
+    ): Promise<TopicMessage[]> {
       // https://connectrpc.com/docs/web/using-clients
       // https://github.com/connectrpc/connect-es
       // https://github.com/connectrpc/examples-es
@@ -3156,7 +3160,7 @@ export function createMessageSearch() {
         pageToken: this.nextPageToken,
       };
 
-      return await this.startSearch(nextRequest, true);
+      return await this.startSearch(nextRequest, undefined, true);
     },
   };
 
