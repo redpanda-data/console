@@ -14,7 +14,11 @@ import { Alert, AlertIcon, Button, DataTable, Result, Skeleton } from '@redpanda
 import { SkipIcon } from 'components/icons';
 import { useMemo } from 'react';
 
-import { type Quota_Value, Quota_ValueType } from '../../../protogen/redpanda/api/dataplane/v1/quota_pb';
+import {
+  Quota_EntityType,
+  type Quota_Value,
+  Quota_ValueType,
+} from '../../../protogen/redpanda/api/dataplane/v1/quota_pb';
 import { listQuotas } from '../../../protogen/redpanda/api/dataplane/v1/quota-QuotaService_connectquery';
 import { InfoText } from '../../../utils/tsx-utils';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
@@ -35,11 +39,11 @@ const QuotasList = () => {
 
       // Map entity type to display string
       let displayType: 'client-id' | 'user' | 'ip' | 'unknown' = 'unknown';
-      if (entityType === 1) {
+      if (entityType === Quota_EntityType.CLIENT_ID) {
         displayType = 'client-id';
-      } else if (entityType === 3) {
+      } else if (entityType === Quota_EntityType.USER) {
         displayType = 'user';
-      } else if (entityType === 4) {
+      } else if (entityType === Quota_EntityType.IP) {
         displayType = 'ip';
       }
 
