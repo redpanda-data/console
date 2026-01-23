@@ -14,7 +14,7 @@ import { Alert, AlertIcon, Button, DataTable, Result, Skeleton } from '@redpanda
 import { SkipIcon } from 'components/icons';
 import { useMemo } from 'react';
 
-import { Quota_ValueType } from '../../../protogen/redpanda/api/dataplane/v1/quota_pb';
+import { type Quota_Value, Quota_ValueType } from '../../../protogen/redpanda/api/dataplane/v1/quota_pb';
 import { listQuotas } from '../../../protogen/redpanda/api/dataplane/v1/quota-QuotaService_connectquery';
 import { InfoText } from '../../../utils/tsx-utils';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
@@ -25,7 +25,9 @@ const QuotasList = () => {
   const { data, error, isLoading } = useQuery(listQuotas, {});
 
   const quotasData = useMemo(() => {
-    if (!data?.quotas) return [];
+    if (!data?.quotas) {
+      return [];
+    }
 
     return data.quotas.map((entry) => {
       const entityType = entry.entity?.entityType;
@@ -33,9 +35,13 @@ const QuotasList = () => {
 
       // Map entity type to display string
       let displayType: 'client-id' | 'user' | 'ip' | 'unknown' = 'unknown';
-      if (entityType === 1) displayType = 'client-id';
-      else if (entityType === 3) displayType = 'user';
-      else if (entityType === 4) displayType = 'ip';
+      if (entityType === 1) {
+        displayType = 'client-id';
+      } else if (entityType === 3) {
+        displayType = 'user';
+      } else if (entityType === 4) {
+        displayType = 'ip';
+      }
 
       return {
         eqKey: `${entityType}-${entityName}`,
@@ -57,7 +63,7 @@ const QuotasList = () => {
     );
   };
 
-  const formatRate = (values: (typeof quotasData)[0]['values'], valueType: Quota_ValueType) => {
+  const formatRate = (values: Quota_Value[], valueType: Quota_ValueType) => {
     const value = values.find((v) => v.valueType === valueType)?.value;
     return value ? (
       prettyNumber(value)
@@ -125,7 +131,7 @@ const QuotasList = () => {
           eqKey: string;
           entityType: 'client-id' | 'user' | 'ip' | 'unknown';
           entityName?: string | undefined;
-          values: Array<{ valueType: Quota_ValueType; value: number }>;
+          values: Quota_Value[];
         }>
           columns={[
             {

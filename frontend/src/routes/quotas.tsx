@@ -23,5 +23,5 @@ export const Route = createFileRoute('/quotas')({
 });
 
 function QuotasWrapper() {
-  return <QuotasList matchedPath="/quotas" />;
+  return <QuotasList />;
 }
