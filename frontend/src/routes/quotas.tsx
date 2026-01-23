@@ -11,8 +11,10 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 import { ScaleIcon } from 'components/icons';
+import { useLayoutEffect } from 'react';
 
 import QuotasList from '../components/pages/quotas/quotas-list';
+import { uiState } from '../state/ui-state';
 
 export const Route = createFileRoute('/quotas')({
   staticData: {
@@ -23,5 +25,11 @@ export const Route = createFileRoute('/quotas')({
 });
 
 function QuotasWrapper() {
+  // Set page title and breadcrumbs in route wrapper for early execution
+  useLayoutEffect(() => {
+    uiState.pageBreadcrumbs = [{ title: 'Quotas', linkTo: '' }];
+    uiState.pageTitle = 'Quotas';
+  }, []);
+
   return <QuotasList />;
 }
