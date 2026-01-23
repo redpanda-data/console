@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from 'components/redpanda-ui/components/alert-dialog';
-import type { ButtonProps } from 'components/redpanda-ui/components/button';
+import type { ButtonVariants } from 'components/redpanda-ui/components/button';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DropdownMenuItem } from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
@@ -42,7 +42,7 @@ export type DeleteResourceAlertDialogProps = {
   // Trigger variant: "dropdown" renders a DropdownMenuItem, "button" renders a Button
   triggerVariant?: 'dropdown' | 'button';
   // Button-specific props when triggerVariant is "button"
-  buttonVariant?: ButtonProps['variant'];
+  buttonVariant?: ButtonVariants['variant'];
   buttonIcon?: React.ReactNode;
   buttonText?: string;
 };
@@ -56,12 +56,13 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
   isDeleting,
   children,
   triggerVariant = 'dropdown',
-  buttonVariant = 'destructiveOutline',
+  buttonVariant = 'destructive-outline',
   buttonIcon,
-  buttonText = 'Delete',
+  buttonText: buttonTextProp,
 }) => {
   const [confirmationText, setConfirmationText] = React.useState('');
   const isDeleteConfirmed = confirmationText.toLowerCase() === 'delete';
+  const buttonText = buttonTextProp === undefined ? undefined : 'Delete';
 
   const handleDelete = () => {
     if (isDeleteConfirmed) {
@@ -80,7 +81,7 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
   const renderTrigger = () => {
     if (triggerVariant === 'button') {
       return (
-        <Button disabled={isDeleting} icon={buttonIcon} variant={buttonVariant}>
+        <Button disabled={isDeleting} icon={buttonIcon} variant={buttonVariant} size={!buttonText ? 'icon' : undefined}>
           {buttonText && !isDeleting && buttonText}
           {isDeleting && (
             <>
@@ -127,13 +128,11 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => setConfirmationText('')}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!isDeleteConfirmed || isDeleting}
-            onClick={handleDelete}
-          >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+          <AlertDialogCancel asChild>
+            <Button variant="secondary-ghost">Cancel</Button>
+          </AlertDialogCancel>
+          <AlertDialogAction asChild disabled={!isDeleteConfirmed || isDeleting} onClick={handleDelete}>
+            <Button variant="destructive">{isDeleting ? 'Deleting...' : 'Delete'}</Button>
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

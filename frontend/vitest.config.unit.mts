@@ -27,6 +27,13 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       preserveSymlinks: true,
+      alias: {
+        // monaco-editor is browser-only; stub it for Node unit tests
+        'monaco-editor': new URL('./tests/mocks/monaco-editor.ts', import.meta.url).pathname,
+        '@monaco-editor/react': new URL('./tests/mocks/monaco-editor-react.ts', import.meta.url).pathname,
+        // @redpanda-data/ui has CSS that can't be parsed in Node
+        '@redpanda-data/ui': new URL('./tests/mocks/redpanda-ui.ts', import.meta.url).pathname,
+      },
     },
   };
 });

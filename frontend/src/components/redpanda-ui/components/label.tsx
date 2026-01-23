@@ -1,25 +1,23 @@
 import { Label as LabelPrimitive } from 'radix-ui';
 import React from 'react';
 
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
 const Label = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentProps<typeof LabelPrimitive.Root> & { testId?: string }
->(({ className, testId, ...props }, ref) => {
-  return (
-    <LabelPrimitive.Root
-      ref={ref}
-      data-slot="label"
-      data-testid={testId}
-      className={cn(
-        'flex gap-1.5 flex-col text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50',
-        className,
-      )}
-      {...props}
-    />
-  );
-});
+  React.ComponentProps<typeof LabelPrimitive.Root> & SharedProps
+>(({ className, testId, ...props }, ref) => (
+  <LabelPrimitive.Root
+    className={cn(
+      'select-none font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50 group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50',
+      className
+    )}
+    data-slot="label"
+    data-testid={testId}
+    ref={ref}
+    {...props}
+  />
+));
 
 Label.displayName = 'Label';
 

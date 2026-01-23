@@ -24,7 +24,7 @@ export type ShadowLinkConfigurationProps = {
 
 export const ShadowLinkConfiguration = ({ shadowLink }: ShadowLinkConfigurationProps) => (
   <Tabs defaultValue="all">
-    <TabsList testId="configuration-subtabs" variant="default">
+    <TabsList testId="configuration-subtabs">
       <TabsTrigger testId="all-tab" value="all" variant="underline">
         All
       </TabsTrigger>

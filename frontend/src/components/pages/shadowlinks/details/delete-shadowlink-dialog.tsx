@@ -19,6 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from 'components/redpanda-ui/components/alert-dialog';
+import { Button } from 'components/redpanda-ui/components/button';
 import { Input } from 'components/redpanda-ui/components/input';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { useState } from 'react';
@@ -42,9 +43,11 @@ export const DeleteShadowLinkDialog = ({
 
   const isDeleteConfirmed = confirmationText.toLowerCase() === 'delete';
 
-  const handleCancel = () => {
-    setConfirmationText('');
-    onOpenChange(false);
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      setConfirmationText(''); // Cleanup on close
+    }
+    onOpenChange(newOpen);
   };
 
   const handleConfirm = () => {
@@ -54,7 +57,7 @@ export const DeleteShadowLinkDialog = ({
   };
 
   return (
-    <AlertDialog onOpenChange={onOpenChange} open={open}>
+    <AlertDialog onOpenChange={handleOpenChange} open={open}>
       <AlertDialogContent>
         <AlertDialogHeader className="text-left">
           <AlertDialogTitle>Delete Shadowlink</AlertDialogTitle>
@@ -72,13 +75,11 @@ export const DeleteShadowLinkDialog = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-            disabled={!isDeleteConfirmed || isLoading}
-            onClick={handleConfirm}
-          >
-            {isLoading ? 'Deleting...' : 'Delete'}
+          <AlertDialogCancel asChild>
+            <Button variant="secondary-ghost">Cancel</Button>
+          </AlertDialogCancel>
+          <AlertDialogAction asChild disabled={!isDeleteConfirmed || isLoading} onClick={handleConfirm}>
+            <Button variant="destructive">{isLoading ? 'Deleting...' : 'Delete'}</Button>
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

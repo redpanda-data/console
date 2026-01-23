@@ -334,7 +334,6 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
         <Flex gap={4} mt={8}>
           {editMode ? (
             <Button
-              colorScheme="brand"
               isDisabled={roleNameAlreadyExist || !isFormValid}
               isLoading={isLoading}
               loadingText="Editing..."
@@ -344,7 +343,6 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             </Button>
           ) : (
             <Button
-              colorScheme="brand"
               isDisabled={roleNameAlreadyExist || !isFormValid}
               isLoading={isLoading}
               loadingText="Creating..."

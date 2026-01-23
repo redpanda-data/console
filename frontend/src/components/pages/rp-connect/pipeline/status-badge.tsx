@@ -8,43 +8,43 @@ export const PipelineStatusBadge = ({ state }: { state?: Pipeline_State }) => {
     switch (state) {
       case Pipeline_State.RUNNING:
         return {
-          variant: 'green' as const,
+          variant: 'success-inverted' as const,
           icon: <Check className="h-3 w-3" />,
           text: 'Running',
         };
       case Pipeline_State.STARTING:
         return {
-          variant: 'blue' as const,
+          variant: 'info-inverted' as const,
           icon: <Loader2 className="h-3 w-3 animate-spin" />,
           text: 'Starting',
         };
       case Pipeline_State.STOPPING:
         return {
-          variant: 'orange' as const,
+          variant: 'warning-inverted' as const,
           icon: <Loader2 className="h-3 w-3 animate-spin" />,
           text: 'Stopping',
         };
       case Pipeline_State.STOPPED:
         return {
-          variant: 'gray' as const,
+          variant: 'neutral-inverted' as const,
           icon: <Pause className="h-3 w-3" />,
           text: 'Stopped',
         };
       case Pipeline_State.COMPLETED:
         return {
-          variant: 'green' as const,
+          variant: 'success-inverted' as const,
           icon: <Check className="h-3 w-3" />,
           text: 'Completed',
         };
       case Pipeline_State.ERROR:
         return {
-          variant: 'red' as const,
+          variant: 'destructive-inverted' as const,
           icon: <AlertCircle className="h-3 w-3" />,
           text: 'Error',
         };
       default:
         return {
-          variant: 'gray' as const,
+          variant: 'neutral-inverted' as const,
           icon: <AlertCircle className="h-3 w-3" />,
           text: 'Unknown',
         };

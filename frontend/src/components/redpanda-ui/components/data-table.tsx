@@ -14,11 +14,11 @@ import {
   Circle,
   CircleOff,
   EyeOff,
+  FilterIcon,
   HelpCircle,
   MoreHorizontal,
   Settings2,
-  Timer,
-  X,
+  Timer
 } from 'lucide-react';
 import { DropdownMenu as DropdownMenuPrimitive } from 'radix-ui';
 import React from 'react';
@@ -228,7 +228,7 @@ export function DataTableColumnHeader<TData, TValue>({
     <div className={cn('flex items-center gap-2', className)} data-testid={testId}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="data-[state=open]:bg-accent -ml-3 h-8">
+          <Button variant="secondary-ghost" size="sm" className="data-[state=open]:bg-accent -ml-3 h-8">
             <span>{title}</span>
             {column.getIsSorted() === 'desc' ? (
               <ArrowDown />
@@ -282,24 +282,24 @@ export function DataTableFacetedFilter<TData, TValue>({
   return (
     <Popover testId={testId}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 border-dashed">
+        <Button variant="secondary-outline" size="sm" icon={<FilterIcon />}>
           {title}
           {selectedValues?.size > 0 && (
             <>
               <Separator orientation="vertical" className="mx-2 h-4" />
-              <Badge variant="secondary" className="rounded-sm px-1 font-normal lg:hidden">
+              <Badge variant="primary-inverted" className="lg:hidden">
                 {selectedValues.size}
               </Badge>
               <div className="hidden gap-1 lg:flex">
                 {selectedValues.size > 2 ? (
-                  <Badge variant="secondary" className="rounded-sm px-1 font-normal">
+                  <Badge variant="primary-inverted">
                     {selectedValues.size} selected
                   </Badge>
                 ) : (
                   options
                     .filter((option) => selectedValues.has(option.value))
                     .map((option) => (
-                      <Badge variant="secondary" key={option.value} className="rounded-sm px-1 font-normal">
+                      <Badge variant="primary-inverted" key={option.value}>
                         {option.label}
                       </Badge>
                     ))
@@ -468,7 +468,7 @@ export function DataTableRowActions<TData>({ row }: DataTableRowActionsProps<TDa
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="data-[state=open]:bg-muted size-8">
+        <Button variant="secondary-ghost" size="icon" className="data-[state=open]:bg-muted size-8">
           <MoreHorizontal />
           <span className="sr-only">Open menu</span>
         </Button>
@@ -524,9 +524,8 @@ export function DataTableToolbar<TData>({ table, testId }: DataTableToolbarProps
           <DataTableFacetedFilter column={table.getColumn('priority')} title="Priority" options={priorities} />
         )}
         {isFiltered && (
-          <Button variant="ghost" size="sm" onClick={() => table.resetColumnFilters()}>
-            Reset
-            <X />
+          <Button variant="secondary-ghost" size="sm" onClick={() => table.resetColumnFilters()}>
+            Clear
           </Button>
         )}
       </div>

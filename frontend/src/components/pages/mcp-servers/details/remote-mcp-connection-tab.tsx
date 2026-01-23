@@ -91,8 +91,10 @@ export const RemoteMCPConnectionTab = () => {
           </CardHeader>
           <CardContent className="px-4 pb-4">
             <div className="space-y-4">
-              <div className="space-y-4">
-                <Label className="font-medium text-sm">Server URL</Label>
+              <div className="flex flex-col gap-1.5">
+                <Label className="font-medium text-sm" htmlFor="server-url">
+                  Server URL
+                </Label>
                 <div className="w-full">
                   <DynamicCodeBlock code={mcpServerData?.mcpServer?.url || ''} lang="text" />
                 </div>

@@ -597,10 +597,6 @@ export class EditOffsetsModal extends Component<{
     if (this.page === 0) {
       return (
         <Flex gap={2}>
-          <Button key="cancel" onClick={this.props.onClose}>
-            Cancel
-          </Button>
-
           <Button
             isDisabled={disableContinue || disableNav}
             isLoading={this.isLoadingTimestamps}
@@ -613,25 +609,41 @@ export class EditOffsetsModal extends Component<{
               <ChevronRightIcon />
             </span>
           </Button>
+
+          <Button key="cancel" onClick={this.props.onClose} variant="link">
+            Cancel
+          </Button>
         </Flex>
       );
     }
 
     return (
       <Flex gap={2}>
-        <Button isDisabled={disableNav} key="back" onClick={() => this.setPage(0)} style={{ paddingRight: '18px' }}>
+        <Button
+          isDisabled={disableNav}
+          key="back"
+          onClick={() => this.setPage(0)}
+          style={{ paddingRight: '18px' }}
+          variant="outline"
+        >
           <span>
             <ChevronLeftIcon />
           </span>
           <span>Back</span>
         </Button>
 
-        <Button key="cancel" onClick={this.props.onClose} style={{ marginLeft: 'auto' }}>
-          Cancel
+        <Button
+          isDisabled={disableNav}
+          key="next"
+          onClick={() => this.onApplyEdit()}
+          style={{ marginLeft: 'auto' }}
+          variant="solid"
+        >
+          <span>Apply</span>
         </Button>
 
-        <Button isDisabled={disableNav} key="next" onClick={() => this.onApplyEdit()} variant="solid">
-          <span>Apply</span>
+        <Button key="cancel" onClick={this.props.onClose} variant="link">
+          Cancel
         </Button>
       </Flex>
     );

@@ -107,7 +107,7 @@ class GroupList extends PageComponent {
           </Flex>
         </Section>
 
-        <Section>
+        <Section mt={4}>
           {/* Searchbar */} {/* Filters */}
           <div
             style={{

@@ -290,7 +290,7 @@ export const MtlsConfiguration = () => {
                     }}
                     value={field.value}
                   >
-                    <TabsList variant="default">
+                    <TabsList>
                       <TabsTrigger data-testid="mtls-mode-upload-tab" value="pem">
                         Upload
                       </TabsTrigger>

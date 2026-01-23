@@ -8,7 +8,7 @@ type RemoteMCPConnectDocsAlertProps = {
 };
 
 export const RemoteMCPConnectDocsAlert = ({ documentationUrl, clientName }: RemoteMCPConnectDocsAlertProps) => (
-  <Alert variant="default">
+  <Alert>
     <Info />
     <AlertTitle>{clientName} documentation</AlertTitle>
     <AlertDescription>

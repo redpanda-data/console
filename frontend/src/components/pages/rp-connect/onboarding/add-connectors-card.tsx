@@ -1,7 +1,6 @@
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Separator } from 'components/redpanda-ui/components/separator';
-import { cn } from 'components/redpanda-ui/lib/utils';
 import { PlusIcon } from 'lucide-react';
 import { memo } from 'react';
 
@@ -19,11 +18,11 @@ const AddConnectorButton = ({
   type: ConnectComponentType;
   onClick: (type: ConnectComponentType) => void;
 }) => {
-  const { text, variant, className, icon } = getConnectorTypeBadgeProps(type);
+  const { text, variant, icon } = getConnectorTypeBadgeProps(type);
   return (
     <Badge className="max-w-fit cursor-pointer" icon={icon} onClick={() => onClick(type)} variant={variant}>
       {text}
-      <PlusIcon className={cn(className, 'mb-0.5 ml-3')} size={12} />
+      <PlusIcon className="mb-0.5 ml-3" size={12} />
     </Badge>
   );
 };

@@ -1,4 +1,6 @@
-import * as React from 'react';
+'use client';
+
+import React from 'react';
 
 import { useLayoutEffect } from './use-layout-effect';
 
@@ -8,12 +10,12 @@ const useInsertionEffect = React.useInsertionEffect ?? useLayoutEffect;
 type ChangeHandler<T> = (state: T) => void;
 type SetStateFn<T> = React.Dispatch<React.SetStateAction<T>>;
 
-interface UseControllableStateParams<T> {
+type UseControllableStateParams<T> = {
   prop?: T | undefined;
   defaultProp: T;
   onChange?: ChangeHandler<T>;
   caller?: string;
-}
+};
 
 /**
  * Taken from Radix UI
@@ -22,7 +24,9 @@ interface UseControllableStateParams<T> {
 export function useControllableState<T>({
   prop,
   defaultProp,
-  onChange = () => {},
+  onChange = () => {
+    // Default no-op function
+  },
   caller,
 }: UseControllableStateParams<T>): [T, SetStateFn<T>] {
   const [uncontrolledProp, setUncontrolledProp, onChangeRef] = useUncontrolledState({
@@ -44,8 +48,9 @@ export function useControllableState<T>({
       if (wasControlled !== isControlled) {
         const from = wasControlled ? 'controlled' : 'uncontrolled';
         const to = isControlled ? 'controlled' : 'uncontrolled';
+        // biome-ignore lint/suspicious/noConsole: needed for controllable state implementation
         console.warn(
-          `${caller} is changing from ${from} to ${to}. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.`,
+          `${caller} is changing from ${from} to ${to}. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.`
         );
       }
       isControlledRef.current = isControlled;
@@ -55,15 +60,15 @@ export function useControllableState<T>({
   const setValue = React.useCallback<SetStateFn<T>>(
     (nextValue) => {
       if (isControlled) {
-        const value = isFunction(nextValue) ? nextValue(prop) : nextValue;
-        if (value !== prop) {
-          onChangeRef.current?.(value as T);
+        const newValue = isFunction(nextValue) ? nextValue(prop) : nextValue;
+        if (newValue !== prop) {
+          onChangeRef.current?.(newValue as T);
         }
       } else {
         setUncontrolledProp(nextValue);
       }
     },
-    [isControlled, prop, setUncontrolledProp, onChangeRef],
+    [isControlled, prop, setUncontrolledProp, onChangeRef]
   );
 
   return [value, setValue];

@@ -177,7 +177,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
           </Flex>
         </ModalBody>
         <ModalFooter gap={2}>
-          <Button isDisabled={isCreating} onClick={() => closeModal()} variant={'outline'}>
+          <Button isDisabled={isCreating} onClick={() => closeModal()} variant="ghost">
             Cancel
           </Button>
           <Button

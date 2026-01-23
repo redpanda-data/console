@@ -363,7 +363,7 @@ export const AclPrincipalGroupEditor = observer(
             </VStack>
           </ModalBody>
           <ModalFooter gap={2}>
-            <Button onClick={p.onClose} variant="ghost">
+            <Button onClick={p.onClose} variant="secondary-ghost">
               Cancel
             </Button>
             <Button
@@ -507,7 +507,7 @@ export const ResourceACLsEditor = observer(
         {Boolean(p.onDelete) && (
           <Flex>
             <Box alignSelf="center" bg="gray.300" height="80%" width="1px" />
-            <Button alignSelf="center" mx={2} onClick={p.onDelete} variant="ghost">
+            <Button alignSelf="center" mx={2} onClick={p.onDelete} variant="destructive-ghost">
               <Icon as={TrashIcon} fontSize="22px" />
             </Button>
           </Flex>

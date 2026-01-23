@@ -15,8 +15,9 @@ import type { FC } from 'react';
 import { api } from '../../../state/backend-api';
 import type { Partition, Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
-import { Alert, AlertIcon, Badge, Box, DataTable, Flex, Popover, Text } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, DataTable, Flex, Popover, Text } from '@redpanda-data/ui';
 import { WarningIcon } from 'components/icons';
+import { Badge } from 'components/redpanda-ui/components/badge';
 
 import usePaginationParams from '../../../hooks/use-pagination-params';
 import { uiState } from '../../../state/ui-state';
@@ -80,9 +81,11 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) =>
               return (
                 <Flex alignItems="center" gap={2}>
                   {header}
-                  {leaderLessPartitions?.includes(partition.id) && <Badge variant="error">Leaderless</Badge>}
+                  {leaderLessPartitions?.includes(partition.id) && (
+                    <Badge variant="destructive-inverted">Leaderless</Badge>
+                  )}
                   {underReplicatedPartitions?.includes(partition.id) && (
-                    <Badge variant="warning">Under-replicated</Badge>
+                    <Badge variant="warning-inverted">Under-replicated</Badge>
                   )}
                 </Flex>
               );

@@ -451,20 +451,20 @@ export const ConnectOnboardingWizard = ({
             <WizardStepper.Controls className="justify-between">
               <div className="flex gap-2">
                 {!(methods.isFirst || methods.isLast) && (
-                  <Button onClick={methods.prev} type="button" variant="secondary">
+                  <Button onClick={methods.prev} type="button" variant="outline">
                     <ChevronLeftIcon />
                     Previous
                   </Button>
                 )}
                 {!methods.isLast && (
-                  <Button onClick={handleCancel} type="button" variant="outline">
+                  <Button onClick={handleCancel} type="button" variant="secondary-ghost">
                     Cancel
                   </Button>
                 )}
               </div>
               <div className="flex gap-2">
                 {!methods.isLast && (
-                  <Button onClick={() => methods.next()} type="button" variant="outline">
+                  <Button onClick={() => methods.next()} type="button" variant="secondary-ghost">
                     Skip
                   </Button>
                 )}

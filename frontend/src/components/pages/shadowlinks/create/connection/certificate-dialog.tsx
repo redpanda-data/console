@@ -176,7 +176,7 @@ export function CertificateDialog({
         </div>
 
         <DialogFooter>
-          <Button data-testid="cancel-button" onClick={handleCancel} variant="outline">
+          <Button data-testid="cancel-button" onClick={handleCancel} variant="secondary-ghost">
             Cancel
           </Button>
           <Button data-testid="save-certificate-button" disabled={!isValid} onClick={handleSave}>

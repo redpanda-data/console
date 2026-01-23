@@ -1,41 +1,46 @@
 'use client';
 import React, { createContext, useContext } from 'react';
 
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
 type GroupPosition = 'first' | 'middle' | 'last';
 
-interface GroupContextValue {
+type GroupContextValue = {
   position?: GroupPosition;
   attached: boolean;
-}
+};
 
 const GroupContext = createContext<GroupContextValue>({
   position: undefined,
   attached: false,
 });
 
-const useGroup = () => {
-  return useContext(GroupContext);
-};
+const useGroup = () => useContext(GroupContext);
 
 const Group = ({
   children,
   className,
+  testId,
   attached = false,
 }: {
   children: React.ReactNode;
   className?: string;
   attached?: boolean;
-}) => {
+} & SharedProps) => {
   const childrenArray = React.Children.toArray(children).filter((child) => React.isValidElement(child));
   const childCount = childrenArray.length;
 
   const content = childrenArray.map((child, index) => {
     const getPosition = (): GroupPosition | undefined => {
-      if (!attached || childCount === 1) return undefined;
-      if (index === 0) return 'first';
-      if (index === childCount - 1) return 'last';
+      if (!attached || childCount === 1) {
+        return;
+      }
+      if (index === 0) {
+        return 'first';
+      }
+      if (index === childCount - 1) {
+        return 'last';
+      }
       return 'middle';
     };
 
@@ -56,7 +61,11 @@ const Group = ({
     );
   });
 
-  return <div className={cn('flex items-end w-full', !attached && 'gap-1.5', className)}>{content}</div>;
+  return (
+    <div className={cn('flex w-full items-end', !attached && 'gap-1.5', className)} data-testid={testId}>
+      {content}
+    </div>
+  );
 };
 
 export { Group, useGroup, type GroupPosition, type GroupContextValue };

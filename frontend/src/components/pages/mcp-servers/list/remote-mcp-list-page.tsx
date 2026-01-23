@@ -39,7 +39,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, Check, Loader2, Pause, Plus, X } from 'lucide-react';
+import { AlertCircle, Check, Loader2, Pause } from 'lucide-react';
 import { runInAction } from 'mobx';
 import React, { useCallback, useEffect } from 'react';
 import {
@@ -162,11 +162,7 @@ export const createColumns = (
   {
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-    cell: ({ row }) => (
-      <Text className="font-medium" variant="default">
-        {row.getValue('name')}
-      </Text>
-    ),
+    cell: ({ row }) => <Text className="font-medium">{row.getValue('name')}</Text>,
   },
   {
     accessorKey: 'tools',
@@ -249,8 +245,7 @@ function MCPDataTableToolbar({ table }: { table: TanstackTable<MCPServer> }) {
         )}
         {Boolean(isFiltered) && (
           <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
-            Reset
-            <X className="ml-2 h-4 w-4" />
+            Clear
           </Button>
         )}
       </div>
@@ -263,7 +258,11 @@ export const updatePageTitle = () => {
   runInAction(() => {
     uiState.pageTitle = 'Remote MCP';
     uiState.pageBreadcrumbs.pop(); // Remove last breadcrumb to ensure the title is used without previous page breadcrumb being shown
-    uiState.pageBreadcrumbs.push({ title: 'Remote MCP', linkTo: '/mcp-servers', heading: 'Remote MCP' });
+    uiState.pageBreadcrumbs.push({
+      title: 'Remote MCP',
+      linkTo: '/mcp-servers',
+      heading: 'Remote MCP',
+    });
   });
 };
 
@@ -277,7 +276,9 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
   // React Query hooks
   const { data: mcpServersData, isLoading, error } = useListMCPServersQuery({});
   const { mutateAsync: deleteMCPServer, isPending: isDeletingServer } = useDeleteMCPServerMutation();
-  const { mutateAsync: deleteSecret } = useDeleteSecretMutation({ skipInvalidation: true });
+  const { mutateAsync: deleteSecret } = useDeleteSecretMutation({
+    skipInvalidation: true,
+  });
 
   // Handler for deleting MCP server with optional service account deletion
   const handleDeleteWithServiceAccount = useCallback(
@@ -304,7 +305,13 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
         toast.success('MCP server deleted successfully');
       } catch (deleteError) {
         const connectError = ConnectError.from(deleteError);
-        toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'delete', entity: 'MCP server' }));
+        toast.error(
+          formatToastErrorMessageGRPC({
+            error: connectError,
+            action: 'delete',
+            entity: 'MCP server',
+          })
+        );
       }
     },
     [deleteMCPServer, deleteSecret, deleteHandlerRef]
@@ -372,13 +379,12 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
           <Heading level={1}>Remote MCP</Heading>
           <Text variant="muted">Manage your Model Context Protocol (MCP) servers.</Text>
         </header>
-        <MCPDataTableToolbar table={table} />
+        <div className="mb-4">
+          <Button onClick={() => navigate({ to: '/mcp-servers/create' })}>Create MCP Server</Button>
+        </div>
         <div className="flex items-center justify-between">
+          <MCPDataTableToolbar table={table} />
           <DataTableViewOptions table={table} />
-          <Button onClick={() => navigate({ to: '/mcp-servers/create' })} size="sm" variant="secondary">
-            <Plus className="h-4 w-4" />
-            Create MCP Server
-          </Button>
         </div>
         <Table>
           <TableHeader>

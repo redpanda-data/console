@@ -1,10 +1,10 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
 const textareaVariants = cva(
-  'border-input placeholder:text-muted-foreground selection:bg-selected selection:text-selected-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex w-full rounded-md border bg-transparent text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+  '!border-input flex w-full rounded-md border bg-transparent text-base shadow-xs outline-none transition-[color,box-shadow] selection:bg-selected selection:text-selected-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:ring-destructive/40',
   {
     variants: {
       size: {
@@ -24,25 +24,21 @@ const textareaVariants = cva(
       size: 'default',
       resize: 'auto',
     },
-  },
+  }
 );
 
-interface TextareaProps extends React.ComponentProps<'textarea'>, VariantProps<typeof textareaVariants> {
-  testId?: string;
-}
+interface TextareaProps extends React.ComponentProps<'textarea'>, VariantProps<typeof textareaVariants>, SharedProps {}
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, size, resize, testId, ...props }, ref) => {
-    return (
-      <textarea
-        ref={ref}
-        data-slot="textarea"
-        data-testid={testId}
-        className={cn(textareaVariants({ size, resize }), className)}
-        {...props}
-      />
-    );
-  },
+  ({ className, size, resize, testId, ...props }, ref) => (
+    <textarea
+      className={cn(textareaVariants({ size, resize }), className)}
+      data-slot="textarea"
+      data-testid={testId}
+      ref={ref}
+      {...props}
+    />
+  )
 );
 
 Textarea.displayName = 'Textarea';

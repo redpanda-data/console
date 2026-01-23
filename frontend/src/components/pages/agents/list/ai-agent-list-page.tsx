@@ -39,7 +39,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, Check, Loader2, Pause, Plus, X } from 'lucide-react';
+import { AlertCircle, Check, Loader2, Pause } from 'lucide-react';
 import { runInAction } from 'mobx';
 import type { AIAgent as APIAIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
@@ -156,11 +156,7 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<AIAgent>
     {
       accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-      cell: ({ row }) => (
-        <Text className="font-medium" variant="default">
-          {row.getValue('name')}
-        </Text>
-      ),
+      cell: ({ row }) => <Text className="font-medium">{row.getValue('name')}</Text>,
     },
     {
       id: 'tools',
@@ -262,8 +258,7 @@ function AIAgentDataTableToolbar({ table }: { table: TanstackTable<AIAgent> }) {
         )}
         {Boolean(isFiltered) && (
           <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
-            Reset
-            <X className="ml-2 h-4 w-4" />
+            Clear
           </Button>
         )}
       </div>
@@ -276,7 +271,11 @@ export const updatePageTitle = () => {
   runInAction(() => {
     uiState.pageTitle = 'AI Agents';
     uiState.pageBreadcrumbs.pop(); // Remove last breadcrumb to ensure the title is used without previous page breadcrumb being shown
-    uiState.pageBreadcrumbs.push({ title: 'AI Agents', linkTo: '/agents', heading: 'AI Agents' });
+    uiState.pageBreadcrumbs.push({
+      title: 'AI Agents',
+      linkTo: '/agents',
+      heading: 'AI Agents',
+    });
   });
 };
 
@@ -295,7 +294,9 @@ const AIAgentsListPageContent = ({
   const { data: aiAgentsData, isLoading, error } = useListAIAgentsQuery({});
   const { data: mcpServersData } = useListMCPServersQuery();
   const { mutateAsync: deleteAIAgent, isPending: isDeletingAgent } = useDeleteAIAgentMutation();
-  const { mutateAsync: deleteSecret } = useDeleteSecretMutation({ skipInvalidation: true });
+  const { mutateAsync: deleteSecret } = useDeleteSecretMutation({
+    skipInvalidation: true,
+  });
 
   // Handler for deleting agent with optional service account deletion
   const handleDeleteWithServiceAccount = useCallback(
@@ -322,7 +323,13 @@ const AIAgentsListPageContent = ({
         toast.success('AI agent deleted successfully');
       } catch (deleteError) {
         const connectError = ConnectError.from(deleteError);
-        toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'delete', entity: 'AI agent' }));
+        toast.error(
+          formatToastErrorMessageGRPC({
+            error: connectError,
+            action: 'delete',
+            entity: 'AI agent',
+          })
+        );
       }
     },
     [deleteAIAgent, deleteSecret, deleteHandlerRef]
@@ -406,13 +413,12 @@ const AIAgentsListPageContent = ({
           <Heading level={1}>AI Agents</Heading>
           <Text variant="muted">Manage your AI agents with custom configurations and LLM providers.</Text>
         </header>
-        <AIAgentDataTableToolbar table={table} />
+        <div className="mb-4">
+          <Button onClick={() => navigate({ to: '/agents/create' })}>Create AI Agent</Button>
+        </div>
         <div className="flex items-center justify-between">
+          <AIAgentDataTableToolbar table={table} />
           <DataTableViewOptions table={table} />
-          <Button onClick={() => navigate({ to: '/agents/create' })} size="sm" variant="secondary">
-            <Plus className="h-4 w-4" />
-            Create AI Agent
-          </Button>
         </div>
         <Table>
           <TableHeader>

@@ -22,7 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'c
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, Trash2 } from 'lucide-react';
 import { DeletePipelineRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import type { Pipeline as APIPipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useMemo, useState } from 'react';
@@ -110,7 +110,10 @@ const PipelineListPageContent = () => {
 
   const handleCreateClick = useCallback(() => {
     resetOnboardingWizardStore();
-    navigate({ to: '/rp-connect/wizard', search: { step: undefined, serverless: undefined } });
+    navigate({
+      to: '/rp-connect/wizard',
+      search: { step: undefined, serverless: undefined },
+    });
   }, [resetOnboardingWizardStore, navigate]);
 
   const columns = useMemo<ColumnDef<Pipeline>[]>(
@@ -186,8 +189,8 @@ const PipelineListPageContent = () => {
             <div className="flex justify-end" data-actions-column>
               <DeleteResourceAlertDialog
                 buttonIcon={<Trash2 />}
-                buttonText=""
-                buttonVariant="ghost"
+                buttonText={undefined}
+                buttonVariant="destructive-ghost"
                 isDeleting={isDeletingPipeline}
                 onDelete={handleDelete}
                 resourceId={row.original.id}
@@ -228,10 +231,8 @@ const PipelineListPageContent = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-end gap-4">
-        <Button icon={<Plus />} onClick={handleCreateClick} size="sm">
-          Create pipeline
-        </Button>
+      <div className="mb-4">
+        <Button onClick={handleCreateClick}>Create a pipeline</Button>
       </div>
       <Table>
         <TableHeader>
@@ -288,7 +289,7 @@ const PipelineListPageContent = () => {
 
 // Separate component to prevent unnecessary remounting
 const RedpandaConnectContent = () => (
-  <div className="flex flex-col gap-6">
+  <div className="flex flex-col gap-4">
     <Text>
       Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that drive
       real-time analytics and actionable business insights. Integrate data across systems with hundreds of prebuilt
@@ -319,13 +320,11 @@ export const PipelineListPage = () => {
     return (
       <div className="flex flex-col gap-4">
         {showKafkaConnectLoadingHint ? (
-          <div className="flex min-h-10 items-center gap-2 text-muted-foreground text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <Spinner />
             <Text variant="muted">Checking for Kafka Connect availability...</Text>
           </div>
-        ) : (
-          <div className="h-10" />
-        )}
+        ) : null}
         <RedpandaConnectContent />
       </div>
     );

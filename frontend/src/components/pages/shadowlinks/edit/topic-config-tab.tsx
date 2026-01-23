@@ -44,13 +44,13 @@ import type { FormValues } from '../create/model';
 const getBadgeVariant = (status: ShadowingStatus): BadgeVariant => {
   switch (status) {
     case 'always':
-      return 'green';
+      return 'success-inverted';
     case 'default':
-      return 'secondary';
+      return 'secondary-inverted';
     case 'optional':
       return 'outline';
     case 'never':
-      return 'destructive';
+      return 'destructive-inverted';
     default:
       return 'outline';
   }

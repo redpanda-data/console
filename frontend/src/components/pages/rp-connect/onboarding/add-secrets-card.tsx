@@ -145,7 +145,7 @@ export const AddSecretsCard = ({
                 <Text className="font-medium text-sm">Existing secrets:</Text>
                 <div className="flex flex-wrap gap-2">
                   {visibleSecrets.used.map((secret) => (
-                    <Badge className="font-mono" icon={<Check />} key={secret} variant="green">
+                    <Badge className="font-mono" icon={<Check />} key={secret} variant="success-inverted">
                       {`\${secrets.${secret}}`}
                     </Badge>
                   ))}
@@ -154,14 +154,14 @@ export const AddSecretsCard = ({
                       className="cursor-pointer font-mono hover:opacity-80"
                       key={secret}
                       onClick={() => handleSecretClick(secret)}
-                      variant="secondary"
+                      variant="neutral-inverted"
                     >
                       {`\${secrets.${secret}}`}
                     </Badge>
                   ))}
                   <CollapsibleContent className="flex flex-wrap gap-2">
                     {collapsibleSecrets.used.map((secret) => (
-                      <Badge className="font-mono" icon={<Check />} key={secret} variant="green">
+                      <Badge className="font-mono" icon={<Check />} key={secret} variant="success-inverted">
                         {`\${secrets.${secret}}`}
                       </Badge>
                     ))}
@@ -170,7 +170,7 @@ export const AddSecretsCard = ({
                         className="cursor-pointer font-mono hover:opacity-80"
                         key={secret}
                         onClick={() => handleSecretClick(secret)}
-                        variant="secondary"
+                        variant="neutral-inverted"
                       >
                         {`\${secrets.${secret}}`}
                       </Badge>
@@ -202,7 +202,7 @@ export const AddSecretsCard = ({
                     className="cursor-pointer text-sm hover:opacity-80"
                     key={secret}
                     onClick={() => setIsSecretsDialogOpen(true)}
-                    variant="red"
+                    variant="destructive-inverted"
                   >
                     Create <InlineCode className="bg-transparent">$secrets.{secret}</InlineCode>
                     <PlusIcon className="size-4" />
@@ -213,7 +213,7 @@ export const AddSecretsCard = ({
           )}
           <Button
             onClick={() => setIsSecretsDialogOpen(true)}
-            size={existingSecrets.length > 0 ? 'sm' : 'default'}
+            size={existingSecrets.length > 0 ? 'sm' : 'md'}
             variant="outline"
           >
             {existingSecrets.length > 0 ? 'Add more secrets' : 'Add secret'}

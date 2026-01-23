@@ -25,7 +25,8 @@ import {
 } from '@tanstack/react-table';
 import { config } from 'config';
 import { Loader2, X } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import type React from 'react';
+import { useMemo, useState } from 'react';
 
 import { Button } from '../../../redpanda-ui/components/button';
 import {
@@ -71,11 +72,7 @@ const createColumns = (): ColumnDef<RetrievalResultRow>[] => [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Score" />,
     cell: ({ row }) => {
       const score = row.getValue('score') as number | undefined;
-      return (
-        <Text className="font-mono" variant="default">
-          {score !== undefined ? score.toFixed(3) : '-'}
-        </Text>
-      );
+      return <Text className="font-mono">{score !== undefined ? score.toFixed(3) : '-'}</Text>;
     },
   },
   {
@@ -94,7 +91,7 @@ const createColumns = (): ColumnDef<RetrievalResultRow>[] => [
     accessorKey: 'documentName',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Document" />,
     cell: ({ row }) => (
-      <Text className="max-w-[200px] truncate font-mono" title={row.getValue('documentName')} variant="default">
+      <Text className="max-w-[200px] truncate font-mono" title={row.getValue('documentName')}>
         {row.getValue('documentName')}
       </Text>
     ),
@@ -113,11 +110,7 @@ const createColumns = (): ColumnDef<RetrievalResultRow>[] => [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Content" />,
     cell: ({ row }) => {
       const content = row.getValue('content') as string;
-      return (
-        <Text className="wrap-break-word line-clamp-2" variant="default">
-          {content}
-        </Text>
-      );
+      return <Text className="wrap-break-word line-clamp-2">{content}</Text>;
     },
   },
 ];

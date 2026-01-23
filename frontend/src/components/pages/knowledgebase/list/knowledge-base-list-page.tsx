@@ -40,7 +40,7 @@ import {
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, Loader2, Plus, X } from 'lucide-react';
+import { AlertCircle, Loader2, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import type { KnowledgeBase } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import React, { useCallback, useEffect, useMemo } from 'react';
@@ -164,7 +164,7 @@ const ModelCell = ({ provider, model }: { provider: string; model: string }) => 
   return (
     <div className="flex items-center gap-2">
       <ProviderLogo className="h-4 w-4 shrink-0" provider={provider} />
-      <Text variant="default">{model}</Text>
+      <Text>{model}</Text>
     </div>
   );
 };
@@ -195,11 +195,7 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<Knowledg
       header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
       cell: ({ row }) => {
         const displayName = row.getValue('displayName') as string;
-        return (
-          <Text className="wrap-break-word font-medium" variant="default">
-            {displayName}
-          </Text>
-        );
+        return <Text className="wrap-break-word font-medium">{displayName}</Text>;
       },
     },
     {
@@ -207,11 +203,7 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<Knowledg
       header: ({ column }) => <DataTableColumnHeader column={column} title="Description" />,
       cell: ({ row }) => {
         const description = row.getValue('description') as string;
-        return (
-          <Text className="wrap-break-word" variant="default">
-            {description || ''}
-          </Text>
-        );
+        return <Text className="wrap-break-word">{description || ''}</Text>;
       },
     },
     {
@@ -253,11 +245,17 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<Knowledg
       accessorKey: 'embeddingGenerator',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Embedding Generator" />,
       cell: ({ row }) => {
-        const value = row.getValue('embeddingGenerator') as { provider: string; model: string };
+        const value = row.getValue('embeddingGenerator') as {
+          provider: string;
+          model: string;
+        };
         return <ModelCell model={value.model} provider={value.provider} />;
       },
       filterFn: (row, id, value) => {
-        const embeddingGenerator = row.getValue(id) as { provider: string; model: string };
+        const embeddingGenerator = row.getValue(id) as {
+          provider: string;
+          model: string;
+        };
         if (!embeddingGenerator.model) {
           return false;
         }
@@ -268,11 +266,17 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<Knowledg
       accessorKey: 'rerankerModel',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Reranker Model" />,
       cell: ({ row }) => {
-        const value = row.getValue('rerankerModel') as { provider: string; model: string };
+        const value = row.getValue('rerankerModel') as {
+          provider: string;
+          model: string;
+        };
         return <ModelCell model={value.model} provider={value.provider} />;
       },
       filterFn: (row, id, value) => {
-        const rerankerModel = row.getValue(id) as { provider: string; model: string };
+        const rerankerModel = row.getValue(id) as {
+          provider: string;
+          model: string;
+        };
         if (!rerankerModel.model) {
           return false;
         }
@@ -407,7 +411,13 @@ export const KnowledgeBaseListPage = () => {
         toast.success('Knowledge base deleted successfully');
       } catch (deleteError) {
         const connectError = ConnectError.from(deleteError);
-        toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'delete', entity: 'knowledge base' }));
+        toast.error(
+          formatToastErrorMessageGRPC({
+            error: connectError,
+            action: 'delete',
+            entity: 'knowledge base',
+          })
+        );
       }
     },
     [deleteKnowledgeBase]
@@ -475,13 +485,12 @@ export const KnowledgeBaseListPage = () => {
           create intelligent systems that can answer questions and provide insights from your knowledge repository.
         </Text>
       </header>
-      <KnowledgeBaseDataTableToolbar table={table} />
+      <div className="mb-4">
+        <Button onClick={() => navigate({ to: '/knowledgebases/create' })}>Create Knowledge Base</Button>
+      </div>
       <div className="flex items-center justify-between">
+        <KnowledgeBaseDataTableToolbar table={table} />
         <DataTableViewOptions table={table} />
-        <Button onClick={() => navigate({ to: '/knowledgebases/create' })} size="sm" variant="secondary">
-          <Plus className="h-4 w-4" />
-          Create Knowledge Base
-        </Button>
       </div>
       <Table>
         <TableHeader>

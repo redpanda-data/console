@@ -148,7 +148,7 @@ export const AgentTab: FC<Props> = ({ span }) => {
             MODEL
           </Text>
           <div>
-            <Badge variant="secondary">
+            <Badge variant="neutral-inverted">
               <Text variant="small">{agentData.model}</Text>
             </Badge>
           </div>

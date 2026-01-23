@@ -662,7 +662,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
         {!!errors?.root?.serverError && <Alert status="error">{errors.root.serverError.message}</Alert>}
 
         <Flex alignItems="center" gap={4}>
-          <Button colorScheme="brand" data-testid="produce-button" isLoading={isSubmitting} type="submit">
+          <Button data-testid="produce-button" isLoading={isSubmitting} type="submit">
             Produce
           </Button>
           <Link params={{ topicName: encodeURIComponent(topicName) }} to="/topics/$topicName">

@@ -176,7 +176,7 @@ const ResourceTypeSelection = ({
                 key={`rt-${resourceType}-button-${ruleIndex}`}
                 onClick={() => handleResourceTypeChange(rule.id, resourceType)}
                 size="sm"
-                variant={rule.resourceType === resourceType ? 'default' : 'ghost'}
+                variant={rule.resourceType === resourceType ? 'primary' : 'ghost'}
               >
                 {name}
               </Button>
@@ -368,7 +368,7 @@ const AclRules = ({
                   data-testid={`remove-rule-button-${getRuleDataTestId(rule)}`}
                   onClick={() => removeRule(rule.id)}
                   size="icon"
-                  variant="ghost"
+                  variant="destructive-ghost"
                 >
                   <Trash2 />
                 </Button>
@@ -1046,7 +1046,7 @@ export default function CreateACL({
   const getSectionKey = (ruleId: number, section: string) => `${ruleId}-${section}`;
 
   return (
-    <div>
+    <div className="relative min-h-screen pb-20">
       {/* Page Header - Sticky */}
 
       {/* Main Content */}
@@ -1094,12 +1094,9 @@ export default function CreateACL({
             {/* Right Column - Summary Card */}
             <div className="lg:col-span-1">
               <div className="sticky top-20">
-                <div className="mb-2 flex h-10 justify-end gap-2">
-                  <Button className="sticky border-gray-300 text-gray-700" onClick={onCancel} variant="outline">
-                    Cancel
-                  </Button>
+                <Summary rules={rules} sharedConfig={sharedConfig} />
+                <div className="mt-4 flex items-center gap-2">
                   <Button
-                    className="sticky bg-gray-900 text-white hover:bg-gray-800"
                     data-testid="submit-acl-button"
                     disabled={!!principalError || !isValidRule}
                     onClick={() => {
@@ -1112,8 +1109,10 @@ export default function CreateACL({
                   >
                     {edit ? 'Save' : 'Create'}
                   </Button>
+                  <Button onClick={onCancel} variant="secondary-ghost">
+                    Cancel
+                  </Button>
                 </div>
-                <Summary rules={rules} sharedConfig={sharedConfig} />
               </div>
             </div>
           </div>

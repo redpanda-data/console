@@ -74,7 +74,7 @@ export const ConsumerOffsetStep = () => {
         </CardHeader>
         <CardContent>
           <Tabs onValueChange={handleModeChange} value={consumersMode}>
-            <TabsList variant="default">
+            <TabsList>
               <TabsTrigger data-testid="consumers-all-tab" value="all">
                 All consumer groups
               </TabsTrigger>

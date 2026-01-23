@@ -8,25 +8,36 @@
  * by the Apache License, Version 2.0
  */
 
-import { Input } from 'components/redpanda-ui/components/input';
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from 'components/redpanda-ui/components/select';
-import { Slider } from 'components/redpanda-ui/components/slider';
-import { Text } from 'components/redpanda-ui/components/typography';
-import { Field, FieldLabel, FieldDescription, FieldError } from 'components/redpanda-ui/components/field';
-import { AI_AGENT_SECRET_TEXT, SecretSelector } from 'components/ui/secret/secret-selector';
-import { type Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { useEffect, useMemo } from 'react';
-import { Controller, type UseFormReturn } from 'react-hook-form';
+	Field,
+	FieldDescription,
+	FieldError,
+	FieldLabel,
+} from "components/redpanda-ui/components/field";
+import { Input } from "components/redpanda-ui/components/input";
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectLabel,
+	SelectTrigger,
+	SelectValue,
+} from "components/redpanda-ui/components/select";
+import { Slider } from "components/redpanda-ui/components/slider";
+import { Text } from "components/redpanda-ui/components/typography";
+import {
+	AI_AGENT_SECRET_TEXT,
+	SecretSelector,
+} from "components/ui/secret/secret-selector";
+import type { Scope } from "protogen/redpanda/api/dataplane/v1/secret_pb";
+import { useEffect, useMemo } from "react";
+import { Controller, type UseFormReturn } from "react-hook-form";
 
-import { detectProvider, MODEL_OPTIONS_BY_PROVIDER } from '../../pages/agents/ai-agent-model';
+import {
+	detectProvider,
+	MODEL_OPTIONS_BY_PROVIDER,
+} from "../../pages/agents/ai-agent-model";
 
 export interface LLMConfigSectionProps {
   mode: 'create' | 'edit';
@@ -65,11 +76,11 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
   const selectedGatewayId = fieldNames.gatewayId ? form.watch(fieldNames.gatewayId) : undefined;
   const isUsingGateway = hasGatewayDeployed && !!selectedGatewayId;
 
-  const filteredModels = useMemo(() => {
-    if (!selectedProvider) return [];
-    const providerData = MODEL_OPTIONS_BY_PROVIDER[selectedProvider];
-    return providerData?.models || [];
-  }, [selectedProvider]);
+	const filteredModels = useMemo(() => {
+		if (!selectedProvider) return [];
+		const providerData = MODEL_OPTIONS_BY_PROVIDER[selectedProvider];
+		return providerData?.models || [];
+	}, [selectedProvider]);
 
   useEffect(() => {
     if (isUsingGateway) {
@@ -155,7 +166,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
         <Field>
           <FieldLabel>Provider</FieldLabel>
           <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-            <Text variant="default">
+            <Text>
               {selectedProvider === 'openai' && 'OpenAI'}
               {selectedProvider === 'anthropic' && 'Anthropic'}
               {selectedProvider === 'google' && 'Google'}
@@ -166,17 +177,22 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
         </Field>
       )}
 
-      <Field data-invalid={!!form.formState.errors[fieldNames.model]}>
-        <FieldLabel htmlFor="model" required>
-          Model
-        </FieldLabel>
-        <Controller
-          control={form.control}
-          name={fieldNames.model}
-          render={({ field }) => {
-            const providerData = selectedProvider ? MODEL_OPTIONS_BY_PROVIDER[selectedProvider] : null;
-            const detectedProvider = field.value ? detectProvider(field.value as string) : null;
-            const isFreeTextMode = providerData && providerData.models.length === 0;
+			<Field data-invalid={!!form.formState.errors[fieldNames.model]}>
+				<FieldLabel htmlFor="model" required>
+					Model
+				</FieldLabel>
+				<Controller
+					control={form.control}
+					name={fieldNames.model}
+					render={({ field }) => {
+						const providerData = selectedProvider
+							? MODEL_OPTIONS_BY_PROVIDER[selectedProvider]
+							: null;
+						const detectedProvider = field.value
+							? detectProvider(field.value as string)
+							: null;
+						const isFreeTextMode =
+							providerData && providerData.models.length === 0;
 
             if (isFreeTextMode) {
               return (
@@ -291,30 +307,37 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
         </Field>
       )}
 
-      {showMaxIterations && (
-        <Field data-invalid={!!form.formState.errors[fieldNames.maxIterations]}>
-          <div className="flex items-center justify-between">
-            <FieldLabel htmlFor="maxIterations">Max Iterations</FieldLabel>
-            <Text className="font-medium text-sm">{form.watch(fieldNames.maxIterations)}</Text>
-          </div>
-          <Controller
-            control={form.control}
-            name={fieldNames.maxIterations}
-            render={({ field }) => (
-              <Slider
-                id="maxIterations"
-                max={100}
-                min={10}
-                onValueChange={(values) => field.onChange(values[0])}
-                value={[field.value]}
-              />
-            )}
-          />
-          {form.formState.errors[fieldNames.maxIterations] && (
-            <FieldError>{form.formState.errors[fieldNames.maxIterations]?.message as string}</FieldError>
-          )}
-        </Field>
-      )}
-    </div>
-  );
+			{showMaxIterations && (
+				<Field data-invalid={!!form.formState.errors[fieldNames.maxIterations]}>
+					<div className="flex items-center justify-between">
+						<FieldLabel htmlFor="maxIterations">Max Iterations</FieldLabel>
+						<Text className="font-medium text-sm">
+							{form.watch(fieldNames.maxIterations)}
+						</Text>
+					</div>
+					<Controller
+						control={form.control}
+						name={fieldNames.maxIterations}
+						render={({ field }) => (
+							<Slider
+								id="maxIterations"
+								max={100}
+								min={10}
+								onValueChange={(values) => field.onChange(values[0])}
+								value={[field.value]}
+							/>
+						)}
+					/>
+					{form.formState.errors[fieldNames.maxIterations] && (
+						<FieldError>
+							{
+								form.formState.errors[fieldNames.maxIterations]
+									?.message as string
+							}
+						</FieldError>
+					)}
+				</Field>
+			)}
+		</div>
+	);
 };

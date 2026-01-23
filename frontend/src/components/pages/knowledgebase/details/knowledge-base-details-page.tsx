@@ -74,7 +74,11 @@ export const updatePageTitle = (knowledgebaseId?: string) => {
     uiState.pageTitle = knowledgebaseId ? `Knowledge Base - ${knowledgebaseId}` : 'Knowledge Base Details';
     uiState.pageBreadcrumbs = [
       { title: 'Knowledge Bases', linkTo: '/knowledgebases' },
-      { title: knowledgebaseId || 'Details', linkTo: '', heading: knowledgebaseId || 'Knowledge Base Details' },
+      {
+        title: knowledgebaseId || 'Details',
+        linkTo: '',
+        heading: knowledgebaseId || 'Knowledge Base Details',
+      },
     ];
   });
 };
@@ -446,7 +450,7 @@ export const KnowledgeBaseDetailsPage = () => {
                         </button>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <Text variant="default">{getConsumerGroupStateDescription(consumerGroup.state)}</Text>
+                        <Text>{getConsumerGroupStateDescription(consumerGroup.state)}</Text>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

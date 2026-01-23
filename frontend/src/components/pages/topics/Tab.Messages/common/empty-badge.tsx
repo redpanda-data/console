@@ -9,12 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import { Badge, Flex, Text } from '@redpanda-data/ui';
+import { Flex, Text } from '@redpanda-data/ui';
 import { BanIcon } from 'components/icons';
+import { Badge } from 'components/redpanda-ui/components/badge';
 import type { FC } from 'react';
 
 export const EmptyBadge: FC<{ mode: 'empty' | 'null' }> = ({ mode }) => (
-  <Badge variant="inverted">
+  <Badge variant="neutral-inverted">
     <Flex gap={2} verticalAlign="center">
       <BanIcon size={16} />
       <Text>

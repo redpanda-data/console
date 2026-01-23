@@ -256,19 +256,19 @@ export const APIConnectWizard = () => {
                         : methods.prev
                     }
                     type="button"
-                    variant="secondary"
+                    variant="secondary-outline"
                   >
                     <ChevronLeftIcon />
                     Previous
                   </Button>
                 )}
-                <Button onClick={handleCancel} type="button" variant="outline">
+                <Button onClick={handleCancel} type="button" variant="secondary-ghost">
                   Cancel
                 </Button>
               </div>
               <div className="flex gap-2">
                 {!methods.isLast && (
-                  <Button onClick={() => handleSkip(methods)} type="button" variant="outline">
+                  <Button onClick={() => handleSkip(methods)} type="button" variant="secondary-ghost">
                     Skip
                   </Button>
                 )}

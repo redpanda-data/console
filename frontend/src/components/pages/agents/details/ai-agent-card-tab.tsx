@@ -367,9 +367,7 @@ export const AIAgentCardTab = () => {
                     />
                   ) : (
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text className="truncate" variant="default">
-                        {displayCard.iconUrl}
-                      </Text>
+                      <Text className="truncate">{displayCard.iconUrl}</Text>
                     </div>
                   )}
                 </div>
@@ -385,9 +383,7 @@ export const AIAgentCardTab = () => {
                     />
                   ) : (
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text className="truncate" variant="default">
-                        {displayCard.documentationUrl}
-                      </Text>
+                      <Text className="truncate">{displayCard.documentationUrl}</Text>
                     </div>
                   )}
                 </div>
@@ -414,7 +410,7 @@ export const AIAgentCardTab = () => {
                     />
                   ) : (
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text variant="default">{displayCard.provider?.organization}</Text>
+                      <Text>{displayCard.provider?.organization}</Text>
                     </div>
                   )}
                 </div>
@@ -430,9 +426,7 @@ export const AIAgentCardTab = () => {
                     />
                   ) : (
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text className="truncate" variant="default">
-                        {displayCard.provider?.url}
-                      </Text>
+                      <Text className="truncate">{displayCard.provider?.url}</Text>
                     </div>
                   )}
                 </div>

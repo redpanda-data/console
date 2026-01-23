@@ -29,7 +29,7 @@ export const UserInformationCard = ({ username, onEditPassword }: UserInformatio
         {/* Username Row */}
         <div className="grid grid-cols-3 items-center gap-4 py-2">
           <Text variant="label">Username</Text>
-          <Text variant="default">{username}</Text>
+          <Text>{username}</Text>
         </div>
 
         <Separator />

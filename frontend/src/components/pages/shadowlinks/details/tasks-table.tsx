@@ -37,11 +37,7 @@ export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProp
       columnHelper.accessor('name', {
         header: 'Task name',
         size: 250,
-        cell: (info) => (
-          <Text className="font-medium" variant="default">
-            {info.getValue()}
-          </Text>
-        ),
+        cell: (info) => <Text className="font-medium">{info.getValue()}</Text>,
       }),
       columnHelper.accessor('state', {
         header: 'State',

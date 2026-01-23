@@ -74,7 +74,7 @@ export const TopicsStep = () => {
         </CardHeader>
         <CardContent>
           <Tabs onValueChange={handleModeChange} value={topicsMode}>
-            <TabsList variant="default">
+            <TabsList>
               <TabsTrigger data-testid="topics-all-tab" value="all">
                 All topics
               </TabsTrigger>

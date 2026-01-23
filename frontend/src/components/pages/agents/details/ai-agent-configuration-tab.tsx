@@ -352,6 +352,7 @@ export const AIAgentConfigurationTab = () => {
     return matchingTier?.id || 'Small';
   }, []);
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: not sure how this slipped through CI
   const getCurrentData = useCallback((): LocalAIAgent | null => {
     if (editedAgentData) {
       return editedAgentData;
@@ -529,7 +530,7 @@ export const AIAgentConfigurationTab = () => {
     if (subagent.description) {
       return (
         <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-          <Text variant="default">{subagent.description}</Text>
+          <Text>{subagent.description}</Text>
         </div>
       );
     }
@@ -837,7 +838,7 @@ export const AIAgentConfigurationTab = () => {
                     />
                   ) : (
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text variant="default">{displayData.displayName}</Text>
+                      <Text>{displayData.displayName}</Text>
                     </div>
                   )}
                 </div>
@@ -851,7 +852,7 @@ export const AIAgentConfigurationTab = () => {
                     />
                   ) : (
                     <div className="flex items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text variant="default">{displayData.description || 'No description'}</Text>
+                      <Text>{displayData.description || 'No description'}</Text>
                     </div>
                   )}
                 </div>
@@ -986,7 +987,7 @@ export const AIAgentConfigurationTab = () => {
                                   />
                                 ) : (
                                   <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                                    <Text variant="default">{subagent.name}</Text>
+                                    <Text>{subagent.name}</Text>
                                   </div>
                                 )}
                               </div>
@@ -1176,10 +1177,7 @@ export const AIAgentConfigurationTab = () => {
                         value={displayData.model}
                       />
                     ) : (
-                      <Select
-                        onValueChange={(value) => updateField({ model: value })}
-                        value={displayData.model}
-                      >
+                      <Select onValueChange={(value) => updateField({ model: value })} value={displayData.model}>
                         <SelectTrigger>
                           <SelectValue>
                             {Boolean(displayData.model) && detectProvider(displayData.model) ? (
@@ -1287,7 +1285,7 @@ export const AIAgentConfigurationTab = () => {
                   <div className="space-y-2">
                     <Label>Provider</Label>
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text variant="default">
+                      <Text>
                         {agent.provider?.provider.case === 'openai' && 'OpenAI'}
                         {agent.provider?.provider.case === 'anthropic' && 'Anthropic'}
                         {agent.provider?.provider.case === 'google' && 'Google'}
@@ -1305,21 +1303,21 @@ export const AIAgentConfigurationTab = () => {
                   <div className="space-y-2">
                     <Label>API Token</Label>
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text variant="default">{displayData.apiKeySecret || 'No secret configured'}</Text>
+                      <Text>{displayData.apiKeySecret || 'No secret configured'}</Text>
                     </div>
                   </div>
                   {agent.provider?.provider.case === 'openaiCompatible' && displayData.baseUrl && (
                     <div className="space-y-2">
                       <Label>Base URL</Label>
                       <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <Text variant="default">{displayData.baseUrl}</Text>
+                        <Text>{displayData.baseUrl}</Text>
                       </div>
                     </div>
                   )}
                   <div className="space-y-2">
                     <Label>Max Iterations</Label>
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text variant="default">{displayData.maxIterations}</Text>
+                      <Text>{displayData.maxIterations}</Text>
                     </div>
                   </div>
                 </div>

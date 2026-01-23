@@ -74,7 +74,7 @@ const DebugBundleLink = ({
                   // Error handling should be managed by the API layer
                 });
               }}
-              variant="ghost"
+              variant="destructive-ghost"
             />
           </Tooltip>
         )}

@@ -79,7 +79,7 @@ const Footer = memo(({ mode, onSave, onCancel, isSaving, disabled }: FooterProps
   if (mode === 'view') {
     return (
       <div className="flex items-center justify-between gap-2 border-t pt-4">
-        <Button onClick={onCancel} variant="outline">
+        <Button onClick={onCancel} variant="secondary-ghost">
           Cancel
         </Button>
       </div>
@@ -88,7 +88,7 @@ const Footer = memo(({ mode, onSave, onCancel, isSaving, disabled }: FooterProps
 
   return (
     <div className="flex items-center justify-between gap-2 border-t pt-4">
-      <Button disabled={isSaving} onClick={onCancel} variant="outline">
+      <Button disabled={isSaving} onClick={onCancel} variant="secondary-ghost">
         Cancel
       </Button>
       <Button className="min-w-[70px]" disabled={isSaving || disabled} onClick={onSave}>
@@ -116,7 +116,7 @@ const PipelinePageSkeleton = memo(({ mode }: { mode: PipelineMode }) => {
 
       {/* Details section */}
       <div className="space-y-4 rounded-lg border p-4">
-        <SkeletonGroup spacing="default">
+        <SkeletonGroup>
           <div className="space-y-2">
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-9 w-full" />
@@ -156,7 +156,7 @@ const PipelinePageSkeleton = memo(({ mode }: { mode: PipelineMode }) => {
       {(mode === 'create' || mode === 'edit') && (
         <div className="w-80 space-y-4 rounded-lg border p-4">
           <Skeleton className="h-6 w-48" />
-          <SkeletonGroup spacing="default">
+          <SkeletonGroup>
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-[90%]" />
           </SkeletonGroup>
@@ -380,7 +380,10 @@ export default function PipelinePage() {
         displayName: name,
         configYaml: yamlContent,
         description: description || '',
-        resources: { cpuShares: tasksToCPU(computeUnits) || '0', memoryShares: '0' },
+        resources: {
+          cpuShares: tasksToCPU(computeUnits) || '0',
+          memoryShares: '0',
+        },
         tags,
         serviceAccount: serviceAccountConfig,
       });
@@ -427,7 +430,10 @@ export default function PipelinePage() {
         displayName: name,
         configYaml: yamlContent,
         description: description || '',
-        resources: { cpuShares: tasksToCPU(computeUnits) || '0', memoryShares: '0' },
+        resources: {
+          cpuShares: tasksToCPU(computeUnits) || '0',
+          memoryShares: '0',
+        },
         tags: {
           ...pipeline?.tags,
         },
@@ -506,7 +512,7 @@ export default function PipelinePage() {
 
       {mode !== 'view' && Object.keys(lintHints).length > 0 && (
         <div className="mt-4">
-          <Alert variant="destructive">
+          <Alert icon={undefined} variant="destructive">
             <AlertDescription>
               <LintHintList className="w-full" isPending={isLinting} lintHints={lintHints} />
             </AlertDescription>

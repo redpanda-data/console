@@ -20,6 +20,7 @@ import { FormSchema, type FormValues, initialValues } from '../model';
 
 vi.mock('config', () => ({
   isEmbedded: vi.fn(() => false),
+  isFeatureFlagEnabled: vi.fn(() => false),
 }));
 
 const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormValues }) => {

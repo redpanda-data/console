@@ -74,10 +74,6 @@ export class SchemaCreatePage extends PageComponent {
   render() {
     return (
       <PageContent key="b">
-        <Heading data-testid="schema-create-heading" variant="xl">
-          Create schema
-        </Heading>
-
         <SchemaEditor mode="CREATE" state={this.editorState} />
 
         <SchemaPageButtons editorState={this.editorState} />
@@ -230,7 +226,6 @@ const SchemaPageButtons = observer(
 
         <Flex gap="4" mt="4">
           <Button
-            colorScheme="brand"
             data-testid="schema-create-save-btn"
             isDisabled={isCreating || isMissingName || isValidating || editorState.isInvalidKeyOrValue}
             isLoading={isCreating}
@@ -317,7 +312,7 @@ const SchemaPageButtons = observer(
                 });
               }
             }}
-            variant="solid"
+            variant="outline"
           >
             Validate
           </Button>

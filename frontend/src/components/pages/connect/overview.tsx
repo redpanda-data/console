@@ -10,8 +10,9 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Badge, Box, DataTable, Stack, Tooltip } from '@redpanda-data/ui';
+import { Box, DataTable, Stack, Tooltip } from '@redpanda-data/ui';
 import ErrorResult from 'components/misc/error-result';
+import { Badge } from 'components/redpanda-ui/components/badge';
 import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
 import { observer, useLocalObservable } from 'mobx-react';
@@ -147,7 +148,10 @@ class KafkaConnectOverview extends PageComponent<{
         key: ConnectView.RedpandaConnect,
         title: (
           <Box minWidth="180px">
-            Redpanda Connect <Badge ml={2}>Recommended</Badge>
+            Redpanda Connect{' '}
+            <Badge className="ml-2" variant="neutral-inverted">
+              Recommended
+            </Badge>
           </Box>
         ),
         content: (

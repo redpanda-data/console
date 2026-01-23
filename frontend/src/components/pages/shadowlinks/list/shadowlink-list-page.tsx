@@ -82,11 +82,7 @@ export const createColumns: ColumnDef<ListShadowLinksResponse_ShadowLink>[] = [
   {
     accessorKey: 'name',
     header: 'Name',
-    cell: ({ row }) => (
-      <Text className="font-medium" variant="default">
-        {row.getValue('name')}
-      </Text>
-    ),
+    cell: ({ row }) => <Text className="font-medium">{row.getValue('name')}</Text>,
   },
   {
     id: 'sourceCluster',

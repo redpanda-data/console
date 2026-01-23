@@ -51,12 +51,30 @@ const allAclsFilter = {
 const ACLFilterAlert = ({ index }: { index: number }) => {
   const { control } = useFormContext<FormValues>();
 
-  const resourceType = useWatch({ control, name: `aclFilters.${index}.resourceType` });
-  const resourcePattern = useWatch({ control, name: `aclFilters.${index}.resourcePattern` });
-  const resourceName = useWatch({ control, name: `aclFilters.${index}.resourceName` });
-  const principal = useWatch({ control, name: `aclFilters.${index}.principal` });
-  const operation = useWatch({ control, name: `aclFilters.${index}.operation` });
-  const permissionType = useWatch({ control, name: `aclFilters.${index}.permissionType` });
+  const resourceType = useWatch({
+    control,
+    name: `aclFilters.${index}.resourceType`,
+  });
+  const resourcePattern = useWatch({
+    control,
+    name: `aclFilters.${index}.resourcePattern`,
+  });
+  const resourceName = useWatch({
+    control,
+    name: `aclFilters.${index}.resourceName`,
+  });
+  const principal = useWatch({
+    control,
+    name: `aclFilters.${index}.principal`,
+  });
+  const operation = useWatch({
+    control,
+    name: `aclFilters.${index}.operation`,
+  });
+  const permissionType = useWatch({
+    control,
+    name: `aclFilters.${index}.permissionType`,
+  });
   const host = useWatch({ control, name: `aclFilters.${index}.host` });
 
   const showMatchAllMessage =
@@ -119,7 +137,7 @@ export const AclsStep = () => {
         </CardHeader>
         <CardContent>
           <Tabs onValueChange={handleModeChange} value={aclsMode}>
-            <TabsList variant="default">
+            <TabsList>
               <TabsTrigger data-testid="acls-all-tab" value="all">
                 All ACLs
               </TabsTrigger>

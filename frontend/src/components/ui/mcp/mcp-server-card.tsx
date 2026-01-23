@@ -103,12 +103,11 @@ const MCPServerCard = ({ server, isSelected, onToggle, showCheckbox = true, idPr
   }
 
   return (
-    <Label
+    <div
       className={cn(
-        'relative flex cursor-pointer rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50',
+        'relative flex rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50',
         isSelected && 'border-secondary'
       )}
-      htmlFor={`mcp-server-${idPrefix}-${server.id}`}
     >
       <Checkbox
         checked={isSelected}
@@ -116,8 +115,10 @@ const MCPServerCard = ({ server, isSelected, onToggle, showCheckbox = true, idPr
         id={`mcp-server-${idPrefix}-${server.id}`}
         onCheckedChange={onToggle}
       />
-      <div className="pr-8">{content}</div>
-    </Label>
+      <Label htmlFor={`mcp-server-${idPrefix}-${server.id}`} className="flex-1 cursor-pointer pr-8">
+        {content}
+      </Label>
+    </div>
   );
 };
 

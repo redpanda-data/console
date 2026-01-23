@@ -341,7 +341,6 @@ function EditSchemaCompatibility(p: {
 
       <Flex gap="4">
         <Button
-          colorScheme="brand"
           data-testid="edit-compatibility-save-btn"
           disabledReason={
             api.userData?.canManageSchemaRegistry === false

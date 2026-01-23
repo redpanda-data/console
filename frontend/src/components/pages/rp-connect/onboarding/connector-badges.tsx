@@ -7,7 +7,6 @@ export type ConnectBadgeProps = {
   icon: React.ReactNode;
   text: string;
   variant: BadgeVariant;
-  className: string;
 };
 
 export const getConnectorTypeBadgeProps = (type: ConnectComponentType): ConnectBadgeProps => {
@@ -16,71 +15,61 @@ export const getConnectorTypeBadgeProps = (type: ConnectComponentType): ConnectB
       return {
         icon: <FolderInput className="h-3 w-3" />,
         text: 'Input',
-        variant: 'green' as const,
-        className: 'text-green-800 dark:text-green-300',
+        variant: 'neutral-inverted',
       };
     case 'output':
       return {
         icon: <FolderOutput className="h-3 w-3" />,
         text: 'Output',
-        variant: 'orange' as const,
-        className: 'text-orange-800 dark:text-orange-300',
+        variant: 'neutral-inverted',
       };
     case 'processor':
       return {
         icon: <Cpu className="h-3 w-3" />,
         text: 'Processor',
-        variant: 'blue' as const,
-        className: 'text-blue-800 dark:text-blue-300',
+        variant: 'neutral-inverted',
       };
     case 'cache':
       return {
         icon: <Database className="h-3 w-3" />,
         text: 'Cache',
-        variant: 'purple' as const,
-        className: 'text-purple-800 dark:text-purple-300',
+        variant: 'neutral-inverted',
       };
     case 'buffer':
       return {
         icon: <Layers className="h-3 w-3" />,
         text: 'Buffer',
-        variant: 'indigo' as const,
-        className: 'text-indigo-800 dark:text-indigo-300',
+        variant: 'neutral-inverted',
       };
     case 'rate_limit':
       return {
         icon: <Timer className="h-3 w-3" />,
         text: 'Rate Limit',
-        variant: 'yellow' as const,
-        className: 'text-yellow-800 dark:text-yellow-300',
+        variant: 'neutral-inverted',
       };
     case 'scanner':
       return {
         icon: <Search className="h-3 w-3" />,
         text: 'Scanner',
-        variant: 'cyan' as const,
-        className: 'text-cyan-800 dark:text-cyan-300',
+        variant: 'neutral-inverted',
       };
     case 'metrics':
       return {
         icon: <HelpCircle className="h-3 w-3" />,
         text: 'Metrics',
-        variant: 'teal' as const,
-        className: 'text-teal-800 dark:text-teal-300',
+        variant: 'neutral-inverted',
       };
     case 'tracer':
       return {
         icon: <HelpCircle className="h-3 w-3" />,
         text: 'Tracer',
-        variant: 'rose' as const,
-        className: 'text-rose-800 dark:text-rose-300',
+        variant: 'neutral-inverted',
       };
     default:
       return {
         icon: <HelpCircle className="h-3 w-3" />,
         text: 'Unknown',
-        variant: 'gray' as const,
-        className: 'text-gray-800 dark:text-gray-300',
+        variant: 'neutral-inverted',
       };
   }
 };

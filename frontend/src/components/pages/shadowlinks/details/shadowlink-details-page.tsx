@@ -92,7 +92,13 @@ export const ShadowLinkDetailsPage = () => {
         navigate({ to: '/shadowlinks' });
       },
       onError: (error) => {
-        toast.error(formatToastErrorMessageGRPC({ error, action: 'delete', entity: 'shadowlink' }));
+        toast.error(
+          formatToastErrorMessageGRPC({
+            error,
+            action: 'delete',
+            entity: 'shadowlink',
+          })
+        );
       },
     });
   };
@@ -179,7 +185,7 @@ export const ShadowLinkDetailsPage = () => {
 
       {/* Tabs */}
       <Tabs defaultValue="overview">
-        <TabsList testId="shadowlink-details-tabs" variant="default">
+        <TabsList testId="shadowlink-details-tabs">
           <TabsTrigger testId="overview-tab" value="overview" variant="underline">
             Overview
           </TabsTrigger>

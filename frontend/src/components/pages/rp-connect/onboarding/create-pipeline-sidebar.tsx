@@ -75,7 +75,7 @@ export const CreatePipelineSidebar = memo(
     if (isComponentListLoading) {
       return (
         <div className="flex flex-col gap-4">
-          <SkeletonGroup direction="vertical" spacing="default">
+          <SkeletonGroup direction="vertical">
             <Skeleton variant="heading" width="full" />
             <Skeleton className="h-10 w-full" />
           </SkeletonGroup>

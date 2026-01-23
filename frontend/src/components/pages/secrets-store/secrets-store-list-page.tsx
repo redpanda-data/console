@@ -39,7 +39,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, CircleUser, Link, Loader2, Plus, Server, Waypoints, X } from 'lucide-react';
+import { AlertCircle, CircleUser, Link, Loader2, Server, Waypoints, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import {
   ListSecretsFilterSchema,
@@ -86,8 +86,16 @@ const scopeOptions = [
   { value: String(Scope.AI_GATEWAY), label: 'AI Gateway', icon: Waypoints },
   { value: String(Scope.MCP_SERVER), label: 'MCP Server', icon: MCPIcon },
   { value: String(Scope.AI_AGENT), label: 'AI Agent', icon: CircleUser },
-  { value: String(Scope.REDPANDA_CONNECT), label: 'Redpanda Connect', icon: Link },
-  { value: String(Scope.REDPANDA_CLUSTER), label: 'Redpanda Cluster', icon: Server },
+  {
+    value: String(Scope.REDPANDA_CONNECT),
+    label: 'Redpanda Connect',
+    icon: Link,
+  },
+  {
+    value: String(Scope.REDPANDA_CLUSTER),
+    label: 'Redpanda Cluster',
+    icon: Server,
+  },
 ];
 
 type CreateColumnsOptions = {
@@ -102,11 +110,7 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<SecretTa
     {
       accessorKey: 'id',
       header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
-      cell: ({ row }) => (
-        <Text className="font-medium" variant="default">
-          {row.getValue('id')}
-        </Text>
-      ),
+      cell: ({ row }) => <Text className="font-medium">{row.getValue('id')}</Text>,
     },
     {
       accessorKey: 'labels',
@@ -166,7 +170,7 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<SecretTa
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="cursor-help">
-                    <Badge variant="secondary">+{scopes.length - 2} more</Badge>
+                    <Badge variant="primary-inverted">+{scopes.length - 2} more</Badge>
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -281,7 +285,13 @@ export const SecretsStoreListPage = () => {
         toast.success('Secret deleted successfully');
       } catch (deleteError) {
         const connectError = ConnectError.from(deleteError);
-        toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'delete', entity: 'secret' }));
+        toast.error(
+          formatToastErrorMessageGRPC({
+            error: connectError,
+            action: 'delete',
+            entity: 'secret',
+          })
+        );
       }
     },
     [deleteSecret]
@@ -337,15 +347,13 @@ export const SecretsStoreListPage = () => {
             page and reference them when creating a new resource such as Redpanda Connect pipelines.
           </Text>
         </header>
-
-        <SecretsStoreDataTableToolbar table={table} />
+        <div className="mt-2 mb-4">
+          <Button onClick={() => navigate({ to: '/secrets/create' })}>Create Secret</Button>
+        </div>
 
         <div className="flex items-center justify-between">
+          <SecretsStoreDataTableToolbar table={table} />
           <DataTableViewOptions table={table} />
-          <Button onClick={() => navigate({ to: '/secrets/create' })} size="sm" variant="secondary">
-            <Plus className="h-4 w-4" />
-            Create Secret
-          </Button>
         </div>
 
         <Table>

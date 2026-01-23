@@ -297,7 +297,6 @@ const CreateUserModal = observer(
 
         <Flex gap={4} mt={8}>
           <Button
-            colorScheme="brand"
             isDisabled={state.isCreating || !state.isValidUsername || !state.isValidPassword || userAlreadyExists}
             isLoading={state.isCreating}
             loadingText="Creating..."

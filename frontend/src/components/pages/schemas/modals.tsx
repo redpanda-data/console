@@ -41,11 +41,11 @@ const GenericModal = (p: {
       <ModalBody>{p.body}</ModalBody>
 
       <ModalFooter>
-        <Button colorScheme={p.primaryColorScheme} mr={3} onClick={() => p.onPrimaryButton(p.closeModal)}>
-          {p.primaryButtonContent}
-        </Button>
-        <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="outline">
+        <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="ghost">
           {p.secondaryButtonContent}
+        </Button>
+        <Button colorScheme={p.primaryColorScheme} ml={3} onClick={() => p.onPrimaryButton(p.closeModal)}>
+          {p.primaryButtonContent}
         </Button>
       </ModalFooter>
     </ModalContent>
@@ -82,16 +82,16 @@ const ExplicitConfirmModal = (p: {
         </ModalBody>
 
         <ModalFooter>
+          <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="ghost">
+            {p.secondaryButtonContent}
+          </Button>
           <Button
             colorScheme="red"
             isDisabled={!isConfirmEnabled}
-            mr={3}
+            ml={3}
             onClick={() => p.onPrimaryButton(p.closeModal)}
           >
             {p.primaryButtonContent}
-          </Button>
-          <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="outline">
-            {p.secondaryButtonContent}
           </Button>
         </ModalFooter>
       </ModalContent>

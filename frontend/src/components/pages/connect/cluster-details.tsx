@@ -89,9 +89,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
           <div>
             <div style={{ display: 'flex', marginBottom: '.5em' }}>
               <Link params={{ clusterName }} to="/connect-clusters/$clusterName/create-connector">
-                <Button colorScheme="brand" variant="solid">
-                  Create connector
-                </Button>
+                <Button variant="solid">Create connector</Button>
               </Link>
             </div>
 

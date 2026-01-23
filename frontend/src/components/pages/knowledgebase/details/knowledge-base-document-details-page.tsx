@@ -36,9 +36,7 @@ export const KnowledgeBaseDocumentDetailsPage = () => {
                 <Text className="mb-1 font-medium text-sm" variant="muted">
                   Relevance Score
                 </Text>
-                <Text className="font-mono" variant="default">
-                  {score.toFixed(3)}
-                </Text>
+                <Text className="font-mono">{score.toFixed(3)}</Text>
               </div>
             )}
             <div>
@@ -56,9 +54,7 @@ export const KnowledgeBaseDocumentDetailsPage = () => {
               <Text className="mb-1 font-medium text-sm" variant="muted">
                 Chunk ID
               </Text>
-              <Text className="font-mono" variant="default">
-                {chunkId}
-              </Text>
+              <Text className="font-mono">{chunkId}</Text>
             </div>
           </div>
         </CardContent>

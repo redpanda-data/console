@@ -21,7 +21,8 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { Info, Loader2, RefreshCw, X } from 'lucide-react';
 import type { ShadowTopic } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import React, { useEffect, useMemo, useRef } from 'react';
+import type React from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import { ShadowTopicStatusBadge } from './shadow-topic-status-badge';
 
@@ -116,11 +117,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
       columnHelper.accessor('topicName', {
         header: 'Name',
         size: 300,
-        cell: (info) => (
-          <Text className="font-medium" variant="default">
-            {info.getValue()}
-          </Text>
-        ),
+        cell: (info) => <Text className="font-medium">{info.getValue()}</Text>,
       }),
       columnHelper.accessor('totalLag', {
         header: () => (
