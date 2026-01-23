@@ -77,4 +77,87 @@ export class QuotaPage {
     await this.page.goto(`${baseURL}/quotas`);
     await expect(this.page.getByRole('heading', { name: 'Quotas' })).toBeVisible();
   }
+
+  /**
+   * Pagination methods
+   */
+  async hasPagination(): Promise<boolean> {
+    return this.page
+      .getByText(/Page \d+ of \d+/)
+      .isVisible()
+      .catch(() => false);
+  }
+
+  async getCurrentPageNumber(): Promise<number> {
+    const paginationText = await this.page.getByText(/Page \d+ of \d+/).textContent();
+    if (!paginationText) return 1;
+    const match = paginationText.match(/Page (\d+) of \d+/);
+    return match ? Number.parseInt(match[1]) : 1;
+  }
+
+  async getTotalPageCount(): Promise<number> {
+    const paginationText = await this.page.getByText(/Page \d+ of \d+/).textContent();
+    if (!paginationText) return 1;
+    const match = paginationText.match(/Page \d+ of (\d+)/);
+    return match ? Number.parseInt(match[1]) : 1;
+  }
+
+  async goToNextPage() {
+    await this.page.getByRole('button', { name: 'Go to next page' }).click();
+    await this.page.waitForTimeout(300); // Brief wait for table to update
+  }
+
+  async goToPreviousPage() {
+    await this.page.getByRole('button', { name: 'Go to previous page' }).click();
+    await this.page.waitForTimeout(300);
+  }
+
+  async goToFirstPage() {
+    await this.page.getByRole('button', { name: 'Go to first page' }).click();
+    await this.page.waitForTimeout(300);
+  }
+
+  async goToLastPage() {
+    await this.page.getByRole('button', { name: 'Go to last page' }).click();
+    await this.page.waitForTimeout(300);
+  }
+
+  async setRowsPerPage(rows: 10 | 20 | 25 | 30 | 40 | 50) {
+    const selectTrigger = this.page.locator('button[role="combobox"]').filter({ hasText: /\d+/ });
+    await selectTrigger.click();
+    await this.page.getByRole('option', { name: rows.toString() }).click();
+    await this.page.waitForTimeout(300);
+  }
+
+  async countQuotasOnCurrentPage(filterText?: string): Promise<number> {
+    const locator = filterText
+      ? this.page.locator('tr').filter({ hasText: filterText })
+      : this.page.locator('tbody tr');
+    return locator.count();
+  }
+
+  async countQuotasAcrossAllPages(filterText?: string): Promise<number> {
+    const hasPagination = await this.hasPagination();
+
+    if (!hasPagination) {
+      return this.countQuotasOnCurrentPage(filterText);
+    }
+
+    const totalPages = await this.getTotalPageCount();
+    let totalCount = 0;
+
+    // Go to first page
+    await this.goToFirstPage();
+
+    for (let i = 1; i <= totalPages; i++) {
+      const count = await this.countQuotasOnCurrentPage(filterText);
+      totalCount += count;
+
+      if (i < totalPages) {
+        await this.goToNextPage();
+      }
+    }
+
+    return totalCount;
+  }
 }

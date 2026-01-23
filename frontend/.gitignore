@@ -158,3 +158,5 @@ dist
 
 # Gemini CLI
 .gemini/settings.json
+
+tests/**/playwright-report/
