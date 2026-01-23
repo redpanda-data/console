@@ -602,16 +602,16 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       }
 
       // Calculate backend page size: for pagination mode (maxResults === -1),
-    // fetch exactly 1 page at a time to handle compaction gaps reliably
-    const backendPageSize = maxResults === -1 ? pageSize : undefined;
+      // fetch exactly 1 page at a time to handle compaction gaps reliably
+      const backendPageSize = maxResults === -1 ? pageSize : undefined;
 
-    const request = {
-      topicName: props.topic.topicName,
-      partitionId: partitionID,
-      startOffset,
-      startTimestamp: currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp,
-      maxResults,
-      pageSize: backendPageSize,
+      const request = {
+        topicName: props.topic.topicName,
+        partitionId: partitionID,
+        startOffset,
+        startTimestamp: currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp,
+        maxResults,
+        pageSize: backendPageSize,
         filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
         includeRawPayload: true,
         keyDeserializer,
@@ -623,7 +623,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         setSearchPhase('Searching...');
 
         const search = createMessageSearch();
-      setMessageSearch(search);
+        setMessageSearch(search);
         const startTime = Date.now();
 
         const result = await search.startSearch(request, abortSignal).catch((err: Error) => {
@@ -657,11 +657,12 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       startOffset,
       maxResults,
       pageSize,
-    getSearchParams,
-    keyDeserializer,
-    valueDeserializer,
-    filters,
-  ]);
+      getSearchParams,
+      keyDeserializer,
+      valueDeserializer,
+      filters,
+    ]
+  );
 
   // Convert searchFunc to useCallback
   const searchFunc = useCallback(
