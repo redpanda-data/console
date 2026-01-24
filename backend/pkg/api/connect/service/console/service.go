@@ -61,6 +61,7 @@ func (api *Service) ListMessages(
 		MaxResults:            int(req.Msg.GetMaxResults()),
 		FilterInterpreterCode: req.Msg.GetFilterInterpreterCode(),
 		Enterprise:            req.Msg.GetEnterprise(),
+		PageToken:             req.Msg.GetPageToken(),
 	}
 
 	interpreterCode, err := lmq.DecodeInterpreterCode()
@@ -96,6 +97,8 @@ func (api *Service) ListMessages(
 		IgnoreMaxSizeLimit:    req.Msg.GetIgnoreMaxSizeLimit(),
 		KeyDeserializer:       fromProtoEncoding(req.Msg.GetKeyDeserializer()),
 		ValueDeserializer:     fromProtoEncoding(req.Msg.GetValueDeserializer()),
+		PageToken:             lmq.PageToken,
+		PageSize:              int(req.Msg.GetPageSize()),
 	}
 
 	timeout := 35 * time.Second
