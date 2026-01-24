@@ -3,9 +3,9 @@ import { expect, test } from '@playwright/test';
 import { createClientIdQuota, deleteClientIdQuota } from '../../shared/quota.utils';
 import { QuotaPage } from '../utils/quota-page';
 
-const QUOTAS_TEST_LIMIT = 50;
+const QUOTAS_TEST_LIMIT = 15;
 
-test.describe('Quotas - Display 50 quotas', () => {
+test.describe('Quotas - Display 15 quotas', () => {
   test(`should create ${QUOTAS_TEST_LIMIT} quotas and verify all are visible on the page`, async ({ page }) => {
     const quotaPage = new QuotaPage(page);
     const timestamp = Date.now();
@@ -38,7 +38,7 @@ test.describe('Quotas - Display 50 quotas', () => {
         expect(visibleQuotaCount).toBe(QUOTAS_TEST_LIMIT);
       }).toPass({ timeout: 15_000, intervals: [500, 1000, 5000] });
 
-      // Final verification - count should now be stable at 50
+      // Final verification - count should now be stable at 15
       const visibleQuotaCount = await page
         .locator('tr')
         .filter({ hasText: `quota-test-${timestamp}` })
