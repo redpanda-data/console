@@ -167,6 +167,9 @@ export type GetTopicConsumersResponse = {
   topicConsumers: TopicConsumer[];
 };
 
+/**
+ * @deprecated Use `PayloadEncoding` enum from `protogen/redpanda/api/console/v1alpha1/common_pb` instead.
+ */
 export type MessageDataType =
   | 'null'
   | 'avro'
@@ -184,6 +187,9 @@ export type MessageDataType =
   | 'uint'
   | 'smile'
   | 'cbor';
+/**
+ * @deprecated Use `CompressionType` enum from `protogen/redpanda/api/console/v1alpha1/common_pb` instead.
+ */
 export const CompressionType = {
   Unknown: 'unknown',
 
@@ -194,8 +200,14 @@ export const CompressionType = {
   ZStd: 'zstd',
 } as const;
 
+/**
+ * @deprecated Use `CompressionType` enum from `protogen/redpanda/api/console/v1alpha1/common_pb` instead.
+ */
 export type CompressionTypeType = (typeof CompressionType)[keyof typeof CompressionType];
 
+/**
+ * @deprecated Use `KafkaRecordPayload` from `protogen/redpanda/api/console/v1alpha1/list_messages_pb` instead.
+ */
 export type Payload = {
   payload: unknown; // json obj
   isPayloadNull: boolean;
@@ -209,6 +221,10 @@ export type Payload = {
   rawBytes?: Uint8Array;
 };
 
+/**
+ * @deprecated Use `ListMessagesResponse_DataMessage` from proto types instead.
+ * This REST-based message type will be removed in a future version.
+ */
 export type TopicMessage = {
   partitionID: number;
   offset: number;
@@ -231,6 +247,10 @@ export type TopicMessage = {
   keyBinHexPreview: string;
 };
 
+/**
+ * @deprecated Use `ListMessagesResponse` streaming from `protogen/redpanda/api/console/v1alpha1/list_messages_pb`
+ * with `useListMessagesStream` hook instead.
+ */
 export type ListMessageResponse = {
   elapsedMs: number;
   fetchedMessages: number;
@@ -238,6 +258,10 @@ export type ListMessageResponse = {
   messages: TopicMessage[];
 };
 
+/**
+ * @deprecated Use `ListMessagesResponse` streaming from `protogen/redpanda/api/console/v1alpha1/list_messages_pb`
+ * with `useListMessagesStream` hook instead.
+ */
 export type GetTopicMessagesResponse = {
   kafkaMessages: ListMessageResponse;
 };

@@ -18,7 +18,7 @@ notes.md
 **/utils/interpreter/compiled
 
 # Logs
-logs
+/logs
 *.log
 npm-debug.log*
 yarn-debug.log*

@@ -2748,6 +2748,10 @@ export const transformsApi = observable({
   },
 });
 
+/**
+ * @deprecated Use `useListMessagesStream` from `react-query/api/messages` instead.
+ * This MobX-based message search will be removed in a future version.
+ */
 export function createMessageSearch() {
   const messageSearch = {
     // Parameters last passed to 'startMessageSearch'

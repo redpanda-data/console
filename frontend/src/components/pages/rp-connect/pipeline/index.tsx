@@ -22,6 +22,8 @@ import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'componen
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
+import { LogExplorer } from 'components/ui/logs';
+import { usePipelineLogs } from 'components/ui/pipeline/use-pipeline-logs';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { useDebounce } from 'hooks/use-debounce';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
@@ -61,7 +63,6 @@ import { Details } from './details';
 import { Toolbar } from './toolbar';
 import { extractLintHintsFromError } from '../errors';
 import { CreatePipelineSidebar } from '../onboarding/create-pipeline-sidebar';
-import { LogsTab } from '../pipelines-details';
 import { cpuToTasks, MIN_TASKS, tasksToCPU } from '../tasks';
 import { parseSchema } from '../utils/schema';
 import { type PipelineMode, usePipelineMode } from '../utils/use-pipeline-mode';
@@ -98,6 +99,38 @@ const Footer = memo(({ mode, onSave, onCancel, isSaving, disabled }: FooterProps
     </div>
   );
 });
+
+Footer.displayName = 'Footer';
+
+type PipelineLogsExplorerProps = {
+  pipelineId: string;
+};
+
+/**
+ * Pipeline logs explorer component that wraps LogExplorer with usePipelineLogs.
+ * This component handles the data fetching and passes the correct props to LogExplorer.
+ */
+const PipelineLogsExplorer = memo(({ pipelineId }: PipelineLogsExplorerProps) => {
+  const { logs, isStreaming, error, reset } = usePipelineLogs({
+    pipelineId,
+    enabled: Boolean(pipelineId),
+  });
+
+  return (
+    <LogExplorer
+      emptyMessage="No logs found for this pipeline"
+      error={error?.message}
+      idLabel="Pipeline ID"
+      isLoading={isStreaming}
+      logs={logs}
+      maxHeight="500px"
+      onRefresh={reset}
+      showId={false}
+    />
+  );
+});
+
+PipelineLogsExplorer.displayName = 'PipelineLogsExplorer';
 
 const PipelinePageSkeleton = memo(({ mode }: { mode: PipelineMode }) => {
   const content = (
@@ -545,7 +578,7 @@ export default function PipelinePage() {
             <TabsContents>
               <TabsContent value="configuration">{content}</TabsContent>
               <TabsContent value="logs">
-                <LogsTab pipeline={pipeline} />
+                <PipelineLogsExplorer pipelineId={pipeline.id} />
               </TabsContent>
             </TabsContents>
           </Tabs>

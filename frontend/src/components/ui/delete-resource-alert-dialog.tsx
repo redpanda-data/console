@@ -57,13 +57,13 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
   children,
   triggerVariant = 'dropdown',
   buttonVariant = 'destructive-outline',
-  buttonIcon,
+  buttonIcon: buttonIconProp,
   buttonText: buttonTextProp,
 }) => {
   const [confirmationText, setConfirmationText] = React.useState('');
   const isDeleteConfirmed = confirmationText.toLowerCase() === 'delete';
   const buttonText = buttonTextProp === undefined ? undefined : 'Delete';
-
+  const buttonIcon = buttonIconProp === undefined ? undefined : <Trash2 className="h-4 w-4" />;
   const handleDelete = () => {
     if (isDeleteConfirmed) {
       onDelete(resourceId);

@@ -12,27 +12,74 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { Link as TanStackRouterLink, useNavigate } from '@tanstack/react-router';
-import type { ColumnDef, VisibilityState } from '@tanstack/react-table';
-import { flexRender, getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
+import type {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  Table as TanstackTable,
+  VisibilityState,
+} from '@tanstack/react-table';
+import {
+  flexRender,
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
-import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
+import {
+  DataTableColumnHeader,
+  DataTableFacetedFilter,
+  DataTablePagination,
+  DataTableViewOptions,
+} from 'components/redpanda-ui/components/data-table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from 'components/redpanda-ui/components/dropdown-menu';
+import { Input } from 'components/redpanda-ui/components/input';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { AlertCircle, Trash2 } from 'lucide-react';
-import { DeletePipelineRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
+import { AlertCircle, MoreHorizontal, X } from 'lucide-react';
+import {
+  DeletePipelineRequestSchema,
+  StartPipelineRequestSchema,
+  StopPipelineRequestSchema,
+} from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import type { Pipeline as APIPipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
-import { useDeletePipelineMutation, useListPipelinesQuery } from 'react-query/api/pipeline';
+import {
+  useDeletePipelineMutation,
+  useListPipelinesQuery,
+  useStartPipelineMutation,
+  useStopPipelineMutation,
+} from 'react-query/api/pipeline';
 import { toast } from 'sonner';
 import { useResetOnboardingWizardStore } from 'state/onboarding-wizard-store';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { parseDocument } from 'yaml';
 
-import { PipelineStatusBadge } from './status-badge';
+import {
+  ISSUE_FILTER_OPTIONS,
+  PIPELINE_STATE_OPTIONS,
+  STARTABLE_STATES,
+  STOPPABLE_STATES,
+} from '../../../ui/pipeline/constants';
+import { PipelineLogIndicator } from '../../../ui/pipeline/pipeline-log-indicator';
+import { PipelineStatusBadge } from '../../../ui/pipeline/status-badge';
+import { usePipelineLogCounts } from '../../../ui/pipeline/use-pipeline-log-counts';
 import { TabKafkaConnect } from '../../connect/overview';
 
 type Pipeline = {
@@ -40,27 +87,109 @@ type Pipeline = {
   name: string;
   description: string;
   state: Pipeline_State;
+  configYaml: string;
+  input?: string;
+  output?: string;
 };
 
-const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => ({
-  id: apiPipeline.id,
-  name: apiPipeline.displayName,
-  description: apiPipeline.description,
-  state: apiPipeline.state,
-});
+const parseInputOutput = (configYaml: string): { input?: string; output?: string } => {
+  if (!configYaml) {
+    return {};
+  }
+  try {
+    const doc = parseDocument(configYaml);
+    const inputNode = doc.get('input');
+    const outputNode = doc.get('output');
+    return {
+      input:
+        inputNode && typeof inputNode === 'object' && inputNode !== null
+          ? Object.keys(inputNode as Record<string, unknown>)[0]
+          : undefined,
+      output:
+        outputNode && typeof outputNode === 'object' && outputNode !== null
+          ? Object.keys(outputNode as Record<string, unknown>)[0]
+          : undefined,
+    };
+  } catch {
+    return {};
+  }
+};
+
+const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
+  const { input, output } = parseInputOutput(apiPipeline.configYaml);
+  return {
+    id: apiPipeline.id,
+    name: apiPipeline.displayName,
+    description: apiPipeline.description,
+    state: apiPipeline.state,
+    configYaml: apiPipeline.configYaml,
+    input,
+    output,
+  };
+};
+
+// Toolbar component
+type PipelineDataTableToolbarProps = {
+  table: TanstackTable<Pipeline>;
+  inputOptions: { label: string; value: string }[];
+  outputOptions: { label: string; value: string }[];
+};
+
+const PipelineDataTableToolbar = ({ table, inputOptions, outputOptions }: PipelineDataTableToolbarProps) => {
+  const isFiltered = table.getState().columnFilters.length > 0;
+
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex flex-1 items-center gap-1">
+        <Input
+          className="h-8 w-[200px]"
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            table.getColumn('name')?.setFilterValue(event.target.value)
+          }
+          placeholder="Filter pipelines..."
+          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+        />
+        {table.getColumn('input') && inputOptions.length > 0 && (
+          <DataTableFacetedFilter column={table.getColumn('input')} options={inputOptions} title="Input" />
+        )}
+        {table.getColumn('output') && outputOptions.length > 0 && (
+          <DataTableFacetedFilter column={table.getColumn('output')} options={outputOptions} title="Output" />
+        )}
+        {table.getColumn('state') && (
+          <DataTableFacetedFilter
+            column={table.getColumn('state')}
+            options={[...PIPELINE_STATE_OPTIONS]}
+            title="State"
+          />
+        )}
+        {table.getColumn('logs') && (
+          <DataTableFacetedFilter column={table.getColumn('logs')} options={[...ISSUE_FILTER_OPTIONS]} title="Issues" />
+        )}
+        {isFiltered ? (
+          <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
+            Reset
+            <X className="ml-2 h-4 w-4" />
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+};
 
 const PipelineTableSkeleton = () => (
   <div className="flex flex-col gap-4">
-    <div className="flex items-center justify-end gap-4">
-      <Skeleton className="h-9 w-40" />
+    <div className="flex items-center justify-between gap-4">
+      <Skeleton className="h-8 w-[200px]" />
+      <Skeleton className="h-8 w-20" />
     </div>
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>ID</TableHead>
           <TableHead>Pipeline Name</TableHead>
-          <TableHead>Description</TableHead>
+          <TableHead>Input</TableHead>
+          <TableHead>Output</TableHead>
           <TableHead>State</TableHead>
+          <TableHead>Issues</TableHead>
           <TableHead />
         </TableRow>
       </TableHeader>
@@ -68,16 +197,19 @@ const PipelineTableSkeleton = () => (
         {Array.from({ length: 5 }).map(() => (
           <TableRow key={crypto.randomUUID()}>
             <TableCell>
-              <Skeleton className="h-4 w-24" />
-            </TableCell>
-            <TableCell>
               <Skeleton className="h-4 w-40" />
             </TableCell>
             <TableCell>
-              <Skeleton className="h-4 w-64" />
+              <Skeleton className="h-6 w-16" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-6 w-16" />
             </TableCell>
             <TableCell>
               <Skeleton className="h-6 w-20" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-6 w-16" />
             </TableCell>
             <TableCell>
               <Skeleton className="h-8 w-8" />
@@ -92,11 +224,18 @@ const PipelineTableSkeleton = () => (
 const PipelineListPageContent = () => {
   const navigate = useNavigate();
   const resetOnboardingWizardStore = useResetOnboardingWizardStore();
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+    id: false,
+    description: false,
+  });
   const [rowSelection, setRowSelection] = useState({});
 
   const { data: pipelinesData, isLoading, error } = useListPipelinesQuery();
   const { mutate: deleteMutation, isPending: isDeletingPipeline } = useDeletePipelineMutation();
+  const { mutate: startMutation } = useStartPipelineMutation();
+  const { mutate: stopMutation } = useStopPipelineMutation();
 
   const pipelines = useMemo(
     () =>
@@ -107,6 +246,10 @@ const PipelineListPageContent = () => {
         .map(transformAPIPipeline),
     [pipelinesData]
   );
+
+  // Get all pipeline IDs to fetch log counts
+  const pipelineIds = useMemo(() => pipelines.map((p) => p.id), [pipelines]);
+  const { data: logCounts, isLoading: isLoadingLogCounts } = usePipelineLogCounts(pipelineIds, !isLoading);
 
   const handleCreateClick = useCallback(() => {
     resetOnboardingWizardStore();
@@ -120,7 +263,7 @@ const PipelineListPageContent = () => {
     () => [
       {
         accessorKey: 'id',
-        header: 'ID',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
         cell: ({ row }) => (
           <TanStackRouterLink
             className="text-[1rem] text-foreground underline decoration-dotted underline-offset-[3px]"
@@ -130,12 +273,11 @@ const PipelineListPageContent = () => {
             {row.getValue('id')}
           </TanStackRouterLink>
         ),
-        enableSorting: false,
         size: 120,
       },
       {
         accessorKey: 'name',
-        header: 'Pipeline Name',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Pipeline Name" />,
         cell: ({ row }) => (
           <TanStackRouterLink
             className="text-[1rem] text-foreground underline decoration-dotted underline-offset-[3px]"
@@ -145,25 +287,178 @@ const PipelineListPageContent = () => {
             {row.getValue('name')}
           </TanStackRouterLink>
         ),
+        filterFn: (row, _columnId, filterValue: string) => {
+          const searchValue = filterValue.toLowerCase();
+          const name = row.original.name?.toLowerCase() ?? '';
+          const description = row.original.description?.toLowerCase() ?? '';
+          const id = row.original.id?.toLowerCase() ?? '';
+          return name.includes(searchValue) || description.includes(searchValue) || id.includes(searchValue);
+        },
         size: 250,
       },
       {
         accessorKey: 'description',
-        header: 'Description',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Description" />,
         cell: ({ row }) => <Text className="max-w-md truncate">{row.getValue('description')}</Text>,
-        enableSorting: false,
         size: 400,
       },
       {
+        accessorKey: 'input',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Input" />,
+        cell: ({ row }) => {
+          const input = row.getValue('input') as string | undefined;
+          const counts = logCounts?.get(row.original.id);
+          const inputIssues = counts?.input;
+          const hasIssues = inputIssues && (inputIssues.errors > 0 || inputIssues.warnings > 0);
+
+          if (!input) {
+            return <Text variant="muted">-</Text>;
+          }
+
+          return (
+            <div className="flex items-center gap-2">
+              <Badge variant="simple-inverted">{input}</Badge>
+              {hasIssues ? <PipelineLogIndicator counts={inputIssues} isLoading={isLoadingLogCounts} /> : null}
+            </div>
+          );
+        },
+        filterFn: (row, _columnId, filterValue: string[]) => {
+          const input = row.original.input;
+          if (!input) {
+            return false;
+          }
+          return filterValue.includes(input);
+        },
+        size: 180,
+      },
+      {
+        accessorKey: 'output',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Output" />,
+        cell: ({ row }) => {
+          const output = row.getValue('output') as string | undefined;
+          const counts = logCounts?.get(row.original.id);
+          const outputIssues = counts?.output;
+          const hasIssues = outputIssues && (outputIssues.errors > 0 || outputIssues.warnings > 0);
+
+          if (!output) {
+            return <Text variant="muted">-</Text>;
+          }
+
+          return (
+            <div className="flex items-center gap-2">
+              <Badge variant="simple-inverted">{output}</Badge>
+              {hasIssues ? <PipelineLogIndicator counts={outputIssues} isLoading={isLoadingLogCounts} /> : null}
+            </div>
+          );
+        },
+        filterFn: (row, _columnId, filterValue: string[]) => {
+          const output = row.original.output;
+          if (!output) {
+            return false;
+          }
+          return filterValue.includes(output);
+        },
+        size: 180,
+      },
+      {
         accessorKey: 'state',
-        header: 'State',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
         cell: ({ row }) => <PipelineStatusBadge state={row.getValue('state')} />,
+        filterFn: (row, _columnId, filterValue: string[]) => {
+          const state = row.original.state;
+          return filterValue.includes(String(state));
+        },
         size: 120,
+      },
+      {
+        id: 'logs',
+        accessorFn: (row) => {
+          const counts = logCounts?.get(row.id);
+          // Only consider root-level issues (not scoped to input/output)
+          const rootCounts = counts?.root;
+          if (!rootCounts) {
+            return 'none';
+          }
+          if (rootCounts.errors > 0) {
+            return 'error';
+          }
+          if (rootCounts.warnings > 0) {
+            return 'warning';
+          }
+          return 'none';
+        },
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Issues" />,
+        cell: ({ row }) => {
+          const counts = logCounts?.get(row.original.id);
+          // Only show root-level issues in the Issues column
+          return <PipelineLogIndicator counts={counts?.root} isLoading={isLoadingLogCounts} />;
+        },
+        filterFn: (row, _columnId, filterValue: string[]) => {
+          const counts = logCounts?.get(row.original.id);
+          // Filter based on total issues across all scopes
+          const totalCounts = counts?.total;
+          if (!totalCounts) {
+            return filterValue.includes('none');
+          }
+          if (totalCounts.errors > 0 && filterValue.includes('error')) {
+            return true;
+          }
+          if (totalCounts.warnings > 0 && filterValue.includes('warning')) {
+            return true;
+          }
+          return filterValue.includes('none');
+        },
+        enableSorting: false,
+        size: 150,
       },
       {
         id: 'actions',
         enableHiding: false,
         cell: ({ row }) => {
+          const pipeline = row.original;
+          const canStart = (STARTABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
+          const canStop = (STOPPABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
+
+          const handleStart = () => {
+            const startRequest = create(StartPipelineRequestSchema, {
+              request: { id: pipeline.id },
+            });
+            startMutation(startRequest, {
+              onSuccess: () => {
+                toast.success('Pipeline started');
+              },
+              onError: (err) => {
+                toast.error(
+                  formatToastErrorMessageGRPC({
+                    error: ConnectError.from(err),
+                    action: 'start',
+                    entity: 'pipeline',
+                  })
+                );
+              },
+            });
+          };
+
+          const handleStop = () => {
+            const stopRequest = create(StopPipelineRequestSchema, {
+              request: { id: pipeline.id },
+            });
+            stopMutation(stopRequest, {
+              onSuccess: () => {
+                toast.success('Pipeline stopped');
+              },
+              onError: (err) => {
+                toast.error(
+                  formatToastErrorMessageGRPC({
+                    error: ConnectError.from(err),
+                    action: 'stop',
+                    entity: 'pipeline',
+                  })
+                );
+              },
+            });
+          };
+
           const handleDelete = (id: string) => {
             const deleteRequest = create(DeletePipelineRequestSchema, {
               request: { id },
@@ -187,31 +482,85 @@ const PipelineListPageContent = () => {
 
           return (
             <div className="flex justify-end" data-actions-column>
-              <DeleteResourceAlertDialog
-                buttonIcon={<Trash2 />}
-                buttonText={undefined}
-                buttonVariant="destructive-ghost"
-                isDeleting={isDeletingPipeline}
-                onDelete={handleDelete}
-                resourceId={row.original.id}
-                resourceName={row.original.name}
-                resourceType="Pipeline"
-                triggerVariant="button"
-              />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="size-8" size="icon" variant="secondary-ghost">
+                    <MoreHorizontal />
+                    <span className="sr-only">Open menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() =>
+                      navigate({
+                        to: '/rp-connect/$pipelineId/edit',
+                        params: { pipelineId: encodeURIComponent(pipeline.id) },
+                      })
+                    }
+                  >
+                    Edit
+                  </DropdownMenuItem>
+                  {canStart ? <DropdownMenuItem onClick={handleStart}>Start</DropdownMenuItem> : null}
+                  {canStop ? <DropdownMenuItem onClick={handleStop}>Stop</DropdownMenuItem> : null}
+                  <DropdownMenuSeparator />
+                  <DeleteResourceAlertDialog
+                    buttonIcon={undefined}
+                    buttonText="Delete"
+                    buttonVariant="destructive-ghost"
+                    isDeleting={isDeletingPipeline}
+                    onDelete={handleDelete}
+                    resourceId={pipeline.id}
+                    resourceName={pipeline.name}
+                    resourceType="Pipeline"
+                    triggerVariant="dropdown"
+                  />
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           );
         },
         size: 60,
       },
     ],
-    [deleteMutation, isDeletingPipeline]
+    [deleteMutation, isDeletingPipeline, logCounts, isLoadingLogCounts, navigate, startMutation, stopMutation]
   );
+
+  // Generate filter options from pipeline data
+  const inputOptions = useMemo(() => {
+    const uniqueInputs = new Set<string>();
+    for (const pipeline of pipelines) {
+      if (pipeline.input) {
+        uniqueInputs.add(pipeline.input);
+      }
+    }
+    return Array.from(uniqueInputs)
+      .sort()
+      .map((input) => ({ label: input, value: input }));
+  }, [pipelines]);
+
+  const outputOptions = useMemo(() => {
+    const uniqueOutputs = new Set<string>();
+    for (const pipeline of pipelines) {
+      if (pipeline.output) {
+        uniqueOutputs.add(pipeline.output);
+      }
+    }
+    return Array.from(uniqueOutputs)
+      .sort()
+      .map((output) => ({ label: output, value: output }));
+  }, [pipelines]);
 
   const table = useReactTable({
     data: pipelines,
     columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     initialState: {
@@ -220,6 +569,8 @@ const PipelineListPageContent = () => {
       },
     },
     state: {
+      sorting,
+      columnFilters,
       columnVisibility,
       rowSelection,
     },
@@ -233,6 +584,10 @@ const PipelineListPageContent = () => {
     <div className="flex flex-col gap-4">
       <div className="mb-4">
         <Button onClick={handleCreateClick}>Create a pipeline</Button>
+      </div>
+      <div className="flex items-center justify-between">
+        <PipelineDataTableToolbar inputOptions={inputOptions} outputOptions={outputOptions} table={table} />
+        <DataTableViewOptions table={table} />
       </div>
       <Table>
         <TableHeader>
