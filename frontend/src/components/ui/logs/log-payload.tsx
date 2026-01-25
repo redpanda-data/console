@@ -92,14 +92,14 @@ export const LogPayload = memo(({ payload, label, className, maxLength = 500, sh
     <div className={cn('flex flex-col gap-1', className)}>
       {(label || encodingLabel) && (
         <div className="flex items-center gap-2">
-          {label && <span className="font-medium text-xs text-muted-foreground">{label}</span>}
+          {label && <span className="font-medium text-muted-foreground text-xs">{label}</span>}
           {encodingLabel && (
-            <Badge variant="simple" size="sm">
+            <Badge size="sm" variant="simple">
               {encodingLabel}
             </Badge>
           )}
           {payload.schemaId !== undefined && (
-            <Badge variant="simple" size="sm">
+            <Badge size="sm" variant="simple">
               Schema #{payload.schemaId}
             </Badge>
           )}

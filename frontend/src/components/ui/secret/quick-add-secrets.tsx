@@ -104,7 +104,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
     const map = new Map<string, string>(); // normalized -> original
     for (const secret of requiredSecrets) {
       const normalized = normalizeSecretName(secret);
-      if (!existingSecretsSet.has(normalized) && !createdSecretsSet.has(normalized)) {
+      if (!(existingSecretsSet.has(normalized) || createdSecretsSet.has(normalized))) {
         map.set(normalized, secret);
       }
     }
@@ -137,9 +137,10 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
 
   const handleCreateSecrets = async (data: SecretFormData) => {
     // Filter out secrets that have already been created
-    const secretEntries = Object.entries(data).filter(([normalizedSecretName]) => {
-      return !(existingSecretsSet.has(normalizedSecretName) || createdSecretsSet.has(normalizedSecretName));
-    });
+    const secretEntries = Object.entries(data).filter(
+      ([normalizedSecretName]) =>
+        !(existingSecretsSet.has(normalizedSecretName) || createdSecretsSet.has(normalizedSecretName))
+    );
 
     if (secretEntries.length === 0) {
       return;
@@ -282,14 +283,17 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
 
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
-                <form key={formKey} className="space-y-3" onSubmit={form.handleSubmit(handleCreateSecrets)}>
+                <form className="space-y-3" key={formKey} onSubmit={form.handleSubmit(handleCreateSecrets)}>
                   {missingSecrets.map((normalizedSecretName) => {
                     const fieldName = `${normalizedSecretName}.value` as keyof SecretFormData;
                     const error = form.formState.errors[normalizedSecretName]?.value;
 
                     return (
-                      <Field key={normalizedSecretName} data-invalid={!!error}>
-                        <FieldLabel className="font-medium font-mono text-sm" htmlFor={`secret-${normalizedSecretName}`}>
+                      <Field data-invalid={!!error} key={normalizedSecretName}>
+                        <FieldLabel
+                          className="font-medium font-mono text-sm"
+                          htmlFor={`secret-${normalizedSecretName}`}
+                        >
                           {normalizedSecretName}
                         </FieldLabel>
                         <Input
@@ -297,8 +301,8 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                           placeholder={`Enter value for ${normalizedSecretName}...`}
                           type="password"
                           {...form.register(fieldName)}
-                          aria-invalid={!!error}
                           aria-describedby={error ? `secret-${normalizedSecretName}-error` : undefined}
+                          aria-invalid={!!error}
                         />
                         {!!error && (
                           <FieldError id={`secret-${normalizedSecretName}-error`}>{error.message}</FieldError>
@@ -307,12 +311,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                     );
                   })}
 
-                  <Button
-                    className="w-full"
-                    disabled={form.formState.isSubmitting}
-                    type="submit"
-                    variant="secondary"
-                  >
+                  <Button className="w-full" disabled={form.formState.isSubmitting} type="submit" variant="secondary">
                     {form.formState.isSubmitting ? (
                       <div className="flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -373,12 +372,12 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                         newSecretForm.setValue('name', normalized);
                       },
                     })}
-                    aria-invalid={!!newSecretForm.formState.errors.name}
                     aria-describedby={
                       newSecretForm.formState.errors.name || newSecretForm.formState.isDirty
                         ? 'new-secret-name-description new-secret-name-error'
                         : 'new-secret-name-description'
                     }
+                    aria-invalid={!!newSecretForm.formState.errors.name}
                   />
                   <FieldDescription id="new-secret-name-description">
                     Secrets are stored in uppercase. Invalid characters will be replaced with underscores.
@@ -397,8 +396,8 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                     placeholder="Enter secret value..."
                     type="password"
                     {...newSecretForm.register('value')}
-                    aria-invalid={!!newSecretForm.formState.errors.value}
                     aria-describedby={newSecretForm.formState.errors.value ? 'new-secret-value-error' : undefined}
+                    aria-invalid={!!newSecretForm.formState.errors.value}
                   />
                   {!!newSecretForm.formState.errors.value && (
                     <FieldError id="new-secret-value-error">{newSecretForm.formState.errors.value.message}</FieldError>

@@ -16,7 +16,7 @@ import {
   AccordionTrigger,
 } from 'components/redpanda-ui/components/accordion';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Field, FieldLabel, FieldDescription, FieldError } from 'components/redpanda-ui/components/field';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Text } from 'components/redpanda-ui/components/typography';
@@ -24,8 +24,7 @@ import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
 import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { Controller, type Control, useFormState } from 'react-hook-form';
-import { useFieldArray } from 'react-hook-form';
+import { type Control, Controller, useFieldArray, useFormState } from 'react-hook-form';
 import type { MCPServer } from 'react-query/api/remote-mcp';
 
 import type { FormValues } from '../../pages/agents/create/schemas';
@@ -119,9 +118,8 @@ export const SubagentConfigSection = ({ control, availableMcpServers }: Subagent
                       )}
                     />
                     <FieldDescription>
-                      Used by the parent agent to decide when to invoke this subagent. Also used for context
-                      management - the parent provides context when starting the subagent, which maintains its own
-                      context.
+                      Used by the parent agent to decide when to invoke this subagent. Also used for context management
+                      - the parent provides context when starting the subagent, which maintains its own context.
                     </FieldDescription>
                     {errors.subagents?.[index]?.description && (
                       <FieldError>{errors.subagents[index]?.description?.message}</FieldError>

@@ -13,7 +13,7 @@ import { CloseIcon } from 'components/icons';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Input } from 'components/redpanda-ui/components/input';
-import { useState, type KeyboardEvent } from 'react';
+import { type KeyboardEvent, useState } from 'react';
 
 type StringArrayInputProps = {
   value: string[];

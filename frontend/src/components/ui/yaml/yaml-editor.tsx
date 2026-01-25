@@ -117,22 +117,23 @@ export const YamlEditor = (props: YamlEditorProps) => {
   }, [monacoYamlOptions]);
 
   // Cleanup on unmount
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (yamlRef.current) {
         yamlRef.current.dispose();
       }
-    };
-  }, []);
+    },
+    []
+  );
 
   return (
     <Editor
+      defaultLanguage="yaml"
+      loading={<LoadingPlaceholder />}
       onMount={(_, monaco) => {
         monacoRef.current = monaco;
         yamlRef.current = configureMonacoYaml(monaco, monacoYamlOptions);
       }}
-      defaultLanguage="yaml"
-      loading={<LoadingPlaceholder />}
       options={options}
       wrapperProps={{
         style: {

@@ -11,11 +11,9 @@
 
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { ChevronDown, ChevronRight } from 'lucide-react';
-import { memo, useCallback, useState } from 'react';
+import { memo } from 'react';
 
 import { LogLevelBadge } from './log-level-badge';
-import { LogPayload } from './log-payload';
 import type { ParsedLogEntry } from './types';
 
 type LogRowProps = {
@@ -23,8 +21,10 @@ type LogRowProps = {
   log: ParsedLogEntry;
   /** Whether to show the ID column (e.g., for multi-source views) */
   showId?: boolean;
-  /** Label for the ID field in expanded view */
-  idLabel?: string;
+  /** Callback when the row is clicked */
+  onClick?: () => void;
+  /** Whether this row is selected */
+  isSelected?: boolean;
   /** Class name for the row container */
   className?: string;
 };
@@ -32,13 +32,11 @@ type LogRowProps = {
 const formatTimestamp = (timestamp: bigint): string => {
   const date = new Date(Number(timestamp));
   return date.toLocaleString(undefined, {
-    year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    fractionalSecondDigits: 3,
   });
 };
 
@@ -51,99 +49,50 @@ const formatPath = (path: string | null): string => {
 };
 
 /**
- * A row component that displays a single parsed log entry.
- * Works with any data conforming to ParsedLogEntry interface.
+ * A fixed-height row component that displays a single parsed log entry.
+ * Click to view full details in a sheet panel.
  */
-export const LogRow = memo(({ log, showId = false, idLabel = 'ID', className }: LogRowProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const toggleExpanded = useCallback(() => {
-    setIsExpanded((prev) => !prev);
-  }, []);
-
+export const LogRow = memo(({ log, showId = false, onClick, isSelected = false, className }: LogRowProps) => {
   // Extract message from log content - handle various field names
   const rawMessage = log.content?.message ?? log.content?.msg;
   const message = typeof rawMessage === 'string' ? rawMessage : rawMessage ? JSON.stringify(rawMessage) : '';
 
   return (
-    <div
+    <button
       className={cn(
-        'border-b border-border/50 transition-colors hover:bg-muted/30',
+        'flex w-full cursor-pointer items-center gap-3 border-border/50 border-b px-3 py-2 text-left transition-colors hover:bg-muted/50',
         log.level === 'ERROR' && 'bg-red-50/30 dark:bg-red-950/10',
         log.level === 'WARN' && 'bg-yellow-50/30 dark:bg-yellow-950/10',
+        isSelected && 'bg-muted',
         className
       )}
+      onClick={onClick}
+      type="button"
     >
-      {/* Main row - always visible */}
-      <button
-        aria-expanded={isExpanded}
-        className="flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left"
-        onClick={toggleExpanded}
-        type="button"
-      >
-        <span className="flex-shrink-0 text-muted-foreground">
-          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        </span>
+      <span className="w-[130px] shrink-0 font-mono text-muted-foreground text-xs">
+        {formatTimestamp(log.timestamp)}
+      </span>
 
-        <span className="w-[180px] flex-shrink-0 font-mono text-xs text-muted-foreground">
-          {formatTimestamp(log.timestamp)}
-        </span>
+      <span className="w-[65px] shrink-0">
+        <LogLevelBadge level={log.level} />
+      </span>
 
-        <span className="w-[70px] flex-shrink-0">
-          <LogLevelBadge level={log.level} />
-        </span>
-
-        {showId && (
-          <span className="w-[140px] flex-shrink-0">
-            <Badge className="max-w-full truncate" size="sm" variant="simple">
-              {log.id || '-'}
-            </Badge>
-          </span>
-        )}
-
-        <span className="w-[100px] flex-shrink-0">
-          <Badge size="sm" variant="neutral-outline">
-            {formatPath(log.path)}
+      {showId && (
+        <span className="w-[120px] shrink-0">
+          <Badge className="max-w-full truncate" size="sm" variant="simple">
+            {log.id || '-'}
           </Badge>
         </span>
-
-        <span className="min-w-0 flex-1 truncate font-mono text-sm">{message || '[No message]'}</span>
-      </button>
-
-      {/* Expanded details */}
-      {isExpanded && (
-        <div className="border-t border-border/30 bg-muted/20 px-4 py-3">
-          <div className="grid gap-4">
-            {/* Metadata row */}
-            <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
-              <div>
-                <span className="font-medium text-muted-foreground">Partition: </span>
-                <span>{log.partitionId}</span>
-              </div>
-              <div>
-                <span className="font-medium text-muted-foreground">Offset: </span>
-                <span>{log.offset.toString()}</span>
-              </div>
-              {log.id && (
-                <div>
-                  <span className="font-medium text-muted-foreground">{idLabel}: </span>
-                  <span className="font-mono">{log.id}</span>
-                </div>
-              )}
-              {log.path && (
-                <div>
-                  <span className="font-medium text-muted-foreground">Path: </span>
-                  <span className="font-mono">{log.path}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Value payload */}
-            <LogPayload label="Value" maxLength={2000} payload={log.message.value} />
-          </div>
-        </div>
       )}
-    </div>
+
+      <span className="w-[80px] shrink-0">
+        <Badge size="sm" variant="neutral-outline">
+          {formatPath(log.path)}
+        </Badge>
+      </span>
+
+      <span className="min-w-0 flex-1 truncate font-mono text-sm">{message || '[No message]'}</span>
+    </button>
   );
 });
 

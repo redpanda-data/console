@@ -1,6 +1,6 @@
-import type { MCPServer } from 'react-query/api/remote-mcp';
 import type { HTMLAttributes } from 'react';
 import { useMemo } from 'react';
+import type { MCPServer } from 'react-query/api/remote-mcp';
 
 import { Checkbox } from '../../redpanda-ui/components/checkbox';
 import { Label } from '../../redpanda-ui/components/label';
@@ -61,7 +61,13 @@ type MCPServerCardProps = {
   idPrefix?: string;
 };
 
-const MCPServerCard = ({ server, isSelected, onToggle, showCheckbox = true, idPrefix = 'default' }: MCPServerCardProps) => {
+const MCPServerCard = ({
+  server,
+  isSelected,
+  onToggle,
+  showCheckbox = true,
+  idPrefix = 'default',
+}: MCPServerCardProps) => {
   const toolNames = Object.keys(server.tools || {});
 
   const MAX_VISIBLE_TOOLS = 8;
@@ -115,7 +121,7 @@ const MCPServerCard = ({ server, isSelected, onToggle, showCheckbox = true, idPr
         id={`mcp-server-${idPrefix}-${server.id}`}
         onCheckedChange={onToggle}
       />
-      <Label htmlFor={`mcp-server-${idPrefix}-${server.id}`} className="flex-1 cursor-pointer pr-8">
+      <Label className="flex-1 cursor-pointer pr-8" htmlFor={`mcp-server-${idPrefix}-${server.id}`}>
         {content}
       </Label>
     </div>

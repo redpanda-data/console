@@ -10,7 +10,7 @@
  */
 
 // Re-export LOG_LEVELS and LogLevel from types for convenience
-export { LOG_LEVELS, type LogLevel, DEFAULT_LEVEL_OPTIONS } from './types';
+export { DEFAULT_LEVEL_OPTIONS, LOG_LEVELS, type LogLevel } from './types';
 
 /**
  * Common log path prefixes.

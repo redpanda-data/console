@@ -94,7 +94,7 @@ export const RegexPatternsField = ({
                   value={pattern}
                 />
                 {pattern && !isReadOnly && (
-                  <div className="-translate-y-1/2 pointer-events-none absolute top-1/2 right-3">
+                  <div className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2">
                     {validation.valid ? (
                       <Check className="h-4 w-4 text-green-600" />
                     ) : (

@@ -23,7 +23,7 @@ type LintHintListProps = {
 };
 
 export const LintHintList: React.FC<LintHintListProps> = memo(({ className, lintHints, isPending }) => {
-  if (!lintHints || Object.keys(lintHints).length === 0 && !isPending) {
+  if (!lintHints || (Object.keys(lintHints).length === 0 && !isPending)) {
     return null;
   }
 
@@ -39,11 +39,15 @@ export const LintHintList: React.FC<LintHintListProps> = memo(({ className, lint
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
         <div className="flex flex-col gap-4 p-3">
           {Object.entries(lintHints).map(([toolName, hint]) => (
-            <div className="flex-col flex gap-1.5" key={toolName}>
+            <div className="flex flex-col gap-1.5" key={toolName}>
               {hint.line > 0 ? (
-                  <SimpleCodeBlock code={`Line ${hint.line}, Col ${hint.column}: ${hint.hint}`} width="full" className="my-0"/>
+                <SimpleCodeBlock
+                  className="my-0"
+                  code={`Line ${hint.line}, Col ${hint.column}: ${hint.hint}`}
+                  width="full"
+                />
               ) : (
-                <SimpleCodeBlock code={hint.hint} width="full" className="my-0"/>
+                <SimpleCodeBlock className="my-0" code={hint.hint} width="full" />
               )}
               {hint.lintType && (
                 <Text className="font-medium text-gray-500 text-xs uppercase tracking-wide">{hint.lintType}</Text>

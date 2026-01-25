@@ -19,11 +19,8 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import { useMemo } from 'react';
 import { parsePayloadAsJson, StartOffset } from 'react-query/api/messages';
-import {
-  MAX_REDPANDA_CONNECT_LOGS_RESULT_COUNT,
-  REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS,
-  REDPANDA_CONNECT_LOGS_TOPIC,
-} from 'react-query/api/pipeline';
+import { REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS, REDPANDA_CONNECT_LOGS_TOPIC } from 'react-query/api/pipeline';
+import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
 import { sanitizeString } from 'utils/filter-helper';
 import { encodeBase64 } from 'utils/utils';
 
@@ -160,7 +157,7 @@ const fetchPipelineLogCounts = async (pipelineIds: string[]): Promise<Map<string
     partitionId: -1,
     startOffset: StartOffset.TIMESTAMP,
     startTimestamp: BigInt(startTime),
-    maxResults: MAX_REDPANDA_CONNECT_LOGS_RESULT_COUNT,
+    maxResults: MAX_PAGE_SIZE,
     filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
     includeOriginalRawPayload: false,
     keyDeserializer: PayloadEncoding.UNSPECIFIED,

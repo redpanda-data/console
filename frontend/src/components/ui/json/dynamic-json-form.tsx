@@ -129,7 +129,8 @@ const hasEmptyValues = (value: JSONValue, schema: JSONSchemaType): boolean => {
     }
 
     // Check if all values are empty/default
-    if (schema.properties) {      return Object.entries(schema.properties).every(([key, propSchema]) => {
+    if (schema.properties) {
+      return Object.entries(schema.properties).every(([key, propSchema]) => {
         const val = obj[key];
         const subSchema = propSchema as JSONSchemaType;
 
@@ -275,7 +276,8 @@ export const DynamicJSONForm = ({
     path: string[] = [],
     depth = 0,
     parentSchema?: JSONSchemaType,
-    propertyName?: string  ) => {
+    propertyName?: string
+  ) => {
     if (depth >= maxDepth && (propSchema.type === 'object' || propSchema.type === 'array')) {
       // Render as JSON editor when max depth is reached
       return (

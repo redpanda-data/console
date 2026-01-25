@@ -81,7 +81,7 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
   const renderTrigger = () => {
     if (triggerVariant === 'button') {
       return (
-        <Button disabled={isDeleting} icon={buttonIcon} variant={buttonVariant} size={!buttonText ? 'icon' : undefined}>
+        <Button disabled={isDeleting} icon={buttonIcon} size={buttonText ? undefined : 'icon'} variant={buttonVariant}>
           {buttonText && !isDeleting && buttonText}
           {isDeleting && (
             <>

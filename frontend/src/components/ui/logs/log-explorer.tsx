@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
@@ -23,14 +24,26 @@ import {
 import { Input } from 'components/redpanda-ui/components/input';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { ScrollArea } from 'components/redpanda-ui/components/scroll-area';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from 'components/redpanda-ui/components/sheet';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { AlertCircle, FilterIcon, Loader2, RefreshCw, X } from 'lucide-react';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { AlertCircle, Copy, FilterIcon, Loader2, RefreshCw, X } from 'lucide-react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { DEFAULT_SCOPE_OPTIONS } from './constants';
+import { LogLevelBadge } from './log-level-badge';
+import { LogPayload } from './log-payload';
 import { LogRow } from './log-row';
 import { DEFAULT_LEVEL_OPTIONS, type LogLevel, type ParsedLogEntry, type ScopeOption } from './types';
+
+/** Duration in ms for the "new row" highlight animation */
+const NEW_ROW_HIGHLIGHT_DURATION = 3000;
+
+/** Fixed row height for virtualization */
+const ROW_HEIGHT = 40;
+
+/** Number of rows to render outside the visible area (overscan) */
+const OVERSCAN_COUNT = 10;
 
 type LogExplorerProps<T extends ParsedLogEntry = ParsedLogEntry> = {
   /** Parsed log entries to display */
@@ -58,32 +71,15 @@ type LogExplorerProps<T extends ParsedLogEntry = ParsedLogEntry> = {
 };
 
 /**
- * A reusable log explorer component with filtering, search, and scrolling.
- * Works with any data conforming to ParsedLogEntry interface.
- *
- * @example
- * ```tsx
- * // Basic usage with pipeline logs
- * const { logs, isStreaming, error, reset } = usePipelineLogs({ pipelineId });
- *
- * <LogExplorer
- *   logs={logs}
- *   isLoading={isStreaming}
- *   error={error?.message}
- *   onRefresh={reset}
- * />
- *
- * // With custom scope options
- * <LogExplorer
- *   logs={logs}
- *   scopeOptions={[
- *     { value: 'producer', label: 'Producer' },
- *     { value: 'consumer', label: 'Consumer' },
- *   ]}
- * />
- * ```
+ * Create a unique key for a log entry
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Component has multiple filter states and rendering conditions
+const getLogKey = (log: ParsedLogEntry): string => `${log.partitionId}-${log.offset.toString()}`;
+
+/**
+ * A reusable log explorer component with virtualization, filtering, and search.
+ * Uses TanStack Virtual to only render visible rows for optimal performance.
+ * Click a row to view full details in a side sheet.
+ */
 export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLogEntry>({
   logs,
   isLoading = false,
@@ -94,13 +90,23 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
   maxHeight = '600px',
   emptyMessage = 'No logs found',
   className,
-  scopeOptions = DEFAULT_SCOPE_OPTIONS as ScopeOption[],
+  scopeOptions = DEFAULT_SCOPE_OPTIONS as unknown as ScopeOption[],
   searchFilter,
 }: LogExplorerProps<T>) {
   // Filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevels, setSelectedLevels] = useState<LogLevel[]>([]);
   const [selectedScopes, setSelectedScopes] = useState<string[]>([]);
+
+  // Selected log for the detail sheet
+  const [selectedLog, setSelectedLog] = useState<T | null>(null);
+
+  // Track known log keys to identify new logs
+  const knownLogsRef = useRef<Set<string>>(new Set());
+  const [newLogKeys, setNewLogKeys] = useState<Set<string>>(new Set());
+
+  // Scroll container ref for virtualization
+  const parentRef = useRef<HTMLDivElement>(null);
 
   // Default search filter
   const defaultSearchFilter = useCallback((log: T, query: string) => {
@@ -138,6 +144,57 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
     return result;
   }, [logs, searchQuery, selectedLevels, selectedScopes, searchFilter, defaultSearchFilter]);
 
+  // Track new logs and manage highlight animation
+  useEffect(() => {
+    const currentKeys = new Set(logs.map(getLogKey));
+    const newKeys = new Set<string>();
+
+    // Find keys that weren't in knownLogsRef
+    for (const key of currentKeys) {
+      if (!knownLogsRef.current.has(key)) {
+        newKeys.add(key);
+      }
+    }
+
+    // If we have new logs, update state and schedule removal
+    if (newKeys.size > 0) {
+      setNewLogKeys((prev) => {
+        const updated = new Set(prev);
+        for (const key of newKeys) {
+          updated.add(key);
+        }
+        return updated;
+      });
+
+      // Remove highlight after duration
+      const timer = setTimeout(() => {
+        setNewLogKeys((prev) => {
+          const updated = new Set(prev);
+          for (const key of newKeys) {
+            updated.delete(key);
+          }
+          return updated;
+        });
+      }, NEW_ROW_HIGHLIGHT_DURATION);
+
+      // Update known logs
+      knownLogsRef.current = currentKeys;
+
+      return () => clearTimeout(timer);
+    }
+
+    // Update known logs even if no new keys
+    knownLogsRef.current = currentKeys;
+  }, [logs]);
+
+  // Virtualizer for the log list - using fixed row height
+  const virtualizer = useVirtualizer({
+    count: filteredLogs.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: OVERSCAN_COUNT,
+  });
+
   // Toggle a level filter
   const toggleLevel = useCallback((level: LogLevel) => {
     setSelectedLevels((prev) => (prev.includes(level) ? prev.filter((l) => l !== level) : [...prev, level]));
@@ -157,6 +214,8 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
 
   const hasFilters = searchQuery.trim() || selectedLevels.length > 0 || selectedScopes.length > 0;
 
+  const virtualItems = virtualizer.getVirtualItems();
+
   return (
     <div className={cn('flex flex-col gap-3', className)}>
       {/* Toolbar */}
@@ -164,32 +223,27 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
         {/* Search input */}
         <Input
           className="h-8 w-[200px]"
+          onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search logs..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
         />
 
         {/* Level filter */}
         <FacetedFilter
+          onToggle={toggleLevel as (value: string) => void}
           options={DEFAULT_LEVEL_OPTIONS}
           selectedValues={selectedLevels}
           title="Level"
-          onToggle={toggleLevel as (value: string) => void}
         />
 
         {/* Scope filter - only show if scopeOptions has items */}
         {scopeOptions.length > 0 ? (
-          <FacetedFilter
-            options={scopeOptions}
-            selectedValues={selectedScopes}
-            title="Scope"
-            onToggle={toggleScope}
-          />
+          <FacetedFilter onToggle={toggleScope} options={scopeOptions} selectedValues={selectedScopes} title="Scope" />
         ) : null}
 
         {/* Clear filters */}
         {hasFilters ? (
-          <Button className="h-8 px-2 lg:px-3" variant="ghost" onClick={clearFilters}>
+          <Button className="h-8 px-2 lg:px-3" onClick={clearFilters} variant="ghost">
             Reset
             <X className="ml-2 h-4 w-4" />
           </Button>
@@ -200,7 +254,7 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
 
         {/* Refresh button */}
         {onRefresh ? (
-          <Button className="h-8" disabled={isLoading} size="sm" variant="outline" onClick={onRefresh}>
+          <Button className="h-8" disabled={isLoading} onClick={onRefresh} size="sm" variant="outline">
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             Refresh
           </Button>
@@ -237,28 +291,56 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
         </div>
       ) : null}
 
-      {/* Logs list */}
+      {/* Virtualized logs list */}
       {logs.length > 0 ? (
-        <ScrollArea className="rounded-md border" style={{ maxHeight }}>
-          <div className="min-w-0">
-            {filteredLogs.map((log) => (
-              <LogRow
-                idLabel={idLabel}
-                key={`${log.partitionId}-${log.offset.toString()}`}
-                log={log}
-                showId={showId}
-              />
-            ))}
-            {filteredLogs.length === 0 && hasFilters ? (
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <p className="text-sm">No logs match the current filters</p>
-                <Button className="mt-2" size="sm" variant="ghost" onClick={clearFilters}>
-                  Clear filters
-                </Button>
-              </div>
-            ) : null}
+        <div className="overflow-auto rounded-md border" ref={parentRef} style={{ maxHeight }}>
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualItems.map((virtualRow) => {
+              const log = filteredLogs[virtualRow.index];
+              const logKey = getLogKey(log);
+              const isNew = newLogKeys.has(logKey);
+              const isSelected = selectedLog ? getLogKey(selectedLog) === logKey : false;
+
+              return (
+                <div
+                  key={virtualRow.key}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <LogRow
+                    className={cn(isNew && 'animate-log-highlight')}
+                    isSelected={isSelected}
+                    log={log}
+                    onClick={() => setSelectedLog(log)}
+                    showId={showId}
+                  />
+                </div>
+              );
+            })}
           </div>
-        </ScrollArea>
+
+          {/* Empty filtered state */}
+          {filteredLogs.length === 0 && hasFilters ? (
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+              <p className="text-sm">No logs match the current filters</p>
+              <Button className="mt-2" onClick={clearFilters} size="sm" variant="ghost">
+                Clear filters
+              </Button>
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
       {/* Streaming indicator */}
@@ -268,9 +350,137 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
           <span>Loading more logs...</span>
         </div>
       ) : null}
+
+      {/* Log detail sheet */}
+      <Sheet onOpenChange={(open) => !open && setSelectedLog(null)} open={selectedLog !== null}>
+        <SheetContent side="right" size="lg">
+          {selectedLog ? <LogDetailSheet idLabel={idLabel} log={selectedLog} /> : null}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }) as <T extends ParsedLogEntry>(props: LogExplorerProps<T>) => JSX.Element;
+
+// Log detail sheet content
+type LogDetailSheetProps = {
+  log: ParsedLogEntry;
+  idLabel?: string;
+};
+
+const LogDetailSheet = memo(({ log, idLabel = 'ID' }: LogDetailSheetProps) => {
+  const copyToClipboard = useCallback((text: string) => {
+    navigator.clipboard.writeText(text);
+  }, []);
+
+  const formatTimestamp = (timestamp: bigint): string => {
+    const date = new Date(Number(timestamp));
+    return date.toLocaleString(undefined, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      fractionalSecondDigits: 3,
+    });
+  };
+
+  const rawMessage = log.content?.message ?? log.content?.msg;
+  const message = typeof rawMessage === 'string' ? rawMessage : rawMessage ? JSON.stringify(rawMessage, null, 2) : '';
+
+  return (
+    <div className="flex h-full flex-col">
+      <SheetHeader className="mb-6">
+        <SheetTitle>Log Details</SheetTitle>
+      </SheetHeader>
+
+      <ScrollArea className="flex-1 pr-4">
+        <div className="flex flex-col gap-6">
+          {/* Summary */}
+          <div className="flex flex-wrap items-center gap-2">
+            <LogLevelBadge level={log.level} size="md" />
+            <Badge size="md" variant="neutral-outline">
+              {log.path || 'root'}
+            </Badge>
+            <span className="font-mono text-muted-foreground text-sm">{formatTimestamp(log.timestamp)}</span>
+          </div>
+
+          {/* Message */}
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="font-medium text-sm">Message</span>
+              <Button className="h-6 px-2" onClick={() => copyToClipboard(message)} size="sm" variant="ghost">
+                <Copy className="mr-1 h-3 w-3" />
+                Copy
+              </Button>
+            </div>
+            <pre className="whitespace-pre-wrap rounded-md bg-muted p-3 font-mono text-sm">
+              {message || '[No message]'}
+            </pre>
+          </div>
+
+          {/* Metadata */}
+          <div>
+            <span className="mb-2 block font-medium text-sm">Metadata</span>
+            <div className="grid gap-2 rounded-md bg-muted p-3 text-sm">
+              <div className="grid grid-cols-[120px_1fr] gap-2">
+                <span className="text-muted-foreground">{idLabel}:</span>
+                <span className="font-mono">{log.id || '-'}</span>
+              </div>
+              <div className="grid grid-cols-[120px_1fr] gap-2">
+                <span className="text-muted-foreground">Partition:</span>
+                <span className="font-mono">{log.partitionId}</span>
+              </div>
+              <div className="grid grid-cols-[120px_1fr] gap-2">
+                <span className="text-muted-foreground">Offset:</span>
+                <span className="font-mono">{log.offset.toString()}</span>
+              </div>
+              <div className="grid grid-cols-[120px_1fr] gap-2">
+                <span className="text-muted-foreground">Scope:</span>
+                <span className="font-mono">{log.scope}</span>
+              </div>
+              {log.path ? (
+                <div className="grid grid-cols-[120px_1fr] gap-2">
+                  <span className="text-muted-foreground">Path:</span>
+                  <span className="font-mono">{log.path}</span>
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Raw payload */}
+          <div>
+            <span className="mb-2 block font-medium text-sm">Raw Payload</span>
+            <LogPayload label="" maxLength={5000} payload={log.message.value} />
+          </div>
+
+          {/* Full content JSON */}
+          {log.content ? (
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <span className="font-medium text-sm">Full Content (JSON)</span>
+                <Button
+                  className="h-6 px-2"
+                  onClick={() => copyToClipboard(JSON.stringify(log.content, null, 2))}
+                  size="sm"
+                  variant="ghost"
+                >
+                  <Copy className="mr-1 h-3 w-3" />
+                  Copy
+                </Button>
+              </div>
+              <pre className="max-h-[300px] overflow-auto whitespace-pre-wrap rounded-md bg-muted p-3 font-mono text-xs">
+                {JSON.stringify(log.content, null, 2)}
+              </pre>
+            </div>
+          ) : null}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+});
+
+LogDetailSheet.displayName = 'LogDetailSheet';
 
 // Faceted filter component (simplified version from DataTable)
 type FacetedFilterProps<T extends string> = {

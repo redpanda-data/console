@@ -35,8 +35,8 @@ export function extractSecretReferences(yamlContent: string): SecretReference[] 
     const fullReference = match[0];
     let secretPath = match[1];
     let defaultValue: string | undefined;
-    if (secretPath.includes(":")) {
-      const idx = secretPath.indexOf(":");
+    if (secretPath.includes(':')) {
+      const idx = secretPath.indexOf(':');
       defaultValue = secretPath.substring(idx + 1);
       secretPath = secretPath.substring(0, idx);
     }
@@ -46,7 +46,9 @@ export function extractSecretReferences(yamlContent: string): SecretReference[] 
     const nestedKey = pathParts.slice(1).join('.');
 
     // Check if we already have this secret reference
-    const existing = secretReferences.find((ref) => ref.secretName === secretName && (ref.nestedKey ?? "") === nestedKey);
+    const existing = secretReferences.find(
+      (ref) => ref.secretName === secretName && (ref.nestedKey ?? '') === nestedKey
+    );
 
     if (!existing) {
       secretReferences.push({

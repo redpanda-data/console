@@ -216,7 +216,7 @@ data:
   });
 
   test('should handle inline secret references', () => {
-    const yaml = 'connection_string: postgresql://user:\${secrets.DB_PASS}@localhost:5432/db';
+    const yaml = 'connection_string: postgresql://user:${secrets.DB_PASS}@localhost:5432/db';
     const result = extractSecretReferences(yaml);
 
     expect(result).toHaveLength(1);
@@ -284,9 +284,7 @@ describe('getUniqueSecretNames', () => {
   });
 
   test('should handle single reference', () => {
-    const references = [
-      { secretName: 'SINGLE_SECRET', fullReference: '${secrets.SINGLE_SECRET}' },
-    ];
+    const references = [{ secretName: 'SINGLE_SECRET', fullReference: '${secrets.SINGLE_SECRET}' }];
 
     const result = getUniqueSecretNames(references);
 

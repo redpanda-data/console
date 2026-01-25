@@ -18,15 +18,11 @@ import {
   StartOffset,
   useListMessagesStream,
 } from 'react-query/api/messages';
-import {
-  MAX_REDPANDA_CONNECT_LOGS_RESULT_COUNT,
-  REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS,
-  REDPANDA_CONNECT_LOGS_TOPIC,
-} from 'react-query/api/pipeline';
+import { REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS, REDPANDA_CONNECT_LOGS_TOPIC } from 'react-query/api/pipeline';
+import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
 import { sanitizeString } from 'utils/filter-helper';
 import { encodeBase64 } from 'utils/utils';
 
-// Import log types from ui/logs for consistency
 import {
   LOG_LEVELS,
   LOG_PATH_INPUT,
@@ -179,7 +175,7 @@ const createPipelineLogFilter = (pipelineId: string, levels?: LogLevel[]): strin
 export const usePipelineLogs = (options: UsePipelineLogsOptions): UsePipelineLogsResult => {
   const {
     pipelineId,
-    maxResults = MAX_REDPANDA_CONNECT_LOGS_RESULT_COUNT,
+    maxResults = MAX_PAGE_SIZE,
     timeWindowHours = REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS,
     enabled = true,
     levels,
@@ -190,7 +186,7 @@ export const usePipelineLogs = (options: UsePipelineLogsOptions): UsePipelineLog
     const now = Date.now();
     const windowMs = timeWindowHours * 60 * 60 * 1000;
     const timestamp = BigInt(now - windowMs);
-    
+
     return timestamp;
   }, [timeWindowHours]);
 
@@ -202,7 +198,7 @@ export const usePipelineLogs = (options: UsePipelineLogsOptions): UsePipelineLog
     const code = createPipelineLogFilter(pipelineId, levels);
     const sanitized = sanitizeString(code);
     const encoded = encodeBase64(sanitized);
-    
+
     return encoded;
   }, [pipelineId, levels]);
 

@@ -60,7 +60,7 @@ export const TagsFieldList = <TFieldValues extends FieldValues>({
             control={form.control}
             name={`${fieldName}.${idx}.key` as Path<TFieldValues>}
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid} className="flex-1">
+              <Field className="flex-1" data-invalid={fieldState.invalid}>
                 <Input placeholder="Key" {...field} />
                 {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
               </Field>
@@ -70,7 +70,7 @@ export const TagsFieldList = <TFieldValues extends FieldValues>({
             control={form.control}
             name={`${fieldName}.${idx}.value` as Path<TFieldValues>}
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid} className="flex-1">
+              <Field className="flex-1" data-invalid={fieldState.invalid}>
                 <Input placeholder="Value" {...field} />
                 {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
               </Field>
@@ -88,11 +88,7 @@ export const TagsFieldList = <TFieldValues extends FieldValues>({
       <Controller
         control={form.control}
         name={fieldName as Path<TFieldValues>}
-        render={({ fieldState }) => (
-          <>
-            {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
-          </>
-        )}
+        render={({ fieldState }) => <>{Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}</>}
       />
     </div>
   );

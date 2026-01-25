@@ -16,7 +16,9 @@ import { MCPServer_State, useGetMCPServerQuery } from 'react-query/api/remote-mc
 
 const routeApi = getRouteApi('/mcp-servers/$id');
 
-const getMCPServerStatus = (state: typeof MCPServer_State[keyof typeof MCPServer_State]): { icon: React.ReactNode; text: string; variant: BadgeVariant } => {
+const getMCPServerStatus = (
+  state: (typeof MCPServer_State)[keyof typeof MCPServer_State]
+): { icon: React.ReactNode; text: string; variant: BadgeVariant } => {
   switch (state) {
     case MCPServer_State.RUNNING:
       return {

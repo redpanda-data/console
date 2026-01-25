@@ -9,22 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// Components
-export { LogExplorer } from './log-explorer';
-export { LogLevelBadge } from './log-level-badge';
-export { LogPayload } from './log-payload';
-export { LogRow } from './log-row';
-
-// Types
-export type {
-  FilterOption,
-  LevelOption,
-  LogLevel,
-  ParsedLogContent,
-  ParsedLogEntry,
-  ScopeOption,
-} from './types';
-
 // Constants
 export {
   DEFAULT_LEVEL_OPTIONS,
@@ -35,3 +19,17 @@ export {
   LOG_PATH_OUTPUT,
   LOG_PATH_ROOT,
 } from './constants';
+// Components
+export { LogExplorer } from './log-explorer';
+export { LogLevelBadge } from './log-level-badge';
+export { LogPayload } from './log-payload';
+export { LogRow } from './log-row';
+// Types
+export type {
+  FilterOption,
+  LevelOption,
+  LogLevel,
+  ParsedLogContent,
+  ParsedLogEntry,
+  ScopeOption,
+} from './types';

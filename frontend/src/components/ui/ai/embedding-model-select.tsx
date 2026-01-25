@@ -44,7 +44,13 @@ type EmbeddingModelSelectProps = {
  * Reusable embedding model select component
  * Displays models grouped by provider with logos
  */
-export const EmbeddingModelSelect = ({ value, onValueChange, models, placeholder, disabled = false }: EmbeddingModelSelectProps) => {
+export const EmbeddingModelSelect = ({
+  value,
+  onValueChange,
+  models,
+  placeholder,
+  disabled = false,
+}: EmbeddingModelSelectProps) => {
   // Detect provider for selected model
   const allModels = [...models.openai, ...models.cohere];
   const selectedModel = allModels.find((m) => m.name === value);
