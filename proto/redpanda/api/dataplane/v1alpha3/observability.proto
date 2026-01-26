@@ -51,22 +51,28 @@ message TimeSeries {
   repeated DataPoint values = 3;
 }
 
-// Input data for a Query operation.
-message QueryRequest {
-  // Predefined query to request data from
-  string query_name = 1;
+// Parameters for executing a query.
+message ExecuteQueryParams {
   // Optional - if not provided, performs an instant query at end time (or current time if both are absent)
-  google.protobuf.Timestamp start = 2;
+  google.protobuf.Timestamp start = 1;
   // Optional - defaults to current date
-  google.protobuf.Timestamp end = 3;
+  google.protobuf.Timestamp end = 2;
   // Query resolution step width (optional)
-  google.protobuf.Duration step = 4;
+  google.protobuf.Duration step = 3;
   // Optional filter values to apply to the query, if the query supports them
-  map<string, string> filters = 5;
+  map<string, string> filters = 4;
 }
 
-// Response of a Query operation.
-message QueryResponse {
+// Input data for an ExecuteQuery operation.
+message ExecuteQueryRequest {
+  // Predefined query to request data from
+  string query_name = 1;
+  // Query execution parameters
+  ExecuteQueryParams params = 2;
+}
+
+// Response of an ExecuteQuery operation.
+message ExecuteQueryResponse {
   QueryMetadata metadata = 1;
 
   repeated TimeSeries result = 2;
@@ -102,10 +108,10 @@ service ObservabilityService {
   }
 
   // Execute a predefined query
-  rpc Query(QueryRequest) returns (QueryResponse) {
+  rpc ExecuteQuery(ExecuteQueryRequest) returns (ExecuteQueryResponse) {
     option (google.api.http) = {
-      post: "/v1alpha3/observability/query"
-      body: "*"
+      post: "/v1alpha3/observability/queries/{query_name}:execute"
+      body: "params"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Execute Query"
@@ -115,7 +121,7 @@ service ObservabilityService {
         value: {
           description: "Query results"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.QueryResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ExecuteQueryResponse"}
           }
         }
       }
