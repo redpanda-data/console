@@ -14,6 +14,6 @@ export const listQueries = ObservabilityService.method.listQueries;
 /**
  * Execute a predefined query
  *
- * @generated from rpc redpanda.api.dataplane.v1alpha3.ObservabilityService.Query
+ * @generated from rpc redpanda.api.dataplane.v1alpha3.ObservabilityService.ExecuteQuery
  */
-export const query = ObservabilityService.method.query;
+export const executeQuery = ObservabilityService.method.executeQuery;

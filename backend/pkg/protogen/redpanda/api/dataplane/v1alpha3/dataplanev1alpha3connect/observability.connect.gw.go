@@ -18,16 +18,16 @@ import (
 // service.
 type ObservabilityServiceGatewayServer struct {
 	v1alpha3.UnimplementedObservabilityServiceServer
-	listQueries connect_gateway.UnaryHandler[v1alpha3.ListQueriesRequest, v1alpha3.ListQueriesResponse]
-	query       connect_gateway.UnaryHandler[v1alpha3.QueryRequest, v1alpha3.QueryResponse]
+	listQueries  connect_gateway.UnaryHandler[v1alpha3.ListQueriesRequest, v1alpha3.ListQueriesResponse]
+	executeQuery connect_gateway.UnaryHandler[v1alpha3.ExecuteQueryRequest, v1alpha3.ExecuteQueryResponse]
 }
 
 // NewObservabilityServiceGatewayServer constructs a Connect-Gateway gRPC server for the
 // ObservabilityService service.
 func NewObservabilityServiceGatewayServer(svc ObservabilityServiceHandler, opts ...connect_gateway.HandlerOption) *ObservabilityServiceGatewayServer {
 	return &ObservabilityServiceGatewayServer{
-		listQueries: connect_gateway.NewUnaryHandler(ObservabilityServiceListQueriesProcedure, svc.ListQueries, opts...),
-		query:       connect_gateway.NewUnaryHandler(ObservabilityServiceQueryProcedure, svc.Query, opts...),
+		listQueries:  connect_gateway.NewUnaryHandler(ObservabilityServiceListQueriesProcedure, svc.ListQueries, opts...),
+		executeQuery: connect_gateway.NewUnaryHandler(ObservabilityServiceExecuteQueryProcedure, svc.ExecuteQuery, opts...),
 	}
 }
 
@@ -35,8 +35,8 @@ func (s *ObservabilityServiceGatewayServer) ListQueries(ctx context.Context, req
 	return s.listQueries(ctx, req)
 }
 
-func (s *ObservabilityServiceGatewayServer) Query(ctx context.Context, req *v1alpha3.QueryRequest) (*v1alpha3.QueryResponse, error) {
-	return s.query(ctx, req)
+func (s *ObservabilityServiceGatewayServer) ExecuteQuery(ctx context.Context, req *v1alpha3.ExecuteQueryRequest) (*v1alpha3.ExecuteQueryResponse, error) {
+	return s.executeQuery(ctx, req)
 }
 
 // RegisterObservabilityServiceHandlerGatewayServer registers the Connect handlers for the

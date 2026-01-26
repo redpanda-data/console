@@ -20,8 +20,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ObservabilityService_ListQueries_FullMethodName = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/ListQueries"
-	ObservabilityService_Query_FullMethodName       = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/Query"
+	ObservabilityService_ListQueries_FullMethodName  = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/ListQueries"
+	ObservabilityService_ExecuteQuery_FullMethodName = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/ExecuteQuery"
 )
 
 // ObservabilityServiceClient is the client API for ObservabilityService service.
@@ -33,7 +33,7 @@ type ObservabilityServiceClient interface {
 	// List available queries
 	ListQueries(ctx context.Context, in *ListQueriesRequest, opts ...grpc.CallOption) (*ListQueriesResponse, error)
 	// Execute a predefined query
-	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
+	ExecuteQuery(ctx context.Context, in *ExecuteQueryRequest, opts ...grpc.CallOption) (*ExecuteQueryResponse, error)
 }
 
 type observabilityServiceClient struct {
@@ -54,10 +54,10 @@ func (c *observabilityServiceClient) ListQueries(ctx context.Context, in *ListQu
 	return out, nil
 }
 
-func (c *observabilityServiceClient) Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error) {
+func (c *observabilityServiceClient) ExecuteQuery(ctx context.Context, in *ExecuteQueryRequest, opts ...grpc.CallOption) (*ExecuteQueryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(QueryResponse)
-	err := c.cc.Invoke(ctx, ObservabilityService_Query_FullMethodName, in, out, cOpts...)
+	out := new(ExecuteQueryResponse)
+	err := c.cc.Invoke(ctx, ObservabilityService_ExecuteQuery_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ type ObservabilityServiceServer interface {
 	// List available queries
 	ListQueries(context.Context, *ListQueriesRequest) (*ListQueriesResponse, error)
 	// Execute a predefined query
-	Query(context.Context, *QueryRequest) (*QueryResponse, error)
+	ExecuteQuery(context.Context, *ExecuteQueryRequest) (*ExecuteQueryResponse, error)
 	mustEmbedUnimplementedObservabilityServiceServer()
 }
 
@@ -87,8 +87,8 @@ type UnimplementedObservabilityServiceServer struct{}
 func (UnimplementedObservabilityServiceServer) ListQueries(context.Context, *ListQueriesRequest) (*ListQueriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListQueries not implemented")
 }
-func (UnimplementedObservabilityServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
+func (UnimplementedObservabilityServiceServer) ExecuteQuery(context.Context, *ExecuteQueryRequest) (*ExecuteQueryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExecuteQuery not implemented")
 }
 func (UnimplementedObservabilityServiceServer) mustEmbedUnimplementedObservabilityServiceServer() {}
 func (UnimplementedObservabilityServiceServer) testEmbeddedByValue()                              {}
@@ -129,20 +129,20 @@ func _ObservabilityService_ListQueries_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObservabilityService_Query_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryRequest)
+func _ObservabilityService_ExecuteQuery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExecuteQueryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObservabilityServiceServer).Query(ctx, in)
+		return srv.(ObservabilityServiceServer).ExecuteQuery(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ObservabilityService_Query_FullMethodName,
+		FullMethod: ObservabilityService_ExecuteQuery_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObservabilityServiceServer).Query(ctx, req.(*QueryRequest))
+		return srv.(ObservabilityServiceServer).ExecuteQuery(ctx, req.(*ExecuteQueryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -159,8 +159,8 @@ var ObservabilityService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ObservabilityService_ListQueries_Handler,
 		},
 		{
-			MethodName: "Query",
-			Handler:    _ObservabilityService_Query_Handler,
+			MethodName: "ExecuteQuery",
+			Handler:    _ObservabilityService_ExecuteQuery_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

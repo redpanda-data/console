@@ -38,16 +38,16 @@ const (
 	// ObservabilityServiceListQueriesProcedure is the fully-qualified name of the
 	// ObservabilityService's ListQueries RPC.
 	ObservabilityServiceListQueriesProcedure = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/ListQueries"
-	// ObservabilityServiceQueryProcedure is the fully-qualified name of the ObservabilityService's
-	// Query RPC.
-	ObservabilityServiceQueryProcedure = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/Query"
+	// ObservabilityServiceExecuteQueryProcedure is the fully-qualified name of the
+	// ObservabilityService's ExecuteQuery RPC.
+	ObservabilityServiceExecuteQueryProcedure = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/ExecuteQuery"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	observabilityServiceServiceDescriptor           = v1alpha3.File_redpanda_api_dataplane_v1alpha3_observability_proto.Services().ByName("ObservabilityService")
-	observabilityServiceListQueriesMethodDescriptor = observabilityServiceServiceDescriptor.Methods().ByName("ListQueries")
-	observabilityServiceQueryMethodDescriptor       = observabilityServiceServiceDescriptor.Methods().ByName("Query")
+	observabilityServiceServiceDescriptor            = v1alpha3.File_redpanda_api_dataplane_v1alpha3_observability_proto.Services().ByName("ObservabilityService")
+	observabilityServiceListQueriesMethodDescriptor  = observabilityServiceServiceDescriptor.Methods().ByName("ListQueries")
+	observabilityServiceExecuteQueryMethodDescriptor = observabilityServiceServiceDescriptor.Methods().ByName("ExecuteQuery")
 )
 
 // ObservabilityServiceClient is a client for the
@@ -56,7 +56,7 @@ type ObservabilityServiceClient interface {
 	// List available queries
 	ListQueries(context.Context, *connect.Request[v1alpha3.ListQueriesRequest]) (*connect.Response[v1alpha3.ListQueriesResponse], error)
 	// Execute a predefined query
-	Query(context.Context, *connect.Request[v1alpha3.QueryRequest]) (*connect.Response[v1alpha3.QueryResponse], error)
+	ExecuteQuery(context.Context, *connect.Request[v1alpha3.ExecuteQueryRequest]) (*connect.Response[v1alpha3.ExecuteQueryResponse], error)
 }
 
 // NewObservabilityServiceClient constructs a client for the
@@ -76,10 +76,10 @@ func NewObservabilityServiceClient(httpClient connect.HTTPClient, baseURL string
 			connect.WithSchema(observabilityServiceListQueriesMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		query: connect.NewClient[v1alpha3.QueryRequest, v1alpha3.QueryResponse](
+		executeQuery: connect.NewClient[v1alpha3.ExecuteQueryRequest, v1alpha3.ExecuteQueryResponse](
 			httpClient,
-			baseURL+ObservabilityServiceQueryProcedure,
-			connect.WithSchema(observabilityServiceQueryMethodDescriptor),
+			baseURL+ObservabilityServiceExecuteQueryProcedure,
+			connect.WithSchema(observabilityServiceExecuteQueryMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -87,8 +87,8 @@ func NewObservabilityServiceClient(httpClient connect.HTTPClient, baseURL string
 
 // observabilityServiceClient implements ObservabilityServiceClient.
 type observabilityServiceClient struct {
-	listQueries *connect.Client[v1alpha3.ListQueriesRequest, v1alpha3.ListQueriesResponse]
-	query       *connect.Client[v1alpha3.QueryRequest, v1alpha3.QueryResponse]
+	listQueries  *connect.Client[v1alpha3.ListQueriesRequest, v1alpha3.ListQueriesResponse]
+	executeQuery *connect.Client[v1alpha3.ExecuteQueryRequest, v1alpha3.ExecuteQueryResponse]
 }
 
 // ListQueries calls redpanda.api.dataplane.v1alpha3.ObservabilityService.ListQueries.
@@ -96,9 +96,9 @@ func (c *observabilityServiceClient) ListQueries(ctx context.Context, req *conne
 	return c.listQueries.CallUnary(ctx, req)
 }
 
-// Query calls redpanda.api.dataplane.v1alpha3.ObservabilityService.Query.
-func (c *observabilityServiceClient) Query(ctx context.Context, req *connect.Request[v1alpha3.QueryRequest]) (*connect.Response[v1alpha3.QueryResponse], error) {
-	return c.query.CallUnary(ctx, req)
+// ExecuteQuery calls redpanda.api.dataplane.v1alpha3.ObservabilityService.ExecuteQuery.
+func (c *observabilityServiceClient) ExecuteQuery(ctx context.Context, req *connect.Request[v1alpha3.ExecuteQueryRequest]) (*connect.Response[v1alpha3.ExecuteQueryResponse], error) {
+	return c.executeQuery.CallUnary(ctx, req)
 }
 
 // ObservabilityServiceHandler is an implementation of the
@@ -107,7 +107,7 @@ type ObservabilityServiceHandler interface {
 	// List available queries
 	ListQueries(context.Context, *connect.Request[v1alpha3.ListQueriesRequest]) (*connect.Response[v1alpha3.ListQueriesResponse], error)
 	// Execute a predefined query
-	Query(context.Context, *connect.Request[v1alpha3.QueryRequest]) (*connect.Response[v1alpha3.QueryResponse], error)
+	ExecuteQuery(context.Context, *connect.Request[v1alpha3.ExecuteQueryRequest]) (*connect.Response[v1alpha3.ExecuteQueryResponse], error)
 }
 
 // NewObservabilityServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -122,18 +122,18 @@ func NewObservabilityServiceHandler(svc ObservabilityServiceHandler, opts ...con
 		connect.WithSchema(observabilityServiceListQueriesMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	observabilityServiceQueryHandler := connect.NewUnaryHandler(
-		ObservabilityServiceQueryProcedure,
-		svc.Query,
-		connect.WithSchema(observabilityServiceQueryMethodDescriptor),
+	observabilityServiceExecuteQueryHandler := connect.NewUnaryHandler(
+		ObservabilityServiceExecuteQueryProcedure,
+		svc.ExecuteQuery,
+		connect.WithSchema(observabilityServiceExecuteQueryMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/redpanda.api.dataplane.v1alpha3.ObservabilityService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ObservabilityServiceListQueriesProcedure:
 			observabilityServiceListQueriesHandler.ServeHTTP(w, r)
-		case ObservabilityServiceQueryProcedure:
-			observabilityServiceQueryHandler.ServeHTTP(w, r)
+		case ObservabilityServiceExecuteQueryProcedure:
+			observabilityServiceExecuteQueryHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -147,6 +147,6 @@ func (UnimplementedObservabilityServiceHandler) ListQueries(context.Context, *co
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.ObservabilityService.ListQueries is not implemented"))
 }
 
-func (UnimplementedObservabilityServiceHandler) Query(context.Context, *connect.Request[v1alpha3.QueryRequest]) (*connect.Response[v1alpha3.QueryResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.ObservabilityService.Query is not implemented"))
+func (UnimplementedObservabilityServiceHandler) ExecuteQuery(context.Context, *connect.Request[v1alpha3.ExecuteQueryRequest]) (*connect.Response[v1alpha3.ExecuteQueryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.ObservabilityService.ExecuteQuery is not implemented"))
 }

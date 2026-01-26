@@ -368,6 +368,36 @@ components:
           format: uint64
           type: string
       type: object
+    ExecuteQueryParams:
+      description: Parameters for executing a query.
+      properties:
+        end:
+          format: date-time
+          title: Optional - defaults to current date
+          type: string
+        filters:
+          additionalProperties:
+            type: string
+          title: Optional filter values to apply to the query, if the query supports them
+          type: object
+        start:
+          format: date-time
+          title: Optional - if not provided, performs an instant query at end time (or current time if both are absent)
+          type: string
+        step:
+          title: Query resolution step width (optional)
+          type: string
+      type: object
+    ExecuteQueryResponse:
+      description: Response of an ExecuteQuery operation.
+      properties:
+        metadata:
+          $ref: '#/components/schemas/QueryMetadata'
+        result:
+          items:
+            $ref: '#/components/schemas/TimeSeries'
+          type: array
+      type: object
     FilterMetadata:
       description: Description of a filter that may be available in a query.
       properties:
@@ -1214,39 +1244,6 @@ components:
         unit:
           title: Unit of measurement for the returned time series
           type: string
-      type: object
-    QueryRequest:
-      description: Input data for a Query operation.
-      properties:
-        end:
-          format: date-time
-          title: Optional - defaults to current date
-          type: string
-        filters:
-          additionalProperties:
-            type: string
-          title: Optional filter values to apply to the query, if the query supports them
-          type: object
-        query_name:
-          title: Predefined query to request data from
-          type: string
-        start:
-          format: date-time
-          title: Optional - if not provided, performs an instant query at end time (or current time if both are absent)
-          type: string
-        step:
-          title: Query resolution step width (optional)
-          type: string
-      type: object
-    QueryResponse:
-      description: Response of a Query operation.
-      properties:
-        metadata:
-          $ref: '#/components/schemas/QueryMetadata'
-        result:
-          items:
-            $ref: '#/components/schemas/TimeSeries'
-          type: array
       type: object
     Resource:
       description: Resource information.
@@ -2178,24 +2175,31 @@ paths:
       summary: List Available Queries
       tags:
         - Observability
-  /v1alpha3/observability/query:
+  /v1alpha3/observability/queries/{query_name}:execute:
     post:
       description: Execute a predefined query. If start time is not provided, performs an instant query at the end time (or current time if both are absent). If start time is provided, performs a range query over the time range. Optional filters can be applied as key-value pairs.
-      operationId: ObservabilityService_Query
+      operationId: ObservabilityService_ExecuteQuery
+      parameters:
+        - description: Predefined query to request data from
+          in: path
+          name: query_name
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/QueryRequest'
-        description: Input data for a Query operation.
+              $ref: '#/components/schemas/ExecuteQueryParams'
+        description: Query execution parameters
         required: true
-        x-originalParamName: body
+        x-originalParamName: params
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/QueryResponse'
+                $ref: '#/components/schemas/ExecuteQueryResponse'
           description: Query results
         default:
           content:

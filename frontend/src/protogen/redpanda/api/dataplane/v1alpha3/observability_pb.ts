@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/api/dataplane/v1alpha3/observability.proto.
  */
 export const file_redpanda_api_dataplane_v1alpha3_observability: GenFile = /*@__PURE__*/
-  fileDesc("CjNyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxYWxwaGEzL29ic2VydmFiaWxpdHkucHJvdG8SH3JlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMiMgoORmlsdGVyTWV0YWRhdGESCwoDa2V5GAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJIv0BCg1RdWVyeU1ldGFkYXRhEgwKBG5hbWUYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSDAoEdW5pdBgDIAEoCRJACgdmaWx0ZXJzGAQgAygLMi8ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5GaWx0ZXJNZXRhZGF0YRJKCgZsYWJlbHMYBSADKAsyOi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlF1ZXJ5TWV0YWRhdGEuTGFiZWxzRW50cnkaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASIUChJMaXN0UXVlcmllc1JlcXVlc3QiVgoTTGlzdFF1ZXJpZXNSZXNwb25zZRI/CgdxdWVyaWVzGAEgAygLMi4ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5RdWVyeU1ldGFkYXRhIkkKCURhdGFQb2ludBItCgl0aW1lc3RhbXAYASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg0KBXZhbHVlGAIgASgBIs4BCgpUaW1lU2VyaWVzEgwKBG5hbWUYASABKAkSRwoGbGFiZWxzGAIgAygLMjcucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5UaW1lU2VyaWVzLkxhYmVsc0VudHJ5EjoKBnZhbHVlcxgDIAMoCzIqLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRGF0YVBvaW50Gi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEinAIKDFF1ZXJ5UmVxdWVzdBISCgpxdWVyeV9uYW1lGAEgASgJEikKBXN0YXJ0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBInCgNlbmQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEicKBHN0ZXAYBCABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SSwoHZmlsdGVycxgFIAMoCzI6LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuUXVlcnlSZXF1ZXN0LkZpbHRlcnNFbnRyeRouCgxGaWx0ZXJzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASKOAQoNUXVlcnlSZXNwb25zZRJACghtZXRhZGF0YRgBIAEoCzIuLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuUXVlcnlNZXRhZGF0YRI7CgZyZXN1bHQYAiADKAsyKy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlRpbWVTZXJpZXMy4AcKFE9ic2VydmFiaWxpdHlTZXJ2aWNlEogDCgtMaXN0UXVlcmllcxIzLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuTGlzdFF1ZXJpZXNSZXF1ZXN0GjQucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5MaXN0UXVlcmllc1Jlc3BvbnNlIo0CkkHaARIWTGlzdCBBdmFpbGFibGUgUXVlcmllcxprTGlzdCBhbGwgYXZhaWxhYmxlIHByZWRlZmluZWQgcXVlcmllcyB3aXRoIHRoZWlyIG1ldGFkYXRhIChuYW1lLCBkZXNjcmlwdGlvbiwgdW5pdCwgYW5kIGF2YWlsYWJsZSBmaWx0ZXJzKS5KUwoDMjAwEkwKEFF1ZXJpZXMgbWV0YWRhdGESOAo2GjQucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5MaXN0UXVlcmllc1Jlc3BvbnNliqYdBAgBEAaC0+STAiESHy92MWFscGhhMy9vYnNlcnZhYmlsaXR5L3F1ZXJpZXMSgAQKBVF1ZXJ5Ei0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5RdWVyeVJlcXVlc3QaLi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlF1ZXJ5UmVzcG9uc2UilwOSQeMCEg1FeGVjdXRlIFF1ZXJ5GoUCRXhlY3V0ZSBhIHByZWRlZmluZWQgcXVlcnkuIElmIHN0YXJ0IHRpbWUgaXMgbm90IHByb3ZpZGVkLCBwZXJmb3JtcyBhbiBpbnN0YW50IHF1ZXJ5IGF0IHRoZSBlbmQgdGltZSAob3IgY3VycmVudCB0aW1lIGlmIGJvdGggYXJlIGFic2VudCkuIElmIHN0YXJ0IHRpbWUgaXMgcHJvdmlkZWQsIHBlcmZvcm1zIGEgcmFuZ2UgcXVlcnkgb3ZlciB0aGUgdGltZSByYW5nZS4gT3B0aW9uYWwgZmlsdGVycyBjYW4gYmUgYXBwbGllZCBhcyBrZXktdmFsdWUgcGFpcnMuSkoKAzIwMBJDCg1RdWVyeSByZXN1bHRzEjIKMBouLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuUXVlcnlSZXNwb25zZYqmHQQIARAGgtPkkwIiOgEqIh0vdjFhbHBoYTMvb2JzZXJ2YWJpbGl0eS9xdWVyeRo6kkE3Cg1PYnNlcnZhYmlsaXR5EiZPYnNlcnZhYmlsaXR5IG9wZXJhdGlvbnMgZm9yIFJlZHBhbmRhLkLBAgojY29tLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTNCEk9ic2VydmFiaWxpdHlQcm90b1ABWmdnaXRodWIuY29tL3JlZHBhbmRhLWRhdGEvY29uc29sZS9iYWNrZW5kL3BrZy9wcm90b2dlbi9yZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxYWxwaGEzO2RhdGFwbGFuZXYxYWxwaGEzogIDUkFEqgIfUmVkcGFuZGEuQXBpLkRhdGFwbGFuZS5WMWFscGhhM8oCH1JlZHBhbmRhXEFwaVxEYXRhcGxhbmVcVjFhbHBoYTPiAitSZWRwYW5kYVxBcGlcRGF0YXBsYW5lXFYxYWxwaGEzXEdQQk1ldGFkYXRh6gIiUmVkcGFuZGE6OkFwaTo6RGF0YXBsYW5lOjpWMWFscGhhM2IGcHJvdG8z", [file_google_api_annotations, file_google_protobuf_duration, file_google_protobuf_timestamp, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization]);
+  fileDesc("CjNyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxYWxwaGEzL29ic2VydmFiaWxpdHkucHJvdG8SH3JlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMiMgoORmlsdGVyTWV0YWRhdGESCwoDa2V5GAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJIv0BCg1RdWVyeU1ldGFkYXRhEgwKBG5hbWUYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSDAoEdW5pdBgDIAEoCRJACgdmaWx0ZXJzGAQgAygLMi8ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5GaWx0ZXJNZXRhZGF0YRJKCgZsYWJlbHMYBSADKAsyOi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlF1ZXJ5TWV0YWRhdGEuTGFiZWxzRW50cnkaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASIUChJMaXN0UXVlcmllc1JlcXVlc3QiVgoTTGlzdFF1ZXJpZXNSZXNwb25zZRI/CgdxdWVyaWVzGAEgAygLMi4ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5RdWVyeU1ldGFkYXRhIkkKCURhdGFQb2ludBItCgl0aW1lc3RhbXAYASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg0KBXZhbHVlGAIgASgBIs4BCgpUaW1lU2VyaWVzEgwKBG5hbWUYASABKAkSRwoGbGFiZWxzGAIgAygLMjcucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5UaW1lU2VyaWVzLkxhYmVsc0VudHJ5EjoKBnZhbHVlcxgDIAMoCzIqLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRGF0YVBvaW50Gi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEilAIKEkV4ZWN1dGVRdWVyeVBhcmFtcxIpCgVzdGFydBgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASJwoDZW5kGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBInCgRzdGVwGAMgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uElEKB2ZpbHRlcnMYBCADKAsyQC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkV4ZWN1dGVRdWVyeVBhcmFtcy5GaWx0ZXJzRW50cnkaLgoMRmlsdGVyc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEibgoTRXhlY3V0ZVF1ZXJ5UmVxdWVzdBISCgpxdWVyeV9uYW1lGAEgASgJEkMKBnBhcmFtcxgCIAEoCzIzLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRXhlY3V0ZVF1ZXJ5UGFyYW1zIpUBChRFeGVjdXRlUXVlcnlSZXNwb25zZRJACghtZXRhZGF0YRgBIAEoCzIuLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuUXVlcnlNZXRhZGF0YRI7CgZyZXN1bHQYAiADKAsyKy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlRpbWVTZXJpZXMymAgKFE9ic2VydmFiaWxpdHlTZXJ2aWNlEogDCgtMaXN0UXVlcmllcxIzLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuTGlzdFF1ZXJpZXNSZXF1ZXN0GjQucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5MaXN0UXVlcmllc1Jlc3BvbnNlIo0CkkHaARIWTGlzdCBBdmFpbGFibGUgUXVlcmllcxprTGlzdCBhbGwgYXZhaWxhYmxlIHByZWRlZmluZWQgcXVlcmllcyB3aXRoIHRoZWlyIG1ldGFkYXRhIChuYW1lLCBkZXNjcmlwdGlvbiwgdW5pdCwgYW5kIGF2YWlsYWJsZSBmaWx0ZXJzKS5KUwoDMjAwEkwKEFF1ZXJpZXMgbWV0YWRhdGESOAo2GjQucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5MaXN0UXVlcmllc1Jlc3BvbnNliqYdBAgBEAaC0+STAiESHy92MWFscGhhMy9vYnNlcnZhYmlsaXR5L3F1ZXJpZXMSuAQKDEV4ZWN1dGVRdWVyeRI0LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRXhlY3V0ZVF1ZXJ5UmVxdWVzdBo1LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRXhlY3V0ZVF1ZXJ5UmVzcG9uc2UiugOSQeoCEg1FeGVjdXRlIFF1ZXJ5GoUCRXhlY3V0ZSBhIHByZWRlZmluZWQgcXVlcnkuIElmIHN0YXJ0IHRpbWUgaXMgbm90IHByb3ZpZGVkLCBwZXJmb3JtcyBhbiBpbnN0YW50IHF1ZXJ5IGF0IHRoZSBlbmQgdGltZSAob3IgY3VycmVudCB0aW1lIGlmIGJvdGggYXJlIGFic2VudCkuIElmIHN0YXJ0IHRpbWUgaXMgcHJvdmlkZWQsIHBlcmZvcm1zIGEgcmFuZ2UgcXVlcnkgb3ZlciB0aGUgdGltZSByYW5nZS4gT3B0aW9uYWwgZmlsdGVycyBjYW4gYmUgYXBwbGllZCBhcyBrZXktdmFsdWUgcGFpcnMuSlEKAzIwMBJKCg1RdWVyeSByZXN1bHRzEjkKNxo1LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRXhlY3V0ZVF1ZXJ5UmVzcG9uc2WKph0ECAEQBoLT5JMCPjoGcGFyYW1zIjQvdjFhbHBoYTMvb2JzZXJ2YWJpbGl0eS9xdWVyaWVzL3txdWVyeV9uYW1lfTpleGVjdXRlGjqSQTcKDU9ic2VydmFiaWxpdHkSJk9ic2VydmFiaWxpdHkgb3BlcmF0aW9ucyBmb3IgUmVkcGFuZGEuQsECCiNjb20ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhM0IST2JzZXJ2YWJpbGl0eVByb3RvUAFaZ2dpdGh1Yi5jb20vcmVkcGFuZGEtZGF0YS9jb25zb2xlL2JhY2tlbmQvcGtnL3Byb3RvZ2VuL3JlZHBhbmRhL2FwaS9kYXRhcGxhbmUvdjFhbHBoYTM7ZGF0YXBsYW5ldjFhbHBoYTOiAgNSQUSqAh9SZWRwYW5kYS5BcGkuRGF0YXBsYW5lLlYxYWxwaGEzygIfUmVkcGFuZGFcQXBpXERhdGFwbGFuZVxWMWFscGhhM+ICK1JlZHBhbmRhXEFwaVxEYXRhcGxhbmVcVjFhbHBoYTNcR1BCTWV0YWRhdGHqAiJSZWRwYW5kYTo6QXBpOjpEYXRhcGxhbmU6OlYxYWxwaGEzYgZwcm90bzM", [file_google_api_annotations, file_google_protobuf_duration, file_google_protobuf_timestamp, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization]);
 
 /**
  * Description of a filter that may be available in a query.
@@ -182,11 +182,53 @@ export const TimeSeriesSchema: GenMessage<TimeSeries> = /*@__PURE__*/
   messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 5);
 
 /**
- * Input data for a Query operation.
+ * Parameters for executing a query.
  *
- * @generated from message redpanda.api.dataplane.v1alpha3.QueryRequest
+ * @generated from message redpanda.api.dataplane.v1alpha3.ExecuteQueryParams
  */
-export type QueryRequest = Message<"redpanda.api.dataplane.v1alpha3.QueryRequest"> & {
+export type ExecuteQueryParams = Message<"redpanda.api.dataplane.v1alpha3.ExecuteQueryParams"> & {
+  /**
+   * Optional - if not provided, performs an instant query at end time (or current time if both are absent)
+   *
+   * @generated from field: google.protobuf.Timestamp start = 1;
+   */
+  start?: Timestamp;
+
+  /**
+   * Optional - defaults to current date
+   *
+   * @generated from field: google.protobuf.Timestamp end = 2;
+   */
+  end?: Timestamp;
+
+  /**
+   * Query resolution step width (optional)
+   *
+   * @generated from field: google.protobuf.Duration step = 3;
+   */
+  step?: Duration;
+
+  /**
+   * Optional filter values to apply to the query, if the query supports them
+   *
+   * @generated from field: map<string, string> filters = 4;
+   */
+  filters: { [key: string]: string };
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1alpha3.ExecuteQueryParams.
+ * Use `create(ExecuteQueryParamsSchema)` to create a new message.
+ */
+export const ExecuteQueryParamsSchema: GenMessage<ExecuteQueryParams> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 6);
+
+/**
+ * Input data for an ExecuteQuery operation.
+ *
+ * @generated from message redpanda.api.dataplane.v1alpha3.ExecuteQueryRequest
+ */
+export type ExecuteQueryRequest = Message<"redpanda.api.dataplane.v1alpha3.ExecuteQueryRequest"> & {
   /**
    * Predefined query to request data from
    *
@@ -195,47 +237,26 @@ export type QueryRequest = Message<"redpanda.api.dataplane.v1alpha3.QueryRequest
   queryName: string;
 
   /**
-   * Optional - if not provided, performs an instant query at end time (or current time if both are absent)
+   * Query execution parameters
    *
-   * @generated from field: google.protobuf.Timestamp start = 2;
+   * @generated from field: redpanda.api.dataplane.v1alpha3.ExecuteQueryParams params = 2;
    */
-  start?: Timestamp;
-
-  /**
-   * Optional - defaults to current date
-   *
-   * @generated from field: google.protobuf.Timestamp end = 3;
-   */
-  end?: Timestamp;
-
-  /**
-   * Query resolution step width (optional)
-   *
-   * @generated from field: google.protobuf.Duration step = 4;
-   */
-  step?: Duration;
-
-  /**
-   * Optional filter values to apply to the query, if the query supports them
-   *
-   * @generated from field: map<string, string> filters = 5;
-   */
-  filters: { [key: string]: string };
+  params?: ExecuteQueryParams;
 };
 
 /**
- * Describes the message redpanda.api.dataplane.v1alpha3.QueryRequest.
- * Use `create(QueryRequestSchema)` to create a new message.
+ * Describes the message redpanda.api.dataplane.v1alpha3.ExecuteQueryRequest.
+ * Use `create(ExecuteQueryRequestSchema)` to create a new message.
  */
-export const QueryRequestSchema: GenMessage<QueryRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 6);
+export const ExecuteQueryRequestSchema: GenMessage<ExecuteQueryRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 7);
 
 /**
- * Response of a Query operation.
+ * Response of an ExecuteQuery operation.
  *
- * @generated from message redpanda.api.dataplane.v1alpha3.QueryResponse
+ * @generated from message redpanda.api.dataplane.v1alpha3.ExecuteQueryResponse
  */
-export type QueryResponse = Message<"redpanda.api.dataplane.v1alpha3.QueryResponse"> & {
+export type ExecuteQueryResponse = Message<"redpanda.api.dataplane.v1alpha3.ExecuteQueryResponse"> & {
   /**
    * @generated from field: redpanda.api.dataplane.v1alpha3.QueryMetadata metadata = 1;
    */
@@ -248,11 +269,11 @@ export type QueryResponse = Message<"redpanda.api.dataplane.v1alpha3.QueryRespon
 };
 
 /**
- * Describes the message redpanda.api.dataplane.v1alpha3.QueryResponse.
- * Use `create(QueryResponseSchema)` to create a new message.
+ * Describes the message redpanda.api.dataplane.v1alpha3.ExecuteQueryResponse.
+ * Use `create(ExecuteQueryResponseSchema)` to create a new message.
  */
-export const QueryResponseSchema: GenMessage<QueryResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 7);
+export const ExecuteQueryResponseSchema: GenMessage<ExecuteQueryResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 8);
 
 /**
  * ObservabilityService provides query access to Redpanda metrics.
@@ -273,12 +294,12 @@ export const ObservabilityService: GenService<{
   /**
    * Execute a predefined query
    *
-   * @generated from rpc redpanda.api.dataplane.v1alpha3.ObservabilityService.Query
+   * @generated from rpc redpanda.api.dataplane.v1alpha3.ObservabilityService.ExecuteQuery
    */
-  query: {
+  executeQuery: {
     methodKind: "unary";
-    input: typeof QueryRequestSchema;
-    output: typeof QueryResponseSchema;
+    input: typeof ExecuteQueryRequestSchema;
+    output: typeof ExecuteQueryResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_redpanda_api_dataplane_v1alpha3_observability, 0);
