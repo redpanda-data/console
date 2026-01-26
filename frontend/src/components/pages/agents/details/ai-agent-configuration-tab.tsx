@@ -484,9 +484,9 @@ export const AIAgentConfigurationTab = () => {
       return null;
     }
     const gateway = gatewaysData.gateways.find(
-      (gw) => gw.name.split('/').pop() === aiAgentData.aiAgent.gateway?.virtualGatewayId
+      (gw) => gw.name.split('/').pop() === aiAgentData.aiAgent!.gateway?.virtualGatewayId
     );
-    return gateway?.displayName || aiAgentData.aiAgent.gateway.virtualGatewayId;
+    return gateway?.displayName || aiAgentData.aiAgent!.gateway!.virtualGatewayId;
   }, [aiAgentData, gatewaysData]);
 
   const updateField = useCallback(
@@ -727,10 +727,11 @@ export const AIAgentConfigurationTab = () => {
         }
       }
 
-      const tagsMap = buildTagsMap(aiAgentData.aiAgent.tags, displayData.tags);
+      const tagsMap = buildTagsMap(aiAgentData.aiAgent!.tags, displayData.tags);
       // When using gateway, keep the existing API key reference; otherwise use the selected secret
-      const apiKeyRef = isUsingGateway
-        ? extractProviderInfo(aiAgentData.aiAgent.provider).apiKeyTemplate
+      const currentProvider = aiAgentData.aiAgent!.provider;
+      const apiKeyRef = isUsingGateway && currentProvider
+        ? extractProviderInfo(currentProvider).apiKeyTemplate
         : `\${secrets.${displayData.apiKeySecret}}`;
       const updatedProvider = createUpdatedProvider(displayData.provider.provider.case, apiKeyRef, displayData.baseUrl);
 

@@ -38,10 +38,7 @@ import {
 	useListModelsQuery,
 } from "react-query/api/ai-gateway";
 
-import {
-	detectProvider,
-	MODEL_OPTIONS_BY_PROVIDER,
-} from "../../pages/agents/ai-agent-model";
+import { MODEL_OPTIONS_BY_PROVIDER } from "../../pages/agents/ai-agent-model";
 
 export interface LLMConfigSectionProps {
   mode: 'create' | 'edit';
@@ -72,6 +69,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
   showBaseUrl = false,
   showMaxIterations = true,
   hasGatewayDeployed = false,
+  isLoadingGateways = false,
   availableGateways = [],
 }) => {
   const selectedProvider = form.watch(fieldNames.provider) as keyof typeof MODEL_OPTIONS_BY_PROVIDER;
@@ -190,16 +188,18 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
             name={fieldNames.gatewayId}
             render={({ field }) => (
               <Select
-                disabled={!hasGatewayDeployed || availableGateways.length === 0}
+                disabled={isLoadingGateways || !hasGatewayDeployed || availableGateways.length === 0}
                 onValueChange={field.onChange}
                 value={field.value}
               >
                 <SelectTrigger id="gateway">
                   <SelectValue
                     placeholder={
-                      hasGatewayDeployed && availableGateways.length > 0
-                        ? 'Select a gateway'
-                        : 'No gateways available'
+                      isLoadingGateways
+                        ? 'Loading gateways...'
+                        : hasGatewayDeployed && availableGateways.length > 0
+                          ? 'Select a gateway'
+                          : 'No gateways available'
                     }
                   />
                 </SelectTrigger>
@@ -291,13 +291,10 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
 						const providerData = selectedProvider
 							? MODEL_OPTIONS_BY_PROVIDER[selectedProvider]
 							: null;
-						const detectedProvider = field.value
-							? detectProvider(field.value as string)
-							: null;
 						const isFreeTextMode =
 							providerData && providerData.models.length === 0;
             const hasNoProviders = isUsingGateway && availableProviders.length === 0 && !isLoadingProviders;
-            const hasNoModels = isUsingGateway && filteredModels.length === 0 && !isLoadingModels && selectedProvider;
+            const hasNoModels = isUsingGateway && filteredModels.length === 0 && !isLoadingModels && !!selectedProvider;
 
             if (isFreeTextMode) {
               return (
