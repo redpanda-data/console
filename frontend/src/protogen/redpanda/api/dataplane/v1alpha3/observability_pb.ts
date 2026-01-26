@@ -16,35 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/api/dataplane/v1alpha3/observability.proto.
  */
 export const file_redpanda_api_dataplane_v1alpha3_observability: GenFile = /*@__PURE__*/
-  fileDesc("CjNyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxYWxwaGEzL29ic2VydmFiaWxpdHkucHJvdG8SH3JlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMiMgoORmlsdGVyTWV0YWRhdGESCwoDa2V5GAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJIvcBCg1RdWVyeU1ldGFkYXRhEgwKBG5hbWUYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSDAoEdW5pdBgDIAEoCRJACgdmaWx0ZXJzGAQgAygLMi8ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5GaWx0ZXJNZXRhZGF0YRJGCgR0YWdzGAUgAygLMjgucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5RdWVyeU1ldGFkYXRhLlRhZ3NFbnRyeRorCglUYWdzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASL9AQoSTGlzdFF1ZXJpZXNSZXF1ZXN0ErkBCgR0YWdzGAEgAygLMj0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5MaXN0UXVlcmllc1JlcXVlc3QuVGFnc0VudHJ5QmySQTwyOlF1ZXJpZXMgdGhhdCBtYXRjaCBhbGwgdGhlIHByb3ZpZGVkIHRhZ3Mgd2lsbCBiZSByZXR1cm5lZC66SCqaAScQECojciEyH14oW1xwe0x9XHB7Wn1ccHtOfV8uOi89K1wtQF0qKSQaKwoJVGFnc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiVgoTTGlzdFF1ZXJpZXNSZXNwb25zZRI/CgdxdWVyaWVzGAEgAygLMi4ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5RdWVyeU1ldGFkYXRhIlgKCURhdGFQb2ludBItCgl0aW1lc3RhbXAYASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhIKBXZhbHVlGAIgASgBSACIAQFCCAoGX3ZhbHVlIs4BCgpUaW1lU2VyaWVzEgwKBG5hbWUYASABKAkSRwoGbGFiZWxzGAIgAygLMjcucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5UaW1lU2VyaWVzLkxhYmVsc0VudHJ5EjoKBnZhbHVlcxgDIAMoCzIqLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRGF0YVBvaW50Gi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEi0wEKDUluc3RhbnRSZXN1bHQSDAoEbmFtZRgBIAEoCRJKCgZsYWJlbHMYAiADKAsyOi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkluc3RhbnRSZXN1bHQuTGFiZWxzRW50cnkSOQoFdmFsdWUYAyABKAsyKi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkRhdGFQb2ludBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIroCChdFeGVjdXRlUmFuZ2VRdWVyeVBhcmFtcxIxCgVzdGFydBgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBrpIA8gBARIsCgNlbmQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSACIAQEShQEKB2ZpbHRlcnMYAyADKAsyRS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkV4ZWN1dGVSYW5nZVF1ZXJ5UGFyYW1zLkZpbHRlcnNFbnRyeUItukgqmgEnEBAqI3IhMh9eKFtccHtMfVxwe1p9XHB7Tn1fLjovPStcLUBdKikkGi4KDEZpbHRlcnNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBQgYKBF9lbmQiogEKGEV4ZWN1dGVSYW5nZVF1ZXJ5UmVxdWVzdBI0CgpxdWVyeV9uYW1lGAEgASgJQiC6SB3IAQFyGBABGIABMhFeW2Etel1bYS16MC05X10qJBJQCgZwYXJhbXMYAiABKAsyOC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkV4ZWN1dGVSYW5nZVF1ZXJ5UGFyYW1zQga6SAPIAQEimwEKGUV4ZWN1dGVSYW5nZVF1ZXJ5UmVzcG9uc2USQAoIbWV0YWRhdGEYASABKAsyLi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlF1ZXJ5TWV0YWRhdGESPAoHcmVzdWx0cxgCIAMoCzIrLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuVGltZVNlcmllcyKNAgoZRXhlY3V0ZUluc3RhbnRRdWVyeVBhcmFtcxItCgR0aW1lGAEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgAiAEBEocBCgdmaWx0ZXJzGAIgAygLMkcucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5FeGVjdXRlSW5zdGFudFF1ZXJ5UGFyYW1zLkZpbHRlcnNFbnRyeUItukgqmgEnEBAqI3IhMh9eKFtccHtMfVxwe1p9XHB7Tn1fLjovPStcLUBdKikkGi4KDEZpbHRlcnNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBQgcKBV90aW1lIqYBChpFeGVjdXRlSW5zdGFudFF1ZXJ5UmVxdWVzdBI0CgpxdWVyeV9uYW1lGAEgASgJQiC6SB3IAQFyGBABGIABMhFeW2Etel1bYS16MC05X10qJBJSCgZwYXJhbXMYAiABKAsyOi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkV4ZWN1dGVJbnN0YW50UXVlcnlQYXJhbXNCBrpIA8gBASKgAQobRXhlY3V0ZUluc3RhbnRRdWVyeVJlc3BvbnNlEkAKCG1ldGFkYXRhGAEgASgLMi4ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5RdWVyeU1ldGFkYXRhEj8KB3Jlc3VsdHMYAiADKAsyLi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkluc3RhbnRSZXN1bHQyjwwKFE9ic2VydmFiaWxpdHlTZXJ2aWNlEogDCgtMaXN0UXVlcmllcxIzLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuTGlzdFF1ZXJpZXNSZXF1ZXN0GjQucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5MaXN0UXVlcmllc1Jlc3BvbnNlIo0CkkHaARIWTGlzdCBBdmFpbGFibGUgUXVlcmllcxprTGlzdCBhbGwgYXZhaWxhYmxlIHByZWRlZmluZWQgcXVlcmllcyB3aXRoIHRoZWlyIG1ldGFkYXRhIChuYW1lLCBkZXNjcmlwdGlvbiwgdW5pdCwgYW5kIGF2YWlsYWJsZSBmaWx0ZXJzKS5KUwoDMjAwEkwKEFF1ZXJpZXMgbWV0YWRhdGESOAo2GjQucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5MaXN0UXVlcmllc1Jlc3BvbnNliqYdBAgBEAaC0+STAiESHy92MWFscGhhMy9vYnNlcnZhYmlsaXR5L3F1ZXJpZXMS9wMKEUV4ZWN1dGVSYW5nZVF1ZXJ5EjkucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5FeGVjdXRlUmFuZ2VRdWVyeVJlcXVlc3QaOi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkV4ZWN1dGVSYW5nZVF1ZXJ5UmVzcG9uc2Ui6gKSQZUCEhNFeGVjdXRlIFJhbmdlIFF1ZXJ5Gp8BRXhlY3V0ZSBhIHByZWRlZmluZWQgcXVlcnkgb3ZlciBhIHRpbWUgcmFuZ2UuIFJldHVybnMgbXVsdGlwbGUgZGF0YSBwb2ludHMgYmV0d2VlbiB0aGUgc3RhcnQgYW5kIGVuZCB0aW1lcy4gT3B0aW9uYWwgZmlsdGVycyBjYW4gYmUgYXBwbGllZCBhcyBrZXktdmFsdWUgcGFpcnMuSlwKAzIwMBJVChNSYW5nZSBxdWVyeSByZXN1bHRzEj4KPBo6LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRXhlY3V0ZVJhbmdlUXVlcnlSZXNwb25zZYqmHQQIARAGgtPkkwJDOgZwYXJhbXMiOS92MWFscGhhMy9vYnNlcnZhYmlsaXR5L3F1ZXJpZXMve3F1ZXJ5X25hbWV9OmV4ZWN1dGVSYW5nZRK1BAoTRXhlY3V0ZUluc3RhbnRRdWVyeRI7LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRXhlY3V0ZUluc3RhbnRRdWVyeVJlcXVlc3QaPC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkV4ZWN1dGVJbnN0YW50UXVlcnlSZXNwb25zZSKiA5JBywISFUV4ZWN1dGUgSW5zdGFudCBRdWVyeRrPAUV4ZWN1dGUgYSBwcmVkZWZpbmVkIHF1ZXJ5IGF0IGEgc2luZ2xlIHBvaW50IGluIHRpbWUuIFJldHVybnMgYSBzaW5nbGUgZGF0YSBwb2ludCBmb3IgZWFjaCB0aW1lIHNlcmllcy4gSWYgdGltZSBpcyBub3Qgc3BlY2lmaWVkLCBkZWZhdWx0cyB0byBjdXJyZW50IHRpbWUuIE9wdGlvbmFsIGZpbHRlcnMgY2FuIGJlIGFwcGxpZWQgYXMga2V5LXZhbHVlIHBhaXJzLkpgCgMyMDASWQoVSW5zdGFudCBxdWVyeSByZXN1bHRzEkAKPho8LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRXhlY3V0ZUluc3RhbnRRdWVyeVJlc3BvbnNliqYdBAgBEAaC0+STAkU6BnBhcmFtcyI7L3YxYWxwaGEzL29ic2VydmFiaWxpdHkvcXVlcmllcy97cXVlcnlfbmFtZX06ZXhlY3V0ZUluc3RhbnQaOpJBNwoNT2JzZXJ2YWJpbGl0eRImT2JzZXJ2YWJpbGl0eSBvcGVyYXRpb25zIGZvciBSZWRwYW5kYS5CwQIKI2NvbS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzQhJPYnNlcnZhYmlsaXR5UHJvdG9QAVpnZ2l0aHViLmNvbS9yZWRwYW5kYS1kYXRhL2NvbnNvbGUvYmFja2VuZC9wa2cvcHJvdG9nZW4vcmVkcGFuZGEvYXBpL2RhdGFwbGFuZS92MWFscGhhMztkYXRhcGxhbmV2MWFscGhhM6ICA1JBRKoCH1JlZHBhbmRhLkFwaS5EYXRhcGxhbmUuVjFhbHBoYTPKAh9SZWRwYW5kYVxBcGlcRGF0YXBsYW5lXFYxYWxwaGEz4gIrUmVkcGFuZGFcQXBpXERhdGFwbGFuZVxWMWFscGhhM1xHUEJNZXRhZGF0YeoCIlJlZHBhbmRhOjpBcGk6OkRhdGFwbGFuZTo6VjFhbHBoYTNiBnByb3RvMw", [file_buf_validate_validate, file_google_api_annotations, file_google_protobuf_timestamp, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization]);
-
-/**
- * Description of a filter that may be available in a query.
- *
- * @generated from message redpanda.api.dataplane.v1alpha3.FilterMetadata
- */
-export type FilterMetadata = Message<"redpanda.api.dataplane.v1alpha3.FilterMetadata"> & {
-  /**
-   * What key to use to provide a value for this filter when executing
-   *
-   * @generated from field: string key = 1;
-   */
-  key: string;
-
-  /**
-   * A description of the filter
-   *
-   * @generated from field: string description = 2;
-   */
-  description: string;
-};
-
-/**
- * Describes the message redpanda.api.dataplane.v1alpha3.FilterMetadata.
- * Use `create(FilterMetadataSchema)` to create a new message.
- */
-export const FilterMetadataSchema: GenMessage<FilterMetadata> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 0);
+  fileDesc("CjNyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxYWxwaGEzL29ic2VydmFiaWxpdHkucHJvdG8SH3JlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMiuQIKDVF1ZXJ5TWV0YWRhdGESDAoEbmFtZRgBIAEoCRITCgtkZXNjcmlwdGlvbhgCIAEoCRIMCgR1bml0GAMgASgJEk4KB2ZpbHRlcnMYBCADKAsyPS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlF1ZXJ5TWV0YWRhdGEuRmlsdGVyTWV0YWRhdGESRgoEdGFncxgFIAMoCzI4LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuUXVlcnlNZXRhZGF0YS5UYWdzRW50cnkaMgoORmlsdGVyTWV0YWRhdGESCwoDa2V5GAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJGisKCVRhZ3NFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBItsCChJMaXN0UXVlcmllc1JlcXVlc3QSSgoGZmlsdGVyGAEgASgLMjoucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5MaXN0UXVlcmllc1JlcXVlc3QuRmlsdGVyGvgBCgZGaWx0ZXISwAEKBHRhZ3MYASADKAsyRC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkxpc3RRdWVyaWVzUmVxdWVzdC5GaWx0ZXIuVGFnc0VudHJ5QmySQTwyOlF1ZXJpZXMgdGhhdCBtYXRjaCBhbGwgdGhlIHByb3ZpZGVkIHRhZ3Mgd2lsbCBiZSByZXR1cm5lZC66SCqaAScQECojciEyH14oW1xwe0x9XHB7Wn1ccHtOfV8uOi89K1wtQF0qKSQaKwoJVGFnc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiVgoTTGlzdFF1ZXJpZXNSZXNwb25zZRI/CgdxdWVyaWVzGAEgAygLMi4ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5RdWVyeU1ldGFkYXRhIlgKCURhdGFQb2ludBItCgl0aW1lc3RhbXAYASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhIKBXZhbHVlGAIgASgBSACIAQFCCAoGX3ZhbHVlIs4BCgpUaW1lU2VyaWVzEgwKBG5hbWUYASABKAkSRwoGbGFiZWxzGAIgAygLMjcucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5UaW1lU2VyaWVzLkxhYmVsc0VudHJ5EjoKBnZhbHVlcxgDIAMoCzIqLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRGF0YVBvaW50Gi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEi0wEKDUluc3RhbnRSZXN1bHQSDAoEbmFtZRgBIAEoCRJKCgZsYWJlbHMYAiADKAsyOi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkluc3RhbnRSZXN1bHQuTGFiZWxzRW50cnkSOQoFdmFsdWUYAyABKAsyKi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkRhdGFQb2ludBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIroCChdFeGVjdXRlUmFuZ2VRdWVyeVBhcmFtcxIxCgVzdGFydBgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBrpIA8gBARIsCgNlbmQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSACIAQEShQEKB2ZpbHRlcnMYAyADKAsyRS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkV4ZWN1dGVSYW5nZVF1ZXJ5UGFyYW1zLkZpbHRlcnNFbnRyeUItukgqmgEnEBAqI3IhMh9eKFtccHtMfVxwe1p9XHB7Tn1fLjovPStcLUBdKikkGi4KDEZpbHRlcnNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBQgYKBF9lbmQiogEKGEV4ZWN1dGVSYW5nZVF1ZXJ5UmVxdWVzdBI0CgpxdWVyeV9uYW1lGAEgASgJQiC6SB3IAQFyGBABGIABMhFeW2Etel1bYS16MC05X10qJBJQCgZwYXJhbXMYAiABKAsyOC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkV4ZWN1dGVSYW5nZVF1ZXJ5UGFyYW1zQga6SAPIAQEimwEKGUV4ZWN1dGVSYW5nZVF1ZXJ5UmVzcG9uc2USQAoIbWV0YWRhdGEYASABKAsyLi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlF1ZXJ5TWV0YWRhdGESPAoHcmVzdWx0cxgCIAMoCzIrLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuVGltZVNlcmllcyKNAgoZRXhlY3V0ZUluc3RhbnRRdWVyeVBhcmFtcxItCgR0aW1lGAEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgAiAEBEocBCgdmaWx0ZXJzGAIgAygLMkcucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5FeGVjdXRlSW5zdGFudFF1ZXJ5UGFyYW1zLkZpbHRlcnNFbnRyeUItukgqmgEnEBAqI3IhMh9eKFtccHtMfVxwe1p9XHB7Tn1fLjovPStcLUBdKikkGi4KDEZpbHRlcnNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBQgcKBV90aW1lIqYBChpFeGVjdXRlSW5zdGFudFF1ZXJ5UmVxdWVzdBI0CgpxdWVyeV9uYW1lGAEgASgJQiC6SB3IAQFyGBABGIABMhFeW2Etel1bYS16MC05X10qJBJSCgZwYXJhbXMYAiABKAsyOi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkV4ZWN1dGVJbnN0YW50UXVlcnlQYXJhbXNCBrpIA8gBASKgAQobRXhlY3V0ZUluc3RhbnRRdWVyeVJlc3BvbnNlEkAKCG1ldGFkYXRhGAEgASgLMi4ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5RdWVyeU1ldGFkYXRhEj8KB3Jlc3VsdHMYAiADKAsyLi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkluc3RhbnRSZXN1bHQyjwwKFE9ic2VydmFiaWxpdHlTZXJ2aWNlEogDCgtMaXN0UXVlcmllcxIzLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuTGlzdFF1ZXJpZXNSZXF1ZXN0GjQucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5MaXN0UXVlcmllc1Jlc3BvbnNlIo0CkkHaARIWTGlzdCBBdmFpbGFibGUgUXVlcmllcxprTGlzdCBhbGwgYXZhaWxhYmxlIHByZWRlZmluZWQgcXVlcmllcyB3aXRoIHRoZWlyIG1ldGFkYXRhIChuYW1lLCBkZXNjcmlwdGlvbiwgdW5pdCwgYW5kIGF2YWlsYWJsZSBmaWx0ZXJzKS5KUwoDMjAwEkwKEFF1ZXJpZXMgbWV0YWRhdGESOAo2GjQucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5MaXN0UXVlcmllc1Jlc3BvbnNliqYdBAgBEAqC0+STAiESHy92MWFscGhhMy9vYnNlcnZhYmlsaXR5L3F1ZXJpZXMS9wMKEUV4ZWN1dGVSYW5nZVF1ZXJ5EjkucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5FeGVjdXRlUmFuZ2VRdWVyeVJlcXVlc3QaOi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkV4ZWN1dGVSYW5nZVF1ZXJ5UmVzcG9uc2Ui6gKSQZUCEhNFeGVjdXRlIFJhbmdlIFF1ZXJ5Gp8BRXhlY3V0ZSBhIHByZWRlZmluZWQgcXVlcnkgb3ZlciBhIHRpbWUgcmFuZ2UuIFJldHVybnMgbXVsdGlwbGUgZGF0YSBwb2ludHMgYmV0d2VlbiB0aGUgc3RhcnQgYW5kIGVuZCB0aW1lcy4gT3B0aW9uYWwgZmlsdGVycyBjYW4gYmUgYXBwbGllZCBhcyBrZXktdmFsdWUgcGFpcnMuSlwKAzIwMBJVChNSYW5nZSBxdWVyeSByZXN1bHRzEj4KPBo6LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRXhlY3V0ZVJhbmdlUXVlcnlSZXNwb25zZYqmHQQIARAKgtPkkwJDOgZwYXJhbXMiOS92MWFscGhhMy9vYnNlcnZhYmlsaXR5L3F1ZXJpZXMve3F1ZXJ5X25hbWV9OmV4ZWN1dGVSYW5nZRK1BAoTRXhlY3V0ZUluc3RhbnRRdWVyeRI7LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRXhlY3V0ZUluc3RhbnRRdWVyeVJlcXVlc3QaPC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkV4ZWN1dGVJbnN0YW50UXVlcnlSZXNwb25zZSKiA5JBywISFUV4ZWN1dGUgSW5zdGFudCBRdWVyeRrPAUV4ZWN1dGUgYSBwcmVkZWZpbmVkIHF1ZXJ5IGF0IGEgc2luZ2xlIHBvaW50IGluIHRpbWUuIFJldHVybnMgYSBzaW5nbGUgZGF0YSBwb2ludCBmb3IgZWFjaCB0aW1lIHNlcmllcy4gSWYgdGltZSBpcyBub3Qgc3BlY2lmaWVkLCBkZWZhdWx0cyB0byBjdXJyZW50IHRpbWUuIE9wdGlvbmFsIGZpbHRlcnMgY2FuIGJlIGFwcGxpZWQgYXMga2V5LXZhbHVlIHBhaXJzLkpgCgMyMDASWQoVSW5zdGFudCBxdWVyeSByZXN1bHRzEkAKPho8LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRXhlY3V0ZUluc3RhbnRRdWVyeVJlc3BvbnNliqYdBAgBEAqC0+STAkU6BnBhcmFtcyI7L3YxYWxwaGEzL29ic2VydmFiaWxpdHkvcXVlcmllcy97cXVlcnlfbmFtZX06ZXhlY3V0ZUluc3RhbnQaOpJBNwoNT2JzZXJ2YWJpbGl0eRImT2JzZXJ2YWJpbGl0eSBvcGVyYXRpb25zIGZvciBSZWRwYW5kYS5CwQIKI2NvbS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzQhJPYnNlcnZhYmlsaXR5UHJvdG9QAVpnZ2l0aHViLmNvbS9yZWRwYW5kYS1kYXRhL2NvbnNvbGUvYmFja2VuZC9wa2cvcHJvdG9nZW4vcmVkcGFuZGEvYXBpL2RhdGFwbGFuZS92MWFscGhhMztkYXRhcGxhbmV2MWFscGhhM6ICA1JBRKoCH1JlZHBhbmRhLkFwaS5EYXRhcGxhbmUuVjFhbHBoYTPKAh9SZWRwYW5kYVxBcGlcRGF0YXBsYW5lXFYxYWxwaGEz4gIrUmVkcGFuZGFcQXBpXERhdGFwbGFuZVxWMWFscGhhM1xHUEJNZXRhZGF0YeoCIlJlZHBhbmRhOjpBcGk6OkRhdGFwbGFuZTo6VjFhbHBoYTNiBnByb3RvMw", [file_buf_validate_validate, file_google_api_annotations, file_google_protobuf_timestamp, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization]);
 
 /**
  * A description of a predefined query available in the system.
@@ -76,9 +48,9 @@ export type QueryMetadata = Message<"redpanda.api.dataplane.v1alpha3.QueryMetada
   /**
    * Available filters for this query
    *
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha3.FilterMetadata filters = 4;
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha3.QueryMetadata.FilterMetadata filters = 4;
    */
-  filters: FilterMetadata[];
+  filters: QueryMetadata_FilterMetadata[];
 
   /**
    * Tags for grouping queries (e.g., category, type, component)
@@ -93,7 +65,35 @@ export type QueryMetadata = Message<"redpanda.api.dataplane.v1alpha3.QueryMetada
  * Use `create(QueryMetadataSchema)` to create a new message.
  */
 export const QueryMetadataSchema: GenMessage<QueryMetadata> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 1);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 0);
+
+/**
+ * Description of a filter that may be available in a query.
+ *
+ * @generated from message redpanda.api.dataplane.v1alpha3.QueryMetadata.FilterMetadata
+ */
+export type QueryMetadata_FilterMetadata = Message<"redpanda.api.dataplane.v1alpha3.QueryMetadata.FilterMetadata"> & {
+  /**
+   * What key to use to provide a value for this filter when executing
+   *
+   * @generated from field: string key = 1;
+   */
+  key: string;
+
+  /**
+   * A description of the filter
+   *
+   * @generated from field: string description = 2;
+   */
+  description: string;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1alpha3.QueryMetadata.FilterMetadata.
+ * Use `create(QueryMetadata_FilterMetadataSchema)` to create a new message.
+ */
+export const QueryMetadata_FilterMetadataSchema: GenMessage<QueryMetadata_FilterMetadata> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 0, 0);
 
 /**
  * Contains details of a ListQueries request.
@@ -101,6 +101,27 @@ export const QueryMetadataSchema: GenMessage<QueryMetadata> = /*@__PURE__*/
  * @generated from message redpanda.api.dataplane.v1alpha3.ListQueriesRequest
  */
 export type ListQueriesRequest = Message<"redpanda.api.dataplane.v1alpha3.ListQueriesRequest"> & {
+  /**
+   * Optional filter to apply when listing queries
+   *
+   * @generated from field: redpanda.api.dataplane.v1alpha3.ListQueriesRequest.Filter filter = 1;
+   */
+  filter?: ListQueriesRequest_Filter;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1alpha3.ListQueriesRequest.
+ * Use `create(ListQueriesRequestSchema)` to create a new message.
+ */
+export const ListQueriesRequestSchema: GenMessage<ListQueriesRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 1);
+
+/**
+ * Filter criteria for listing queries.
+ *
+ * @generated from message redpanda.api.dataplane.v1alpha3.ListQueriesRequest.Filter
+ */
+export type ListQueriesRequest_Filter = Message<"redpanda.api.dataplane.v1alpha3.ListQueriesRequest.Filter"> & {
   /**
    * Filter queries that contain all of these key/value pairs
    *
@@ -110,11 +131,11 @@ export type ListQueriesRequest = Message<"redpanda.api.dataplane.v1alpha3.ListQu
 };
 
 /**
- * Describes the message redpanda.api.dataplane.v1alpha3.ListQueriesRequest.
- * Use `create(ListQueriesRequestSchema)` to create a new message.
+ * Describes the message redpanda.api.dataplane.v1alpha3.ListQueriesRequest.Filter.
+ * Use `create(ListQueriesRequest_FilterSchema)` to create a new message.
  */
-export const ListQueriesRequestSchema: GenMessage<ListQueriesRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 2);
+export const ListQueriesRequest_FilterSchema: GenMessage<ListQueriesRequest_Filter> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 1, 0);
 
 /**
  * Response of the ListQueries operation.
@@ -135,7 +156,7 @@ export type ListQueriesResponse = Message<"redpanda.api.dataplane.v1alpha3.ListQ
  * Use `create(ListQueriesResponseSchema)` to create a new message.
  */
 export const ListQueriesResponseSchema: GenMessage<ListQueriesResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 3);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 2);
 
 /**
  * A single data point made of value and date when it's been measured.
@@ -164,7 +185,7 @@ export type DataPoint = Message<"redpanda.api.dataplane.v1alpha3.DataPoint"> & {
  * Use `create(DataPointSchema)` to create a new message.
  */
 export const DataPointSchema: GenMessage<DataPoint> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 4);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 3);
 
 /**
  * A sequence of data points for a label combination.
@@ -199,7 +220,7 @@ export type TimeSeries = Message<"redpanda.api.dataplane.v1alpha3.TimeSeries"> &
  * Use `create(TimeSeriesSchema)` to create a new message.
  */
 export const TimeSeriesSchema: GenMessage<TimeSeries> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 5);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 4);
 
 /**
  * A single data point for a label combination at a specific point in time.
@@ -234,7 +255,7 @@ export type InstantResult = Message<"redpanda.api.dataplane.v1alpha3.InstantResu
  * Use `create(InstantResultSchema)` to create a new message.
  */
 export const InstantResultSchema: GenMessage<InstantResult> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 6);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 5);
 
 /**
  * Parameters for executing a range query.
@@ -269,7 +290,7 @@ export type ExecuteRangeQueryParams = Message<"redpanda.api.dataplane.v1alpha3.E
  * Use `create(ExecuteRangeQueryParamsSchema)` to create a new message.
  */
 export const ExecuteRangeQueryParamsSchema: GenMessage<ExecuteRangeQueryParams> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 7);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 6);
 
 /**
  * Input data for an ExecuteRangeQuery operation.
@@ -297,7 +318,7 @@ export type ExecuteRangeQueryRequest = Message<"redpanda.api.dataplane.v1alpha3.
  * Use `create(ExecuteRangeQueryRequestSchema)` to create a new message.
  */
 export const ExecuteRangeQueryRequestSchema: GenMessage<ExecuteRangeQueryRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 8);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 7);
 
 /**
  * Response of an ExecuteRangeQuery operation.
@@ -323,7 +344,7 @@ export type ExecuteRangeQueryResponse = Message<"redpanda.api.dataplane.v1alpha3
  * Use `create(ExecuteRangeQueryResponseSchema)` to create a new message.
  */
 export const ExecuteRangeQueryResponseSchema: GenMessage<ExecuteRangeQueryResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 9);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 8);
 
 /**
  * Parameters for executing an instant query.
@@ -351,7 +372,7 @@ export type ExecuteInstantQueryParams = Message<"redpanda.api.dataplane.v1alpha3
  * Use `create(ExecuteInstantQueryParamsSchema)` to create a new message.
  */
 export const ExecuteInstantQueryParamsSchema: GenMessage<ExecuteInstantQueryParams> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 10);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 9);
 
 /**
  * Input data for an ExecuteInstantQuery operation.
@@ -379,7 +400,7 @@ export type ExecuteInstantQueryRequest = Message<"redpanda.api.dataplane.v1alpha
  * Use `create(ExecuteInstantQueryRequestSchema)` to create a new message.
  */
 export const ExecuteInstantQueryRequestSchema: GenMessage<ExecuteInstantQueryRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 11);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 10);
 
 /**
  * Response of an ExecuteInstantQuery operation.
@@ -407,7 +428,7 @@ export type ExecuteInstantQueryResponse = Message<"redpanda.api.dataplane.v1alph
  * Use `create(ExecuteInstantQueryResponseSchema)` to create a new message.
  */
 export const ExecuteInstantQueryResponseSchema: GenMessage<ExecuteInstantQueryResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 12);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_observability, 11);
 
 /**
  * ObservabilityService provides query access to Redpanda metrics.

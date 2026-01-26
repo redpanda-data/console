@@ -1151,6 +1151,16 @@ components:
           description: Token to retrieve the next page of results. Empty if there are no more results.
           type: string
       type: object
+    ListQueriesRequest.Filter:
+      description: Filter criteria for listing queries.
+      properties:
+        tags[string]:
+          additionalProperties:
+            type: string
+          description: Queries that match all the provided tags will be returned.
+          title: Filter queries that contain all of these key/value pairs
+          type: object
+      type: object
     ListQueriesResponse:
       description: Response of the ListQueries operation.
       properties:
@@ -2212,7 +2222,7 @@ paths:
 
             This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
           in: query
-          name: tags[string]
+          name: filter.tags[string]
           schema:
             type: string
       responses:
