@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package redpanda.api.dataplane.v1alpha3;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
@@ -26,16 +27,27 @@ message QueryMetadata {
   string unit = 3;
   // Available filters for this query
   repeated FilterMetadata filters = 4;
-  // Labels for grouping queries (e.g., category, type, component)
-  map<string, string> labels = 5;
+  // Tags for grouping queries (e.g., category, type, component)
+  map<string, string> tags = 5;
 }
 
 // Contains details of a ListQueries request.
-message ListQueriesRequest {}
+message ListQueriesRequest {
+  // Filter queries that contain all of these key/value pairs
+  map<string, string> tags = 1 [
+    (buf.validate.field).map = {
+      max_pairs: 16
+      values: {
+        string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+      }
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Queries that match all the provided tags will be returned."}
+  ];
+}
 
 // Response of the ListQueries operation.
 message ListQueriesResponse {
-  // A description for each available predefined query.
+  // A description for each available predefined query
   repeated QueryMetadata queries = 1;
 }
 
