@@ -49,31 +49,61 @@ export const useListGatewaysQuery = (
   });
 };
 
+// Provider regex for stripping name prefix
+const PROVIDER_PREFIX_REGEX = /^model_providers\//;
+
+// Transform function for model providers - strips "model_providers/" prefix from names
+const transformModelProviders = (response: ListModelProvidersResponse) => ({
+  ...response,
+  modelProviders: response.modelProviders.map((provider) => ({
+    ...provider,
+    name: provider.name.replace(PROVIDER_PREFIX_REGEX, ''),
+  })),
+});
+
 /**
  * Hook to list Model Providers using the AI Gateway v1 API
  * Lists available LLM providers (OpenAI, Anthropic, Google, etc.)
+ *
+ * @note Provider names are automatically transformed to strip the "model_providers/" prefix
  */
 export const useListModelProvidersQuery = (
   input?: MessageInit<ListModelProvidersRequest>,
   options?: QueryOptions<GenMessage<ListModelProvidersRequest>, ListModelProvidersResponse>
-): UseQueryResult<ListModelProvidersResponse, ConnectError> => {
+): UseQueryResult<ReturnType<typeof transformModelProviders>, ConnectError> => {
   const transport = useAIGatewayTransport();
 
   const listModelProvidersRequest = create(ListModelProvidersRequestSchema, {
     pageToken: input?.pageToken ?? '',
     pageSize: input?.pageSize ?? AI_GATEWAY_DEFAULT_PAGE_SIZE,
-    filter: input?.filter ?? '',
+    ...(input?.filter && { filter: input.filter }),
   });
 
   return useQuery(listModelProviders, listModelProvidersRequest, {
     enabled: options?.enabled,
     transport,
+    select: transformModelProviders,
   });
 };
+
+// Model regex for stripping name prefix
+const MODEL_PREFIX_REGEX = /^models\/[^/]+\//;
+
+// Transform function for models - strips "models/provider/" prefix from names
+// e.g., "models/openai/gpt-4o-mini" -> "gpt-4o-mini"
+const transformModels = (response: ListModelsResponse) => ({
+  ...response,
+  models: response.models.map((model) => ({
+    ...model,
+    name: model.name.replace(MODEL_PREFIX_REGEX, ''),
+  })),
+});
 
 /**
  * Hook to list Models using the AI Gateway v1 API
  * Lists available models, optionally filtered by provider
+ *
+ * @note Model names are automatically transformed to strip the "models/provider/" prefix
  *
  * @example
  * // Filter by provider
@@ -82,18 +112,19 @@ export const useListModelProvidersQuery = (
 export const useListModelsQuery = (
   input?: MessageInit<ListModelsRequest>,
   options?: QueryOptions<GenMessage<ListModelsRequest>, ListModelsResponse>
-): UseQueryResult<ListModelsResponse, ConnectError> => {
+): UseQueryResult<ReturnType<typeof transformModels>, ConnectError> => {
   const transport = useAIGatewayTransport();
 
   const listModelsRequest = create(ListModelsRequestSchema, {
     pageToken: input?.pageToken ?? '',
     pageSize: input?.pageSize ?? AI_GATEWAY_DEFAULT_PAGE_SIZE,
-    filter: input?.filter ?? '',
-    orderBy: input?.orderBy ?? '',
+    ...(input?.filter && { filter: input.filter }),
+    ...(input?.orderBy && { orderBy: input.orderBy }),
   });
 
   return useQuery(listModels, listModelsRequest, {
     enabled: options?.enabled,
     transport,
+    select: transformModels,
   });
 };

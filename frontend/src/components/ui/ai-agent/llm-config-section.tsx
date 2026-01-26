@@ -97,14 +97,13 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
 	const availableProviders = useMemo(() => {
 		if (isUsingGateway && providersData?.modelProviders) {
 			// Map gateway providers to our format (already filtered for enabled at API level)
+			// Provider names are already transformed by the query hook (prefix stripped)
 			return providersData.modelProviders.map((provider) => {
-				// Strip "model_providers/" prefix from provider name
-				const providerName = provider.name.replace(/^model_providers\//, '');
-				const providerId = providerName.toLowerCase().replace(/\s+/g, '');
+				const providerId = provider.name.toLowerCase().replace(/\s+/g, '');
 
 				return {
 					id: providerId,
-					label: provider.displayName || providerName,
+					label: provider.displayName || provider.name,
 					icon: MODEL_OPTIONS_BY_PROVIDER[providerId as keyof typeof MODEL_OPTIONS_BY_PROVIDER]?.icon || '',
 				};
 			});
@@ -121,17 +120,12 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
 	const filteredModels = useMemo(() => {
 		if (isUsingGateway && modelsData?.models) {
 			// Map gateway models to our format (already filtered for enabled at API level)
-			return modelsData.models.map((model) => {
-				// Strip "models/provider/" prefix from model name
-				// e.g., "models/openai/gpt-4o-mini" -> "gpt-4o-mini"
-				const modelName = model.name.split('/').pop() || model.name;
-
-				return {
-					value: modelName,
-					name: model.displayName || modelName,
-					description: model.description || '',
-				};
-			});
+			// Model names are already transformed by the query hook (prefix stripped)
+			return modelsData.models.map((model) => ({
+				value: model.name,
+				name: model.displayName || model.name,
+				description: model.description || '',
+			}));
 		}
 		// Fallback to hardcoded models
 		if (!selectedProvider) return [];
