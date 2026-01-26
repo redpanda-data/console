@@ -46,11 +46,6 @@ export const useListGatewaysQuery = (
   return useQuery(listGateways, listGatewaysRequest, {
     enabled: options?.enabled,
     transport,
-    staleTime: 60_000, // 1 minute - prevent excessive refetching
-    gcTime: 300_000, // 5 minutes cache
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
   });
 };
 
@@ -73,11 +68,6 @@ export const useListModelProvidersQuery = (
   return useQuery(listModelProviders, listModelProvidersRequest, {
     enabled: options?.enabled,
     transport,
-    staleTime: 60_000, // 1 minute - prevent excessive refetching
-    gcTime: 300_000, // 5 minutes cache
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
   });
 };
 
@@ -105,10 +95,5 @@ export const useListModelsQuery = (
   return useQuery(listModels, listModelsRequest, {
     enabled: options?.enabled,
     transport,
-    staleTime: 60_000, // 1 minute - prevent excessive refetching
-    gcTime: 300_000, // 5 minutes cache
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
   });
 };
