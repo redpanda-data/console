@@ -16,6 +16,7 @@ import { getRouteApi } from '@tanstack/react-router';
 const routeApi = getRouteApi('/agents/$id');
 
 import { CLOUD_MANAGED_TAG_KEYS, isCloudManagedTagKey } from 'components/constants';
+import { isFeatureFlagEnabled } from 'config';
 import {
   Accordion,
   AccordionContent,
@@ -319,8 +320,11 @@ export const AIAgentConfigurationTab = () => {
   const [editedAgentData, setEditedAgentData] = useState<LocalAIAgent | null>(null);
   const [expandedSubagent, setExpandedSubagent] = useState<string | undefined>(undefined);
 
-  // Check if agent is using gateway
-  const isUsingGateway = !!aiAgentData?.aiAgent?.gateway?.virtualGatewayId;
+  // Feature flag: when true, use legacy API key mode (hardcoded providers, no gateway API calls)
+  const isLegacyApiKeyMode = isFeatureFlagEnabled('enableApiKeyConfigurationAgent');
+
+  // Check if agent is using gateway AND feature flag allows it
+  const isUsingGateway = !isLegacyApiKeyMode && !!aiAgentData?.aiAgent?.gateway?.virtualGatewayId;
 
   const getResourceTierFromAgent = useCallback((resources?: { cpuShares?: string; memoryShares?: string }) => {
     if (!resources) {
