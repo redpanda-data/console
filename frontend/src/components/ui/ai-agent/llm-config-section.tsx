@@ -33,6 +33,10 @@ import {
 import type { Scope } from "protogen/redpanda/api/dataplane/v1/secret_pb";
 import { useEffect, useMemo } from "react";
 import { Controller, type UseFormReturn } from "react-hook-form";
+import {
+	useListModelProvidersQuery,
+	useListModelsQuery,
+} from "react-query/api/ai-gateway";
 
 import {
 	detectProvider,
@@ -70,54 +74,136 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
   hasGatewayDeployed = false,
   availableGateways = [],
 }) => {
-  const GATEWAY_HARDCODED_PROVIDER = 'openai';
-  const GATEWAY_HARDCODED_MODEL = 'gpt-4o';
-
   const selectedProvider = form.watch(fieldNames.provider) as keyof typeof MODEL_OPTIONS_BY_PROVIDER;
   const selectedGatewayId = fieldNames.gatewayId ? form.watch(fieldNames.gatewayId) : undefined;
   const isUsingGateway = hasGatewayDeployed && !!selectedGatewayId;
 
+  // Fetch providers and models from AI Gateway when using gateway
+  // Filter for enabled providers at the API level
+  const { data: providersData, isLoading: isLoadingProviders } = useListModelProvidersQuery(
+    { filter: 'enabled = "true"' },
+    { enabled: isUsingGateway }
+  );
+
+  // Filter models by provider and enabled status
+  const { data: modelsData, isLoading: isLoadingModels } = useListModelsQuery(
+    {
+      filter: selectedProvider
+        ? `provider = "${selectedProvider}" AND enabled = "true"`
+        : 'enabled = "true"',
+    },
+    { enabled: isUsingGateway && !!selectedProvider }
+  );
+
+	// Get available providers - from gateway API or hardcoded
+	const availableProviders = useMemo(() => {
+		if (isUsingGateway && providersData?.modelProviders) {
+			// Map gateway providers to our format (already filtered for enabled at API level)
+			return providersData.modelProviders.map((provider) => {
+				// Strip "model_providers/" prefix from provider name
+				const providerName = provider.name.replace(/^model_providers\//, '');
+				const providerId = providerName.toLowerCase().replace(/\s+/g, '');
+
+				return {
+					id: providerId,
+					label: provider.displayName || providerName,
+					icon: MODEL_OPTIONS_BY_PROVIDER[providerId as keyof typeof MODEL_OPTIONS_BY_PROVIDER]?.icon || '',
+				};
+			});
+		}
+		// Fallback to hardcoded providers
+		return Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([id, provider]) => ({
+			id,
+			label: provider.label,
+			icon: provider.icon,
+		}));
+	}, [isUsingGateway, providersData]);
+
+	// Get available models - from gateway API or hardcoded
 	const filteredModels = useMemo(() => {
+		if (isUsingGateway && modelsData?.models) {
+			// Map gateway models to our format (already filtered for enabled at API level)
+			return modelsData.models.map((model) => {
+				// Strip "models/provider/" prefix from model name
+				// e.g., "models/openai/gpt-4o-mini" -> "gpt-4o-mini"
+				const modelName = model.name.split('/').pop() || model.name;
+
+				return {
+					value: modelName,
+					name: model.displayName || modelName,
+					description: model.description || '',
+				};
+			});
+		}
+		// Fallback to hardcoded models
 		if (!selectedProvider) return [];
 		const providerData = MODEL_OPTIONS_BY_PROVIDER[selectedProvider];
 		return providerData?.models || [];
-	}, [selectedProvider]);
+	}, [isUsingGateway, modelsData, selectedProvider]);
 
+  // Auto-select first provider when available (create mode)
+  useEffect(() => {
+    if (mode === 'create' && isUsingGateway && availableProviders.length > 0 && !isLoadingProviders) {
+      const currentProvider = form.getValues(fieldNames.provider);
+      // Check if current provider is in the available list
+      const isValidProvider = availableProviders.some((p) => p.id === currentProvider);
+
+      if (!currentProvider || !isValidProvider) {
+        // Auto-select first available provider
+        form.setValue(fieldNames.provider, availableProviders[0].id, { shouldValidate: true });
+      }
+    }
+  }, [mode, isUsingGateway, availableProviders, isLoadingProviders, form, fieldNames]);
+
+  // Auto-select first model when available (create mode)
+  useEffect(() => {
+    if (mode === 'create' && isUsingGateway && filteredModels.length > 0 && filteredModels[0] && !isLoadingModels && selectedProvider) {
+      const currentModel = form.getValues(fieldNames.model);
+      const isValid = currentModel && filteredModels.some((m: { value: string }) => m.value === currentModel);
+
+      if (!isValid) {
+        // Auto-select first available model
+        form.setValue(fieldNames.model, filteredModels[0].value, { shouldValidate: true });
+      }
+    }
+  }, [mode, isUsingGateway, selectedProvider, filteredModels, isLoadingModels, form, fieldNames]);
+
+  // Clear API key when using gateway
   useEffect(() => {
     if (isUsingGateway) {
-      form.setValue(fieldNames.provider, GATEWAY_HARDCODED_PROVIDER);
-      form.setValue(fieldNames.model, GATEWAY_HARDCODED_MODEL);
       form.setValue(fieldNames.apiKeySecret, '');
     }
   }, [isUsingGateway, form, fieldNames]);
 
-  useEffect(() => {
-    if (mode === 'create' && filteredModels.length > 0 && filteredModels[0] && !isUsingGateway) {
-      const currentModel = form.getValues(fieldNames.model);
-      const isValid = filteredModels.some((m: { value: string }) => m.value === currentModel);
-
-      if (!isValid) {
-        form.setValue(fieldNames.model, filteredModels[0].value);
-      }
-    }
-  }, [selectedProvider, mode, filteredModels, form, fieldNames, isUsingGateway]);
-
   return (
     <div className="space-y-4">
-      {hasGatewayDeployed && availableGateways.length > 0 && fieldNames.gatewayId && (
+      {fieldNames.gatewayId && (
         <Field data-invalid={!!form.formState.errors[fieldNames.gatewayId]}>
-          <FieldLabel htmlFor="gateway">AI Gateway</FieldLabel>
-          <FieldDescription>Route requests through an AI Gateway</FieldDescription>
+          <FieldLabel htmlFor="gateway" required>AI Gateway</FieldLabel>
+          <FieldDescription>
+            {hasGatewayDeployed && availableGateways.length > 0
+              ? 'Route requests through an AI Gateway'
+              : 'Gateway not available. Please enable AI Gateway for your cluster.'}
+          </FieldDescription>
           <Controller
             control={form.control}
             name={fieldNames.gatewayId}
             render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value || ''}>
+              <Select
+                disabled={!hasGatewayDeployed || availableGateways.length === 0}
+                onValueChange={field.onChange}
+                value={field.value}
+              >
                 <SelectTrigger id="gateway">
-                  <SelectValue placeholder="No gateway" />
+                  <SelectValue
+                    placeholder={
+                      hasGatewayDeployed && availableGateways.length > 0
+                        ? 'Select a gateway'
+                        : 'No gateways available'
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No gateway</SelectItem>
                   {availableGateways.map((gw) => (
                     <SelectItem key={gw.id} value={gw.id}>
                       {gw.displayName}
@@ -138,19 +224,32 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
           <FieldLabel htmlFor="provider" required>
             Provider
           </FieldLabel>
+          {isUsingGateway && availableProviders.length === 0 && !isLoadingProviders && (
+            <FieldDescription>No enabled providers available. Please enable providers in AI Gateway.</FieldDescription>
+          )}
           <Controller
             control={form.control}
             name={fieldNames.provider}
             render={({ field }) => (
-              <Select disabled={isUsingGateway} onValueChange={field.onChange} value={field.value}>
+              <Select
+                disabled={isLoadingProviders || (isUsingGateway && availableProviders.length === 0)}
+                onValueChange={field.onChange}
+                value={field.value}
+              >
                 <SelectTrigger id="provider">
-                  <SelectValue placeholder="Select provider" />
+                  <SelectValue placeholder={
+                    isLoadingProviders
+                      ? "Loading providers..."
+                      : (isUsingGateway && availableProviders.length === 0)
+                        ? "No providers available"
+                        : "Select provider"
+                  } />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([providerId, provider]) => (
-                    <SelectItem key={providerId} value={providerId}>
+                  {availableProviders.map((provider) => (
+                    <SelectItem key={provider.id} value={provider.id}>
                       <div className="flex items-center gap-2">
-                        <img alt={provider.label} className="h-4 w-4" src={provider.icon} />
+                        {provider.icon && <img alt={provider.label} className="h-4 w-4" src={provider.icon} />}
                         <span>{provider.label}</span>
                       </div>
                     </SelectItem>
@@ -182,6 +281,9 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
 				<FieldLabel htmlFor="model" required>
 					Model
 				</FieldLabel>
+				{isUsingGateway && filteredModels.length === 0 && !isLoadingModels && selectedProvider && (
+					<FieldDescription>No enabled models available. Please enable models in AI Gateway.</FieldDescription>
+				)}
 				<Controller
 					control={form.control}
 					name={fieldNames.model}
@@ -194,12 +296,14 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
 							: null;
 						const isFreeTextMode =
 							providerData && providerData.models.length === 0;
+            const hasNoProviders = isUsingGateway && availableProviders.length === 0 && !isLoadingProviders;
+            const hasNoModels = isUsingGateway && filteredModels.length === 0 && !isLoadingModels && selectedProvider;
 
             if (isFreeTextMode) {
               return (
                 <>
                   <Input
-                    disabled={isUsingGateway}
+                    disabled={hasNoProviders || hasNoModels}
                     id="model"
                     placeholder="Enter model name (e.g., llama-3.1-70b)"
                     {...field}
@@ -212,36 +316,40 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
             }
 
             return (
-              <Select disabled={isUsingGateway} onValueChange={field.onChange} value={field.value}>
+              <Select disabled={isLoadingModels || hasNoProviders || hasNoModels} onValueChange={field.onChange} value={field.value}>
                 <SelectTrigger id="model">
-                  <SelectValue placeholder="Select AI model">
-                    {field.value && detectedProvider ? (
-                      <div className="flex items-center gap-2">
-                        <img alt={detectedProvider.label} className="h-4 w-4" src={detectedProvider.icon} />
-                        <span>{field.value}</span>
-                      </div>
-                    ) : (
-                      'Select AI model'
-                    )}
-                  </SelectValue>
+                  <SelectValue placeholder={
+                    hasNoProviders
+                      ? "No providers available"
+                      : hasNoModels
+                        ? "No models available"
+                        : isLoadingModels
+                          ? "Loading models..."
+                          : "Select model"
+                  } />
                 </SelectTrigger>
                 <SelectContent>
-                  {providerData ? (
+                  {isLoadingModels ? (
+                    <div className="p-2">
+                      <Text variant="muted">Loading models...</Text>
+                    </div>
+                  ) : hasNoModels ? (
+                    <div className="p-2">
+                      <Text variant="muted">No enabled models available</Text>
+                    </div>
+                  ) : filteredModels.length > 0 ? (
                     <SelectGroup>
-                      <SelectLabel>
-                        <div className="flex items-center gap-2">
-                          <img alt={providerData.label} className="h-4 w-4" src={providerData.icon} />
-                          <span>{providerData.label}</span>
-                        </div>
-                      </SelectLabel>
+                      {providerData && !isUsingGateway && (
+                        <SelectLabel>
+                          <div className="flex items-center gap-2">
+                            <img alt={providerData.label} className="h-4 w-4" src={providerData.icon} />
+                            <span>{providerData.label}</span>
+                          </div>
+                        </SelectLabel>
+                      )}
                       {filteredModels.map((model: { value: string; name: string; description: string }) => (
                         <SelectItem key={model.value} value={model.value}>
-                          <div className="flex flex-col gap-0.5">
-                            <Text className="font-medium">{model.name}</Text>
-                            <Text className="text-xs" variant="muted">
-                              {model.description}
-                            </Text>
-                          </div>
+                          {model.name}
                         </SelectItem>
                       ))}
                     </SelectGroup>

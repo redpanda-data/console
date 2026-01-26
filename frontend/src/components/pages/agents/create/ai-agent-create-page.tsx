@@ -146,7 +146,7 @@ export const AIAgentCreatePage = () => {
     if (!isLegacyApiKeyMode && availableGateways.length > 0 && !form.getValues('gatewayId')) {
       form.setValue('gatewayId', availableGateways[0].id);
     }
-  }, [isLegacyApiKeyMode, availableGateways.length, form]);
+  }, [isLegacyApiKeyMode, availableGateways, form]);
 
   const {
     fields: tagFields,
