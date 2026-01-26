@@ -1,0 +1,129 @@
+{
+  "cookies": [
+    {
+      "name": "_hp2_ses_props.328327039",
+      "value": "%7B%22z%22%3A0%2C%22ts%22%3A1769451870476%2C%22d%22%3A%22localhost%22%2C%22h%22%3A%22%2Flogin%22%2C%22t%22%3A%22Redpanda%20Console%22%7D",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1769453672,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "__hstc",
+      "value": "181257784.d7504f1881ce269df359f59576f859d7.1769451871006.1769451871006.1769451871006.1",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1785003871,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "hubspotutk",
+      "value": "d7504f1881ce269df359f59576f859d7",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1785003871,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "__hssrc",
+      "value": "1",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "__hssc",
+      "value": "181257784.1.1769451871006",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1769453671,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "__cf_bm",
+      "value": "7MlwjViG9VmolezmVFgLTOpqzQWIRCtIbFp8sNai2Do-1769451871-1.0.1.1-aA.iR7WoY0bARRyuen.fk1egUkqxsXXipFx6b31Qgr3SDThrU7sODGx6ZkYiOPLkVfEcGccoQfX2Mc88AbBGf3KhS22jwJBZeTRQwUnbeu8",
+      "domain": ".hubspot.com",
+      "path": "/",
+      "expires": 1769453671.399171,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_cfuvid",
+      "value": ".Q9I5RYBS2KXfVBhC0XxqtngCCadxSnbU9TkNAvpcxc-1769451871413-0.0.1.1-604800000",
+      "domain": ".hubspot.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_gcl_au",
+      "value": "1.1.1036820304.1769451871",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1777227871,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "console_session",
+      "value": "eyJhbGciOiJkaXIiLCJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwidHlwIjoiSldUIiwiemlwIjoiREVGIn0..nxLKCmBX-kdM_IAf.NoPP7dkh1tQWm1FZ0yTBjcvS9p2dlkrzFIqasbezs0j6yYlA4E4Hy__ohqRj7ocUHnnNVJGKhF4PTGhKsRGQ-DoFu4tBRhSZckEKfWsERZ5qjOhls0h8bRkLTR-d4CCHxfasg4C9Ekp-D3yveh6UBxsrQxggg1zaIXf_n79srMe3OhOPN03Q1mv11LNgJd2rMugCUGEOENREWGrF1mxWYnaq4IXmx6mMj9CozQlYGOogKNHfV_EcInB2XXYkt300lDIHT4Z7S1fCMiWjB4P0aQ0xs9eC8M0tzkxSsWyryO9Lm3iVRD55T0L-oNQkENOKibsMvOwJqOMpJ0LOzc3q1Ljm_v1yBTMNSceRYw4QK0E-zTgFBhkVLjKxfj7w9M4uwscyuycpaNCr6KgbjLFpkGjDm6ySQEmwsp9-VdzlS75q9kwro-5P4irw6B4s1MUcw3ZEZWiCrkJ_YIdzDYDSi9f50U03zFszTJLpjiuvsboCIDJQWpwGIh0Ouytf9qK0LxqXk8ub.xag2gzvva9XFbuOqy8F30g",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1800987872.24291,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_hp2_id.328327039",
+      "value": "%7B%22userId%22%3A%222335447698431825%22%2C%22pageviewId%22%3A%222306694724670764%22%2C%22sessionId%22%3A%225481344585107165%22%2C%22identity%22%3A%22e2euser%22%2C%22trackerVersion%22%3A%224.0%22%2C%22identityField%22%3Anull%2C%22isIdentified%22%3A1%7D",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1803529472,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_hp2_props.328327039",
+      "value": "%7B%22Product%20Name%22%3A%22Console%22%2C%22Platform%22%3A%22Kafka%22%2C%22BakedInTrial%22%3Afalse%2C%22LicenseType%22%3A%22Enterprise%22%2C%22MillisecondsToExpiration%22%3A6121287699%2C%22SSOEnabled%22%3Atrue%7D",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1803529472,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:3100",
+      "localStorage": [
+        {
+          "name": "chakra-ui-color-mode",
+          "value": "light"
+        },
+        {
+          "name": "_gcl_ls",
+          "value": "{\"schema\":\"gcl\",\"version\":1,\"gcl_ctr\":{\"value\":{\"value\":0,\"timeouts\":0,\"creationTimeMs\":1769451871437},\"expires\":1777227871437}}"
+        }
+      ]
+    }
+  ]
+}
