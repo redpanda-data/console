@@ -20,8 +20,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ObservabilityService_ListQueries_FullMethodName  = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/ListQueries"
-	ObservabilityService_ExecuteQuery_FullMethodName = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/ExecuteQuery"
+	ObservabilityService_ListQueries_FullMethodName         = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/ListQueries"
+	ObservabilityService_ExecuteRangeQuery_FullMethodName   = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/ExecuteRangeQuery"
+	ObservabilityService_ExecuteInstantQuery_FullMethodName = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/ExecuteInstantQuery"
 )
 
 // ObservabilityServiceClient is the client API for ObservabilityService service.
@@ -32,8 +33,10 @@ const (
 type ObservabilityServiceClient interface {
 	// List available queries
 	ListQueries(ctx context.Context, in *ListQueriesRequest, opts ...grpc.CallOption) (*ListQueriesResponse, error)
-	// Execute a predefined query
-	ExecuteQuery(ctx context.Context, in *ExecuteQueryRequest, opts ...grpc.CallOption) (*ExecuteQueryResponse, error)
+	// Execute a predefined range query
+	ExecuteRangeQuery(ctx context.Context, in *ExecuteRangeQueryRequest, opts ...grpc.CallOption) (*ExecuteRangeQueryResponse, error)
+	// Execute a predefined instant query
+	ExecuteInstantQuery(ctx context.Context, in *ExecuteInstantQueryRequest, opts ...grpc.CallOption) (*ExecuteInstantQueryResponse, error)
 }
 
 type observabilityServiceClient struct {
@@ -54,10 +57,20 @@ func (c *observabilityServiceClient) ListQueries(ctx context.Context, in *ListQu
 	return out, nil
 }
 
-func (c *observabilityServiceClient) ExecuteQuery(ctx context.Context, in *ExecuteQueryRequest, opts ...grpc.CallOption) (*ExecuteQueryResponse, error) {
+func (c *observabilityServiceClient) ExecuteRangeQuery(ctx context.Context, in *ExecuteRangeQueryRequest, opts ...grpc.CallOption) (*ExecuteRangeQueryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ExecuteQueryResponse)
-	err := c.cc.Invoke(ctx, ObservabilityService_ExecuteQuery_FullMethodName, in, out, cOpts...)
+	out := new(ExecuteRangeQueryResponse)
+	err := c.cc.Invoke(ctx, ObservabilityService_ExecuteRangeQuery_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *observabilityServiceClient) ExecuteInstantQuery(ctx context.Context, in *ExecuteInstantQueryRequest, opts ...grpc.CallOption) (*ExecuteInstantQueryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExecuteInstantQueryResponse)
+	err := c.cc.Invoke(ctx, ObservabilityService_ExecuteInstantQuery_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -72,8 +85,10 @@ func (c *observabilityServiceClient) ExecuteQuery(ctx context.Context, in *Execu
 type ObservabilityServiceServer interface {
 	// List available queries
 	ListQueries(context.Context, *ListQueriesRequest) (*ListQueriesResponse, error)
-	// Execute a predefined query
-	ExecuteQuery(context.Context, *ExecuteQueryRequest) (*ExecuteQueryResponse, error)
+	// Execute a predefined range query
+	ExecuteRangeQuery(context.Context, *ExecuteRangeQueryRequest) (*ExecuteRangeQueryResponse, error)
+	// Execute a predefined instant query
+	ExecuteInstantQuery(context.Context, *ExecuteInstantQueryRequest) (*ExecuteInstantQueryResponse, error)
 	mustEmbedUnimplementedObservabilityServiceServer()
 }
 
@@ -87,8 +102,11 @@ type UnimplementedObservabilityServiceServer struct{}
 func (UnimplementedObservabilityServiceServer) ListQueries(context.Context, *ListQueriesRequest) (*ListQueriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListQueries not implemented")
 }
-func (UnimplementedObservabilityServiceServer) ExecuteQuery(context.Context, *ExecuteQueryRequest) (*ExecuteQueryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ExecuteQuery not implemented")
+func (UnimplementedObservabilityServiceServer) ExecuteRangeQuery(context.Context, *ExecuteRangeQueryRequest) (*ExecuteRangeQueryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExecuteRangeQuery not implemented")
+}
+func (UnimplementedObservabilityServiceServer) ExecuteInstantQuery(context.Context, *ExecuteInstantQueryRequest) (*ExecuteInstantQueryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExecuteInstantQuery not implemented")
 }
 func (UnimplementedObservabilityServiceServer) mustEmbedUnimplementedObservabilityServiceServer() {}
 func (UnimplementedObservabilityServiceServer) testEmbeddedByValue()                              {}
@@ -129,20 +147,38 @@ func _ObservabilityService_ListQueries_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObservabilityService_ExecuteQuery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ExecuteQueryRequest)
+func _ObservabilityService_ExecuteRangeQuery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExecuteRangeQueryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObservabilityServiceServer).ExecuteQuery(ctx, in)
+		return srv.(ObservabilityServiceServer).ExecuteRangeQuery(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ObservabilityService_ExecuteQuery_FullMethodName,
+		FullMethod: ObservabilityService_ExecuteRangeQuery_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObservabilityServiceServer).ExecuteQuery(ctx, req.(*ExecuteQueryRequest))
+		return srv.(ObservabilityServiceServer).ExecuteRangeQuery(ctx, req.(*ExecuteRangeQueryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ObservabilityService_ExecuteInstantQuery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExecuteInstantQueryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ObservabilityServiceServer).ExecuteInstantQuery(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ObservabilityService_ExecuteInstantQuery_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ObservabilityServiceServer).ExecuteInstantQuery(ctx, req.(*ExecuteInstantQueryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -159,8 +195,12 @@ var ObservabilityService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ObservabilityService_ListQueries_Handler,
 		},
 		{
-			MethodName: "ExecuteQuery",
-			Handler:    _ObservabilityService_ExecuteQuery_Handler,
+			MethodName: "ExecuteRangeQuery",
+			Handler:    _ObservabilityService_ExecuteRangeQuery_Handler,
+		},
+		{
+			MethodName: "ExecuteInstantQuery",
+			Handler:    _ObservabilityService_ExecuteInstantQuery_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

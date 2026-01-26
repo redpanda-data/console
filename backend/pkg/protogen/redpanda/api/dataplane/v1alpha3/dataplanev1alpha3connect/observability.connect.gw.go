@@ -18,16 +18,18 @@ import (
 // service.
 type ObservabilityServiceGatewayServer struct {
 	v1alpha3.UnimplementedObservabilityServiceServer
-	listQueries  connect_gateway.UnaryHandler[v1alpha3.ListQueriesRequest, v1alpha3.ListQueriesResponse]
-	executeQuery connect_gateway.UnaryHandler[v1alpha3.ExecuteQueryRequest, v1alpha3.ExecuteQueryResponse]
+	listQueries         connect_gateway.UnaryHandler[v1alpha3.ListQueriesRequest, v1alpha3.ListQueriesResponse]
+	executeRangeQuery   connect_gateway.UnaryHandler[v1alpha3.ExecuteRangeQueryRequest, v1alpha3.ExecuteRangeQueryResponse]
+	executeInstantQuery connect_gateway.UnaryHandler[v1alpha3.ExecuteInstantQueryRequest, v1alpha3.ExecuteInstantQueryResponse]
 }
 
 // NewObservabilityServiceGatewayServer constructs a Connect-Gateway gRPC server for the
 // ObservabilityService service.
 func NewObservabilityServiceGatewayServer(svc ObservabilityServiceHandler, opts ...connect_gateway.HandlerOption) *ObservabilityServiceGatewayServer {
 	return &ObservabilityServiceGatewayServer{
-		listQueries:  connect_gateway.NewUnaryHandler(ObservabilityServiceListQueriesProcedure, svc.ListQueries, opts...),
-		executeQuery: connect_gateway.NewUnaryHandler(ObservabilityServiceExecuteQueryProcedure, svc.ExecuteQuery, opts...),
+		listQueries:         connect_gateway.NewUnaryHandler(ObservabilityServiceListQueriesProcedure, svc.ListQueries, opts...),
+		executeRangeQuery:   connect_gateway.NewUnaryHandler(ObservabilityServiceExecuteRangeQueryProcedure, svc.ExecuteRangeQuery, opts...),
+		executeInstantQuery: connect_gateway.NewUnaryHandler(ObservabilityServiceExecuteInstantQueryProcedure, svc.ExecuteInstantQuery, opts...),
 	}
 }
 
@@ -35,8 +37,12 @@ func (s *ObservabilityServiceGatewayServer) ListQueries(ctx context.Context, req
 	return s.listQueries(ctx, req)
 }
 
-func (s *ObservabilityServiceGatewayServer) ExecuteQuery(ctx context.Context, req *v1alpha3.ExecuteQueryRequest) (*v1alpha3.ExecuteQueryResponse, error) {
-	return s.executeQuery(ctx, req)
+func (s *ObservabilityServiceGatewayServer) ExecuteRangeQuery(ctx context.Context, req *v1alpha3.ExecuteRangeQueryRequest) (*v1alpha3.ExecuteRangeQueryResponse, error) {
+	return s.executeRangeQuery(ctx, req)
+}
+
+func (s *ObservabilityServiceGatewayServer) ExecuteInstantQuery(ctx context.Context, req *v1alpha3.ExecuteInstantQueryRequest) (*v1alpha3.ExecuteInstantQueryResponse, error) {
+	return s.executeInstantQuery(ctx, req)
 }
 
 // RegisterObservabilityServiceHandlerGatewayServer registers the Connect handlers for the

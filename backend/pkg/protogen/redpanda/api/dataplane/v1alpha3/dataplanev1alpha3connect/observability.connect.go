@@ -38,16 +38,20 @@ const (
 	// ObservabilityServiceListQueriesProcedure is the fully-qualified name of the
 	// ObservabilityService's ListQueries RPC.
 	ObservabilityServiceListQueriesProcedure = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/ListQueries"
-	// ObservabilityServiceExecuteQueryProcedure is the fully-qualified name of the
-	// ObservabilityService's ExecuteQuery RPC.
-	ObservabilityServiceExecuteQueryProcedure = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/ExecuteQuery"
+	// ObservabilityServiceExecuteRangeQueryProcedure is the fully-qualified name of the
+	// ObservabilityService's ExecuteRangeQuery RPC.
+	ObservabilityServiceExecuteRangeQueryProcedure = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/ExecuteRangeQuery"
+	// ObservabilityServiceExecuteInstantQueryProcedure is the fully-qualified name of the
+	// ObservabilityService's ExecuteInstantQuery RPC.
+	ObservabilityServiceExecuteInstantQueryProcedure = "/redpanda.api.dataplane.v1alpha3.ObservabilityService/ExecuteInstantQuery"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	observabilityServiceServiceDescriptor            = v1alpha3.File_redpanda_api_dataplane_v1alpha3_observability_proto.Services().ByName("ObservabilityService")
-	observabilityServiceListQueriesMethodDescriptor  = observabilityServiceServiceDescriptor.Methods().ByName("ListQueries")
-	observabilityServiceExecuteQueryMethodDescriptor = observabilityServiceServiceDescriptor.Methods().ByName("ExecuteQuery")
+	observabilityServiceServiceDescriptor                   = v1alpha3.File_redpanda_api_dataplane_v1alpha3_observability_proto.Services().ByName("ObservabilityService")
+	observabilityServiceListQueriesMethodDescriptor         = observabilityServiceServiceDescriptor.Methods().ByName("ListQueries")
+	observabilityServiceExecuteRangeQueryMethodDescriptor   = observabilityServiceServiceDescriptor.Methods().ByName("ExecuteRangeQuery")
+	observabilityServiceExecuteInstantQueryMethodDescriptor = observabilityServiceServiceDescriptor.Methods().ByName("ExecuteInstantQuery")
 )
 
 // ObservabilityServiceClient is a client for the
@@ -55,8 +59,10 @@ var (
 type ObservabilityServiceClient interface {
 	// List available queries
 	ListQueries(context.Context, *connect.Request[v1alpha3.ListQueriesRequest]) (*connect.Response[v1alpha3.ListQueriesResponse], error)
-	// Execute a predefined query
-	ExecuteQuery(context.Context, *connect.Request[v1alpha3.ExecuteQueryRequest]) (*connect.Response[v1alpha3.ExecuteQueryResponse], error)
+	// Execute a predefined range query
+	ExecuteRangeQuery(context.Context, *connect.Request[v1alpha3.ExecuteRangeQueryRequest]) (*connect.Response[v1alpha3.ExecuteRangeQueryResponse], error)
+	// Execute a predefined instant query
+	ExecuteInstantQuery(context.Context, *connect.Request[v1alpha3.ExecuteInstantQueryRequest]) (*connect.Response[v1alpha3.ExecuteInstantQueryResponse], error)
 }
 
 // NewObservabilityServiceClient constructs a client for the
@@ -76,10 +82,16 @@ func NewObservabilityServiceClient(httpClient connect.HTTPClient, baseURL string
 			connect.WithSchema(observabilityServiceListQueriesMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		executeQuery: connect.NewClient[v1alpha3.ExecuteQueryRequest, v1alpha3.ExecuteQueryResponse](
+		executeRangeQuery: connect.NewClient[v1alpha3.ExecuteRangeQueryRequest, v1alpha3.ExecuteRangeQueryResponse](
 			httpClient,
-			baseURL+ObservabilityServiceExecuteQueryProcedure,
-			connect.WithSchema(observabilityServiceExecuteQueryMethodDescriptor),
+			baseURL+ObservabilityServiceExecuteRangeQueryProcedure,
+			connect.WithSchema(observabilityServiceExecuteRangeQueryMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		executeInstantQuery: connect.NewClient[v1alpha3.ExecuteInstantQueryRequest, v1alpha3.ExecuteInstantQueryResponse](
+			httpClient,
+			baseURL+ObservabilityServiceExecuteInstantQueryProcedure,
+			connect.WithSchema(observabilityServiceExecuteInstantQueryMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -87,8 +99,9 @@ func NewObservabilityServiceClient(httpClient connect.HTTPClient, baseURL string
 
 // observabilityServiceClient implements ObservabilityServiceClient.
 type observabilityServiceClient struct {
-	listQueries  *connect.Client[v1alpha3.ListQueriesRequest, v1alpha3.ListQueriesResponse]
-	executeQuery *connect.Client[v1alpha3.ExecuteQueryRequest, v1alpha3.ExecuteQueryResponse]
+	listQueries         *connect.Client[v1alpha3.ListQueriesRequest, v1alpha3.ListQueriesResponse]
+	executeRangeQuery   *connect.Client[v1alpha3.ExecuteRangeQueryRequest, v1alpha3.ExecuteRangeQueryResponse]
+	executeInstantQuery *connect.Client[v1alpha3.ExecuteInstantQueryRequest, v1alpha3.ExecuteInstantQueryResponse]
 }
 
 // ListQueries calls redpanda.api.dataplane.v1alpha3.ObservabilityService.ListQueries.
@@ -96,9 +109,15 @@ func (c *observabilityServiceClient) ListQueries(ctx context.Context, req *conne
 	return c.listQueries.CallUnary(ctx, req)
 }
 
-// ExecuteQuery calls redpanda.api.dataplane.v1alpha3.ObservabilityService.ExecuteQuery.
-func (c *observabilityServiceClient) ExecuteQuery(ctx context.Context, req *connect.Request[v1alpha3.ExecuteQueryRequest]) (*connect.Response[v1alpha3.ExecuteQueryResponse], error) {
-	return c.executeQuery.CallUnary(ctx, req)
+// ExecuteRangeQuery calls redpanda.api.dataplane.v1alpha3.ObservabilityService.ExecuteRangeQuery.
+func (c *observabilityServiceClient) ExecuteRangeQuery(ctx context.Context, req *connect.Request[v1alpha3.ExecuteRangeQueryRequest]) (*connect.Response[v1alpha3.ExecuteRangeQueryResponse], error) {
+	return c.executeRangeQuery.CallUnary(ctx, req)
+}
+
+// ExecuteInstantQuery calls
+// redpanda.api.dataplane.v1alpha3.ObservabilityService.ExecuteInstantQuery.
+func (c *observabilityServiceClient) ExecuteInstantQuery(ctx context.Context, req *connect.Request[v1alpha3.ExecuteInstantQueryRequest]) (*connect.Response[v1alpha3.ExecuteInstantQueryResponse], error) {
+	return c.executeInstantQuery.CallUnary(ctx, req)
 }
 
 // ObservabilityServiceHandler is an implementation of the
@@ -106,8 +125,10 @@ func (c *observabilityServiceClient) ExecuteQuery(ctx context.Context, req *conn
 type ObservabilityServiceHandler interface {
 	// List available queries
 	ListQueries(context.Context, *connect.Request[v1alpha3.ListQueriesRequest]) (*connect.Response[v1alpha3.ListQueriesResponse], error)
-	// Execute a predefined query
-	ExecuteQuery(context.Context, *connect.Request[v1alpha3.ExecuteQueryRequest]) (*connect.Response[v1alpha3.ExecuteQueryResponse], error)
+	// Execute a predefined range query
+	ExecuteRangeQuery(context.Context, *connect.Request[v1alpha3.ExecuteRangeQueryRequest]) (*connect.Response[v1alpha3.ExecuteRangeQueryResponse], error)
+	// Execute a predefined instant query
+	ExecuteInstantQuery(context.Context, *connect.Request[v1alpha3.ExecuteInstantQueryRequest]) (*connect.Response[v1alpha3.ExecuteInstantQueryResponse], error)
 }
 
 // NewObservabilityServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -122,18 +143,26 @@ func NewObservabilityServiceHandler(svc ObservabilityServiceHandler, opts ...con
 		connect.WithSchema(observabilityServiceListQueriesMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	observabilityServiceExecuteQueryHandler := connect.NewUnaryHandler(
-		ObservabilityServiceExecuteQueryProcedure,
-		svc.ExecuteQuery,
-		connect.WithSchema(observabilityServiceExecuteQueryMethodDescriptor),
+	observabilityServiceExecuteRangeQueryHandler := connect.NewUnaryHandler(
+		ObservabilityServiceExecuteRangeQueryProcedure,
+		svc.ExecuteRangeQuery,
+		connect.WithSchema(observabilityServiceExecuteRangeQueryMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	observabilityServiceExecuteInstantQueryHandler := connect.NewUnaryHandler(
+		ObservabilityServiceExecuteInstantQueryProcedure,
+		svc.ExecuteInstantQuery,
+		connect.WithSchema(observabilityServiceExecuteInstantQueryMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/redpanda.api.dataplane.v1alpha3.ObservabilityService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ObservabilityServiceListQueriesProcedure:
 			observabilityServiceListQueriesHandler.ServeHTTP(w, r)
-		case ObservabilityServiceExecuteQueryProcedure:
-			observabilityServiceExecuteQueryHandler.ServeHTTP(w, r)
+		case ObservabilityServiceExecuteRangeQueryProcedure:
+			observabilityServiceExecuteRangeQueryHandler.ServeHTTP(w, r)
+		case ObservabilityServiceExecuteInstantQueryProcedure:
+			observabilityServiceExecuteInstantQueryHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -147,6 +176,10 @@ func (UnimplementedObservabilityServiceHandler) ListQueries(context.Context, *co
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.ObservabilityService.ListQueries is not implemented"))
 }
 
-func (UnimplementedObservabilityServiceHandler) ExecuteQuery(context.Context, *connect.Request[v1alpha3.ExecuteQueryRequest]) (*connect.Response[v1alpha3.ExecuteQueryResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.ObservabilityService.ExecuteQuery is not implemented"))
+func (UnimplementedObservabilityServiceHandler) ExecuteRangeQuery(context.Context, *connect.Request[v1alpha3.ExecuteRangeQueryRequest]) (*connect.Response[v1alpha3.ExecuteRangeQueryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.ObservabilityService.ExecuteRangeQuery is not implemented"))
+}
+
+func (UnimplementedObservabilityServiceHandler) ExecuteInstantQuery(context.Context, *connect.Request[v1alpha3.ExecuteInstantQueryRequest]) (*connect.Response[v1alpha3.ExecuteInstantQueryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.ObservabilityService.ExecuteInstantQuery is not implemented"))
 }

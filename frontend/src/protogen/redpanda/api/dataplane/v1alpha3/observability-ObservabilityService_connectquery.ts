@@ -12,8 +12,15 @@ import { ObservabilityService } from "./observability_pb";
 export const listQueries = ObservabilityService.method.listQueries;
 
 /**
- * Execute a predefined query
+ * Execute a predefined range query
  *
- * @generated from rpc redpanda.api.dataplane.v1alpha3.ObservabilityService.ExecuteQuery
+ * @generated from rpc redpanda.api.dataplane.v1alpha3.ObservabilityService.ExecuteRangeQuery
  */
-export const executeQuery = ObservabilityService.method.executeQuery;
+export const executeRangeQuery = ObservabilityService.method.executeRangeQuery;
+
+/**
+ * Execute a predefined instant query
+ *
+ * @generated from rpc redpanda.api.dataplane.v1alpha3.ObservabilityService.ExecuteInstantQuery
+ */
+export const executeInstantQuery = ObservabilityService.method.executeInstantQuery;

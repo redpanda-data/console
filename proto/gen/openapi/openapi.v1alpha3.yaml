@@ -326,9 +326,14 @@ components:
       properties:
         timestamp:
           format: date-time
+          title: The timestamp when this datapoint was recorded
           type: string
         value:
           format: double
+          nullable: true
+          title: |-
+            The value recorded for the given timestamp. The value may be absent when not available in the
+            metrics system or when it is NaN
           type: number
       type: object
     DeleteAIAgentResponse:
@@ -368,12 +373,38 @@ components:
           format: uint64
           type: string
       type: object
-    ExecuteQueryParams:
-      description: Parameters for executing a query.
+    ExecuteInstantQueryParams:
+      description: Parameters for executing an instant query.
+      properties:
+        filters:
+          additionalProperties:
+            type: string
+          title: Optional filter values to apply to the query, if the query supports them
+          type: object
+        time:
+          format: date-time
+          nullable: true
+          title: Time at which to evaluate the query (defaults to current time if not provided)
+          type: string
+      type: object
+    ExecuteInstantQueryResponse:
+      description: Response of an ExecuteInstantQuery operation.
+      properties:
+        metadata:
+          $ref: '#/components/schemas/QueryMetadata'
+        results:
+          items:
+            $ref: '#/components/schemas/InstantResult'
+          title: Instant query results, each with a single data point at the requested time
+          type: array
+      type: object
+    ExecuteRangeQueryParams:
+      description: Parameters for executing a range query.
       properties:
         end:
           format: date-time
-          title: Optional - defaults to current date
+          nullable: true
+          title: End time for the range query (defaults to current time if not provided)
           type: string
         filters:
           additionalProperties:
@@ -382,28 +413,28 @@ components:
           type: object
         start:
           format: date-time
-          title: Optional - if not provided, performs an instant query at end time (or current time if both are absent)
-          type: string
-        step:
-          title: Query resolution step width (optional)
+          title: Start time for the range query
           type: string
       type: object
-    ExecuteQueryResponse:
-      description: Response of an ExecuteQuery operation.
+    ExecuteRangeQueryResponse:
+      description: Response of an ExecuteRangeQuery operation.
       properties:
         metadata:
           $ref: '#/components/schemas/QueryMetadata'
-        result:
+        results:
           items:
             $ref: '#/components/schemas/TimeSeries'
+          title: Time series data with multiple data points over the time range
           type: array
       type: object
     FilterMetadata:
       description: Description of a filter that may be available in a query.
       properties:
         description:
+          title: A description of the filter
           type: string
         key:
+          title: What key to use to provide a value for this filter when executing
           type: string
       type: object
     GatewayConfig:
@@ -450,6 +481,20 @@ components:
           type: string
         base_url:
           type: string
+      type: object
+    InstantResult:
+      description: A single data point for a label combination at a specific point in time.
+      properties:
+        labels:
+          additionalProperties:
+            type: string
+          title: Labels associated to the result
+          type: object
+        name:
+          title: Name is a human friendly name for the result, computed from labels
+          type: string
+        value:
+          $ref: '#/components/schemas/DataPoint'
       type: object
     InstrumentationScope:
       description: |-
@@ -1112,6 +1157,7 @@ components:
         queries:
           items:
             $ref: '#/components/schemas/QueryMetadata'
+          title: A description for each available predefined query
           type: array
       type: object
     ListTracesResponse:
@@ -1227,20 +1273,21 @@ components:
       description: A description of a predefined query available in the system.
       properties:
         description:
-          title: What this query returns
+          title: A description of what this query returns
           type: string
         filters:
           items:
             $ref: '#/components/schemas/FilterMetadata'
           title: Available filters for this query
           type: array
-        labels:
+        name:
+          title: Name of the query that can be used in the service to execute it
+          type: string
+        tags:
           additionalProperties:
             type: string
-          title: Labels for grouping queries (e.g., category, type, component)
+          title: Tags for grouping queries (e.g., category, type, component)
           type: object
-        name:
-          type: string
         unit:
           title: Unit of measurement for the returned time series
           type: string
@@ -1604,15 +1651,15 @@ components:
         labels:
           additionalProperties:
             type: string
-          description: Labels associated to the time series.
+          title: Labels associated to the time series
           type: object
         name:
-          description: Name is a human friendly name for the series, computed from labels.
+          title: Name is a human friendly name for the series, computed from labels
           type: string
         values:
           items:
             $ref: '#/components/schemas/DataPoint'
-          title: Multiple for range queries, single item for instant queries
+          title: The sequence of data points associated with the time series
           type: array
       type: object
     Tool:
@@ -2159,6 +2206,15 @@ paths:
     get:
       description: List all available predefined queries with their metadata (name, description, unit, and available filters).
       operationId: ObservabilityService_ListQueries
+      parameters:
+        - description: |-
+            Filter queries that contain all of these key/value pairs
+
+            This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+          in: query
+          name: tags[string]
+          schema:
+            type: string
       responses:
         "200":
           content:
@@ -2175,10 +2231,10 @@ paths:
       summary: List Available Queries
       tags:
         - Observability
-  /v1alpha3/observability/queries/{query_name}:execute:
+  /v1alpha3/observability/queries/{query_name}:executeInstant:
     post:
-      description: Execute a predefined query. If start time is not provided, performs an instant query at the end time (or current time if both are absent). If start time is provided, performs a range query over the time range. Optional filters can be applied as key-value pairs.
-      operationId: ObservabilityService_ExecuteQuery
+      description: Execute a predefined query at a single point in time. Returns a single data point for each time series. If time is not specified, defaults to current time. Optional filters can be applied as key-value pairs.
+      operationId: ObservabilityService_ExecuteInstantQuery
       parameters:
         - description: Predefined query to request data from
           in: path
@@ -2190,8 +2246,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ExecuteQueryParams'
-        description: Query execution parameters
+              $ref: '#/components/schemas/ExecuteInstantQueryParams'
+        description: Instant query execution parameters
         required: true
         x-originalParamName: params
       responses:
@@ -2199,15 +2255,50 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExecuteQueryResponse'
-          description: Query results
+                $ref: '#/components/schemas/ExecuteInstantQueryResponse'
+          description: Instant query results
         default:
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Execute Query
+      summary: Execute Instant Query
+      tags:
+        - Observability
+  /v1alpha3/observability/queries/{query_name}:executeRange:
+    post:
+      description: Execute a predefined query over a time range. Returns multiple data points between the start and end times. Optional filters can be applied as key-value pairs.
+      operationId: ObservabilityService_ExecuteRangeQuery
+      parameters:
+        - description: Predefined query to request data from
+          in: path
+          name: query_name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteRangeQueryParams'
+        description: Range query execution parameters
+        required: true
+        x-originalParamName: params
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteRangeQueryResponse'
+          description: Range query results
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Execute Range Query
       tags:
         - Observability
   /v1alpha3/redpanda-connect/mcp-servers:
