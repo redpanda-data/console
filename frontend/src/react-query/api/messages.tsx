@@ -59,6 +59,10 @@ export type ListMessagesStreamOptions = {
   ignoreMaxSizeLimit?: boolean;
   /** Whether the stream should start automatically */
   enabled?: boolean;
+  /** Number of retry attempts on error (default: 0 = no retry) */
+  retryCount?: number;
+  /** Delay in ms between retry attempts (default: 1000) */
+  retryDelay?: number;
 };
 
 export type ListMessagesStreamState = {
@@ -76,6 +80,8 @@ export type ListMessagesStreamState = {
   isStreaming: boolean;
   /** Whether the stream has completed (either successfully or with error) */
   isComplete: boolean;
+  /** Current retry attempt (0 = initial attempt) */
+  retryAttempt: number;
 };
 
 export type ListMessagesStreamResult = ListMessagesStreamState & {
@@ -95,6 +101,33 @@ const createInitialState = (): ListMessagesStreamState => ({
   error: null,
   isStreaming: false,
   isComplete: false,
+  retryAttempt: 0,
+});
+
+/**
+ * Create a stable key from stream options for change detection.
+ * Only includes options that should trigger a restart when changed.
+ */
+const createOptionsKey = (options: ListMessagesStreamOptions): string =>
+  JSON.stringify({
+    topic: options.topic,
+    startOffset: options.startOffset.toString(),
+    startTimestamp: options.startTimestamp?.toString(),
+    partitionId: options.partitionId,
+    maxResults: options.maxResults,
+    filterInterpreterCode: options.filterInterpreterCode,
+    keyDeserializer: options.keyDeserializer,
+    valueDeserializer: options.valueDeserializer,
+  });
+
+/** Create an error state object */
+const createErrorState = (message: string): Partial<ListMessagesStreamState> => ({
+  error: {
+    message,
+    $typeName: 'redpanda.api.console.v1alpha1.ListMessagesResponse.ErrorMessage',
+  } as ListMessagesResponse_ErrorMessage,
+  isStreaming: false,
+  isComplete: true,
 });
 
 /**
@@ -112,7 +145,8 @@ const createInitialState = (): ListMessagesStreamState => ({
 export const useListMessagesStream = (options: ListMessagesStreamOptions): ListMessagesStreamResult => {
   const [state, setState] = useState<ListMessagesStreamState>(createInitialState);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const isStartedRef = useRef(false);
+  const prevOptionsKeyRef = useRef<string | null>(null);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
     topic,
@@ -127,47 +161,108 @@ export const useListMessagesStream = (options: ListMessagesStreamOptions): ListM
     valueDeserializer,
     ignoreMaxSizeLimit = false,
     enabled = true,
+    retryCount = 0,
+    retryDelay = 1000,
   } = options;
 
+  // Create stable options key for change detection
+  const optionsKey = createOptionsKey(options);
+
   const cancel = useCallback(() => {
+    // Clear any pending retry
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+    // Abort current stream
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
   }, []);
 
-  const start = useCallback(async () => {
-    const consoleClient = config.consoleClient;
-    if (!consoleClient) {
-      setState((prev) => ({
-        ...prev,
-        error: {
-          message: 'Console client not available',
-          $typeName: 'redpanda.api.console.v1alpha1.ListMessagesResponse.ErrorMessage',
-        } as ListMessagesResponse_ErrorMessage,
-        isComplete: true,
-        isStreaming: false,
-      }));
-      return;
-    }
+  const handleStreamError = useCallback(
+    (err: unknown, attempt: number, scheduleRetry: (nextAttempt: number) => void) => {
+      // Handle abort error silently
+      if (err instanceof Error && err.name === 'AbortError') {
+        setState((prev) => ({ ...prev, isStreaming: false, isComplete: true }));
+        return;
+      }
 
-    // Cancel any existing stream
-    cancel();
+      // Check if we should retry
+      if (attempt < retryCount) {
+        setState((prev) => ({
+          ...prev,
+          phase: `Retrying (${attempt + 1}/${retryCount})...`,
+          retryAttempt: attempt + 1,
+        }));
+        scheduleRetry(attempt + 1);
+        return;
+      }
 
-    // Reset state
-    setState({
-      ...createInitialState(),
-      isStreaming: true,
-    });
+      // No more retries, set error state
+      const message = err instanceof Error ? err.message : 'Unknown error occurred';
+      setState((prev) => ({ ...prev, ...createErrorState(message) }));
+    },
+    [retryCount]
+  );
 
-    // Create abort controller for this stream
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
+  const startWithRetry = useCallback(
+    async (attempt = 0) => {
+      const consoleClient = config.consoleClient;
+      if (!consoleClient) {
+        setState((prev) => ({ ...prev, ...createErrorState('Console client not available') }));
+        return;
+      }
 
-    const request = create(ListMessagesRequestSchema, {
+      // Cancel any existing stream
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+
+      // Reset state with retry attempt info
+      setState({ ...createInitialState(), isStreaming: true, retryAttempt: attempt });
+
+      // Create abort controller for this stream
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
+
+      const request = create(ListMessagesRequestSchema, {
+        topic,
+        startOffset,
+        startTimestamp: startTimestamp ?? BigInt(0),
+        partitionId,
+        maxResults,
+        filterInterpreterCode,
+        troubleshoot,
+        includeOriginalRawPayload,
+        keyDeserializer,
+        valueDeserializer,
+        ignoreMaxSizeLimit,
+      });
+
+      try {
+        const stream = consoleClient.listMessages(request, { signal: abortController.signal });
+
+        for await (const response of stream) {
+          if (abortController.signal.aborted) {
+            break;
+          }
+          processResponse(response, setState);
+        }
+
+        setState((prev) => ({ ...prev, isStreaming: false, isComplete: true }));
+      } catch (err) {
+        handleStreamError(err, attempt, (nextAttempt) => {
+          retryTimeoutRef.current = setTimeout(() => startWithRetry(nextAttempt), retryDelay);
+        });
+      }
+    },
+    [
       topic,
       startOffset,
-      startTimestamp: startTimestamp ?? BigInt(0),
+      startTimestamp,
       partitionId,
       maxResults,
       filterInterpreterCode,
@@ -176,65 +271,15 @@ export const useListMessagesStream = (options: ListMessagesStreamOptions): ListM
       keyDeserializer,
       valueDeserializer,
       ignoreMaxSizeLimit,
-    });
+      retryDelay,
+      handleStreamError,
+    ]
+  );
 
-    try {
-      const stream = consoleClient.listMessages(request, {
-        signal: abortController.signal,
-      });
-
-      for await (const response of stream) {
-        // Check if cancelled
-        if (abortController.signal.aborted) {
-          break;
-        }
-
-        processResponse(response, setState);
-      }
-
-      // Stream completed naturally
-
-      setState((prev) => ({
-        ...prev,
-        isStreaming: false,
-        isComplete: true,
-      }));
-    } catch (err) {
-      // Handle abort error silently
-      if (err instanceof Error && err.name === 'AbortError') {
-        setState((prev) => ({
-          ...prev,
-          isStreaming: false,
-          isComplete: true,
-        }));
-        return;
-      }
-
-      // Handle other errors
-      setState((prev) => ({
-        ...prev,
-        error: {
-          message: err instanceof Error ? err.message : 'Unknown error occurred',
-          $typeName: 'redpanda.api.console.v1alpha1.ListMessagesResponse.ErrorMessage',
-        } as ListMessagesResponse_ErrorMessage,
-        isStreaming: false,
-        isComplete: true,
-      }));
-    }
-  }, [
-    topic,
-    startOffset,
-    startTimestamp,
-    partitionId,
-    maxResults,
-    filterInterpreterCode,
-    troubleshoot,
-    includeOriginalRawPayload,
-    keyDeserializer,
-    valueDeserializer,
-    ignoreMaxSizeLimit,
-    cancel,
-  ]);
+  const start = useCallback(() => {
+    cancel();
+    startWithRetry(0);
+  }, [cancel, startWithRetry]);
 
   const reset = useCallback(() => {
     // Just call start() - it already handles canceling the previous stream
@@ -242,13 +287,23 @@ export const useListMessagesStream = (options: ListMessagesStreamOptions): ListM
     start();
   }, [start]);
 
-  // Auto-start when enabled
+  // Auto-start when enabled or when options change
   useEffect(() => {
-    if (enabled && !isStartedRef.current) {
-      isStartedRef.current = true;
+    if (!enabled) {
+      // If disabled, cancel any running stream
+      cancel();
+      prevOptionsKeyRef.current = null;
+      return;
+    }
+
+    // Check if options changed
+    const optionsChanged = prevOptionsKeyRef.current !== optionsKey;
+
+    if (optionsChanged) {
+      prevOptionsKeyRef.current = optionsKey;
       start();
     }
-  }, [enabled, start]);
+  }, [enabled, optionsKey, start, cancel]);
 
   // Cleanup on unmount
   useEffect(() => cancel, [cancel]);

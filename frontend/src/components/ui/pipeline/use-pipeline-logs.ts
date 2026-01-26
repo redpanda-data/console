@@ -23,14 +23,8 @@ import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
 import { sanitizeString } from 'utils/filter-helper';
 import { encodeBase64 } from 'utils/utils';
 
-import {
-  LOG_LEVELS,
-  LOG_PATH_INPUT,
-  LOG_PATH_OUTPUT,
-  type LogLevel,
-  type ParsedLogContent,
-  type ParsedLogEntry,
-} from '../logs';
+import { LOG_PATH_INPUT, LOG_PATH_OUTPUT } from '../logs/constants';
+import { LOG_LEVELS, type LogLevel, type ParsedLogContent, type ParsedLogEntry } from '../logs/types';
 
 export type PipelineLogScope = 'input' | 'output' | 'root';
 
@@ -181,6 +175,10 @@ export const usePipelineLogs = (options: UsePipelineLogsOptions): UsePipelineLog
     levels,
   } = options;
 
+  // Create stable key from levels array to avoid unnecessary filter recreation
+  // when caller passes new array reference with same values
+  const levelsKey = useMemo(() => (levels ? [...levels].sort().join(',') : ''), [levels]);
+
   // Calculate start timestamp based on time window
   const startTimestamp = useMemo(() => {
     const now = Date.now();
@@ -190,17 +188,19 @@ export const usePipelineLogs = (options: UsePipelineLogsOptions): UsePipelineLog
     return timestamp;
   }, [timeWindowHours]);
 
-  // Create filter code
+  // Create filter code - use levelsKey for stable dependency
   const filterInterpreterCode = useMemo(() => {
     if (!pipelineId) {
       return '';
     }
-    const code = createPipelineLogFilter(pipelineId, levels);
+    // Parse levels back from key for filter creation
+    const parsedLevels = levelsKey ? (levelsKey.split(',') as LogLevel[]) : undefined;
+    const code = createPipelineLogFilter(pipelineId, parsedLevels);
     const sanitized = sanitizeString(code);
     const encoded = encodeBase64(sanitized);
 
     return encoded;
-  }, [pipelineId, levels]);
+  }, [pipelineId, levelsKey]);
 
   const streamResult = useListMessagesStream({
     topic: REDPANDA_CONNECT_LOGS_TOPIC,

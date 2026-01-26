@@ -265,12 +265,12 @@ const PipelineEditor = observer((p: { pipeline: Pipeline }) => {
 });
 
 /**
- * @deprecated Use `LogExplorer` from `components/ui/logs` with `usePipelineLogs` hook instead.
+ * @deprecated Use `LogExplorer` from `components/ui/logs/log-explorer` with `usePipelineLogs` hook instead.
  * This MobX-based log viewer will be removed in a future version.
  *
  * @example
  * ```tsx
- * import { LogExplorer } from 'components/ui/logs';
+ * import { LogExplorer } from 'components/ui/logs/log-explorer';
  * import { usePipelineLogs } from 'components/ui/pipeline/use-pipeline-logs';
  *
  * const { logs, isStreaming, error, reset } = usePipelineLogs({ pipelineId });

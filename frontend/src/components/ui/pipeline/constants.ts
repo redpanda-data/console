@@ -11,9 +11,6 @@
 
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
-// Re-export log-related constants from ui/logs for backward compatibility
-export { LOG_LEVELS, LOG_PATH_INPUT, LOG_PATH_OUTPUT, type LogLevel } from '../logs';
-
 /**
  * Issue levels that represent warning or error states.
  * Used for filtering pipelines by issue severity.

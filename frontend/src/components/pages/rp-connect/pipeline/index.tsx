@@ -18,11 +18,10 @@ import { Card } from 'components/redpanda-ui/components/card';
 import { Form } from 'components/redpanda-ui/components/form';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Heading } from 'components/redpanda-ui/components/typography';
-import { cn } from 'components/redpanda-ui/lib/utils';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
-import { LogExplorer } from 'components/ui/logs';
+import { LogExplorer } from 'components/ui/logs/log-explorer';
+import { LogExplorerSkeleton } from 'components/ui/logs/log-explorer-skeleton';
 import { usePipelineLogs } from 'components/ui/pipeline/use-pipeline-logs';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { useDebounce } from 'hooks/use-debounce';
@@ -59,7 +58,8 @@ import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { z } from 'zod';
 
-import { Details } from './details';
+import { PipelineConfig } from './config';
+import { PipelineDetailsSidebar } from './details-sidebar';
 import { Toolbar } from './toolbar';
 import { extractLintHintsFromError } from '../errors';
 import { CreatePipelineSidebar } from '../onboarding/create-pipeline-sidebar';
@@ -125,7 +125,6 @@ const PipelineLogsExplorer = memo(({ pipelineId }: PipelineLogsExplorerProps) =>
       logs={logs}
       maxHeight="500px"
       onRefresh={reset}
-      showId={false}
     />
   );
 });
@@ -147,36 +146,12 @@ const PipelinePageSkeleton = memo(({ mode }: { mode: PipelineMode }) => {
         </div>
       )}
 
-      {/* Details section */}
-      <div className="space-y-4 rounded-lg border p-4">
-        <SkeletonGroup>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-9 w-full" />
-          </div>
-        </SkeletonGroup>
-      </div>
-
       {/* YAML Editor section */}
-      <div className="flex-1 rounded-lg border">
-        <div className="border-b p-3">
-          <Skeleton className="h-5 w-48" />
-        </div>
-        <div className="p-4">
-          <SkeletonGroup spacing="sm">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-[90%]" />
-            <Skeleton className="h-4 w-[95%]" />
-            <Skeleton className="h-4 w-[85%]" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-[92%]" />
-          </SkeletonGroup>
-        </div>
-      </div>
+      <LogExplorerSkeleton />
 
       <div className="flex items-center justify-between gap-2 border-t pt-4">
         <Skeleton className="h-9 w-20" />
-        {(mode === 'create' || mode === 'edit') && <Skeleton className="h-9 w-32" />}
+        <Skeleton className="h-9 w-32" />
       </div>
     </div>
   );
@@ -185,22 +160,19 @@ const PipelinePageSkeleton = memo(({ mode }: { mode: PipelineMode }) => {
     <div className="flex w-full gap-4">
       {mode === 'create' ? content : <Card size="full">{content}</Card>}
 
-      {/* Sidebar for create/edit modes */}
-      {(mode === 'create' || mode === 'edit') && (
-        <div className="w-80 space-y-4 rounded-lg border p-4">
-          <Skeleton className="h-6 w-48" />
-          <SkeletonGroup>
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-[90%]" />
-          </SkeletonGroup>
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-          </div>
+      <div className="w-80 space-y-4 rounded-lg border p-4">
+        <Skeleton className="h-6 w-48" />
+        <SkeletonGroup>
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-[90%]" />
+        </SkeletonGroup>
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
         </div>
-      )}
+      </div>
     </div>
   );
 });
@@ -521,14 +493,14 @@ export default function PipelinePage() {
 
   const isSaving = isCreatePending || isUpdatePending;
 
-  if (isPipelineLoading) {
+  if (isPipelineLoading || (!pipeline && mode === 'view') || (!pipeline && mode === 'edit')) {
     return <PipelinePageSkeleton mode={mode} />;
   }
 
   const content = (
     <>
       <Form {...form}>
-        <Details pipeline={pipeline} readonly={mode === 'view'} />
+        <PipelineConfig />
       </Form>
 
       <YamlEditorCard
@@ -570,18 +542,7 @@ export default function PipelinePage() {
     if (mode === 'view' && pipeline) {
       return (
         <Card size="full">
-          <Tabs defaultValue="configuration">
-            <TabsList>
-              <TabsTrigger value="configuration">Configuration</TabsTrigger>
-              <TabsTrigger value="logs">Logs</TabsTrigger>
-            </TabsList>
-            <TabsContents>
-              <TabsContent value="configuration">{content}</TabsContent>
-              <TabsContent value="logs">
-                <PipelineLogsExplorer pipelineId={pipeline.id} />
-              </TabsContent>
-            </TabsContents>
-          </Tabs>
+          <PipelineLogsExplorer pipelineId={pipeline.id} />
         </Card>
       );
     }
@@ -590,21 +551,18 @@ export default function PipelinePage() {
   };
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       {mode === 'edit' && (
         <div className="mt-12 mb-4">
           <Heading level={1}>Edit pipeline</Heading>
         </div>
       )}
-      <div className={cn((mode === 'create' || mode === 'edit') && 'grid grid-cols-[minmax(auto,950px)_260px] gap-4')}>
-        <div className="flex flex-1 flex-col gap-4">
-          {mode === 'view' && pipelineId && (
-            <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />
-          )}
-
-          {renderContent()}
-        </div>
-        {(mode === 'create' || mode === 'edit') && (
+      {mode === 'view' && pipelineId && (
+        <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />
+      )}
+      <div className="relative grid grid-cols-[minmax(auto,950px)_260px] gap-4">
+        <div className="flex flex-1 flex-col gap-4">{renderContent()}</div>
+        {mode === 'create' || mode === 'edit' ? (
           <CreatePipelineSidebar
             componentList={componentListResponse?.components}
             editorContent={yamlContent}
@@ -612,7 +570,8 @@ export default function PipelinePage() {
             isComponentListLoading={isComponentListLoading}
             setYamlContent={handleSetYamlContent}
           />
-        )}
+        ) : null}
+        {mode === 'view' && pipeline ? <PipelineDetailsSidebar pipeline={pipeline} /> : null}
       </div>
     </div>
   );

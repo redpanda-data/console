@@ -9,9 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// Re-export LOG_LEVELS and LogLevel from types for convenience
-export { DEFAULT_LEVEL_OPTIONS, LOG_LEVELS, type LogLevel } from './types';
-
 /**
  * Common log path prefixes.
  * These are examples - consumers can define their own paths.

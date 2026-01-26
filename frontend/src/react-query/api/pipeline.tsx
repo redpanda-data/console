@@ -43,7 +43,6 @@ import {
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const REDPANDA_CONNECT_LOGS_TOPIC = '__redpanda.connect.logs';
-export const MAX_REDPANDA_CONNECT_LOGS_RESULT_COUNT = 1000;
 export const REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS = 5;
 
 export const useGetPipelineQuery = (

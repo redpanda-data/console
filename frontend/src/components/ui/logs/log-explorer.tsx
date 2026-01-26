@@ -8,29 +8,24 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: necessary complexity */
 
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Checkbox } from 'components/redpanda-ui/components/checkbox';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from 'components/redpanda-ui/components/command';
+import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
+import { FacetedFilter } from 'components/redpanda-ui/components/faceted-filter';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { ScrollArea } from 'components/redpanda-ui/components/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from 'components/redpanda-ui/components/sheet';
-import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { AlertCircle, Copy, FilterIcon, Loader2, RefreshCw, X } from 'lucide-react';
+import { AlertCircle, Loader2, RefreshCw, X } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { DEFAULT_SCOPE_OPTIONS } from './constants';
+import { LogRowsSkeleton } from './log-explorer-skeleton';
 import { LogLevelBadge } from './log-level-badge';
 import { LogPayload } from './log-payload';
 import { LogRow } from './log-row';
@@ -54,8 +49,6 @@ type LogExplorerProps<T extends ParsedLogEntry = ParsedLogEntry> = {
   error?: string | null;
   /** Callback to refresh/restart the log stream */
   onRefresh?: () => void;
-  /** Whether to show the ID column (e.g., for multi-source views) */
-  showId?: boolean;
   /** Label for the ID field */
   idLabel?: string;
   /** Maximum height of the log list (CSS value) */
@@ -85,7 +78,6 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
   isLoading = false,
   error = null,
   onRefresh,
-  showId = false,
   idLabel = 'ID',
   maxHeight = '600px',
   emptyMessage = 'No logs found',
@@ -244,7 +236,6 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
         {/* Clear filters */}
         {hasFilters ? (
           <Button className="h-8 px-2 lg:px-3" onClick={clearFilters} variant="ghost">
-            Reset
             <X className="ml-2 h-4 w-4" />
           </Button>
         ) : null}
@@ -276,13 +267,7 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
       ) : null}
 
       {/* Loading state */}
-      {isLoading && logs.length === 0 ? (
-        <div className="flex flex-col gap-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton className="h-10 w-full" key={`skeleton-${i.toString()}`} />
-          ))}
-        </div>
-      ) : null}
+      {isLoading && logs.length === 0 ? <LogRowsSkeleton rows={8} /> : null}
 
       {/* Empty state */}
       {!isLoading && logs.length === 0 && !error ? (
@@ -324,7 +309,6 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
                     isSelected={isSelected}
                     log={log}
                     onClick={() => setSelectedLog(log)}
-                    showId={showId}
                   />
                 </div>
               );
@@ -367,26 +351,24 @@ type LogDetailSheetProps = {
   idLabel?: string;
 };
 
+const formatTimestamp = (timestamp: bigint): string => {
+  const date = new Date(Number(timestamp));
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    fractionalSecondDigits: 3,
+  });
+};
+
 const LogDetailSheet = memo(({ log, idLabel = 'ID' }: LogDetailSheetProps) => {
-  const copyToClipboard = useCallback((text: string) => {
-    navigator.clipboard.writeText(text);
-  }, []);
-
-  const formatTimestamp = (timestamp: bigint): string => {
-    const date = new Date(Number(timestamp));
-    return date.toLocaleString(undefined, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      fractionalSecondDigits: 3,
-    });
-  };
-
   const rawMessage = log.content?.message ?? log.content?.msg;
-  const message = typeof rawMessage === 'string' ? rawMessage : rawMessage ? JSON.stringify(rawMessage, null, 2) : '';
+  const stringifiedMessage = rawMessage ? JSON.stringify(rawMessage) : '';
+  const message = typeof rawMessage === 'string' ? rawMessage : stringifiedMessage;
+  const contentJson = log.content ? JSON.stringify(log.content, null, 2) : '';
 
   return (
     <div className="flex h-full flex-col">
@@ -400,7 +382,7 @@ const LogDetailSheet = memo(({ log, idLabel = 'ID' }: LogDetailSheetProps) => {
           <div className="flex flex-wrap items-center gap-2">
             <LogLevelBadge level={log.level} size="md" />
             <Badge size="md" variant="neutral-outline">
-              {log.path || 'root'}
+              {log.path ?? 'root'}
             </Badge>
             <span className="font-mono text-muted-foreground text-sm">{formatTimestamp(log.timestamp)}</span>
           </div>
@@ -408,40 +390,37 @@ const LogDetailSheet = memo(({ log, idLabel = 'ID' }: LogDetailSheetProps) => {
           {/* Message */}
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <span className="font-medium text-sm">Message</span>
-              <Button className="h-6 px-2" onClick={() => copyToClipboard(message)} size="sm" variant="ghost">
-                <Copy className="mr-1 h-3 w-3" />
-                Copy
-              </Button>
+              <Text variant="label">Message</Text>
+              <CopyButton content={message} size="sm" variant="ghost" />
             </div>
-            <pre className="whitespace-pre-wrap rounded-md bg-muted p-3 font-mono text-sm">
-              {message || '[No message]'}
-            </pre>
+            <DynamicCodeBlock code={message} lang="json" />
           </div>
 
           {/* Metadata */}
           <div>
-            <span className="mb-2 block font-medium text-sm">Metadata</span>
+            <Text className="mb-2 block" variant="label">
+              Metadata
+            </Text>
             <div className="grid gap-2 rounded-md bg-muted p-3 text-sm">
               <div className="grid grid-cols-[120px_1fr] gap-2">
-                <span className="text-muted-foreground">{idLabel}:</span>
+                <Text variant="muted">{idLabel}:</Text>
                 <span className="font-mono">{log.id || '-'}</span>
               </div>
               <div className="grid grid-cols-[120px_1fr] gap-2">
-                <span className="text-muted-foreground">Partition:</span>
+                <Text variant="muted">Partition:</Text>
                 <span className="font-mono">{log.partitionId}</span>
               </div>
               <div className="grid grid-cols-[120px_1fr] gap-2">
-                <span className="text-muted-foreground">Offset:</span>
+                <Text variant="muted">Offset:</Text>
                 <span className="font-mono">{log.offset.toString()}</span>
               </div>
               <div className="grid grid-cols-[120px_1fr] gap-2">
-                <span className="text-muted-foreground">Scope:</span>
+                <Text variant="muted">Scope:</Text>
                 <span className="font-mono">{log.scope}</span>
               </div>
               {log.path ? (
                 <div className="grid grid-cols-[120px_1fr] gap-2">
-                  <span className="text-muted-foreground">Path:</span>
+                  <Text variant="muted">Path:</Text>
                   <span className="font-mono">{log.path}</span>
                 </div>
               ) : null}
@@ -450,7 +429,9 @@ const LogDetailSheet = memo(({ log, idLabel = 'ID' }: LogDetailSheetProps) => {
 
           {/* Raw payload */}
           <div>
-            <span className="mb-2 block font-medium text-sm">Raw Payload</span>
+            <Text className="mb-2 block" variant="label">
+              Raw Payload
+            </Text>
             <LogPayload label="" maxLength={5000} payload={log.message.value} />
           </div>
 
@@ -458,20 +439,10 @@ const LogDetailSheet = memo(({ log, idLabel = 'ID' }: LogDetailSheetProps) => {
           {log.content ? (
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <span className="font-medium text-sm">Full Content (JSON)</span>
-                <Button
-                  className="h-6 px-2"
-                  onClick={() => copyToClipboard(JSON.stringify(log.content, null, 2))}
-                  size="sm"
-                  variant="ghost"
-                >
-                  <Copy className="mr-1 h-3 w-3" />
-                  Copy
-                </Button>
+                <Text variant="label">Full Content (JSON)</Text>
+                <CopyButton content={contentJson} size="sm" variant="ghost" />
               </div>
-              <pre className="max-h-[300px] overflow-auto whitespace-pre-wrap rounded-md bg-muted p-3 font-mono text-xs">
-                {JSON.stringify(log.content, null, 2)}
-              </pre>
+              <DynamicCodeBlock code={contentJson} lang="json" />
             </div>
           ) : null}
         </div>
@@ -481,85 +452,3 @@ const LogDetailSheet = memo(({ log, idLabel = 'ID' }: LogDetailSheetProps) => {
 });
 
 LogDetailSheet.displayName = 'LogDetailSheet';
-
-// Faceted filter component (simplified version from DataTable)
-type FacetedFilterProps<T extends string> = {
-  title: string;
-  options: { value: T; label: string }[];
-  selectedValues: T[];
-  onToggle: (value: T) => void;
-};
-
-const FacetedFilter = memo(<T extends string>({ title, options, selectedValues, onToggle }: FacetedFilterProps<T>) => (
-  <Popover>
-    <PopoverTrigger asChild>
-      <Button className="h-8 border-dashed" size="sm" variant="outline">
-        <FilterIcon className="mr-2 h-4 w-4" />
-        {title}
-        {selectedValues.length > 0 ? (
-          <>
-            <span className="mx-2 h-4 w-px bg-border" />
-            <div className="flex gap-1">
-              {selectedValues.length <= 2 ? (
-                selectedValues.map((value) => (
-                  <Badge key={value} size="sm" variant="simple">
-                    {options.find((o) => o.value === value)?.label ?? value}
-                  </Badge>
-                ))
-              ) : (
-                <Badge size="sm" variant="simple">
-                  {selectedValues.length} selected
-                </Badge>
-              )}
-            </div>
-          </>
-        ) : null}
-      </Button>
-    </PopoverTrigger>
-    <PopoverContent align="start" className="w-[200px] p-0">
-      <Command>
-        <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup>
-            {options.map((option) => {
-              const isSelected = selectedValues.includes(option.value);
-              return (
-                <CommandItem key={option.value} onSelect={() => onToggle(option.value)}>
-                  <div
-                    className={cn(
-                      'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
-                      isSelected ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
-                    )}
-                  >
-                    <Checkbox checked={isSelected} className="h-3 w-3" />
-                  </div>
-                  <span>{option.label}</span>
-                </CommandItem>
-              );
-            })}
-          </CommandGroup>
-          {selectedValues.length > 0 ? (
-            <>
-              <CommandSeparator />
-              <CommandGroup>
-                <CommandItem
-                  className="justify-center text-center"
-                  onSelect={() => {
-                    for (const v of selectedValues) {
-                      onToggle(v);
-                    }
-                  }}
-                >
-                  Clear filters
-                </CommandItem>
-              </CommandGroup>
-            </>
-          ) : null}
-        </CommandList>
-      </Command>
-    </PopoverContent>
-  </Popover>
-));
-
-// Need to use a type assertion for memo with generics
-(FacetedFilter as { displayName?: string }).displayName = 'FacetedFilter';

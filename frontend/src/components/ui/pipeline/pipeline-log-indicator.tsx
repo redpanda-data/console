@@ -72,13 +72,13 @@ export const PipelineLogIndicator = memo(({ counts, isLoading }: PipelineLogIndi
   }
 
   if (!counts) {
-    return <span className="text-muted-foreground text-sm">-</span>;
+    return null;
   }
 
   const hasIssues = counts.errors > 0 || counts.warnings > 0;
 
   if (!hasIssues) {
-    return <span className="text-muted-foreground text-sm">-</span>;
+    return null;
   }
 
   return (

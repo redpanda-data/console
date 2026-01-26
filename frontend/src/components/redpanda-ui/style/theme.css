@@ -1077,4 +1077,18 @@
       opacity: 0;
     }
   }
+
+  /* Log highlight animation for new rows */
+  @keyframes log-highlight {
+    0% {
+      background-color: var(--color-background-theme-subtle);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  .animate-log-highlight {
+    animation: log-highlight 3s ease-out forwards;
+  }
 }

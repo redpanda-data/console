@@ -14,7 +14,6 @@ import {
   Circle,
   CircleOff,
   EyeOff,
-  FilterIcon,
   HelpCircle,
   MoreHorizontal,
   Settings2,
@@ -27,15 +26,6 @@ import { z } from 'zod';
 import { Badge } from './badge';
 import { Button } from './button';
 import { Checkbox } from './checkbox';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from './command';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -51,10 +41,9 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from './dropdown-menu';
+import { FacetedFilter, type FacetedFilterOption } from './faceted-filter';
 import { Input } from './input';
-import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
-import { Separator } from './separator';
 import { cn } from '../lib/utils';
 
 // Schema
@@ -262,14 +251,16 @@ export function DataTableColumnHeader<TData, TValue>({
 interface DataTableFacetedFilterProps<TData, TValue> {
   column?: Column<TData, TValue>;
   title?: string;
-  options: {
-    label: string;
-    value: string;
-    icon?: React.ComponentType<{ className?: string }>;
-  }[];
+  options: FacetedFilterOption[];
   testId?: string;
 }
 
+/**
+ * A faceted filter component for TanStack Table columns.
+ * This is a thin wrapper around FacetedFilter that connects to the table column API.
+ *
+ * For standalone usage without TanStack Table, use FacetedFilter directly.
+ */
 export function DataTableFacetedFilter<TData, TValue>({
   column,
   title,
@@ -277,103 +268,34 @@ export function DataTableFacetedFilter<TData, TValue>({
   testId,
 }: DataTableFacetedFilterProps<TData, TValue>) {
   const facets = column?.getFacetedUniqueValues();
-  const selectedValues = new Set(column?.getFilterValue() as string[]);
+  const selectedValues = (column?.getFilterValue() as string[]) ?? [];
+
+  const handleToggle = (value: string) => {
+    const currentSet = new Set(selectedValues);
+    if (currentSet.has(value)) {
+      currentSet.delete(value);
+    } else {
+      currentSet.add(value);
+    }
+    const filterValues = Array.from(currentSet);
+    column?.setFilterValue(filterValues.length > 0 ? filterValues : undefined);
+  };
+
+  const handleClear = () => {
+    column?.setFilterValue(undefined);
+  };
 
   return (
-    <Popover testId={testId}>
-      <PopoverTrigger asChild>
-        <Button variant="secondary-outline" size="sm" icon={<FilterIcon />}>
-          {title}
-          {selectedValues?.size > 0 && (
-            <>
-              <Separator orientation="vertical" className="mx-2 h-4" />
-              <Badge variant="primary-inverted" className="lg:hidden">
-                {selectedValues.size}
-              </Badge>
-              <div className="hidden gap-1 lg:flex">
-                {selectedValues.size > 2 ? (
-                  <Badge variant="primary-inverted">
-                    {selectedValues.size} selected
-                  </Badge>
-                ) : (
-                  options
-                    .filter((option) => selectedValues.has(option.value))
-                    .map((option) => (
-                      <Badge variant="primary-inverted" key={option.value}>
-                        {option.label}
-                      </Badge>
-                    ))
-                )}
-              </div>
-            </>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="start">
-        <Command>
-          <CommandInput placeholder={title} />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => {
-                const isSelected = selectedValues.has(option.value);
-                return (
-                  <CommandItem
-                    key={option.value}
-                    className="gap-3"
-                    onSelect={() => {
-                      if (isSelected) {
-                        selectedValues.delete(option.value);
-                      } else {
-                        selectedValues.add(option.value);
-                      }
-                      const filterValues = Array.from(selectedValues);
-                      column?.setFilterValue(filterValues.length ? filterValues : undefined);
-                    }}
-                  >
-                    <Checkbox
-                      checked={isSelected}
-                      className="size-4 shrink-0"
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          selectedValues.add(option.value);
-                        } else {
-                          selectedValues.delete(option.value);
-                        }
-                        const filterValues = Array.from(selectedValues);
-                        column?.setFilterValue(filterValues.length ? filterValues : undefined);
-                      }}
-                    />
-                    <div className="flex items-center gap-2 flex-1">
-                      {option.icon && <option.icon className="text-muted-foreground size-4 shrink-0" />}
-                      <span className={cn('flex-1', title === 'Region' ? 'font-mono' : '')}>{option.label}</span>
-                      {facets?.get(option.value) && (
-                        <span className="text-muted-foreground ml-auto flex size-4 items-center justify-center font-mono text-xs shrink-0">
-                          {facets.get(option.value)}
-                        </span>
-                      )}
-                    </div>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-            {selectedValues.size > 0 && (
-              <>
-                <CommandSeparator />
-                <CommandGroup>
-                  <CommandItem
-                    onSelect={() => column?.setFilterValue(undefined)}
-                    className="justify-center text-center"
-                  >
-                    Clear filters
-                  </CommandItem>
-                </CommandGroup>
-              </>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <FacetedFilter
+      facetCounts={facets}
+      onClear={handleClear}
+      onToggle={handleToggle}
+      options={options}
+      searchable
+      selectedValues={selectedValues}
+      testId={testId}
+      title={title ?? ''}
+    />
   );
 }
 
