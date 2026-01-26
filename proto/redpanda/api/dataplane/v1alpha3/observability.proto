@@ -178,7 +178,7 @@ service ObservabilityService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
-      api: API_CONSOLE
+      api: API_PROMETHEUS
     };
   }
 
@@ -203,7 +203,7 @@ service ObservabilityService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
-      api: API_CONSOLE
+      api: API_PROMETHEUS
     };
   }
 
@@ -228,7 +228,7 @@ service ObservabilityService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
-      api: API_CONSOLE
+      api: API_PROMETHEUS
     };
   }
 }
