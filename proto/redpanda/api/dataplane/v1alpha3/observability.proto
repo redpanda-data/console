@@ -8,16 +8,16 @@ import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
 
-// Description of a filter that may be available in a query.
-message FilterMetadata {
-  // What key to use to provide a value for this filter when executing
-  string key = 1;
-  // A description of the filter
-  string description = 2;
-}
-
 // A description of a predefined query available in the system.
 message QueryMetadata {
+  // Description of a filter that may be available in a query.
+  message FilterMetadata {
+    // What key to use to provide a value for this filter when executing
+    string key = 1;
+    // A description of the filter
+    string description = 2;
+  }
+
   // Name of the query that can be used in the service to execute it
   string name = 1;
   // A description of what this query returns
@@ -32,16 +32,21 @@ message QueryMetadata {
 
 // Contains details of a ListQueries request.
 message ListQueriesRequest {
-  // Filter queries that contain all of these key/value pairs
-  map<string, string> tags = 1 [
-    (buf.validate.field).map = {
-      max_pairs: 16
-      values: {
-        string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-      }
-    },
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Queries that match all the provided tags will be returned."}
-  ];
+  // Filter criteria for listing queries.
+  message Filter {
+    // Filter queries that contain all of these key/value pairs
+    map<string, string> tags = 1 [
+      (buf.validate.field).map = {
+        max_pairs: 16
+        values: {
+          string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+        }
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Queries that match all the provided tags will be returned."}
+    ];
+  }
+  // Optional filter to apply when listing queries
+  Filter filter = 1;
 }
 
 // Response of the ListQueries operation.
