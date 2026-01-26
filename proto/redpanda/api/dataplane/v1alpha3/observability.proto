@@ -4,7 +4,6 @@ package redpanda.api.dataplane.v1alpha3;
 
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
-import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
@@ -83,19 +82,29 @@ message InstantResult {
 // Parameters for executing a range query.
 message ExecuteRangeQueryParams {
   // Start time for the range query
-  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp start = 1 [(buf.validate.field).required = true];
   // End time for the range query (defaults to current time if not provided)
-  google.protobuf.Timestamp end = 2;
+  optional google.protobuf.Timestamp end = 2;
   // Optional filter values to apply to the query, if the query supports them
-  map<string, string> filters = 3;
+  map<string, string> filters = 3 [(buf.validate.field).map = {
+    max_pairs: 16
+    values: {
+      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+    }
+  }];
 }
 
 // Input data for an ExecuteRangeQuery operation.
 message ExecuteRangeQueryRequest {
   // Predefined query to request data from
-  string query_name = 1;
+  string query_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[a-z][a-z0-9_]*$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128
+  ];
   // Range query execution parameters
-  ExecuteRangeQueryParams params = 2;
+  ExecuteRangeQueryParams params = 2 [(buf.validate.field).required = true];
 }
 
 // Response of an ExecuteRangeQuery operation.
@@ -108,17 +117,27 @@ message ExecuteRangeQueryResponse {
 // Parameters for executing an instant query.
 message ExecuteInstantQueryParams {
   // Time at which to evaluate the query (defaults to current time if not provided)
-  google.protobuf.Timestamp time = 1;
+  optional google.protobuf.Timestamp time = 1;
   // Optional filter values to apply to the query, if the query supports them
-  map<string, string> filters = 2;
+  map<string, string> filters = 2 [(buf.validate.field).map = {
+    max_pairs: 16
+    values: {
+      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+    }
+  }];
 }
 
 // Input data for an ExecuteInstantQuery operation.
 message ExecuteInstantQueryRequest {
   // Predefined query to request data from
-  string query_name = 1;
+  string query_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[a-z][a-z0-9_]*$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128
+  ];
   // Instant query execution parameters
-  ExecuteInstantQueryParams params = 2;
+  ExecuteInstantQueryParams params = 2 [(buf.validate.field).required = true];
 }
 
 // Response of an ExecuteInstantQuery operation.
