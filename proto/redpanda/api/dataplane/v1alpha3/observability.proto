@@ -10,14 +10,17 @@ import "redpanda/api/auth/v1/authorization.proto";
 
 // Description of a filter that may be available in a query.
 message FilterMetadata {
+  // What key to use to provide a value for this filter when executing
   string key = 1;
+  // A description of the filter
   string description = 2;
 }
 
 // A description of a predefined query available in the system.
 message QueryMetadata {
+  // Name of the query that can be used in the service to execute it
   string name = 1;
-  // What this query returns
+  // A description of what this query returns
   string description = 2;
   // Unit of measurement for the returned time series
   string unit = 3;
@@ -32,50 +35,86 @@ message ListQueriesRequest {}
 
 // Response of the ListQueries operation.
 message ListQueriesResponse {
+  // A description for each available predefined query.
   repeated QueryMetadata queries = 1;
 }
 
 // A single data point made of value and date when it's been measured.
 message DataPoint {
+  // The timestamp when this datapoint was recorded
   google.protobuf.Timestamp timestamp = 1;
-  double value = 2;
+  // The value recorded for the given timestamp. The value may be absent when not available in the
+  // metrics system or when it is NaN
+  optional double value = 2;
 }
 
 // A sequence of data points for a label combination.
 message TimeSeries {
-  // Name is a human friendly name for the series, computed from labels.
+  // Name is a human friendly name for the series, computed from labels
   string name = 1;
-  // Labels associated to the time series.
+  // Labels associated to the time series
   map<string, string> labels = 2;
-  // Multiple for range queries, single item for instant queries
+  // The sequence of data points associated with the time series
   repeated DataPoint values = 3;
 }
 
-// Parameters for executing a query.
-message ExecuteQueryParams {
-  // Optional - if not provided, performs an instant query at end time (or current time if both are absent)
-  google.protobuf.Timestamp start = 1;
-  // Optional - defaults to current date
-  google.protobuf.Timestamp end = 2;
-  // Query resolution step width (optional)
-  google.protobuf.Duration step = 3;
-  // Optional filter values to apply to the query, if the query supports them
-  map<string, string> filters = 4;
+// A single data point for a label combination at a specific point in time.
+message InstantResult {
+  // Name is a human friendly name for the result, computed from labels
+  string name = 1;
+  // Labels associated to the result
+  map<string, string> labels = 2;
+  // The data point at the requested time
+  DataPoint value = 3;
 }
 
-// Input data for an ExecuteQuery operation.
-message ExecuteQueryRequest {
+// Parameters for executing a range query.
+message ExecuteRangeQueryParams {
+  // Start time for the range query
+  google.protobuf.Timestamp start = 1;
+  // End time for the range query (defaults to current time if not provided)
+  google.protobuf.Timestamp end = 2;
+  // Optional filter values to apply to the query, if the query supports them
+  map<string, string> filters = 3;
+}
+
+// Input data for an ExecuteRangeQuery operation.
+message ExecuteRangeQueryRequest {
   // Predefined query to request data from
   string query_name = 1;
-  // Query execution parameters
-  ExecuteQueryParams params = 2;
+  // Range query execution parameters
+  ExecuteRangeQueryParams params = 2;
 }
 
-// Response of an ExecuteQuery operation.
-message ExecuteQueryResponse {
+// Response of an ExecuteRangeQuery operation.
+message ExecuteRangeQueryResponse {
   QueryMetadata metadata = 1;
+  // Time series data with multiple data points over the time range
+  repeated TimeSeries results = 2;
+}
 
-  repeated TimeSeries result = 2;
+// Parameters for executing an instant query.
+message ExecuteInstantQueryParams {
+  // Time at which to evaluate the query (defaults to current time if not provided)
+  google.protobuf.Timestamp time = 1;
+  // Optional filter values to apply to the query, if the query supports them
+  map<string, string> filters = 2;
+}
+
+// Input data for an ExecuteInstantQuery operation.
+message ExecuteInstantQueryRequest {
+  // Predefined query to request data from
+  string query_name = 1;
+  // Instant query execution parameters
+  ExecuteInstantQueryParams params = 2;
+}
+
+// Response of an ExecuteInstantQuery operation.
+message ExecuteInstantQueryResponse {
+  // Query metadata associated with the query.
+  QueryMetadata metadata = 1;
+  // Instant query results, each with a single data point at the requested time
+  repeated InstantResult results = 2;
 }
 
 // ObservabilityService provides query access to Redpanda metrics.
@@ -107,21 +146,46 @@ service ObservabilityService {
     };
   }
 
-  // Execute a predefined query
-  rpc ExecuteQuery(ExecuteQueryRequest) returns (ExecuteQueryResponse) {
+  // Execute a predefined range query
+  rpc ExecuteRangeQuery(ExecuteRangeQueryRequest) returns (ExecuteRangeQueryResponse) {
     option (google.api.http) = {
-      post: "/v1alpha3/observability/queries/{query_name}:execute"
+      post: "/v1alpha3/observability/queries/{query_name}:executeRange"
       body: "params"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Execute Query"
-      description: "Execute a predefined query. If start time is not provided, performs an instant query at the end time (or current time if both are absent). If start time is provided, performs a range query over the time range. Optional filters can be applied as key-value pairs."
+      summary: "Execute Range Query"
+      description: "Execute a predefined query over a time range. Returns multiple data points between the start and end times. Optional filters can be applied as key-value pairs."
       responses: {
         key: "200"
         value: {
-          description: "Query results"
+          description: "Range query results"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ExecuteQueryResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ExecuteRangeQueryResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_CONSOLE
+    };
+  }
+
+  // Execute a predefined instant query
+  rpc ExecuteInstantQuery(ExecuteInstantQueryRequest) returns (ExecuteInstantQueryResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha3/observability/queries/{query_name}:executeInstant"
+      body: "params"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Execute Instant Query"
+      description: "Execute a predefined query at a single point in time. Returns a single data point for each time series. If time is not specified, defaults to current time. Optional filters can be applied as key-value pairs."
+      responses: {
+        key: "200"
+        value: {
+          description: "Instant query results"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ExecuteInstantQueryResponse"}
           }
         }
       }
