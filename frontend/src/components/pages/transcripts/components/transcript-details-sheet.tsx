@@ -117,7 +117,7 @@ export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onC
         <div className="flex items-center gap-2">
           {!!isIncomplete && (
             <>
-              <AlertCircle className="h-4 w-4 text-amber-500" />
+              <AlertCircle className="h-4 w-4 text-warning" />
               <Text className="text-muted-foreground" variant="small">
                 Incomplete Transcript
               </Text>
@@ -187,11 +187,11 @@ export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onC
 
         {!(isLoading || selectedSpan) && isIncomplete && (
           <div className="space-y-4 p-4">
-            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
+            <div className="rounded-md border border-warning/30 bg-warning-subtle p-3">
               <div className="flex items-start gap-2">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
                 <div>
-                  <Text as="p" className="font-medium text-amber-600" variant="small">
+                  <Text as="p" className="font-medium text-warning" variant="small">
                     Waiting for root span
                   </Text>
                   <Text as="p" className="mt-1" variant="muted">

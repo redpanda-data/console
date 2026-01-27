@@ -138,7 +138,7 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="inline-flex">
-                      <Badge className="cursor-help text-xs" variant="secondary">
+                      <Badge className="cursor-help text-xs" variant="neutral-inverted">
                         {toolData.type}
                       </Badge>
                     </div>
