@@ -145,6 +145,17 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
     }
   }, [mode, isUsingGateway, availableProviders, isLoadingProviders, form, fieldNames]);
 
+  // Clear model field when provider changes to show loading state
+  useEffect(() => {
+    if (isUsingGateway && selectedProvider) {
+      const currentModel = form.getValues(fieldNames.model);
+      // When models are loading or unavailable, clear the field to show placeholder
+      if (currentModel && (isLoadingModels || filteredModels.length === 0)) {
+        form.setValue(fieldNames.model, '', { shouldValidate: false });
+      }
+    }
+  }, [isUsingGateway, selectedProvider, isLoadingModels, filteredModels.length, form, fieldNames]);
+
   // Auto-select first model when available (create mode)
   useEffect(() => {
     if (mode === 'create' && isUsingGateway && filteredModels.length > 0 && filteredModels[0] && !isLoadingModels && selectedProvider) {
