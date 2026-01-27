@@ -23,6 +23,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/testcontainers/testcontainers-go/network"
 
@@ -42,14 +43,11 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	ctx := t.Context()
 
 	// create one common network that all containers will share
-	testNetwork, err := network.New(ctx, network.WithAttachable())
+	testNetwork, err := network.New(ctx)
 	require.NoError(err)
-	t.Cleanup(func() {
-		assert.NoError(testNetwork.Remove(context.Background()))
-	})
 
 	redpandaContainer, err := redpanda.Run(ctx,
-		"redpandadata/redpanda:v23.3.18",
+		"redpandadata/redpanda:v25.2.1",
 		network.WithNetwork([]string{"redpanda"}, testNetwork),
 		redpanda.WithListener("redpanda:29092"),
 	)
@@ -58,15 +56,29 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	seedBroker, err := redpandaContainer.KafkaSeedBroker(ctx)
 	require.NoError(err)
 
+	// Log consumer for debugging container failures
+	logConsumer := &testutil.TestContainersLogger{
+		LogPrefix: "[kafka-connect] ",
+	}
+
 	// Kafka KafkaConnect container
-	connectC, err := testutil.RunRedpandaConnectorsContainer(
+	connectContainer, err := testutil.RunRedpandaConnectorsContainer(
 		ctx,
 		[]string{"redpanda:29092"},
 		network.WithNetwork([]string{"kafka-connect"}, testNetwork),
+		testcontainers.WithLogConsumers(logConsumer),
 	)
 	require.NoError(err)
 
-	connectContainer := connectC
+	// Register cleanup in correct order: containers first, then network
+	t.Cleanup(func() {
+		cleanupCtx := context.Background()
+		// Terminate containers first (LIFO: registered last, runs first)
+		_ = connectContainer.Terminate(cleanupCtx)
+		_ = redpandaContainer.Terminate(cleanupCtx)
+		// Then remove network
+		_ = testNetwork.Remove(cleanupCtx)
+	})
 
 	connectPort, err := connectContainer.MappedPort(ctx, nat.Port("8083"))
 	require.NoError(err)
@@ -103,11 +115,6 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	defer func() {
 		s.api.ConnectSvc = oldConnectSvc
 	}()
-
-	t.Cleanup(func() {
-		assert.NoError(connectContainer.Terminate(context.Background()))
-		assert.NoError(redpandaContainer.Terminate(context.Background()))
-	})
 
 	t.Run("happy path", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
