@@ -38,8 +38,7 @@ func RunRedpandaConnectorsContainer(ctx context.Context, bootstrapServers []stri
 
 	request := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			// Pin to digest for reproducibility - :latest tag can have variable behavior
-			Image:        "docker.cloudsmith.io/redpanda/connectors-unsupported/connectors@sha256:0ff21e793ef3042f2f48fb3d6549fae0ef687950a76b8017ab9d8b17c33cadb0",
+			Image:        KafkaConnectImage(),
 			ExposedPorts: []string{"8083/tcp"},
 			Env: map[string]string{
 				"CONNECT_CONFIGURATION":     testConnectConfig,
