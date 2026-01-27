@@ -154,12 +154,12 @@ const BucketTooltip: FC<BucketTooltipProps> = ({ time, successCount, errorCount,
       <div className="mb-1 font-semibold text-foreground">{time}</div>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-1.5">
-          <div className="h-2 w-2 rounded-full bg-emerald-500" />
+          <div className="h-2 w-2 rounded-full bg-success" />
           <span className="text-muted-foreground">{successCount}</span>
         </div>
         {errorCount > 0 ? (
           <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full bg-red-500" />
+            <div className="h-2 w-2 rounded-full bg-destructive" />
             <span className="text-muted-foreground">{errorCount}</span>
           </div>
         ) : null}
@@ -177,21 +177,21 @@ const BucketTooltip: FC<BucketTooltipProps> = ({ time, successCount, errorCount,
 const getBarColorClass = (isHovered: boolean, isInWindow: boolean, isSuccess: boolean): string => {
   if (isSuccess) {
     if (isHovered) {
-      return 'bg-emerald-500';
+      return 'bg-success';
     }
     if (isInWindow) {
-      return 'bg-emerald-500/80';
+      return 'bg-success/80';
     }
-    return 'bg-emerald-500/40';
+    return 'bg-success/40';
   }
   // Error bars
   if (isHovered) {
-    return 'bg-red-500';
+    return 'bg-destructive';
   }
   if (isInWindow) {
-    return 'bg-red-500/80';
+    return 'bg-destructive/80';
   }
-  return 'bg-red-500/40';
+  return 'bg-destructive/40';
 };
 
 /** Find the index range of buckets that overlap with a time window */
@@ -529,11 +529,11 @@ export const TranscriptActivityChart: FC<Props> = ({
       {/* Legend */}
       <div className="flex items-center gap-4 border-t px-3 py-2 text-muted-foreground">
         <div className="flex items-center gap-1.5">
-          <div className="h-2 w-2 rounded-sm bg-emerald-500/70" />
+          <div className="h-2 w-2 rounded-sm bg-success/70" />
           <Small>Successful</Small>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-2 w-2 rounded-sm bg-red-500/70" />
+          <div className="h-2 w-2 rounded-sm bg-destructive/70" />
           <Small>Errors</Small>
         </div>
         <div className="flex items-center gap-1.5">

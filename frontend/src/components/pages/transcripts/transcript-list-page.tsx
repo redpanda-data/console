@@ -269,7 +269,10 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     setInitialHistogram(undefined);
     setInitialTotalCount(0);
     hasInitializedRef.current = false;
-  }, []);
+    // Clear span selection - selected span may not exist in new data
+    setSelectedTraceId(null);
+    setSelectedSpanId(null);
+  }, [setSelectedTraceId, setSelectedSpanId]);
 
   // Handle time range changes from the Select component
   // This replaces the useEffect approach to prevent double-queries from nuqs hydration
@@ -346,11 +349,6 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
       appGlobal.onRefresh = previousHandler;
     };
   }, [resetQueryState]);
-
-  useEffect(() => {
-    setSelectedTraceId(null);
-    setSelectedSpanId(null);
-  }, [setSelectedTraceId, setSelectedSpanId]);
 
   // Use accumulated traces for display
   const displayTraces = accumulatedTraces;

@@ -15,7 +15,7 @@ import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-d
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { CheckCircle, ChevronDown, ChevronRight, HelpCircle, History, MessageSquare, User, Wrench } from 'lucide-react';
+import { CheckCircle, ChevronDown, ChevronRight, HelpCircle, MessageSquare, User, Wrench } from 'lucide-react';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
@@ -106,7 +106,7 @@ const HistoryMessageItem: FC<{ message: Message; index: number }> = ({ message, 
       {/* Role header */}
       <div className="flex items-center gap-1.5">
         <Icon className="h-3 w-3 text-muted-foreground" />
-        <Text className="font-medium capitalize" variant="small">
+        <Text className="font-medium capitalize" variant="muted">
           {message.role}
         </Text>
       </div>
@@ -173,7 +173,7 @@ const InputSection: FC<{ input: string; lastInputMessage?: Message }> = ({ input
       </div>
       <ContentPanel spacing>
         {!!input && (
-          <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="small">
+          <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="muted">
             {input}
           </Text>
         )}
@@ -224,7 +224,7 @@ const OutputSection: FC<{ output: string; lastOutputMessage?: Message }> = ({ ou
       </div>
       <ContentPanel spacing>
         {!!output && (
-          <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="small">
+          <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="muted">
             {output}
           </Text>
         )}
@@ -562,30 +562,37 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
             MODEL
           </Text>
           <div>
-            <Badge variant="secondary">
+            <Badge variant="neutral-inverted">
               <Text variant="small">{llmData.model}</Text>
             </Badge>
           </div>
         </div>
       )}
 
-      {/* Token Counts - Compact */}
+      {/* Token Counts */}
       {llmData.inputTokens > 0 && (
-        <ContentPanel className="flex items-center justify-between bg-muted/20">
-          <div className="space-x-3">
-            <Text variant="muted">
-              Input:{' '}
-              <span className="font-medium font-mono text-foreground">{llmData.inputTokens.toLocaleString()}</span>
-            </Text>
-            <Text variant="muted">
-              Output:{' '}
-              <span className="font-medium font-mono text-foreground">{llmData.outputTokens.toLocaleString()}</span>
-            </Text>
-          </div>
-          <Text className="font-medium" variant="muted">
-            {totalTokens.toLocaleString()} total
+        <div className="space-y-1.5">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
+            TOKEN USAGE
           </Text>
-        </ContentPanel>
+          <ContentPanel className="bg-muted/20">
+            <div className="flex items-center justify-between">
+              <div className="space-x-3">
+                <Text variant="muted">
+                  Input:{' '}
+                  <span className="font-medium font-mono text-foreground">{llmData.inputTokens.toLocaleString()}</span>
+                </Text>
+                <Text variant="muted">
+                  Output:{' '}
+                  <span className="font-medium font-mono text-foreground">{llmData.outputTokens.toLocaleString()}</span>
+                </Text>
+              </div>
+              <Text className="font-medium" variant="muted">
+                {totalTokens.toLocaleString()} total
+              </Text>
+            </div>
+          </ContentPanel>
+        </div>
       )}
 
       <InputSection input={llmData.input} lastInputMessage={llmData.lastInputMessage} />
@@ -594,19 +601,27 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
       {/* Conversation History */}
       <Collapsible onOpenChange={setIsHistoryOpen} open={isHistoryOpen}>
         <CollapsibleTrigger asChild>
-          <Button className="h-7 w-full justify-between px-2 hover:bg-muted/50" variant="ghost">
+          <Button
+            className="flex h-auto w-full items-center justify-between px-0 py-0 hover:bg-transparent"
+            variant="ghost"
+          >
             <div className="flex items-center gap-1.5">
-              <History className="h-3 w-3" />
-              <Text variant="small">Conversation History</Text>
+              {isHistoryOpen ? (
+                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-3 w-3 text-muted-foreground" />
+              )}
+              <Text as="span" variant="label">
+                CONVERSATION HISTORY
+              </Text>
               {historyMessageCount > 0 && (
-                <Badge className="h-4 bg-muted/50 px-1" variant="outline">
+                <Badge className="h-4 bg-muted/50 px-1.5" variant="outline">
                   <Text variant="small">
                     {historyMessageCount} {historyMessageCount === 1 ? 'message' : 'messages'}
                   </Text>
                 </Badge>
               )}
             </div>
-            {isHistoryOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
           </Button>
         </CollapsibleTrigger>
         {hasConversationHistory ? (
