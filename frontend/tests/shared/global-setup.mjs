@@ -240,7 +240,8 @@ topic.creation.enable=false
 
   let connect;
   try {
-    connect = await new GenericContainer('docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:latest')
+    // Pin to digest for reproducibility - :latest tag can have variable behavior
+    connect = await new GenericContainer('docker.cloudsmith.io/redpanda/connectors-unsupported/connectors@sha256:0ff21e793ef3042f2f48fb3d6549fae0ef687950a76b8017ab9d8b17c33cadb0')
       .withPlatform('linux/amd64')
       .withNetwork(network)
       .withNetworkAliases('connect')
