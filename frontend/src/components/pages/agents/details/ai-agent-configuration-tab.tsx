@@ -66,7 +66,9 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { useCallback, useMemo, useState } from 'react';
 import { useGetAIAgentQuery, useUpdateAIAgentMutation } from 'react-query/api/ai-agent';
-import { useListGatewaysQuery, useListModelProvidersQuery, useListModelsQuery } from 'react-query/api/ai-gateway';
+import { useListGatewaysQuery } from 'react-query/api/ai-gateway';
+import { useListModelProvidersQuery } from 'react-query/api/ai-gateway/model-providers';
+import { useListModelsQuery } from 'react-query/api/ai-gateway/models';
 import { type MCPServer, useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';

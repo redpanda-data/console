@@ -80,7 +80,7 @@ export const AIAgentCreatePage = () => {
   // Gateway detection and list query (using v1 API from ai-gateway module)
   // Only fetch when NOT in legacy mode
   const { data: gatewaysData, isLoading: isLoadingGateways } = useListGatewaysQuery(
-    { pageSize: 100 },
+    {},
     { enabled: !isLegacyApiKeyMode }
   );
 

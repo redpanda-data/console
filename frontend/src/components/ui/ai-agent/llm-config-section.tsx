@@ -33,10 +33,8 @@ import {
 import type { Scope } from "protogen/redpanda/api/dataplane/v1/secret_pb";
 import { useEffect, useMemo } from "react";
 import { Controller, type UseFormReturn } from "react-hook-form";
-import {
-	useListModelProvidersQuery,
-	useListModelsQuery,
-} from "react-query/api/ai-gateway";
+import { useListModelProvidersQuery } from "react-query/api/ai-gateway/model-providers";
+import { useListModelsQuery } from "react-query/api/ai-gateway/models";
 
 import { MODEL_OPTIONS_BY_PROVIDER } from "../../pages/agents/ai-agent-model";
 

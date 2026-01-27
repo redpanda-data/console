@@ -48,7 +48,6 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3004,
     htmlFallback: 'index',
     cors: {
       origin: ['http://localhost:3000', 'http://localhost:9090'],
