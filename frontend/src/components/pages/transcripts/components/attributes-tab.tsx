@@ -165,7 +165,7 @@ export const AttributesTab: FC<Props> = ({ span }) => {
               <Text className="break-all font-mono" variant="muted">
                 {attr.key}
               </Text>
-              <Text className="break-all font-mono" variant="small">
+              <Text className="break-all font-mono" variant="muted">
                 {attr.value}
               </Text>
             </div>
