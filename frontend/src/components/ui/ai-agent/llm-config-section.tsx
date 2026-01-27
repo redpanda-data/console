@@ -316,7 +316,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
             }
 
             return (
-              <Select disabled={isLoadingModels || hasNoProviders || hasNoModels} onValueChange={field.onChange} value={field.value}>
+              <Select disabled={isLoadingModels || hasNoProviders || hasNoModels} onValueChange={field.onChange} value={field.value || undefined}>
                 <SelectTrigger id="model">
                   <SelectValue placeholder={
                     hasNoProviders

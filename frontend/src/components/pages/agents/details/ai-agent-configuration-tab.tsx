@@ -407,9 +407,7 @@ export const AIAgentConfigurationTab = () => {
 
   const { data: modelsData, isLoading: isLoadingModels } = useListModelsQuery(
     {
-      filter: selectedProvider
-        ? `provider = "${selectedProvider}" AND enabled = "true"`
-        : 'enabled = "true"',
+      filter: selectedProvider ? `provider = "${selectedProvider}" AND enabled = "true"` : 'enabled = "true"',
     },
     { enabled: isUsingGateway && !!selectedProvider }
   );
@@ -732,9 +730,10 @@ export const AIAgentConfigurationTab = () => {
       const tagsMap = buildTagsMap(aiAgentData.aiAgent!.tags, displayData.tags);
       // When using gateway, keep the existing API key reference; otherwise use the selected secret
       const currentProvider = aiAgentData.aiAgent!.provider;
-      const apiKeyRef = isUsingGateway && currentProvider
-        ? extractProviderInfo(currentProvider).apiKeyTemplate
-        : `\${secrets.${displayData.apiKeySecret}}`;
+      const apiKeyRef =
+        isUsingGateway && currentProvider
+          ? extractProviderInfo(currentProvider).apiKeyTemplate
+          : `\${secrets.${displayData.apiKeySecret}}`;
       const updatedProvider = createUpdatedProvider(displayData.provider.provider.case, apiKeyRef, displayData.baseUrl);
 
       const gatewayConfig =
@@ -1198,9 +1197,7 @@ export const AIAgentConfigurationTab = () => {
                         // Get models for the new provider
                         const providerModels = isUsingGateway ? [] : MODEL_OPTIONS_BY_PROVIDER[value]?.models || [];
                         const firstModel =
-                          providerModels.length > 0 && providerModels[0]
-                            ? providerModels[0].value
-                            : displayData.model;
+                          providerModels.length > 0 && providerModels[0] ? providerModels[0].value : displayData.model;
 
                         updateField({
                           provider: createUpdatedProvider(value, '', displayData.baseUrl || ''),
@@ -1211,7 +1208,7 @@ export const AIAgentConfigurationTab = () => {
                       value={displayData.provider?.provider.case}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={isLoadingProviders ? "Loading providers..." : "Select provider"}>
+                        <SelectValue placeholder={isLoadingProviders ? 'Loading providers...' : 'Select provider'}>
                           {Boolean(displayData.provider?.provider.case) && (
                             <div className="flex items-center gap-2">
                               <img
@@ -1253,7 +1250,8 @@ export const AIAgentConfigurationTab = () => {
                   {/* Model - filtered by provider */}
                   <div className="space-y-2">
                     <Label htmlFor="model">Model</Label>
-                    {displayData.provider?.provider.case === 'openaiCompatible' || (isUsingGateway && filteredModels.length === 0 && !isLoadingModels) ? (
+                    {displayData.provider?.provider.case === 'openaiCompatible' ||
+                    (isUsingGateway && filteredModels.length === 0 && !isLoadingModels) ? (
                       <Input
                         onChange={(e) => updateField({ model: e.target.value })}
                         placeholder="Enter model name (e.g., llama-3.1-70b)"
@@ -1266,7 +1264,7 @@ export const AIAgentConfigurationTab = () => {
                         value={displayData.model}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={isLoadingModels ? "Loading models..." : "Select model"}>
+                          <SelectValue placeholder={isLoadingModels ? 'Loading models...' : 'Select model'}>
                             {Boolean(displayData.model) && detectProvider(displayData.model) ? (
                               <div className="flex items-center gap-2">
                                 <img
@@ -1292,21 +1290,33 @@ export const AIAgentConfigurationTab = () => {
                                 <SelectLabel>
                                   <div className="flex items-center gap-2">
                                     <img
-                                      alt={MODEL_OPTIONS_BY_PROVIDER[displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER]?.label}
+                                      alt={
+                                        MODEL_OPTIONS_BY_PROVIDER[
+                                          displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
+                                        ]?.label
+                                      }
                                       className="h-4 w-4"
-                                      src={MODEL_OPTIONS_BY_PROVIDER[displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER]?.icon}
+                                      src={
+                                        MODEL_OPTIONS_BY_PROVIDER[
+                                          displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
+                                        ]?.icon
+                                      }
                                     />
-                                    <span>{MODEL_OPTIONS_BY_PROVIDER[displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER]?.label}</span>
+                                    <span>
+                                      {
+                                        MODEL_OPTIONS_BY_PROVIDER[
+                                          displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
+                                        ]?.label
+                                      }
+                                    </span>
                                   </div>
                                 </SelectLabel>
                               )}
-                              {filteredModels.map(
-                                (model: { value: string; name: string; description: string }) => (
-                                  <SelectItem key={model.value} value={model.value}>
-                                    {model.name}
-                                  </SelectItem>
-                                )
-                              )}
+                              {filteredModels.map((model: { value: string; name: string; description: string }) => (
+                                <SelectItem key={model.value} value={model.value}>
+                                  {model.name}
+                                </SelectItem>
+                              ))}
                             </SelectGroup>
                           ) : (
                             <div className="p-2">
