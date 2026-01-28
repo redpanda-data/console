@@ -15,15 +15,7 @@ import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-d
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
-import {
-  ChevronDown,
-  ChevronRight,
-  CornerDownRight,
-  HelpCircle,
-  MessageSquare,
-  User,
-  Wrench,
-} from 'lucide-react';
+import { ChevronDown, ChevronRight, CornerDownRight, HelpCircle, MessageSquare, User, Wrench } from 'lucide-react';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
