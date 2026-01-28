@@ -85,7 +85,7 @@ export const CollapsibleCodeSection: FC<Props> = ({ title, content, defaultExpan
       ) : null}
 
       {isExpanded ? (
-        <ContentPanel padding="md">
+        <ContentPanel padding="sm">
           <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" id={sectionId}>
             {content}
           </pre>

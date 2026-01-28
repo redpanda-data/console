@@ -34,7 +34,7 @@ const MetricCard: FC<MetricCardProps> = ({ label, value, variant = 'default' }) 
   const isError = variant === 'error';
   return (
     <ContentPanel className={cn(isError ? 'border-destructive/20 bg-destructive/10' : undefined)}>
-      <Text className="text-[10px]" variant="muted">
+      <Text className="text-xs" variant="muted">
         {label}
       </Text>
       <Text className={cn('font-mono font-semibold', isError && 'text-destructive')} variant="small">
@@ -85,7 +85,7 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
       {statistics.totalTokens > 0 && (
         <div className="space-y-2">
           <SectionHeader>Token Usage</SectionHeader>
-          <ContentPanel padding="md" spacing>
+          <ContentPanel padding="sm" spacing>
             <div className="flex items-center justify-between">
               <Text className="text-xs" variant="muted">
                 Input tokens
@@ -130,7 +130,7 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
         <div className="space-y-2">
           <SectionHeader>Service</SectionHeader>
           <ContentPanel>
-            <Text className="break-all font-mono" variant="small">
+            <Text className="break-all font-mono text-sm" variant="muted">
               {summary.rootServiceName}
             </Text>
           </ContentPanel>
@@ -142,7 +142,7 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
         <div className="space-y-2">
           <SectionHeader>Conversation ID</SectionHeader>
           <ContentPanel>
-            <Text className="break-all font-mono" variant="muted">
+            <Text className="break-all font-mono text-sm" variant="muted">
               {conversationId}
             </Text>
           </ContentPanel>
