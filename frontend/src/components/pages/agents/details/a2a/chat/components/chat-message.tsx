@@ -12,6 +12,7 @@
 import { Message, MessageBody, MessageContent, MessageMetadata } from 'components/ai-elements/message';
 
 import { ChatMessageActions } from './chat-message-actions';
+import { A2AErrorBlock } from './message-blocks/a2a-error-block';
 import { ArtifactBlock } from './message-blocks/artifact-block';
 import { TaskStatusUpdateBlock } from './message-blocks/task-status-update-block';
 import { ToolBlock } from './message-blocks/tool-block';
@@ -101,6 +102,8 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
               timestamp={block.timestamp}
             />
           );
+        case 'a2a-error':
+          return <A2AErrorBlock error={block.error} key={`${message.id}-error-${index}`} timestamp={block.timestamp} />;
         default:
           return null;
       }
