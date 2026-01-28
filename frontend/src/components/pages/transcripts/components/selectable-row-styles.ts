@@ -20,18 +20,18 @@ export const selectableRowBase =
   'grid w-full cursor-pointer items-center border-b border-border/30 text-left transition-colors';
 
 /** Hover state for unselected rows */
-export const selectableRowHover = 'hover:bg-muted/50 dark:hover:bg-muted/30';
+export const selectableRowHover = 'hover:bg-muted/20 dark:hover:bg-muted/15';
 
 /**
  * Selected state styling using selection colors from the design system
  */
 export const selectableRowSelected = [
-  'data-[selected=true]:bg-selection',
-  'data-[selected=true]:border-primary/30',
-  'data-[selected=true]:hover:bg-selection/80',
-  'dark:data-[selected=true]:bg-primary-subtle',
-  'dark:data-[selected=true]:border-primary/40',
-  'dark:data-[selected=true]:hover:bg-primary-subtle/80',
+  'data-[selected=true]:bg-selection/15',
+  'data-[selected=true]:border-primary/20',
+  'data-[selected=true]:hover:bg-selection/20',
+  'dark:data-[selected=true]:bg-selection/12',
+  'dark:data-[selected=true]:border-primary/25',
+  'dark:data-[selected=true]:hover:bg-selection/16',
 ].join(' ');
 
 /** Focus ring for keyboard navigation */

@@ -589,7 +589,7 @@ const RootTraceServiceBadge: FC<{ isIncomplete: boolean; serviceName: string | u
   if (isIncomplete) {
     return (
       <Badge
-        className="flex h-4 shrink-0 items-center border-warning/30 bg-warning-subtle px-1.5 py-0 font-normal text-warning"
+        className="flex h-4 shrink-0 items-center border-warning/25 bg-muted/50 px-1.5 py-0 font-normal text-warning/90"
         variant="outline"
       >
         <AlertCircle className="mr-1 h-3 w-3 shrink-0" />
@@ -684,12 +684,11 @@ const RootTraceRow: FC<{
       aria-label={`${isExpanded ? 'Collapse' : 'Expand'} transcript ${traceSummary.rootSpanName || 'unnamed'}, ${traceSummary.spanCount} spans${rootSpanId ? ', click to inspect root span' : ''}`}
       className={cn(
         selectableRowBase,
+        selectableRowHover,
         selectableRowSelected,
         selectableRowFocus,
         'h-9 [grid-template-columns:72px_minmax(0,1fr)_260px]',
-        'data-[incomplete=true]:bg-warning-subtle data-[incomplete=true]:hover:bg-warning/10',
-        'data-[incomplete=false]:data-[selected=false]:bg-muted/10 data-[incomplete=false]:data-[selected=false]:hover:bg-muted/50',
-        'dark:data-[incomplete=false]:data-[selected=false]:hover:bg-muted/30'
+        'data-[incomplete=true]:border-l-2 data-[incomplete=true]:border-l-warning'
       )}
       data-incomplete={isIncomplete}
       data-selected={isSelected}
@@ -1077,7 +1076,7 @@ export const TranscriptsTable: FC<Props> = ({
         <div className={selectedTraceId ? 'flex h-full min-w-0 flex-1 flex-col' : 'flex h-full w-full flex-col'}>
           <div className="flex flex-1 flex-col overflow-hidden bg-background">
             {/* Column Headers */}
-            <div className="sticky top-0 grid border-b bg-muted/50 font-medium text-muted-foreground [grid-template-columns:72px_minmax(0,1fr)_260px]">
+            <div className="sticky top-0 grid h-10 items-center border-b font-medium text-foreground [grid-template-columns:72px_minmax(0,1fr)_260px]">
               <button
                 aria-label={
                   sortOrder === 'newest-first'
