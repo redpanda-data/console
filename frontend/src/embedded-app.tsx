@@ -110,22 +110,8 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
 
   setup(p);
 
-  // Create router with dynamic basePath
-  const router = useMemo(
-    () =>
-      createRouter({
-        routeTree,
-        context: {
-          basePath,
-          queryClient,
-        },
-        basepath: basePath,
-        defaultNotFoundComponent: NotFoundPage,
-      }),
-    [basePath]
-  );
-
   // This transport handles the grpc requests for the embedded app.
+  // Created before router so loaders can use it via context.
   const dataplaneTransport = useMemo(
     () =>
       createConnectTransport({
@@ -136,6 +122,22 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
         },
       }),
     [p.urlOverride?.grpc]
+  );
+
+  // Create router with dynamic basePath
+  const router = useMemo(
+    () =>
+      createRouter({
+        routeTree,
+        context: {
+          basePath,
+          queryClient,
+          dataplaneTransport,
+        },
+        basepath: basePath,
+        defaultNotFoundComponent: NotFoundPage,
+      }),
+    [basePath, dataplaneTransport]
   );
 
   if (!p.isConsoleReadyToMount) {

@@ -16,6 +16,7 @@ import { GetTraceResponseSchema, ListTracesResponseSchema } from 'protogen/redpa
 import { getTrace, listTraces } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing-TracingService_connectquery';
 import { screen, waitFor } from 'test-utils';
 
+import { TRANSCRIPTS_PAGE_SIZE } from './transcript-list-page';
 import {
   createMockTranscript,
   createMockTranscriptSummary,
@@ -106,7 +107,7 @@ describe('TranscriptListPage', () => {
       expect(listTracesMock).toHaveBeenCalled();
       expect(listTracesMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          pageSize: 100,
+          pageSize: TRANSCRIPTS_PAGE_SIZE,
         }),
         expect.anything()
       );
