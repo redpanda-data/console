@@ -364,6 +364,18 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     parseAsInteger.withDefault(DEFAULT_SEARCH_PARAMS.startOffset)
   );
 
+  const [startTimestamp, setStartTimestamp] = useQueryStateWithCallback<number>(
+    {
+      onUpdate: (val) => {
+        setSearchParams(props.topic.topicName, { startTimestamp: val, startTimestampWasSetByUser: true });
+      },
+      getDefaultValue: () =>
+        getSearchParams(props.topic.topicName)?.startTimestamp ?? DEFAULT_SEARCH_PARAMS.startTimestamp,
+    },
+    't',
+    parseAsInteger.withDefault(DEFAULT_SEARCH_PARAMS.startTimestamp)
+  );
+
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
   // Filters with session storage (NOT in URL)
@@ -484,14 +496,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   );
 
   // Convert executeMessageSearch to useCallback
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const executeMessageSearch = useCallback(
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
     async (abortSignal?: AbortSignal): Promise<TopicMessage[]> => {
       const canUseFilters =
         (api.topicPermissions.get(props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
-
-      // Get current search params from Zustand store for filters
-      const currentSearchParams = getSearchParams(props.topic.topicName);
 
       let filterCode = '';
       if (canUseFilters) {
@@ -524,7 +533,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         topicName: props.topic.topicName,
         partitionId: partitionID,
         startOffset,
-        startTimestamp: currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp,
+        startTimestamp,
         maxResults,
         filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
         includeRawPayload: true,
@@ -568,8 +577,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       props.topic.topicName,
       partitionID,
       startOffset,
+      startTimestamp,
       maxResults,
-      getSearchParams,
       keyDeserializer,
       valueDeserializer,
       filters,
@@ -580,9 +589,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const searchFunc = useCallback(
     (source: 'auto' | 'manual') => {
       // Create search params signature (includes filters to detect changes)
-      const currentSearchParams = getSearchParams(props.topic.topicName);
       const filtersSignature = filters.map((f) => `${f.id}:${f.isActive}:${f.transpiledCode}`).join('|');
-      const searchParams = `${startOffset} ${maxResults} ${partitionID} ${currentSearchParams?.startTimestamp ?? uiState.topicSettings.searchParams.startTimestamp} ${keyDeserializer} ${valueDeserializer} ${filtersSignature}`;
+      const searchParams = `${startOffset} ${maxResults} ${partitionID} ${startTimestamp} ${keyDeserializer} ${valueDeserializer} ${filtersSignature}`;
 
       if (searchParams === currentSearchRunRef.current && source === 'auto') {
         return;
@@ -618,9 +626,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       startOffset,
       maxResults,
       partitionID,
+      startTimestamp,
       executeMessageSearch,
-      getSearchParams,
-      props.topic.topicName,
       keyDeserializer,
       valueDeserializer,
       filters,
@@ -936,7 +943,13 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                   />
                 </Tooltip>
               )}
-              {currentOffsetOrigin === PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
+              {currentOffsetOrigin === PartitionOffsetOrigin.Timestamp && (
+                <StartOffsetDateTimePicker
+                  onChange={setStartTimestamp}
+                  topicName={props.topic.topicName}
+                  value={startTimestamp}
+                />
+              )}
             </Flex>
           </Label>
 

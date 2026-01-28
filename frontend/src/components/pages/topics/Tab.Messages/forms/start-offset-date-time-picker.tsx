@@ -10,30 +10,27 @@
  */
 
 import { DateTimeInput } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 import { useEffect } from 'react';
 
-import { uiState } from '../../../../../state/ui-state';
+import { useTopicSettingsStore } from '../../../../../stores/topic-settings-store';
 
-export const StartOffsetDateTimePicker = observer(() => {
+type StartOffsetDateTimePickerProps = {
+  topicName: string;
+  value: number;
+  onChange: (value: number) => void;
+};
+
+export const StartOffsetDateTimePicker = ({ topicName, value, onChange }: StartOffsetDateTimePickerProps) => {
+  const getSearchParams = useTopicSettingsStore((s) => s.getSearchParams);
+  const searchParams = getSearchParams(topicName);
+
   // Initialize timestamp on mount if not set by user
   useEffect(() => {
-    const searchParams = uiState.topicSettings.searchParams;
-    if (!searchParams.startTimestampWasSetByUser) {
+    if (!searchParams?.startTimestampWasSetByUser && value === -1) {
       // so far, the user did not change the startTimestamp, so we set it to 'now'
-      searchParams.startTimestamp = Date.now();
+      onChange(Date.now());
     }
-  }, []);
+  }, [searchParams?.startTimestampWasSetByUser, value, onChange]);
 
-  const searchParams = uiState.topicSettings.searchParams;
-
-  return (
-    <DateTimeInput
-      onChange={(value) => {
-        searchParams.startTimestamp = value;
-        searchParams.startTimestampWasSetByUser = true;
-      }}
-      value={searchParams.startTimestamp}
-    />
-  );
-});
+  return <DateTimeInput onChange={onChange} value={value === -1 ? Date.now() : value} />;
+};
