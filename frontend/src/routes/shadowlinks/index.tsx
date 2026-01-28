@@ -9,8 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
+import { createQueryOptions } from '@connectrpc/connect-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { ShieldIcon } from 'components/icons';
+import { ListShadowLinksRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 
 import { ShadowLinkListPage } from '../../components/pages/shadowlinks/list/shadowlink-list-page';
 
@@ -18,6 +22,11 @@ export const Route = createFileRoute('/shadowlinks/')({
   staticData: {
     title: 'Shadow Links',
     icon: ShieldIcon,
+  },
+  loader: async ({ context: { queryClient, dataplaneTransport } }) => {
+    await queryClient.ensureQueryData(
+      createQueryOptions(listShadowLinks, create(ListShadowLinksRequestSchema, {}), { transport: dataplaneTransport })
+    );
   },
   component: ShadowLinkListPage,
 });

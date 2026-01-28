@@ -54,6 +54,8 @@ const TIME_RANGES = [
   { value: '24h', label: 'Last 24 hours', ms: 24 * 60 * 60 * 1000 },
 ];
 
+export const TRANSCRIPTS_PAGE_SIZE = 100;
+
 /** Props for the stats row component */
 type TranscriptsStatsRowProps = {
   isLoading: boolean;
@@ -306,7 +308,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   const { data, isLoading, error } = useListTracesQuery({
     startTime: timestamps.startTimestamp,
     endTime: timestamps.endTimestamp,
-    pageSize: 100,
+    pageSize: TRANSCRIPTS_PAGE_SIZE,
     pageToken: currentPageToken,
   });
 
