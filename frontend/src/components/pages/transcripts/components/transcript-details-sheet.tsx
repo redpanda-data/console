@@ -44,9 +44,38 @@ type Props = {
 export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useQueryState('tab', parseAsString.withDefault('overview'));
-  const { data: traceData, isLoading } = useGetTraceQuery(traceId);
+  const { data: traceData, isLoading, isError } = useGetTraceQuery(traceId);
 
   const trace = traceData?.trace;
+
+  // Auto-close and clear URL params when trace/span doesn't exist
+  // This handles stale URLs from bookmarks or shared links
+  useEffect(() => {
+    // Wait for query to complete
+    if (isLoading || !isOpen) {
+      return;
+    }
+
+    // Case 1: Trace fetch failed or trace doesn't exist
+    if (isError || (!trace && traceId)) {
+      toast.error('Transcript not found', {
+        description: 'The transcript may have expired or been deleted.',
+      });
+      onClose();
+      return;
+    }
+
+    // Case 2: Trace exists but span not found
+    if (trace && spanId) {
+      const spanExists = trace.spans?.some((s) => bytesToHex(s.spanId) === spanId);
+      if (!spanExists) {
+        toast.error('Span not found', {
+          description: 'The span may have expired or been deleted.',
+        });
+        onClose();
+      }
+    }
+  }, [isLoading, isError, trace, traceId, spanId, isOpen, onClose]);
 
   const handleCopyLink = async () => {
     if (!(traceId && spanId)) {
