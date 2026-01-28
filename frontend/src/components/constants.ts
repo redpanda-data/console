@@ -18,6 +18,7 @@ export const FEATURE_FLAGS = {
   enableMcpServiceAccount: false,
   enablePipelineServiceAccount: false,
   enableTranscriptsInConsole: false,
+  enableApiKeyConfigurationAgent: false,
   shadowlinkCloudUi: false,
   enableNewTheme: false,
 };

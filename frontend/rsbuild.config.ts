@@ -53,12 +53,31 @@ export default defineConfig({
       origin: ['http://localhost:3000', 'http://localhost:9090'],
       credentials: true,
     },
-    proxy: {
-      context: ['/api', '/redpanda.api', '/auth', '/logout'],
-      target: process.env.PROXY_TARGET || 'http://localhost:9090',
-      changeOrigin: !!process.env.PROXY_TARGET,
-      secure: process.env.PROXY_TARGET ? false : undefined,
-    },
+    proxy: [
+      // AI Gateway API - proxy to separate AI Gateway service
+      // Matches: /.redpanda/api/redpanda.api.aigateway.v1.*
+      // Proto package is: redpanda.api.aigateway.v1 (includes .api)
+      // AI Gateway now expects the full path with .api
+      ...(process.env.AI_GATEWAY_URL
+        ? [
+            {
+              context: ['/.redpanda/api/redpanda.api.aigateway.v1'],
+              target: process.env.AI_GATEWAY_URL,
+              changeOrigin: true,
+              secure: false,
+              logLevel: 'debug',
+              // No pathRewrite - AI Gateway expects full path with .api
+            },
+          ]
+        : []),
+      // All other APIs - proxy to Console backend
+      {
+        context: ['/api', '/redpanda.api', '/auth', '/logout'],
+        target: process.env.PROXY_TARGET || 'http://localhost:9090',
+        changeOrigin: !!process.env.PROXY_TARGET,
+        secure: process.env.PROXY_TARGET ? false : undefined,
+      },
+    ],
   },
   source: {
     define: {
