@@ -119,6 +119,7 @@ export type SetConfigArguments = {
   fetch?: WindowOrWorkerGlobalScope['fetch'];
   jwt?: string;
   clusterId?: string;
+  aiGatewayUrl?: string;
   urlOverride?: {
     rest?: string;
     ws?: string;
@@ -147,6 +148,7 @@ export type Breadcrumb = {
 
 type Config = {
   controlplaneUrl: string;
+  aiGatewayUrl?: string;
   dataplaneTransport?: Transport;
   restBasePath: string;
   grpcBasePath: string;
