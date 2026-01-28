@@ -66,14 +66,16 @@ type TranscriptsStatsRowProps = {
 const TranscriptsStatsRow: FC<TranscriptsStatsRowProps> = ({ isLoading, isInitialLoad, stats, onCollapseAll }) => {
   if (isLoading && isInitialLoad) {
     return (
-      <div className="flex items-center justify-between px-1 text-muted-foreground">
-        <Small className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-1">
+        <Text as="span" className="flex items-center gap-2" variant="muted">
           <Spinner size="xs" />
           Loading transcripts...
-        </Small>
+        </Text>
         <div className="flex items-center gap-3">
           <Button className="h-6 px-2" onClick={onCollapseAll} size="sm" variant="ghost">
-            <Small>Collapse all</Small>
+            <Text as="span" variant="muted">
+              Collapse all
+            </Text>
           </Button>
         </div>
       </div>
@@ -83,8 +85,8 @@ const TranscriptsStatsRow: FC<TranscriptsStatsRowProps> = ({ isLoading, isInitia
   const hasAnomalies = stats.withErrors > 0 || stats.inProgress > 0;
 
   return (
-    <div className="flex items-center justify-between px-1 text-muted-foreground">
-      <Small>
+    <div className="flex items-center justify-between px-1">
+      <Text as="span" variant="muted">
         Showing {stats.total} {pluralize(stats.total, 'transcript')}
         {hasAnomalies ? (
           <span className="text-muted-foreground/70">
@@ -94,10 +96,12 @@ const TranscriptsStatsRow: FC<TranscriptsStatsRowProps> = ({ isLoading, isInitia
             {stats.inProgress > 0 ? `, ${stats.inProgress} in-progress` : null})
           </span>
         ) : null}
-      </Small>
+      </Text>
       <div className="flex items-center gap-3">
         <Button className="h-6 px-2" onClick={onCollapseAll} size="sm" variant="ghost">
-          <Small>Collapse all</Small>
+          <Text as="span" variant="muted">
+            Collapse all
+          </Text>
         </Button>
       </div>
     </div>

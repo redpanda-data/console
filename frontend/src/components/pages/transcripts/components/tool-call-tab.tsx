@@ -130,7 +130,7 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
             TOOL
           </Text>
           <div className="flex items-center gap-2">
-            <Text className="font-medium" variant="small">
+            <Text className="font-medium" variant="muted">
               {toolData.name}
             </Text>
             {!!toolData.type && (
@@ -144,7 +144,7 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
                     </div>
                   </TooltipTrigger>
                   <TooltipContent arrow={false} className="max-w-sm border bg-popover text-popover-foreground">
-                    <p className="text-xs">{getToolTypeTooltip(toolData.type, toolData.rawType)}</p>
+                    <Text variant="muted">{getToolTypeTooltip(toolData.type, toolData.rawType)}</Text>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -156,7 +156,7 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
       {/* Tool Description */}
       {!!toolData.description && (
         <ContentPanel className="bg-muted/20">
-          <Text className="leading-relaxed" variant="muted">
+          <Text className="text-sm leading-relaxed" variant="muted">
             {toolData.description}
           </Text>
         </ContentPanel>
@@ -169,7 +169,7 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
             CALL ID
           </Text>
           <ContentPanel>
-            <Text className="break-all font-mono" variant="small">
+            <Text className="break-all font-mono text-sm" variant="muted">
               {toolData.callId}
             </Text>
           </ContentPanel>
