@@ -640,8 +640,12 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   }, [searchFunc]);
 
   // Message Table rendering variables and functions
+  // Bound pageIndex to valid range based on filtered results
+  const totalPages = Math.max(1, Math.ceil(filteredMessages.length / pageSize));
+  const boundedPageIndex = Math.min(pageIndex, totalPages - 1);
+
   const paginationParams = {
-    pageIndex,
+    pageIndex: boundedPageIndex,
     pageSize,
   };
 
