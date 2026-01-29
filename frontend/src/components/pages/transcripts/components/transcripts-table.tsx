@@ -161,6 +161,10 @@ type Props = {
    * @default false
    */
   disableFaceting?: boolean;
+  /** Optional: Trace ID to auto-expand when displayed (for linked trace mode) */
+  autoExpandTraceId?: string | null;
+  /** Optional: Pre-fetched trace data for linked mode (to avoid re-fetching) */
+  linkedTraceData?: { traceId: string; spans: Span[]; summary?: TraceSummary } | null;
 };
 
 // Helper: Calculate next parent depths for child spans
@@ -179,7 +183,7 @@ const getNextParentDepths = (parentDepths: number[], depth: number, isLastChild:
 // Helper: Calculate tree line connector flags for a span row
 const getSpanRowLineFlags = (depth: number, isLastChild: boolean, parentDepths: number[]) => {
   const drawCol0Vertical = parentDepths.includes(0) || depth === 1;
-  const col0VerticalHeight = isLastChild && depth === 1 ? '50%' : 'calc(100% + 1px)';
+  const col0VerticalHeight = isLastChild && depth === 1 ? 'calc(50% + 4px)' : 'calc(100% + 8px)';
 
   return {
     drawCol0Vertical,
@@ -205,13 +209,13 @@ const GutterColumn: FC<GutterColumnProps> = ({ colIndex, depth, isLastChild, par
       style={{ '--tree-x': '11px' } as React.CSSProperties}
     >
       {!!drawAncestorContinuation && (
-        <div className="absolute top-0 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
+        <div className="absolute -top-1 -bottom-1 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
       )}
       {!!isCurrentColumn && (
         <>
           <div
-            className="absolute top-0 w-px bg-border"
-            style={{ left: 'var(--tree-x)', height: isLastChild ? '50%' : 'calc(100% + 1px)' }}
+            className="absolute -top-1 w-px bg-border"
+            style={{ left: 'var(--tree-x)', height: isLastChild ? 'calc(50% + 4px)' : 'calc(100% + 8px)' }}
           />
           <div className="absolute top-1/2 h-px w-[13px] bg-border" style={{ left: 'var(--tree-x)' }} />
         </>
@@ -242,7 +246,7 @@ const TreeLines: FC<TreeLinesProps> = ({ depth, isLastChild, parentDepths, isExp
       >
         {!!lineFlags.drawCol0Vertical && (
           <div
-            className="absolute top-0 w-px bg-border"
+            className="absolute -top-1 w-px bg-border"
             style={{ left: 'var(--tree-x)', height: lineFlags.col0VerticalHeight }}
           />
         )}
@@ -943,8 +947,17 @@ export const TranscriptsTable: FC<Props> = ({
   setColumnFilters,
   hideToolbar = false,
   disableFaceting = false,
+  autoExpandTraceId,
+  linkedTraceData: _linkedTraceData,
 }) => {
   const [expandedTraces, setExpandedTraces] = useState<Set<string>>(new Set());
+
+  // Auto-expand trace when autoExpandTraceId changes (for linked trace mode)
+  useEffect(() => {
+    if (autoExpandTraceId && !expandedTraces.has(autoExpandTraceId)) {
+      setExpandedTraces((prev) => new Set([...prev, autoExpandTraceId]));
+    }
+  }, [autoExpandTraceId, expandedTraces]);
   const [sortOrder, setSortOrder] = useState<'newest-first' | 'oldest-first'>('newest-first');
 
   // Enhance traces with searchable field and status
