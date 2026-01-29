@@ -63,6 +63,9 @@ service TracingService {
 
 // ListTracesRequest is the request message for listing traces.
 message ListTracesRequest {
+  // Fields 1, 2 were removed (start_time, end_time moved to Filter message).
+  reserved 1, 2;
+
   // Maximum number of traces to return (pagination). Defaults to 100 if not specified or set to 0.
   int32 page_size = 3 [
     (buf.validate.field).int32 = {
