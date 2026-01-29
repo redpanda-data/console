@@ -32,14 +32,15 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Heading, Small, Text } from 'components/redpanda-ui/components/typography';
 import { ArrowLeft, Database, RefreshCw, X } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
-import type { TraceHistogram, TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
+import type { TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { ChangeEvent, FC } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useListTracesQuery } from 'react-query/api/tracing';
+import { useGetTraceHistogramQuery, useGetTraceQuery, useListTracesQuery } from 'react-query/api/tracing';
 import { appGlobal } from 'state/app-global';
 import { pluralize } from 'utils/string';
 
-import { TranscriptActivityChart } from './components/transcript-activity-chart';
+import { LinkedTraceBanner } from './components/linked-trace-banner';
+import { TranscriptActivityChart, TranscriptActivityChartSkeleton } from './components/transcript-activity-chart';
 import { type EnhancedTranscriptSummary, statusOptions, TranscriptsTable } from './components/transcripts-table';
 import { calculateVisibleWindow } from './utils/transcript-statistics';
 
@@ -247,6 +248,7 @@ type TranscriptListPageProps = {
 export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFaceting = false }) => {
   const [selectedTraceId, setSelectedTraceId] = useQueryState('traceId', parseAsString);
   const [selectedSpanId, setSelectedSpanId] = useQueryState('spanId', parseAsString);
+  const [, setSelectedTab] = useQueryState('tab', parseAsString);
   const [timeRange, setTimeRange] = useQueryState('timeRange', parseAsString.withDefault('1h'));
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -259,10 +261,11 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   // Jump navigation state
   const [jumpedTo, setJumpedTo] = useState<JumpedState>(null);
 
-  // Histogram from initial load (not affected by load more or jumps)
-  const [initialHistogram, setInitialHistogram] = useState<TraceHistogram | undefined>(undefined);
-  const [initialTotalCount, setInitialTotalCount] = useState(0);
-  const hasInitializedRef = useRef(false);
+  // Linked trace state - for showing traces from URL that aren't in current results
+  // This mode is ONLY entered when the page initially loads with a traceId in the URL
+  const [isLinkedTraceMode, setIsLinkedTraceMode] = useState(false);
+  const linkedTraceIdRef = useRef<string | null>(null);
+  const hasCompletedInitialMount = useRef(false);
 
   const selectedRange = TIME_RANGES.find((r) => r.value === timeRange) || TIME_RANGES[3];
 
@@ -272,13 +275,14 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     setAccumulatedTraces([]);
     setCurrentPageToken('');
     setJumpedTo(null);
-    setInitialHistogram(undefined);
-    setInitialTotalCount(0);
-    hasInitializedRef.current = false;
     // Clear span selection - selected span may not exist in new data
     setSelectedTraceId(null);
     setSelectedSpanId(null);
-  }, [setSelectedTraceId, setSelectedSpanId]);
+    setSelectedTab(null);
+    // Clear linked trace state
+    setIsLinkedTraceMode(false);
+    linkedTraceIdRef.current = null;
+  }, [setSelectedTraceId, setSelectedSpanId, setSelectedTab]);
 
   // Handle time range changes from the Select component
   // This replaces the useEffect approach to prevent double-queries from nuqs hydration
@@ -312,34 +316,115 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   }, [nowMs, selectedRange.ms, jumpedTo]);
 
   // Query for the main time range (or jumped range)
-  const { data, isLoading, error } = useListTracesQuery({
-    startTime: timestamps.startTimestamp,
-    endTime: timestamps.endTimestamp,
-    pageSize: TRANSCRIPTS_PAGE_SIZE,
-    pageToken: currentPageToken,
-  });
+  // In linked trace mode, skip this query - we use useGetTraceQuery instead
+  const {
+    data,
+    isLoading: isListTracesLoading,
+    error,
+  } = useListTracesQuery(
+    {
+      pageSize: TRANSCRIPTS_PAGE_SIZE,
+      pageToken: currentPageToken,
+      filter: {
+        startTime: timestamps.startTimestamp,
+        endTime: timestamps.endTimestamp,
+      },
+    },
+    { enabled: !isLinkedTraceMode }
+  );
 
-  // Store initial histogram and total count from first load
-  useEffect(() => {
-    if (data && !hasInitializedRef.current && !jumpedTo) {
-      setInitialHistogram(data.histogram);
-      setInitialTotalCount(data.totalCount);
-      hasInitializedRef.current = true;
+  // Query for full trace details (for linked mode - to get all spans and summary)
+  const { data: linkedTraceData, isLoading: isLinkedTraceLoading } = useGetTraceQuery(
+    isLinkedTraceMode ? selectedTraceId : null,
+    { enabled: isLinkedTraceMode && !!selectedTraceId }
+  );
+
+  // Combined loading state - use linked trace loading when in linked mode
+  const isLoading = isLinkedTraceMode ? isLinkedTraceLoading : isListTracesLoading;
+
+  // Derive active trace timestamp for histogram marker - works in both linked and normal mode
+  const activeTraceTimeMs = useMemo(() => {
+    if (isLinkedTraceMode && linkedTraceData?.trace?.summary?.startTime) {
+      const t = linkedTraceData.trace.summary.startTime;
+      return Number(t.seconds) * 1000 + Math.floor(Number(t.nanos) / 1_000_000);
     }
-  }, [data, jumpedTo]);
+    if (selectedTraceId) {
+      const trace = accumulatedTraces.find((t) => t.traceId === selectedTraceId);
+      if (trace?.startTime) {
+        return Number(trace.startTime.seconds) * 1000 + Math.floor(Number(trace.startTime.nanos) / 1_000_000);
+      }
+    }
+    return null;
+  }, [isLinkedTraceMode, linkedTraceData, selectedTraceId, accumulatedTraces]);
+
+  // Calculate histogram time range based on mode
+  // In linked mode: trace time ± 1 hour (but end time capped to now)
+  // In normal mode: query time range
+  const histogramTimestamps = useMemo(() => {
+    const ONE_HOUR_MS = 60 * 60 * 1000;
+    if (isLinkedTraceMode && activeTraceTimeMs) {
+      // Cap end time to current time - no point showing future time range
+      const endMs = Math.min(activeTraceTimeMs + ONE_HOUR_MS, Date.now());
+      return {
+        startTimestamp: timestampFromMs(activeTraceTimeMs - ONE_HOUR_MS),
+        endTimestamp: timestampFromMs(endMs),
+      };
+    }
+    return {
+      startTimestamp: timestamps.startTimestamp,
+      endTimestamp: timestamps.endTimestamp,
+    };
+  }, [isLinkedTraceMode, activeTraceTimeMs, timestamps.startTimestamp, timestamps.endTimestamp]);
+
+  // Separate histogram query
+  const { data: histogramData, isLoading: isHistogramLoading } = useGetTraceHistogramQuery({
+    filter: {
+      startTime: histogramTimestamps.startTimestamp,
+      endTime: histogramTimestamps.endTimestamp,
+    },
+  });
 
   // Accumulate traces when data changes
   // Note: Don't include currentPageToken in deps - it changes before data arrives,
   // which would cause the effect to re-run with stale data and duplicate traces
   // biome-ignore lint/correctness/useExhaustiveDependencies: currentPageToken is intentionally excluded - see comment above
   useEffect(() => {
-    if (!data?.traces) {
+    // In linked mode, get trace summary from GetTrace response
+    if (isLinkedTraceMode) {
+      if (linkedTraceData?.trace?.summary) {
+        setAccumulatedTraces([linkedTraceData.trace.summary]);
+      }
       return;
     }
 
+    // Normal mode: accumulate from ListTraces response
+    if (!data?.traces) {
+      return;
+    }
     setAccumulatedTraces((prev) => (currentPageToken === '' ? data.traces : [...prev, ...data.traces]));
     setIsLoadingMore(false);
-  }, [data]);
+  }, [data, isLinkedTraceMode, linkedTraceData?.trace?.summary]);
+
+  // Detect when URL has a traceId on initial page load - enter linked mode
+  // This only runs once on mount. After that, clicking traces does NOT enter linked mode.
+  useEffect(() => {
+    if (hasCompletedInitialMount.current) {
+      // After initial mount, only handle exiting linked mode when URL params are cleared
+      if (!selectedTraceId && isLinkedTraceMode) {
+        setIsLinkedTraceMode(false);
+        linkedTraceIdRef.current = null;
+      }
+      return;
+    }
+
+    // Initial mount - check if page loaded with a traceId in URL
+    hasCompletedInitialMount.current = true;
+    if (selectedTraceId) {
+      // Page loaded with traceId in URL - enter linked mode
+      setIsLinkedTraceMode(true);
+      linkedTraceIdRef.current = selectedTraceId;
+    }
+  }, [selectedTraceId, isLinkedTraceMode]);
 
   // Connect the global refresh button to this page's refresh logic
   useEffect(() => {
@@ -502,6 +587,43 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     setSelectedSpanId(spanId);
   };
 
+  const handleDismissLinkedTrace = () => {
+    setIsLinkedTraceMode(false);
+    linkedTraceIdRef.current = null;
+    setSelectedTraceId(null);
+    setSelectedSpanId(null);
+    setSelectedTab(null);
+  };
+
+  const handleViewSurrounding = () => {
+    // Exit linked mode and center time range on the linked trace's time
+    if (activeTraceTimeMs) {
+      const THIRTY_MINUTES_MS = 30 * 60 * 1000;
+      const startMs = activeTraceTimeMs - THIRTY_MINUTES_MS;
+      const endMs = activeTraceTimeMs + THIRTY_MINUTES_MS;
+
+      const startDate = new Date(startMs);
+      const endDate = new Date(endMs);
+      const label = `${startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} - ${endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+
+      // Clear linked mode but keep the trace selected
+      setIsLinkedTraceMode(false);
+      linkedTraceIdRef.current = null;
+
+      // Jump to the time range centered on the trace
+      setJumpedTo({
+        startMs,
+        endMs,
+        label,
+      });
+      setAccumulatedTraces([]);
+      setCurrentPageToken('');
+    } else {
+      // Fallback: just dismiss
+      handleDismissLinkedTrace();
+    }
+  };
+
   const [collapseAllTrigger, setCollapseAllTrigger] = useState(0);
 
   const handleCollapseAll = () => {
@@ -512,14 +634,16 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   // Calculate the actual visible window from accumulated traces
   const visibleWindow = useMemo(() => calculateVisibleWindow(accumulatedTraces), [accumulatedTraces]);
 
-  // Determine if we're viewing the latest traces (first page, no time jump)
+  // Determine if we're viewing the latest traces (first page, no time jump, not linked)
   // This affects how the timeline chart displays the loaded data range
-  const isViewingLiveHead = useMemo(() => currentPageToken === '' && jumpedTo === null, [currentPageToken, jumpedTo]);
+  const isViewingLiveHead = useMemo(
+    () => currentPageToken === '' && jumpedTo === null && !isLinkedTraceMode,
+    [currentPageToken, jumpedTo, isLinkedTraceMode]
+  );
 
-  // Use initial histogram for display (shows full query range distribution)
-  // When in jumped mode, use current data's histogram
-  const displayHistogram = jumpedTo ? data?.histogram : initialHistogram;
-  const displayTotalCount = jumpedTo ? (data?.totalCount ?? 0) : initialTotalCount;
+  // Use histogram from separate query
+  const displayHistogram = histogramData?.histogram;
+  const displayTotalCount = histogramData?.totalCount ?? 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -545,15 +669,29 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
         timeRange={timeRange}
       />
 
-      {/* Activity Chart - Always show when we have histogram data */}
-      {displayHistogram && displayHistogram.buckets.length > 0 && (
+      {/* Activity Chart - Show skeleton while loading, then chart if data exists */}
+      {isHistogramLoading && <TranscriptActivityChartSkeleton />}
+      {!isHistogramLoading && displayHistogram && displayHistogram.buckets.length > 0 && (
         <TranscriptActivityChart
+          highlightedTraceTimeMs={activeTraceTimeMs}
           histogram={displayHistogram}
           isViewingLatest={isViewingLiveHead}
           loadedCount={accumulatedTraces.length}
-          onBucketClick={jumpedTo ? undefined : handleBucketClick}
-          queryEndMs={jumpedTo ? jumpedTo.endMs : timestamps.endMs}
-          queryStartMs={jumpedTo ? jumpedTo.startMs : timestamps.startMs}
+          onBucketClick={jumpedTo || isLinkedTraceMode ? undefined : handleBucketClick}
+          queryEndMs={
+            isLinkedTraceMode && activeTraceTimeMs
+              ? Math.min(activeTraceTimeMs + 60 * 60 * 1000, Date.now())
+              : jumpedTo
+                ? jumpedTo.endMs
+                : timestamps.endMs
+          }
+          queryStartMs={
+            isLinkedTraceMode && activeTraceTimeMs
+              ? activeTraceTimeMs - 60 * 60 * 1000
+              : jumpedTo
+                ? jumpedTo.startMs
+                : timestamps.startMs
+          }
           returnedEndTime={visibleWindow.endMs > 0 ? timestampFromMs(visibleWindow.endMs) : undefined}
           returnedStartTime={visibleWindow.startMs > 0 ? timestampFromMs(visibleWindow.startMs) : undefined}
           totalCount={displayTotalCount}
@@ -572,8 +710,18 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
           />
         )}
 
+        {/* Linked Trace Banner - shown when viewing a linked trace */}
+        {isLinkedTraceMode && selectedTraceId && (
+          <LinkedTraceBanner
+            onDismiss={handleDismissLinkedTrace}
+            onViewSurrounding={handleViewSurrounding}
+            traceId={selectedTraceId}
+          />
+        )}
+
         {/* Traces Table with external toolbar */}
         <TranscriptsTable
+          autoExpandTraceId={isLinkedTraceMode ? selectedTraceId : undefined}
           collapseAllTrigger={collapseAllTrigger}
           columnFilters={columnFilters}
           disableFaceting={disableFaceting}
@@ -581,6 +729,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
           hasUnfilteredData={Boolean(displayTraces.length > 0)}
           hideToolbar
           isLoading={isLoading && currentPageToken === ''}
+          linkedTraceData={isLinkedTraceMode ? linkedTraceData?.trace : undefined}
           onSpanClick={handleSpanClick}
           selectedSpanId={selectedSpanId}
           selectedTraceId={selectedTraceId}

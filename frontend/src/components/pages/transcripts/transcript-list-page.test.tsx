@@ -12,8 +12,16 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
-import { GetTraceResponseSchema, ListTracesResponseSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
-import { getTrace, listTraces } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing-TracingService_connectquery';
+import {
+  GetTraceHistogramResponseSchema,
+  GetTraceResponseSchema,
+  ListTracesResponseSchema,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
+import {
+  getTrace,
+  getTraceHistogram,
+  listTraces,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/tracing-TracingService_connectquery';
 import { screen, waitFor } from 'test-utils';
 
 import { TRANSCRIPTS_PAGE_SIZE } from './transcript-list-page';
@@ -172,9 +180,14 @@ describe('TranscriptListPage', () => {
       const listTracesMock = vi.fn().mockReturnValue(listTracesResponse);
       const getTraceMock = vi.fn();
 
+      const getTraceHistogramMock = vi
+        .fn()
+        .mockReturnValue(create(GetTraceHistogramResponseSchema, { histogram: undefined, totalCount: 0 }));
+
       const transport = createRouterTransport(({ rpc }) => {
         rpc(listTraces, listTracesMock);
         rpc(getTrace, getTraceMock);
+        rpc(getTraceHistogram, getTraceHistogramMock);
       });
 
       renderTranscriptListPage(transport);
@@ -212,9 +225,14 @@ describe('TranscriptListPage', () => {
       const listTracesMock = vi.fn().mockReturnValue(listTracesResponse);
       const getTraceMock = vi.fn();
 
+      const getTraceHistogramMock = vi
+        .fn()
+        .mockReturnValue(create(GetTraceHistogramResponseSchema, { histogram: undefined, totalCount: 0 }));
+
       const transport = createRouterTransport(({ rpc }) => {
         rpc(listTraces, listTracesMock);
         rpc(getTrace, getTraceMock);
+        rpc(getTraceHistogram, getTraceHistogramMock);
       });
 
       renderTranscriptListPage(transport);
@@ -245,9 +263,14 @@ describe('TranscriptListPage', () => {
       const listTracesMock = vi.fn().mockReturnValue(listTracesResponse);
       const getTraceMock = vi.fn();
 
+      const getTraceHistogramMock = vi
+        .fn()
+        .mockReturnValue(create(GetTraceHistogramResponseSchema, { histogram: undefined, totalCount: 0 }));
+
       const transport = createRouterTransport(({ rpc }) => {
         rpc(listTraces, listTracesMock);
         rpc(getTrace, getTraceMock);
+        rpc(getTraceHistogram, getTraceHistogramMock);
       });
 
       renderTranscriptListPage(transport, '/transcripts?timeRange=1h');
@@ -259,8 +282,8 @@ describe('TranscriptListPage', () => {
       // Verify API was called (may be called multiple times due to component effects)
       expect(listTracesMock).toHaveBeenCalled();
       const call = listTracesMock.mock.calls[0][0];
-      const startSecs = Number(call.startTime.seconds);
-      const endSecs = Number(call.endTime.seconds);
+      const startSecs = Number(call.filter.startTime.seconds);
+      const endSecs = Number(call.filter.endTime.seconds);
       const diffMinutes = (endSecs - startSecs) / 60;
       expect(diffMinutes).toBeCloseTo(60, 0);
 
@@ -288,8 +311,8 @@ describe('TranscriptListPage', () => {
       // Verify API was called with 1 hour range
       expect(listTracesMock).toHaveBeenCalled();
       const call = listTracesMock.mock.calls[0][0];
-      const startSecs = Number(call.startTime.seconds);
-      const endSecs = Number(call.endTime.seconds);
+      const startSecs = Number(call.filter.startTime.seconds);
+      const endSecs = Number(call.filter.endTime.seconds);
       const diffMinutes = (endSecs - startSecs) / 60;
 
       // Should be approximately 60 minutes (allow small variance for test execution time)
@@ -326,9 +349,14 @@ describe('TranscriptListPage', () => {
       const listTracesMock = vi.fn().mockReturnValue(listTracesResponse);
       const getTraceMock = vi.fn().mockReturnValue(getTraceResponse);
 
+      const getTraceHistogramMock = vi
+        .fn()
+        .mockReturnValue(create(GetTraceHistogramResponseSchema, { histogram: undefined, totalCount: 0 }));
+
       const transport = createRouterTransport(({ rpc }) => {
         rpc(listTraces, listTracesMock);
         rpc(getTrace, getTraceMock);
+        rpc(getTraceHistogram, getTraceHistogramMock);
       });
 
       renderTranscriptListPage(transport);
@@ -374,9 +402,14 @@ describe('TranscriptListPage', () => {
       const listTracesMock = vi.fn().mockReturnValue(listTracesResponse);
       const getTraceMock = vi.fn();
 
+      const getTraceHistogramMock = vi
+        .fn()
+        .mockReturnValue(create(GetTraceHistogramResponseSchema, { histogram: undefined, totalCount: 0 }));
+
       const transport = createRouterTransport(({ rpc }) => {
         rpc(listTraces, listTracesMock);
         rpc(getTrace, getTraceMock);
+        rpc(getTraceHistogram, getTraceHistogramMock);
       });
 
       renderTranscriptListPage(transport);
