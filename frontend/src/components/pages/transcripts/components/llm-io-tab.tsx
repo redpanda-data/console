@@ -15,15 +15,15 @@ import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-d
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { ChevronDown, ChevronRight, CornerDownRight, HelpCircle, MessageSquare, User, Wrench } from 'lucide-react';
+import { ChevronDown, ChevronRight, HelpCircle, MessageSquare, User, Wrench } from 'lucide-react';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
 import { tryParseJson } from 'utils/json-utils';
-import { prettyBytes } from 'utils/utils';
 
 import { ContentPanel } from './content-panel';
-import { formatJsonContent, getPreview } from '../utils/transcript-formatters';
+import { ToolEventCard } from './tool-event-card';
+import { formatJsonContent } from '../utils/transcript-formatters';
 
 type Props = {
   span: Span;
@@ -69,88 +69,6 @@ type Message = {
   content: string;
   toolCalls?: ToolCall[]; // Extracted from tool_call parts
   toolResponses?: ToolResponse[]; // Extracted from tool_call_response parts
-};
-
-const SMALL_PAYLOAD_THRESHOLD = 2 * 1024; // 2KB
-const PREVIEW_LINES = 3;
-
-// Component: Unified tool event card for both calls and responses
-type ToolEventCardProps = {
-  type: 'call' | 'response';
-  toolName: string;
-  callId?: string;
-  content: string;
-};
-
-const ToolEventCard: FC<ToolEventCardProps> = ({ type, toolName, callId, content }) => {
-  const payloadSize = useMemo(() => new Blob([content]).size, [content]);
-  const shouldDefaultExpand = payloadSize < SMALL_PAYLOAD_THRESHOLD;
-  const [isExpanded, setIsExpanded] = useState(shouldDefaultExpand);
-
-  const preview = useMemo(() => getPreview(content, PREVIEW_LINES), [content]);
-  const hasPreview = content.split('\n').length > PREVIEW_LINES || payloadSize > SMALL_PAYLOAD_THRESHOLD;
-
-  const isCall = type === 'call';
-  const typeLabel = isCall ? 'Tool Call' : 'Tool Response';
-
-  return (
-    <ContentPanel className="p-0">
-      {/* Two-row header */}
-      <button
-        className="flex w-full flex-col gap-0.5 px-3 py-2 text-left transition-colors hover:bg-muted/20"
-        onClick={() => setIsExpanded(!isExpanded)}
-        type="button"
-      >
-        {/* Row 1: Chevron + Icon + Tool name */}
-        <div className="flex min-w-0 items-center gap-1.5">
-          {isExpanded ? (
-            <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-          )}
-          <Wrench className="h-3 w-3 shrink-0 text-muted-foreground" />
-          <Text className="min-w-0 truncate font-medium" variant="muted">
-            {toolName}
-          </Text>
-        </div>
-        {/* Row 2: Type + Call ID + Size */}
-        <div className="flex items-center gap-1.5 pl-[18px] text-muted-foreground text-xs">
-          <span>{typeLabel}</span>
-          {callId ? (
-            <>
-              <span>•</span>
-              <span className="flex items-center gap-0.5">
-                {!isCall && <CornerDownRight className="h-2.5 w-2.5 shrink-0" />}
-                <span className="font-mono">{callId.slice(0, 8)}</span>
-              </span>
-            </>
-          ) : null}
-          <span>•</span>
-          <span className="shrink-0 font-mono">{prettyBytes(payloadSize)}</span>
-        </div>
-      </button>
-
-      {/* Preview when collapsed */}
-      {!isExpanded && hasPreview ? (
-        <button
-          className="w-full border-t px-3 py-2 text-left transition-opacity hover:opacity-80"
-          onClick={() => setIsExpanded(true)}
-          type="button"
-        >
-          <Text as="p" className="line-clamp-3 break-all font-mono text-sm leading-relaxed" variant="muted">
-            {preview}
-          </Text>
-        </button>
-      ) : null}
-
-      {/* Expanded content */}
-      {isExpanded ? (
-        <div className="border-t px-3 py-2">
-          <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed">{content}</pre>
-        </div>
-      ) : null}
-    </ContentPanel>
-  );
 };
 
 // Component: Display tool call
