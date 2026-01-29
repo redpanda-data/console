@@ -11,7 +11,7 @@
 
 import { CloseIcon, LinkIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import type { FC } from 'react';
 
 type LinkedTraceBannerProps = {
@@ -33,12 +33,9 @@ export const LinkedTraceBanner: FC<LinkedTraceBannerProps> = ({ traceId, onViewS
       <LinkIcon className="h-4 w-4 shrink-0 text-primary" />
       <Text as="span" className="truncate" variant="small">
         Viewing linked trace{' '}
-        <code
-          className="max-w-[200px] truncate rounded bg-muted px-1 py-0.5 font-mono text-xs"
-          title={traceId}
-        >
+        <InlineCode className="max-w-[200px] truncate text-xs" title={traceId}>
           {traceId}
-        </code>
+        </InlineCode>
       </Text>
     </div>
     <div className="flex shrink-0 items-center gap-2">
@@ -46,7 +43,7 @@ export const LinkedTraceBanner: FC<LinkedTraceBannerProps> = ({ traceId, onViewS
         View Surrounding Traces
       </Button>
       <Button aria-label="Dismiss linked trace" className="h-7 w-7" onClick={onDismiss} size="icon" variant="ghost">
-        <CloseIcon className="h-3.5 w-3.5" />
+        <CloseIcon className="h-4 w-4" />
       </Button>
     </div>
   </div>
