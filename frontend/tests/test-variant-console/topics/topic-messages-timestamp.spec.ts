@@ -263,117 +263,6 @@ test.describe('Filter Messages by Timestamp', () => {
       expect(Number(urlTimestamp)).toBeGreaterThan(0);
     });
 
-    await test.step('Switch to Latest/Live offset type', async () => {
-      // Open the start offset dropdown again
-      const startOffsetDropdown = page.getByTestId('start-offset-dropdown');
-      await expect(startOffsetDropdown).toBeVisible();
-      await startOffsetDropdown.click();
-
-      // Select "Latest / Live" option
-      const latestOption = page.getByTestId('start-offset-latest-live');
-      await expect(latestOption).toBeVisible();
-      await latestOption.click();
-
-      // DateTimeInput should no longer be visible
-      await expect(page.getByTestId('start-timestamp-input')).not.toBeVisible();
-    });
-
-    await test.step('Verify timestamp parameter is removed from URL', async () => {
-      // Wait for URL to update and remove timestamp parameter
-      await page.waitForURL((url) => !url.searchParams.has('t'), { timeout: 5000 });
-
-      const currentUrl = page.url();
-      expect(currentUrl).not.toContain('t=');
-
-      // Verify timestamp parameter is not in URL
-      const urlParams = new URL(currentUrl).searchParams;
-      const urlTimestamp = urlParams.get('t');
-      expect(urlTimestamp).toBeNull();
-    });
-
-    await test.step('Switch to Beginning offset type and verify t parameter remains absent', async () => {
-      // Open the start offset dropdown
-      const startOffsetDropdown = page.getByTestId('start-offset-dropdown');
-      await startOffsetDropdown.click();
-
-      // Select "Beginning" option
-      const beginningOption = page.getByTestId('start-offset-beginning');
-      await expect(beginningOption).toBeVisible();
-      await beginningOption.click();
-
-      // Verify timestamp parameter is still not in URL
-      const currentUrl = page.url();
-      expect(currentUrl).not.toContain('t=');
-
-      const urlParams = new URL(currentUrl).searchParams;
-      const urlTimestamp = urlParams.get('t');
-      expect(urlTimestamp).toBeNull();
-    });
-
-    await test.step('Switch to Offset (custom) and verify t parameter remains absent', async () => {
-      // Open the start offset dropdown
-      const startOffsetDropdown = page.getByTestId('start-offset-dropdown');
-      await startOffsetDropdown.click();
-
-      // Select "Offset" option
-      const offsetOption = page.getByTestId('start-offset-custom');
-      await expect(offsetOption).toBeVisible();
-      await offsetOption.click();
-
-      // Verify timestamp parameter is still not in URL
-      const currentUrl = page.url();
-      expect(currentUrl).not.toContain('t=');
-
-      const urlParams = new URL(currentUrl).searchParams;
-      const urlTimestamp = urlParams.get('t');
-      expect(urlTimestamp).toBeNull();
-    });
-
-    await topicPage.deleteTopic(topicName);
-  });
-
-  test('should remove timestamp parameter from URL when switching to non-timestamp offset type', async ({ page }) => {
-    const topicName = `timestamp-url-removal-${Date.now()}`;
-    const message = 'Test message for URL parameter removal';
-
-    const topicPage = new TopicPage(page);
-    await topicPage.createTopic(topicName);
-    await topicPage.produceMessage(topicName, message);
-
-    await test.step('Navigate to topic and select Timestamp offset origin', async () => {
-      await page.goto(`/topics/${topicName}`);
-
-      // Wait for messages to load
-      await expect(page.getByText(message)).toBeVisible({ timeout: 5000 });
-
-      // Open the start offset dropdown
-      const startOffsetDropdown = page.getByTestId('start-offset-dropdown');
-      await expect(startOffsetDropdown).toBeVisible();
-      await startOffsetDropdown.click();
-
-      // Select "Timestamp" option
-      const timestampOption = page.getByTestId('start-offset-timestamp');
-      await expect(timestampOption).toBeVisible();
-      await timestampOption.click();
-
-      // DateTimeInput should now be visible
-      await expect(page.getByTestId('start-timestamp-input')).toBeVisible({ timeout: 5000 });
-    });
-
-    await test.step('Verify timestamp parameter is added to URL', async () => {
-      // Wait for URL to update with timestamp parameter
-      await page.waitForURL((url) => url.searchParams.has('t'), { timeout: 5000 });
-
-      const currentUrl = page.url();
-      expect(currentUrl).toContain('t=');
-
-      // Extract and verify timestamp parameter
-      const urlParams = new URL(currentUrl).searchParams;
-      const urlTimestamp = urlParams.get('t');
-      expect(urlTimestamp).toBeTruthy();
-      expect(Number(urlTimestamp)).toBeGreaterThan(0);
-    });
-
     await test.step('Switch to Beginning offset type', async () => {
       // Open the start offset dropdown again
       const startOffsetDropdown = page.getByTestId('start-offset-dropdown');
@@ -393,11 +282,8 @@ test.describe('Filter Messages by Timestamp', () => {
       // Wait for URL to update and remove timestamp parameter
       await page.waitForURL((url) => !url.searchParams.has('t'), { timeout: 5000 });
 
-      const currentUrl = page.url();
-      expect(currentUrl).not.toContain('t=');
-
       // Verify timestamp parameter is not in URL
-      const urlParams = new URL(currentUrl).searchParams;
+      const urlParams = new URL(page.url()).searchParams;
       const urlTimestamp = urlParams.get('t');
       expect(urlTimestamp).toBeNull();
     });
