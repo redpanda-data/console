@@ -11,6 +11,7 @@
 
 import type { Timestamp } from '@bufbuild/protobuf/wkt';
 import { durationMs, timestampDate } from '@bufbuild/protobuf/wkt';
+import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Small } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { TraceHistogram, TraceHistogramBucket } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
@@ -36,6 +37,8 @@ type Props = {
   isViewingLatest: boolean;
   /** Callback when a bucket is clicked for navigation */
   onBucketClick?: (bucketStartMs: number, bucketEndMs: number) => void;
+  /** Optional: Time of the highlighted/linked trace for showing a marker */
+  highlightedTraceTimeMs?: number | null;
 };
 
 /** Represents a time range with start and end timestamps in milliseconds */
@@ -314,6 +317,7 @@ export const TranscriptActivityChart: FC<Props> = ({
   queryEndMs,
   isViewingLatest,
   onBucketClick,
+  highlightedTraceTimeMs,
 }) => {
   const [hoveredBucket, setHoveredBucket] = useState<number | null>(null);
   const buckets = histogram?.buckets ?? [];
@@ -424,6 +428,28 @@ export const TranscriptActivityChart: FC<Props> = ({
     };
   }, [chartAxisRange, buckets, bucketDurationMs]);
 
+  // Calculate position for the highlighted trace time marker
+  const highlightedMarkerPosition = useMemo(() => {
+    if (!highlightedTraceTimeMs || buckets.length === 0) {
+      return null;
+    }
+
+    // Calculate position as percentage of the total timeline
+    const totalDuration = queryEndMs - queryStartMs;
+    if (totalDuration <= 0) {
+      return null;
+    }
+
+    const positionPercent = ((highlightedTraceTimeMs - queryStartMs) / totalDuration) * 100;
+
+    // Only show if within visible range (with a small buffer)
+    if (positionPercent < -2 || positionPercent > 102) {
+      return null;
+    }
+
+    return `${Math.max(0, Math.min(100, positionPercent))}%`;
+  }, [highlightedTraceTimeMs, queryStartMs, queryEndMs, buckets.length]);
+
   if (buckets.length === 0) {
     return (
       <div className="relative z-0 mb-3 rounded-lg border bg-muted/20">
@@ -496,6 +522,16 @@ export const TranscriptActivityChart: FC<Props> = ({
                   />
                 );
               })}
+              {/* Highlighted trace time marker (for linked trace mode) */}
+              {highlightedMarkerPosition !== null && (
+                <div
+                  className="pointer-events-none absolute top-0 bottom-0 z-10 w-0.5 bg-primary"
+                  style={{ left: highlightedMarkerPosition }}
+                >
+                  {/* Diamond marker at top */}
+                  <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-primary" />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -544,7 +580,81 @@ export const TranscriptActivityChart: FC<Props> = ({
           </div>
           <Small>Loaded data</Small>
         </div>
+        {highlightedTraceTimeMs !== null && highlightedTraceTimeMs !== undefined && (
+          <div className="flex items-center gap-1.5">
+            <div className="relative h-3 w-0.5 bg-primary">
+              <div className="absolute -top-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rotate-45 bg-primary" />
+            </div>
+            <Small>Selected trace</Small>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+/** Bar heights for skeleton - varies to mimic real histogram appearance */
+const SKELETON_BAR_HEIGHTS = [
+  6, 10, 8, 12, 9, 14, 11, 7, 5, 8, 10, 6, 9, 13, 7, 11, 8, 6, 10, 12, 7, 9, 14, 8, 6, 11, 10, 7, 9, 12,
+];
+
+/** Loading skeleton that matches the chart structure to prevent layout shift */
+export const TranscriptActivityChartSkeleton: FC = () => (
+  <div className="relative z-0 mb-3 rounded-lg border bg-muted/20">
+    {/* Header skeleton */}
+    <div className="flex items-center border-b bg-muted/30 px-3 py-2.5">
+      <Skeleton className="h-4 w-64" />
+    </div>
+
+    {/* Chart area skeleton */}
+    <div className="relative px-3 pt-4 pb-2">
+      <div className="relative flex">
+        {/* Y-axis placeholder */}
+        <div className="relative mr-3 flex w-9 shrink-0 flex-col justify-between">
+          <Skeleton className="h-3 w-6" />
+          <Skeleton className="h-3 w-4" />
+          <Skeleton className="h-3 w-3" />
+        </div>
+
+        {/* Bars container - wrapper provides width constraint */}
+        <div className="relative flex-1">
+          <div className="relative flex h-16 items-end gap-px">
+            {SKELETON_BAR_HEIGHTS.map((height, i) => (
+              <Skeleton
+                className="min-w-[4px] flex-1 rounded-t-sm"
+                key={`bar-${i}-${height}`}
+                style={{ height: height * 4 }}
+                width="fit"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Time labels placeholder */}
+      <div className="mt-2 ml-12 flex justify-between">
+        <Skeleton className="h-3 w-10" />
+        <Skeleton className="h-3 w-10" />
+        <Skeleton className="h-3 w-10" />
+        <Skeleton className="h-3 w-10" />
+        <Skeleton className="h-3 w-10" />
+      </div>
+    </div>
+
+    {/* Legend skeleton */}
+    <div className="flex items-center gap-4 border-t px-3 py-2">
+      <div className="flex items-center gap-1.5">
+        <Skeleton className="h-2 w-2 rounded-sm" />
+        <Skeleton className="h-3 w-16" />
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Skeleton className="h-2 w-2 rounded-sm" />
+        <Skeleton className="h-3 w-12" />
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Skeleton className="h-2 w-6" />
+        <Skeleton className="h-3 w-20" />
+      </div>
+    </div>
+  </div>
+);
