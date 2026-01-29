@@ -17,8 +17,7 @@ test.describe('Filter Messages by Timestamp', () => {
     await test.step('Navigate to topic and select Timestamp offset origin', async () => {
       await page.goto(`/topics/${topicName}`);
 
-      // Wait for messages to load
-      await expect(page.getByText(message)).toBeVisible({ timeout: 5000 });
+      await page.waitForRequest((request) => request.url().includes('ConsoleService/ListMessages'));
 
       // Open the start offset dropdown
       const startOffsetDropdown = page.getByTestId('start-offset-dropdown');
@@ -35,64 +34,49 @@ test.describe('Filter Messages by Timestamp', () => {
     });
 
     await test.step('Set timestamp and verify URL update and API request', async () => {
-      // Set a specific timestamp (e.g., 1 hour ago)
       const timestampValue = Date.now() - 60 * 60 * 1000;
-
-      // Find the readonly text input that displays the current datetime
-      const dateTimeDisplay = page.getByTestId('start-timestamp-input').getByRole('textbox');
-      await expect(dateTimeDisplay).toBeVisible();
-
-      // Click on the readonly input to open the date/time picker
-      await dateTimeDisplay.click();
-
-      // Wait a moment for any picker UI to appear
-      await page.waitForTimeout(500);
-
-      // Find and fill the time input
-      const timeInput = page.getByTestId('start-timestamp-input').locator('input[type="time"]');
-      await expect(timeInput).toBeVisible();
-
-      // Convert timestamp to time format (HH:mm)
       const date = new Date(timestampValue);
       const hours = String(date.getHours()).padStart(2, '0');
       const minutes = String(date.getMinutes()).padStart(2, '0');
       const timeValue = `${hours}:${minutes}`;
 
-      // Listen for the API request to ListMessages with startOffset -4 (Timestamp mode)
-      const apiRequestPromise = page.waitForRequest((request) => {
-        if (
-          !request.url().includes('redpanda.api.console.v1alpha1.ConsoleService/ListMessages') ||
-          request.method() !== 'POST'
-        ) {
-          return false;
-        }
+      await test.step('Open date/time picker', async () => {
+        const dateTimeDisplay = page.getByTestId('start-timestamp-input').getByRole('textbox');
+        await expect(dateTimeDisplay).toBeVisible();
+        await dateTimeDisplay.click();
+        await page.waitForTimeout(500);
+      });
 
-        // Try to parse the request body to check if it has startOffset -4
-        try {
-          const postData = request.postData();
-          if (!postData) {
+      await test.step('Fill time input', async () => {
+        const timeInput = page.getByTestId('start-timestamp-input').locator('input[type="time"]');
+        await expect(timeInput).toBeVisible();
+        await timeInput.fill(timeValue);
+      });
+
+      await test.step('Submit time and wait for API request', async () => {
+        const apiRequestPromise = page.waitForRequest((request) => {
+          if (!request.url().includes('ConsoleService/ListMessages') || request.method() !== 'POST') {
             return false;
           }
 
-          // Check if the postData contains the expected fields (as string search)
-          return postData.includes('"startOffset":"-4"') && postData.includes('"startTimestamp"');
-        } catch {
-          return false;
-        }
+          try {
+            const postData = request.postData();
+            if (!postData) {
+              return false;
+            }
+
+            return postData.includes('"startOffset":"-4"') && postData.includes('"startTimestamp"');
+          } catch {
+            return false;
+          }
+        });
+
+        await page.keyboard.press('Enter');
+
+        const apiRequest = await apiRequestPromise;
+        expect(apiRequest).toBeTruthy();
+        expect(apiRequest.url()).toContain('ListMessages');
       });
-
-      // Set the time value
-      await timeInput.fill(timeValue);
-
-      // Trigger the change by pressing Enter or Tab
-      await page.keyboard.press('Enter');
-
-      // Wait for the API request with correct parameters
-      const apiRequest = await apiRequestPromise;
-
-      // Verify the request was made
-      expect(apiRequest).toBeTruthy();
-      expect(apiRequest.url()).toContain('ListMessages');
     });
 
     await test.step('Verify URL contains timestamp parameter', () => {
@@ -131,8 +115,7 @@ test.describe('Filter Messages by Timestamp', () => {
     await test.step('Navigate to topic and select Timestamp offset origin', async () => {
       await page.goto(`/topics/${topicName}`);
 
-      // Wait for messages to load
-      await expect(page.getByText(message)).toBeVisible({ timeout: 5000 });
+      await page.waitForRequest((request) => request.url().includes('ConsoleService/ListMessages'));
 
       // Open the start offset dropdown
       const startOffsetDropdown = page.getByTestId('start-offset-dropdown');
@@ -165,10 +148,7 @@ test.describe('Filter Messages by Timestamp', () => {
 
       // Listen for the API request
       const apiRequestPromise = page.waitForRequest((request) => {
-        if (
-          !request.url().includes('redpanda.api.console.v1alpha1.ConsoleService/ListMessages') ||
-          request.method() !== 'POST'
-        ) {
+        if (!request.url().includes('ConsoleService/ListMessages') || request.method() !== 'POST') {
           return false;
         }
 
@@ -232,8 +212,7 @@ test.describe('Filter Messages by Timestamp', () => {
     await test.step('Navigate to topic and select Timestamp offset origin', async () => {
       await page.goto(`/topics/${topicName}`);
 
-      // Wait for messages to load
-      await expect(page.getByText(message)).toBeVisible({ timeout: 5000 });
+      await page.waitForRequest((request) => request.url().includes('ConsoleService/ListMessages'));
 
       // Open the start offset dropdown
       const startOffsetDropdown = page.getByTestId('start-offset-dropdown');

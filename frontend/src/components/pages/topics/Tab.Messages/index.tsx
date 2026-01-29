@@ -923,8 +923,15 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                   } else {
                     setStartOffset(e);
                   }
-                  // Clear timestamp from URL when offset type is not Timestamp
-                  if (e !== PartitionOffsetOrigin.Timestamp) {
+
+                  // Handle timestamp parameter in URL
+                  if (e === PartitionOffsetOrigin.Timestamp) {
+                    // Set timestamp to now when switching TO Timestamp mode
+                    if (startTimestamp === -1) {
+                      setStartTimestamp(Date.now());
+                    }
+                  } else {
+                    // Clear timestamp from URL when switching away from Timestamp
                     setStartTimestamp(null);
                   }
                 }}
