@@ -362,6 +362,7 @@ const SpanRow: FC<SpanRowProps> = ({
         data-selected={isSelected}
         data-testid={`span-row-${span.spanId}`}
         onClick={() => onClick(traceId, span.spanId)}
+        onDoubleClick={hasChildren ? onToggle : undefined}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -698,6 +699,7 @@ const RootTraceRow: FC<{
       data-selected={isSelected}
       data-testid={`transcript-row-${traceSummary.traceId}`}
       onClick={handleRowClick}
+      onDoubleClick={onToggle}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
