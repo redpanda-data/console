@@ -661,7 +661,7 @@ export class ConnectorPropertiesStore {
         this.propsByName.set(p.name, p);
       }
 
-      if (this.appliedConfig === null) {
+      if (this.appliedConfig === undefined) {
         // Set default values
         for (const p of allProps) {
           if (p.entry.definition.custom_default_value !== undefined) {
