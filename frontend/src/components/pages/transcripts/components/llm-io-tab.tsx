@@ -116,7 +116,7 @@ const HistoryMessageItem: FC<{ message: Message; index: number }> = ({ message, 
           {isJson ? (
             <DynamicCodeBlock code={formatJsonContent(message.content)} lang="json" />
           ) : (
-            <Text className="whitespace-pre-wrap break-words font-mono text-sm" variant="muted">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
               {message.content}
             </Text>
           )}
