@@ -45,7 +45,7 @@ export const RawJSONTab: FC<Props> = ({ span }) => {
       </div>
 
       <ContentPanel className="w-full bg-muted/20" padding="sm">
-        <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed text-muted-foreground">
+        <pre className="whitespace-pre-wrap break-words font-mono text-muted-foreground text-sm leading-relaxed">
           <code>{jsonString}</code>
         </pre>
       </ContentPanel>

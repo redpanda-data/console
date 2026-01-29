@@ -31,6 +31,7 @@ import {
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Heading, Small, Text } from 'components/redpanda-ui/components/typography';
 import { ArrowLeft, Database, RefreshCw, X } from 'lucide-react';
+import { runInAction } from 'mobx';
 import { parseAsString, useQueryStates } from 'nuqs';
 import type { TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { ChangeEvent, FC } from 'react';
@@ -38,6 +39,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetTraceHistogramQuery, useGetTraceQuery, useListTracesQuery } from 'react-query/api/tracing';
 import { ONE_MINUTE } from 'react-query/react-query.utils';
 import { appGlobal } from 'state/app-global';
+import { uiState } from 'state/ui-state';
 import { pluralize } from 'utils/string';
 
 import { LinkedTraceBanner } from './components/linked-trace-banner';
@@ -57,6 +59,19 @@ const TIME_RANGES = [
 ];
 
 export const TRANSCRIPTS_PAGE_SIZE = 100;
+
+// Hack for MobX to ensure we don't need to use observables
+export const updatePageTitle = () => {
+  runInAction(() => {
+    uiState.pageTitle = 'Transcripts';
+    uiState.pageBreadcrumbs.pop();
+    uiState.pageBreadcrumbs.push({
+      title: 'Transcripts',
+      linkTo: '/transcripts',
+      heading: 'Transcripts',
+    });
+  });
+};
 
 /** Props for the stats row component */
 type TranscriptsStatsRowProps = {
@@ -278,6 +293,10 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   const hasCompletedInitialMount = useRef(false);
 
   const selectedRange = TIME_RANGES.find((r) => r.value === timeRange) || TIME_RANGES[3];
+
+  useEffect(() => {
+    updatePageTitle();
+  }, []);
 
   // Consolidated reset function for query state
   // Used by refresh, time range change, and back-to-newest actions
