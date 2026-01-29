@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/api/dataplane/v1alpha3/tracing.proto.
  */
 export const file_redpanda_api_dataplane_v1alpha3_tracing: GenFile = /*@__PURE__*/
-  fileDesc("Ci1yZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxYWxwaGEzL3RyYWNpbmcucHJvdG8SH3JlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMizwYKEUxpc3RUcmFjZXNSZXF1ZXN0EqsBCgpzdGFydF90aW1lGAEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEJ7kkF1MnNTdGFydCB0aW1lIGZvciB0aGUgcXVlcnkgKGluY2x1c2l2ZSkuIERlZmF1bHRzIHRvIFVuaXggZXBvY2ggKDE5NzAtMDEtMDEpIGlmIG5vdCBwcm92aWRlZC4gTXVzdCBiZSBiZWZvcmUgZW5kX3RpbWUu4EEBEqkBCghlbmRfdGltZRgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCe5JBdTJzRW5kIHRpbWUgZm9yIHRoZSBxdWVyeSAoZXhjbHVzaXZlKS4gRGVmYXVsdHMgdG8gY3VycmVudCB0aW1lICsgNSBtaW51dGVzIGlmIG5vdCBwcm92aWRlZC4gTXVzdCBiZSBhZnRlciBzdGFydF90aW1lLuBBARK3AQoJcGFnZV9zaXplGAMgASgFQqMBkkGMATJ4TWF4aW11bSBudW1iZXIgb2YgdHJhY2VzIHRvIHJldHVybiBwZXIgcGFnZS4gRGVmYXVsdHMgdG8gMTAwIGlmIG5vdCBzcGVjaWZpZWQgb3Igc2V0IHRvIDAuIFVzZSAtMSB0byBkaXNhYmxlIHBhZ2luYXRpb24uWQAAAAAAQI9AaQAAAAAAAPC/ukgQGg4Y6Aco////////////ARKAAQoKcGFnZV90b2tlbhgEIAEoCUJskkFpMmdPcGFxdWUgdG9rZW4gZnJvbSBhIHByZXZpb3VzIExpc3RUcmFjZXNSZXNwb25zZSB0byBmZXRjaCB0aGUgbmV4dCBwYWdlLiBMZWF2ZSBlbXB0eSBmb3IgdGhlIGZpcnN0IHBhZ2UuOqIBukieARqbAQoQdGltZV9yYW5nZV92YWxpZBI1ZW5kX3RpbWUgbXVzdCBiZSA+PSBzdGFydF90aW1lIHdoZW4gYm90aCBhcmUgcHJvdmlkZWQaUCFoYXModGhpcy5zdGFydF90aW1lKSB8fCAhaGFzKHRoaXMuZW5kX3RpbWUpIHx8IHRoaXMuZW5kX3RpbWUgPj0gdGhpcy5zdGFydF90aW1lIq0HChJMaXN0VHJhY2VzUmVzcG9uc2USPQoGdHJhY2VzGAEgAygLMi0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5UcmFjZVN1bW1hcnkScAoPbmV4dF9wYWdlX3Rva2VuGAIgASgJQleSQVQyUk9wYXF1ZSB0b2tlbiB0byByZXRyaWV2ZSB0aGUgbmV4dCBwYWdlIG9mIHJlc3VsdHMuIEVtcHR5IGlmIHRoaXMgaXMgdGhlIGxhc3QgcGFnZS4SmwEKC3RvdGFsX2NvdW50GAMgASgFQoUBkkF/Mn1Ub3RhbCBudW1iZXIgb2YgdHJhY2VzIG1hdGNoaW5nIHRoZSB0aW1lIHJhbmdlIGZpbHRlciwgcmVnYXJkbGVzcyBvZiBwYWdpbmF0aW9uLiBVc2UgdGhpcyB0byBkaXNwbGF5ICdTaG93aW5nIFggb2YgWSB0cmFjZXMnLuBBAxK9AQoTcmV0dXJuZWRfc3RhcnRfdGltZRgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCgwGSQX0ye1N0YXJ0IHRpbWUgb2YgdGhlIG9sZGVzdCB0cmFjZSBpbiB0aGlzIHBhZ2UuIFVzZSB3aXRoIHJldHVybmVkX2VuZF90aW1lIHRvIGhpZ2hsaWdodCB0aGUgY3VycmVudCB2aWV3IHdpbmRvdyBpbiBhIHRpbWVsaW5lLuBBAxK7AQoRcmV0dXJuZWRfZW5kX3RpbWUYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQoMBkkF9MntFbmQgdGltZSBvZiB0aGUgbmV3ZXN0IHRyYWNlIGluIHRoaXMgcGFnZS4gVXNlIHdpdGggcmV0dXJuZWRfc3RhcnRfdGltZSB0byBoaWdobGlnaHQgdGhlIGN1cnJlbnQgdmlldyB3aW5kb3cgaW4gYSB0aW1lbGluZS7gQQMSyQEKCWhpc3RvZ3JhbRgGIAEoCzIvLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuVHJhY2VIaXN0b2dyYW1ChAGSQX4yfEhpc3RvZ3JhbSBzaG93aW5nIHRyYWNlIGRpc3RyaWJ1dGlvbiBvdmVyIHRoZSBxdWVyeSB0aW1lIHJhbmdlLiBFYWNoIGJ1Y2tldCByZXByZXNlbnRzIGEgdGltZSBpbnRlcnZhbCB3aXRoIGl0cyB0cmFjZSBjb3VudC7gQQMitQEKDlRyYWNlSGlzdG9ncmFtEkYKB2J1Y2tldHMYASADKAsyNS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlRyYWNlSGlzdG9ncmFtQnVja2V0ElsKD2J1Y2tldF9kdXJhdGlvbhgCIAEoCzIZLmdvb2dsZS5wcm90b2J1Zi5EdXJhdGlvbkInkkEkMiJEdXJhdGlvbiBvZiBlYWNoIGhpc3RvZ3JhbSBidWNrZXQuImoKFFRyYWNlSGlzdG9ncmFtQnVja2V0Ei4KCnN0YXJ0X3RpbWUYASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg0KBWNvdW50GAIgASgFEhMKC2Vycm9yX2NvdW50GAMgASgFIvAGCgxUcmFjZVN1bW1hcnkSegoIdHJhY2VfaWQYASABKAlCaJJBUDI9VW5pcXVlIHRyYWNlIGlkZW50aWZpZXIgYXMgYSAzMi1jaGFyYWN0ZXIgaGV4YWRlY2ltYWwgc3RyaW5nLooBDl5bMC05YS1mXXszMn0kukgSchAyDl5bMC05YS1mXXszMn0kEoEBCg5yb290X3NwYW5fbmFtZRgCIAEoCUJpkkFmMmROYW1lIG9mIHRoZSByb290IHNwYW4gKHRoZSBzcGFuIHdpdGggbm8gcGFyZW50KS4gTWF5IGJlIGVtcHR5IGlmIHRoZSByb290IHNwYW4gaXMgbm90IHlldCBhdmFpbGFibGUuErYBChFyb290X3NlcnZpY2VfbmFtZRgDIAEoCUKaAZJBlgEykwFTZXJ2aWNlIG5hbWUgZXh0cmFjdGVkIGZyb20gdGhlIHJvb3Qgc3BhbidzICdzZXJ2aWNlLm5hbWUnIHJlc291cmNlIGF0dHJpYnV0ZS4gTWF5IGJlIGVtcHR5IGlmIHRoZSByb290IHNwYW4gaXMgdW5hdmFpbGFibGUgb3IgbGFja3MgdGhlIGF0dHJpYnV0ZS4SawoKc3RhcnRfdGltZRgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCO5JBNTIzU3RhcnQgdGltZSBvZiB0aGUgdHJhY2UgKGVhcmxpZXN0IHNwYW4gc3RhcnQgdGltZSku4EEDEpQBCghkdXJhdGlvbhgFIAEoCzIZLmdvb2dsZS5wcm90b2J1Zi5EdXJhdGlvbkJnkkFhMl9Ub3RhbCBkdXJhdGlvbiBvZiB0aGUgdHJhY2UsIGNhbGN1bGF0ZWQgYXMgKGxhdGVzdCBzcGFuIGVuZCB0aW1lKSAtIChlYXJsaWVzdCBzcGFuIHN0YXJ0IHRpbWUpLuBBAxJMCgpzcGFuX2NvdW50GAYgASgFQjiSQTIyMFRvdGFsIG51bWJlciBvZiBzcGFucyB0aGF0IGJlbG9uZyB0byB0aGlzIHRyYWNlLuBBAxJVCgtlcnJvcl9jb3VudBgHIAEoBUJAkkE6MjhOdW1iZXIgb2Ygc3BhbnMgaW4gdGhpcyB0cmFjZSB0aGF0IGhhdmUgYW4gZXJyb3Igc3RhdHVzLuBBAyKUAQoPR2V0VHJhY2VSZXF1ZXN0EoABCgh0cmFjZV9pZBgBIAEoCUJukkFQMj1VbmlxdWUgdHJhY2UgaWRlbnRpZmllciBhcyBhIDMyLWNoYXJhY3RlciBoZXhhZGVjaW1hbCBzdHJpbmcuigEOXlswLTlhLWZdezMyfSTgQQK6SBXIAQFyEDIOXlswLTlhLWZdezMyfSQiSQoQR2V0VHJhY2VSZXNwb25zZRI1CgV0cmFjZRgBIAEoCzImLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuVHJhY2UiwQMKBVRyYWNlEnoKCHRyYWNlX2lkGAEgASgJQmiSQVAyPVVuaXF1ZSB0cmFjZSBpZGVudGlmaWVyIGFzIGEgMzItY2hhcmFjdGVyIGhleGFkZWNpbWFsIHN0cmluZy6KAQ5eWzAtOWEtZl17MzJ9JLpIEnIQMg5eWzAtOWEtZl17MzJ9JBKWAQoFc3BhbnMYAiADKAsyFi5yZWRwYW5kYS5vdGVsLnYxLlNwYW5Cb5JBbDJqTGlzdCBvZiBhbGwgc3BhbnMgYmVsb25naW5nIHRvIHRoaXMgdHJhY2UuIFVzZSB0aGUgcGFyZW50X3NwYW5faWQgZmllbGQgdG8gcmVjb25zdHJ1Y3QgdGhlIHNwYW4gaGllcmFyY2h5LhKiAQoHc3VtbWFyeRgDIAEoCzItLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuVHJhY2VTdW1tYXJ5QmKSQV8yXUNvbXB1dGVkIHN1bW1hcnkgaW5mb3JtYXRpb24gZm9yIHRoaXMgdHJhY2UsIGluY2x1ZGluZyBkdXJhdGlvbiwgc3BhbiBjb3VudCwgYW5kIGVycm9yIGNvdW50LjK0BAoOVHJhY2luZ1NlcnZpY2US8gEKCkxpc3RUcmFjZXMSMi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkxpc3RUcmFjZXNSZXF1ZXN0GjMucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5MaXN0VHJhY2VzUmVzcG9uc2Uie5JBWBILTGlzdCB0cmFjZXMaSVJldHVybnMgYSBwYWdpbmF0ZWQgbGlzdCBvZiB0cmFjZSBzdW1tYXJpZXMgZm9yIHRoZSBzcGVjaWZpZWQgdGltZSByYW5nZS6Kph0ECAEQAYLT5JMCEhIQL3YxYWxwaGEzL3RyYWNlcxLmAQoIR2V0VHJhY2USMC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkdldFRyYWNlUmVxdWVzdBoxLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuR2V0VHJhY2VSZXNwb25zZSJ1kkFHEglHZXQgdHJhY2UaOlJldHJpZXZlcyBhIGNvbXBsZXRlIHRyYWNlIHdpdGggYWxsIGl0cyBzcGFucyBieSB0cmFjZSBJRC6Kph0ECAEQAYLT5JMCHRIbL3YxYWxwaGEzL3RyYWNlcy97dHJhY2VfaWR9GkSSQUEKB1RyYWNpbmcSNlF1ZXJ5IGFuZCByZXRyaWV2ZSBPcGVuVGVsZW1ldHJ5IHRyYWNlcyBmcm9tIFJlZHBhbmRhLkK7AgojY29tLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTNCDFRyYWNpbmdQcm90b1ABWmdnaXRodWIuY29tL3JlZHBhbmRhLWRhdGEvY29uc29sZS9iYWNrZW5kL3BrZy9wcm90b2dlbi9yZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxYWxwaGEzO2RhdGFwbGFuZXYxYWxwaGEzogIDUkFEqgIfUmVkcGFuZGEuQXBpLkRhdGFwbGFuZS5WMWFscGhhM8oCH1JlZHBhbmRhXEFwaVxEYXRhcGxhbmVcVjFhbHBoYTPiAitSZWRwYW5kYVxBcGlcRGF0YXBsYW5lXFYxYWxwaGEzXEdQQk1ldGFkYXRh6gIiUmVkcGFuZGE6OkFwaTo6RGF0YXBsYW5lOjpWMWFscGhhM2IGcHJvdG8z", [file_buf_validate_validate, file_google_api_annotations, file_google_api_field_behavior, file_google_protobuf_duration, file_google_protobuf_timestamp, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization, file_redpanda_otel_v1_trace]);
+  fileDesc("Ci1yZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxYWxwaGEzL3RyYWNpbmcucHJvdG8SH3JlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMi8gYKEUxpc3RUcmFjZXNSZXF1ZXN0ErcBCglwYWdlX3NpemUYAyABKAVCowGSQYwBMnhNYXhpbXVtIG51bWJlciBvZiB0cmFjZXMgdG8gcmV0dXJuIHBlciBwYWdlLiBEZWZhdWx0cyB0byAxMDAgaWYgbm90IHNwZWNpZmllZCBvciBzZXQgdG8gMC4gVXNlIC0xIHRvIGRpc2FibGUgcGFnaW5hdGlvbi5ZAAAAAABAj0BpAAAAAAAA8L+6SBAaDhjoByj///////////8BEoABCgpwYWdlX3Rva2VuGAQgASgJQmySQWkyZ09wYXF1ZSB0b2tlbiBmcm9tIGEgcHJldmlvdXMgTGlzdFRyYWNlc1Jlc3BvbnNlIHRvIGZldGNoIHRoZSBuZXh0IHBhZ2UuIExlYXZlIGVtcHR5IGZvciB0aGUgZmlyc3QgcGFnZS4SSQoGZmlsdGVyGAUgASgLMjkucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5MaXN0VHJhY2VzUmVxdWVzdC5GaWx0ZXIa1AMKBkZpbHRlchKSAQoKc3RhcnRfdGltZRgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCYpJBXDJaU3RhcnQgdGltZSBmb3IgdGhlIHF1ZXJ5IChpbmNsdXNpdmUpLiBEZWZhdWx0cyB0byBVbml4IGVwb2NoICgxOTcwLTAxLTAxKSBpZiBub3QgcHJvdmlkZWQu4EEBEo8BCghlbmRfdGltZRgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCYZJBWzJZRW5kIHRpbWUgZm9yIHRoZSBxdWVyeSAoZXhjbHVzaXZlKS4gRGVmYXVsdHMgdG8gY3VycmVudCB0aW1lICsgNSBtaW51dGVzIGlmIG5vdCBwcm92aWRlZC7gQQE6ogG6SJ4BGpsBChB0aW1lX3JhbmdlX3ZhbGlkEjVlbmRfdGltZSBtdXN0IGJlID49IHN0YXJ0X3RpbWUgd2hlbiBib3RoIGFyZSBwcm92aWRlZBpQIWhhcyh0aGlzLnN0YXJ0X3RpbWUpIHx8ICFoYXModGhpcy5lbmRfdGltZSkgfHwgdGhpcy5lbmRfdGltZSA+PSB0aGlzLnN0YXJ0X3RpbWUi5wUKEkxpc3RUcmFjZXNSZXNwb25zZRI9CgZ0cmFjZXMYASADKAsyLS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlRyYWNlU3VtbWFyeRJwCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAlCV5JBVDJST3BhcXVlIHRva2VuIHRvIHJldHJpZXZlIHRoZSBuZXh0IHBhZ2Ugb2YgcmVzdWx0cy4gRW1wdHkgaWYgdGhpcyBpcyB0aGUgbGFzdCBwYWdlLhKbAQoLdG90YWxfY291bnQYAyABKAVChQGSQX8yfVRvdGFsIG51bWJlciBvZiB0cmFjZXMgbWF0Y2hpbmcgdGhlIHRpbWUgcmFuZ2UgZmlsdGVyLCByZWdhcmRsZXNzIG9mIHBhZ2luYXRpb24uIFVzZSB0aGlzIHRvIGRpc3BsYXkgJ1Nob3dpbmcgWCBvZiBZIHRyYWNlcycu4EEDEr0BChNyZXR1cm5lZF9zdGFydF90aW1lGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEKDAZJBfTJ7U3RhcnQgdGltZSBvZiB0aGUgb2xkZXN0IHRyYWNlIGluIHRoaXMgcGFnZS4gVXNlIHdpdGggcmV0dXJuZWRfZW5kX3RpbWUgdG8gaGlnaGxpZ2h0IHRoZSBjdXJyZW50IHZpZXcgd2luZG93IGluIGEgdGltZWxpbmUu4EEDErsBChFyZXR1cm5lZF9lbmRfdGltZRgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCgwGSQX0ye0VuZCB0aW1lIG9mIHRoZSBuZXdlc3QgdHJhY2UgaW4gdGhpcyBwYWdlLiBVc2Ugd2l0aCByZXR1cm5lZF9zdGFydF90aW1lIHRvIGhpZ2hsaWdodCB0aGUgY3VycmVudCB2aWV3IHdpbmRvdyBpbiBhIHRpbWVsaW5lLuBBA0oECAYQByKqAQoYR2V0VHJhY2VIaXN0b2dyYW1SZXF1ZXN0Eo0BCgZmaWx0ZXIYASABKAsyOS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkxpc3RUcmFjZXNSZXF1ZXN0LkZpbHRlckJCkkE/Mj1GaWx0ZXIgY3JpdGVyaWEgaW5jbHVkaW5nIHRpbWUgcmFuZ2UgZm9yIHRoZSBoaXN0b2dyYW0gcXVlcnkuIu4BChlHZXRUcmFjZUhpc3RvZ3JhbVJlc3BvbnNlEogBCgloaXN0b2dyYW0YASABKAsyLy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlRyYWNlSGlzdG9ncmFtQkSSQUEyP0hpc3RvZ3JhbSBzaG93aW5nIHRyYWNlIGRpc3RyaWJ1dGlvbiBvdmVyIHRoZSBxdWVyeSB0aW1lIHJhbmdlLhJGCgt0b3RhbF9jb3VudBgCIAEoBUIxkkErMilUb3RhbCBudW1iZXIgb2YgdHJhY2VzIGluIHRoZSB0aW1lIHJhbmdlLuBBAyK1AQoOVHJhY2VIaXN0b2dyYW0SRgoHYnVja2V0cxgBIAMoCzI1LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuVHJhY2VIaXN0b2dyYW1CdWNrZXQSWwoPYnVja2V0X2R1cmF0aW9uGAIgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uQieSQSQyIkR1cmF0aW9uIG9mIGVhY2ggaGlzdG9ncmFtIGJ1Y2tldC4iagoUVHJhY2VIaXN0b2dyYW1CdWNrZXQSLgoKc3RhcnRfdGltZRgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDQoFY291bnQYAiABKAUSEwoLZXJyb3JfY291bnQYAyABKAUi8AYKDFRyYWNlU3VtbWFyeRJ6Cgh0cmFjZV9pZBgBIAEoCUJokkFQMj1VbmlxdWUgdHJhY2UgaWRlbnRpZmllciBhcyBhIDMyLWNoYXJhY3RlciBoZXhhZGVjaW1hbCBzdHJpbmcuigEOXlswLTlhLWZdezMyfSS6SBJyEDIOXlswLTlhLWZdezMyfSQSgQEKDnJvb3Rfc3Bhbl9uYW1lGAIgASgJQmmSQWYyZE5hbWUgb2YgdGhlIHJvb3Qgc3BhbiAodGhlIHNwYW4gd2l0aCBubyBwYXJlbnQpLiBNYXkgYmUgZW1wdHkgaWYgdGhlIHJvb3Qgc3BhbiBpcyBub3QgeWV0IGF2YWlsYWJsZS4StgEKEXJvb3Rfc2VydmljZV9uYW1lGAMgASgJQpoBkkGWATKTAVNlcnZpY2UgbmFtZSBleHRyYWN0ZWQgZnJvbSB0aGUgcm9vdCBzcGFuJ3MgJ3NlcnZpY2UubmFtZScgcmVzb3VyY2UgYXR0cmlidXRlLiBNYXkgYmUgZW1wdHkgaWYgdGhlIHJvb3Qgc3BhbiBpcyB1bmF2YWlsYWJsZSBvciBsYWNrcyB0aGUgYXR0cmlidXRlLhJrCgpzdGFydF90aW1lGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEI7kkE1MjNTdGFydCB0aW1lIG9mIHRoZSB0cmFjZSAoZWFybGllc3Qgc3BhbiBzdGFydCB0aW1lKS7gQQMSlAEKCGR1cmF0aW9uGAUgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uQmeSQWEyX1RvdGFsIGR1cmF0aW9uIG9mIHRoZSB0cmFjZSwgY2FsY3VsYXRlZCBhcyAobGF0ZXN0IHNwYW4gZW5kIHRpbWUpIC0gKGVhcmxpZXN0IHNwYW4gc3RhcnQgdGltZSku4EEDEkwKCnNwYW5fY291bnQYBiABKAVCOJJBMjIwVG90YWwgbnVtYmVyIG9mIHNwYW5zIHRoYXQgYmVsb25nIHRvIHRoaXMgdHJhY2Uu4EEDElUKC2Vycm9yX2NvdW50GAcgASgFQkCSQToyOE51bWJlciBvZiBzcGFucyBpbiB0aGlzIHRyYWNlIHRoYXQgaGF2ZSBhbiBlcnJvciBzdGF0dXMu4EEDIpQBCg9HZXRUcmFjZVJlcXVlc3QSgAEKCHRyYWNlX2lkGAEgASgJQm6SQVAyPVVuaXF1ZSB0cmFjZSBpZGVudGlmaWVyIGFzIGEgMzItY2hhcmFjdGVyIGhleGFkZWNpbWFsIHN0cmluZy6KAQ5eWzAtOWEtZl17MzJ9JOBBArpIFcgBAXIQMg5eWzAtOWEtZl17MzJ9JCJJChBHZXRUcmFjZVJlc3BvbnNlEjUKBXRyYWNlGAEgASgLMiYucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5UcmFjZSLBAwoFVHJhY2USegoIdHJhY2VfaWQYASABKAlCaJJBUDI9VW5pcXVlIHRyYWNlIGlkZW50aWZpZXIgYXMgYSAzMi1jaGFyYWN0ZXIgaGV4YWRlY2ltYWwgc3RyaW5nLooBDl5bMC05YS1mXXszMn0kukgSchAyDl5bMC05YS1mXXszMn0kEpYBCgVzcGFucxgCIAMoCzIWLnJlZHBhbmRhLm90ZWwudjEuU3BhbkJvkkFsMmpMaXN0IG9mIGFsbCBzcGFucyBiZWxvbmdpbmcgdG8gdGhpcyB0cmFjZS4gVXNlIHRoZSBwYXJlbnRfc3Bhbl9pZCBmaWVsZCB0byByZWNvbnN0cnVjdCB0aGUgc3BhbiBoaWVyYXJjaHkuEqIBCgdzdW1tYXJ5GAMgASgLMi0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5UcmFjZVN1bW1hcnlCYpJBXzJdQ29tcHV0ZWQgc3VtbWFyeSBpbmZvcm1hdGlvbiBmb3IgdGhpcyB0cmFjZSwgaW5jbHVkaW5nIGR1cmF0aW9uLCBzcGFuIGNvdW50LCBhbmQgZXJyb3IgY291bnQuMtgGCg5UcmFjaW5nU2VydmljZRLyAQoKTGlzdFRyYWNlcxIyLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuTGlzdFRyYWNlc1JlcXVlc3QaMy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkxpc3RUcmFjZXNSZXNwb25zZSJ7kkFYEgtMaXN0IHRyYWNlcxpJUmV0dXJucyBhIHBhZ2luYXRlZCBsaXN0IG9mIHRyYWNlIHN1bW1hcmllcyBmb3IgdGhlIHNwZWNpZmllZCB0aW1lIHJhbmdlLoqmHQQIARABgtPkkwISEhAvdjFhbHBoYTMvdHJhY2VzEuYBCghHZXRUcmFjZRIwLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuR2V0VHJhY2VSZXF1ZXN0GjEucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5HZXRUcmFjZVJlc3BvbnNlInWSQUcSCUdldCB0cmFjZRo6UmV0cmlldmVzIGEgY29tcGxldGUgdHJhY2Ugd2l0aCBhbGwgaXRzIHNwYW5zIGJ5IHRyYWNlIElELoqmHQQIARABgtPkkwIdEhsvdjFhbHBoYTMvdHJhY2VzL3t0cmFjZV9pZH0SoQIKEUdldFRyYWNlSGlzdG9ncmFtEjkucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5HZXRUcmFjZUhpc3RvZ3JhbVJlcXVlc3QaOi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkdldFRyYWNlSGlzdG9ncmFtUmVzcG9uc2UilAGSQWcSE0dldCB0cmFjZSBoaXN0b2dyYW0aUFJldHVybnMgdGhlIGRpc3RyaWJ1dGlvbiBvZiB0cmFjZXMgb3ZlciBhIHRpbWUgcmFuZ2UgZm9yIHRpbWVsaW5lIHZpc3VhbGl6YXRpb24uiqYdBAgBEAGC0+STAhwSGi92MWFscGhhMy90cmFjZXM6aGlzdG9ncmFtGkSSQUEKB1RyYWNpbmcSNlF1ZXJ5IGFuZCByZXRyaWV2ZSBPcGVuVGVsZW1ldHJ5IHRyYWNlcyBmcm9tIFJlZHBhbmRhLkK7AgojY29tLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTNCDFRyYWNpbmdQcm90b1ABWmdnaXRodWIuY29tL3JlZHBhbmRhLWRhdGEvY29uc29sZS9iYWNrZW5kL3BrZy9wcm90b2dlbi9yZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxYWxwaGEzO2RhdGFwbGFuZXYxYWxwaGEzogIDUkFEqgIfUmVkcGFuZGEuQXBpLkRhdGFwbGFuZS5WMWFscGhhM8oCH1JlZHBhbmRhXEFwaVxEYXRhcGxhbmVcVjFhbHBoYTPiAitSZWRwYW5kYVxBcGlcRGF0YXBsYW5lXFYxYWxwaGEzXEdQQk1ldGFkYXRh6gIiUmVkcGFuZGE6OkFwaTo6RGF0YXBsYW5lOjpWMWFscGhhM2IGcHJvdG8z", [file_buf_validate_validate, file_google_api_annotations, file_google_api_field_behavior, file_google_protobuf_duration, file_google_protobuf_timestamp, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization, file_redpanda_otel_v1_trace]);
 
 /**
  * ListTracesRequest is the request message for listing traces.
@@ -27,6 +27,44 @@ export const file_redpanda_api_dataplane_v1alpha3_tracing: GenFile = /*@__PURE__
  * @generated from message redpanda.api.dataplane.v1alpha3.ListTracesRequest
  */
 export type ListTracesRequest = Message<"redpanda.api.dataplane.v1alpha3.ListTracesRequest"> & {
+  /**
+   * Maximum number of traces to return (pagination). Defaults to 100 if not specified or set to 0.
+   *
+   * @generated from field: int32 page_size = 3;
+   */
+  pageSize: number;
+
+  /**
+   * Page token for pagination (opaque, from previous response). Leave empty for first page.
+   *
+   * @generated from field: string page_token = 4;
+   */
+  pageToken: string;
+
+  /**
+   * Optional filter criteria for listing traces.
+   *
+   * @generated from field: redpanda.api.dataplane.v1alpha3.ListTracesRequest.Filter filter = 5;
+   */
+  filter?: ListTracesRequest_Filter;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1alpha3.ListTracesRequest.
+ * Use `create(ListTracesRequestSchema)` to create a new message.
+ */
+export const ListTracesRequestSchema: GenMessage<ListTracesRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 0);
+
+/**
+ * Filter criteria for listing traces including time range.
+ * Default behavior:
+ * - start_time: defaults to Unix epoch (1970-01-01) if not provided
+ * - end_time: defaults to current time + 5 minutes if not provided
+ *
+ * @generated from message redpanda.api.dataplane.v1alpha3.ListTracesRequest.Filter
+ */
+export type ListTracesRequest_Filter = Message<"redpanda.api.dataplane.v1alpha3.ListTracesRequest.Filter"> & {
   /**
    * Start time for trace query (inclusive). Traces that finished after this time will be included.
    * Optional: defaults to Unix epoch if not provided.
@@ -42,28 +80,14 @@ export type ListTracesRequest = Message<"redpanda.api.dataplane.v1alpha3.ListTra
    * @generated from field: google.protobuf.Timestamp end_time = 2;
    */
   endTime?: Timestamp;
-
-  /**
-   * Maximum number of traces to return (pagination). Defaults to 100 if not specified or set to 0.
-   *
-   * @generated from field: int32 page_size = 3;
-   */
-  pageSize: number;
-
-  /**
-   * Page token for pagination (opaque, from previous response). Leave empty for first page.
-   *
-   * @generated from field: string page_token = 4;
-   */
-  pageToken: string;
 };
 
 /**
- * Describes the message redpanda.api.dataplane.v1alpha3.ListTracesRequest.
- * Use `create(ListTracesRequestSchema)` to create a new message.
+ * Describes the message redpanda.api.dataplane.v1alpha3.ListTracesRequest.Filter.
+ * Use `create(ListTracesRequest_FilterSchema)` to create a new message.
  */
-export const ListTracesRequestSchema: GenMessage<ListTracesRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 0);
+export const ListTracesRequest_FilterSchema: GenMessage<ListTracesRequest_Filter> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 0, 0);
 
 /**
  * ListTracesResponse is the response message for listing traces.
@@ -105,14 +129,6 @@ export type ListTracesResponse = Message<"redpanda.api.dataplane.v1alpha3.ListTr
    * @generated from field: google.protobuf.Timestamp returned_end_time = 5;
    */
   returnedEndTime?: Timestamp;
-
-  /**
-   * Histogram of trace counts over the query time range.
-   * Use this to render a timeline visualization showing trace distribution.
-   *
-   * @generated from field: redpanda.api.dataplane.v1alpha3.TraceHistogram histogram = 6;
-   */
-  histogram?: TraceHistogram;
 };
 
 /**
@@ -121,6 +137,56 @@ export type ListTracesResponse = Message<"redpanda.api.dataplane.v1alpha3.ListTr
  */
 export const ListTracesResponseSchema: GenMessage<ListTracesResponse> = /*@__PURE__*/
   messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 1);
+
+/**
+ * GetTraceHistogramRequest is the request message for getting the trace histogram.
+ *
+ * @generated from message redpanda.api.dataplane.v1alpha3.GetTraceHistogramRequest
+ */
+export type GetTraceHistogramRequest = Message<"redpanda.api.dataplane.v1alpha3.GetTraceHistogramRequest"> & {
+  /**
+   * Optional filter criteria for the histogram query.
+   * Reuses the same Filter message as ListTracesRequest for consistency.
+   *
+   * @generated from field: redpanda.api.dataplane.v1alpha3.ListTracesRequest.Filter filter = 1;
+   */
+  filter?: ListTracesRequest_Filter;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1alpha3.GetTraceHistogramRequest.
+ * Use `create(GetTraceHistogramRequestSchema)` to create a new message.
+ */
+export const GetTraceHistogramRequestSchema: GenMessage<GetTraceHistogramRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 2);
+
+/**
+ * GetTraceHistogramResponse is the response message for getting the trace histogram.
+ *
+ * @generated from message redpanda.api.dataplane.v1alpha3.GetTraceHistogramResponse
+ */
+export type GetTraceHistogramResponse = Message<"redpanda.api.dataplane.v1alpha3.GetTraceHistogramResponse"> & {
+  /**
+   * Histogram of trace counts over the query time range.
+   *
+   * @generated from field: redpanda.api.dataplane.v1alpha3.TraceHistogram histogram = 1;
+   */
+  histogram?: TraceHistogram;
+
+  /**
+   * Total number of traces matching the time range.
+   *
+   * @generated from field: int32 total_count = 2;
+   */
+  totalCount: number;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1alpha3.GetTraceHistogramResponse.
+ * Use `create(GetTraceHistogramResponseSchema)` to create a new message.
+ */
+export const GetTraceHistogramResponseSchema: GenMessage<GetTraceHistogramResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 3);
 
 /**
  * TraceHistogram contains bucketed trace counts for timeline visualization.
@@ -148,7 +214,7 @@ export type TraceHistogram = Message<"redpanda.api.dataplane.v1alpha3.TraceHisto
  * Use `create(TraceHistogramSchema)` to create a new message.
  */
 export const TraceHistogramSchema: GenMessage<TraceHistogram> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 2);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 4);
 
 /**
  * TraceHistogramBucket represents a single time bucket in the histogram.
@@ -183,7 +249,7 @@ export type TraceHistogramBucket = Message<"redpanda.api.dataplane.v1alpha3.Trac
  * Use `create(TraceHistogramBucketSchema)` to create a new message.
  */
 export const TraceHistogramBucketSchema: GenMessage<TraceHistogramBucket> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 3);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 5);
 
 /**
  * TraceSummary contains high-level metadata about a trace.
@@ -247,7 +313,7 @@ export type TraceSummary = Message<"redpanda.api.dataplane.v1alpha3.TraceSummary
  * Use `create(TraceSummarySchema)` to create a new message.
  */
 export const TraceSummarySchema: GenMessage<TraceSummary> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 4);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 6);
 
 /**
  * GetTraceRequest is the request message for retrieving a single trace.
@@ -268,7 +334,7 @@ export type GetTraceRequest = Message<"redpanda.api.dataplane.v1alpha3.GetTraceR
  * Use `create(GetTraceRequestSchema)` to create a new message.
  */
 export const GetTraceRequestSchema: GenMessage<GetTraceRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 5);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 7);
 
 /**
  * GetTraceResponse is the response message for retrieving a single trace.
@@ -289,7 +355,7 @@ export type GetTraceResponse = Message<"redpanda.api.dataplane.v1alpha3.GetTrace
  * Use `create(GetTraceResponseSchema)` to create a new message.
  */
 export const GetTraceResponseSchema: GenMessage<GetTraceResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 6);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 8);
 
 /**
  * Trace represents a complete distributed trace with all its spans.
@@ -325,7 +391,7 @@ export type Trace = Message<"redpanda.api.dataplane.v1alpha3.Trace"> & {
  * Use `create(TraceSchema)` to create a new message.
  */
 export const TraceSchema: GenMessage<Trace> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 7);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 9);
 
 /**
  * TracingService provides access to distributed traces stored in Redpanda.
@@ -354,6 +420,17 @@ export const TracingService: GenService<{
     methodKind: "unary";
     input: typeof GetTraceRequestSchema;
     output: typeof GetTraceResponseSchema;
+  },
+  /**
+   * GetTraceHistogram returns the trace count distribution over a time range.
+   * Use this to render a timeline visualization separately from trace listing.
+   *
+   * @generated from rpc redpanda.api.dataplane.v1alpha3.TracingService.GetTraceHistogram
+   */
+  getTraceHistogram: {
+    methodKind: "unary";
+    input: typeof GetTraceHistogramRequestSchema;
+    output: typeof GetTraceHistogramResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_redpanda_api_dataplane_v1alpha3_tracing, 0);

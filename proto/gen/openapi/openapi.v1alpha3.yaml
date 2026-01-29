@@ -469,6 +469,17 @@ components:
             $ref: '#/components/schemas/ConfigurationYAMLSchema'
           type: array
       type: object
+    GetTraceHistogramResponse:
+      description: GetTraceHistogramResponse is the response message for getting the trace histogram.
+      properties:
+        histogram:
+          $ref: '#/components/schemas/TraceHistogram'
+        total_count:
+          description: Total number of traces in the time range.
+          format: int32
+          readOnly: true
+          type: integer
+      type: object
     GetTraceResponse:
       description: GetTraceResponse is the response message for retrieving a single trace.
       properties:
@@ -1170,11 +1181,25 @@ components:
           title: A description for each available predefined query
           type: array
       type: object
+    ListTracesRequest.Filter:
+      properties:
+        end_time:
+          description: End time for the query (exclusive). Defaults to current time + 5 minutes if not provided.
+          format: date-time
+          type: string
+        start_time:
+          description: Start time for the query (inclusive). Defaults to Unix epoch (1970-01-01) if not provided.
+          format: date-time
+          type: string
+      title: |-
+        Filter criteria for listing traces including time range.
+        Default behavior:
+        - start_time: defaults to Unix epoch (1970-01-01) if not provided
+        - end_time: defaults to current time + 5 minutes if not provided
+      type: object
     ListTracesResponse:
       description: ListTracesResponse is the response message for listing traces.
       properties:
-        histogram:
-          $ref: '#/components/schemas/TraceHistogram'
         next_page_token:
           description: Opaque token to retrieve the next page of results. Empty if this is the last page.
           type: string
@@ -2606,18 +2631,6 @@ paths:
       description: Returns a paginated list of trace summaries for the specified time range.
       operationId: TracingService_ListTraces
       parameters:
-        - description: Start time for the query (inclusive). Defaults to Unix epoch (1970-01-01) if not provided. Must be before end_time.
-          in: query
-          name: start_time
-          schema:
-            format: date-time
-            type: string
-        - description: End time for the query (exclusive). Defaults to current time + 5 minutes if not provided. Must be after start_time.
-          in: query
-          name: end_time
-          schema:
-            format: date-time
-            type: string
         - description: Maximum number of traces to return per page. Defaults to 100 if not specified or set to 0. Use -1 to disable pagination.
           in: query
           name: page_size
@@ -2628,6 +2641,18 @@ paths:
           in: query
           name: page_token
           schema:
+            type: string
+        - description: Start time for the query (inclusive). Defaults to Unix epoch (1970-01-01) if not provided.
+          in: query
+          name: filter.start_time
+          schema:
+            format: date-time
+            type: string
+        - description: End time for the query (exclusive). Defaults to current time + 5 minutes if not provided.
+          in: query
+          name: filter.end_time
+          schema:
+            format: date-time
             type: string
       responses:
         default:
@@ -2658,6 +2683,33 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Get trace
+      tags:
+        - Tracing
+  /v1alpha3/traces:histogram:
+    get:
+      description: Returns the distribution of traces over a time range for timeline visualization.
+      operationId: TracingService_GetTraceHistogram
+      parameters:
+        - description: Start time for the query (inclusive). Defaults to Unix epoch (1970-01-01) if not provided.
+          in: query
+          name: filter.start_time
+          schema:
+            format: date-time
+            type: string
+        - description: End time for the query (exclusive). Defaults to current time + 5 minutes if not provided.
+          in: query
+          name: filter.end_time
+          schema:
+            format: date-time
+            type: string
+      responses:
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get trace histogram
       tags:
         - Tracing
 security:

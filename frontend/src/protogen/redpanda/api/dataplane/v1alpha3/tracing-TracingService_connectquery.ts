@@ -17,3 +17,11 @@ export const listTraces = TracingService.method.listTraces;
  * @generated from rpc redpanda.api.dataplane.v1alpha3.TracingService.GetTrace
  */
 export const getTrace = TracingService.method.getTrace;
+
+/**
+ * GetTraceHistogram returns the trace count distribution over a time range.
+ * Use this to render a timeline visualization separately from trace listing.
+ *
+ * @generated from rpc redpanda.api.dataplane.v1alpha3.TracingService.GetTraceHistogram
+ */
+export const getTraceHistogram = TracingService.method.getTraceHistogram;
