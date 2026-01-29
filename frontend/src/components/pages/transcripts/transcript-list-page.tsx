@@ -361,12 +361,12 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   // In linked mode: trace time ± 1 hour (but end time capped to now)
   // In normal mode: query time range
   const histogramTimestamps = useMemo(() => {
-    const ONE_HOUR_MS = 60 * 60 * 1000;
+    const ONE_HOUR = 60 * 60 * 1000;
     if (isLinkedTraceMode && activeTraceTimeMs) {
       // Cap end time to current time - no point showing future time range
-      const endMs = Math.min(activeTraceTimeMs + ONE_HOUR_MS, Date.now());
+      const endMs = Math.min(activeTraceTimeMs + ONE_HOUR, Date.now());
       return {
-        startTimestamp: timestampFromMs(activeTraceTimeMs - ONE_HOUR_MS),
+        startTimestamp: timestampFromMs(activeTraceTimeMs - ONE_HOUR),
         endTimestamp: timestampFromMs(endMs),
       };
     }

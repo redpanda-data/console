@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { render, screen } from 'test-utils';
+import { describe, expect, test } from 'vitest';
 
 import { ToolEventCard } from './tool-event-card';
 
@@ -30,25 +30,25 @@ const largePayload = JSON.stringify(
 
 describe('ToolEventCard', () => {
   describe('rendering', () => {
-    it('renders tool name in header', () => {
+    test('renders tool name in header', () => {
       render(<ToolEventCard content={smallPayload} testId="tool-card" toolName="readFile" type="call" />);
 
-      expect(screen.getByText('readFile')).toBeInTheDocument();
+      expect(screen.getByText('readFile')).toBeVisible();
     });
 
-    it('renders type label for tool calls', () => {
+    test('renders type label for tool calls', () => {
       render(<ToolEventCard content={smallPayload} testId="tool-card" toolName="readFile" type="call" />);
 
-      expect(screen.getByText('Tool Call')).toBeInTheDocument();
+      expect(screen.getByText('Tool Call')).toBeVisible();
     });
 
-    it('renders type label for tool responses', () => {
+    test('renders type label for tool responses', () => {
       render(<ToolEventCard content={smallPayload} testId="tool-card" toolName="readFile" type="response" />);
 
-      expect(screen.getByText('Tool Response')).toBeInTheDocument();
+      expect(screen.getByText('Tool Response')).toBeVisible();
     });
 
-    it('renders truncated call ID when provided', () => {
+    test('renders truncated call ID when provided', () => {
       render(
         <ToolEventCard
           callId="abc12345xyz67890"
@@ -59,35 +59,35 @@ describe('ToolEventCard', () => {
         />
       );
 
-      expect(screen.getByText('abc12345')).toBeInTheDocument();
+      expect(screen.getByText('abc12345')).toBeVisible();
     });
 
-    it('renders payload size', () => {
+    test('renders payload size', () => {
       render(<ToolEventCard content={smallPayload} testId="tool-card" toolName="readFile" type="call" />);
 
       // Small payload should show bytes
-      expect(screen.getByText(/\d+\s*B/)).toBeInTheDocument();
+      expect(screen.getByText(/\d+\s*B/)).toBeVisible();
     });
   });
 
   describe('auto-expand behavior', () => {
-    it('auto-expands small payloads (< 2KB)', () => {
+    test('auto-expands small payloads (< 2KB)', () => {
       render(<ToolEventCard content={smallPayload} testId="tool-card" toolName="readFile" type="call" />);
 
       // Content should be visible for small payloads
-      expect(screen.getByText(/key/)).toBeInTheDocument();
-      expect(screen.getByText(/value/)).toBeInTheDocument();
+      expect(screen.getByText(/key/)).toBeVisible();
+      expect(screen.getByText(/value/)).toBeVisible();
     });
 
-    it('collapses large payloads by default', async () => {
+    test('collapses large payloads by default', async () => {
       render(<ToolEventCard content={largePayload} testId="tool-card" toolName="readFile" type="call" />);
 
       // Should show preview instead of full content
       const preview = screen.getByTestId('tool-card-preview');
-      expect(preview).toBeInTheDocument();
+      expect(preview).toBeVisible();
     });
 
-    it('respects defaultExpanded override', () => {
+    test('respects defaultExpanded override', () => {
       render(
         <ToolEventCard content={largePayload} defaultExpanded testId="tool-card" toolName="readFile" type="call" />
       );
@@ -99,7 +99,7 @@ describe('ToolEventCard', () => {
   });
 
   describe('expand/collapse interaction', () => {
-    it('toggles expansion when header is clicked', async () => {
+    test('toggles expansion when header is clicked', async () => {
       const user = userEvent.setup();
       render(<ToolEventCard content={smallPayload} testId="tool-card" toolName="readFile" type="call" />);
 
@@ -113,7 +113,7 @@ describe('ToolEventCard', () => {
       expect(toggle).toHaveAttribute('aria-expanded', 'true');
     });
 
-    it('expands when preview is clicked', async () => {
+    test('expands when preview is clicked', async () => {
       const user = userEvent.setup();
       render(<ToolEventCard content={largePayload} testId="tool-card" toolName="readFile" type="call" />);
 
@@ -126,7 +126,7 @@ describe('ToolEventCard', () => {
   });
 
   describe('ARIA accessibility', () => {
-    it('has aria-controls linking to content', () => {
+    test('has aria-controls linking to content', () => {
       render(<ToolEventCard content={smallPayload} testId="tool-card" toolName="readFile" type="call" />);
 
       const toggle = screen.getByTestId('tool-card-toggle');
@@ -136,7 +136,7 @@ describe('ToolEventCard', () => {
       expect(document.getElementById(contentId!)).toBeInTheDocument();
     });
 
-    it('has aria-expanded reflecting state', async () => {
+    test('has aria-expanded reflecting state', async () => {
       const user = userEvent.setup();
       render(<ToolEventCard content={smallPayload} testId="tool-card" toolName="readFile" type="call" />);
 
@@ -147,7 +147,7 @@ describe('ToolEventCard', () => {
       expect(toggle).toHaveAttribute('aria-expanded', 'false');
     });
 
-    it('has aria-label on preview button', () => {
+    test('has aria-label on preview button', () => {
       render(<ToolEventCard content={largePayload} testId="tool-card" toolName="readFile" type="call" />);
 
       const preview = screen.getByTestId('tool-card-preview');
@@ -156,7 +156,7 @@ describe('ToolEventCard', () => {
   });
 
   describe('response visual indicator', () => {
-    it('shows CornerDownRight icon for responses with callId', () => {
+    test('shows CornerDownRight icon for responses with callId', () => {
       const { container } = render(
         <ToolEventCard
           callId="abc12345xyz67890"
@@ -172,7 +172,7 @@ describe('ToolEventCard', () => {
       expect(svg).toBeInTheDocument();
     });
 
-    it('does not show CornerDownRight icon for calls', () => {
+    test('does not show CornerDownRight icon for calls', () => {
       const { container } = render(
         <ToolEventCard
           callId="abc12345xyz67890"
