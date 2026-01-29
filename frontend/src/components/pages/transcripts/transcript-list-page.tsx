@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Heading, Small, Text } from 'components/redpanda-ui/components/typography';
+import { Heading, Link, Small, Text } from 'components/redpanda-ui/components/typography';
 import { ArrowLeft, Database, RefreshCw, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { parseAsString, useQueryStates } from 'nuqs';
@@ -673,7 +673,13 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     <div className="flex flex-col gap-4">
       <header className="flex flex-col gap-2">
         <Heading level={1}>Transcripts</Heading>
-        <Text variant="muted">Inspect LLM calls, tool invocations, and nested spans from your AI agents</Text>
+        <Text variant="muted">
+          Trace and debug AI requests across your agentic dataplane — view LLM calls, tool invocations, and spans from
+          agents, gateways, and services.{' '}
+          <Link href="https://docs.redpanda.com/redpanda-cloud/develop/ai/transcripts/" target="_blank">
+            Learn more
+          </Link>
+        </Text>
       </header>
 
       {/* Toolbar with Search Controls and Time Range */}
