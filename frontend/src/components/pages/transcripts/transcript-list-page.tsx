@@ -36,6 +36,7 @@ import type { TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/trac
 import type { ChangeEvent, FC } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetTraceHistogramQuery, useGetTraceQuery, useListTracesQuery } from 'react-query/api/tracing';
+import { ONE_MINUTE } from 'react-query/react-query.utils';
 import { appGlobal } from 'state/app-global';
 import { pluralize } from 'utils/string';
 
@@ -361,7 +362,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   // In linked mode: trace time ± 1 hour (but end time capped to now)
   // In normal mode: query time range
   const histogramTimestamps = useMemo(() => {
-    const ONE_HOUR = 60 * 60 * 1000;
+    const ONE_HOUR = 60 * ONE_MINUTE;
     if (isLinkedTraceMode && activeTraceTimeMs) {
       // Cap end time to current time - no point showing future time range
       const endMs = Math.min(activeTraceTimeMs + ONE_HOUR, Date.now());
@@ -598,9 +599,9 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   const handleViewSurrounding = () => {
     // Exit linked mode and center time range on the linked trace's time
     if (activeTraceTimeMs) {
-      const THIRTY_MINUTES_MS = 30 * 60 * 1000;
-      const startMs = activeTraceTimeMs - THIRTY_MINUTES_MS;
-      const endMs = activeTraceTimeMs + THIRTY_MINUTES_MS;
+      const THIRTY_MINUTES = 30 * ONE_MINUTE;
+      const startMs = activeTraceTimeMs - THIRTY_MINUTES;
+      const endMs = activeTraceTimeMs + THIRTY_MINUTES;
 
       const startDate = new Date(startMs);
       const endDate = new Date(endMs);
