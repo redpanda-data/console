@@ -39,5 +39,9 @@ export const StartOffsetDateTimePicker = ({ topicName, value, onChange }: StartO
     }
   }, [searchParams?.startTimestampWasSetByUser, value]);
 
-  return <DateTimeInput onChange={onChange} value={value === -1 ? initialTimestamp : value} />;
+  return (
+    <div data-testid="start-timestamp-input">
+      <DateTimeInput onChange={onChange} value={value === -1 ? initialTimestamp : value} />
+    </div>
+  );
 };
