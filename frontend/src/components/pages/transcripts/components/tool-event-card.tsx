@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, ChevronRight, CornerDownRight, Wrench } from 'lucide-react';
 import type { FC } from 'react';
@@ -75,11 +76,11 @@ export const ToolEventCard: FC<ToolEventCardProps> = ({ content, toolName, type,
         {/* Row 1: Chevron + Icon + Tool name */}
         <div className="flex min-w-0 items-center gap-1.5">
           {isExpanded ? (
-            <ChevronDown aria-hidden="true" className="h-3 w-3 shrink-0 text-muted-foreground" />
+            <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
           ) : (
-            <ChevronRight aria-hidden="true" className="h-3 w-3 shrink-0 text-muted-foreground" />
+            <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
           )}
-          <Wrench aria-hidden="true" className="h-3 w-3 shrink-0 text-muted-foreground" />
+          <Wrench aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
           <Text className="min-w-0 truncate font-medium" variant="muted">
             {toolName}
           </Text>
@@ -103,17 +104,17 @@ export const ToolEventCard: FC<ToolEventCardProps> = ({ content, toolName, type,
 
       {/* Preview when collapsed */}
       {!isExpanded && hasPreview ? (
-        <button
+        <Button
           aria-label={`Expand ${toolName} ${typeLabel.toLowerCase()}`}
-          className="w-full border-t px-3 py-2 text-left transition-opacity hover:opacity-80"
+          className="h-auto w-full justify-start rounded-none border-t px-3 py-2 text-left"
           data-testid={testId ? `${testId}-preview` : undefined}
           onClick={() => setIsExpanded(true)}
-          type="button"
+          variant="ghost"
         >
           <Text as="p" className="line-clamp-3 break-all font-mono text-sm leading-relaxed" variant="muted">
             {preview}
           </Text>
-        </button>
+        </Button>
       ) : null}
 
       {/* Expanded content */}
