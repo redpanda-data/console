@@ -923,6 +923,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                   } else {
                     setStartOffset(e);
                   }
+                  // Clear timestamp from URL when offset type is not Timestamp
+                  if (e !== PartitionOffsetOrigin.Timestamp) {
+                    setStartTimestamp(DEFAULT_SEARCH_PARAMS.startTimestamp);
+                  }
                 }}
                 options={startOffsetOptions}
                 value={currentOffsetOrigin}
