@@ -45,30 +45,24 @@ service TracingService {
       description: "Retrieves a complete trace with all its spans by trace ID."
     };
   }
+
+  // GetTraceHistogram returns the trace count distribution over a time range.
+  // Use this to render a timeline visualization separately from trace listing.
+  rpc GetTraceHistogram(GetTraceHistogramRequest) returns (GetTraceHistogramResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+    option (google.api.http) = {get: "/v1alpha3/traces:histogram"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get trace histogram"
+      description: "Returns the distribution of traces over a time range for timeline visualization."
+    };
+  }
 }
 
 // ListTracesRequest is the request message for listing traces.
 message ListTracesRequest {
-  option (buf.validate.message).cel = {
-    id: "time_range_valid"
-    message: "end_time must be >= start_time when both are provided"
-    expression: "!has(this.start_time) || !has(this.end_time) || this.end_time >= this.start_time"
-  };
-
-  // Start time for trace query (inclusive). Traces that finished after this time will be included.
-  // Optional: defaults to Unix epoch if not provided.
-  google.protobuf.Timestamp start_time = 1 [
-    (google.api.field_behavior) = OPTIONAL,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Start time for the query (inclusive). Defaults to Unix epoch (1970-01-01) if not provided. Must be before end_time."}
-  ];
-
-  // End time for trace query (exclusive). Traces that started before this time will be included.
-  // Optional: defaults to current time + 5 minutes if not provided.
-  google.protobuf.Timestamp end_time = 2 [
-    (google.api.field_behavior) = OPTIONAL,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "End time for the query (exclusive). Defaults to current time + 5 minutes if not provided. Must be after start_time."}
-  ];
-
   // Maximum number of traces to return (pagination). Defaults to 100 if not specified or set to 0.
   int32 page_size = 3 [
     (buf.validate.field).int32 = {
@@ -84,6 +78,35 @@ message ListTracesRequest {
 
   // Page token for pagination (opaque, from previous response). Leave empty for first page.
   string page_token = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Opaque token from a previous ListTracesResponse to fetch the next page. Leave empty for the first page."}];
+
+  // Optional filter criteria for listing traces.
+  Filter filter = 5;
+
+  // Filter criteria for listing traces including time range.
+  // Default behavior:
+  // - start_time: defaults to Unix epoch (1970-01-01) if not provided
+  // - end_time: defaults to current time + 5 minutes if not provided
+  message Filter {
+    option (buf.validate.message).cel = {
+      id: "time_range_valid"
+      message: "end_time must be >= start_time when both are provided"
+      expression: "!has(this.start_time) || !has(this.end_time) || this.end_time >= this.start_time"
+    };
+
+    // Start time for trace query (inclusive). Traces that finished after this time will be included.
+    // Optional: defaults to Unix epoch if not provided.
+    google.protobuf.Timestamp start_time = 1 [
+      (google.api.field_behavior) = OPTIONAL,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Start time for the query (inclusive). Defaults to Unix epoch (1970-01-01) if not provided."}
+    ];
+
+    // End time for trace query (exclusive). Traces that started before this time will be included.
+    // Optional: defaults to current time + 5 minutes if not provided.
+    google.protobuf.Timestamp end_time = 2 [
+      (google.api.field_behavior) = OPTIONAL,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "End time for the query (exclusive). Defaults to current time + 5 minutes if not provided."}
+    ];
+  }
 }
 
 // ListTracesResponse is the response message for listing traces.
@@ -112,11 +135,26 @@ message ListTracesResponse {
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "End time of the newest trace in this page. Use with returned_start_time to highlight the current view window in a timeline."}
   ];
 
+  // Field 6 was removed (histogram). Use GetTraceHistogram RPC instead.
+  reserved 6;
+}
+
+// GetTraceHistogramRequest is the request message for getting the trace histogram.
+message GetTraceHistogramRequest {
+  // Optional filter criteria for the histogram query.
+  // Reuses the same Filter message as ListTracesRequest for consistency.
+  ListTracesRequest.Filter filter = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter criteria including time range for the histogram query."}];
+}
+
+// GetTraceHistogramResponse is the response message for getting the trace histogram.
+message GetTraceHistogramResponse {
   // Histogram of trace counts over the query time range.
-  // Use this to render a timeline visualization showing trace distribution.
-  TraceHistogram histogram = 6 [
+  TraceHistogram histogram = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Histogram showing trace distribution over the query time range."}];
+
+  // Total number of traces matching the time range.
+  int32 total_count = 2 [
     (google.api.field_behavior) = OUTPUT_ONLY,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Histogram showing trace distribution over the query time range. Each bucket represents a time interval with its trace count."}
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Total number of traces in the time range."}
   ];
 }
 
