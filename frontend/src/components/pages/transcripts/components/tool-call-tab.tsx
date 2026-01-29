@@ -91,35 +91,54 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
     <div className="space-y-4 p-4">
       {/* Tool Description */}
       {!!toolData.description && (
-        <ContentPanel className="bg-muted/20">
-          <Text className="text-sm leading-relaxed" variant="muted">
-            {toolData.description}
+        <div className="space-y-1.5">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
+            DESCRIPTION
           </Text>
-        </ContentPanel>
+          <ContentPanel className="bg-muted/20">
+            <Text className="text-sm leading-relaxed" variant="muted">
+              {toolData.description}
+            </Text>
+          </ContentPanel>
+        </div>
       )}
 
       {/* Arguments */}
       {!!toolData.hasArguments && (
-        <ToolEventCard
-          callId={toolData.callId}
-          content={
-            toolData.isArgumentsJson ? formatJsonContent(toolData.arguments, true) : truncateContent(toolData.arguments)
-          }
-          testId="tool-call-arguments"
-          toolName={toolData.name || 'unknown'}
-          type="call"
-        />
+        <div className="space-y-1.5">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
+            ARGUMENTS
+          </Text>
+          <ToolEventCard
+            callId={toolData.callId}
+            content={
+              toolData.isArgumentsJson
+                ? formatJsonContent(toolData.arguments, true)
+                : truncateContent(toolData.arguments)
+            }
+            testId="tool-call-arguments"
+            toolName={toolData.name || 'unknown'}
+            type="call"
+          />
+        </div>
       )}
 
       {/* Result */}
       {!!toolData.hasResult && (
-        <ToolEventCard
-          callId={toolData.callId}
-          content={toolData.isResultJson ? formatJsonContent(toolData.result, true) : truncateContent(toolData.result)}
-          testId="tool-call-result"
-          toolName={toolData.name || 'unknown'}
-          type="response"
-        />
+        <div className="space-y-1.5">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
+            RESPONSE
+          </Text>
+          <ToolEventCard
+            callId={toolData.callId}
+            content={
+              toolData.isResultJson ? formatJsonContent(toolData.result, true) : truncateContent(toolData.result)
+            }
+            testId="tool-call-result"
+            toolName={toolData.name || 'unknown'}
+            type="response"
+          />
+        </div>
       )}
     </div>
   );

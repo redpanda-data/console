@@ -134,7 +134,7 @@ export const AgentTab: FC<Props> = ({ span }) => {
             AGENT ID
           </Text>
           <ContentPanel>
-            <Text className="font-mono text-sm" variant="muted">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
               {agentData.agentId}
             </Text>
           </ContentPanel>
@@ -192,7 +192,7 @@ export const AgentTab: FC<Props> = ({ span }) => {
             CONVERSATION ID
           </Text>
           <ContentPanel>
-            <Text className="font-mono text-sm" variant="muted">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
               {agentData.conversationId}
             </Text>
           </ContentPanel>

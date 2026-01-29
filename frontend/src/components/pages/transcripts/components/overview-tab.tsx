@@ -130,7 +130,7 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
         <div className="space-y-2">
           <SectionHeader>Service</SectionHeader>
           <ContentPanel>
-            <Text className="break-all font-mono text-sm" variant="muted">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
               {summary.rootServiceName}
             </Text>
           </ContentPanel>
@@ -142,7 +142,7 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
         <div className="space-y-2">
           <SectionHeader>Conversation ID</SectionHeader>
           <ContentPanel>
-            <Text className="break-all font-mono text-sm" variant="muted">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
               {conversationId}
             </Text>
           </ContentPanel>

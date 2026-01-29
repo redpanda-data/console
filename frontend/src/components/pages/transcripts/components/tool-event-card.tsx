@@ -120,7 +120,9 @@ export const ToolEventCard: FC<ToolEventCardProps> = ({ content, toolName, type,
       {/* Expanded content */}
       {isExpanded ? (
         <div className="border-t px-3 py-2" id={contentId}>
-          <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed">{content}</pre>
+          <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed text-muted-foreground">
+            {content}
+          </pre>
         </div>
       ) : null}
     </ContentPanel>
