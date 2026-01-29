@@ -12,11 +12,17 @@
 import { create } from '@bufbuild/protobuf';
 import { useQuery } from '@connectrpc/connect-query';
 import {
+  type GetTraceHistogramRequest,
+  GetTraceHistogramRequestSchema,
   GetTraceRequestSchema,
   type ListTracesRequest,
   ListTracesRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
-import { getTrace, listTraces } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing-TracingService_connectquery';
+import {
+  getTrace,
+  getTraceHistogram,
+  listTraces,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/tracing-TracingService_connectquery';
 import { fastFailRetry, type MessageInit } from 'react-query/react-query.utils';
 
 export const useListTracesQuery = (
@@ -38,6 +44,17 @@ export const useGetTraceQuery = (traceId: string | null | undefined, opts?: { en
   return useQuery(getTrace, getTraceRequest, {
     ...opts,
     enabled: !!traceId && (opts?.enabled ?? true),
+    retry: fastFailRetry,
+  });
+};
+
+export const useGetTraceHistogramQuery = (
+  request: MessageInit<GetTraceHistogramRequest>,
+  opts?: { enabled?: boolean }
+) => {
+  const getTraceHistogramRequest = create(GetTraceHistogramRequestSchema, request);
+  return useQuery(getTraceHistogram, getTraceHistogramRequest, {
+    ...opts,
     retry: fastFailRetry,
   });
 };
