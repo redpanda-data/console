@@ -54,6 +54,8 @@ const TIME_RANGES = [
   { value: '24h', label: 'Last 24 hours', ms: 24 * 60 * 60 * 1000 },
 ];
 
+export const TRANSCRIPTS_PAGE_SIZE = 100;
+
 /** Props for the stats row component */
 type TranscriptsStatsRowProps = {
   isLoading: boolean;
@@ -66,14 +68,16 @@ type TranscriptsStatsRowProps = {
 const TranscriptsStatsRow: FC<TranscriptsStatsRowProps> = ({ isLoading, isInitialLoad, stats, onCollapseAll }) => {
   if (isLoading && isInitialLoad) {
     return (
-      <div className="flex items-center justify-between px-1 text-muted-foreground">
-        <Small className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-1">
+        <Text as="span" className="flex items-center gap-2" variant="muted">
           <Spinner size="xs" />
           Loading transcripts...
-        </Small>
+        </Text>
         <div className="flex items-center gap-3">
           <Button className="h-6 px-2" onClick={onCollapseAll} size="sm" variant="ghost">
-            <Small>Collapse all</Small>
+            <Text as="span" variant="muted">
+              Collapse all
+            </Text>
           </Button>
         </div>
       </div>
@@ -83,8 +87,8 @@ const TranscriptsStatsRow: FC<TranscriptsStatsRowProps> = ({ isLoading, isInitia
   const hasAnomalies = stats.withErrors > 0 || stats.inProgress > 0;
 
   return (
-    <div className="flex items-center justify-between px-1 text-muted-foreground">
-      <Small>
+    <div className="flex items-center justify-between px-1">
+      <Text as="span" variant="muted">
         Showing {stats.total} {pluralize(stats.total, 'transcript')}
         {hasAnomalies ? (
           <span className="text-muted-foreground/70">
@@ -94,10 +98,12 @@ const TranscriptsStatsRow: FC<TranscriptsStatsRowProps> = ({ isLoading, isInitia
             {stats.inProgress > 0 ? `, ${stats.inProgress} in-progress` : null})
           </span>
         ) : null}
-      </Small>
+      </Text>
       <div className="flex items-center gap-3">
         <Button className="h-6 px-2" onClick={onCollapseAll} size="sm" variant="ghost">
-          <Small>Collapse all</Small>
+          <Text as="span" variant="muted">
+            Collapse all
+          </Text>
         </Button>
       </div>
     </div>
@@ -269,7 +275,10 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     setInitialHistogram(undefined);
     setInitialTotalCount(0);
     hasInitializedRef.current = false;
-  }, []);
+    // Clear span selection - selected span may not exist in new data
+    setSelectedTraceId(null);
+    setSelectedSpanId(null);
+  }, [setSelectedTraceId, setSelectedSpanId]);
 
   // Handle time range changes from the Select component
   // This replaces the useEffect approach to prevent double-queries from nuqs hydration
@@ -306,7 +315,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   const { data, isLoading, error } = useListTracesQuery({
     startTime: timestamps.startTimestamp,
     endTime: timestamps.endTimestamp,
-    pageSize: 100,
+    pageSize: TRANSCRIPTS_PAGE_SIZE,
     pageToken: currentPageToken,
   });
 
@@ -346,11 +355,6 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
       appGlobal.onRefresh = previousHandler;
     };
   }, [resetQueryState]);
-
-  useEffect(() => {
-    setSelectedTraceId(null);
-    setSelectedSpanId(null);
-  }, [setSelectedTraceId, setSelectedSpanId]);
 
   // Use accumulated traces for display
   const displayTraces = accumulatedTraces;

@@ -426,7 +426,7 @@ const SpanRow: FC<SpanRowProps> = ({
         <div className="flex shrink-0 items-center gap-2 py-1 pr-6 pl-2">
           <div className="relative h-2.5 flex-1 rounded-sm bg-muted/30">
             <div
-              className={cn('absolute h-full rounded-sm', span.hasError ? 'bg-red-500/70' : 'bg-sky-500/70')}
+              className={cn('absolute h-full rounded-sm', span.hasError ? 'bg-destructive/70' : 'bg-info/70')}
               style={{
                 left: `${barStart}%`,
                 width: `${barWidth}%`,
@@ -589,7 +589,7 @@ const RootTraceServiceBadge: FC<{ isIncomplete: boolean; serviceName: string | u
   if (isIncomplete) {
     return (
       <Badge
-        className="flex h-4 shrink-0 items-center border-amber-500/30 bg-amber-500/10 px-1.5 py-0 font-normal text-amber-600"
+        className="flex h-4 shrink-0 items-center border-warning/25 bg-muted/50 px-1.5 py-0 font-normal text-warning/90"
         variant="outline"
       >
         <AlertCircle className="mr-1 h-3 w-3 shrink-0" />
@@ -620,7 +620,7 @@ const RootTraceDurationCell: FC<{
     return (
       <>
         <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-          <div className="h-full w-full rounded-full bg-amber-500/30" />
+          <div className="h-full w-full rounded-full bg-warning/30" />
         </div>
         <Small className="w-14 shrink-0 text-left font-mono text-muted-foreground">—</Small>
       </>
@@ -630,7 +630,7 @@ const RootTraceDurationCell: FC<{
     <>
       <div className="relative h-2.5 flex-1 overflow-hidden rounded-sm bg-muted/30">
         <div
-          className={cn('h-full rounded-sm', hasErrors ? 'bg-red-500/70' : 'bg-sky-500/70')}
+          className={cn('h-full rounded-sm', hasErrors ? 'bg-destructive/70' : 'bg-info/70')}
           style={{ width: '100%' }}
         />
       </div>
@@ -684,12 +684,11 @@ const RootTraceRow: FC<{
       aria-label={`${isExpanded ? 'Collapse' : 'Expand'} transcript ${traceSummary.rootSpanName || 'unnamed'}, ${traceSummary.spanCount} spans${rootSpanId ? ', click to inspect root span' : ''}`}
       className={cn(
         selectableRowBase,
+        selectableRowHover,
         selectableRowSelected,
         selectableRowFocus,
         'h-9 [grid-template-columns:72px_minmax(0,1fr)_260px]',
-        'data-[incomplete=true]:bg-amber-500/5 data-[incomplete=true]:hover:bg-amber-500/10',
-        'data-[incomplete=false]:data-[selected=false]:bg-muted/10 data-[incomplete=false]:data-[selected=false]:hover:bg-slate-50',
-        'dark:data-[incomplete=false]:data-[selected=false]:hover:bg-slate-900/40'
+        'data-[incomplete=true]:border-l-2 data-[incomplete=true]:border-l-warning'
       )}
       data-incomplete={isIncomplete}
       data-selected={isSelected}
@@ -820,7 +819,7 @@ const ExpandedSpansContent: FC<{
 
   if (error) {
     return (
-      <div className="flex items-center justify-center gap-2 p-4 text-center text-red-600 text-sm">
+      <div className="flex items-center justify-center gap-2 p-4 text-center text-destructive text-sm">
         <AlertCircle className="h-4 w-4" />
         <span>Failed to load transcript: {error.message}</span>
       </div>
@@ -1077,7 +1076,7 @@ export const TranscriptsTable: FC<Props> = ({
         <div className={selectedTraceId ? 'flex h-full min-w-0 flex-1 flex-col' : 'flex h-full w-full flex-col'}>
           <div className="flex flex-1 flex-col overflow-hidden bg-background">
             {/* Column Headers */}
-            <div className="sticky top-0 grid border-b bg-muted/50 font-medium text-muted-foreground [grid-template-columns:72px_minmax(0,1fr)_260px]">
+            <div className="sticky top-0 grid h-10 items-center border-b font-medium text-foreground [grid-template-columns:72px_minmax(0,1fr)_260px]">
               <button
                 aria-label={
                   sortOrder === 'newest-first'
@@ -1132,7 +1131,7 @@ export const TranscriptsTable: FC<Props> = ({
               if (error) {
                 return (
                   <div
-                    className="flex h-24 items-center justify-center gap-2 text-red-600 text-sm"
+                    className="flex h-24 items-center justify-center gap-2 text-destructive text-sm"
                     data-testid="transcripts-error-state"
                   >
                     <AlertCircle className="h-4 w-4" />

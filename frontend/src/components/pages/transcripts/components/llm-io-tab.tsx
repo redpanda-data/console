@@ -15,15 +15,15 @@ import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-d
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { CheckCircle, ChevronDown, ChevronRight, HelpCircle, History, MessageSquare, User, Wrench } from 'lucide-react';
+import { ChevronDown, ChevronRight, CornerDownRight, HelpCircle, MessageSquare, User, Wrench } from 'lucide-react';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
 import { tryParseJson } from 'utils/json-utils';
+import { prettyBytes } from 'utils/utils';
 
-import { CollapsibleCodeSection } from './collapsible-code-section';
 import { ContentPanel } from './content-panel';
-import { formatJsonContent } from '../utils/transcript-formatters';
+import { formatJsonContent, getPreview } from '../utils/transcript-formatters';
 
 type Props = {
   span: Span;
@@ -33,9 +33,11 @@ type Props = {
 type MessagePart = {
   type: 'text' | 'tool_call' | 'tool_call_response';
   content?: string; // text parts
-  name?: string; // tool_call parts
+  name?: string; // tool_call parts and tool_call_response parts
+  id?: string; // tool_call parts - unique call identifier
   arguments?: Record<string, unknown>; // tool_call parts
   response?: Record<string, unknown>; // tool_call_response parts
+  tool_call_id?: string; // tool_call_response parts - correlation ID
 };
 
 // OpenTelemetry message structure
@@ -49,12 +51,15 @@ type OTelMessage = {
 type ToolCall = {
   name: string;
   arguments: Record<string, unknown>;
+  id?: string; // Unique call identifier for correlation
   uiKey?: string; // Unique key for React rendering
 };
 
 // Tool response extracted from parts
 type ToolResponse = {
   response: Record<string, unknown>;
+  name?: string; // Tool name for display
+  callId?: string; // Correlation ID linking to the tool call
   uiKey?: string; // Unique key for React rendering
 };
 
@@ -66,30 +71,106 @@ type Message = {
   toolResponses?: ToolResponse[]; // Extracted from tool_call_response parts
 };
 
+const SMALL_PAYLOAD_THRESHOLD = 2 * 1024; // 2KB
+const PREVIEW_LINES = 3;
+
+// Component: Unified tool event card for both calls and responses
+type ToolEventCardProps = {
+  type: 'call' | 'response';
+  toolName: string;
+  callId?: string;
+  content: string;
+};
+
+const ToolEventCard: FC<ToolEventCardProps> = ({ type, toolName, callId, content }) => {
+  const payloadSize = useMemo(() => new Blob([content]).size, [content]);
+  const shouldDefaultExpand = payloadSize < SMALL_PAYLOAD_THRESHOLD;
+  const [isExpanded, setIsExpanded] = useState(shouldDefaultExpand);
+
+  const preview = useMemo(() => getPreview(content, PREVIEW_LINES), [content]);
+  const hasPreview = content.split('\n').length > PREVIEW_LINES || payloadSize > SMALL_PAYLOAD_THRESHOLD;
+
+  const isCall = type === 'call';
+  const typeLabel = isCall ? 'Tool Call' : 'Tool Response';
+
+  return (
+    <ContentPanel className="p-0">
+      {/* Two-row header */}
+      <button
+        className="flex w-full flex-col gap-0.5 px-3 py-2 text-left transition-colors hover:bg-muted/20"
+        onClick={() => setIsExpanded(!isExpanded)}
+        type="button"
+      >
+        {/* Row 1: Chevron + Icon + Tool name */}
+        <div className="flex min-w-0 items-center gap-1.5">
+          {isExpanded ? (
+            <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+          )}
+          <Wrench className="h-3 w-3 shrink-0 text-muted-foreground" />
+          <Text className="min-w-0 truncate font-medium" variant="muted">
+            {toolName}
+          </Text>
+        </div>
+        {/* Row 2: Type + Call ID + Size */}
+        <div className="flex items-center gap-1.5 pl-[18px] text-muted-foreground text-xs">
+          <span>{typeLabel}</span>
+          {callId ? (
+            <>
+              <span>•</span>
+              <span className="flex items-center gap-0.5">
+                {!isCall && <CornerDownRight className="h-2.5 w-2.5 shrink-0" />}
+                <span className="font-mono">{callId.slice(0, 8)}</span>
+              </span>
+            </>
+          ) : null}
+          <span>•</span>
+          <span className="shrink-0 font-mono">{prettyBytes(payloadSize)}</span>
+        </div>
+      </button>
+
+      {/* Preview when collapsed */}
+      {!isExpanded && hasPreview ? (
+        <button
+          className="w-full border-t px-3 py-2 text-left transition-opacity hover:opacity-80"
+          onClick={() => setIsExpanded(true)}
+          type="button"
+        >
+          <Text as="p" className="line-clamp-3 break-all font-mono text-sm leading-relaxed" variant="muted">
+            {preview}
+          </Text>
+        </button>
+      ) : null}
+
+      {/* Expanded content */}
+      {isExpanded ? (
+        <div className="border-t px-3 py-2">
+          <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed">{content}</pre>
+        </div>
+      ) : null}
+    </ContentPanel>
+  );
+};
+
 // Component: Display tool call
 const ToolCallDisplay: FC<{ toolCall: ToolCall }> = ({ toolCall }) => (
-  <div className="space-y-1.5">
-    <div className="flex items-center gap-1.5">
-      <Wrench className="h-3 w-3 text-muted-foreground" />
-      <Text className="font-medium" variant="muted">
-        Tool Call: {toolCall.name}
-      </Text>
-    </div>
-    <CollapsibleCodeSection content={JSON.stringify(toolCall.arguments, null, 2)} title="ARGUMENTS" />
-  </div>
+  <ToolEventCard
+    callId={toolCall.id}
+    content={JSON.stringify(toolCall.arguments, null, 2)}
+    toolName={toolCall.name}
+    type="call"
+  />
 );
 
 // Component: Display tool response
 const ToolResponseDisplay: FC<{ response: ToolResponse }> = ({ response }) => (
-  <div className="space-y-1.5">
-    <div className="flex items-center gap-1.5">
-      <CheckCircle className="h-3 w-3 text-muted-foreground" />
-      <Text className="font-medium" variant="muted">
-        Tool Response
-      </Text>
-    </div>
-    <CollapsibleCodeSection content={JSON.stringify(response.response, null, 2)} title="RESPONSE" />
-  </div>
+  <ToolEventCard
+    callId={response.callId}
+    content={JSON.stringify(response.response, null, 2)}
+    toolName={response.name || 'unknown'}
+    type="response"
+  />
 );
 
 // Component: Display a single history message
@@ -106,7 +187,7 @@ const HistoryMessageItem: FC<{ message: Message; index: number }> = ({ message, 
       {/* Role header */}
       <div className="flex items-center gap-1.5">
         <Icon className="h-3 w-3 text-muted-foreground" />
-        <Text className="font-medium capitalize" variant="small">
+        <Text className="font-medium capitalize" variant="muted">
           {message.role}
         </Text>
       </div>
@@ -115,11 +196,9 @@ const HistoryMessageItem: FC<{ message: Message; index: number }> = ({ message, 
       {hasContent ? (
         <div className="leading-relaxed">
           {isJson ? (
-            <div className="[&_*]:text-xs">
-              <DynamicCodeBlock code={formatJsonContent(message.content)} lang="json" />
-            </div>
+            <DynamicCodeBlock code={formatJsonContent(message.content)} lang="json" />
           ) : (
-            <Text className="whitespace-pre-wrap break-words" variant="muted">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm" variant="muted">
               {message.content}
             </Text>
           )}
@@ -165,17 +244,15 @@ const InputSection: FC<{ input: string; lastInputMessage?: Message }> = ({ input
               <HelpCircle className="h-3 w-3 text-muted-foreground/50" />
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              <p className="text-xs">
-                The last message added to the conversation before this LLM request. This could be a user message, tool
-                response, or any other input that triggered this specific LLM call.
-              </p>
+              The last message added to the conversation before this LLM request. This could be a user message, tool
+              response, or any other input that triggered this specific LLM call.
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
       <ContentPanel spacing>
         {!!input && (
-          <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="small">
+          <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
             {input}
           </Text>
         )}
@@ -219,14 +296,14 @@ const OutputSection: FC<{ output: string; lastOutputMessage?: Message }> = ({ ou
               <HelpCircle className="h-3 w-3 text-muted-foreground/50" />
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              <p className="text-xs">The response generated by the LLM for this specific request.</p>
+              The response generated by the LLM for this specific request.
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
       <ContentPanel spacing>
         {!!output && (
-          <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="small">
+          <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
             {output}
           </Text>
         )}
@@ -303,8 +380,23 @@ const getMessageIcon = (role: string) => {
 // Regex for matching indexed message format: gen_ai.prompt.{index}.{field}
 const INDEXED_MESSAGE_PATTERN = /^gen_ai\.prompt\.(\d+)\.(role|content)$/;
 
+// Helper: Build a map of tool call ID -> tool name from all messages
+const buildToolCallMap = (messages: OTelMessage[]): Map<string, string> => {
+  const toolCallMap = new Map<string, string>();
+
+  for (const msg of messages) {
+    for (const part of msg.parts || []) {
+      if (part.type === 'tool_call' && part.id && part.name) {
+        toolCallMap.set(part.id, part.name);
+      }
+    }
+  }
+
+  return toolCallMap;
+};
+
 // Helper: Flatten OpenTelemetry message parts into displayable message
-const flattenMessageParts = (otelMsg: OTelMessage): Message => {
+const flattenMessageParts = (otelMsg: OTelMessage, toolCallMap: Map<string, string>): Message => {
   const message: Message = {
     role: otelMsg.role || 'system',
     content: '',
@@ -327,6 +419,7 @@ const flattenMessageParts = (otelMsg: OTelMessage): Message => {
           message.toolCalls?.push({
             name: part.name,
             arguments: part.arguments,
+            id: part.id,
             uiKey: `tool-call-${index}-${part.name}`,
           });
         }
@@ -334,8 +427,15 @@ const flattenMessageParts = (otelMsg: OTelMessage): Message => {
 
       case 'tool_call_response':
         if (part.response) {
+          // The call ID is in the 'id' field (not 'tool_call_id')
+          const callId = part.id;
+          // Look up the tool name from the matching tool_call
+          const toolName = callId ? toolCallMap.get(callId) : undefined;
+
           message.toolResponses?.push({
             response: part.response,
+            name: toolName,
+            callId,
             uiKey: `tool-response-${index}`,
           });
         }
@@ -366,11 +466,14 @@ const extractOTelMessages = (span: Span, attributeKey: string): Message[] => {
       return [];
     }
 
+    // Build a map of tool call ID -> tool name for looking up response names
+    const toolCallMap = buildToolCallMap(parsed as OTelMessage[]);
+
     return parsed
       .map((msg: OTelMessage) => {
         // Check if message has parts array (OpenTelemetry format)
         if (msg.parts && Array.isArray(msg.parts)) {
-          return flattenMessageParts(msg);
+          return flattenMessageParts(msg, toolCallMap);
         }
 
         // Backward compatibility: simple {role, content} format
@@ -564,30 +667,37 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
             MODEL
           </Text>
           <div>
-            <Badge variant="secondary">
+            <Badge variant="neutral-inverted">
               <Text variant="small">{llmData.model}</Text>
             </Badge>
           </div>
         </div>
       )}
 
-      {/* Token Counts - Compact */}
+      {/* Token Counts */}
       {llmData.inputTokens > 0 && (
-        <ContentPanel className="flex items-center justify-between bg-muted/20">
-          <div className="space-x-3">
-            <Text variant="muted">
-              Input:{' '}
-              <span className="font-medium font-mono text-foreground">{llmData.inputTokens.toLocaleString()}</span>
-            </Text>
-            <Text variant="muted">
-              Output:{' '}
-              <span className="font-medium font-mono text-foreground">{llmData.outputTokens.toLocaleString()}</span>
-            </Text>
-          </div>
-          <Text className="font-medium" variant="muted">
-            {totalTokens.toLocaleString()} total
+        <div className="space-y-1.5">
+          <Text as="div" className="uppercase tracking-wide" variant="label">
+            TOKEN USAGE
           </Text>
-        </ContentPanel>
+          <ContentPanel className="bg-muted/20">
+            <div className="flex items-center justify-between">
+              <div className="space-x-3">
+                <Text variant="muted">
+                  Input:{' '}
+                  <span className="font-medium font-mono text-foreground">{llmData.inputTokens.toLocaleString()}</span>
+                </Text>
+                <Text variant="muted">
+                  Output:{' '}
+                  <span className="font-medium font-mono text-foreground">{llmData.outputTokens.toLocaleString()}</span>
+                </Text>
+              </div>
+              <Text className="font-medium" variant="muted">
+                {totalTokens.toLocaleString()} total
+              </Text>
+            </div>
+          </ContentPanel>
+        </div>
       )}
 
       <InputSection input={llmData.input} lastInputMessage={llmData.lastInputMessage} />
@@ -596,19 +706,27 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
       {/* Conversation History */}
       <Collapsible onOpenChange={setIsHistoryOpen} open={isHistoryOpen}>
         <CollapsibleTrigger asChild>
-          <Button className="h-7 w-full justify-between px-2 hover:bg-muted/50" variant="ghost">
+          <Button
+            className="flex h-auto w-full items-center justify-between px-0 py-0 hover:bg-transparent"
+            variant="ghost"
+          >
             <div className="flex items-center gap-1.5">
-              <History className="h-3 w-3" />
-              <Text variant="small">Conversation History</Text>
+              {isHistoryOpen ? (
+                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-3 w-3 text-muted-foreground" />
+              )}
+              <Text as="span" variant="label">
+                CONVERSATION HISTORY
+              </Text>
               {historyMessageCount > 0 && (
-                <Badge className="h-4 bg-muted/50 px-1" variant="outline">
+                <Badge className="h-4 bg-muted/50 px-1.5" variant="outline">
                   <Text variant="small">
                     {historyMessageCount} {historyMessageCount === 1 ? 'message' : 'messages'}
                   </Text>
                 </Badge>
               )}
             </div>
-            {isHistoryOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
           </Button>
         </CollapsibleTrigger>
         {hasConversationHistory ? (

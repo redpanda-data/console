@@ -162,10 +162,10 @@ export const AttributesTab: FC<Props> = ({ span }) => {
         {filteredAttributes.map((attr) => (
           <ContentPanel key={attr.key}>
             <div className="space-y-0.5">
-              <Text className="break-all font-mono" variant="muted">
+              <Text className="break-all font-mono text-sm" variant="muted">
                 {attr.key}
               </Text>
-              <Text className="break-all font-mono" variant="small">
+              <Text className="break-all font-mono text-sm" variant="muted">
                 {attr.value}
               </Text>
             </div>

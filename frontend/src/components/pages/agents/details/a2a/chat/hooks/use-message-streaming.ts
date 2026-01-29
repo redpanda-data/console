@@ -9,12 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import type { Task, TaskArtifactUpdateEvent, TaskStatusUpdateEvent } from '@a2a-js/sdk';
-import { ConnectError } from '@connectrpc/connect';
+import type { JSONRPCError, Task, TaskArtifactUpdateEvent, TaskStatusUpdateEvent } from '@a2a-js/sdk';
 import { streamText } from 'ai';
 import { config } from 'config';
-import { toast } from 'sonner';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import {
   handleArtifactUpdateEvent,
@@ -26,9 +23,76 @@ import {
 import { buildMessageWithContentBlocks, closeActiveTextBlock } from './message-builder';
 import type { ResponseMetadataEvent, StreamChunk, StreamingState, TextDeltaEvent } from './streaming-types';
 import { a2a } from '../../a2a-provider';
-import type { ChatMessage } from '../types';
+import type { ChatMessage, ContentBlock } from '../types';
 import { saveMessage, updateMessage } from '../utils/database-operations';
 import { createAssistantMessage } from '../utils/message-converter';
+
+/**
+ * Regex patterns for parsing JSON-RPC error details from error messages.
+ *
+ * Why regex? The a2a-js SDK throws plain Error objects with formatted strings
+ * instead of structured error objects. The SDK has access to the structured
+ * JSON-RPC error (code, message, data) but serializes it into the error message:
+ *
+ *   // a2a-js/src/client/transports/json_rpc_transport.ts
+ *   if ('error' in a2aStreamResponse) {
+ *     const err = a2aStreamResponse.error;
+ *     throw new Error(
+ *       `SSE event contained an error: ${err.message} (Code: ${err.code}) Data: ${JSON.stringify(err.data || {})}`
+ *     );
+ *   }
+ *
+ * Until the SDK exposes structured error data, we parse it back out.
+ */
+const JSON_RPC_CODE_REGEX = /\(Code:\s*(-?\d+)\)/i;
+const JSON_RPC_DATA_REGEX = /Data:\s*(\{[^}]*\})/i;
+const JSON_RPC_MESSAGE_REGEX = /error:\s*([^(]+)\s*\(Code:/i;
+const ERROR_PREFIX_STREAMING_REGEX = /^Error during streaming[^:]*:\s*/i;
+const ERROR_PREFIX_SSE_REGEX = /^SSE event contained an error:\s*/i;
+const ERROR_SUFFIX_CODE_REGEX = /\s*\(Code:\s*-?\d+\).*$/i;
+
+/**
+ * Parse A2A/JSON-RPC error details from an error message string.
+ */
+const parseA2AError = (error: unknown): JSONRPCError => {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+
+  // Try to parse JSON-RPC error from the error message
+  // Format: "SSE event contained an error: <message> (Code: <code>) Data: <json> (code: <connect_code>)"
+  const jsonRpcMatch = errorMessage.match(JSON_RPC_CODE_REGEX);
+  const dataMatch = errorMessage.match(JSON_RPC_DATA_REGEX);
+  const messageMatch = errorMessage.match(JSON_RPC_MESSAGE_REGEX);
+
+  // Extract just the core error message without wrapper text
+  let message = errorMessage;
+  if (messageMatch?.[1]) {
+    message = messageMatch[1].trim();
+  } else {
+    // Remove common prefixes
+    message = message
+      .replace(ERROR_PREFIX_STREAMING_REGEX, '')
+      .replace(ERROR_PREFIX_SSE_REGEX, '')
+      .replace(ERROR_SUFFIX_CODE_REGEX, '')
+      .trim();
+  }
+
+  const code = jsonRpcMatch?.[1] ? Number.parseInt(jsonRpcMatch[1], 10) : -1;
+
+  let data: Record<string, unknown> | undefined;
+  if (dataMatch?.[1]) {
+    try {
+      data = JSON.parse(dataMatch[1]);
+    } catch {
+      // Invalid JSON in data field
+    }
+  }
+
+  return {
+    code,
+    message: message || 'Unknown error',
+    data,
+  };
+};
 
 type StreamMessageParams = {
   prompt: string;
@@ -196,10 +260,38 @@ export const streamMessage = async ({
       success: true,
     };
   } catch (error) {
-    const connectError = ConnectError.from(error);
-    toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'stream', entity: 'message' }));
+    // Parse JSON-RPC error details
+    const a2aError = parseA2AError(error);
+
+    // Create error content block
+    const errorBlock: ContentBlock = {
+      type: 'a2a-error',
+      error: a2aError,
+      timestamp: new Date(),
+    };
+
+    // Build message with error block
+    const errorMessage = buildMessageWithContentBlocks({
+      baseMessage: assistantMessage,
+      contentBlocks: [errorBlock],
+      taskId: undefined,
+      taskState: 'failed',
+      taskStartIndex: undefined,
+    });
+
+    // Update database with error
+    await updateMessage(assistantMessage.id, {
+      content: '',
+      isStreaming: false,
+      taskState: 'failed',
+      contentBlocks: [errorBlock],
+    });
+
+    // Notify caller about error message
+    onMessageUpdate(errorMessage);
+
     return {
-      assistantMessage,
+      assistantMessage: errorMessage,
       success: false,
     };
   }

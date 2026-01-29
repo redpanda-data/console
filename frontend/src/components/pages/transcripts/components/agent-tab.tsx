@@ -78,7 +78,7 @@ export const AgentTab: FC<Props> = ({ span }) => {
             AGENT NAME
           </Text>
           <ContentPanel>
-            <Text className="font-medium" variant="small">
+            <Text className="font-medium" variant="muted">
               {agentData.agentName}
             </Text>
           </ContentPanel>
@@ -92,7 +92,7 @@ export const AgentTab: FC<Props> = ({ span }) => {
             DESCRIPTION
           </Text>
           <ContentPanel>
-            <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="muted">
+            <Text className="whitespace-pre-wrap break-words text-sm leading-relaxed" variant="muted">
               {agentData.agentDescription}
             </Text>
           </ContentPanel>
@@ -106,7 +106,7 @@ export const AgentTab: FC<Props> = ({ span }) => {
             INPUT
           </Text>
           <ContentPanel>
-            <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="muted">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
               {agentData.agentInput}
             </Text>
           </ContentPanel>
@@ -120,7 +120,7 @@ export const AgentTab: FC<Props> = ({ span }) => {
             OUTPUT
           </Text>
           <ContentPanel>
-            <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="muted">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
               {agentData.agentOutput}
             </Text>
           </ContentPanel>
@@ -134,7 +134,7 @@ export const AgentTab: FC<Props> = ({ span }) => {
             AGENT ID
           </Text>
           <ContentPanel>
-            <Text className="font-mono" variant="muted">
+            <Text className="font-mono text-sm" variant="muted">
               {agentData.agentId}
             </Text>
           </ContentPanel>
@@ -192,7 +192,7 @@ export const AgentTab: FC<Props> = ({ span }) => {
             CONVERSATION ID
           </Text>
           <ContentPanel>
-            <Text className="font-mono" variant="muted">
+            <Text className="font-mono text-sm" variant="muted">
               {agentData.conversationId}
             </Text>
           </ContentPanel>
