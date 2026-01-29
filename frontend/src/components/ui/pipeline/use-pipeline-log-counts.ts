@@ -10,7 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { useQueries } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { config } from 'config';
 import { PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
@@ -19,18 +19,18 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import { useMemo } from 'react';
 import { parsePayloadAsJson, StartOffset } from 'react-query/api/messages';
-import { REDPANDA_CONNECT_LOGS_TOPIC } from 'react-query/api/pipeline';
+import { REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS, REDPANDA_CONNECT_LOGS_TOPIC } from 'react-query/api/pipeline';
+import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
 import { sanitizeString } from 'utils/filter-helper';
 import { encodeBase64 } from 'utils/utils';
 
 import { LOG_PATH_INPUT, LOG_PATH_OUTPUT } from '../logs/constants';
-import { LOG_LEVELS, type LogLevel } from '../logs/types';
 
-/** Number of most recent logs to consider per pipeline */
-const LOGS_PER_PIPELINE = 50;
+/** Cache staleness time in milliseconds (30 seconds) */
+const STALE_TIME_MS = 30 * 1000;
 
-/** Time window in hours to look back for logs */
-const TIME_WINDOW_HOURS = 5;
+/** Cache garbage collection time in milliseconds (30 minutes) */
+const GC_TIME_MS = 30 * 60 * 1000;
 
 /**
  * Scoped log counts - warnings and errors for a specific scope.
@@ -64,6 +64,9 @@ const createEmptyCounts = (): PipelineLogCounts => ({
   root: { warnings: 0, errors: 0 },
 });
 
+/** Stable empty Map to avoid creating new references on each render */
+const EMPTY_MAP = new Map<string, PipelineLogCounts>();
+
 /**
  * Determine scope based on log path.
  */
@@ -75,19 +78,6 @@ const getLogScope = (path: string | null): 'input' | 'output' | 'root' => {
     return 'output';
   }
   return 'root';
-};
-
-/**
- * Compare two bigints for descending sort order.
- */
-const compareBigIntDesc = (a: bigint, b: bigint): number => {
-  if (b > a) {
-    return 1;
-  }
-  if (b < a) {
-    return -1;
-  }
-  return 0;
 };
 
 /**
@@ -112,32 +102,129 @@ const collectStreamMessages = async (
 };
 
 /**
- * Fetch log counts for a single pipeline.
+ * Decode message key from Uint8Array to string.
+ */
+const decodeMessageKey = (keyPayload: Uint8Array | undefined): string | null => {
+  if (!keyPayload || keyPayload.length === 0) {
+    return null;
+  }
+  try {
+    return new TextDecoder().decode(keyPayload);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Build a JavaScript filter that matches any of the given pipeline IDs
+ * AND filters for WARN/ERROR log levels only.
+ *
+ * This server-side filtering reduces data transfer and ensures we only
+ * receive messages that will actually be counted.
+ */
+const buildBatchFilter = (pipelineIds: string[]): string => {
+  const idsJson = JSON.stringify(pipelineIds);
+  // Filter by pipeline ID (key) AND log level (in content JSON)
+  // This reduces data transfer by filtering out INFO/DEBUG/TRACE logs server-side
+  return `
+    if (!${idsJson}.includes(key)) return false;
+    try {
+      var v = JSON.parse(content);
+      var l = (v.level || '').toUpperCase();
+      return l === 'WARN' || l === 'ERROR';
+    } catch (e) {
+      return false;
+    }
+  `;
+};
+
+type ParsedIssue = {
+  pipelineId: string;
+  level: 'WARN' | 'ERROR';
+  scope: 'input' | 'output' | 'root';
+};
+
+/**
+ * Parse a single message into a structured issue if it's a valid WARN/ERROR.
+ */
+const parseMessageAsIssue = (
+  msg: ListMessagesResponse_DataMessage,
+  validPipelineIds: Set<string>
+): ParsedIssue | null => {
+  const pipelineId = decodeMessageKey(msg.key?.normalizedPayload);
+  if (!(pipelineId && validPipelineIds.has(pipelineId))) {
+    return null;
+  }
+
+  const content = parsePayloadAsJson<ParsedLogMessage>(msg.value?.normalizedPayload);
+  if (!content) {
+    return null;
+  }
+
+  const level = content.level?.toUpperCase();
+  if (level !== 'WARN' && level !== 'ERROR') {
+    return null;
+  }
+
+  const path = content.path ?? null;
+  return { pipelineId, level, scope: getLogScope(path) };
+};
+
+/**
+ * Aggregate parsed issues into pipeline counts.
+ * No per-pipeline limit - backend controls total via maxResults.
+ */
+const aggregateIssueCounts = (issues: ParsedIssue[], pipelineIds: string[]): Map<string, PipelineLogCounts> => {
+  const results = new Map<string, PipelineLogCounts>();
+  for (const id of pipelineIds) {
+    results.set(id, createEmptyCounts());
+  }
+
+  for (const issue of issues) {
+    const counts = results.get(issue.pipelineId) ?? createEmptyCounts();
+    if (issue.level === 'WARN') {
+      counts[issue.scope].warnings += 1;
+    } else {
+      counts[issue.scope].errors += 1;
+    }
+    results.set(issue.pipelineId, counts);
+  }
+
+  return results;
+};
+
+/**
+ * Fetch log counts for multiple pipelines in a single batched request.
  *
  * Strategy:
- * 1. Fetch last LOGS_PER_PIPELINE logs for this pipeline (no level filter)
- * 2. Count WARN/ERROR within those logs, scoped by path
+ * 1. Build a single filter matching all pipeline IDs AND WARN/ERROR levels
+ * 2. Fetch logs with centralized maxResults (backend controls limit)
+ * 3. Parse messages into issues, aggregate counts by pipeline and scope
  */
-const fetchSinglePipelineLogCounts = async (pipelineId: string): Promise<PipelineLogCounts> => {
-  const counts = createEmptyCounts();
+const fetchBatchedLogCounts = async (pipelineIds: string[]): Promise<Map<string, PipelineLogCounts>> => {
+  if (pipelineIds.length === 0) {
+    return new Map();
+  }
 
   const consoleClient = config.consoleClient;
   if (!consoleClient) {
-    return counts;
+    const results = new Map<string, PipelineLogCounts>();
+    for (const id of pipelineIds) {
+      results.set(id, createEmptyCounts());
+    }
+    return results;
   }
 
-  // Simple filter: match this specific pipeline ID
-  // Using var and simple equality for maximum interpreter compatibility
-  const filterCode = `return key == "${pipelineId}";`;
-
-  const startTime = Date.now() - TIME_WINDOW_HOURS * 60 * 60 * 1000;
+  const filterCode = buildBatchFilter(pipelineIds);
+  // Use centralized constants - let backend control the limits
+  const startTime = Date.now() - REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS * 60 * 60 * 1000;
 
   const request = create(ListMessagesRequestSchema, {
     topic: REDPANDA_CONNECT_LOGS_TOPIC,
     partitionId: -1,
     startOffset: StartOffset.TIMESTAMP,
     startTimestamp: BigInt(startTime),
-    maxResults: LOGS_PER_PIPELINE,
+    maxResults: MAX_PAGE_SIZE, // Backend-controlled limit
     filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
     includeOriginalRawPayload: false,
     keyDeserializer: PayloadEncoding.UNSPECIFIED,
@@ -147,80 +234,58 @@ const fetchSinglePipelineLogCounts = async (pipelineId: string): Promise<Pipelin
   try {
     const stream = consoleClient.listMessages(request);
     const messages = await collectStreamMessages(stream);
+    const validPipelineIds = new Set(pipelineIds);
 
-    // Sort by timestamp descending to get most recent first
-    const sortedMessages = messages
-      .map((msg) => ({ msg, timestamp: msg.timestamp ?? BigInt(0) }))
-      .sort((a, b) => compareBigIntDesc(a.timestamp, b.timestamp))
-      .slice(0, LOGS_PER_PIPELINE);
-
-    // Count WARN/ERROR within the snapshot
-    for (const { msg } of sortedMessages) {
-      const content = parsePayloadAsJson<ParsedLogMessage>(msg.value?.normalizedPayload);
-      if (!content) {
-        continue;
-      }
-
-      const level = content.level?.toUpperCase() as LogLevel | undefined;
-      if (!(level && LOG_LEVELS.includes(level))) {
-        continue;
-      }
-
-      if (level !== 'WARN' && level !== 'ERROR') {
-        continue;
-      }
-
-      const path = content.path ?? null;
-      const scope = getLogScope(path);
-
-      if (level === 'WARN') {
-        counts[scope].warnings += 1;
-      } else {
-        counts[scope].errors += 1;
+    // Parse all messages into issues
+    const issues: ParsedIssue[] = [];
+    for (const msg of messages) {
+      const issue = parseMessageAsIssue(msg, validPipelineIds);
+      if (issue) {
+        issues.push(issue);
       }
     }
-  } catch {
-    // Silently fail - return empty counts
-  }
 
-  return counts;
+    return aggregateIssueCounts(issues, pipelineIds);
+  } catch {
+    // Silently fail - return empty counts for all pipelines
+    const results = new Map<string, PipelineLogCounts>();
+    for (const id of pipelineIds) {
+      results.set(id, createEmptyCounts());
+    }
+    return results;
+  }
 };
 
 /**
  * Hook to fetch pipeline log counts for the given pipeline IDs.
  *
- * Uses useQueries for parallel fetching - each pipeline gets its own cached query.
- * This ensures we get data for all visible pipelines and enables efficient caching
- * when paginating (already-fetched pipelines use cached data).
+ * Uses a single batched request to fetch logs for all pipelines at once,
+ * reducing backend load from N requests to 1 request.
  *
  * @param pipelineIds - Array of pipeline IDs to fetch counts for (should be visible IDs only)
- * @param enabled - Whether to enable the queries (default: true)
+ * @param enabled - Whether to enable the query (default: true)
  */
 export const usePipelineLogCounts = (pipelineIds: string[], enabled = true) => {
-  const queries = useQueries({
-    queries: pipelineIds.map((pipelineId) => ({
-      queryKey: ['pipeline-log-counts', pipelineId],
-      queryFn: () => fetchSinglePipelineLogCounts(pipelineId),
-      enabled,
-      staleTime: 60 * 1000, // 1 minute
-      refetchOnWindowFocus: false,
-    })),
+  // Create a stable query key based on sorted pipeline IDs
+  // This ensures cache hits regardless of array order
+  const sortedIds = useMemo(() => [...pipelineIds].sort(), [pipelineIds]);
+  const queryKey = useMemo(() => ['pipeline-log-counts-batch', sortedIds.join(',')], [sortedIds]);
+
+  const query = useQuery({
+    queryKey,
+    queryFn: () => fetchBatchedLogCounts(sortedIds),
+    enabled: enabled && sortedIds.length > 0,
+    staleTime: STALE_TIME_MS,
+    gcTime: GC_TIME_MS,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchInterval: 30 * 1000, // Poll every 30 seconds
   });
 
-  // Combine results into a Map for easy lookup by pipeline ID
-  const data = useMemo(() => {
-    const map = new Map<string, PipelineLogCounts>();
-    for (let i = 0; i < pipelineIds.length; i++) {
-      const query = queries[i];
-      if (query?.data) {
-        map.set(pipelineIds[i], query.data);
-      }
-    }
-    return map;
-  }, [queries, pipelineIds]);
-
-  // Aggregate loading state - true if any query is loading
-  const isLoading = queries.some((q) => q.isLoading);
-
-  return { data, isLoading };
+  return {
+    data: query.data ?? EMPTY_MAP,
+    isLoading: query.isLoading,
+    isStale: query.isStale,
+    dataUpdatedAt: query.dataUpdatedAt,
+  };
 };
