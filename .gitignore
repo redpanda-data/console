@@ -20,3 +20,12 @@ requests.txt
 build
 
 .cursor
+
+# Beads task tracking (ephemeral)
+.beads/
+.mcp.json
+.worktrees/
+
+# Root-level Claude orchestration (stealth - not shared)
+/.claude/
+/CLAUDE.md
