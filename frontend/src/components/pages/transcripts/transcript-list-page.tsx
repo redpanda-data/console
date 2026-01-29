@@ -31,7 +31,7 @@ import {
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Heading, Small, Text } from 'components/redpanda-ui/components/typography';
 import { ArrowLeft, Database, RefreshCw, X } from 'lucide-react';
-import { parseAsString, useQueryState } from 'nuqs';
+import { parseAsString, useQueryStates } from 'nuqs';
 import type { TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { ChangeEvent, FC } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -247,10 +247,19 @@ type TranscriptListPageProps = {
 };
 
 export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFaceting = false }) => {
-  const [selectedTraceId, setSelectedTraceId] = useQueryState('traceId', parseAsString);
-  const [selectedSpanId, setSelectedSpanId] = useQueryState('spanId', parseAsString);
-  const [, setSelectedTab] = useQueryState('tab', parseAsString);
-  const [timeRange, setTimeRange] = useQueryState('timeRange', parseAsString.withDefault('1h'));
+  // URL state - batched for efficient updates
+  const [urlState, setUrlState] = useQueryStates({
+    traceId: parseAsString,
+    spanId: parseAsString,
+    tab: parseAsString,
+    timeRange: parseAsString.withDefault('1h'),
+  });
+  const { traceId: selectedTraceId, spanId: selectedSpanId, timeRange } = urlState;
+
+  // Wrapper setters for components that need individual setters
+  const setSelectedTraceId = useCallback((value: string | null) => setUrlState({ traceId: value }), [setUrlState]);
+  const setSelectedSpanId = useCallback((value: string | null) => setUrlState({ spanId: value }), [setUrlState]);
+
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
@@ -276,25 +285,23 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     setAccumulatedTraces([]);
     setCurrentPageToken('');
     setJumpedTo(null);
-    // Clear span selection - selected span may not exist in new data
-    setSelectedTraceId(null);
-    setSelectedSpanId(null);
-    setSelectedTab(null);
+    // Clear span selection - selected span may not exist in new data (batched URL update)
+    setUrlState({ traceId: null, spanId: null, tab: null });
     // Clear linked trace state
     setIsLinkedTraceMode(false);
     linkedTraceIdRef.current = null;
-  }, [setSelectedTraceId, setSelectedSpanId, setSelectedTab]);
+  }, [setUrlState]);
 
   // Handle time range changes from the Select component
   // This replaces the useEffect approach to prevent double-queries from nuqs hydration
   const handleTimeRangeChange = useCallback(
     (value: string) => {
-      setTimeRange(value);
+      setUrlState({ timeRange: value });
       setNowMs(Date.now());
       resetQueryState();
       // No refetch() needed - changing nowMs updates the query key, triggering automatic refetch
     },
-    [setTimeRange, resetQueryState]
+    [setUrlState, resetQueryState]
   );
 
   // Calculate query timestamps based on whether we're in jumped mode
@@ -584,16 +591,13 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   };
 
   const handleSpanClick = (traceId: string, spanId: string) => {
-    setSelectedTraceId(traceId);
-    setSelectedSpanId(spanId);
+    setUrlState({ traceId, spanId });
   };
 
   const handleDismissLinkedTrace = () => {
     setIsLinkedTraceMode(false);
     linkedTraceIdRef.current = null;
-    setSelectedTraceId(null);
-    setSelectedSpanId(null);
-    setSelectedTab(null);
+    setUrlState({ traceId: null, spanId: null, tab: null });
   };
 
   const handleViewSurrounding = () => {
